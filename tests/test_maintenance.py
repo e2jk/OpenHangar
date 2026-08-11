@@ -2,9 +2,9 @@
 Tests for Phase 4: Maintenance tracking routes and status calculation.
 """
 
-import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from datetime import date, timedelta
 
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     HoursBasis,
@@ -347,7 +347,7 @@ class TestAuthGuard:
 
 class TestTriggerList:
     def test_list_shows_triggers(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _add_calendar_trigger(app, acid, name="Annual check")
         _login(app, client)
@@ -356,7 +356,7 @@ class TestTriggerList:
         assert b"Annual check" in r.data
 
     def test_list_empty_state(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.get(f"/aircraft/{acid}/maintenance")
@@ -377,7 +377,7 @@ class TestTriggerList:
 
 class TestAddTrigger:
     def test_get_shows_form(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.get(f"/aircraft/{acid}/maintenance/new")
@@ -385,7 +385,7 @@ class TestAddTrigger:
         assert b"Add Maintenance Item" in r.data
 
     def test_post_creates_calendar_trigger(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -407,7 +407,7 @@ class TestAddTrigger:
             assert t.interval_days == 365
 
     def test_post_creates_hours_trigger(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -427,7 +427,7 @@ class TestAddTrigger:
             assert float(t.interval_hours) == 50.0
 
     def test_post_rejects_missing_name(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -442,7 +442,7 @@ class TestAddTrigger:
         assert b"Name is required" in r.data
 
     def test_post_rejects_calendar_without_due_date(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -457,7 +457,7 @@ class TestAddTrigger:
         assert b"Due date is required" in r.data
 
     def test_post_rejects_hours_without_due_hobbs(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -472,7 +472,7 @@ class TestAddTrigger:
         assert b"Due engine hours is required" in r.data
 
     def test_post_creates_landings_trigger(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -492,7 +492,7 @@ class TestAddTrigger:
             assert t.interval_landings == 200
 
     def test_post_rejects_landings_without_due_landings(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -512,7 +512,7 @@ class TestAddTrigger:
 
 class TestEditTrigger:
     def test_get_prefills_form(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         trid = _add_calendar_trigger(
             app, acid, name="Annual", due_date=date(2027, 1, 1)
@@ -523,7 +523,7 @@ class TestEditTrigger:
         assert b"Annual" in r.data
 
     def test_post_updates_trigger(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         trid = _add_calendar_trigger(app, acid, name="Annual")
         _login(app, client)
@@ -544,7 +544,7 @@ class TestEditTrigger:
             assert t.due_date == date(2028, 6, 1)
 
     def test_edit_404_for_wrong_aircraft(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid1 = _add_aircraft(app, tid, registration="OO-AA1")
         acid2 = _add_aircraft(app, tid, registration="OO-AA2")
         trid = _add_calendar_trigger(app, acid1)
@@ -558,7 +558,7 @@ class TestEditTrigger:
 
 class TestDeleteTrigger:
     def test_delete_removes_trigger(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         trid = _add_calendar_trigger(app, acid)
         _login(app, client)
@@ -570,7 +570,7 @@ class TestDeleteTrigger:
             assert db.session.get(MaintenanceTrigger, trid) is None
 
     def test_delete_404_for_wrong_aircraft(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid1 = _add_aircraft(app, tid, registration="OO-AA1")
         acid2 = _add_aircraft(app, tid, registration="OO-AA2")
         trid = _add_calendar_trigger(app, acid1)
@@ -584,7 +584,7 @@ class TestDeleteTrigger:
 
 class TestServiceTrigger:
     def test_get_shows_service_form(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         trid = _add_calendar_trigger(app, acid, name="Annual")
         _login(app, client)
@@ -593,7 +593,7 @@ class TestServiceTrigger:
         assert b"Mark as serviced" in r.data
 
     def test_post_creates_record(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         trid = _add_calendar_trigger(app, acid)
         _login(app, client)
@@ -614,7 +614,7 @@ class TestServiceTrigger:
             assert rec.notes == "Done at workshop"
 
     def test_calendar_trigger_advances_due_date(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         trid = _add_calendar_trigger(
             app, acid, due_date=date(2026, 1, 1), interval_days=365
@@ -632,7 +632,7 @@ class TestServiceTrigger:
             assert t.due_date == date(2027, 4, 1)
 
     def test_hours_trigger_advances_due_hobbs(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         trid = _add_hours_trigger(app, acid, due_hobbs=200.0, interval_hours=50.0)
         _login(app, client)
@@ -648,7 +648,7 @@ class TestServiceTrigger:
             assert float(t.due_engine_hours) == 248.5
 
     def test_hours_trigger_requires_hobbs(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         trid = _add_hours_trigger(app, acid)
         _login(app, client)
@@ -663,7 +663,7 @@ class TestServiceTrigger:
         assert b"Hobbs at service is required" in r.data
 
     def test_landings_trigger_advances_due_landings(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         trid = _add_landings_trigger(
             app, acid, due_landings=1000, interval_landings=200
@@ -681,7 +681,7 @@ class TestServiceTrigger:
             assert t.due_landings == 1185
 
     def test_landings_trigger_requires_landings(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         trid = _add_landings_trigger(app, acid)
         _login(app, client)
@@ -696,7 +696,7 @@ class TestServiceTrigger:
         assert b"Landings at service is required" in r.data
 
     def test_service_requires_date(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         trid = _add_calendar_trigger(app, acid)
         _login(app, client)
@@ -737,7 +737,7 @@ class TestMaintenanceNoTenantUser:
 
 class TestSaveTriggerValidation:
     def test_invalid_trigger_type_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -751,7 +751,7 @@ class TestSaveTriggerValidation:
         assert b"calendar" in r.data or b"Trigger type" in r.data
 
     def test_calendar_bad_due_date_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -766,7 +766,7 @@ class TestSaveTriggerValidation:
         assert b"valid date" in r.data
 
     def test_calendar_invalid_interval_days_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -782,7 +782,7 @@ class TestSaveTriggerValidation:
         assert b"positive" in r.data
 
     def test_hours_negative_due_hobbs_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -797,7 +797,7 @@ class TestSaveTriggerValidation:
         assert b"positive" in r.data
 
     def test_hours_invalid_interval_hours_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -813,7 +813,7 @@ class TestSaveTriggerValidation:
         assert b"positive" in r.data
 
     def test_landings_negative_due_landings_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -828,7 +828,7 @@ class TestSaveTriggerValidation:
         assert b"positive" in r.data
 
     def test_landings_invalid_interval_landings_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -844,7 +844,7 @@ class TestSaveTriggerValidation:
         assert b"positive" in r.data
 
     def test_calendar_invalid_warn_days_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -860,7 +860,7 @@ class TestSaveTriggerValidation:
         assert b"Warning lead time" in r.data
 
     def test_calendar_warn_days_saved(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -879,7 +879,7 @@ class TestSaveTriggerValidation:
             assert t.warn_days == 45
 
     def test_hours_invalid_warn_hours_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -895,7 +895,7 @@ class TestSaveTriggerValidation:
         assert b"Warning lead time" in r.data
 
     def test_hours_warn_hours_and_basis_saved(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -916,7 +916,7 @@ class TestSaveTriggerValidation:
             assert t.hours_basis == "flight"
 
     def test_hours_basis_defaults_to_engine_when_missing(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -934,7 +934,7 @@ class TestSaveTriggerValidation:
             assert t.hours_basis == "engine"
 
     def test_landings_invalid_warn_landings_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -950,7 +950,7 @@ class TestSaveTriggerValidation:
         assert b"Warning lead time" in r.data
 
     def test_landings_warn_landings_saved(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         r = client.post(
@@ -974,7 +974,7 @@ class TestSaveTriggerValidation:
 
 class TestServiceTriggerValidation:
     def test_bad_service_date_format_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         trid = _add_calendar_trigger(app, acid)
         _login(app, client)
@@ -989,7 +989,7 @@ class TestServiceTriggerValidation:
         assert b"valid date" in r.data
 
     def test_hours_trigger_negative_hobbs_at_service_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         trid = _add_hours_trigger(app, acid)
         _login(app, client)
@@ -1004,7 +1004,7 @@ class TestServiceTriggerValidation:
         assert b"positive" in r.data
 
     def test_calendar_trigger_accepts_optional_hobbs(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         trid = _add_calendar_trigger(
             app, acid, interval_days=365, due_date=date(2026, 1, 1)
@@ -1025,7 +1025,7 @@ class TestServiceTriggerValidation:
             assert float(rec.hobbs_at_service) == 198.5
 
     def test_calendar_trigger_ignores_non_numeric_hobbs(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         trid = _add_calendar_trigger(
             app, acid, interval_days=365, due_date=date(2026, 1, 1)
@@ -1048,7 +1048,7 @@ class TestServiceTriggerValidation:
     def test_landings_trigger_negative_landings_at_service_shows_error(
         self, app, client
     ):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         trid = _add_landings_trigger(app, acid)
         _login(app, client)
@@ -1063,7 +1063,7 @@ class TestServiceTriggerValidation:
         assert b"positive" in r.data
 
     def test_calendar_trigger_accepts_optional_landings(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         trid = _add_calendar_trigger(
             app, acid, interval_days=365, due_date=date(2026, 1, 1)
@@ -1084,7 +1084,7 @@ class TestServiceTriggerValidation:
             assert rec.landings_at_service == 42
 
     def test_calendar_trigger_ignores_non_numeric_landings(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         trid = _add_calendar_trigger(
             app, acid, interval_days=365, due_date=date(2026, 1, 1)

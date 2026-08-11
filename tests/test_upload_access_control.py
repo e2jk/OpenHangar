@@ -27,7 +27,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     db,
 )
 
-
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
 
@@ -158,7 +157,7 @@ def _make_pilot_doc(app, pilot_user_id, filename):
 
 class TestAircraftDocumentAccess:
     def test_owner_tenant_can_access(self, app, client):
-        uid, tid = _make_tenant_and_user(app, "owner@a.com")
+        _uid, tid = _make_tenant_and_user(app, "owner@a.com")
         acid = _make_aircraft(app, tid)
         _write_file(app, "ac_doc.pdf")
         _make_aircraft_doc(app, acid, "ac_doc.pdf")
@@ -180,7 +179,7 @@ class TestAircraftDocumentAccess:
 
 class TestComponentDocumentAccess:
     def test_owner_tenant_can_access(self, app, client):
-        uid, tid = _make_tenant_and_user(app, "comp_owner@a.com")
+        _uid, tid = _make_tenant_and_user(app, "comp_owner@a.com")
         acid = _make_aircraft(app, tid)
         cid = _make_component(app, acid)
         _write_file(app, "comp_doc.pdf")
@@ -201,7 +200,7 @@ class TestComponentDocumentAccess:
 
 class TestFlightDocumentAccess:
     def test_owner_tenant_can_access(self, app, client):
-        uid, tid = _make_tenant_and_user(app, "fe_owner@a.com")
+        _uid, tid = _make_tenant_and_user(app, "fe_owner@a.com")
         acid = _make_aircraft(app, tid)
         fid = _make_flight(app, acid)
         _write_file(app, "flight_doc.pdf")

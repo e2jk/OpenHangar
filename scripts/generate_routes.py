@@ -27,10 +27,9 @@ import argparse
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
-
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "app"))
@@ -436,7 +435,7 @@ def generate(
             if not unresolved:
                 try:
                     url = base_url + url_for(endpoint, **params)
-                except Exception as exc:
+                except Exception as exc:  # noqa: BLE001 -- per-route build failure, record note and keep scanning all routes
                     notes = f"url_for failed: {exc}"
             else:
                 notes = f"params unresolvable in seed DB: {unresolved}"
@@ -462,7 +461,7 @@ def generate(
     post_count = sum(1 for r in routes if r["method"] == "POST")
 
     output = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "db_url_masked": _mask_db_url(db_url),
         "summary": {
             "total": total,

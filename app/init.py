@@ -1,13 +1,12 @@
 import os
 import secrets
 import sqlite3
-from datetime import timedelta
-from functools import lru_cache
-
-import click  # pyright: ignore[reportMissingImports]
+from datetime import UTC, timedelta
+from functools import cache
 from typing import Any
 from urllib.parse import urlparse
 
+import click  # pyright: ignore[reportMissingImports]
 from flask import (
     Flask,
     Response,
@@ -19,12 +18,15 @@ from flask import (
     session,
 )  # pyright: ignore[reportMissingImports]
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
-from flask_babel import Babel, get_locale as _babel_get_locale  # pyright: ignore[reportMissingImports]
+from flask_babel import Babel  # pyright: ignore[reportMissingImports]
+from flask_babel import get_locale as _babel_get_locale
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect  # pyright: ignore[reportMissingImports]
-from werkzeug.middleware.proxy_fix import ProxyFix  # pyright: ignore[reportMissingImports]
 from sqlalchemy import event  # pyright: ignore[reportMissingImports]
 from sqlalchemy.engine import Engine  # pyright: ignore[reportMissingImports]
+from werkzeug.middleware.proxy_fix import (
+    ProxyFix,  # pyright: ignore[reportMissingImports]
+)
 
 
 def _env_or_file(name: str) -> str:
@@ -100,7 +102,7 @@ def _aviation_day_msgid(month: int, day: int) -> str | None:
     return None
 
 
-@lru_cache(maxsize=None)
+@cache
 def _static_folder_mtime_token(static_folder: str) -> str:
     latest = 0
     for root, _dirs, files in os.walk(static_folder):
@@ -135,12 +137,11 @@ def _set_sqlite_fk_pragma(dbapi_connection: Any, _record: Any) -> None:
 
 def _drop_and_restore_schema(database_url: str, sql_bytes: bytes) -> None:
     """Drop the public schema and restore it from a pg_dump byte-string."""
-    import subprocess  # noqa: PLC0415  # nosec B404
+    import subprocess  # nosec B404
     import tempfile
 
-    from sqlalchemy import text  # pyright: ignore[reportMissingImports]
-
     from models import db  # pyright: ignore[reportMissingImports]
+    from sqlalchemy import text  # pyright: ignore[reportMissingImports]
     from utils import to_libpq_url  # pyright: ignore[reportMissingImports]
 
     # Close the ORM session while its connection is still alive so Flask's
@@ -191,6 +192,7 @@ def _drop_and_restore_schema(database_url: str, sql_bytes: bytes) -> None:
         result = subprocess.run(  # nosec B603
             ["psql", "--no-password", "-f", tmp_path, to_libpq_url(database_url)],
             timeout=600,
+            check=False,  # returncode checked explicitly below
         )
     except subprocess.TimeoutExpired:
         raise RuntimeError("psql restore timed out after 10 minutes.")
@@ -206,9 +208,11 @@ def _easa_sync_loop(app: Flask) -> None:
     import os
     import random
     import time
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
-    from airworthiness_sync import sync_all_nodes  # pyright: ignore[reportMissingImports]
+    from airworthiness_sync import (
+        sync_all_nodes,  # pyright: ignore[reportMissingImports]
+    )
 
     _log = logging.getLogger(__name__)
 
@@ -227,13 +231,13 @@ def _easa_sync_loop(app: Flask) -> None:
     _log.info("EASA sync scheduled daily at %02d:%02d UTC", sync_hour, sync_minute)
 
     while True:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         next_run = now.replace(
             hour=sync_hour, minute=sync_minute, second=0, microsecond=0
         )
         if next_run <= now:
             next_run += timedelta(days=1)
-        time.sleep((next_run - datetime.now(timezone.utc)).total_seconds())
+        time.sleep((next_run - datetime.now(UTC)).total_seconds())
         sync_all_nodes(app)
 
 
@@ -271,7 +275,7 @@ def _parse_notification_time() -> tuple[int, int]:
 def _notification_daily_loop(app: Flask, run_hour: int, run_minute: int) -> None:
     import logging
     import time
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
     _log = logging.getLogger(__name__)
     _log.info(
@@ -279,18 +283,20 @@ def _notification_daily_loop(app: Flask, run_hour: int, run_minute: int) -> None
     )
 
     while True:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         next_run = now.replace(
             hour=run_hour, minute=run_minute, second=0, microsecond=0
         )
         if next_run <= now:
             next_run += timedelta(days=1)
-        time.sleep((next_run - datetime.now(timezone.utc)).total_seconds())
+        time.sleep((next_run - datetime.now(UTC)).total_seconds())
         try:
-            from services.notification_service import run_daily_checks  # pyright: ignore[reportMissingImports]
+            from services.notification_service import (
+                run_daily_checks,  # pyright: ignore[reportMissingImports]
+            )
 
             run_daily_checks(app)
-        except Exception:
+        except Exception:  # noqa: BLE001 -- background job, must not crash the loop, retries tomorrow
             _log.exception("Notification daily check failed; will retry tomorrow")
 
 
@@ -308,7 +314,9 @@ def _start_notification_scheduler(app: Flask) -> None:
 
 
 def create_app() -> Flask:
-    from security_alerts import attach_to_logger  # pyright: ignore[reportMissingImports]
+    from security_alerts import (
+        attach_to_logger,  # pyright: ignore[reportMissingImports]
+    )
 
     attach_to_logger()
 
@@ -828,8 +836,10 @@ def create_app() -> Flask:
         _single_aircraft_mode = _pac == 1
 
         # EE-09: aviation history day banner
-        from datetime import date as _date  # noqa: PLC0415
-        from flask_babel import gettext as _gt, ngettext as _ngt  # noqa: PLC0415
+        from datetime import date as _date
+
+        from flask_babel import gettext as _gt
+        from flask_babel import ngettext as _ngt
 
         _today = _date.today()
         _avi_msgid = _aviation_day_msgid(_today.month, _today.day)
@@ -839,7 +849,7 @@ def create_app() -> Flask:
         _pilot_anniversary: dict[str, Any] | None = None
         _pilot_anniversary_confetti = False
         if uid:
-            from models import PilotProfile as _PP  # noqa: PLC0415
+            from models import PilotProfile as _PP
 
             _pp = _PP.query.filter_by(user_id=uid).first()
             if _pp:
@@ -978,6 +988,7 @@ def create_app() -> Flask:
             return render_template("landing.html")
         if session.get("user_id"):
             from datetime import date as _date
+
             from models import (
                 Aircraft,
                 AircraftPhoto,
@@ -1092,8 +1103,10 @@ def create_app() -> Flask:
             grounding_snags = [(s, ac_by_id[s.aircraft_id]) for s in open_grounding]
 
             from models import PilotProfile
-            from sqlalchemy import or_ as _or_dash  # pyright: ignore[reportMissingImports]
             from pilots.currency import currency_summary as _currency_summary
+            from sqlalchemy import (
+                or_ as _or_dash,  # pyright: ignore[reportMissingImports]
+            )
 
             pilot_profile = PilotProfile.query.filter_by(
                 user_id=session["user_id"]
@@ -1150,16 +1163,14 @@ def create_app() -> Flask:
             # ── Reservation stat card + pending approval queue ────────────────
             import calendar as _cal
             from collections import defaultdict
-            from datetime import datetime as _dt, timedelta, timezone as _tz
-            from models import Reservation, ReservationStatus
+            from datetime import datetime as _dt
+            from datetime import timedelta
 
-            from models import Role
+            from models import Reservation, ReservationStatus, Role
             from utils import current_user_role
 
             _role = current_user_role()
-            today_utc = _dt.now(_tz.utc).replace(
-                hour=0, minute=0, second=0, microsecond=0
-            )
+            today_utc = _dt.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
             pending_reservations = (
                 (
                     Reservation.query.filter(
@@ -1205,10 +1216,10 @@ def create_app() -> Flask:
                 cal_year += 1
                 cal_month = 1
 
-            cal_month_start = _dt(cal_year, cal_month, 1, tzinfo=_tz.utc)
+            cal_month_start = _dt(cal_year, cal_month, 1, tzinfo=UTC)
             cal_last_day = _cal.monthrange(cal_year, cal_month)[1]
             cal_month_end = _dt(
-                cal_year, cal_month, cal_last_day, 23, 59, 59, tzinfo=_tz.utc
+                cal_year, cal_month, cal_last_day, 23, 59, 59, tzinfo=UTC
             )
 
             cal_reservations = (
@@ -1404,9 +1415,10 @@ def create_app() -> Flask:
         """Exit 0 if the database has no user data, 1 if it does (restore safety check)."""
         import sys
 
-        from sqlalchemy.exc import ProgrammingError  # pyright: ignore[reportMissingImports]
-
         from models import User  # pyright: ignore[reportMissingImports]
+        from sqlalchemy.exc import (
+            ProgrammingError,  # pyright: ignore[reportMissingImports]
+        )
 
         try:
             count = User.query.count()
@@ -1429,7 +1441,6 @@ def create_app() -> Flask:
         import zipfile
 
         from flask import current_app  # pyright: ignore[reportMissingImports]
-
         from models import User  # pyright: ignore[reportMissingImports]
         from services.backup_format import (  # pyright: ignore[reportMissingImports]
             BackupArchiveError,
@@ -1454,14 +1465,18 @@ def create_app() -> Flask:
         # wrong-key decryption error instead of prompting for the correct key.
         encryption_key_raw = os.environ.get("OPENHANGAR_RESTORE_ENCRYPTION_KEY", "")
         if encryption_key_raw:
-            from config.routes import _derive_key  # pyright: ignore[reportMissingImports]
-            from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # pyright: ignore[reportMissingImports]
+            from config.routes import (
+                _derive_key,  # pyright: ignore[reportMissingImports]
+            )
+            from cryptography.hazmat.primitives.ciphers.aead import (
+                AESGCM,  # pyright: ignore[reportMissingImports]
+            )
 
             key = _derive_key(encryption_key_raw)
             nonce, ct = payload[:12], payload[12:]
             try:
                 zip_bytes = AESGCM(key).decrypt(nonce, ct, None)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 -- wrong key surfaces as various crypto/zip errors
                 print(f"ERROR: Decryption failed — wrong key? ({exc})", file=sys.stderr)
                 sys.exit(1)
         else:
@@ -1491,8 +1506,12 @@ def create_app() -> Flask:
 
         if backup_alembic != "unknown":
             try:
-                from alembic.script import ScriptDirectory  # pyright: ignore[reportMissingImports]
-                from flask_migrate import Migrate as _Migrate  # pyright: ignore[reportMissingImports]
+                from alembic.script import (
+                    ScriptDirectory,  # pyright: ignore[reportMissingImports]
+                )
+                from flask_migrate import (
+                    Migrate as _Migrate,  # pyright: ignore[reportMissingImports]
+                )
 
                 _m = _Migrate(current_app, db)
                 scripts = ScriptDirectory.from_config(_m.get_config())
@@ -1505,7 +1524,7 @@ def create_app() -> Flask:
                         file=sys.stderr,
                     )
                     sys.exit(1)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 -- best-effort compatibility check, continue restore either way
                 print(f"WARNING: Could not verify Alembic compatibility: {exc}")
 
         # ── drop schema + restore SQL dump ────────────────────────────────────
@@ -1541,9 +1560,9 @@ def create_app() -> Flask:
             (dp, f) for dp, _dirs, files in os.walk(upload_folder) for f in files
         ]
         if _existing:
-            from datetime import datetime, timezone as _tz
+            from datetime import datetime
 
-            _snap_ts = datetime.now(_tz.utc).strftime("%Y%m%dT%H%M%SZ")
+            _snap_ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
             _enc_key_raw = _env_or_file("BACKUP_ENCRYPTION_KEY")
             _snap_ext = ".zip.enc" if _enc_key_raw else ".zip"
             _snap_name = f"uploads_pre_restore_{_snap_ts}{_snap_ext}"
@@ -1558,7 +1577,10 @@ def create_app() -> Flask:
             _snap_bytes = _snap_buf.getvalue()
 
             if _enc_key_raw:
-                from config.routes import _derive_key, _encrypt_bytes  # pyright: ignore[reportMissingImports]
+                from config.routes import (  # pyright: ignore[reportMissingImports]
+                    _derive_key,
+                    _encrypt_bytes,
+                )
 
                 _snap_bytes = _encrypt_bytes(_snap_bytes, _derive_key(_enc_key_raw))
 
@@ -1669,20 +1691,29 @@ def create_app() -> Flask:
         # reset-db's DROP/CREATE SCHEMA window -- and development/test runs
         # are never the thing being "upgraded".
         if flask_env == "production":
-            from services.version_service import start_version_check_thread  # pyright: ignore[reportMissingImports]
+            from services.version_service import (
+                start_version_check_thread,  # pyright: ignore[reportMissingImports]
+            )
 
             start_version_check_thread(app)
-        from sync_watcher import start_sync_watcher  # pyright: ignore[reportMissingImports]
+        from sync_watcher import (
+            start_sync_watcher,  # pyright: ignore[reportMissingImports]
+        )
 
         start_sync_watcher(app)
         if os.environ.get("OPENHANGAR_ENV", "production") == "production":
             _start_easa_sync_scheduler(app)
             _start_notification_scheduler(app)
-            from services.backup_scheduler import start_backup_scheduler  # pyright: ignore[reportMissingImports]
+            from services.backup_scheduler import (
+                start_backup_scheduler,  # pyright: ignore[reportMissingImports]
+            )
 
             start_backup_scheduler(app)
             import threading
-            from services.notification_service import send_welcome_email_if_needed  # pyright: ignore[reportMissingImports]
+
+            from services.notification_service import (
+                send_welcome_email_if_needed,  # pyright: ignore[reportMissingImports]
+            )
 
             threading.Thread(
                 target=send_welcome_email_if_needed,
@@ -1756,13 +1787,16 @@ def _validate_config(app: Flask) -> None:
     # OPENHANGAR_DATABASE_URL: production deployments must use PostgreSQL
     db_url = app.config.get("SQLALCHEMY_DATABASE_URI", "")
     flask_env = os.environ.get("OPENHANGAR_ENV", "production")
-    if "sqlite" not in db_url and flask_env not in ("development", "test"):
-        if not db_url.startswith(("postgresql://", "postgresql+psycopg://")):
-            scheme = db_url.split("://")[0] if "://" in db_url else db_url[:20]
-            errors.append(
-                f"OPENHANGAR_DATABASE_URL scheme {scheme!r} is not supported in production. "
-                "Use 'postgresql://'."
-            )
+    if (
+        "sqlite" not in db_url
+        and flask_env not in ("development", "test")
+        and not db_url.startswith(("postgresql://", "postgresql+psycopg://"))
+    ):
+        scheme = db_url.split("://")[0] if "://" in db_url else db_url[:20]
+        errors.append(
+            f"OPENHANGAR_DATABASE_URL scheme {scheme!r} is not supported in production. "
+            "Use 'postgresql://'."
+        )
 
     # OPENHANGAR_BACKUP_ENCRYPTION_KEY / OPENHANGAR_RESTORE_ENCRYPTION_KEY:
     # whitespace-only values are likely a misconfiguration.

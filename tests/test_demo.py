@@ -9,16 +9,22 @@ Covers:
 """
 
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 from flask import template_rendered  # pyright: ignore[reportMissingImports]
-from sqlalchemy.pool import StaticPool  # pyright: ignore[reportMissingImports]
-
 from init import create_app  # pyright: ignore[reportMissingImports]
-from models import AppSetting, DemoSlot, Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
-
+from models import (  # pyright: ignore[reportMissingImports]
+    AppSetting,
+    DemoSlot,
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    db,
+)
+from sqlalchemy.pool import StaticPool  # pyright: ignore[reportMissingImports]
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -131,7 +137,7 @@ class TestDemoSlotModel:
             assert slot.last_activity_at is None
 
     def test_slot_last_activity_set(self, demo_app):
-        ts = datetime(2025, 1, 1, 12, 0, tzinfo=timezone.utc)
+        ts = datetime(2025, 1, 1, 12, 0, tzinfo=UTC)
         with demo_app.app_context():
             slot_id, _ = _make_demo_slot(demo_app, last_activity=ts)
             slot = db.session.get(DemoSlot, slot_id)
@@ -198,8 +204,8 @@ class TestDemoEnter:
         assert response.status_code == 302
 
     def test_enter_prefers_least_recently_used_slot(self, demo_app, demo_client):
-        old_ts = datetime.now(timezone.utc) - timedelta(hours=2)
-        new_ts = datetime.now(timezone.utc) - timedelta(minutes=5)
+        old_ts = datetime.now(UTC) - timedelta(hours=2)
+        new_ts = datetime.now(UTC) - timedelta(minutes=5)
         _make_demo_slot(demo_app, slot_id=1, last_activity=new_ts)
         _make_demo_slot(demo_app, slot_id=2, last_activity=old_ts)
         demo_client.post("/demo/enter")
@@ -211,7 +217,7 @@ class TestDemoEnter:
         self, demo_app, demo_client, monkeypatch
     ):
         monkeypatch.setenv("OPENHANGAR_DEMO_BUSY_WINDOW_MINUTES", "30")
-        recent = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=5)
+        recent = datetime.now(UTC).replace(tzinfo=None) - timedelta(minutes=5)
         _make_demo_slot(demo_app, slot_id=1, last_activity=recent)
         response = demo_client.post("/demo/enter")
         assert response.status_code == 503
@@ -220,7 +226,7 @@ class TestDemoEnter:
         self, demo_app, demo_client, monkeypatch
     ):
         monkeypatch.setenv("OPENHANGAR_DEMO_BUSY_WINDOW_MINUTES", "not-a-number")
-        recent = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=5)
+        recent = datetime.now(UTC).replace(tzinfo=None) - timedelta(minutes=5)
         _make_demo_slot(demo_app, slot_id=1, last_activity=recent)
         response = demo_client.post("/demo/enter")
         assert response.status_code == 503
@@ -243,7 +249,7 @@ class TestDemoHasRecentActivity:
             assert demo_has_recent_activity() is False
 
     def test_recent_activity_returns_true(self, demo_app):
-        recent = datetime.now(timezone.utc) - timedelta(minutes=5)
+        recent = datetime.now(UTC) - timedelta(minutes=5)
         _make_demo_slot(demo_app, slot_id=1, last_activity=recent)
         with demo_app.app_context():
             from demo.routes import demo_has_recent_activity
@@ -251,7 +257,7 @@ class TestDemoHasRecentActivity:
             assert demo_has_recent_activity() is True
 
     def test_old_activity_returns_false(self, demo_app):
-        old = datetime.now(timezone.utc) - timedelta(hours=2)
+        old = datetime.now(UTC) - timedelta(hours=2)
         _make_demo_slot(demo_app, slot_id=1, last_activity=old)
         with demo_app.app_context():
             from demo.routes import demo_has_recent_activity
@@ -464,7 +470,10 @@ class TestDemoLogout:
 
     def test_logout_without_demo_slot_does_not_set_slot(self, app, client):
         """Normal logout (no demo_slot_id) leaves demo_slot_id absent."""
-        from tests.test_routes import _create_user, _login_session  # pyright: ignore[reportMissingImports]
+        from tests.test_routes import (  # pyright: ignore[reportMissingImports]
+            _create_user,
+            _login_session,
+        )
 
         _create_user(app)
         _login_session(app, client)
@@ -508,7 +517,7 @@ class TestDemoLanguage:
     ):
         """After demo entry, current_locale matches the visitor's locale, not the
         demo user's stored 'en' default."""
-        _, user_id = _make_demo_slot(demo_app, slot_id=1)
+        _, _user_id = _make_demo_slot(demo_app, slot_id=1)
         # Inject French as the visitor language then enter the demo
         with demo_client.session_transaction() as sess:
             sess["language"] = "fr"
@@ -540,7 +549,7 @@ class TestDemoLanguage:
 class TestDemoDisplayId:
     def test_display_id_injected_when_slot_in_session(self, demo_app, demo_client):
         with demo_app.app_context():
-            from models import DemoSlot, Tenant, TenantUser, User, Role, db
+            from models import DemoSlot, Role, Tenant, TenantUser, User, db
 
             tenant = Tenant(name="Demo Hangar #4242")
             db.session.add(tenant)

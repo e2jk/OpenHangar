@@ -8,7 +8,6 @@ from datetime import date
 from decimal import Decimal
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
-
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AircraftOwner,
@@ -24,7 +23,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     db,
 )
 from services.billing import BillingService  # pyright: ignore[reportMissingImports]
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -150,7 +148,7 @@ class TestRecordValuationSnapshot:
             BillingService.post(
                 acc,
                 LedgerEntryType.CHARGE,
-                Decimal("200"),
+                Decimal(200),
                 "Later charge",
                 date(2026, 3, 15),
                 source_type="test",
@@ -186,7 +184,7 @@ class TestRecordValuationSnapshot:
             BillingService.post(
                 acc,
                 LedgerEntryType.CHARGE,
-                Decimal("300"),
+                Decimal(300),
                 "Future charge",
                 date(2026, 6, 1),
                 source_type="test",

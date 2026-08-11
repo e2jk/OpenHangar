@@ -11,9 +11,8 @@ Never loaded in production.
 
 import random
 
-import pyotp  # pyright: ignore[reportMissingImports]
 import pw_hash as _pw  # pyright: ignore[reportMissingImports]
-
+import pyotp  # pyright: ignore[reportMissingImports]
 from _seed_helpers import (  # pyright: ignore[reportMissingImports]
     seed_fleet,
     seed_personal_minimums,

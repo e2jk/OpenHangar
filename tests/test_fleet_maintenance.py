@@ -2,9 +2,9 @@
 Tests for Phase 13: Fleet Maintenance Overview page.
 """
 
-import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from datetime import date, timedelta
 
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     Flight,
@@ -17,7 +17,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     User,
     db,
 )
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -266,7 +265,7 @@ class TestByTypeView:
         assert b"OO-TST" in resp.data
 
     def test_only_shows_own_tenant_data(self, app, client):
-        _, t1 = _create_user_and_tenant(app, "a@example.com")
+        _, _t1 = _create_user_and_tenant(app, "a@example.com")
         _, t2 = _create_user_and_tenant(app, "b@example.com")
         ac2 = _add_aircraft(app, t2, "OO-OTHER")
         _add_snag(app, ac2, title="Other tenant snag", is_grounding=True)

@@ -2,9 +2,18 @@
 Tests for Phase 36: Aircraft Operating Cost Dashboard.
 """
 
-import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from datetime import date, timedelta
 
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
+from expenses.cost_dashboard import (  # pyright: ignore[reportMissingImports]
+    DEFAULT_PERIOD_MONTHS,
+    PERIOD_OPTIONS,
+    _in_period,
+    _prorated_amount,
+    compute_cost_dashboard,
+    hours_flown,
+    resolve_period,
+)
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     Expense,
@@ -17,17 +26,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     User,
     db,
 )
-
-from expenses.cost_dashboard import (  # pyright: ignore[reportMissingImports]
-    DEFAULT_PERIOD_MONTHS,
-    PERIOD_OPTIONS,
-    _in_period,
-    _prorated_amount,
-    compute_cost_dashboard,
-    hours_flown,
-    resolve_period,
-)
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -449,7 +447,7 @@ class TestCostDashboardRoute:
         assert resp.status_code == 302
 
     def test_404_wrong_tenant(self, client, app):
-        _, t1 = _create_user_and_tenant(app, "owner@example.com")
+        _, _t1 = _create_user_and_tenant(app, "owner@example.com")
         _, t2 = _create_user_and_tenant(app, "other@example.com")
         ac_id = _add_aircraft(app, t2)
         _login(app, client, "owner@example.com")
@@ -501,7 +499,7 @@ class TestCostDashboardRoute:
         _add_flight(app, ac_id, hobbs_start=0.0, hobbs_end=4.0)
         _login(app, client)
         resp = client.get(f"/aircraft/{ac_id}/costs")
-        assert b"Fuel &amp; oil" in resp.data or "Fuel & oil".encode() in resp.data
+        assert b"Fuel &amp; oil" in resp.data or b"Fuel & oil" in resp.data
         assert b"Variable maintenance" in resp.data
         assert b"120.00" in resp.data
         assert b"80.00" in resp.data

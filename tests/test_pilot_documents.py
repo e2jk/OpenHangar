@@ -31,7 +31,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     db,
 )
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
@@ -310,7 +309,7 @@ class TestPilotDocumentDelete:
             assert db.session.get(Document, doc_id) is None
 
     def test_cannot_delete_other_user_document(self, app, client):
-        uid1, _ = _create_user_and_tenant(app, "a@x.com")
+        _uid1, _ = _create_user_and_tenant(app, "a@x.com")
         uid2, _ = _create_user_and_tenant(app, "b@x.com")
         doc_id = _add_document(app, pilot_user_id=uid2, title="Other's doc")
         _login(app, client, "a@x.com")
@@ -372,7 +371,7 @@ class TestPilotProfileDocuments:
 
 class TestInsuranceCertUpload:
     def test_upload_creates_doc_with_insurance_cert_type(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid, insurance_expiry=date(2027, 6, 1))
         _login(app, client)
         rv = client.post(
@@ -391,7 +390,7 @@ class TestInsuranceCertUpload:
             assert doc.superseded_by_id is None
 
     def test_upload_supersedes_previous_cert(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid, insurance_expiry=date(2027, 6, 1))
         old_doc_id = _add_document(
             app,
@@ -411,7 +410,7 @@ class TestInsuranceCertUpload:
             assert old_doc.superseded_by_id is not None
 
     def test_upload_no_file_redirects_with_flash(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid, insurance_expiry=date(2027, 6, 1))
         _login(app, client)
         rv = client.post(
@@ -422,7 +421,7 @@ class TestInsuranceCertUpload:
         assert rv.status_code == 302
 
     def test_upload_disallowed_extension(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid, insurance_expiry=date(2027, 6, 1))
         _login(app, client)
         rv = client.post(
@@ -433,7 +432,7 @@ class TestInsuranceCertUpload:
         assert rv.status_code == 302
 
     def test_upload_requires_owner_role(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         # Add a viewer user to the same tenant
         with app.app_context():
             viewer = User(
@@ -464,7 +463,7 @@ class TestInsuranceCertUpload:
 
 class TestTitleSuggestions:
     def test_returns_aircraft_titles(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _add_document(app, aircraft_id=ac_id, title="Annual Review 2025")
         _add_document(app, aircraft_id=ac_id, title="Weight & Balance")
@@ -476,7 +475,7 @@ class TestTitleSuggestions:
         assert "Weight & Balance" in data
 
     def test_filters_by_prefix(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _add_document(app, aircraft_id=ac_id, title="Annual Review 2025")
         _add_document(app, aircraft_id=ac_id, title="Weight & Balance")
@@ -495,8 +494,8 @@ class TestTitleSuggestions:
         assert "PPL Licence" in data
 
     def test_scoped_to_tenant(self, app, client):
-        uid1, tid1 = _create_user_and_tenant(app, "a@x.com")
-        uid2, tid2 = _create_user_and_tenant(app, "b@x.com")
+        _uid1, tid1 = _create_user_and_tenant(app, "a@x.com")
+        _uid2, tid2 = _create_user_and_tenant(app, "b@x.com")
         ac1_id = _add_aircraft(app, tid1, "OO-A")
         ac2_id = _add_aircraft(app, tid2, "OO-B")
         _add_document(app, aircraft_id=ac1_id, title="Tenant A Doc")
@@ -508,7 +507,7 @@ class TestTitleSuggestions:
         assert "Tenant B Doc" not in data
 
     def test_excludes_null_titles(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _add_document(app, aircraft_id=ac_id, title=None)
         _login(app, client)
@@ -517,7 +516,7 @@ class TestTitleSuggestions:
         assert None not in data
 
     def test_component_owner_type(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         with app.app_context():
             from models import Component, ComponentType
@@ -552,7 +551,7 @@ class TestTitleSuggestions:
 
 class TestDownloadAllDocuments:
     def test_returns_zip(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _add_document(
             app,
@@ -570,7 +569,7 @@ class TestDownloadAllDocuments:
             assert "manifest.txt" in zf.namelist()
 
     def test_zip_excludes_sensitive_for_non_owner(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         # Add a pilot (non-owner) user with all-aircraft access
         with app.app_context():
             crew_user = User(
@@ -606,7 +605,7 @@ class TestDownloadAllDocuments:
             assert not any("Secret" in n for n in names)
 
     def test_zip_includes_sensitive_for_owner(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _add_document(
             app,
@@ -625,7 +624,7 @@ class TestDownloadAllDocuments:
             assert "Secret Cert" in manifest
 
     def test_zip_missing_file_still_returns(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         # Add a document whose file doesn't exist on disk
         _add_document(app, aircraft_id=ac_id, title="Ghost Doc")
@@ -638,7 +637,7 @@ class TestDownloadAllDocuments:
             assert "Ghost Doc" in manifest
 
     def test_requires_login(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         rv = client.get(f"/aircraft/{ac_id}/documents/download-all")
         assert rv.status_code in (302, 401)
@@ -649,7 +648,7 @@ class TestDownloadAllDocuments:
 
 class TestAircraftDetailInsuranceCert:
     def test_detail_shows_view_certificate_link(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(
             app, tid, insurance_expiry=date.today() + timedelta(days=180)
         )
@@ -667,7 +666,7 @@ class TestAircraftDetailInsuranceCert:
         assert b"View certificate" in rv.data
 
     def test_detail_no_cert_no_link(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(
             app, tid, insurance_expiry=date.today() + timedelta(days=180)
         )
@@ -676,7 +675,7 @@ class TestAircraftDetailInsuranceCert:
         assert b"View certificate" not in rv.data
 
     def test_superseded_cert_not_shown(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(
             app, tid, insurance_expiry=date.today() + timedelta(days=180)
         )
@@ -710,7 +709,7 @@ class TestAircraftDetailInsuranceCert:
 
 class TestUploadDocumentPhase27Fields:
     def test_upload_saves_doc_type(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         client.post(
@@ -728,7 +727,7 @@ class TestUploadDocumentPhase27Fields:
             assert doc.valid_until == date(2030, 1, 15)
 
     def test_upload_invalid_valid_until_stored_as_none(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         client.post(
@@ -749,7 +748,7 @@ class TestUploadDocumentPhase27Fields:
 
 class TestEditDocumentPhase27Fields:
     def test_edit_sets_valid_until(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         doc_id = _add_document(app, aircraft_id=ac_id, title="ARC")
         _login(app, client)
@@ -762,7 +761,7 @@ class TestEditDocumentPhase27Fields:
             assert doc.valid_until == date(2026, 12, 31)
 
     def test_edit_clears_valid_until_when_blank(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         doc_id = _add_document(
             app, aircraft_id=ac_id, title="ARC", valid_until=date(2026, 6, 1)
@@ -777,7 +776,7 @@ class TestEditDocumentPhase27Fields:
             assert doc.valid_until is None
 
     def test_edit_invalid_valid_until_ignored(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         doc_id = _add_document(app, aircraft_id=ac_id, title="ARC")
         _login(app, client)

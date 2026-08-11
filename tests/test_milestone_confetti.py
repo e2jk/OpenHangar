@@ -16,7 +16,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     db,
 )
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
@@ -84,7 +83,7 @@ def _post_flight(client, aircraft_id, ft_start, ft_end):
 
 class TestCheckFlightHourMilestone:
     def test_skips_when_flight_time_is_none(self, app, client):
-        uid, tid, acid = _setup(app)
+        uid, _tid, acid = _setup(app)
         _login(client, uid)
         # Flight with no flight_time set → milestone check is a no-op
         with app.app_context():
@@ -105,7 +104,7 @@ class TestCheckFlightHourMilestone:
             assert "milestone_hours" not in sess
 
     def test_no_milestone_when_below_threshold(self, app, client):
-        uid, tid, acid = _setup(app)
+        uid, _tid, acid = _setup(app)
         _login(client, uid)
         # Add 50h of existing flights, then add a 3h flight → total 53h, no milestone
         _add_flight_entry(app, acid, 50.0)
@@ -115,7 +114,7 @@ class TestCheckFlightHourMilestone:
             assert "milestone_hours" not in sess
 
     def test_milestone_100h_sets_session_flag(self, app, client):
-        uid, tid, acid = _setup(app)
+        uid, _tid, acid = _setup(app)
         _login(client, uid)
         # 98h existing; add 3h flight → 101h total, crosses 100h
         _add_flight_entry(app, acid, 98.0)
@@ -125,7 +124,7 @@ class TestCheckFlightHourMilestone:
             assert sess.get("milestone_hours") == 100
 
     def test_milestone_100h_flashes_message(self, app, client):
-        uid, tid, acid = _setup(app)
+        uid, _tid, acid = _setup(app)
         _login(client, uid)
         _add_flight_entry(app, acid, 98.0)
         resp = _post_flight(client, acid, 200.0, 203.0)
@@ -134,7 +133,7 @@ class TestCheckFlightHourMilestone:
         assert b"100" in list_resp.data
 
     def test_milestone_500h(self, app, client):
-        uid, tid, acid = _setup(app)
+        uid, _tid, acid = _setup(app)
         _login(client, uid)
         _add_flight_entry(app, acid, 498.0)
         resp = _post_flight(client, acid, 200.0, 203.0)
@@ -143,7 +142,7 @@ class TestCheckFlightHourMilestone:
             assert sess.get("milestone_hours") == 500
 
     def test_only_first_milestone_crossed_is_flagged(self, app, client):
-        uid, tid, acid = _setup(app)
+        uid, _tid, acid = _setup(app)
         _login(client, uid)
         # Jump straight from 0h to 600h (crosses 100h and 500h); only 100h flagged
         resp = _post_flight(client, acid, 0.0, 600.0)
@@ -152,7 +151,7 @@ class TestCheckFlightHourMilestone:
             assert sess.get("milestone_hours") == 100
 
     def test_no_milestone_when_flight_time_is_none(self, app, client):
-        uid, tid, acid = _setup(app)
+        uid, _tid, acid = _setup(app)
         _login(client, uid)
         # POST a flight with no counter data → flight_time is None → helper returns early
         resp = client.post(
@@ -177,7 +176,7 @@ class TestCheckFlightHourMilestone:
 
 class TestListFlightsMilestone:
     def test_milestone_hours_consumed_from_session(self, app, client):
-        uid, tid, acid = _setup(app)
+        uid, _tid, acid = _setup(app)
         _login(client, uid)
         with client.session_transaction() as sess:
             sess["milestone_hours"] = 100
@@ -188,7 +187,7 @@ class TestListFlightsMilestone:
             assert "milestone_hours" not in sess
 
     def test_confetti_script_present_when_milestone_set(self, app, client):
-        uid, tid, acid = _setup(app)
+        uid, _tid, acid = _setup(app)
         _login(client, uid)
         with client.session_transaction() as sess:
             sess["milestone_hours"] = 1000
@@ -196,7 +195,7 @@ class TestListFlightsMilestone:
         assert b"confetti-milestone" in resp.data
 
     def test_confetti_script_absent_without_milestone(self, app, client):
-        uid, tid, acid = _setup(app)
+        uid, _tid, acid = _setup(app)
         _login(client, uid)
         resp = client.get(f"/aircraft/{acid}/flights")
         assert b"confetti-milestone" not in resp.data

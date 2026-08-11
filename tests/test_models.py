@@ -5,11 +5,19 @@ These tests exercise the ORM layer directly (no HTTP), using the same
 in-memory SQLite database that the route tests use.
 """
 
-import pytest  # pyright: ignore[reportMissingImports]
-from datetime import date, datetime, timedelta, timezone
-from sqlalchemy.exc import IntegrityError  # pyright: ignore[reportMissingImports]
-from models import Aircraft, Component, ComponentType, Role, Tenant, UserInvitation, db  # pyright: ignore[reportMissingImports]
+from datetime import UTC, date, datetime, timedelta
 
+import pytest  # pyright: ignore[reportMissingImports]
+from models import (  # pyright: ignore[reportMissingImports]
+    Aircraft,
+    Component,
+    ComponentType,
+    Role,
+    Tenant,
+    UserInvitation,
+    db,
+)
+from sqlalchemy.exc import IntegrityError  # pyright: ignore[reportMissingImports]
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -514,8 +522,7 @@ class TestUserInvitationIsExpired:
             inv = UserInvitation(
                 tenant_id=tenant.id,
                 role=Role.PILOT,
-                expires_at=datetime.now(timezone.utc).replace(tzinfo=None)
-                - timedelta(hours=1),
+                expires_at=datetime.now(UTC).replace(tzinfo=None) - timedelta(hours=1),
             )
             db.session.add(inv)
             db.session.commit()
@@ -528,8 +535,7 @@ class TestUserInvitationIsExpired:
             inv = UserInvitation(
                 tenant_id=tenant.id,
                 role=Role.PILOT,
-                expires_at=datetime.now(timezone.utc).replace(tzinfo=None)
-                + timedelta(days=1),
+                expires_at=datetime.now(UTC).replace(tzinfo=None) + timedelta(days=1),
             )
             db.session.add(inv)
             db.session.commit()
@@ -537,14 +543,13 @@ class TestUserInvitationIsExpired:
 
     def test_is_expired_with_tz_aware_past_datetime(self, app):
         """In-memory object with tz-aware datetime covers models.py:104."""
-        from datetime import timezone
 
         with app.app_context():
             tenant = _make_tenant()
             inv = UserInvitation(
                 tenant_id=tenant.id,
                 role=Role.PILOT,
-                expires_at=datetime.now(timezone.utc) - timedelta(hours=1),
+                expires_at=datetime.now(UTC) - timedelta(hours=1),
             )
             # Check is_expired before commit so expires_at is still tz-aware in memory
             assert inv.is_expired is True

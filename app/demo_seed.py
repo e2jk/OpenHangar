@@ -12,7 +12,6 @@ import random
 import shutil
 
 import pw_hash as _pw  # pyright: ignore[reportMissingImports]
-
 from _seed_helpers import (
     seed_fleet,
     seed_pilot_profiles,
@@ -113,7 +112,9 @@ def seed() -> None:
         db.session.add(tenant)
         db.session.flush()
 
-        def _make_user(email: str, name: str, role: Role) -> User:
+        def _make_user(
+            email: str, name: str, role: Role, *, _tenant: Tenant = tenant
+        ) -> User:
             u = User(
                 email=email,
                 password_hash=dummy_hash,
@@ -123,7 +124,7 @@ def seed() -> None:
             )
             db.session.add(u)
             db.session.flush()
-            db.session.add(TenantUser(user_id=u.id, tenant_id=tenant.id, role=role))
+            db.session.add(TenantUser(user_id=u.id, tenant_id=_tenant.id, role=role))
             return u
 
         owner_user = _make_user(

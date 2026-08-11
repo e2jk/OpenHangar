@@ -1,11 +1,13 @@
 import logging
 import os
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
-import pyotp
 import pw_hash as _pw
-from extensions import _rate_limiting_disabled, cache as _cache, limiter as _limiter  # pyright: ignore[reportMissingImports]
+import pyotp
+from extensions import _rate_limiting_disabled  # pyright: ignore[reportMissingImports]
+from extensions import cache as _cache
+from extensions import limiter as _limiter
 from flask import (
     Blueprint,
     current_app,
@@ -17,10 +19,8 @@ from flask import (
     url_for,
 )
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
-from markupsafe import Markup, escape
-
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
-
+from markupsafe import Markup, escape
 from models import (
     OperatingModel,
     PasswordResetToken,
@@ -90,7 +90,7 @@ def _check_account_locked(email: str) -> datetime | None:
     if not raw:
         return None
     locked_until = datetime.fromisoformat(raw)
-    if datetime.now(timezone.utc) < locked_until:
+    if datetime.now(UTC) < locked_until:
         return locked_until
     # Expired — clean up
     _cache.delete(f"login_lock_acct:{email}")
@@ -105,7 +105,7 @@ def _increment_account_failures(email: str) -> int:
 
 
 def _lock_account(email: str, ip: str) -> None:
-    locked_until = datetime.now(timezone.utc) + timedelta(minutes=_ACCT_LOCK_MINUTES)
+    locked_until = datetime.now(UTC) + timedelta(minutes=_ACCT_LOCK_MINUTES)
     _cache.set(
         f"login_lock_acct:{email}",
         locked_until.isoformat(),
@@ -722,7 +722,9 @@ def _setup_finish() -> ResponseReturnValue:
 
     # Auto-generate the Hangar ID from the tenant name so canonical document
     # paths work immediately, without requiring a trip to Settings first.
-    from documents.routes import _ensure_tenant_slug  # pyright: ignore[reportMissingImports]
+    from documents.routes import (
+        _ensure_tenant_slug,  # pyright: ignore[reportMissingImports]
+    )
 
     _ensure_tenant_slug(tenant)
 
@@ -771,7 +773,7 @@ def _setup_finish() -> ResponseReturnValue:
             email=co.get("email") or None,
             display_name=co.get("name") or None,
             role=inv_role,
-            expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            expires_at=datetime.now(UTC) + timedelta(days=7),
         )
         db.session.add(inv)
 
@@ -995,7 +997,7 @@ def reset_password(token: str) -> ResponseReturnValue:
 
         user.password_hash = _pw.hash(new_pw)
         user.totp_secret = None  # clear TOTP so the user can re-enrol
-        prt.used_at = datetime.now(timezone.utc)
+        prt.used_at = datetime.now(UTC)
         db.session.commit()
 
         flash(_("Password reset successfully. You can now log in."), "success")

@@ -4,6 +4,7 @@ Share blueprint — public read-only aircraft status pages via token.
 
 import io
 import secrets
+from datetime import UTC
 
 from flask import (
     Blueprint,
@@ -16,7 +17,6 @@ from flask import (
     url_for,
 )  # pyright: ignore[reportMissingImports]
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
-
 from models import (
     Aircraft,
     Document,
@@ -84,12 +84,12 @@ def create_token(aircraft_id: int) -> ResponseReturnValue:
 @require_role(*_OWNER_ROLES)
 def revoke_token(aircraft_id: int, token_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_403(aircraft_id)
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     st = db.session.get(ShareToken, token_id)
     if not st or st.aircraft_id != ac.id:
         abort(404)
-    st.revoked_at = datetime.now(timezone.utc)
+    st.revoked_at = datetime.now(UTC)
     db.session.commit()
     return redirect(url_for("aircraft.detail", aircraft_id=aircraft_id))
 

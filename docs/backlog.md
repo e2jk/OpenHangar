@@ -651,9 +651,12 @@ with a count of overdue items.
    `app/notification_service.py`):
    ```python
    from pywebpush import webpush, WebPushException
+
    webpush(
-       subscription_info={"endpoint": sub.endpoint,
-                          "keys": {"p256dh": sub.p256dh, "auth": sub.auth}},
+       subscription_info={
+           "endpoint": sub.endpoint,
+           "keys": {"p256dh": sub.p256dh, "auth": sub.auth},
+       },
        data=json.dumps({"title": "Maintenance due", "body": "...", "badge": 3}),
        vapid_private_key=VAPID_PRIVATE_KEY,
        vapid_claims={"sub": f"mailto:{VAPID_CLAIM_EMAIL}"},

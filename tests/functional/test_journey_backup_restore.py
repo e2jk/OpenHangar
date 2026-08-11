@@ -39,7 +39,9 @@ from io import BytesIO
 from unittest.mock import MagicMock, patch
 
 from config.routes import _derive_key  # pyright: ignore[reportMissingImports]
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # pyright: ignore[reportMissingImports]
+from cryptography.hazmat.primitives.ciphers.aead import (
+    AESGCM,  # pyright: ignore[reportMissingImports]
+)
 from models import BackupRecord, Document, db  # pyright: ignore[reportMissingImports]
 
 from tests.functional.conftest import submit

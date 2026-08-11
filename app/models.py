@@ -1,6 +1,7 @@
 import enum
 import secrets
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import ClassVar
 
 from flask_sqlalchemy import SQLAlchemy  # pyright: ignore[reportMissingImports]
 from sqlalchemy import text
@@ -63,7 +64,7 @@ class PermissionBit:
     ALL = 0xFF
 
     # Default masks per role (used when no explicit per-aircraft row exists)
-    ROLE_DEFAULTS: "dict[str, int]" = {
+    ROLE_DEFAULTS: ClassVar[dict[str, int]] = {
         "admin": ALL,
         "owner": ALL,
         "pilot": VIEW_AIRCRAFT | READ_MAINT_LIMITED | WRITE_LOGBOOK | RESERVE_AIRCRAFT,
@@ -92,7 +93,7 @@ class Tenant(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     users = db.relationship(
@@ -123,7 +124,7 @@ class User(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     tenants = db.relationship(
@@ -211,7 +212,7 @@ class UserInvitation(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     tenant = db.relationship("Tenant")
@@ -222,8 +223,8 @@ class UserInvitation(db.Model):
         exp = self.expires_at
         # SQLite returns naive datetimes; compare with naive UTC in that case
         if exp.tzinfo is None:
-            return datetime.now(timezone.utc).replace(tzinfo=None) > exp
-        return datetime.now(timezone.utc) > exp
+            return datetime.now(UTC).replace(tzinfo=None) > exp
+        return datetime.now(UTC) > exp
 
     @property
     def is_accepted(self) -> bool:
@@ -254,7 +255,7 @@ class PasswordResetToken(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     expires_at = db.Column(db.DateTime(timezone=True), nullable=False)
     used_at = db.Column(db.DateTime(timezone=True), nullable=True)
@@ -266,8 +267,8 @@ class PasswordResetToken(db.Model):
     def is_expired(self) -> bool:
         exp = self.expires_at
         if exp.tzinfo is None:
-            return datetime.now(timezone.utc).replace(tzinfo=None) > exp
-        return datetime.now(timezone.utc) > exp
+            return datetime.now(UTC).replace(tzinfo=None) > exp
+        return datetime.now(UTC) > exp
 
     @property
     def is_used(self) -> bool:
@@ -341,7 +342,7 @@ class ComponentType:
     AVIONICS = "avionics"
     OTHER = "other"
 
-    ALL = {AIRFRAME, ENGINE, PROPELLER, AVIONICS, OTHER}
+    ALL: ClassVar[set[str]] = {AIRFRAME, ENGINE, PROPELLER, AVIONICS, OTHER}
 
 
 class Aircraft(db.Model):
@@ -389,7 +390,7 @@ class Aircraft(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     tenant = db.relationship("Tenant", back_populates="aircraft")
@@ -609,7 +610,7 @@ class AircraftPhoto(db.Model):
     uploaded_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     uploaded_by_user_id = db.Column(
         db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
@@ -664,7 +665,7 @@ class Component(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     aircraft = db.relationship("Aircraft", back_populates="components")
@@ -695,8 +696,8 @@ class CrewRole:
     SP = "SP"
     COPILOT = "COPILOT"
     STUDENT = "STUDENT"
-    ALL = [PIC, IP, SP, COPILOT, STUDENT]
-    LABELS = {
+    ALL: ClassVar[list[str]] = [PIC, IP, SP, COPILOT, STUDENT]
+    LABELS: ClassVar[dict[str, str]] = {
         PIC: "PIC",
         IP: "Instructor",
         SP: "Safety Pilot",
@@ -722,7 +723,7 @@ class GpsTrack(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     # Render cache for the default (landscape, low-res) single-flight PNG/GIF —
     # geojson never changes once saved, so no invalidation is ever needed.
@@ -733,7 +734,7 @@ class GpsTrack(db.Model):
 class LogbookEntryType:
     FLIGHT = "flight"
     FSTD = "fstd"  # synthetic training device / simulator session
-    ALL = {FLIGHT, FSTD}
+    ALL: ClassVar[set[str]] = {FLIGHT, FSTD}
 
 
 class FstdType:
@@ -742,7 +743,7 @@ class FstdType:
     FNPT = "FNPT"
     BITD = "BITD"
     AATD = "AATD"
-    ALL = [FFS, FTD, FNPT, BITD, AATD]
+    ALL: ClassVar[list[str]] = [FFS, FTD, FNPT, BITD, AATD]
 
 
 class Flight(db.Model):
@@ -830,7 +831,7 @@ class Flight(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     # ── EASA FCL.050 pilot-log figures (shared, once per row) ─────────────────
@@ -1007,7 +1008,7 @@ class PersonalMinimumsStatus:
     DRAFT = "draft"
     ACTIVE = "active"
     SUPERSEDED = "superseded"
-    ALL = {DRAFT, ACTIVE, SUPERSEDED}
+    ALL: ClassVar[set[str]] = {DRAFT, ACTIVE, SUPERSEDED}
 
 
 class PersonalMinimumsTag:
@@ -1021,14 +1022,14 @@ class PersonalMinimumsTag:
     MANOEUVRES_PRACTICE_INTERVAL_MONTHS = "manoeuvres_practice_interval_months"
     MIN_FUEL_RESERVE_MINUTES = "min_fuel_reserve_minutes"
 
-    ALL = {
+    ALL: ClassVar[set[str]] = {
         MAX_DAYS_SINCE_LAST_FLIGHT,
         MAX_DAYS_SINCE_INSTRUCTOR_FLIGHT,
         MANOEUVRES_PRACTICE_INTERVAL_MONTHS,
         MIN_FUEL_RESERVE_MINUTES,
     }
     # Tags with an automatic recency check in v1 (see backlog decisions log).
-    HAS_RECENCY_CHECK = {
+    HAS_RECENCY_CHECK: ClassVar[set[str]] = {
         MAX_DAYS_SINCE_LAST_FLIGHT,
         MAX_DAYS_SINCE_INSTRUCTOR_FLIGHT,
     }
@@ -1061,13 +1062,13 @@ class PersonalMinimumsRevision(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     updated_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
     user = db.relationship("User")
@@ -1232,7 +1233,7 @@ class AircraftGpsImportBatch(db.Model):
     imported_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     format_detected = db.Column(
         db.String(16), nullable=False
@@ -1270,7 +1271,7 @@ class TriggerType:
     CALENDAR = "calendar"  # due on a specific date
     HOURS = "hours"  # due at a specific hobbs reading
     LANDINGS = "landings"  # due at a specific cumulative landing count
-    ALL = {CALENDAR, HOURS, LANDINGS}
+    ALL: ClassVar[set[str]] = {CALENDAR, HOURS, LANDINGS}
 
 
 class HoursBasis:
@@ -1282,8 +1283,8 @@ class HoursBasis:
 
     ENGINE = "engine"
     FLIGHT = "flight"
-    ALL = {ENGINE, FLIGHT}
-    LABELS = {ENGINE: "Engine hours", FLIGHT: "Flight hours"}
+    ALL: ClassVar[set[str]] = {ENGINE, FLIGHT}
+    LABELS: ClassVar[dict[str, str]] = {ENGINE: "Engine hours", FLIGHT: "Flight hours"}
 
 
 class MaintenanceTrigger(db.Model):
@@ -1333,7 +1334,7 @@ class MaintenanceTrigger(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     aircraft = db.relationship("Aircraft", back_populates="maintenance_triggers")
@@ -1480,7 +1481,7 @@ class MaintenanceRecord(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     trigger = db.relationship("MaintenanceTrigger", back_populates="records")
@@ -1495,8 +1496,8 @@ class ExpenseType:
     INSURANCE = "insurance"
     OTHER = "other"
 
-    ALL = {FUEL, PARTS, INSURANCE, OTHER}
-    LABELS = {
+    ALL: ClassVar[set[str]] = {FUEL, PARTS, INSURANCE, OTHER}
+    LABELS: ClassVar[dict[str, str]] = {
         FUEL: "Fuel",
         PARTS: "Parts & Maintenance",
         INSURANCE: "Insurance",
@@ -1510,13 +1511,13 @@ class ExpenseCategory:
     FIXED = "fixed"
     OPERATING = "operating"
 
-    ALL = {FIXED, OPERATING}
-    LABELS = {
+    ALL: ClassVar[set[str]] = {FIXED, OPERATING}
+    LABELS: ClassVar[dict[str, str]] = {
         FIXED: "Fixed",
         OPERATING: "Operating",
     }
     # Default category per expense type; user may override on a per-entry basis.
-    DEFAULTS = {
+    DEFAULTS: ClassVar[dict[str, str]] = {
         ExpenseType.FUEL: OPERATING,
         ExpenseType.PARTS: OPERATING,
         ExpenseType.INSURANCE: FIXED,
@@ -1531,8 +1532,8 @@ class ExpenseRecurrence:
     QUARTERLY = "quarterly"
     YEARLY = "yearly"
 
-    MONTHS = {MONTHLY: 1, QUARTERLY: 3, YEARLY: 12}
-    ALL = set(MONTHS)
+    MONTHS: ClassVar[dict[str, int]] = {MONTHLY: 1, QUARTERLY: 3, YEARLY: 12}
+    ALL: ClassVar[set[str]] = set(MONTHS)
 
 
 class Expense(db.Model):
@@ -1576,7 +1577,7 @@ class Expense(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     # Phase 37e: who recorded this expense — used to attribute a renter's own
     # fuel-purchase expenses on a rental's linked flights for the fuel credit.
@@ -1627,7 +1628,7 @@ class DocCategory:
     OTHER = "other"
     UNCATEGORISED = "uncategorised"
 
-    ALL = [
+    ALL: ClassVar[list[str]] = [
         MAINTENANCE,
         INSURANCE,
         POH,
@@ -1694,7 +1695,7 @@ class Document(db.Model):
     uploaded_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     aircraft = db.relationship(
@@ -1783,7 +1784,7 @@ class PendingReconcile(db.Model):
     detected_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     reconciled_at = db.Column(db.DateTime(timezone=True), nullable=True)
     ignored = db.Column(db.Boolean, nullable=False, default=False)
@@ -1806,7 +1807,7 @@ class BackupRecord(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     status = db.Column(db.String(32), nullable=False, default="ok")  # ok / failed
     app_version = db.Column(db.String(64), nullable=True)
@@ -1830,7 +1831,7 @@ class ShareToken(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     revoked_at = db.Column(db.DateTime(timezone=True), nullable=True, default=None)
 
@@ -1858,7 +1859,7 @@ class Snag(db.Model):
     reported_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
     resolved_at = db.Column(db.DateTime(timezone=True), nullable=True, default=None)
     resolution_note = db.Column(db.Text, nullable=True)
@@ -1902,7 +1903,7 @@ class Reservation(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     aircraft = db.relationship("Aircraft", back_populates="reservations")
@@ -1976,7 +1977,7 @@ class RentalChargeStatus:
     DRAFT = "draft"
     FINAL = "final"
 
-    ALL = {DRAFT, FINAL}
+    ALL: ClassVar[set[str]] = {DRAFT, FINAL}
 
 
 class RentalCharge(db.Model):
@@ -2021,7 +2022,7 @@ class RentalCharge(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     reservation = db.relationship("Reservation", back_populates="rental_charge")
@@ -2055,7 +2056,7 @@ class MaintenanceDowntime(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     aircraft = db.relationship("Aircraft", back_populates="maintenance_downtimes")
@@ -2068,8 +2069,8 @@ class RateBasis:
     ENGINE_TIME = "engine_time"
     FLIGHT_TIME = "flight_time"
 
-    ALL = {ENGINE_TIME, FLIGHT_TIME}
-    LABELS = {
+    ALL: ClassVar[set[str]] = {ENGINE_TIME, FLIGHT_TIME}
+    LABELS: ClassVar[dict[str, str]] = {
         ENGINE_TIME: "Engine time",
         FLIGHT_TIME: "Flight time",
     }
@@ -2081,8 +2082,8 @@ class RateType:
     WET = "wet"
     DRY = "dry"
 
-    ALL = {WET, DRY}
-    LABELS = {
+    ALL: ClassVar[set[str]] = {WET, DRY}
+    LABELS: ClassVar[dict[str, str]] = {
         WET: "Wet",
         DRY: "Dry",
     }
@@ -2143,7 +2144,7 @@ class RenterAuthorization(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     tenant = db.relationship("Tenant")
@@ -2265,7 +2266,7 @@ class WeightBalanceEntry(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     config = db.relationship("WeightBalanceConfig", back_populates="entries")
@@ -2325,7 +2326,7 @@ class AirworthinessDocType:
 
     ALL = (AD, MANDATORY_SB, SB, SIB, ARC, MANUAL)
     SYNCED = (AD, SIB)  # types populated by EASA sync
-    LABELS = {
+    LABELS: ClassVar[dict[str, str]] = {
         AD: "AD",
         MANDATORY_SB: "Mandatory SB",
         SB: "SB",
@@ -2373,7 +2374,7 @@ class AirworthinessDocument(db.Model):
     first_seen_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     source_node = db.relationship("EASASourceNode", back_populates="documents")
@@ -2418,8 +2419,8 @@ class AirworthinessDocumentStatus(db.Model):
     updated_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
     aircraft = db.relationship("Aircraft", back_populates="airworthiness_statuses")
@@ -2474,7 +2475,7 @@ class NotificationType:
     RESERVATION_AIRCRAFT_GROUNDED = "reservation_aircraft_grounded"
     PERSONAL_MINIMUMS_RECENCY = "personal_minimums_recency"
 
-    ALL: list[str] = [
+    ALL: ClassVar[list[str]] = [
         GROUNDING_SNAG_OPENED,
         SNAG_REPORTED,
         RESERVATION_CONFIRMED,
@@ -2495,7 +2496,7 @@ class NotificationType:
     ]
 
     # System defaults — coded constants; DB only stores per-user or per-tenant overrides
-    SYSTEM_DEFAULTS: dict[str, dict] = {
+    SYSTEM_DEFAULTS: ClassVar[dict[str, dict]] = {
         GROUNDING_SNAG_OPENED: {"enabled": True, "threshold_days": None},
         SNAG_REPORTED: {"enabled": False, "threshold_days": None},
         RESERVATION_CONFIRMED: {"enabled": True, "threshold_days": None},
@@ -2517,7 +2518,7 @@ class NotificationType:
 
     # Capability flags required — user sees this type in their prefs if they have >= 1
     # "is_owner" | "is_pilot" | "is_maint" match init.py context processor naming
-    REQUIRED_CAPS: dict[str, list[str]] = {
+    REQUIRED_CAPS: ClassVar[dict[str, list[str]]] = {
         GROUNDING_SNAG_OPENED: ["is_owner", "is_maint"],
         SNAG_REPORTED: ["is_owner"],
         RESERVATION_CONFIRMED: ["is_pilot"],
@@ -2539,7 +2540,7 @@ class NotificationType:
     }
 
     # Types that have a configurable days-ahead threshold
-    HAS_THRESHOLD: set[str] = {
+    HAS_THRESHOLD: ClassVar[set[str]] = {
         MAINTENANCE_DUE_SOON,
         INSURANCE_EXPIRING,
         MEDICAL_EXPIRING,
@@ -2573,8 +2574,8 @@ class NotificationPreference(db.Model):
     updated_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
     user = db.relationship("User")
@@ -2601,8 +2602,8 @@ class TenantNotificationDefault(db.Model):
     updated_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
     tenant = db.relationship("Tenant")
@@ -2615,7 +2616,7 @@ class BillingAccountKind:
     CO_OWNER = "co_owner"  # Phase 39 — scoped to one aircraft
     MEMBER = "member"  # Phase 40 — scoped to the tenant
 
-    ALL = {RENTER, CO_OWNER, MEMBER}
+    ALL: ClassVar[set[str]] = {RENTER, CO_OWNER, MEMBER}
 
 
 class BillingAccount(db.Model):
@@ -2667,7 +2668,7 @@ class BillingAccount(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     tenant = db.relationship("Tenant")
@@ -2688,7 +2689,7 @@ class LedgerEntryType:
     ADJUSTMENT = "adjustment"  # manual correction, either sign, requires note
     OPENING = "opening"  # opening balance / co-owner buy-in
 
-    ALL = {CHARGE, PAYMENT, CREDIT, ADJUSTMENT, OPENING}
+    ALL: ClassVar[set[str]] = {CHARGE, PAYMENT, CREDIT, ADJUSTMENT, OPENING}
 
 
 class LedgerEntry(db.Model):
@@ -2726,7 +2727,7 @@ class LedgerEntry(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     account = db.relationship("BillingAccount", back_populates="entries")
@@ -2765,7 +2766,7 @@ class AircraftOwner(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     aircraft = db.relationship("Aircraft", back_populates="owners")
@@ -2799,7 +2800,7 @@ class CoOwnerValuationSnapshot(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
     )
 
     aircraft = db.relationship("Aircraft")

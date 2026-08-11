@@ -27,7 +27,7 @@ import atheris
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 
 with atheris.instrument_imports(include=["offline.routes"]):
-    from offline.routes import (  # noqa: E402
+    from offline.routes import (
         _EASA_DECIMAL_FIELDS,
         _EASA_INT_FIELDS,
         _apply_easa_fields,

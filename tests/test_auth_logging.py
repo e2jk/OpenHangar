@@ -4,13 +4,19 @@ Tests for authentication failure logging (CWE-778), timing-safe login
 """
 
 import logging
+from datetime import UTC
 from unittest.mock import patch
 
 import bcrypt  # pyright: ignore[reportMissingImports]
-import pyotp  # pyright: ignore[reportMissingImports]
-
 import pw_hash as _pw  # pyright: ignore[reportMissingImports]
-from models import Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
+import pyotp  # pyright: ignore[reportMissingImports]
+from models import (  # pyright: ignore[reportMissingImports]
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    db,
+)
 
 
 def _make_user(
@@ -316,11 +322,12 @@ class TestAccountLockout:
 
     def test_expired_lock_is_cleared_and_login_proceeds(self, app, client):
         # Covers lines 95-97: lock exists in cache but timestamp has already passed
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
+
         from extensions import cache as _cache  # pyright: ignore[reportMissingImports]
 
         _make_user(app, email="explock@test.com")
-        expired = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
+        expired = (datetime.now(UTC) - timedelta(minutes=1)).isoformat()
         with app.app_context():
             _cache.set("login_lock_acct:explock@test.com", expired, timeout=60)
         # Expired lock must not block a valid login

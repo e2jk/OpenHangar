@@ -21,7 +21,6 @@ from datetime import date as _date
 from typing import Any
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
-
 from models import (  # pyright: ignore[reportMissingImports]
     ExpenseCategory,
     ExpenseRecurrence,

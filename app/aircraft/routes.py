@@ -1,3 +1,8 @@
+import json
+import math
+import os
+import uuid as _uuid_mod
+from datetime import UTC
 from typing import Any, cast
 
 from flask import (  # pyright: ignore[reportMissingImports]
@@ -12,16 +17,11 @@ from flask import (  # pyright: ignore[reportMissingImports]
     url_for,
 )
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
-
-from flask_babel import gettext as _, ngettext  # pyright: ignore[reportMissingImports]
-from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
-
-import json
-import math
-import os
-import uuid as _uuid_mod
-
+from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+from flask_babel import ngettext
 from models import (
+    FUEL_DENSITY,
+    GAL_TO_L,
     Aircraft,
     AircraftGpsImportBatch,
     AircraftOwner,
@@ -35,8 +35,6 @@ from models import (
     Expense,
     ExpenseType,
     Flight,
-    FUEL_DENSITY,
-    GAL_TO_L,
     GpsTrack,
     MaintenanceTrigger,
     OperatingModel,
@@ -52,6 +50,17 @@ from models import (
     WeightBalanceStation,
     db,
 )  # pyright: ignore[reportMissingImports]
+from utils import (
+    accessible_aircraft,
+    activity,
+    compute_aircraft_statuses,
+    get_aircraft_type_engine_info,
+    login_required,
+    require_role,
+    user_can_access_aircraft,
+)  # pyright: ignore[reportMissingImports]
+from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
+
 from aircraft.co_owner_form_parsing import (  # pyright: ignore[reportMissingImports]
     parse_owners_form,
     parse_reserve_fields,
@@ -62,15 +71,6 @@ from aircraft.gps_import import (  # pyright: ignore[reportMissingImports]
     parse_gps_file,
     round_flight_time,
 )
-from utils import (
-    accessible_aircraft,
-    activity,
-    compute_aircraft_statuses,
-    get_aircraft_type_engine_info,
-    login_required,
-    require_role,
-    user_can_access_aircraft,
-)  # pyright: ignore[reportMissingImports]
 
 aircraft_bp = Blueprint("aircraft", __name__, url_prefix="/aircraft")
 
@@ -302,9 +302,9 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
             .order_by(WeightBalanceEntry.date.desc(), WeightBalanceEntry.id.desc())
             .first()
         )
-    from datetime import datetime, timezone as _tz
+    from datetime import datetime
 
-    now = datetime.now(_tz.utc)
+    now = datetime.now(UTC)
     upcoming_reservations = (
         Reservation.query.filter(
             Reservation.aircraft_id == ac.id,
@@ -351,7 +351,9 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
     ]
     _tile = db.session.get(AppSetting, "openaip_api_key")
     openaip_key = _tile.value if _tile and _tile.value else None
-    from services.component_limits import aircraft_limit_infos  # pyright: ignore[reportMissingImports]
+    from services.component_limits import (
+        aircraft_limit_infos,  # pyright: ignore[reportMissingImports]
+    )
 
     component_limit_by_id = {
         info["component"].id: info for info in aircraft_limit_infos(ac)
@@ -620,7 +622,8 @@ def manage_owners(aircraft_id: int) -> ResponseReturnValue:
 
 
 def _co_owner_billing_period(period_months_raw: str | None) -> tuple[Any, Any]:
-    from datetime import date as _date, timedelta as _timedelta
+    from datetime import date as _date
+    from datetime import timedelta as _timedelta
 
     try:
         period_months = int(period_months_raw) if period_months_raw else 12
@@ -688,11 +691,11 @@ def owners_billing(aircraft_id: int) -> ResponseReturnValue:
             .all()
         }
 
-        hours = Decimal("0")
-        fixed_liability = Decimal("0")
-        operating_liability = Decimal("0")
-        reserve_liability = Decimal("0")
-        payments = Decimal("0")
+        hours = Decimal(0)
+        fixed_liability = Decimal(0)
+        operating_liability = Decimal(0)
+        reserve_liability = Decimal(0)
+        payments = Decimal(0)
         for line in statement.lines:
             entry = line.entry
             if entry.source_type == "flight_usage":
@@ -749,7 +752,7 @@ def owners_billing(aircraft_id: int) -> ResponseReturnValue:
             if f.pic_user_id not in owner_user_ids
         ]
     unattributed_hours = sum(
-        (Decimal(f.flight_time) for f in unattributed_flights), Decimal("0")
+        (Decimal(f.flight_time) for f in unattributed_flights), Decimal(0)
     )
 
     snapshots = (
@@ -969,7 +972,6 @@ def owner_account(aircraft_id: int, user_id: int) -> ResponseReturnValue:
 @require_role(*_OWNER_ROLES)
 def owner_statement_csv(aircraft_id: int, user_id: int) -> ResponseReturnValue:
     from flask import Response
-
     from models import BillingAccountKind
     from services.billing import BillingService
 
@@ -1032,7 +1034,6 @@ def my_share(aircraft_id: int) -> ResponseReturnValue:
 @login_required
 def my_share_statement_csv(aircraft_id: int) -> ResponseReturnValue:
     from flask import Response
-
     from models import BillingAccountKind
     from services.billing import BillingService
 
@@ -1065,11 +1066,11 @@ def my_share_statement_csv(aircraft_id: int) -> ResponseReturnValue:
 @login_required
 @require_role(*_OWNER_ROLES)
 def archive_aircraft(aircraft_id: int) -> ResponseReturnValue:
-    from datetime import datetime, timezone as _tz
+    from datetime import datetime
 
     ac = _get_aircraft_or_404(aircraft_id)
     if not ac.is_archived:
-        ac.archived_at = datetime.now(_tz.utc)
+        ac.archived_at = datetime.now(UTC)
         db.session.commit()
         activity("aircraft.archived", registration=ac.registration, aircraft_id=ac.id)
     flash(
@@ -1886,7 +1887,9 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
     file_metas = state["files"]
 
     # Re-parse each tmp file and build combined trackpoint list
-    from aircraft.gps_import import ParsedGpsFile  # pyright: ignore[reportMissingImports]
+    from aircraft.gps_import import (
+        ParsedGpsFile,  # pyright: ignore[reportMissingImports]
+    )
 
     all_parsed: list[ParsedGpsFile] = []
     for meta in file_metas:
@@ -1932,13 +1935,15 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
     full_segs = [_segment_to_dict(seg, i) for i, seg in enumerate(segments)]
 
     # Duplicate detection: find existing Flight records that overlap each segment.
-    from datetime import datetime as _dt, timedelta as _td  # noqa: PLC0415
+    from datetime import datetime as _dt
+    from datetime import timedelta as _td
 
-    from flights.airframe_import import (  # noqa: PLC0415
+    from flights.airframe_import import (
         _CANDIDATE_MIN_SCORE,
         _score_airframe_candidate,
     )
-    from aircraft.gps_import import score_gps_candidates  # noqa: PLC0415
+
+    from aircraft.gps_import import score_gps_candidates
 
     _BLOCK_TOLERANCE = _td(minutes=15)
 
@@ -2052,8 +2057,8 @@ def _gps_import_create_segment(
 
     Returns (entry_or_None, updated_linked_ids).
     """
-    import decimal as _dec  # noqa: PLC0415
-    from datetime import datetime as _dt  # noqa: PLC0415
+    import decimal as _dec
+    from datetime import datetime as _dt
 
     create_pilot_entries = pilot_role in ("pic", "dual")
 
@@ -2140,7 +2145,7 @@ def _gps_import_create_segment(
             db.session.flush()
 
     if create_pilot_entries:
-        from flights.routes import apply_pilot_identity  # noqa: PLC0415
+        from flights.routes import apply_pilot_identity
 
         if entry is None:
             # Other/external aircraft — standalone row (no airframe side).
@@ -2402,8 +2407,8 @@ def gps_import_confirm_one(aircraft_id: int) -> ResponseReturnValue:
 @require_role(*_PILOT_ROLES)
 def gps_import_prefill_segment(aircraft_id: int, seg_idx: int) -> ResponseReturnValue:
     """Store a batch segment as gps_prefill then redirect to /flights/new."""
-    import json as _json  # noqa: PLC0415
-    from datetime import datetime as _dt  # noqa: PLC0415
+    import json as _json
+    from datetime import datetime as _dt
 
     _get_aircraft_or_404(aircraft_id)
     state = session.get("gps_import")
@@ -2573,7 +2578,10 @@ def flight_tracks(aircraft_id: int) -> ResponseReturnValue:
 @login_required
 @require_role(*_PILOT_ROLES)
 def flight_tracks_gif(aircraft_id: int) -> ResponseReturnValue:
-    from utils import generate_tracks_gif, sort_tracks_oldest_first  # pyright: ignore[reportMissingImports]
+    from utils import (  # pyright: ignore[reportMissingImports]
+        generate_tracks_gif,
+        sort_tracks_oldest_first,
+    )
 
     ac = _get_aircraft_or_404(aircraft_id)
     entries = (
@@ -2696,7 +2704,10 @@ def _renumber_photos(photos: list[Any], tenant_slug: str, safe_reg: str) -> None
 @login_required
 @require_role(*_OWNER_ROLES)
 def upload_photo(aircraft_id: int) -> ResponseReturnValue:
-    from documents.routes import _ensure_tenant_slug, _get_tenant  # pyright: ignore[reportMissingImports]
+    from documents.routes import (  # pyright: ignore[reportMissingImports]
+        _ensure_tenant_slug,
+        _get_tenant,
+    )
 
     ac = _get_aircraft_or_404(aircraft_id)
     tenant = _get_tenant()

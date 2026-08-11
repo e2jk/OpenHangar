@@ -5,9 +5,10 @@ Covers: calendar view, create/edit/cancel reservations, conflict detection,
 owner confirm/decline workflow, booking settings, and access control.
 """
 
-import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
-from datetime import date as _date, datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from datetime import date as _date
 
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AircraftBookingSettings,
@@ -26,7 +27,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     UserAllAircraftAccess,
     db,
 )
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -111,8 +111,8 @@ def _make_reservation(
         r = Reservation(
             aircraft_id=aircraft_id,
             pilot_user_id=pilot_user_id,
-            start_dt=datetime.fromisoformat(start).replace(tzinfo=timezone.utc),
-            end_dt=datetime.fromisoformat(end).replace(tzinfo=timezone.utc),
+            start_dt=datetime.fromisoformat(start).replace(tzinfo=UTC),
+            end_dt=datetime.fromisoformat(end).replace(tzinfo=UTC),
             status=status,
             notes=notes,
         )
@@ -213,7 +213,7 @@ class TestCalendarView:
         assert r.status_code == 404
 
     def test_calendar_requires_login(self, app, client):
-        uid, tid = _make_user(app, "owner@ex.com")
+        _uid, tid = _make_user(app, "owner@ex.com")
         ac_id = _make_aircraft(app, tid)
         r = client.get(f"/aircraft/{ac_id}/reservations/")
         assert r.status_code == 302
@@ -1019,7 +1019,7 @@ class TestBookingSettings:
     def test_new_settings_row_defaults_to_engine_time_and_wet(self, app):
         """A freshly-created AircraftBookingSettings row (as after the 37b
         migration backfill) defaults to engine_time/wet."""
-        uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
+        _uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
         ac_id = _make_aircraft(app, tid)
         with app.app_context():
             s = AircraftBookingSettings(aircraft_id=ac_id)
@@ -1222,33 +1222,41 @@ class TestBookingSettings:
 
 class TestChargeableDays:
     def test_same_day_booking_touches_one_day(self):
-        from reservations.routes import _chargeable_days  # pyright: ignore[reportMissingImports]
+        from reservations.routes import (
+            _chargeable_days,  # pyright: ignore[reportMissingImports]
+        )
 
-        start = datetime(2026, 6, 20, 9, 0, tzinfo=timezone.utc)
-        end = datetime(2026, 6, 20, 11, 0, tzinfo=timezone.utc)
+        start = datetime(2026, 6, 20, 9, 0, tzinfo=UTC)
+        end = datetime(2026, 6, 20, 11, 0, tzinfo=UTC)
         assert _chargeable_days(start, end) == 1
 
     def test_overnight_booking_touches_two_days(self):
-        from reservations.routes import _chargeable_days  # pyright: ignore[reportMissingImports]
+        from reservations.routes import (
+            _chargeable_days,  # pyright: ignore[reportMissingImports]
+        )
 
-        start = datetime(2026, 6, 20, 14, 0, tzinfo=timezone.utc)
-        end = datetime(2026, 6, 21, 11, 0, tzinfo=timezone.utc)
+        start = datetime(2026, 6, 20, 14, 0, tzinfo=UTC)
+        end = datetime(2026, 6, 21, 11, 0, tzinfo=UTC)
         assert _chargeable_days(start, end) == 2
 
     def test_ending_exactly_at_midnight_does_not_touch_the_next_day(self):
         """The interval is half-open [start, end) — a booking ending exactly
         at 00:00 the next day never touches any moment of that next day."""
-        from reservations.routes import _chargeable_days  # pyright: ignore[reportMissingImports]
+        from reservations.routes import (
+            _chargeable_days,  # pyright: ignore[reportMissingImports]
+        )
 
-        start = datetime(2026, 6, 20, 23, 0, tzinfo=timezone.utc)
-        end = datetime(2026, 6, 21, 0, 0, tzinfo=timezone.utc)
+        start = datetime(2026, 6, 20, 23, 0, tzinfo=UTC)
+        end = datetime(2026, 6, 21, 0, 0, tzinfo=UTC)
         assert _chargeable_days(start, end) == 1
 
     def test_ending_one_minute_past_midnight_touches_the_next_day(self):
-        from reservations.routes import _chargeable_days  # pyright: ignore[reportMissingImports]
+        from reservations.routes import (
+            _chargeable_days,  # pyright: ignore[reportMissingImports]
+        )
 
-        start = datetime(2026, 6, 20, 23, 0, tzinfo=timezone.utc)
-        end = datetime(2026, 6, 21, 0, 1, tzinfo=timezone.utc)
+        start = datetime(2026, 6, 20, 23, 0, tzinfo=UTC)
+        end = datetime(2026, 6, 21, 0, 1, tzinfo=UTC)
         assert _chargeable_days(start, end) == 2
 
 
@@ -1261,8 +1269,8 @@ class TestReservationModel:
             r = Reservation(
                 aircraft_id=1,
                 pilot_user_id=None,
-                start_dt=datetime(2026, 6, 1, 9, 0, tzinfo=timezone.utc),
-                end_dt=datetime(2026, 6, 1, 11, 30, tzinfo=timezone.utc),
+                start_dt=datetime(2026, 6, 1, 9, 0, tzinfo=UTC),
+                end_dt=datetime(2026, 6, 1, 11, 30, tzinfo=UTC),
                 status=ReservationStatus.PENDING,
             )
             assert r.duration_hours == 2.5
@@ -1302,7 +1310,7 @@ class TestFleetReservations:
         assert r.status_code == 302
 
     def test_pilot_cannot_access_fleet(self, app, client):
-        uid, tid = _make_user(app, "pilot@fleet.test", role=Role.PILOT)
+        uid, _tid = _make_user(app, "pilot@fleet.test", role=Role.PILOT)
         _login(app, client, uid)
         r = client.get("/reservations/fleet/")
         assert r.status_code == 403
@@ -1405,7 +1413,7 @@ class TestFleetReservations:
         """Lines 162-173 — past CONFIRMED reservation with no Flight gets badge."""
         uid, tid = _make_user(app, "admin@noflight.test")
         ac_id = _make_aircraft(app, tid)
-        five_days_ago = datetime.now(timezone.utc) - timedelta(days=5)
+        five_days_ago = datetime.now(UTC) - timedelta(days=5)
         with app.app_context():
             db.session.add(
                 Reservation(
@@ -1433,7 +1441,7 @@ class TestFleetReservations:
             five_days_ago.day,
             9,
             0,
-            tzinfo=timezone.utc,
+            tzinfo=UTC,
         )
         with app.app_context():
             db.session.add(
@@ -1465,7 +1473,7 @@ class TestFleetReservations:
         """Past PENDING reservation (within 60 days) shows 'Expired' pill."""
         uid, tid = _make_user(app, "admin@expired.test")
         ac_id = _make_aircraft(app, tid)
-        ten_days_ago = datetime.now(timezone.utc) - timedelta(days=10)
+        ten_days_ago = datetime.now(UTC) - timedelta(days=10)
         with app.app_context():
             db.session.add(
                 Reservation(
@@ -1486,7 +1494,7 @@ class TestFleetReservations:
         """PENDING reservations older than 60 days are excluded entirely."""
         uid, tid = _make_user(app, "admin@oldpending.test")
         ac_id = _make_aircraft(app, tid)
-        ninety_days_ago = datetime.now(timezone.utc) - timedelta(days=90)
+        ninety_days_ago = datetime.now(UTC) - timedelta(days=90)
         with app.app_context():
             db.session.add(
                 Reservation(

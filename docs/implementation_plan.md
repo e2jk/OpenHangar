@@ -1052,6 +1052,7 @@ attributes raise. No template changes are needed; only `init.py` and
   ```python
   if app.config.get("TESTING") or os.environ.get("FLASK_ENV") == "development":
       from jinja2 import StrictUndefined
+
       app.jinja_env.undefined = StrictUndefined
   ```
 - [x] Run the full test suite; fix any templates where valid optional attributes

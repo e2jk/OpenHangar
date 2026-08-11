@@ -4,7 +4,7 @@ finalize/immutability, payments, renter account pages, and statement CSV
 export. See docs/phase37_rental_spec.md § 37e.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
@@ -67,7 +67,7 @@ def _login(app, client, uid):
 
 def _make_reservation(app, aircraft_id, pilot_user_id, start_offset=-1, end_offset=1):
     with app.app_context():
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         r = Reservation(
             aircraft_id=aircraft_id,
             pilot_user_id=pilot_user_id,
@@ -275,7 +275,7 @@ class TestDraftMath:
         with app.app_context():
             fe = Flight(
                 aircraft_id=acid,
-                date=datetime.now(timezone.utc).date(),
+                date=datetime.now(UTC).date(),
                 departure_icao="EBOS",
                 arrival_icao="EBBR",
                 reservation_id=res_id,
@@ -287,7 +287,7 @@ class TestDraftMath:
                 Expense(
                     aircraft_id=acid,
                     flight_entry_id=fe.id,
-                    date=datetime.now(timezone.utc).date(),
+                    date=datetime.now(UTC).date(),
                     expense_type=ExpenseType.FUEL,
                     amount=45.0,
                     created_by_id=uid,
@@ -298,7 +298,7 @@ class TestDraftMath:
                 Expense(
                     aircraft_id=acid,
                     flight_entry_id=fe.id,
-                    date=datetime.now(timezone.utc).date(),
+                    date=datetime.now(UTC).date(),
                     expense_type=ExpenseType.FUEL,
                     amount=99.0,
                     created_by_id=other_uid,
@@ -309,7 +309,7 @@ class TestDraftMath:
                 Expense(
                     aircraft_id=acid,
                     flight_entry_id=fe.id,
-                    date=datetime.now(timezone.utc).date(),
+                    date=datetime.now(UTC).date(),
                     expense_type=ExpenseType.PARTS,
                     amount=15.0,
                     created_by_id=uid,
@@ -349,7 +349,7 @@ class TestDraftMath:
         with app.app_context():
             fe = Flight(
                 aircraft_id=acid,
-                date=datetime.now(timezone.utc).date(),
+                date=datetime.now(UTC).date(),
                 departure_icao="EBOS",
                 arrival_icao="EBBR",
                 reservation_id=res_id,
@@ -360,7 +360,7 @@ class TestDraftMath:
                 Expense(
                     aircraft_id=acid,
                     flight_entry_id=fe.id,
-                    date=datetime.now(timezone.utc).date(),
+                    date=datetime.now(UTC).date(),
                     expense_type=ExpenseType.FUEL,
                     amount=45.0,
                     created_by_id=uid,
@@ -404,7 +404,7 @@ class TestDraftMath:
         uid, tid = _make_user(app, "owner8b@ex.com", role=Role.OWNER)
         acid = _make_aircraft(app, tid)
         with app.app_context():
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             r = Reservation(
                 aircraft_id=acid,
                 pilot_user_id=None,
@@ -513,7 +513,7 @@ class TestFinalize:
             assert LedgerEntry.query.filter_by(account_id=account.id).count() == 1
 
     def test_save_draft_without_finalizing(self, app, client):
-        uid, tid, acid, res_id = self._setup_draft(app, client, "pilotf3@ex.com")
+        _uid, tid, acid, res_id = self._setup_draft(app, client, "pilotf3@ex.com")
         owner_uid, _ = _make_user(app, "ownerf3@ex.com", role=Role.OWNER)
         with app.app_context():
             db.session.add(
@@ -540,7 +540,7 @@ class TestFinalize:
             assert float(charge.total) == 200.0
 
     def test_adjustment_without_note_rejected(self, app, client):
-        uid, tid, acid, res_id = self._setup_draft(app, client, "pilotf4@ex.com")
+        _uid, tid, acid, res_id = self._setup_draft(app, client, "pilotf4@ex.com")
         owner_uid, _ = _make_user(app, "ownerf4@ex.com", role=Role.OWNER)
         with app.app_context():
             db.session.add(
@@ -564,7 +564,7 @@ class TestFinalize:
             assert float(charge.adjustment) == 0
 
     def test_adjustment_with_note_accepted(self, app, client):
-        uid, tid, acid, res_id = self._setup_draft(app, client, "pilotf5@ex.com")
+        _uid, tid, acid, res_id = self._setup_draft(app, client, "pilotf5@ex.com")
         owner_uid, _ = _make_user(app, "ownerf5@ex.com", role=Role.OWNER)
         with app.app_context():
             db.session.add(
@@ -591,7 +591,7 @@ class TestFinalize:
             assert float(charge.total) == 290.0
 
     def test_negative_hours_rejected(self, app, client):
-        uid, tid, acid, res_id = self._setup_draft(app, client, "pilotf6@ex.com")
+        _uid, tid, acid, res_id = self._setup_draft(app, client, "pilotf6@ex.com")
         owner_uid, _ = _make_user(app, "ownerf6@ex.com", role=Role.OWNER)
         with app.app_context():
             db.session.add(
@@ -612,7 +612,7 @@ class TestFinalize:
         assert r.status_code == 200
 
     def test_invalid_field_values_rejected(self, app, client):
-        uid, tid, acid, res_id = self._setup_draft(app, client, "pilotf7@ex.com")
+        _uid, tid, acid, res_id = self._setup_draft(app, client, "pilotf7@ex.com")
         owner_uid, _ = _make_user(app, "ownerf7@ex.com", role=Role.OWNER)
         with app.app_context():
             db.session.add(
@@ -633,7 +633,7 @@ class TestFinalize:
         assert r.status_code == 200
 
     def test_pilot_cannot_access_charge_route(self, app, client):
-        uid, tid, acid, res_id = self._setup_draft(app, client, "pilotf8@ex.com")
+        uid, _tid, acid, res_id = self._setup_draft(app, client, "pilotf8@ex.com")
         _login(app, client, uid)
         r = client.get(f"/aircraft/{acid}/reservations/{res_id}/charge")
         assert r.status_code == 403
@@ -647,8 +647,8 @@ class TestFinalize:
         assert r.status_code == 404
 
     def test_cross_tenant_404(self, app, client):
-        uid, tid = _make_user(app, "ownerf10@ex.com", role=Role.OWNER)
-        other_uid, other_tid, other_acid, other_res_id = self._setup_draft(
+        uid, _tid = _make_user(app, "ownerf10@ex.com", role=Role.OWNER)
+        _other_uid, _other_tid, other_acid, other_res_id = self._setup_draft(
             app, client, "pilotf10@ex.com"
         )
         _login(app, client, uid)
@@ -656,7 +656,7 @@ class TestFinalize:
         assert r.status_code == 404
 
     def test_owner_get_renders_draft(self, app, client):
-        uid, tid, acid, res_id = self._setup_draft(app, client, "pilotf11@ex.com")
+        _uid, tid, acid, res_id = self._setup_draft(app, client, "pilotf11@ex.com")
         owner_uid, _ = _make_user(app, "ownerf11@ex.com", role=Role.OWNER)
         with app.app_context():
             db.session.add(
@@ -668,7 +668,7 @@ class TestFinalize:
         assert r.status_code == 200
 
     def test_negative_hourly_rate_rejected(self, app, client):
-        uid, tid, acid, res_id = self._setup_draft(app, client, "pilotf12@ex.com")
+        _uid, tid, acid, res_id = self._setup_draft(app, client, "pilotf12@ex.com")
         owner_uid, _ = _make_user(app, "ownerf12@ex.com", role=Role.OWNER)
         with app.app_context():
             db.session.add(
@@ -692,7 +692,7 @@ class TestFinalize:
             assert not charge.is_final
 
     def test_negative_fuel_credit_rejected(self, app, client):
-        uid, tid, acid, res_id = self._setup_draft(app, client, "pilotf13@ex.com")
+        _uid, tid, acid, res_id = self._setup_draft(app, client, "pilotf13@ex.com")
         owner_uid, _ = _make_user(app, "ownerf13@ex.com", role=Role.OWNER)
         with app.app_context():
             db.session.add(
@@ -716,7 +716,7 @@ class TestFinalize:
             assert not charge.is_final
 
     def test_my_account_period_invalid_falls_back(self, app, client):
-        uid, tid, acid, res_id = self._setup_draft(app, client, "pilotf14@ex.com")
+        uid, _tid, _acid, _res_id = self._setup_draft(app, client, "pilotf14@ex.com")
         _login(app, client, uid)
         r = client.get("/my/account?period=notanumber")
         assert r.status_code == 200
@@ -802,7 +802,7 @@ class TestPayments:
         assert r.status_code == 200
 
     def test_payment_for_cross_tenant_user_404s(self, app, client):
-        uid, tid = _make_user(app, "owner_pay5b@ex.com", role=Role.OWNER)
+        uid, _tid = _make_user(app, "owner_pay5b@ex.com", role=Role.OWNER)
         other_uid, _ = _make_user(app, "renter_pay5b@ex.com")
         _login(app, client, uid)
         r = client.post(
@@ -882,20 +882,20 @@ class TestRenterAccountPages:
         assert r.status_code == 403
 
     def test_cross_tenant_404(self, app, client):
-        uid, tid = _make_user(app, "owner_acc3@ex.com", role=Role.OWNER)
+        uid, _tid = _make_user(app, "owner_acc3@ex.com", role=Role.OWNER)
         other_uid, _ = _make_user(app, "renter_acc3@ex.com")
         _login(app, client, uid)
         r = client.get(f"/config/renters/{other_uid}/account")
         assert r.status_code == 404
 
     def test_renter_sees_own_account(self, app, client):
-        uid, tid = _make_user(app, "renter_acc4@ex.com")
+        uid, _tid = _make_user(app, "renter_acc4@ex.com")
         _login(app, client, uid)
         r = client.get("/my/account")
         assert r.status_code == 200
 
     def test_my_account_csv_download(self, app, client):
-        uid, tid = _make_user(app, "renter_acc5@ex.com")
+        uid, _tid = _make_user(app, "renter_acc5@ex.com")
         _login(app, client, uid)
         r = client.get("/my/account/statement.csv")
         assert r.status_code == 200
@@ -983,7 +983,7 @@ class TestStatementCsv:
         assert "Closing balance" in text
 
     def test_owner_csv_cross_tenant_404(self, app, client):
-        uid, tid = _make_user(app, "owner_csv2@ex.com", role=Role.OWNER)
+        uid, _tid = _make_user(app, "owner_csv2@ex.com", role=Role.OWNER)
         other_uid, _ = _make_user(app, "renter_csv2@ex.com")
         _login(app, client, uid)
         r = client.get(f"/config/renters/{other_uid}/account/statement.csv")

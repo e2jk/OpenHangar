@@ -12,7 +12,7 @@ from __future__ import annotations
 import csv
 import io
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import UTC, date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from typing import TYPE_CHECKING, Any, cast
 
@@ -28,13 +28,13 @@ def _quantize(amount: Any) -> Decimal:
 
 @dataclass
 class StatementLine:
-    entry: "LedgerEntry"
+    entry: LedgerEntry
     running_balance: Decimal
 
 
 @dataclass
 class Statement:
-    account: "BillingAccount"
+    account: BillingAccount
     start: date
     end: date
     opening_balance: Decimal
@@ -46,13 +46,12 @@ class BillingService:
     @staticmethod
     def get_or_create_account(
         tenant_id: int, user_id: int, kind: str, aircraft_id: int | None = None
-    ) -> "BillingAccount":
+    ) -> BillingAccount:
         """Return the existing account for this (tenant, user, kind, aircraft)
         scope, or create it. Idempotent under a concurrent-request race —
         the unique constraint is the source of truth, not a pre-check."""
-        from sqlalchemy.exc import IntegrityError
-
         from models import BillingAccount, db
+        from sqlalchemy.exc import IntegrityError
 
         existing: BillingAccount | None = BillingAccount.query.filter_by(
             tenant_id=tenant_id, user_id=user_id, kind=kind, aircraft_id=aircraft_id
@@ -81,16 +80,16 @@ class BillingService:
 
     @staticmethod
     def _insert(
-        account: "BillingAccount",
+        account: BillingAccount,
         entry_type: str,
         amount: Any,
         description: str,
         entry_date: date,
         source_type: str | None = None,
         source_id: int | None = None,
-        created_by: "User | None" = None,
+        created_by: User | None = None,
         reverses_id: int | None = None,
-    ) -> "LedgerEntry":
+    ) -> LedgerEntry:
         from models import LedgerEntry, db
 
         entry = LedgerEntry(
@@ -109,15 +108,15 @@ class BillingService:
 
     @staticmethod
     def post(
-        account: "BillingAccount",
+        account: BillingAccount,
         entry_type: str,
         amount: Any,
         description: str,
         entry_date: date,
         source_type: str | None = None,
         source_id: int | None = None,
-        created_by: "User | None" = None,
-    ) -> "LedgerEntry":
+        created_by: User | None = None,
+    ) -> LedgerEntry:
         """Validates sign against entry_type; commits nothing (caller owns
         the transaction)."""
         from models import LedgerEntryType
@@ -148,9 +147,7 @@ class BillingService:
         )
 
     @staticmethod
-    def reverse(
-        entry: "LedgerEntry", created_by: "User | None", note: str
-    ) -> "LedgerEntry":
+    def reverse(entry: LedgerEntry, created_by: User | None, note: str) -> LedgerEntry:
         """Posts the mirror entry (same type, opposite amount) with
         reverses_id set. Refuses to reverse a reversal and refuses to
         reverse the same entry twice."""
@@ -175,7 +172,7 @@ class BillingService:
         )
 
     @staticmethod
-    def balance(account: "BillingAccount", as_of: date | None = None) -> Decimal:
+    def balance(account: BillingAccount, as_of: date | None = None) -> Decimal:
         from models import LedgerEntry, db
 
         query = db.session.query(db.func.sum(LedgerEntry.amount)).filter(
@@ -187,7 +184,7 @@ class BillingService:
         return _quantize(total) if total is not None else Decimal("0.00")
 
     @staticmethod
-    def statement(account: "BillingAccount", start: date, end: date) -> Statement:
+    def statement(account: BillingAccount, start: date, end: date) -> Statement:
         """Opening balance (sum of entries before start), chronological
         entries in [start, end], closing balance."""
         from models import LedgerEntry
@@ -217,15 +214,15 @@ class BillingService:
         )
 
     @staticmethod
-    def statement_csv(statement: Statement, exported_by: "User | None" = None) -> str:
+    def statement_csv(statement: Statement, exported_by: User | None = None) -> str:
         """Header rows: export date, exporter, period, account holder, scope.
         Then one row per entry: date, type, description, amount, running
         balance."""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         buf = io.StringIO()
         writer = csv.writer(buf)
-        writer.writerow(["Export date", datetime.now(timezone.utc).date().isoformat()])
+        writer.writerow(["Export date", datetime.now(UTC).date().isoformat()])
         writer.writerow(["Exporter", exported_by.display_name if exported_by else ""])
         writer.writerow(
             ["Period", f"{statement.start.isoformat()} to {statement.end.isoformat()}"]

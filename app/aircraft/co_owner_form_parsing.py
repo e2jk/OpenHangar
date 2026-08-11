@@ -93,7 +93,7 @@ def parse_owners_form(
             continue
 
         buyin_s = (buyin_raw[i] if i < len(buyin_raw) else "").strip()
-        buy_in = _parse_decimal(buyin_s) if buyin_s else Decimal("0")
+        buy_in = _parse_decimal(buyin_s) if buyin_s else Decimal(0)
         if buy_in is None or buy_in < 0:
             errors.append(_("Buy-in amount must be a non-negative number."))
             continue
@@ -102,8 +102,8 @@ def parse_owners_form(
         rows.append({"user_id": uid, "share_pct": share, "buy_in_amount": buy_in})
 
     if rows:
-        total = sum((r["share_pct"] for r in rows), Decimal("0"))
-        if total != Decimal("100"):
+        total = sum((r["share_pct"] for r in rows), Decimal(0))
+        if total != Decimal(100):
             errors.append(_("Share percentages must sum to exactly 100%%."))
 
     billing_start_raw = (form.get("co_owner_billing_start", "") or "").strip()

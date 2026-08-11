@@ -90,7 +90,7 @@ class SecurityAlertHandler(logging.Handler):
 
             body = self.format(record)
             self._dispatch(event_type, body)
-        except Exception:
+        except Exception:  # noqa: BLE001 -- logging.Handler.emit() contract: never raise, call handleError
             self.handleError(record)
 
     def _dispatch(self, event_type: str, detail: str) -> None:
@@ -123,7 +123,7 @@ class SecurityAlertHandler(logging.Handler):
             )
             with urllib.request.urlopen(req, timeout=10):  # nosec B310  # scheme restricted to http(s) at startup (OPENHANGAR_ALERT_NTFY_TOPIC_URL check in init.py)
                 pass
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 -- one alert channel's failure must not affect others
             _log.error("Security alert: ntfy delivery failed: %s", exc)
 
     def _send_email(self, to: str, event_type: str, detail: str) -> None:
@@ -160,7 +160,7 @@ class SecurityAlertHandler(logging.Handler):
                 conn.login(user, password)
             conn.sendmail(from_addr, [to], msg.as_bytes())
             conn.quit()
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 -- one alert channel's failure must not affect others
             _log.error("Security alert: email delivery failed: %s", exc)
 
     def _send_webhook(self, url: str, event_type: str, detail: str) -> None:
@@ -176,7 +176,7 @@ class SecurityAlertHandler(logging.Handler):
             )
             with urllib.request.urlopen(req, timeout=10):  # nosec B310  # scheme restricted to http(s) at startup (OPENHANGAR_ALERT_WEBHOOK_URL check in init.py)
                 pass
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 -- one alert channel's failure must not affect others
             _log.error("Security alert: webhook delivery failed: %s", exc)
 
 

@@ -5,7 +5,7 @@ Tests for Phase 3 + Phase 7: Flight logging routes (CRUD + auth guard + validati
 
 import os
 import sys
-from datetime import date
+from datetime import UTC, date
 from io import BytesIO
 from textwrap import dedent
 from unittest.mock import patch
@@ -214,7 +214,7 @@ class TestAuthGuard:
 
 class TestFlightList:
     def test_list_shows_flights(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _add_flight(app, acid, dep="EBOS", arr="EBBR")
         _login(app, client)
@@ -224,7 +224,7 @@ class TestFlightList:
         assert b"EBBR" in resp.data
 
     def test_list_empty_state(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.get(f"/aircraft/{acid}/flights")
@@ -232,7 +232,7 @@ class TestFlightList:
         assert b"No flights logged" in resp.data
 
     def test_list_shows_duration(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _add_flight(app, acid, hobbs_start=100.0, hobbs_end=101.5)
         _login(app, client)
@@ -240,7 +240,7 @@ class TestFlightList:
         assert b"1.5" in resp.data
 
     def test_list_shows_pilot(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _add_flight(app, acid, pilot="J. Smith")
         _login(app, client)
@@ -248,7 +248,7 @@ class TestFlightList:
         assert b"J. Smith" in resp.data
 
     def test_list_shows_notes_sub_row(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _add_flight(app, acid, notes="Smooth VFR flight")
         _login(app, client)
@@ -256,7 +256,7 @@ class TestFlightList:
         assert b"Smooth VFR flight" in resp.data
 
     def test_list_shows_engine_counter_when_no_flight_counter(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _add_flight(
             app,
@@ -275,7 +275,7 @@ class TestFlightList:
         make the earlier flight sort above the later one."""
         from datetime import time
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         # Insert the LATER flight first...
         _add_flight(
@@ -308,7 +308,7 @@ class TestFlightList:
         assert resp.status_code == 404
 
     def test_fleet_flights_page_renders(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _add_flight(app, acid, dep="EBOS", arr="EBBR")
         _login(app, client)
@@ -322,7 +322,7 @@ class TestFlightList:
 
 class TestLogFlight:
     def test_get_shows_form(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.get(f"/flights/new?aircraft_id={acid}")
@@ -330,7 +330,7 @@ class TestLogFlight:
         assert b"Log a flight" in resp.data
 
     def test_get_prefills_hobbs_from_existing_flights(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _add_flight(app, acid, hobbs_start=100.0, hobbs_end=102.0)
         _login(app, client)
@@ -360,7 +360,7 @@ class TestLogFlight:
         assert today in resp.data
 
     def test_post_creates_flight(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -385,7 +385,7 @@ class TestLogFlight:
             assert float(fe.flight_time_counter_end) == 101.5
 
     def test_post_saves_pilot_and_notes(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         client.post(
@@ -408,7 +408,7 @@ class TestLogFlight:
             assert fe.notes == "Test flight"
 
     def test_post_saves_tach(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         client.post(
@@ -432,7 +432,7 @@ class TestLogFlight:
             assert float(fe.engine_time_counter_end) == 501.3
 
     def test_post_rejects_tach_end_not_greater(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -456,7 +456,7 @@ class TestLogFlight:
     def test_post_accepts_equal_flight_counter_start_and_end(self, app, client):
         """Ground-only entry (engine run-up / taxi, no airborne time): the
         flight counter does not move even though the engine counter does."""
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         client.post(
@@ -481,7 +481,7 @@ class TestLogFlight:
             assert float(fe.flight_time_counter_end) == 100.0
 
     def test_post_accepts_equal_engine_counter_start_and_end(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         client.post(
@@ -506,7 +506,7 @@ class TestLogFlight:
             assert float(fe.engine_time_counter_end) == 500.0
 
     def test_post_rejects_negative_tach(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -528,7 +528,7 @@ class TestLogFlight:
         assert b"positive" in resp.data
 
     def test_post_rejects_negative_tach_end(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -550,7 +550,7 @@ class TestLogFlight:
         assert b"positive" in resp.data
 
     def test_post_rejects_invalid_tach_end(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -571,7 +571,7 @@ class TestLogFlight:
         assert b"positive" in resp.data
 
     def test_post_uppercases_icao(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         client.post(
@@ -593,7 +593,7 @@ class TestLogFlight:
             assert fe.arrival_icao == "EBBR"
 
     def test_post_rejects_hobbs_end_not_greater(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -615,7 +615,7 @@ class TestLogFlight:
             assert Flight.query.count() == 0
 
     def test_post_rejects_missing_date(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -635,7 +635,7 @@ class TestLogFlight:
         assert b"Date is required" in resp.data
 
     def test_post_rejects_negative_hobbs(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -662,7 +662,10 @@ class TestReservationPreLink:
     def _make_reservation(
         self, app, aircraft_id, pilot_user_id, start, end, status="confirmed"
     ):
-        from models import Reservation, ReservationStatus  # pyright: ignore[reportMissingImports]
+        from models import (  # pyright: ignore[reportMissingImports]
+            Reservation,
+            ReservationStatus,
+        )
 
         with app.app_context():
             r = Reservation(
@@ -677,7 +680,7 @@ class TestReservationPreLink:
             return r.id
 
     def test_flight_inside_window_links(self, app, client):
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
@@ -685,8 +688,8 @@ class TestReservationPreLink:
             app,
             acid,
             uid,
-            datetime(2026, 6, 20, 9, 0, tzinfo=timezone.utc),
-            datetime(2026, 6, 20, 11, 0, tzinfo=timezone.utc),
+            datetime(2026, 6, 20, 9, 0, tzinfo=UTC),
+            datetime(2026, 6, 20, 11, 0, tzinfo=UTC),
         )
         _login(app, client)
         client.post(
@@ -708,7 +711,7 @@ class TestReservationPreLink:
             assert fe.reservation_id == res_id
 
     def test_flight_outside_window_not_linked(self, app, client):
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
@@ -716,8 +719,8 @@ class TestReservationPreLink:
             app,
             acid,
             uid,
-            datetime(2026, 6, 20, 9, 0, tzinfo=timezone.utc),
-            datetime(2026, 6, 20, 11, 0, tzinfo=timezone.utc),
+            datetime(2026, 6, 20, 9, 0, tzinfo=UTC),
+            datetime(2026, 6, 20, 11, 0, tzinfo=UTC),
         )
         _login(app, client)
         client.post(
@@ -739,9 +742,9 @@ class TestReservationPreLink:
             assert fe.reservation_id is None
 
     def test_flight_other_pilots_reservation_not_linked(self, app, client):
-        from datetime import datetime, timezone
+        from datetime import datetime
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         other_uid, _ = _create_user_and_tenant(app, "other_pilot@example.com")
         with app.app_context():
             from models import Role, TenantUser  # pyright: ignore[reportMissingImports]
@@ -756,8 +759,8 @@ class TestReservationPreLink:
             app,
             acid,
             other_uid,
-            datetime(2026, 6, 20, 9, 0, tzinfo=timezone.utc),
-            datetime(2026, 6, 20, 11, 0, tzinfo=timezone.utc),
+            datetime(2026, 6, 20, 9, 0, tzinfo=UTC),
+            datetime(2026, 6, 20, 11, 0, tzinfo=UTC),
         )
         _login(app, client)
         client.post(
@@ -780,7 +783,7 @@ class TestReservationPreLink:
 
     def test_pending_reservation_not_linked(self, app, client):
         """Only CONFIRMED reservations pre-link — a pending one does not."""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
@@ -788,8 +791,8 @@ class TestReservationPreLink:
             app,
             acid,
             uid,
-            datetime(2026, 6, 20, 9, 0, tzinfo=timezone.utc),
-            datetime(2026, 6, 20, 11, 0, tzinfo=timezone.utc),
+            datetime(2026, 6, 20, 9, 0, tzinfo=UTC),
+            datetime(2026, 6, 20, 11, 0, tzinfo=UTC),
             status="pending",
         )
         _login(app, client)
@@ -812,7 +815,7 @@ class TestReservationPreLink:
             assert fe.reservation_id is None
 
     def test_get_form_shows_covering_reservation_notice(self, app, client):
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
         uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
@@ -820,8 +823,8 @@ class TestReservationPreLink:
             app,
             acid,
             uid,
-            datetime.now(timezone.utc) - timedelta(minutes=30),
-            datetime.now(timezone.utc) + timedelta(minutes=30),
+            datetime.now(UTC) - timedelta(minutes=30),
+            datetime.now(UTC) + timedelta(minutes=30),
         )
         _login(app, client)
         resp = client.get(f"/flights/new?aircraft_id={acid}")
@@ -829,7 +832,7 @@ class TestReservationPreLink:
         assert b"will be linked to your reservation" in resp.data
 
     def test_get_form_no_notice_without_reservation(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.get(f"/flights/new?aircraft_id={acid}")
@@ -842,7 +845,7 @@ class TestReservationPreLink:
 
 class TestPhotoUpload:
     def test_upload_hobbs_photo(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -871,7 +874,7 @@ class TestPhotoUpload:
             )
 
     def test_upload_tach_photo(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         client.post(
@@ -895,7 +898,7 @@ class TestPhotoUpload:
             assert fe.engine_counter_photo.endswith(".png")
 
     def test_upload_ignores_invalid_extension(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         client.post(
@@ -918,7 +921,7 @@ class TestPhotoUpload:
             assert fe.flight_counter_photo is None
 
     def test_edit_replaces_existing_photo(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         fid = _add_flight(app, acid)
         with app.app_context():
@@ -952,7 +955,7 @@ class TestPhotoUpload:
         assert not os.path.isfile(old_path)
 
     def test_delete_flight_removes_photos(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         fid = _add_flight(app, acid)
         photo_name = "todelete.jpg"
@@ -969,7 +972,7 @@ class TestPhotoUpload:
         assert not os.path.isfile(photo_path)
 
     def test_upload_fuel_photo(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         client.post(
@@ -996,7 +999,7 @@ class TestPhotoUpload:
             )
 
     def test_delete_flight_tolerates_missing_photo_file(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         fid = _add_flight(app, acid)
         with app.app_context():
@@ -1033,7 +1036,7 @@ class TestSaveUploadNoneFilename:
 
 class TestServeUpload:
     def test_serve_returns_file(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         fname = "test_serve.jpg"
@@ -1060,7 +1063,7 @@ class TestServeUpload:
 
 class TestEditFlight:
     def test_get_shows_prefilled_form(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         fid = _add_flight(
             app, acid, dep="EBOS", arr="EBBR", hobbs_start=100.0, hobbs_end=101.5
@@ -1072,7 +1075,7 @@ class TestEditFlight:
         assert b"EBBR" in resp.data
 
     def test_get_shows_track_download_links_when_gps_track_linked(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         fid, _ = _add_flight_with_track(app, acid)
         _login(app, client)
@@ -1086,7 +1089,7 @@ class TestEditFlight:
         assert f'<img src="/flights/{fid}/track/image.png"'.encode() in resp.data
 
     def test_get_hides_preview_image_when_track_has_no_geojson(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         fid, _ = _add_flight_with_track(app, acid, geojson={})
         _login(app, client)
@@ -1096,7 +1099,7 @@ class TestEditFlight:
         assert b"Download image" in resp.data
 
     def test_get_prefills_pilot_and_notes(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         fid = _add_flight(app, acid, pilot="J. Smith", notes="Test notes")
         _login(app, client)
@@ -1113,7 +1116,7 @@ class TestEditFlight:
     # longer renders a "pilot_departure_time" override input at all.
 
     def test_post_updates_flight(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         fid = _add_flight(
             app, acid, dep="EBOS", arr="EBBR", hobbs_start=100.0, hobbs_end=101.5
@@ -1144,7 +1147,7 @@ class TestEditFlight:
         selector as creating a new one — it was previously omitted
         entirely from the edit form (`{% if not flight %}`), making a
         mis-registered flight's aircraft unfixable."""
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         fid = _add_flight(app, acid)
         _login(app, client)
@@ -1158,7 +1161,7 @@ class TestEditFlight:
         assert "selected" in select_html[opt_idx : opt_idx + 200]
 
     def test_get_standalone_flight_preselects_other_aircraft(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        uid, _tid = _create_user_and_tenant(app)
         with app.app_context():
             fe = Flight(
                 date=date(2024, 1, 1),
@@ -1183,7 +1186,7 @@ class TestEditFlight:
         assert 'value="OO-XYZ"' in html
 
     def test_post_reassigns_flight_to_different_managed_aircraft(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid1 = _add_aircraft(app, tid, registration="OO-AAA")
         acid2 = _add_aircraft(app, tid, registration="OO-BBB")
         fid = _add_flight(app, acid1)
@@ -1212,7 +1215,7 @@ class TestEditFlight:
         standalone (aircraft_id NULL) — that aircraft's counters/TBO
         tracking are computed live from Flight rows pointing at it, so it
         automatically drops out, no separate reconciliation needed."""
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         fid = _add_flight(app, acid, pilot="Original Pilot")
         _login(app, client)
@@ -1316,7 +1319,7 @@ class TestEditFlight:
 
 class TestDeleteFlight:
     def test_delete_removes_entry(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         fid = _add_flight(app, acid)
         _login(app, client)
@@ -1328,7 +1331,7 @@ class TestDeleteFlight:
             assert db.session.get(Flight, fid) is None
 
     def test_delete_404_for_wrong_aircraft(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid1 = _add_aircraft(app, tid, registration="OO-AA1")
         acid2 = _add_aircraft(app, tid, registration="OO-AA2")
         fid = _add_flight(app, acid1)
@@ -1342,7 +1345,7 @@ class TestDeleteFlight:
 
 class TestComponentLogbook:
     def test_engine_logbook_shows_flights(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         cid = _add_component(
             app,
@@ -1370,7 +1373,7 @@ class TestComponentLogbook:
         """A flight logged with only engine_time (no engine counters — e.g. a
         GPS/logbook import) must still count towards the component's
         cumulative hours, not be silently skipped."""
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         cid = _add_component(
             app,
@@ -1396,7 +1399,7 @@ class TestComponentLogbook:
         assert b"501.5" in resp.data  # 500 + 1.5 = 501.5 comp hours
 
     def test_logbook_shows_tbo_remaining(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         cid = _add_component(
             app,
@@ -1418,7 +1421,7 @@ class TestComponentLogbook:
         assert b"remaining" in resp.data
 
     def test_logbook_filters_by_install_date(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         cid = _add_component(app, acid, installed_at=date(2024, 1, 1))
         _add_flight(
@@ -1445,7 +1448,7 @@ class TestComponentLogbook:
         assert b"EBOS" not in resp.data
 
     def test_logbook_filters_by_removed_date(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         cid = _add_component(
             app, acid, installed_at=date(2023, 1, 1), removed_at=date(2024, 1, 1)
@@ -1474,7 +1477,7 @@ class TestComponentLogbook:
         assert b"ELLX" not in resp.data
 
     def test_logbook_empty_state(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         cid = _add_component(app, acid)
         _login(app, client)
@@ -1483,7 +1486,7 @@ class TestComponentLogbook:
         assert b"No flights recorded" in resp.data
 
     def test_logbook_404_for_wrong_aircraft(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid1 = _add_aircraft(app, tid, registration="OO-AA1")
         acid2 = _add_aircraft(app, tid, registration="OO-AA2")
         cid = _add_component(app, acid1)
@@ -1492,14 +1495,14 @@ class TestComponentLogbook:
         assert resp.status_code == 404
 
     def test_logbook_404_for_nonexistent_component(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.get(f"/aircraft/{acid}/components/9999/logbook")
         assert resp.status_code == 404
 
     def test_propeller_logbook(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         cid = _add_component(
             app, acid, comp_type=ComponentType.PROPELLER, time_at_install=100.0
@@ -1517,7 +1520,7 @@ class TestComponentLogbook:
         assert b"101.0" in resp.data  # 100 + 1.0 = 101.0 comp hours
 
     def test_logbook_tbo_overdue(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         cid = _add_component(
             app,
@@ -1538,7 +1541,7 @@ class TestComponentLogbook:
         assert b"Overdue" in resp.data
 
     def test_logbook_notes_shown(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         cid = _add_component(app, acid)
         _add_flight(
@@ -1557,7 +1560,7 @@ class TestComponentLogbook:
 
 class TestDetailRecentFlights:
     def test_detail_shows_recent_flights(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _add_flight(app, acid, dep="EBOS", arr="EBBR")
         _login(app, client)
@@ -1566,7 +1569,7 @@ class TestDetailRecentFlights:
         assert b"EBOS" in resp.data
 
     def test_detail_shows_empty_state_when_no_flights(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.get(f"/aircraft/{acid}")
@@ -1574,7 +1577,7 @@ class TestDetailRecentFlights:
         assert b"No flights logged yet" in resp.data
 
     def test_detail_shows_at_most_3_recent_flights(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         hs = 100.0
         for i in range(5):
@@ -1595,7 +1598,7 @@ class TestDetailRecentFlights:
         assert b"2024-01-01" not in resp.data
 
     def test_detail_shows_component_logbook_link(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _add_component(app, acid, comp_type=ComponentType.ENGINE)
         _login(app, client)
@@ -1603,7 +1606,7 @@ class TestDetailRecentFlights:
         assert b"Logbook" in resp.data
 
     def test_detail_no_logbook_link_for_avionics(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         with app.app_context():
             comp = Component(
@@ -1646,7 +1649,7 @@ class TestFlightsNoTenantUser:
 
 class TestSaveFlightValidation:
     def test_invalid_date_format_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -1663,7 +1666,7 @@ class TestSaveFlightValidation:
         assert b"valid date" in resp.data
 
     def test_missing_departure_icao_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -1680,7 +1683,7 @@ class TestSaveFlightValidation:
         assert b"Departure" in resp.data
 
     def test_missing_arrival_icao_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -1697,7 +1700,7 @@ class TestSaveFlightValidation:
         assert b"Arrival" in resp.data
 
     def test_negative_hobbs_end_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -1865,7 +1868,7 @@ class TestOtherAircraftFlight:
             assert entry.function_pic is None
 
     def test_other_aircraft_missing_role_rejected(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid)
         _login(app, client)
 
@@ -1884,7 +1887,7 @@ class TestOtherAircraftFlight:
         assert b"required" in resp.data.lower()
 
     def test_other_aircraft_redirects_to_logbook(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid)
         _login(app, client)
 
@@ -1929,7 +1932,7 @@ class TestOtherAircraftFlight:
             assert entry.pic_name == "John Doe"
 
     def test_normal_new_flight_unchanged(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
 
@@ -1949,7 +1952,7 @@ class TestOtherAircraftFlight:
             assert Flight.query.filter_by(aircraft_id=acid).count() == 1
 
     def test_other_aircraft_missing_date_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -1967,7 +1970,7 @@ class TestOtherAircraftFlight:
         assert b"Date is required" in resp.data
 
     def test_other_aircraft_invalid_date_format_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -1985,7 +1988,7 @@ class TestOtherAircraftFlight:
         assert b"valid date" in resp.data
 
     def test_other_aircraft_missing_departure_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -2003,7 +2006,7 @@ class TestOtherAircraftFlight:
         assert b"Departure" in resp.data
 
     def test_other_aircraft_missing_arrival_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -2021,7 +2024,7 @@ class TestOtherAircraftFlight:
         assert b"Arrival" in resp.data
 
     def test_other_aircraft_missing_crew_name_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -2094,7 +2097,7 @@ class TestOtherAircraftFlight:
         assert b"registration" in resp.data
 
     def test_other_aircraft_invalid_departure_time_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -2113,7 +2116,7 @@ class TestOtherAircraftFlight:
         assert b"Departure time" in resp.data
 
     def test_other_aircraft_invalid_arrival_time_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -2182,7 +2185,7 @@ class TestSaveFlightEdgeCases:
         return data
 
     def test_invalid_departure_time_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -2193,7 +2196,7 @@ class TestSaveFlightEdgeCases:
         assert b"Departure time" in resp.data
 
     def test_invalid_arrival_time_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -2215,7 +2218,7 @@ class TestSaveFlightEdgeCases:
     # "pilot_arrival_time" field anymore — there is nothing left to override.
 
     def test_no_aircraft_selected_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -2232,7 +2235,7 @@ class TestSaveFlightEdgeCases:
 
     def test_tach_only_derives_flight_time(self, app, client):
         """Aircraft with has_flight_counter=False uses engine counter diff as flight time."""
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         with app.app_context():
             ac = db.session.get(Aircraft, acid)
@@ -2262,7 +2265,7 @@ class TestSaveFlightEdgeCases:
     def test_tach_only_subtracts_nonzero_flight_counter_offset(self, app, client):
         """A nonzero flight_counter_offset (e.g. taxi/warm-up time baked into the
         tach reading) must actually be subtracted, not just accepted as 0.0."""
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         with app.app_context():
             ac = db.session.get(Aircraft, acid)
@@ -2294,7 +2297,7 @@ class TestSaveFlightEdgeCases:
         """When the counter offset exceeds the raw counter diff (e.g. a counter
         entered backwards, or an offset larger than the actual flight), flight
         time must floor at 0.0 rather than go negative."""
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         with app.app_context():
             ac = db.session.get(Aircraft, acid)
@@ -2322,7 +2325,7 @@ class TestSaveFlightEdgeCases:
             assert float(fe.flight_time) == 0.0
 
     def test_negative_passenger_count_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -2333,7 +2336,7 @@ class TestSaveFlightEdgeCases:
         assert b"Passenger" in resp.data
 
     def test_landing_count_derived_from_day_plus_night(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -2348,7 +2351,7 @@ class TestSaveFlightEdgeCases:
             assert fe.landing_count == 4
 
     def test_landing_count_none_when_pilot_fields_absent(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -2363,7 +2366,7 @@ class TestSaveFlightEdgeCases:
             assert fe.landing_count is None
 
     def test_negative_fuel_added_qty_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -2374,7 +2377,7 @@ class TestSaveFlightEdgeCases:
         assert b"Fuel" in resp.data
 
     def test_negative_fuel_remaining_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -2385,7 +2388,7 @@ class TestSaveFlightEdgeCases:
         assert b"Fuel" in resp.data
 
     def test_second_crew_member_saved(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         client.post(
@@ -2407,7 +2410,7 @@ class TestSaveFlightEdgeCases:
 
 class TestFlightHourMilestone:
     def test_crossing_100h_milestone_flashes_message(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         with app.app_context():
             fe_seed = Flight(
@@ -2551,7 +2554,7 @@ class TestPhase31bCoverage:
             assert fe.pic_user_id == uid
 
     def test_parse_gps_action_invalid_file_flashes_warning(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -2569,9 +2572,9 @@ class TestPhase31bCoverage:
 
     def test_duplicate_detected_with_overlapping_block_times(self, app, client):
         import json as _json
-        from datetime import datetime, timezone
+        from datetime import datetime
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         with app.app_context():
@@ -2580,8 +2583,8 @@ class TestPhase31bCoverage:
                 date=date(2026, 5, 1),
                 departure_icao="EBOS",
                 arrival_icao="EBBR",
-                block_off_utc=datetime(2026, 5, 1, 10, 0, tzinfo=timezone.utc),
-                block_on_utc=datetime(2026, 5, 1, 11, 0, tzinfo=timezone.utc),
+                block_off_utc=datetime(2026, 5, 1, 10, 0, tzinfo=UTC),
+                block_on_utc=datetime(2026, 5, 1, 11, 0, tzinfo=UTC),
             )
             db.session.add(fe_seed)
             db.session.commit()
@@ -2608,7 +2611,7 @@ class TestPhase31bCoverage:
         assert b"already exists" in resp.data or b"duplicate" in resp.data.lower()
 
     def test_duplicate_detected_by_date_dep_arr(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         with app.app_context():
@@ -2635,7 +2638,7 @@ class TestPhase31bCoverage:
         assert b"already exists" in resp.data or b"duplicate" in resp.data.lower()
 
     def test_duplicate_pilot_log_shows_duplicate_ui(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        uid, _tid = _create_user_and_tenant(app)
         _login(app, client)
         with app.app_context():
             pe_seed = Flight(
@@ -2667,7 +2670,7 @@ class TestPhase31bCoverage:
 
         from models import GpsTrack  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         with app.app_context():
@@ -2851,7 +2854,7 @@ class TestPhase31bCoverage:
 
     def test_parse_gps_import_error_returns_warning(self, app, client):
         """Lines 166-167: ImportError inside _parse_gps_upload returns None."""
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         with patch.dict(sys.modules, {"aircraft.gps_import": None}):
@@ -2869,7 +2872,7 @@ class TestPhase31bCoverage:
 
     def test_parse_gps_disallowed_extension_returns_warning(self, app, client):
         """Line 171: disallowed extension returns None from _parse_gps_upload."""
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -2886,7 +2889,7 @@ class TestPhase31bCoverage:
 
     def test_parse_gps_no_segments_returns_warning(self, app, client):
         """Lines 175-176, 179-180: parse succeeds but detect_segments returns []."""
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -2906,7 +2909,7 @@ class TestPhase31bCoverage:
 
     def test_parse_gps_success_stores_prefill(self, app, client):
         """Lines 175-176, 181-182, 466-485: valid flight GPX pre-fills the form."""
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -2928,7 +2931,7 @@ class TestPhase31bCoverage:
 
     def test_parse_gps_on_edit_redirects_to_edit_flight(self, app, client):
         """Line 491: action=parse_gps on the edit route redirects back to edit."""
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         with app.app_context():
@@ -2956,9 +2959,9 @@ class TestPhase31bCoverage:
     def test_edit_excludes_self_from_block_time_duplicate_check(self, app, client):
         """Line 218: editing a flight with overlapping block times excludes itself."""
         import json as _json
-        from datetime import datetime, timezone
+        from datetime import datetime
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         with app.app_context():
@@ -2967,8 +2970,8 @@ class TestPhase31bCoverage:
                 date=date(2026, 5, 15),
                 departure_icao="EBOS",
                 arrival_icao="EBBR",
-                block_off_utc=datetime(2026, 5, 15, 10, 0, tzinfo=timezone.utc),
-                block_on_utc=datetime(2026, 5, 15, 11, 0, tzinfo=timezone.utc),
+                block_off_utc=datetime(2026, 5, 15, 10, 0, tzinfo=UTC),
+                block_on_utc=datetime(2026, 5, 15, 11, 0, tzinfo=UTC),
             )
             db.session.add(fe)
             db.session.commit()
@@ -3000,7 +3003,7 @@ class TestPhase31bCoverage:
         """Unified model: `exclude_flight_id` is the only exclusion
         parameter now (the old separate `exclude_pilot_entry_id` is gone —
         a pilot's own standalone entry and this id are the same row)."""
-        uid, tid = _create_user_and_tenant(app)
+        uid, _tid = _create_user_and_tenant(app)
         _login(app, client)
         with app.app_context():
             pe = Flight(
@@ -3014,7 +3017,9 @@ class TestPhase31bCoverage:
             peid = pe.id
 
         with app.app_context():
-            from flights.routes import _find_duplicate_flight  # pyright: ignore[reportMissingImports]
+            from flights.routes import (
+                _find_duplicate_flight,  # pyright: ignore[reportMissingImports]
+            )
 
             result = _find_duplicate_flight(
                 aircraft_id=None,
@@ -3075,7 +3080,7 @@ class TestPhase31bCoverage:
 
     def test_invalid_gps_hidden_fields_silently_ignored(self, app, client):
         """Lines 720-721, 725-726, 732-733: bad datetime/JSON in GPS hidden fields."""
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
@@ -3101,6 +3106,7 @@ class TestPhase31bCoverage:
         and this pilot's own entry (aircraft_id + pic_user_id both set) —
         there's only one gps_track_id to set on the unified row."""
         import json as _json
+
         from models import GpsTrack  # pyright: ignore[reportMissingImports]
 
         uid, tid = _create_user_and_tenant(app)
@@ -3147,9 +3153,10 @@ class TestPhase31bCoverage:
         """link_gps against a standalone (aircraft_id NULL) pilot-only
         Flight row — the "pilot" match branch of _find_duplicate_flight."""
         import json as _json
+
         from models import GpsTrack  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        uid, _tid = _create_user_and_tenant(app)
         _login(app, client)
         with app.app_context():
             pe = Flight(
@@ -3192,9 +3199,10 @@ class TestPhase31bCoverage:
     def test_edit_with_existing_gps_track_updates_it(self, app, client):
         """Lines 802-811: editing a flight with an existing GpsTrack updates it in place."""
         import json as _json
+
         from models import GpsTrack  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         with app.app_context():
@@ -3284,7 +3292,7 @@ class TestPhase31bCoverage:
         assert data["duplicate"] is None
 
     def test_parse_gps_api_returns_duplicate_when_pilot_log_matches(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        uid, _tid = _create_user_and_tenant(app)
         _login(app, client)
         gpx = _gpx_bytes()
         # First parse to discover the date/route the GPX produces
@@ -3317,7 +3325,7 @@ class TestPhase31bCoverage:
     def test_parse_gps_api_does_not_leak_other_tenant_duplicate(self, app, client):
         """A user cannot probe another tenant's Flight existence/id by
         submitting that tenant's aircraft_id on the parse-gps AJAX endpoint."""
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         _create_user_and_tenant(app)
         _uid_b, tid_b = _create_user_and_tenant(app, "victim@example.com")
@@ -3329,8 +3337,8 @@ class TestPhase31bCoverage:
                     date=date(2024, 6, 1),
                     departure_icao="EBOS",
                     arrival_icao="EBBR",
-                    block_off_utc=datetime(2024, 6, 1, 10, 0, tzinfo=timezone.utc),
-                    block_on_utc=datetime(2024, 6, 1, 10, 3, tzinfo=timezone.utc),
+                    block_off_utc=datetime(2024, 6, 1, 10, 0, tzinfo=UTC),
+                    block_on_utc=datetime(2024, 6, 1, 10, 3, tzinfo=UTC),
                 )
             )
             db.session.commit()
@@ -3352,9 +3360,10 @@ class TestPhase31bCoverage:
     ):
         """Lines 534-541: _suggested_aircraft_for_device returns aircraft_id."""
         from textwrap import dedent
+
         from models import GpsTrack  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         garmin_csv = dedent("""\
@@ -3392,9 +3401,10 @@ class TestPhase31bCoverage:
     def test_edit_flight_with_gps_device_id_updates_existing_track(self, app, client):
         """Line 941: updating a flight with gps_device_id sets it on existing GpsTrack."""
         import json
+
         from models import Flight, GpsTrack  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         with app.app_context():
@@ -3441,7 +3451,7 @@ class TestGpsReviewReturnFlow:
     """Cover flights/routes.py lines 1222-1232: gps_review_return hidden fields."""
 
     def test_redirects_to_review_and_marks_segment_confirmed(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         with client.session_transaction() as sess:
@@ -3473,7 +3483,7 @@ class TestGpsReviewReturnFlow:
 
     def test_redirects_to_review_when_session_aircraft_mismatch(self, app, client):
         """return_ac_id in form but session aircraft_id differs → still redirects."""
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         with client.session_transaction() as sess:
@@ -3562,9 +3572,9 @@ class TestRegistrationLookup:
         assert resp.get_json()["result"]["aircraft_type"] == "CESSNA C172"
 
     def test_tenant_fallback_when_no_own_history(self, app, client):
-        from models import TenantUser, Role  # pyright: ignore[reportMissingImports]
+        from models import Role, TenantUser  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         with app.app_context():
             other = User(
@@ -3683,7 +3693,9 @@ class TestCoordsFromGeojson:
 
 class TestGenerateSingleTrackImage:
     def test_returns_png_bytes(self, app):
-        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
+        from utils import (
+            generate_single_track_image,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             result = generate_single_track_image(
@@ -3692,21 +3704,27 @@ class TestGenerateSingleTrackImage:
         assert result[:4] == b"\x89PNG"
 
     def test_returns_png_for_sparse_track(self, app):
-        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
+        from utils import (
+            generate_single_track_image,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             result = generate_single_track_image(_SPARSE_GEOJSON)
         assert result[:4] == b"\x89PNG"
 
     def test_returns_blank_png_for_no_geojson(self, app):
-        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
+        from utils import (
+            generate_single_track_image,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             result = generate_single_track_image(None)
         assert result[:4] == b"\x89PNG"
 
     def test_returns_blank_png_for_single_point(self, app):
-        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
+        from utils import (
+            generate_single_track_image,  # pyright: ignore[reportMissingImports]
+        )
 
         geojson = {
             "type": "Feature",
@@ -3718,18 +3736,23 @@ class TestGenerateSingleTrackImage:
         assert result[:4] == b"\x89PNG"
 
     def test_plain_bg_when_tiles_unavailable(self, app):
-        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
         from unittest.mock import patch
 
-        with patch("utils._make_tile_background", return_value=None):
-            with app.app_context():
-                result = generate_single_track_image(_SAMPLE_GEOJSON)
+        from utils import (
+            generate_single_track_image,  # pyright: ignore[reportMissingImports]
+        )
+
+        with patch("utils._make_tile_background", return_value=None), app.app_context():
+            result = generate_single_track_image(_SAMPLE_GEOJSON)
         assert result[:4] == b"\x89PNG"
 
     def test_portrait_orientation(self, app):
-        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
-        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
         import io as _io
+
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        from utils import (
+            generate_single_track_image,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             result = generate_single_track_image(
@@ -3739,23 +3762,29 @@ class TestGenerateSingleTrackImage:
         assert img.size == (480, 800)
 
     def test_no_label_when_fields_empty(self, app):
-        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
+        from utils import (
+            generate_single_track_image,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             result = generate_single_track_image(_SAMPLE_GEOJSON)
         assert result[:4] == b"\x89PNG"
 
     def test_returns_blank_png_when_projection_none(self, app):
-        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
         from unittest.mock import patch
 
-        with patch("utils._build_gif_projection", return_value=None):
-            with app.app_context():
-                result = generate_single_track_image(_SAMPLE_GEOJSON)
+        from utils import (
+            generate_single_track_image,  # pyright: ignore[reportMissingImports]
+        )
+
+        with patch("utils._build_gif_projection", return_value=None), app.app_context():
+            result = generate_single_track_image(_SAMPLE_GEOJSON)
         assert result[:4] == b"\x89PNG"
 
     def test_high_res_canvas_bounds_called(self, app):
-        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
+        from utils import (
+            generate_single_track_image,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             result = generate_single_track_image(
@@ -3764,23 +3793,29 @@ class TestGenerateSingleTrackImage:
         assert result[:4] == b"\x89PNG"
 
     def test_high_res_fallback_when_canvas_tiles_fail(self, app):
-        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
         from unittest.mock import patch
+
+        from utils import (
+            generate_single_track_image,  # pyright: ignore[reportMissingImports]
+        )
 
         call_count = [0]
 
         def _none_tiles(*args: object, **kwargs: object) -> None:
             call_count[0] += 1
-            return None
 
-        with patch("utils._make_tile_background", side_effect=_none_tiles):
-            with app.app_context():
-                result = generate_single_track_image(_SAMPLE_GEOJSON, high_res=True)
+        with (
+            patch("utils._make_tile_background", side_effect=_none_tiles),
+            app.app_context(),
+        ):
+            result = generate_single_track_image(_SAMPLE_GEOJSON, high_res=True)
         assert result[:4] == b"\x89PNG"
         assert call_count[0] == 2  # canvas-extent call + track-bbox fallback
 
     def test_font_fallback_on_ioerror(self, app):
-        from utils import generate_single_track_image  # pyright: ignore[reportMissingImports]
+        from utils import (
+            generate_single_track_image,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             result = generate_single_track_image(
@@ -3791,7 +3826,9 @@ class TestGenerateSingleTrackImage:
 
 class TestGenerateSingleTrackGif:
     def test_returns_gif_bytes(self, app):
-        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
+        from utils import (
+            generate_single_track_gif,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             result = generate_single_track_gif(
@@ -3800,9 +3837,12 @@ class TestGenerateSingleTrackGif:
         assert result[:3] == b"GIF"
 
     def test_sparse_track_falls_back_to_single_frame(self, app):
-        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
-        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
         import io as _io
+
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        from utils import (
+            generate_single_track_gif,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             result = generate_single_track_gif(_SPARSE_GEOJSON)
@@ -3811,16 +3851,21 @@ class TestGenerateSingleTrackGif:
         assert not getattr(img, "is_animated", False)
 
     def test_none_geojson_returns_gif(self, app):
-        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
+        from utils import (
+            generate_single_track_gif,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             result = generate_single_track_gif(None)
         assert result[:3] == b"GIF"
 
     def test_animated_gif_has_multiple_frames(self, app):
-        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
-        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
         import io as _io
+
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        from utils import (
+            generate_single_track_gif,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             result = generate_single_track_gif(_SAMPLE_GEOJSON)
@@ -3828,18 +3873,23 @@ class TestGenerateSingleTrackGif:
         assert getattr(img, "n_frames", 1) > 1
 
     def test_plain_bg_when_tiles_unavailable(self, app):
-        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
         from unittest.mock import patch
 
-        with patch("utils._make_tile_background", return_value=None):
-            with app.app_context():
-                result = generate_single_track_gif(_SAMPLE_GEOJSON)
+        from utils import (
+            generate_single_track_gif,  # pyright: ignore[reportMissingImports]
+        )
+
+        with patch("utils._make_tile_background", return_value=None), app.app_context():
+            result = generate_single_track_gif(_SAMPLE_GEOJSON)
         assert result[:3] == b"GIF"
 
     def test_portrait_canvas(self, app):
-        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
-        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
         import io as _io
+
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        from utils import (
+            generate_single_track_gif,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             result = generate_single_track_gif(
@@ -3849,7 +3899,9 @@ class TestGenerateSingleTrackGif:
         assert img.size == (480, 800)
 
     def test_font_fallback_on_ioerror(self, app):
-        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
+        from utils import (
+            generate_single_track_gif,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             result = generate_single_track_gif(
@@ -3858,7 +3910,9 @@ class TestGenerateSingleTrackGif:
         assert result[:3] == b"GIF"
 
     def test_high_res_gif(self, app):
-        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
+        from utils import (
+            generate_single_track_gif,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             result = generate_single_track_gif(
@@ -3867,29 +3921,39 @@ class TestGenerateSingleTrackGif:
         assert result[:3] == b"GIF"
 
     def test_high_res_fallback_when_canvas_tiles_fail(self, app):
-        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
         from unittest.mock import patch
+
+        from utils import (
+            generate_single_track_gif,  # pyright: ignore[reportMissingImports]
+        )
 
         def _none_tiles(*args: object, **kwargs: object) -> None:
             return None
 
-        with patch("utils._make_tile_background", side_effect=_none_tiles):
-            with app.app_context():
-                result = generate_single_track_gif(_SAMPLE_GEOJSON, high_res=True)
+        with (
+            patch("utils._make_tile_background", side_effect=_none_tiles),
+            app.app_context(),
+        ):
+            result = generate_single_track_gif(_SAMPLE_GEOJSON, high_res=True)
         assert result[:3] == b"GIF"
 
     def test_no_frames_returns_blank_gif(self, app):
-        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
         from unittest.mock import patch
 
-        with patch("utils._build_gif_projection", return_value=None):
-            with app.app_context():
-                result = generate_single_track_gif(_SAMPLE_GEOJSON)
+        from utils import (
+            generate_single_track_gif,  # pyright: ignore[reportMissingImports]
+        )
+
+        with patch("utils._build_gif_projection", return_value=None), app.app_context():
+            result = generate_single_track_gif(_SAMPLE_GEOJSON)
         assert result[:3] == b"GIF"
 
     def test_chunk_projection_none_is_skipped(self, app):
-        from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
         from unittest.mock import patch
+
+        from utils import (
+            generate_single_track_gif,  # pyright: ignore[reportMissingImports]
+        )
 
         original = __import__("utils")._build_gif_projection
         call_count = [0]
@@ -3900,18 +3964,20 @@ class TestGenerateSingleTrackGif:
                 return None  # first chunk projection fails → continue
             return original(*args, **kwargs)
 
-        with patch("utils._build_gif_projection", side_effect=_skip_first):
-            with app.app_context():
-                result = generate_single_track_gif(_SAMPLE_GEOJSON)
+        with (
+            patch("utils._build_gif_projection", side_effect=_skip_first),
+            app.app_context(),
+        ):
+            result = generate_single_track_gif(_SAMPLE_GEOJSON)
         assert result[:3] == b"GIF"
 
 
 class TestFlightTrackImageRoute:
     def test_returns_png_when_track_exists(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         ac_id = _add_aircraft(app, tid)
-        flight_id, track_id = _add_flight_with_track(app, ac_id)
+        flight_id, _track_id = _add_flight_with_track(app, ac_id)
 
         resp = client.get(f"/flights/{flight_id}/track/image.png")
         assert resp.status_code == 200
@@ -3919,10 +3985,10 @@ class TestFlightTrackImageRoute:
         assert resp.data[:4] == b"\x89PNG"
 
     def test_cache_headers_present(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         ac_id = _add_aircraft(app, tid)
-        flight_id, track_id = _add_flight_with_track(app, ac_id)
+        flight_id, _track_id = _add_flight_with_track(app, ac_id)
 
         resp = client.get(f"/flights/{flight_id}/track/image.png")
         assert resp.status_code == 200
@@ -3931,9 +3997,10 @@ class TestFlightTrackImageRoute:
 
     def test_default_variant_is_cached_after_first_render(self, app, client):
         from unittest.mock import patch
+
         from models import GpsTrack  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         ac_id = _add_aircraft(app, tid)
         flight_id, track_id = _add_flight_with_track(app, ac_id)
@@ -3951,7 +4018,7 @@ class TestFlightTrackImageRoute:
             assert bytes(track.cached_png) == b"\x89PNGfake"
 
     def test_hires_variant_is_never_cached(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         ac_id = _add_aircraft(app, tid)
         flight_id, track_id = _add_flight_with_track(app, ac_id)
@@ -3964,7 +4031,7 @@ class TestFlightTrackImageRoute:
             assert track.cached_png is None
 
     def test_returns_404_when_no_track(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         ac_id = _add_aircraft(app, tid)
         with app.app_context():
@@ -3998,10 +4065,11 @@ class TestFlightTrackImageRoute:
         assert resp.status_code == 404
 
     def test_portrait_orientation(self, app, client):
-        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
         import io as _io
 
-        uid, tid = _create_user_and_tenant(app)
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+
+        _uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         ac_id = _add_aircraft(app, tid)
         flight_id, _ = _add_flight_with_track(app, ac_id)
@@ -4018,7 +4086,7 @@ class TestFlightTrackImageRoute:
 
 class TestFlightTrackGifRoute:
     def test_returns_gif_when_track_exists(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         ac_id = _add_aircraft(app, tid)
         flight_id, _ = _add_flight_with_track(app, ac_id)
@@ -4029,7 +4097,7 @@ class TestFlightTrackGifRoute:
         assert resp.data[:3] == b"GIF"
 
     def test_cache_headers_present(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         ac_id = _add_aircraft(app, tid)
         flight_id, _ = _add_flight_with_track(app, ac_id)
@@ -4041,9 +4109,10 @@ class TestFlightTrackGifRoute:
 
     def test_default_variant_is_cached_after_first_render(self, app, client):
         from unittest.mock import patch
+
         from models import GpsTrack  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         ac_id = _add_aircraft(app, tid)
         flight_id, track_id = _add_flight_with_track(app, ac_id)
@@ -4061,7 +4130,7 @@ class TestFlightTrackGifRoute:
             assert bytes(track.cached_gif) == b"GIFfake"
 
     def test_hires_variant_is_never_cached(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         ac_id = _add_aircraft(app, tid)
         flight_id, track_id = _add_flight_with_track(app, ac_id)
@@ -4074,7 +4143,7 @@ class TestFlightTrackGifRoute:
             assert track.cached_gif is None
 
     def test_returns_404_when_no_track(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         ac_id = _add_aircraft(app, tid)
         with app.app_context():
@@ -4108,7 +4177,7 @@ class TestFlightTrackGifRoute:
         assert resp.status_code == 404
 
     def test_sparse_track_still_returns_gif(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         ac_id = _add_aircraft(app, tid)
         flight_id, _ = _add_flight_with_track(app, ac_id, geojson=_SPARSE_GEOJSON)
@@ -4118,10 +4187,11 @@ class TestFlightTrackGifRoute:
         assert resp.data[:3] == b"GIF"
 
     def test_portrait_orientation(self, app, client):
-        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
         import io as _io
 
-        uid, tid = _create_user_and_tenant(app)
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+
+        _uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         ac_id = _add_aircraft(app, tid)
         flight_id, _ = _add_flight_with_track(app, ac_id)
