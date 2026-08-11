@@ -9,7 +9,6 @@ from datetime import date
 from decimal import Decimal
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
-
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AircraftOwner,
@@ -28,7 +27,6 @@ from services.billing import BillingService  # pyright: ignore[reportMissingImpo
 from services.co_owner_billing import (  # pyright: ignore[reportMissingImports]
     overdue_since,
 )
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -159,7 +157,7 @@ class TestOwnersBillingRoute:
                     date=date(2026, 2, 1),
                     expense_type="insurance",
                     expense_category=ExpenseCategory.FIXED,
-                    amount=Decimal("200"),
+                    amount=Decimal(200),
                 )
             )
             db.session.add(
@@ -202,7 +200,7 @@ class TestOwnersBillingRoute:
                     date=date(2026, 2, 1),
                     expense_type="insurance",
                     expense_category=ExpenseCategory.FIXED,
-                    amount=Decimal("50"),
+                    amount=Decimal(50),
                 )
             )
             db.session.commit()
@@ -275,7 +273,7 @@ class TestOwnersBillingRoute:
             BillingService.post(
                 acc,
                 LedgerEntryType.PAYMENT,
-                Decimal("-250"),
+                Decimal(-250),
                 "Payment",
                 date(2026, 2, 1),
                 source_type="payment",
@@ -362,7 +360,7 @@ class TestOwnersBillingRoute:
             BillingService.post(
                 acc,
                 LedgerEntryType.CHARGE,
-                Decimal("500"),
+                Decimal(500),
                 "Old charge",
                 date(2020, 1, 2),
                 source_type="test",
@@ -405,7 +403,7 @@ class TestOverdueSince:
             BillingService.post(
                 acc,
                 LedgerEntryType.CHARGE,
-                Decimal("100"),
+                Decimal(100),
                 "Charge",
                 date(2026, 1, 5),
                 source_type="test",
@@ -427,7 +425,7 @@ class TestOverdueSince:
             BillingService.post(
                 acc,
                 LedgerEntryType.CHARGE,
-                Decimal("100"),
+                Decimal(100),
                 "Charge 1",
                 date(2026, 1, 5),
                 source_type="test",
@@ -438,7 +436,7 @@ class TestOverdueSince:
             BillingService.post(
                 acc,
                 LedgerEntryType.PAYMENT,
-                Decimal("-100"),
+                Decimal(-100),
                 "Payment",
                 date(2026, 1, 10),
                 source_type="payment",
@@ -448,7 +446,7 @@ class TestOverdueSince:
             BillingService.post(
                 acc,
                 LedgerEntryType.CHARGE,
-                Decimal("50"),
+                Decimal(50),
                 "Charge 2",
                 date(2026, 1, 20),
                 source_type="test",
@@ -469,7 +467,7 @@ class TestOverdueSince:
             BillingService.post(
                 acc,
                 LedgerEntryType.CHARGE,
-                Decimal("100"),
+                Decimal(100),
                 "Charge",
                 date.today() - date.resolution * 10,
                 source_type="test",

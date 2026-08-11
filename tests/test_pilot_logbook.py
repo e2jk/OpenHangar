@@ -3,12 +3,11 @@ Tests for Phase 17: PilotProfile model, Flight model (pilot-log side), pilot
 logbook routes.
 """
 
-import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from datetime import date
 from unittest.mock import patch
 
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
-
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     Flight,
@@ -20,7 +19,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     User,
     db,
 )
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -90,25 +88,25 @@ def _add_logbook_entry(app, user_id, aircraft_id=None, **kwargs):
     """
     kwargs = {_LOGBOOK_KWARG_RENAME.get(k, k): v for k, v in kwargs.items()}
     if aircraft_id is None:
-        defaults = dict(
-            date=date(2024, 3, 1),
-            other_aircraft_type="C172S",
-            other_aircraft_registration="OO-TST",
-            departure_icao="EBOS",
-            arrival_icao="EBBR",
-            single_pilot_se=1.5,
-            landings_day=1,
-            function_pic=1.5,
-        )
+        defaults = {
+            "date": date(2024, 3, 1),
+            "other_aircraft_type": "C172S",
+            "other_aircraft_registration": "OO-TST",
+            "departure_icao": "EBOS",
+            "arrival_icao": "EBBR",
+            "single_pilot_se": 1.5,
+            "landings_day": 1,
+            "function_pic": 1.5,
+        }
     else:
-        defaults = dict(
-            date=date(2024, 3, 1),
-            departure_icao="EBOS",
-            arrival_icao="EBBR",
-            single_pilot_se=1.5,
-            landings_day=1,
-            function_pic=1.5,
-        )
+        defaults = {
+            "date": date(2024, 3, 1),
+            "departure_icao": "EBOS",
+            "arrival_icao": "EBBR",
+            "single_pilot_se": 1.5,
+            "landings_day": 1,
+            "function_pic": 1.5,
+        }
     defaults.update(kwargs)
     with app.app_context():
         entry = Flight(
@@ -244,7 +242,7 @@ class TestLogbookRoutes:
 
     def test_view_entry_wrong_user_returns_404(self, app, client):
         uid1, _ = _create_user_and_tenant(app, email="a@x.com")
-        uid2, _ = _create_user_and_tenant(app, email="b@x.com")
+        _uid2, _ = _create_user_and_tenant(app, email="b@x.com")
         eid = _add_logbook_entry(app, uid1)
         _login(app, client, email="b@x.com")
         resp = client.get(f"/pilot/logbook/{eid}/view")
@@ -318,9 +316,10 @@ class TestLogbookRoutes:
         assert resp.data[:3] == b"GIF"
 
     def test_pilot_tracks_gif_portrait_endpoint(self, app, client):
+        import io as _io
+
         from models import GpsTrack  # pyright: ignore[reportMissingImports]
         from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
-        import io as _io
 
         uid, _ = _create_user_and_tenant(app)
         _login(app, client)
@@ -356,9 +355,10 @@ class TestLogbookRoutes:
         assert img.size == (480, 800), f"expected portrait 480×800, got {img.size}"
 
     def test_pilot_tracks_gif_hires_landscape_endpoint(self, app, client):
+        import io as _io
+
         from models import GpsTrack  # pyright: ignore[reportMissingImports]
         from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
-        import io as _io
 
         uid, _ = _create_user_and_tenant(app)
         _login(app, client)
@@ -400,9 +400,10 @@ class TestLogbookRoutes:
         assert "hires" in cd, f"filename should include -hires: {cd}"
 
     def test_pilot_tracks_gif_hires_portrait_endpoint(self, app, client):
+        import io as _io
+
         from models import GpsTrack  # pyright: ignore[reportMissingImports]
         from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
-        import io as _io
 
         uid, _ = _create_user_and_tenant(app)
         _login(app, client)
@@ -442,7 +443,7 @@ class TestLogbookRoutes:
         assert "portrait" in cd and "hires" in cd
 
     def test_logbook_empty(self, app, client):
-        uid, _ = _create_user_and_tenant(app)
+        _uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         resp = client.get("/pilot/logbook")
         assert resp.status_code == 200
@@ -467,7 +468,7 @@ class TestLogbookRoutes:
 
     def test_logbook_only_shows_own_entries(self, app, client):
         uid1, _ = _create_user_and_tenant(app, email="a@x.com")
-        uid2, _ = _create_user_and_tenant(app, email="b@x.com")
+        _uid2, _ = _create_user_and_tenant(app, email="b@x.com")
         _add_logbook_entry(app, uid1, departure_place="EHAM")
         _login(app, client, email="b@x.com")
         resp = client.get("/pilot/logbook")
@@ -586,7 +587,7 @@ class TestLogbookRoutes:
 
 class TestEntryRoutes:
     def test_new_entry_get(self, app, client):
-        uid, _ = _create_user_and_tenant(app)
+        _uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         resp = client.get("/pilot/logbook/new")
         assert resp.status_code == 200
@@ -603,20 +604,20 @@ class TestEntryRoutes:
             assert float(entry.single_pilot_se) == 1.5
 
     def test_new_entry_date_required(self, app, client):
-        uid, _ = _create_user_and_tenant(app)
+        _uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         resp = _post_entry(client, {"date": ""})
         assert resp.status_code == 422
         assert b"required" in resp.data.lower()
 
     def test_new_entry_negative_time_shows_error(self, app, client):
-        uid, _ = _create_user_and_tenant(app)
+        _uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         resp = _post_entry(client, {"single_pilot_se": "-1.0"})
         assert b"non-negative" in resp.data
 
     def test_new_entry_negative_landings_shows_error(self, app, client):
-        uid, _ = _create_user_and_tenant(app)
+        _uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         resp = _post_entry(client, {"landings_day": "-1"})
         assert b"non-negative" in resp.data
@@ -689,7 +690,7 @@ class TestEntryRoutes:
 
     def test_edit_entry_wrong_user_returns_404(self, app, client):
         uid1, _ = _create_user_and_tenant(app, email="a@x.com")
-        uid2, _ = _create_user_and_tenant(app, email="b@x.com")
+        _uid2, _ = _create_user_and_tenant(app, email="b@x.com")
         eid = _add_logbook_entry(app, uid1)
         _login(app, client, email="b@x.com")
         resp = client.get(f"/pilot/logbook/{eid}/edit")
@@ -760,6 +761,7 @@ class TestEntryRoutes:
 
     def test_new_entry_with_gps_creates_track(self, app, client):
         import json
+
         from models import GpsTrack  # pyright: ignore[reportMissingImports]
 
         uid, _ = _create_user_and_tenant(app)
@@ -790,6 +792,7 @@ class TestEntryRoutes:
 
     def test_edit_entry_with_gps_updates_track(self, app, client):
         import json
+
         from models import GpsTrack  # pyright: ignore[reportMissingImports]
 
         uid, _ = _create_user_and_tenant(app)
@@ -903,7 +906,7 @@ class TestEntryRoutes:
 
     def test_delete_entry_wrong_user_returns_404(self, app, client):
         uid1, _ = _create_user_and_tenant(app, email="a@x.com")
-        uid2, _ = _create_user_and_tenant(app, email="b@x.com")
+        _uid2, _ = _create_user_and_tenant(app, email="b@x.com")
         eid = _add_logbook_entry(app, uid1)
         _login(app, client, email="b@x.com")
         resp = client.post(f"/pilot/logbook/{eid}/delete")
@@ -1016,7 +1019,7 @@ class TestFstdLogbookEntries:
             assert entry.fstd_type is None
 
     def test_fstd_negative_duration_shows_error(self, app, client):
-        uid, _ = _create_user_and_tenant(app)
+        _uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         resp = client.post(
             "/pilot/logbook/new",
@@ -1123,7 +1126,7 @@ class TestFstdLogbookEntries:
 
 class TestProfileRoutes:
     def test_profile_get_creates_empty_profile(self, app, client):
-        uid, _ = _create_user_and_tenant(app)
+        _uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         resp = client.get("/pilot/profile")
         assert resp.status_code == 200
@@ -1148,7 +1151,7 @@ class TestProfileRoutes:
             assert p.sep_expiry == date(2026, 9, 30)
 
     def test_profile_invalid_date_shows_error(self, app, client):
-        uid, _ = _create_user_and_tenant(app)
+        _uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         resp = client.post(
             "/pilot/profile",
@@ -1161,7 +1164,7 @@ class TestProfileRoutes:
 
     def test_profile_invalid_sep_expiry_shows_error(self, app, client):
         # covers line 110: errors.append for sep_expiry parse failure
-        uid, _ = _create_user_and_tenant(app)
+        _uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         resp = client.post(
             "/pilot/profile",
@@ -1194,7 +1197,7 @@ class TestParserValidation:
 
     def test_invalid_departure_time_shows_error(self, app, client):
         # covers _parse_time except path (lines 45-46) and line 272
-        uid, _ = _create_user_and_tenant(app)
+        _uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         resp = _post_entry(client, {"departure_time": "notatime"})
         assert resp.status_code == 422
@@ -1202,7 +1205,7 @@ class TestParserValidation:
 
     def test_invalid_arrival_time_shows_error(self, app, client):
         # covers line 275
-        uid, _ = _create_user_and_tenant(app)
+        _uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         resp = _post_entry(client, {"arrival_time": "99:99"})
         assert resp.status_code == 422
@@ -1230,14 +1233,14 @@ class TestParserValidation:
             assert entry.landing_time is None
 
     def test_invalid_takeoff_time_shows_error(self, app, client):
-        uid, _ = _create_user_and_tenant(app)
+        _uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         resp = _post_entry(client, {"takeoff_time": "notatime"})
         assert resp.status_code == 422
         assert b"valid HH:MM" in resp.data
 
     def test_invalid_landing_time_shows_error(self, app, client):
-        uid, _ = _create_user_and_tenant(app)
+        _uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         resp = _post_entry(client, {"landing_time": "99:99"})
         assert resp.status_code == 422
@@ -1263,7 +1266,7 @@ class TestParserValidation:
 
     def test_invalid_date_string_shows_error(self, app, client):
         # covers line 266: invalid (non-empty) date
-        uid, _ = _create_user_and_tenant(app)
+        _uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         resp = _post_entry(client, {"date": "not-a-date"})
         assert resp.status_code == 422
@@ -1271,7 +1274,7 @@ class TestParserValidation:
 
     def test_non_numeric_decimal_field_shows_error(self, app, client):
         # covers _parse_decimal except path (lines 60-61)
-        uid, _ = _create_user_and_tenant(app)
+        _uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         resp = _post_entry(client, {"single_pilot_se": "abc"})
         assert resp.status_code == 422
@@ -1279,7 +1282,7 @@ class TestParserValidation:
 
     def test_non_numeric_int_field_shows_error(self, app, client):
         # covers _parse_int except path (lines 73-74)
-        uid, _ = _create_user_and_tenant(app)
+        _uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         resp = _post_entry(client, {"landings_day": "abc"})
         assert resp.status_code == 422
@@ -1349,7 +1352,7 @@ class TestAirportNameFilter:
 
 class TestAirportSearch:
     def test_returns_code_prefix_matches(self, app, client):
-        uid, _ = _create_user_and_tenant(app)
+        _uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         rv = client.get("/airport-search?q=EBBR")
         assert rv.status_code == 200
@@ -1358,7 +1361,7 @@ class TestAirportSearch:
         assert "EBBR" in codes
 
     def test_returns_name_matches(self, app, client):
-        uid, _ = _create_user_and_tenant(app)
+        _uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         rv = client.get("/airport-search?q=Brussels")
         assert rv.status_code == 200
@@ -1367,7 +1370,7 @@ class TestAirportSearch:
         assert "EBBR" in codes
 
     def test_short_query_returns_empty(self, app, client):
-        uid, _ = _create_user_and_tenant(app)
+        _uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         rv = client.get("/airport-search?q=E")
         assert rv.status_code == 200
@@ -1379,7 +1382,7 @@ class TestAirportSearch:
         assert rv.get_json() == {"results": []}
 
     def test_max_ten_results(self, app, client):
-        uid, _ = _create_user_and_tenant(app)
+        _uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         rv = client.get("/airport-search?q=EB")
         data = rv.get_json()
@@ -1428,9 +1431,10 @@ class TestGenerateTracksGif:
         """Lines 173-178: OpenAIP overlay branch is entered when key is set."""
         import io as _io
         from contextlib import contextmanager
-        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
         from unittest.mock import patch
+
         from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
 
         def _fake_tile_png() -> bytes:
             buf = _io.BytesIO()
@@ -1441,11 +1445,11 @@ class TestGenerateTracksGif:
         def _fake_urlopen(*_a: object, **_kw: object):  # type: ignore[misc]
             yield _io.BytesIO(_fake_tile_png())
 
-        with patch("urllib.request.urlopen", side_effect=_fake_urlopen):
-            with app.app_context():
-                result = generate_tracks_gif(
-                    self._sample_rows(), _openaip_key="TEST_KEY"
-                )
+        with (
+            patch("urllib.request.urlopen", side_effect=_fake_urlopen),
+            app.app_context(),
+        ):
+            result = generate_tracks_gif(self._sample_rows(), _openaip_key="TEST_KEY")
         assert result[:3] == b"GIF"
 
     def test_empty_rows_returns_gif(self, app):
@@ -1465,12 +1469,12 @@ class TestGenerateTracksGif:
 
     def test_gif_uses_plain_bg_when_tile_background_returns_none(self, app):
         """Line 237: _base_frame() falls back to Image.new when tile_bg is None."""
-        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
         from unittest.mock import patch
 
-        with patch("utils._make_tile_background", return_value=None):
-            with app.app_context():
-                result = generate_tracks_gif(self._sample_rows())
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+
+        with patch("utils._make_tile_background", return_value=None), app.app_context():
+            result = generate_tracks_gif(self._sample_rows())
         assert result[:3] == b"GIF"
 
     def test_tile_background_zero_scale_returns_none(self, app):
@@ -1492,12 +1496,15 @@ class TestGenerateTracksGif:
 
     def test_tile_fetch_failure_falls_back_to_plain_bg(self, app):
         """GIF is still produced when tile fetching fails (network error)."""
-        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
         from unittest.mock import patch
 
-        with patch("urllib.request.urlopen", side_effect=OSError("no network")):
-            with app.app_context():
-                result = generate_tracks_gif(self._sample_rows())
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+
+        with (
+            patch("urllib.request.urlopen", side_effect=OSError("no network")),
+            app.app_context(),
+        ):
+            result = generate_tracks_gif(self._sample_rows())
         assert result[:3] == b"GIF"
 
     def test_tile_background_too_many_tiles_returns_none(self, app):
@@ -1570,9 +1577,10 @@ class TestGenerateTracksGif:
 
     def test_high_res_gif_is_double_size(self, app):
         """high_res=True produces a 1600×960 landscape GIF (2× the default 800×480)."""
-        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
-        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
         import io as _io
+
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
 
         with app.app_context():
             result = generate_tracks_gif(
@@ -1588,13 +1596,18 @@ class TestGenerateTracksGif:
     def test_per_frame_projection_called_for_each_track(self, app):
         """_build_gif_projection is called once per accumulated frame plus the
         final frame — confirming the zoom-out uses per-frame projections."""
-        from utils import _build_gif_projection, generate_tracks_gif  # pyright: ignore[reportMissingImports]
+        from utils import (  # pyright: ignore[reportMissingImports]
+            _build_gif_projection,
+            generate_tracks_gif,
+        )
 
-        with patch(
-            "utils._build_gif_projection", wraps=_build_gif_projection
-        ) as mock_proj:
-            with app.app_context():
-                result = generate_tracks_gif(self._sample_rows())
+        with (
+            patch(
+                "utils._build_gif_projection", wraps=_build_gif_projection
+            ) as mock_proj,
+            app.app_context(),
+        ):
+            result = generate_tracks_gif(self._sample_rows())
 
         assert result[:3] == b"GIF"
         # 2 sample rows → 2 per-frame calls + 1 final-frame call = 3 total
@@ -1630,8 +1643,9 @@ class TestGenerateTracksGif:
         for that tile (the second frame reads from tile_cache)."""
         import io as _io
         from unittest.mock import patch
-        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+
         from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
 
         def _fake_png() -> bytes:
             buf = _io.BytesIO()
@@ -1676,9 +1690,11 @@ class TestGenerateTracksGif:
                 },
             },
         ]
-        with patch("urllib.request.urlopen", side_effect=_counting_urlopen):
-            with app.app_context():
-                result = generate_tracks_gif(rows)
+        with (
+            patch("urllib.request.urlopen", side_effect=_counting_urlopen),
+            app.app_context(),
+        ):
+            result = generate_tracks_gif(rows)
 
         assert result[:3] == b"GIF"
         # With caching, fetches across 3 frames must be fewer than 3× the
@@ -1689,9 +1705,10 @@ class TestGenerateTracksGif:
     def test_portrait_canvas_produces_correct_dimensions(self, app):
         """generate_tracks_gif with canvas_w=480, canvas_h=800 produces a
         GIF whose pixel dimensions match the portrait canvas exactly."""
-        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
-        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
         import io as _io
+
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
 
         with app.app_context():
             result = generate_tracks_gif(
@@ -1709,8 +1726,9 @@ class TestGenerateTracksGif:
         import io as _io
         from contextlib import contextmanager
         from unittest.mock import patch
-        from utils import _make_tile_background  # pyright: ignore[reportMissingImports]
+
         from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        from utils import _make_tile_background  # pyright: ignore[reportMissingImports]
 
         def _fake_png() -> bytes:
             buf = _io.BytesIO()
@@ -1726,19 +1744,21 @@ class TestGenerateTracksGif:
 
         shared_cache: dict = {}
 
-        with patch("urllib.request.urlopen", side_effect=_fake_urlopen) as mock_fetch:
-            with app.app_context():
-                # First call: fetches tiles and populates the cache
-                _make_tile_background(
-                    _proj, 4.0, 5.0, 51.0, 52.0, 800, 480, tile_cache=shared_cache
-                )
-                first_count = mock_fetch.call_count
+        with (
+            patch("urllib.request.urlopen", side_effect=_fake_urlopen) as mock_fetch,
+            app.app_context(),
+        ):
+            # First call: fetches tiles and populates the cache
+            _make_tile_background(
+                _proj, 4.0, 5.0, 51.0, 52.0, 800, 480, tile_cache=shared_cache
+            )
+            first_count = mock_fetch.call_count
 
-                # Second call with same bounds and cache: all tiles come from cache
-                _make_tile_background(
-                    _proj, 4.0, 5.0, 51.0, 52.0, 800, 480, tile_cache=shared_cache
-                )
-                second_count = mock_fetch.call_count
+            # Second call with same bounds and cache: all tiles come from cache
+            _make_tile_background(
+                _proj, 4.0, 5.0, 51.0, 52.0, 800, 480, tile_cache=shared_cache
+            )
+            second_count = mock_fetch.call_count
 
         assert first_count > 0, "first call should have fetched at least one tile"
         assert second_count == first_count, "second call must not make any new fetches"
@@ -1746,7 +1766,10 @@ class TestGenerateTracksGif:
     def test_canvas_geo_bounds_wider_than_track_bbox(self, app):
         """_canvas_geo_bounds returns a bbox that covers the full canvas extent,
         which is wider/taller than the track projection bbox in at least one direction."""
-        from utils import _canvas_geo_bounds, _build_gif_projection  # pyright: ignore[reportMissingImports]
+        from utils import (  # pyright: ignore[reportMissingImports]
+            _build_gif_projection,
+            _canvas_geo_bounds,
+        )
 
         coords = [(4.0, 51.0), (4.5, 51.3), (5.0, 51.0)]
         with app.app_context():
@@ -1792,8 +1815,9 @@ class TestGenerateTracksGif:
         """When high_res=True, _make_tile_background is called with bounds that
         extend beyond the track bbox (full-canvas tile fill)."""
         from unittest.mock import patch
-        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+
         from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
 
         rows = self._sample_rows()
         lon_min_calls: list[float] = []
@@ -1802,11 +1826,13 @@ class TestGenerateTracksGif:
             lon_min_calls.append(lon_min)
             return _Img.new("RGB", (cw, ch), (200, 200, 200))
 
-        with patch("utils._make_tile_background", side_effect=_capture):
-            with app.app_context():
-                result = generate_tracks_gif(
-                    rows, canvas_w=1600, canvas_h=960, high_res=True
-                )
+        with (
+            patch("utils._make_tile_background", side_effect=_capture),
+            app.app_context(),
+        ):
+            result = generate_tracks_gif(
+                rows, canvas_w=1600, canvas_h=960, high_res=True
+            )
         assert result[:3] == b"GIF"
         # Track bbox min_lon ≈ 3.78 (sample coords 4.0–6.2 minus 10% margin).
         # Canvas-extent calls push lon_min further left; at least one must be < 3.7.
@@ -1820,8 +1846,9 @@ class TestGenerateTracksGif:
         """When canvas-extent tile count exceeds the cap (_make_tile_background → None),
         _frame_bg retries with the track bbox and the GIF is still produced."""
         from unittest.mock import patch
-        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+
         from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
 
         rows = self._sample_rows()
         # Discriminate by lon_min: canvas-extent calls have lon_min < 3.7,
@@ -1834,11 +1861,13 @@ class TestGenerateTracksGif:
             fallback_calls.append(lon_min)
             return _Img.new("RGB", (cw, ch), (200, 200, 200))
 
-        with patch("utils._make_tile_background", side_effect=_selective):
-            with app.app_context():
-                result = generate_tracks_gif(
-                    rows, canvas_w=1600, canvas_h=960, high_res=True
-                )
+        with (
+            patch("utils._make_tile_background", side_effect=_selective),
+            app.app_context(),
+        ):
+            result = generate_tracks_gif(
+                rows, canvas_w=1600, canvas_h=960, high_res=True
+            )
         assert result[:3] == b"GIF"
         assert fallback_calls, (
             "expected at least one fallback call with track-bbox bounds"
@@ -1873,14 +1902,18 @@ class TestLoadAircraftTypes:
         assert result == {}
 
     def test_variants_returns_multiple_for_shared_code(self, app):
-        from utils import _load_aircraft_type_variants  # pyright: ignore[reportMissingImports]
+        from utils import (
+            _load_aircraft_type_variants,  # pyright: ignore[reportMissingImports]
+        )
 
         variants = _load_aircraft_type_variants()
         p28a_names = [name for code, name, *_ in variants if code == "P28A"]
         assert len(p28a_names) > 1, "P28A should have multiple variants"
 
     def test_variants_oserror_returns_empty_list(self, app):
-        from utils import _load_aircraft_type_variants  # pyright: ignore[reportMissingImports]
+        from utils import (
+            _load_aircraft_type_variants,  # pyright: ignore[reportMissingImports]
+        )
 
         with patch("builtins.open", side_effect=OSError):
             result = _load_aircraft_type_variants()
@@ -1889,51 +1922,67 @@ class TestLoadAircraftTypes:
 
 class TestResolveAircraftTypeIcao:
     def test_exact_match(self, app):
-        from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+        from utils import (
+            resolve_aircraft_type_icao,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             assert resolve_aircraft_type_icao("C172") == "C172"
 
     def test_case_insensitive(self, app):
-        from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+        from utils import (
+            resolve_aircraft_type_icao,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             assert resolve_aircraft_type_icao("c172") == "C172"
 
     def test_hyphen_stripped(self, app):
-        from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+        from utils import (
+            resolve_aircraft_type_icao,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             # B-738 → B738
             assert resolve_aircraft_type_icao("B-738") == "B738"
 
     def test_none_returns_none(self, app):
-        from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+        from utils import (
+            resolve_aircraft_type_icao,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             assert resolve_aircraft_type_icao(None) is None
             assert resolve_aircraft_type_icao("") is None
 
     def test_unknown_returns_none(self, app):
-        from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+        from utils import (
+            resolve_aircraft_type_icao,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             assert resolve_aircraft_type_icao("ZZZZ_UNKNOWN_TYPE") is None
 
     def test_model_name_prefix_dr401(self, app):
-        from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+        from utils import (
+            resolve_aircraft_type_icao,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             assert resolve_aircraft_type_icao("DR401") == "DR40"
 
     def test_model_name_prefix_pa28161_with_suffix(self, app):
-        from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+        from utils import (
+            resolve_aircraft_type_icao,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             assert resolve_aircraft_type_icao("PA28-161 TDI") == "P28A"
 
     def test_digit_tail_guard_c172rg(self, app):
-        from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+        from utils import (
+            resolve_aircraft_type_icao,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             # "C172RG" must NOT resolve via the C17 (C-17 Globemaster) prefix;
@@ -1980,7 +2029,9 @@ class TestResolveAircraftTypeIcao:
             os.unlink(tmp)
 
     def test_short_key_guard_skips_keys_under_4_chars(self, app):
-        from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+        from utils import (
+            resolve_aircraft_type_icao,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             # "U4A" is a 3-char model-name prefix key (→ AC56) that is not an
@@ -1989,7 +2040,9 @@ class TestResolveAircraftTypeIcao:
             assert resolve_aircraft_type_icao("U4A") is None
 
     def test_prefix_lookup_oserror_returns_empty(self, app):
-        from utils import _build_model_name_prefix_lookup  # pyright: ignore[reportMissingImports]
+        from utils import (
+            _build_model_name_prefix_lookup,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             _build_model_name_prefix_lookup.cache_clear()
@@ -2004,7 +2057,9 @@ class TestResolveAircraftTypeIcao:
         import os
         import tempfile
 
-        from utils import _build_model_name_prefix_lookup  # pyright: ignore[reportMissingImports]
+        from utils import (
+            _build_model_name_prefix_lookup,  # pyright: ignore[reportMissingImports]
+        )
 
         csv_content = (
             "manufacturer,model,type_designator,description,engine_type,engine_count,wtc\n"
@@ -2028,7 +2083,7 @@ class TestResolveAircraftTypeIcao:
 
 class TestAircraftTypeSearch:
     def test_returns_code_prefix_matches(self, app, client):
-        uid, _ = _create_user_and_tenant(app, email="ats1@example.com")
+        _uid, _ = _create_user_and_tenant(app, email="ats1@example.com")
         _login(app, client, email="ats1@example.com")
         rv = client.get("/aircraft-type-search?q=C172")
         assert rv.status_code == 200
@@ -2037,7 +2092,7 @@ class TestAircraftTypeSearch:
         assert "C172" in codes
 
     def test_returns_name_matches(self, app, client):
-        uid, _ = _create_user_and_tenant(app, email="ats2@example.com")
+        _uid, _ = _create_user_and_tenant(app, email="ats2@example.com")
         _login(app, client, email="ats2@example.com")
         rv = client.get("/aircraft-type-search?q=Boeing+737")
         assert rv.status_code == 200
@@ -2046,7 +2101,7 @@ class TestAircraftTypeSearch:
         assert "B738" in codes
 
     def test_short_query_returns_empty(self, app, client):
-        uid, _ = _create_user_and_tenant(app, email="ats3@example.com")
+        _uid, _ = _create_user_and_tenant(app, email="ats3@example.com")
         _login(app, client, email="ats3@example.com")
         rv = client.get("/aircraft-type-search?q=C")
         assert rv.status_code == 200
@@ -2059,7 +2114,7 @@ class TestAircraftTypeSearch:
 
     def test_all_variants_returned_for_shared_designator(self, app, client):
         # P28A has many variants — all should be returned, not just the first
-        uid, _ = _create_user_and_tenant(app, email="ats4@example.com")
+        _uid, _ = _create_user_and_tenant(app, email="ats4@example.com")
         _login(app, client, email="ats4@example.com")
         rv = client.get("/aircraft-type-search?q=P28A")
         data = rv.get_json()
@@ -2319,7 +2374,8 @@ class TestAnniversaryContextProcessor:
         assert b"PPL" in resp.data
 
     def test_non_anniversary_no_banner(self, app, client):
-        from datetime import date as _d, timedelta
+        from datetime import date as _d
+        from datetime import timedelta
 
         today = _d.today()
         non_ann = _d(today.year - 1, today.month, today.day) + timedelta(days=1)
@@ -2368,7 +2424,9 @@ class TestLinkEntriesToAircraft:
         creating a second FlightEntry row linked via flight_id."""
         from datetime import time
 
-        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import (
+            link_entries_to_aircraft,  # pyright: ignore[reportMissingImports]
+        )
 
         uid, ac_id = self._setup(app, email="link1@example.com", registration="OOABC")
         with app.app_context():
@@ -2402,7 +2460,9 @@ class TestLinkEntriesToAircraft:
         backfill utility in config/routes.py can hand this function any
         standalone row in the instance) is left alone rather than crashing
         on a None pilot id."""
-        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import (
+            link_entries_to_aircraft,  # pyright: ignore[reportMissingImports]
+        )
 
         self._setup(app, email="link_noid@example.com", registration="OONOI")
         with app.app_context():
@@ -2421,7 +2481,9 @@ class TestLinkEntriesToAircraft:
     def test_departure_time_offset_applied(self, app):
         from datetime import time
 
-        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import (
+            link_entries_to_aircraft,  # pyright: ignore[reportMissingImports]
+        )
 
         uid, ac_id = self._setup(
             app, email="link2@example.com", registration="OODEF", offset=0.5
@@ -2445,7 +2507,9 @@ class TestLinkEntriesToAircraft:
         """The row's pic_user_id is already whatever the CSV import set —
         promotion must not disturb it, and should fill pic_name from the
         User record when it's still blank."""
-        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import (
+            link_entries_to_aircraft,  # pyright: ignore[reportMissingImports]
+        )
 
         uid, ac_id = self._setup(app, email="link3@example.com", registration="OOGHI")
         with app.app_context():
@@ -2474,7 +2538,9 @@ class TestLinkEntriesToAircraft:
         tracking."""
         from decimal import Decimal
 
-        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import (
+            link_entries_to_aircraft,  # pyright: ignore[reportMissingImports]
+        )
 
         uid, ac_id = self._setup(app, email="link5@example.com", registration="OOJKL")
         with app.app_context():
@@ -2506,7 +2572,9 @@ class TestLinkEntriesToAircraft:
             assert entry.engine_time is None
 
     def test_skips_entry_with_no_registration(self, app):
-        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import (
+            link_entries_to_aircraft,  # pyright: ignore[reportMissingImports]
+        )
 
         uid, _ = self._setup(app, email="link4@example.com")
         with app.app_context():
@@ -2522,7 +2590,9 @@ class TestLinkEntriesToAircraft:
             assert entry.aircraft_id is None
 
     def test_skips_already_linked_entry(self, app):
-        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import (
+            link_entries_to_aircraft,  # pyright: ignore[reportMissingImports]
+        )
 
         uid, ac_id = self._setup(app, email="link5@example.com", registration="OOJKL")
         with app.app_context():
@@ -2539,7 +2609,9 @@ class TestLinkEntriesToAircraft:
             assert count == 0
 
     def test_skips_unmanaged_aircraft(self, app):
-        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import (
+            link_entries_to_aircraft,  # pyright: ignore[reportMissingImports]
+        )
 
         uid, _ = self._setup(app, email="link6@example.com")
         with app.app_context():
@@ -2555,7 +2627,9 @@ class TestLinkEntriesToAircraft:
             assert entry.aircraft_id is None
 
     def test_place_icao_zzzz_for_missing(self, app):
-        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import (
+            link_entries_to_aircraft,  # pyright: ignore[reportMissingImports]
+        )
 
         uid, ac_id = self._setup(app, email="link7@example.com", registration="OOMNO")
         with app.app_context():
@@ -2575,11 +2649,12 @@ class TestLinkEntriesToAircraft:
             assert entry.arrival_icao == "ZZZZ"
 
     def test_no_pic_name_fill_when_pilot_user_not_found(self, app):
+        from pilots.logbook_import import (
+            link_entries_to_aircraft,  # pyright: ignore[reportMissingImports]
+        )
         from sqlalchemy import text
 
-        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
-
-        uid, ac_id = self._setup(app, email="link8@example.com", registration="OOPQR")
+        _uid, ac_id = self._setup(app, email="link8@example.com", registration="OOPQR")
         with app.app_context():
             # Disable FK checks to allow a non-existent pic_user_id so we
             # can test the defensive guard in link_entries_to_aircraft.
@@ -2608,7 +2683,9 @@ class TestLinkEntriesToAircraft:
                 db.session.execute(text("PRAGMA foreign_keys=ON"))
 
     def test_departure_time_none_when_entry_has_none(self, app):
-        from pilots.logbook_import import link_entries_to_aircraft  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import (
+            link_entries_to_aircraft,  # pyright: ignore[reportMissingImports]
+        )
 
         uid, ac_id = self._setup(app, email="link9@example.com", registration="OOSTU")
         with app.app_context():
@@ -2778,14 +2855,14 @@ class TestFlightListLogbookImportIndicator:
     def test_warning_icon_shown_for_logbook_import_without_flight_time(
         self, app, client
     ):
-        uid, ac_id, _ = self._setup(app, email="vi1@example.com", registration="OOHIJ")
+        _uid, ac_id, _ = self._setup(app, email="vi1@example.com", registration="OOHIJ")
         _login(app, client, email="vi1@example.com")
         rv = client.get(f"/aircraft/{ac_id}/flights")
         assert rv.status_code == 200
         assert b"bi-clock-history" in rv.data
 
     def test_warning_icon_absent_when_flight_time_set(self, app, client):
-        uid, ac_id, flight_id = self._setup(
+        _uid, ac_id, flight_id = self._setup(
             app, email="vi2@example.com", registration="OOKLM"
         )
         with app.app_context():
@@ -2798,7 +2875,7 @@ class TestFlightListLogbookImportIndicator:
         assert b"bi-clock-history" not in rv.data
 
     def test_warning_icon_absent_for_manual_entry(self, app, client):
-        uid, ac_id, flight_id = self._setup(
+        _uid, ac_id, flight_id = self._setup(
             app, email="vi3@example.com", registration="OONOP"
         )
         with app.app_context():

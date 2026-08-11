@@ -14,7 +14,6 @@ import pytest  # pyright: ignore[reportMissingImports]
 from babel import Locale  # pyright: ignore[reportMissingImports]
 from babel.dates import format_date  # pyright: ignore[reportMissingImports]
 from babel.numbers import format_decimal  # pyright: ignore[reportMissingImports]
-
 from init import SUPPORTED_LOCALES  # pyright: ignore[reportMissingImports]
 
 

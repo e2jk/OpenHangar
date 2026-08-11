@@ -6,8 +6,8 @@ import os
 import re as _re
 import uuid
 import zipfile
+from datetime import UTC, datetime
 from datetime import date as _date
-from datetime import datetime, timezone
 
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
@@ -23,11 +23,8 @@ from flask import (  # pyright: ignore[reportMissingImports]
     url_for,
 )
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
-from werkzeug.datastructures import FileStorage
-from werkzeug.utils import secure_filename
-
-from flask_babel import gettext as _, ngettext  # pyright: ignore[reportMissingImports]
-
+from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+from flask_babel import ngettext
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     Component,
@@ -40,7 +37,14 @@ from models import (  # pyright: ignore[reportMissingImports]
     TenantUser,
     db,
 )
-from utils import activity, login_required, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
+from utils import (  # pyright: ignore[reportMissingImports]
+    activity,
+    login_required,
+    require_role,
+    user_can_access_aircraft,
+)
+from werkzeug.datastructures import FileStorage
+from werkzeug.utils import secure_filename
 
 log = logging.getLogger(__name__)
 
@@ -829,7 +833,7 @@ def scan_documents() -> ResponseReturnValue:
     new_count = 0
     for dirpath, _dirs, filenames in os.walk(slug_dir):
         for fname in filenames:
-            if fname.startswith(".") or fname.startswith("_"):
+            if fname.startswith((".", "_")):
                 continue
             full = os.path.join(dirpath, fname)
             relpath = os.path.relpath(full, folder)
@@ -964,7 +968,7 @@ def rename_reconcile_folder() -> ResponseReturnValue:
     if os.path.isdir(new_dir):
         for dirpath, _dirs, filenames in os.walk(new_dir):
             for fname in filenames:
-                if fname.startswith(".") or fname.startswith("_"):
+                if fname.startswith((".", "_")):
                     continue
                 relpath = os.path.relpath(os.path.join(dirpath, fname), folder).replace(
                     "\\", "/"
@@ -1071,7 +1075,7 @@ def import_reconcile(pending_id: int) -> ResponseReturnValue:
         is_sensitive=False,
     )
     db.session.add(doc)
-    pr.reconciled_at = datetime.now(timezone.utc)
+    pr.reconciled_at = datetime.now(UTC)
     db.session.commit()
 
     flash(_("Document imported."), "success")

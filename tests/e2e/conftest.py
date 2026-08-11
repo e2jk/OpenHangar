@@ -180,15 +180,10 @@ def live_server():
         return
 
     # ── In-process mode (local development) ───────────────────────────────────
-    from sqlalchemy.pool import StaticPool
-    from init import create_app
-
     # Import dev seed artefacts for credentials and TOTP secret
     from dev_seed import _DEV_TOTP_SECRET, _USERS
     from dev_seed import seed as _dev_seed
-
-    from sqlalchemy import or_
-
+    from init import create_app
     from models import (
         Aircraft,
         AircraftPhoto,
@@ -214,6 +209,8 @@ def live_server():
         WeightBalanceEntry,
         db,
     )
+    from sqlalchemy import or_
+    from sqlalchemy.pool import StaticPool
 
     upload_dir = tempfile.mkdtemp()
     db_file = os.path.join(upload_dir, "e2e_test.db")
@@ -356,9 +353,8 @@ def live_server():
 
         # ── E2E-only extras: token-based routes for crawl coverage ────────────
         import datetime as _dt
-        from datetime import timezone as _tz
 
-        far_future = _dt.datetime.now(_tz.utc) + _dt.timedelta(days=3650)
+        far_future = _dt.datetime.now(_dt.UTC) + _dt.timedelta(days=3650)
 
         _invite = UserInvitation(
             token="e2e-crawl-invite-token",
@@ -601,7 +597,7 @@ def fresh_logged_in_page(browser_context, live_server_url):
         pg.locator("#totp_code").press_sequentially(code)
         try:
             pg.wait_for_url(lambda url: "/login" not in url, timeout=5000)
-        except Exception:
+        except Exception:  # noqa: BLE001 -- JS auto-submit timeout fallback, exact Playwright exception varies
             pg.locator('button[type="submit"]').click()
             pg.wait_for_url(lambda url: "/login" not in url, timeout=10000)
     yield pg
@@ -670,7 +666,7 @@ def logged_in_page(page, live_server_url):
             # JS auto-submit doesn't fire within 5 s.
             try:
                 page.wait_for_url(lambda url: "/login" not in url, timeout=5000)
-            except Exception:
+            except Exception:  # noqa: BLE001 -- JS auto-submit timeout fallback, exact Playwright exception varies
                 page.locator('button[type="submit"]').click()
                 page.wait_for_url(lambda url: "/login" not in url, timeout=10000)
     return page
@@ -698,9 +694,8 @@ def fresh_server():
     """
     if _E2E_SETUP_FLOW_BASE_URL:
         # ── Docker / external-server mode ───────────────────────────────────
-        from sqlalchemy import create_engine, text
-
         from init import _normalize_database_url  # type: ignore[import]
+        from sqlalchemy import create_engine, text
 
         engine = create_engine(_normalize_database_url(_E2E_SETUP_FLOW_DB_URL))
         with engine.connect() as conn:
@@ -719,10 +714,9 @@ def fresh_server():
         return
 
     # ── In-process mode (local development, no Docker required) ────────────
-    from sqlalchemy.pool import StaticPool
-
     from init import create_app  # type: ignore[import]
     from models import db  # type: ignore[import]
+    from sqlalchemy.pool import StaticPool
 
     upload_dir = tempfile.mkdtemp()
     db_file = os.path.join(upload_dir, "fresh_e2e.db")

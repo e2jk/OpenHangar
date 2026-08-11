@@ -29,7 +29,7 @@ guard singly, direct-model; the policy-flip and resolve-then-retry
 sequences are new.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from tests.functional.conftest import second_user, submit
 
@@ -72,7 +72,7 @@ def test_reservation_guards_interplay(owner_env, app, client_factory):
         aircraft_ids=str(aircraft_id),
     )
 
-    slot_start = datetime(2024, 7, 1, 9, 0, tzinfo=timezone.utc)
+    slot_start = datetime(2024, 7, 1, 9, 0, tzinfo=UTC)
     slot_end = slot_start + timedelta(hours=2)
 
     # User A reserves the slot; owner confirms it.
@@ -123,7 +123,7 @@ def test_reservation_guards_interplay(owner_env, app, client_factory):
 
     # Owner adds a maintenance downtime window; a reservation *inside* it
     # is likewise accepted at creation, then rejected at confirm time.
-    downtime_start = datetime(2024, 7, 2, 9, 0, tzinfo=timezone.utc)
+    downtime_start = datetime(2024, 7, 2, 9, 0, tzinfo=UTC)
     downtime_end = downtime_start + timedelta(hours=8)
     submit(
         owner,
@@ -175,7 +175,7 @@ def test_reservation_guards_interplay(owner_env, app, client_factory):
         snag = Snag.query.filter_by(aircraft_id=aircraft_id, title="Flat tyre").first()
         snag_id = snag.id
 
-    grounded_slot_start = datetime(2024, 7, 3, 9, 0, tzinfo=timezone.utc)
+    grounded_slot_start = datetime(2024, 7, 3, 9, 0, tzinfo=UTC)
     grounded_slot_end = grounded_slot_start + timedelta(hours=1)
     warn_resp = submit(
         user_b,
@@ -194,7 +194,7 @@ def test_reservation_guards_interplay(owner_env, app, client_factory):
         profile.grounded_reservation_policy = "block"
         db.session.commit()
 
-    blocked_slot_start = datetime(2024, 7, 4, 9, 0, tzinfo=timezone.utc)
+    blocked_slot_start = datetime(2024, 7, 4, 9, 0, tzinfo=UTC)
     blocked_slot_end = blocked_slot_start + timedelta(hours=1)
     block_resp = submit(
         user_b,
@@ -227,7 +227,10 @@ def test_reservation_guards_interplay(owner_env, app, client_factory):
     )
 
     with app.app_context():
-        from models import Reservation, ReservationStatus  # pyright: ignore[reportMissingImports]
+        from models import (  # pyright: ignore[reportMissingImports]
+            Reservation,
+            ReservationStatus,
+        )
 
         assert (
             Reservation.query.filter_by(id=res_a_id).first().status

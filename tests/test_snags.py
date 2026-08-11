@@ -2,9 +2,9 @@
 Tests for Phase 12: Snag List routes, model, and grounding propagation.
 """
 
-import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     Role,
@@ -14,7 +14,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     User,
     db,
 )
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -73,7 +72,7 @@ def _add_snag(
             is_grounding=is_grounding,
         )
         if resolved:
-            s.resolved_at = datetime.now(timezone.utc)
+            s.resolved_at = datetime.now(UTC)
             s.resolution_note = "Replaced fastener."
         db.session.add(s)
         db.session.commit()
@@ -109,7 +108,7 @@ class TestSnagModel:
                 aircraft_id=1,
                 title="Test",
                 is_grounding=False,
-                resolved_at=datetime.now(timezone.utc),
+                resolved_at=datetime.now(UTC),
             )
             assert s.is_open is False
 
@@ -166,7 +165,7 @@ class TestListSnags:
         assert resp.status_code == 302
 
     def test_404_for_wrong_tenant(self, app, client):
-        _, t1 = _create_user_and_tenant(app, "a@example.com")
+        _, _t1 = _create_user_and_tenant(app, "a@example.com")
         _, t2 = _create_user_and_tenant(app, "b@example.com")
         ac_id = _add_aircraft(app, t2)
         _login(app, client, "a@example.com")
@@ -432,7 +431,9 @@ class TestDeleteSnag:
 
 class TestGroundingStatus:
     def test_compute_statuses_returns_grounded(self, app):
-        from utils import compute_aircraft_statuses  # pyright: ignore[reportMissingImports]
+        from utils import (
+            compute_aircraft_statuses,  # pyright: ignore[reportMissingImports]
+        )
 
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
@@ -443,7 +444,9 @@ class TestGroundingStatus:
             assert statuses[ac_id] == "grounded"
 
     def test_compute_statuses_ok_when_no_grounding_snag(self, app):
-        from utils import compute_aircraft_statuses  # pyright: ignore[reportMissingImports]
+        from utils import (
+            compute_aircraft_statuses,  # pyright: ignore[reportMissingImports]
+        )
 
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)

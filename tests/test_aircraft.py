@@ -2,10 +2,9 @@
 Tests for Phase 2: Aircraft management routes (CRUD + auth guard).
 """
 
-import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from unittest.mock import patch
 
-from utils import _load_aircraft_type_engine_data, get_aircraft_type_engine_info  # pyright: ignore[reportMissingImports]
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (
     Aircraft,
     Component,
@@ -17,6 +16,10 @@ from models import (
     User,
     db,
 )  # pyright: ignore[reportMissingImports]
+from utils import (  # pyright: ignore[reportMissingImports]
+    _load_aircraft_type_engine_data,
+    get_aircraft_type_engine_info,
+)
 
 
 def _login_orphan_user(app, client):
@@ -121,7 +124,7 @@ class TestAircraftList:
         assert b"No aircraft" in client.get("/aircraft/").data
 
     def test_aircraft_appears_in_list(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid, registration="OO-PNH")
         _login(app, client)
         assert b"OO-PNH" in client.get("/aircraft/").data
@@ -137,7 +140,7 @@ class TestAircraftList:
         assert b"OO-OTHER" not in data
 
     def test_single_aircraft_mode_redirects_to_detail(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid)
         with app.app_context():
             profile = TenantProfile(tenant_id=tid, planned_aircraft_count=1)
@@ -149,7 +152,7 @@ class TestAircraftList:
         assert "/aircraft/OO-PNH" in r.headers["Location"]
 
     def test_single_aircraft_mode_list_param_bypasses_redirect(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid)
         with app.app_context():
             profile = TenantProfile(tenant_id=tid, planned_aircraft_count=1)
@@ -240,13 +243,13 @@ class TestAddAircraft:
 
 class TestAircraftDetail:
     def test_shows_registration(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         assert b"OO-PNH" in client.get(f"/aircraft/{ac_id}").data
 
     def test_shows_components(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _add_component(app, ac_id, make="Lycoming", model="IO-360")
         _login(app, client)
@@ -273,13 +276,13 @@ class TestAircraftDetail:
 
 class TestAircraftRefConverter:
     def test_numeric_id_still_resolves(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid, registration="OO-PNH")
         _login(app, client)
         assert client.get(f"/aircraft/{ac_id}").status_code == 200
 
     def test_registration_resolves_same_aircraft(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid, registration="OO-PNH")
         _login(app, client)
         resp = client.get("/aircraft/OO-PNH")
@@ -287,7 +290,7 @@ class TestAircraftRefConverter:
         assert b"OO-PNH" in resp.data
 
     def test_registration_is_case_insensitive(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid, registration="OO-PNH")
         _login(app, client)
         assert client.get("/aircraft/oo-pnh").status_code == 200
@@ -319,13 +322,13 @@ class TestAircraftRefConverter:
         """The converter applies to the whole /aircraft/<ref>/... tree, not
         just the detail page — flights.list_flights is one representative
         subpage."""
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid, registration="OO-PNH")
         _login(app, client)
         assert client.get("/aircraft/OO-PNH/flights").status_code == 200
 
     def test_registration_with_slash_resolves_via_sanitized_form(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         with app.app_context():
             ac = Aircraft(tenant_id=tid, registration="OO/GRN", make="X", model="Y")
             db.session.add(ac)
@@ -334,7 +337,7 @@ class TestAircraftRefConverter:
         assert client.get("/aircraft/OO-GRN").status_code == 200
 
     def test_generated_links_use_registration(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid, registration="OO-PNH")
         _login(app, client)
         resp = client.get("/aircraft/")
@@ -366,14 +369,14 @@ class TestAircraftRefConverter:
 
 class TestEditAircraft:
     def test_get_shows_prefilled_form(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         data = client.get(f"/aircraft/{ac_id}/edit").data
         assert b"OO-PNH" in data
 
     def test_valid_post_updates_aircraft(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         client.post(
@@ -409,7 +412,7 @@ class TestEditAircraft:
 
 class TestDeleteAircraft:
     def test_delete_removes_aircraft(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         response = client.post(f"/aircraft/{ac_id}/delete")
@@ -418,7 +421,7 @@ class TestDeleteAircraft:
             assert db.session.get(Aircraft, ac_id) is None
 
     def test_delete_cascades_to_components(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         comp_id = _add_component(app, ac_id)
         _login(app, client)
@@ -447,13 +450,13 @@ class TestDeleteAircraft:
 
 class TestAddComponent:
     def test_get_shows_form(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         assert client.get(f"/aircraft/{ac_id}/components/new").status_code == 200
 
     def test_valid_post_creates_component(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         response = client.post(
@@ -477,7 +480,7 @@ class TestAddComponent:
             assert comp.position == "left"
 
     def test_missing_type_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         response = client.post(
@@ -491,7 +494,7 @@ class TestAddComponent:
         assert b"required" in response.data.lower()
 
     def test_negative_time_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         response = client.post(
@@ -512,7 +515,7 @@ class TestAddComponent:
 
 class TestEditComponent:
     def test_get_shows_prefilled_form(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         comp_id = _add_component(app, ac_id, model="IO-360")
         _login(app, client)
@@ -520,7 +523,7 @@ class TestEditComponent:
         assert b"IO-360" in data
 
     def test_valid_post_updates_component(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         comp_id = _add_component(app, ac_id, model="IO-360")
         _login(app, client)
@@ -536,7 +539,7 @@ class TestEditComponent:
             assert db.session.get(Component, comp_id).model == "IO-360-L2A"
 
     def test_component_not_on_aircraft_returns_404(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id1 = _add_aircraft(app, tid, registration="OO-PNH")
         ac_id2 = _add_aircraft(app, tid, registration="OO-ABC")
         comp_id = _add_component(app, ac_id2)
@@ -552,7 +555,7 @@ class TestEditComponent:
 
 class TestDeleteComponent:
     def test_delete_removes_component(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         comp_id = _add_component(app, ac_id)
         _login(app, client)
@@ -562,7 +565,7 @@ class TestDeleteComponent:
             assert db.session.get(Component, comp_id) is None
 
     def test_delete_redirects_to_aircraft_detail(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         comp_id = _add_component(app, ac_id)
         _login(app, client)
@@ -696,7 +699,7 @@ class TestSaveAircraftValidation:
 
 class TestRegistrationUniqueness:
     def test_create_exact_duplicate_in_same_tenant_rejected(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid, registration="OO-PNH")
         _login(app, client)
         response = client.post(
@@ -712,7 +715,7 @@ class TestRegistrationUniqueness:
         """A registration that only differs by '/' or a space from an
         existing one still collides, since AircraftRefConverter would
         otherwise route both to the same URL."""
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid, registration="OO-GRN")
         _login(app, client)
         response = client.post(
@@ -723,7 +726,7 @@ class TestRegistrationUniqueness:
         assert b"already used by another aircraft" in response.data
 
     def test_create_case_insensitive_collision_rejected(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid, registration="OO-PNH")
         _login(app, client)
         response = client.post(
@@ -748,7 +751,7 @@ class TestRegistrationUniqueness:
             assert Aircraft.query.filter_by(registration="OO-PNH").count() == 2
 
     def test_edit_keeping_own_registration_not_rejected(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid, registration="OO-PNH")
         _login(app, client)
         response = client.post(
@@ -759,7 +762,7 @@ class TestRegistrationUniqueness:
         assert response.status_code == 302
 
     def test_edit_to_another_aircrafts_registration_rejected(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid, registration="OO-PNH")
         ac_id2 = _add_aircraft(app, tid, registration="OO-ABC")
         _login(app, client)
@@ -778,7 +781,7 @@ class TestRegistrationUniqueness:
 
 class TestSaveComponentValidation:
     def test_missing_make_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         response = client.post(
@@ -793,7 +796,7 @@ class TestSaveComponentValidation:
         assert b"Manufacturer" in response.data
 
     def test_missing_model_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         response = client.post(
@@ -808,7 +811,7 @@ class TestSaveComponentValidation:
         assert b"Model" in response.data
 
     def test_invalid_installed_at_date_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         response = client.post(
@@ -900,7 +903,7 @@ class TestComponentSuggestion:
 
 class TestQuickAddComponents:
     def test_single_engine_adds_engine_and_propeller(self, app, client):
-        uid, tid = _create_user_and_tenant(app, "pilot3@example.com")
+        _uid, tid = _create_user_and_tenant(app, "pilot3@example.com")
         _login(app, client, "pilot3@example.com")
         ac_id = _add_aircraft(app, tid, registration="OO-TSV")
         resp = client.post(
@@ -919,7 +922,7 @@ class TestQuickAddComponents:
             assert all(c.position is None for c in comps)
 
     def test_twin_engine_adds_two_of_each_with_position(self, app, client):
-        uid, tid = _create_user_and_tenant(app, "pilot4@example.com")
+        _uid, tid = _create_user_and_tenant(app, "pilot4@example.com")
         _login(app, client, "pilot4@example.com")
         ac_id = _add_aircraft(app, tid, registration="OO-TSW")
         client.post(
@@ -935,7 +938,7 @@ class TestQuickAddComponents:
             assert positions == {"1", "2"}
 
     def test_invalid_engine_count_defaults_to_one(self, app, client):
-        uid, tid = _create_user_and_tenant(app, "pilot5@example.com")
+        _uid, tid = _create_user_and_tenant(app, "pilot5@example.com")
         _login(app, client, "pilot5@example.com")
         ac_id = _add_aircraft(app, tid, registration="OO-TSX")
         client.post(

@@ -2,11 +2,14 @@
 Tests for Phase 20: Mass & Balance — config, entries, CG computation, envelope check.
 """
 
-import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
-import pytest  # pyright: ignore[reportMissingImports]
 from datetime import date
 
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
+import pytest  # pyright: ignore[reportMissingImports]
+from aircraft.routes import _point_in_polygon  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
+    FUEL_DENSITY,
+    GAL_TO_L,
     Aircraft,
     Role,
     Tenant,
@@ -15,12 +18,8 @@ from models import (  # pyright: ignore[reportMissingImports]
     WeightBalanceConfig,
     WeightBalanceEntry,
     WeightBalanceStation,
-    FUEL_DENSITY,
-    GAL_TO_L,
     db,
 )
-from aircraft.routes import _point_in_polygon  # pyright: ignore[reportMissingImports]
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -251,7 +250,7 @@ class TestCGComputation:
     def test_overweight_is_out_of_envelope(self, app):
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
-        cfg_id, st_ids = _add_wb_config(app, ac_id)
+        cfg_id, _st_ids = _add_wb_config(app, ac_id)
         with app.app_context():
             cfg = db.session.get(WeightBalanceConfig, cfg_id)
             total_w = 1200.0  # exceeds MTOW 1111
@@ -350,7 +349,7 @@ class TestWBConfigRoute:
         assert resp.status_code == 302
 
     def test_404_for_wrong_tenant(self, app, client):
-        _, t1 = _create_user_and_tenant(app, "a@example.com")
+        _, _t1 = _create_user_and_tenant(app, "a@example.com")
         _, t2 = _create_user_and_tenant(app, "b@example.com")
         ac_id = _add_aircraft(app, t2)
         _login(app, client, "a@example.com")
@@ -372,7 +371,7 @@ class TestWBListRoute:
     def test_shows_entries(self, app, client):
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
-        cfg_id, st_ids = _add_wb_config(app, ac_id)
+        cfg_id, _st_ids = _add_wb_config(app, ac_id)
         with app.app_context():
             db.session.add(
                 WeightBalanceEntry(
@@ -474,7 +473,7 @@ class TestWBEntryRoute:
     def test_post_invalid_date_shows_error(self, app, client):
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
-        cfg_id, st_ids = _add_wb_config(app, ac_id)
+        _cfg_id, st_ids = _add_wb_config(app, ac_id)
         _login(app, client)
         resp = client.post(
             f"/aircraft/{ac_id}/wb/new",
@@ -526,7 +525,7 @@ class TestWBEntryRoute:
         assert b"Configure" in resp.data
 
     def test_404_for_wrong_tenant(self, app, client):
-        _, t1 = _create_user_and_tenant(app, "a@example.com")
+        _, _t1 = _create_user_and_tenant(app, "a@example.com")
         _, t2 = _create_user_and_tenant(app, "b@example.com")
         ac_id = _add_aircraft(app, t2)
         _add_wb_config(app, ac_id)
@@ -880,7 +879,7 @@ class TestWBEntryEditMode:
         _, t2 = _create_user_and_tenant(app, "b@example.com")
         ac1 = _add_aircraft(app, t1, "OO-A")
         ac2 = _add_aircraft(app, t2, "OO-B")
-        cfg1_id, _ = _add_wb_config(app, ac1)
+        _cfg1_id, _ = _add_wb_config(app, ac1)
         cfg2_id, _ = _add_wb_config(app, ac2)
         with app.app_context():
             e = WeightBalanceEntry(
@@ -906,7 +905,7 @@ class TestWBEntryPostEdgeCases:
     def test_negative_weight_shows_error(self, app, client):
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
-        cfg_id, st_ids = _add_wb_config(app, ac_id)
+        _cfg_id, st_ids = _add_wb_config(app, ac_id)
         _login(app, client)
         resp = client.post(
             f"/aircraft/{ac_id}/wb/new",
@@ -949,27 +948,27 @@ class TestAircraftListWBEntryMode:
         assert b"OO-NOCFG" not in resp.data
 
     def test_wb_entry_mode_subtitle(self, app, client):
-        _, tenant_id = _create_user_and_tenant(app)
+        _, _tenant_id = _create_user_and_tenant(app)
         _login(app, client)
         resp = client.get("/aircraft/?next=wb_entry")
         assert resp.status_code == 200
         assert b"W&B" in resp.data
 
     def test_wb_entry_mode_hides_add_aircraft_button(self, app, client):
-        _, tenant_id = _create_user_and_tenant(app)
+        _, _tenant_id = _create_user_and_tenant(app)
         _login(app, client)
         resp = client.get("/aircraft/?next=wb_entry")
         # url_for('aircraft.new_aircraft') resolves to /aircraft/new
         assert b"/aircraft/new" not in resp.data
 
     def test_log_flight_mode_hides_add_aircraft_button(self, app, client):
-        _, tenant_id = _create_user_and_tenant(app)
+        _, _tenant_id = _create_user_and_tenant(app)
         _login(app, client)
         resp = client.get("/aircraft/?next=log_flight")
         assert b"/aircraft/new" not in resp.data
 
     def test_normal_mode_shows_add_aircraft_button(self, app, client):
-        _, tenant_id = _create_user_and_tenant(app)
+        _, _tenant_id = _create_user_and_tenant(app)
         _login(app, client)
         resp = client.get("/aircraft/")
         assert b"/aircraft/new" in resp.data
@@ -1012,7 +1011,7 @@ class TestWBRemainingCoverage:
         _, t2 = _create_user_and_tenant(app, "b@example.com")
         ac1 = _add_aircraft(app, t1, "OO-A")
         ac2 = _add_aircraft(app, t2, "OO-B")
-        cfg1_id, _ = _add_wb_config(app, ac1)
+        _cfg1_id, _ = _add_wb_config(app, ac1)
         cfg2_id, _ = _add_wb_config(app, ac2)
         with app.app_context():
             e = WeightBalanceEntry(
@@ -1195,7 +1194,7 @@ class TestFuelCapacity:
         """Posting a volume above the station capacity triggers a validation error."""
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
-        cfg_id, st_pax_id, st_fuel_id = _add_wb_config_with_fuel_unit(app, ac_id)
+        _cfg_id, st_pax_id, st_fuel_id = _add_wb_config_with_fuel_unit(app, ac_id)
         _login(app, client)
         # capacity is 200.0 L; post 250.0 L
         resp = client.post(
@@ -1213,7 +1212,7 @@ class TestFuelCapacity:
         """Posting a negative volume for a fuel station triggers an error."""
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
-        cfg_id, st_pax_id, st_fuel_id = _add_wb_config_with_fuel_unit(app, ac_id)
+        _cfg_id, st_pax_id, st_fuel_id = _add_wb_config_with_fuel_unit(app, ac_id)
         _login(app, client)
         resp = client.post(
             f"/aircraft/{ac_id}/wb/new",

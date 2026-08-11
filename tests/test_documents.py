@@ -20,7 +20,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     db,
 )
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
@@ -165,7 +164,7 @@ class TestDocumentModel:
 
 class TestListDocuments:
     def test_list_empty(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         rv = client.get(f"/aircraft/{ac_id}/documents")
@@ -173,7 +172,7 @@ class TestListDocuments:
         assert b"No documents" in rv.data
 
     def test_list_shows_documents(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _add_document(app, ac_id, title="My ARC")
         _login(app, client)
@@ -182,7 +181,7 @@ class TestListDocuments:
         assert b"My ARC" in rv.data
 
     def test_sensitive_hidden_by_default(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _add_document(app, ac_id, title="Secret Doc", is_sensitive=True)
         _login(app, client)
@@ -191,7 +190,7 @@ class TestListDocuments:
         assert b"Show sensitive" in rv.data
 
     def test_sensitive_shown_with_flag(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _add_document(app, ac_id, title="Secret Doc", is_sensitive=True)
         _login(app, client)
@@ -200,7 +199,7 @@ class TestListDocuments:
         assert b"Hide sensitive" in rv.data
 
     def test_no_sensitive_toggle_when_none(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _add_document(app, ac_id, title="Public Doc")
         _login(app, client)
@@ -208,14 +207,14 @@ class TestListDocuments:
         assert b"Show sensitive" not in rv.data
 
     def test_list_403_orphan_user(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login_orphan(app, client)
         rv = client.get(f"/aircraft/{ac_id}/documents")
         assert rv.status_code == 403
 
     def test_list_404_wrong_tenant(self, app, client):
-        uid, tid = _create_user_and_tenant(app, "a@x.com")
+        _uid, tid = _create_user_and_tenant(app, "a@x.com")
         _create_user_and_tenant(app, "b@x.com")
         ac_id = _add_aircraft(app, tid)
         _login(app, client, "b@x.com")
@@ -223,7 +222,7 @@ class TestListDocuments:
         assert rv.status_code == 404
 
     def test_requires_login(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         rv = client.get(f"/aircraft/{ac_id}/documents")
         assert rv.status_code in (302, 401)
@@ -234,7 +233,7 @@ class TestListDocuments:
 
 class TestUploadDocument:
     def test_get_form(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         rv = client.get(f"/aircraft/{ac_id}/documents/upload")
@@ -242,7 +241,7 @@ class TestUploadDocument:
         assert b"Upload document" in rv.data
 
     def test_get_form_with_component(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         comp_id = _add_component(app, ac_id)
         _login(app, client)
@@ -251,7 +250,7 @@ class TestUploadDocument:
         assert b"Lycoming" in rv.data
 
     def test_upload_txt_success(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         rv = client.post(
@@ -271,7 +270,7 @@ class TestUploadDocument:
             assert doc.is_sensitive is False
 
     def test_upload_sensitive(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         rv = client.post(
@@ -288,7 +287,7 @@ class TestUploadDocument:
             assert doc.is_sensitive is True
 
     def test_upload_with_component_scope(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         comp_id = _add_component(app, ac_id)
         _login(app, client)
@@ -306,7 +305,7 @@ class TestUploadDocument:
             assert doc.component_id == comp_id
 
     def test_upload_component_wrong_aircraft_ignored(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid, "OO-A")
         ac2_id = _add_aircraft(app, tid, "OO-B")
         comp_id = _add_component(app, ac2_id)
@@ -325,7 +324,7 @@ class TestUploadDocument:
             assert doc.component_id is None
 
     def test_upload_component_invalid_id_ignored(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         rv = client.post(
@@ -339,7 +338,7 @@ class TestUploadDocument:
         assert rv.status_code == 302
 
     def test_upload_no_file_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         rv = client.post(
@@ -351,7 +350,7 @@ class TestUploadDocument:
         assert b"select a file" in rv.data
 
     def test_upload_disallowed_extension(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         rv = client.post(
@@ -363,7 +362,7 @@ class TestUploadDocument:
         assert b"not allowed" in rv.data
 
     def test_upload_stores_file_on_disk(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         client.post(
@@ -377,7 +376,7 @@ class TestUploadDocument:
             assert os.path.exists(os.path.join(folder, doc.filename))
 
     def test_upload_403_orphan(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login_orphan(app, client)
         rv = client.post(
@@ -389,7 +388,7 @@ class TestUploadDocument:
 
     def test_upload_404_wrong_tenant(self, app, client):
         _create_user_and_tenant(app, "a@x.com")
-        uid2, tid2 = _create_user_and_tenant(app, "b@x.com")
+        _uid2, tid2 = _create_user_and_tenant(app, "b@x.com")
         ac_id = _add_aircraft(app, tid2)
         _login(app, client, "a@x.com")
         rv = client.get(f"/aircraft/{ac_id}/documents/upload")
@@ -401,7 +400,7 @@ class TestUploadDocument:
         _save_upload_canonical is only called when a category is provided and
         there is no component scope, so both uploads must include category=.
         """
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         app.config["UPLOAD_FOLDER"] = str(tmp_path)
@@ -431,7 +430,7 @@ class TestUploadDocument:
 
 class TestDeleteDocument:
     def test_delete_removes_record(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         doc_id = _add_document(app, ac_id, title="Temp")
         _login(app, client)
@@ -441,7 +440,7 @@ class TestDeleteDocument:
             assert db.session.get(Document, doc_id) is None
 
     def test_delete_removes_file_from_disk(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         # Upload a real file first
@@ -459,7 +458,7 @@ class TestDeleteDocument:
         assert not os.path.exists(os.path.join(folder, stored))
 
     def test_delete_missing_file_on_disk_ok(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         # Add record pointing to non-existent file
         doc_id = _add_document(app, ac_id)
@@ -468,7 +467,7 @@ class TestDeleteDocument:
         assert rv.status_code == 302
 
     def test_delete_404_wrong_aircraft(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid, "OO-A")
         ac2_id = _add_aircraft(app, tid, "OO-B")
         doc_id = _add_document(app, ac2_id)
@@ -477,7 +476,7 @@ class TestDeleteDocument:
         assert rv.status_code == 404
 
     def test_delete_403_orphan(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         doc_id = _add_document(app, ac_id)
         _login_orphan(app, client)
@@ -490,7 +489,7 @@ class TestDeleteDocument:
 
 class TestEditDocument:
     def test_get_form(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         doc_id = _add_document(app, ac_id, title="Old Title")
         _login(app, client)
@@ -499,7 +498,7 @@ class TestEditDocument:
         assert b"Old Title" in rv.data
 
     def test_post_updates_title(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         doc_id = _add_document(app, ac_id, title="Old")
         _login(app, client)
@@ -513,7 +512,7 @@ class TestEditDocument:
             assert doc.is_sensitive is False
 
     def test_post_clears_title_when_blank(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         doc_id = _add_document(app, ac_id, title="Had Title")
         _login(app, client)
@@ -522,7 +521,7 @@ class TestEditDocument:
             assert db.session.get(Document, doc_id).title is None
 
     def test_post_marks_sensitive(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         doc_id = _add_document(app, ac_id)
         _login(app, client)
@@ -534,7 +533,7 @@ class TestEditDocument:
             assert db.session.get(Document, doc_id).is_sensitive is True
 
     def test_edit_404_wrong_aircraft(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid, "OO-A")
         ac2_id = _add_aircraft(app, tid, "OO-B")
         doc_id = _add_document(app, ac2_id)
@@ -543,7 +542,7 @@ class TestEditDocument:
         assert rv.status_code == 404
 
     def test_edit_403_orphan(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         doc_id = _add_document(app, ac_id)
         _login_orphan(app, client)
@@ -556,7 +555,7 @@ class TestEditDocument:
 
 class TestAircraftDetailDocuments:
     def test_detail_shows_document_count(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _add_document(app, ac_id, title="ARC 2025")
         _login(app, client)
@@ -566,7 +565,7 @@ class TestAircraftDetailDocuments:
         assert b"ARC 2025" in rv.data
 
     def test_detail_sensitive_not_shown(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _add_document(app, ac_id, title="Secret", is_sensitive=True)
         _login(app, client)
@@ -579,14 +578,18 @@ class TestAircraftDetailDocuments:
 
 class TestDeleteFileHelper:
     def test_delete_file_none_is_noop(self, app):
-        from documents.routes import _delete_file  # pyright: ignore[reportMissingImports]
+        from documents.routes import (
+            _delete_file,  # pyright: ignore[reportMissingImports]
+        )
 
         # Should return immediately without error (no app context needed)
         _delete_file(None)
 
     def test_delete_file_moves_to_trash(self, app, tmp_path):
 
-        from documents.routes import _delete_file  # pyright: ignore[reportMissingImports]
+        from documents.routes import (
+            _delete_file,  # pyright: ignore[reportMissingImports]
+        )
 
         src = tmp_path / "test_doc.pdf"
         src.write_bytes(b"pdf content")
@@ -599,7 +602,9 @@ class TestDeleteFileHelper:
         assert (tmp_path / "_trash" / "test_doc.pdf").exists()
 
     def test_delete_file_missing_is_silent(self, app, tmp_path):
-        from documents.routes import _delete_file  # pyright: ignore[reportMissingImports]
+        from documents.routes import (
+            _delete_file,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.test_request_context():
             app.config["UPLOAD_FOLDER"] = str(tmp_path)
@@ -607,7 +612,9 @@ class TestDeleteFileHelper:
             _delete_file("nonexistent.pdf")
 
     def test_delete_file_trash_collision_adds_suffix(self, app, tmp_path):
-        from documents.routes import _delete_file  # pyright: ignore[reportMissingImports]
+        from documents.routes import (
+            _delete_file,  # pyright: ignore[reportMissingImports]
+        )
 
         (tmp_path / "_trash").mkdir()
         # Pre-existing file in trash with same name
@@ -629,7 +636,7 @@ class TestCanonicalUpload:
     def test_upload_with_category_uses_canonical_path(self, app, client, tmp_path):
         from models import DocCategory  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
 
@@ -658,7 +665,7 @@ class TestCanonicalUpload:
             assert "maintenance" in doc.filename
 
     def test_upload_without_category_uses_flat_path(self, app, client, tmp_path):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         app.config["UPLOAD_FOLDER"] = str(tmp_path)
@@ -683,7 +690,7 @@ class TestCanonicalUpload:
     def test_edit_saves_category(self, app, client):
         from models import DocCategory  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         doc_id = _add_document(app, ac_id, title="ARC")
         _login(app, client)
@@ -699,7 +706,7 @@ class TestCanonicalUpload:
             assert doc.category == DocCategory.AIRWORTHINESS
 
     def test_list_shows_broken_link_badge(self, app, client, tmp_path):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         app.config["UPLOAD_FOLDER"] = str(tmp_path)
@@ -725,9 +732,14 @@ class TestCanonicalUpload:
 class TestInsuranceDocumentAutoFill:
     def test_insurance_upload_with_expiry_updates_aircraft(self, app, client, tmp_path):
         import datetime
-        from models import Aircraft, DocCategory, DocType  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        from models import (  # pyright: ignore[reportMissingImports]
+            Aircraft,
+            DocCategory,
+            DocType,
+        )
+
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         app.config["UPLOAD_FOLDER"] = str(tmp_path)
@@ -753,9 +765,12 @@ class TestInsuranceDocumentAutoFill:
     def test_insurance_upload_without_expiry_does_not_update_aircraft(
         self, app, client, tmp_path
     ):
-        from models import Aircraft, DocCategory  # pyright: ignore[reportMissingImports]
+        from models import (  # pyright: ignore[reportMissingImports]
+            Aircraft,
+            DocCategory,
+        )
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         app.config["UPLOAD_FOLDER"] = str(tmp_path)
@@ -777,9 +792,13 @@ class TestInsuranceDocumentAutoFill:
         self, app, client, tmp_path
     ):
         import datetime
-        from models import Aircraft, DocCategory  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        from models import (  # pyright: ignore[reportMissingImports]
+            Aircraft,
+            DocCategory,
+        )
+
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         app.config["UPLOAD_FOLDER"] = str(tmp_path)
@@ -805,7 +824,7 @@ class TestInsuranceDocumentAutoFill:
     def test_insurance_upload_supersedes_previous_cert(self, app, client, tmp_path):
         from models import DocCategory, DocType  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         app.config["UPLOAD_FOLDER"] = str(tmp_path)
@@ -854,7 +873,7 @@ class TestReconcile:
         assert b"slug" in rv2.data.lower()
 
     def test_scan_with_slug_no_dir_shows_info(self, app, client, tmp_path):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         with app.app_context():
             t = db.session.get(Tenant, tid)
             t.slug = "my-hangar"
@@ -865,9 +884,12 @@ class TestReconcile:
         assert rv.status_code == 302
 
     def test_scan_finds_canonical_files(self, app, client, tmp_path):
-        from models import DocCategory, PendingReconcile  # pyright: ignore[reportMissingImports]
+        from models import (  # pyright: ignore[reportMissingImports]
+            DocCategory,
+            PendingReconcile,
+        )
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _add_aircraft(app, tid, "OO-TST")
         with app.app_context():
             t = db.session.get(Tenant, tid)
@@ -892,9 +914,12 @@ class TestReconcile:
             assert pr.title_hint == "Annual inspection"
 
     def test_import_reconcile_creates_document(self, app, client, tmp_path):
-        from models import DocCategory, PendingReconcile  # pyright: ignore[reportMissingImports]
+        from models import (  # pyright: ignore[reportMissingImports]
+            DocCategory,
+            PendingReconcile,
+        )
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid, "OO-TST")
         with app.app_context():
             t = db.session.get(Tenant, tid)
@@ -939,7 +964,7 @@ class TestReconcile:
     def test_ignore_reconcile(self, app, client):
         from models import PendingReconcile  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         with app.app_context():
             t = db.session.get(Tenant, tid)
             t.slug = "ignore-hangar"
@@ -966,7 +991,7 @@ class TestReconcile:
 
 class TestTenantSlug:
     def test_update_slug_saves(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _login(app, client)
         rv = client.post("/config/tenant-slug", data={"slug": "My Hangar 2!"})
         assert rv.status_code == 302
@@ -983,8 +1008,8 @@ class TestTenantSlug:
         assert b"empty" in rv2.data.lower() or rv2.status_code == 200
 
     def test_update_slug_duplicate_rejected(self, app, client):
-        uid1, tid1 = _create_user_and_tenant(app, "a@x.com")
-        uid2, tid2 = _create_user_and_tenant(app, "b@x.com")
+        _uid1, tid1 = _create_user_and_tenant(app, "a@x.com")
+        _uid2, tid2 = _create_user_and_tenant(app, "b@x.com")
         with app.app_context():
             t = db.session.get(Tenant, tid2)
             t.slug = "taken"
@@ -1008,7 +1033,7 @@ class TestScanEdgeCases:
     def test_scan_skips_known_and_hidden_files(self, app, client, tmp_path):
         from models import PendingReconcile  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid, "OO-TST")
         with app.app_context():
             t = db.session.get(Tenant, tid)
@@ -1047,7 +1072,7 @@ class TestScanEdgeCases:
     def test_scan_second_run_no_duplicates(self, app, client, tmp_path):
         from models import PendingReconcile  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         with app.app_context():
             t = db.session.get(Tenant, tid)
             t.slug = "dedup-hangar"
@@ -1066,7 +1091,7 @@ class TestScanEdgeCases:
             assert count == 1
 
     def test_scan_zero_new_files(self, app, client, tmp_path):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         with app.app_context():
             t = db.session.get(Tenant, tid)
             t.slug = "zero-hangar"
@@ -1078,9 +1103,12 @@ class TestScanEdgeCases:
         assert rv.status_code == 302
 
     def test_import_reconcile_with_valid_until(self, app, client, tmp_path):
-        from models import DocCategory, PendingReconcile  # pyright: ignore[reportMissingImports]
+        from models import (  # pyright: ignore[reportMissingImports]
+            DocCategory,
+            PendingReconcile,
+        )
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid, "OO-VU")
         with app.app_context():
             t = db.session.get(Tenant, tid)
@@ -1117,7 +1145,7 @@ class TestScanEdgeCases:
     def test_import_reconcile_invalid_valid_until_ignored(self, app, client, tmp_path):
         from models import PendingReconcile  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         with app.app_context():
             t = db.session.get(Tenant, tid)
             t.slug = "vu2-hangar"
@@ -1144,7 +1172,7 @@ class TestScanEdgeCases:
     def test_import_reconcile_invalid_category_cleared(self, app, client, tmp_path):
         from models import PendingReconcile  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         with app.app_context():
             t = db.session.get(Tenant, tid)
             t.slug = "cat-hangar"
@@ -1170,7 +1198,9 @@ class TestScanEdgeCases:
 
     def test_slug_collision_adds_numeric_suffix(self, app):
         """_ensure_tenant_slug must append a number when the base slug is taken."""
-        from documents.routes import _ensure_tenant_slug  # pyright: ignore[reportMissingImports]
+        from documents.routes import (
+            _ensure_tenant_slug,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             t1 = Tenant(name="My Hangar", slug="my-hangar")
@@ -1183,7 +1213,9 @@ class TestScanEdgeCases:
 
     def test_delete_file_oserror_is_silent(self, app, tmp_path, monkeypatch):
         """OSError during rename is logged and swallowed."""
-        from documents.routes import _delete_file  # pyright: ignore[reportMissingImports]
+        from documents.routes import (
+            _delete_file,  # pyright: ignore[reportMissingImports]
+        )
 
         src = tmp_path / "oserr.pdf"
         src.write_bytes(b"x")
@@ -1195,7 +1227,7 @@ class TestScanEdgeCases:
             _delete_file("oserr.pdf")  # should not raise
 
     def test_edit_document_invalid_category_cleared(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         doc_id = _add_document(app, ac_id, title="X")
         _login(app, client)
@@ -1212,7 +1244,7 @@ class TestScanEdgeCases:
         """Files with dates that fail fromisoformat still get added without date_hint."""
         from models import PendingReconcile  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         with app.app_context():
             t = db.session.get(Tenant, tid)
             t.slug = "baddate-hangar"
@@ -1235,7 +1267,7 @@ class TestScanEdgeCases:
     def test_import_reconcile_invalid_aircraft_id(self, app, client, tmp_path):
         from models import PendingReconcile  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         with app.app_context():
             t = db.session.get(Tenant, tid)
             t.slug = "bad-ac-hangar"
@@ -1266,7 +1298,7 @@ class TestScanEdgeCases:
         aircraft by submitting tenant B's numeric aircraft_id."""
         from models import PendingReconcile  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         _uid_b, tid_b = _create_user_and_tenant(app, "other@example.com")
         other_ac_id = _add_aircraft(app, tid_b, "OO-OTH")
         with app.app_context():
@@ -1292,7 +1324,7 @@ class TestScanEdgeCases:
             assert Document.query.filter_by(aircraft_id=other_ac_id).first() is None
 
     def test_upload_document_invalid_category_cleared(self, app, client, tmp_path):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
         app.config["UPLOAD_FOLDER"] = str(tmp_path)
@@ -1321,7 +1353,7 @@ class TestSlugRename:
         """Changing the slug renames the on-disk folder and rewrites Document.filename."""
         from models import DocCategory  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid, "OO-SR")
         with app.app_context():
             t = db.session.get(Tenant, tid)
@@ -1358,7 +1390,7 @@ class TestSlugRename:
 
     def test_rename_updates_pending_reconcile_paths(self, app, client, tmp_path):
         """PendingReconcile.filepath is also rewritten when the slug changes."""
-        uid, tid = _create_user_and_tenant(app, "slugpr@x.com")
+        _uid, tid = _create_user_and_tenant(app, "slugpr@x.com")
         with app.app_context():
             t = db.session.get(Tenant, tid)
             t.slug = "pr-old"
@@ -1383,7 +1415,7 @@ class TestSlugRename:
 
     def test_rename_merges_when_target_folder_exists(self, app, client, tmp_path):
         """When new slug folder already exists, files are merged into it."""
-        uid, tid = _create_user_and_tenant(app, "merge@x.com")
+        _uid, tid = _create_user_and_tenant(app, "merge@x.com")
         with app.app_context():
             t = db.session.get(Tenant, tid)
             t.slug = "merge-old"
@@ -1404,7 +1436,7 @@ class TestSlugRename:
 
     def test_rename_updates_aircraft_photo_filenames(self, app, client, tmp_path):
         """AircraftPhoto.filename is rewritten when the tenant slug changes."""
-        uid, tid = _create_user_and_tenant(app, "photoslug@x.com")
+        _uid, tid = _create_user_and_tenant(app, "photoslug@x.com")
         ac_id = _add_aircraft(app, tid, "OO-PH")
         with app.app_context():
             t = db.session.get(Tenant, tid)
@@ -1437,7 +1469,7 @@ class TestEditDocumentCategoryMove:
         """Changing a document's category renames the on-disk file path."""
         from models import DocCategory  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app, "catmove@x.com")
+        _uid, tid = _create_user_and_tenant(app, "catmove@x.com")
         ac_id = _add_aircraft(app, tid, "OO-CM")
         with app.app_context():
             t = db.session.get(Tenant, tid)
@@ -1482,7 +1514,7 @@ class TestEditDocumentCategoryMove:
         """If os.rename raises OSError the doc.filename stays unchanged (line 449)."""
         from models import DocCategory  # pyright: ignore[reportMissingImports]
 
-        uid, tid = _create_user_and_tenant(app, "caterr@x.com")
+        _uid, tid = _create_user_and_tenant(app, "caterr@x.com")
         ac_id = _add_aircraft(app, tid, "OO-CE")
         with app.app_context():
             t = db.session.get(Tenant, tid)
@@ -1525,7 +1557,7 @@ class TestScanStalePruning:
     def test_scan_prunes_stale_entries_and_reports_count(self, app, client, tmp_path):
         """Manual scan deletes pending entries whose files are gone and reports
         the count in the flash message (lines 760-761, 763, 827)."""
-        uid, tid = _create_user_and_tenant(app, "stale@x.com")
+        _uid, tid = _create_user_and_tenant(app, "stale@x.com")
         with app.app_context():
             t = db.session.get(Tenant, tid)
             t.slug = "stale-hangar"
@@ -1558,7 +1590,7 @@ class TestFuzzySuggestion:
     def test_list_reconcile_shows_typo_suggestion(self, app, client, tmp_path):
         """A pending entry with a typo folder name shows a rename suggestion
         in the reconcile page (lines 700-710)."""
-        uid, tid = _create_user_and_tenant(app, "fuzzy@x.com")
+        _uid, tid = _create_user_and_tenant(app, "fuzzy@x.com")
         with app.app_context():
             t = db.session.get(Tenant, tid)
             t.slug = "fuzzy-hangar"
@@ -1586,7 +1618,7 @@ class TestRenameFolderEndpoint:
     def _setup(
         self, app, client, tmp_path, email="rf@x.com", slug="rf-hangar", reg="OO-RF"
     ):
-        uid, tid = _create_user_and_tenant(app, email)
+        _uid, tid = _create_user_and_tenant(app, email)
         ac_id = _add_aircraft(app, tid, reg)
         with app.app_context():
             t = db.session.get(Tenant, tid)
@@ -1600,7 +1632,7 @@ class TestRenameFolderEndpoint:
         """Renaming a typo folder to a valid category auto-imports the matching file."""
         from models import DocCategory  # pyright: ignore[reportMissingImports]
 
-        tid, ac_id = self._setup(app, client, tmp_path)
+        tid, _ac_id = self._setup(app, client, tmp_path)
         bad = tmp_path / "rf-hangar" / "OO-RF" / "maintenence"
         bad.mkdir(parents=True)
         (bad / "2024-03-01 - Service.pdf").write_bytes(b"%PDF")
@@ -1696,7 +1728,7 @@ class TestRenameFolderEndpoint:
     def test_rename_skips_dotfiles_and_already_tracked(self, app, client, tmp_path):
         """Dotfiles and already-tracked documents are skipped during inline scan
         (lines 909, 913)."""
-        tid, ac_id = self._setup(
+        _tid, ac_id = self._setup(
             app, client, tmp_path, "rfskip@x.com", "rfskip-hangar", "OO-SK"
         )
         dest = tmp_path / "rfskip-hangar" / "OO-SK" / "maintenance"
@@ -1789,11 +1821,9 @@ class TestSafeJoin:
     def test_path_traversal_aborts(self, app):
         from documents.routes import _safe_join  # pyright: ignore[reportMissingImports]
 
-        with app.test_request_context():
-            with app.app_context():
-                import pytest
+        with app.test_request_context(), app.app_context():
+            import pytest
+            from werkzeug.exceptions import BadRequest
 
-                with pytest.raises(
-                    Exception
-                ):  # abort(400) raises werkzeug HTTPException
-                    _safe_join("/uploads", "../../../etc/passwd")
+            with pytest.raises(BadRequest):  # abort(400)
+                _safe_join("/uploads", "../../../etc/passwd")

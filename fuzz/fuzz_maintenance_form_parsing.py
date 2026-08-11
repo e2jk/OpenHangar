@@ -19,7 +19,7 @@ import atheris
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 
 with atheris.instrument_imports(include=["maintenance.form_parsing"]):
-    from maintenance.form_parsing import (  # noqa: E402
+    from maintenance.form_parsing import (
         parse_service_fields,
         parse_trigger_fields,
     )

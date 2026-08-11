@@ -14,7 +14,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     db,
 )
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
@@ -83,7 +82,7 @@ def _add_photo(app, aircraft_id, slug="photo-hangar", reg="OO-PH", order=1):
 
 class TestCoverPhotoProperty:
     def test_cover_photo_returns_first_photo(self, app):
-        uid, tid = _make_user_tenant(app, "cp@x.com", "cp-hangar")
+        _uid, tid = _make_user_tenant(app, "cp@x.com", "cp-hangar")
         ac_id = _add_aircraft(app, tid, "OO-CP")
         p1_id = _add_photo(app, ac_id, "cp-hangar", "OO-CP", order=1)
         _add_photo(app, ac_id, "cp-hangar", "OO-CP", order=2)
@@ -94,7 +93,7 @@ class TestCoverPhotoProperty:
             assert ac.cover_photo.id == p1_id
 
     def test_cover_photo_none_when_no_photos(self, app):
-        uid, tid = _make_user_tenant(app, "cpn@x.com", "cpn-hangar")
+        _uid, tid = _make_user_tenant(app, "cpn@x.com", "cpn-hangar")
         ac_id = _add_aircraft(app, tid, "OO-CN")
         with app.app_context():
             ac = db.session.get(Aircraft, ac_id)
@@ -106,7 +105,7 @@ class TestCoverPhotoProperty:
 
 class TestUploadPhoto:
     def test_upload_single_photo(self, app, client):
-        uid, tid = _make_user_tenant(app)
+        _uid, tid = _make_user_tenant(app)
         ac_id = _add_aircraft(app, tid)
         _login(app, client)
 
@@ -124,7 +123,7 @@ class TestUploadPhoto:
             assert photos[0].original_filename == "cover.jpg"
 
     def test_upload_multiple_photos_numbered_in_order(self, app, client):
-        uid, tid = _make_user_tenant(app, "up2@x.com", "up2-hangar")
+        _uid, tid = _make_user_tenant(app, "up2@x.com", "up2-hangar")
         ac_id = _add_aircraft(app, tid, "OO-U2")
         _login(app, client, "up2@x.com")
 
@@ -150,7 +149,7 @@ class TestUploadPhoto:
             assert photos[1].sort_order == 2
 
     def test_upload_appends_after_existing(self, app, client):
-        uid, tid = _make_user_tenant(app, "app@x.com", "app-hangar")
+        _uid, tid = _make_user_tenant(app, "app@x.com", "app-hangar")
         ac_id = _add_aircraft(app, tid, "OO-AP")
         _add_photo(app, ac_id, "app-hangar", "OO-AP", order=1)
         _login(app, client, "app@x.com")
@@ -168,7 +167,7 @@ class TestUploadPhoto:
             assert sorted(orders) == [1, 2]
 
     def test_upload_no_files_rejected(self, app, client):
-        uid, tid = _make_user_tenant(app, "nf@x.com", "nf-hangar")
+        _uid, tid = _make_user_tenant(app, "nf@x.com", "nf-hangar")
         ac_id = _add_aircraft(app, tid, "OO-NF")
         _login(app, client, "nf@x.com")
 
@@ -182,7 +181,7 @@ class TestUploadPhoto:
             assert AircraftPhoto.query.filter_by(aircraft_id=ac_id).count() == 0
 
     def test_upload_unsupported_format_rejected(self, app, client):
-        uid, tid = _make_user_tenant(app, "fmt@x.com", "fmt-hangar")
+        _uid, tid = _make_user_tenant(app, "fmt@x.com", "fmt-hangar")
         ac_id = _add_aircraft(app, tid, "OO-FT")
         _login(app, client, "fmt@x.com")
 
@@ -203,7 +202,7 @@ class TestUploadPhoto:
 
     def test_file_with_no_filename_skipped(self, app, client):
         """Empty-named FileStorage entry is silently skipped; valid file is saved."""
-        uid, tid = _make_user_tenant(app, "ef@x.com", "ef-hangar")
+        _uid, tid = _make_user_tenant(app, "ef@x.com", "ef-hangar")
         ac_id = _add_aircraft(app, tid, "OO-EF")
         _login(app, client, "ef@x.com")
 
@@ -227,7 +226,7 @@ class TestUploadPhoto:
 
 class TestServePhoto:
     def test_serve_returns_image_bytes(self, app, client):
-        uid, tid = _make_user_tenant(app, "srv@x.com", "srv-hangar")
+        _uid, tid = _make_user_tenant(app, "srv@x.com", "srv-hangar")
         ac_id = _add_aircraft(app, tid, "OO-SV")
         p_id = _add_photo(app, ac_id, "srv-hangar", "OO-SV")
         _login(app, client, "srv@x.com")
@@ -237,7 +236,7 @@ class TestServePhoto:
         assert rv.data[:3] == b"\xff\xd8\xff"
 
     def test_serve_wrong_aircraft_404(self, app, client):
-        uid, tid = _make_user_tenant(app, "srv2@x.com", "srv2-hangar")
+        _uid, tid = _make_user_tenant(app, "srv2@x.com", "srv2-hangar")
         ac1_id = _add_aircraft(app, tid, "OO-S1")
         ac2_id = _add_aircraft(app, tid, "OO-S2")
         p_id = _add_photo(app, ac1_id, "srv2-hangar", "OO-S1")
@@ -252,7 +251,7 @@ class TestServePhoto:
 
 class TestDeletePhoto:
     def test_delete_removes_db_row_and_trashes_file(self, app, client):
-        uid, tid = _make_user_tenant(app, "del@x.com", "del-hangar")
+        _uid, tid = _make_user_tenant(app, "del@x.com", "del-hangar")
         ac_id = _add_aircraft(app, tid, "OO-DL")
         p_id = _add_photo(app, ac_id, "del-hangar", "OO-DL", order=1)
         _login(app, client, "del@x.com")
@@ -267,7 +266,7 @@ class TestDeletePhoto:
         assert trash.exists() and any(trash.iterdir())
 
     def test_delete_renumbers_remaining(self, app, client):
-        uid, tid = _make_user_tenant(app, "ren@x.com", "ren-hangar")
+        _uid, tid = _make_user_tenant(app, "ren@x.com", "ren-hangar")
         ac_id = _add_aircraft(app, tid, "OO-RN")
         p1_id = _add_photo(app, ac_id, "ren-hangar", "OO-RN", order=1)
         _add_photo(app, ac_id, "ren-hangar", "OO-RN", order=2)
@@ -285,7 +284,7 @@ class TestDeletePhoto:
             assert [p.sort_order for p in photos] == [1, 2]
 
     def test_delete_wrong_aircraft_404(self, app, client):
-        uid, tid = _make_user_tenant(app, "d404@x.com", "d404-hangar")
+        _uid, tid = _make_user_tenant(app, "d404@x.com", "d404-hangar")
         ac1_id = _add_aircraft(app, tid, "OO-D1")
         ac2_id = _add_aircraft(app, tid, "OO-D2")
         p_id = _add_photo(app, ac1_id, "d404-hangar", "OO-D1")
@@ -296,7 +295,7 @@ class TestDeletePhoto:
 
     def test_trash_collision_gets_unique_suffix(self, app, client):
         """If the trash destination already exists, a suffix is added."""
-        uid, tid = _make_user_tenant(app, "trc@x.com", "trc-hangar")
+        _uid, tid = _make_user_tenant(app, "trc@x.com", "trc-hangar")
         ac_id = _add_aircraft(app, tid, "OO-TC")
         p_id = _add_photo(app, ac_id, "trc-hangar", "OO-TC", order=1)
         _login(app, client, "trc@x.com")
@@ -317,7 +316,7 @@ class TestDeletePhoto:
 
 class TestReorderPhotos:
     def test_reorder_updates_sort_order_and_renames_files(self, app, client):
-        uid, tid = _make_user_tenant(app, "ro@x.com", "ro-hangar")
+        _uid, tid = _make_user_tenant(app, "ro@x.com", "ro-hangar")
         ac_id = _add_aircraft(app, tid, "OO-RO")
         p1_id = _add_photo(app, ac_id, "ro-hangar", "OO-RO", order=1)
         p2_id = _add_photo(app, ac_id, "ro-hangar", "OO-RO", order=2)
@@ -336,7 +335,7 @@ class TestReorderPhotos:
             assert p1.sort_order == 2
 
     def test_reorder_invalid_ids_returns_400(self, app, client):
-        uid, tid = _make_user_tenant(app, "ri@x.com", "ri-hangar")
+        _uid, tid = _make_user_tenant(app, "ri@x.com", "ri-hangar")
         ac_id = _add_aircraft(app, tid, "OO-RI")
         _add_photo(app, ac_id, "ri-hangar", "OO-RI", order=1)
         _login(app, client, "ri@x.com")
@@ -348,7 +347,7 @@ class TestReorderPhotos:
         assert rv.status_code == 400
 
     def test_reorder_non_integer_ids_returns_400(self, app, client):
-        uid, tid = _make_user_tenant(app, "rv@x.com", "rv-hangar")
+        _uid, tid = _make_user_tenant(app, "rv@x.com", "rv-hangar")
         ac_id = _add_aircraft(app, tid, "OO-RV")
         _add_photo(app, ac_id, "rv-hangar", "OO-RV", order=1)
         _login(app, client, "rv@x.com")
@@ -361,7 +360,7 @@ class TestReorderPhotos:
 
     def test_reorder_rename_oserror_keeps_old_filename(self, app, client, monkeypatch):
         """If os.rename fails during renumber, old filename is preserved."""
-        uid, tid = _make_user_tenant(app, "rr@x.com", "rr-hangar")
+        _uid, tid = _make_user_tenant(app, "rr@x.com", "rr-hangar")
         ac_id = _add_aircraft(app, tid, "OO-RR")
         p1_id = _add_photo(app, ac_id, "rr-hangar", "OO-RR", order=1)
         p2_id = _add_photo(app, ac_id, "rr-hangar", "OO-RR", order=2)
@@ -389,7 +388,9 @@ class TestReorderPhotos:
 
 class TestTrashPhotoFile:
     def test_trash_noop_when_file_missing(self, app):
-        from aircraft.routes import _trash_photo_file  # pyright: ignore[reportMissingImports]
+        from aircraft.routes import (
+            _trash_photo_file,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             _trash_photo_file("does-not-exist/photo.jpg")
@@ -397,7 +398,9 @@ class TestTrashPhotoFile:
         assert not (_upload_dir(app) / "_trash" / "photo.jpg").exists()
 
     def test_trash_oserror_is_swallowed(self, app, monkeypatch):
-        from aircraft.routes import _trash_photo_file  # pyright: ignore[reportMissingImports]
+        from aircraft.routes import (
+            _trash_photo_file,  # pyright: ignore[reportMissingImports]
+        )
 
         photo_dir = _upload_dir(app) / "t-hangar" / "OO-TE" / "photos"
         photo_dir.mkdir(parents=True, exist_ok=True)
@@ -415,7 +418,9 @@ class TestTrashPhotoFile:
 
 class TestPhotoFolderHelper:
     def test_returns_correct_path(self, app):
-        from aircraft.routes import _photo_folder  # pyright: ignore[reportMissingImports]
+        from aircraft.routes import (
+            _photo_folder,  # pyright: ignore[reportMissingImports]
+        )
 
         original = app.config.get("UPLOAD_FOLDER")
         try:

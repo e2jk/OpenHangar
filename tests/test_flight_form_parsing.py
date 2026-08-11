@@ -10,7 +10,9 @@ rejection error.
 
 from types import SimpleNamespace
 
-from flights.form_parsing import parse_flight_fields  # pyright: ignore[reportMissingImports]
+from flights.form_parsing import (
+    parse_flight_fields,  # pyright: ignore[reportMissingImports]
+)
 
 
 class TestNegativeValuesResetToNone:

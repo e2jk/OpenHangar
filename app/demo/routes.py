@@ -1,13 +1,14 @@
 import logging
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
+from extensions import _rate_limiting_disabled  # pyright: ignore[reportMissingImports]
+from extensions import limiter as _limiter
 from flask import Blueprint, redirect, render_template, request, session, url_for
-
-from extensions import _rate_limiting_disabled, limiter as _limiter  # pyright: ignore[reportMissingImports]
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
-from flask_babel import get_locale as _get_locale  # pyright: ignore[reportMissingImports]
-
+from flask_babel import (
+    get_locale as _get_locale,  # pyright: ignore[reportMissingImports]
+)
 from models import DemoSlot, User, db
 
 log = logging.getLogger(__name__)
@@ -69,7 +70,7 @@ def enter() -> ResponseReturnValue:
 
     # If even the LRU slot is still warm, all slots are actively in use
     window = _busy_window_minutes()
-    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=window)
+    cutoff = datetime.now(UTC).replace(tzinfo=None) - timedelta(minutes=window)
     if slot.last_activity_at and slot.last_activity_at >= cutoff:
         return render_template("demo_full.html"), 503
 
@@ -101,19 +102,19 @@ def _slot_user_id(slot: DemoSlot, role: str) -> int:
 
 
 def _touch_slot(slot: DemoSlot) -> None:
-    slot.last_activity_at = datetime.now(timezone.utc)
+    slot.last_activity_at = datetime.now(UTC)
     db.session.commit()
 
 
 @demo_bp.route("/demo/next-wipe")
 def next_wipe() -> ResponseReturnValue:
     """Return the scheduled next wipe time for the browser reload-detection logic."""
-    from flask import jsonify  # noqa: PLC0415
+    from flask import jsonify
 
     return jsonify({"next_wipe": os.environ.get("OPENHANGAR_DEMO_NEXT_WIPE_UTC")}), 200
 
 
 def demo_has_recent_activity(window_minutes: int = 20) -> bool:
     """Return True if any slot had activity within *window_minutes*."""
-    cutoff = datetime.now(timezone.utc) - timedelta(minutes=window_minutes)
+    cutoff = datetime.now(UTC) - timedelta(minutes=window_minutes)
     return int(DemoSlot.query.filter(DemoSlot.last_activity_at >= cutoff).count()) > 0

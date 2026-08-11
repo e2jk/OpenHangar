@@ -2,9 +2,9 @@
 Tests for Phase 5: Real Dashboard — stat cards, status badges, panel data.
 """
 
-import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     Flight,
@@ -20,7 +20,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     db,
 )
 from utils import compute_aircraft_statuses  # pyright: ignore[reportMissingImports]
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -302,7 +301,7 @@ class TestInsuranceStatus:
 
 class TestDashboardStats:
     def test_hours_this_month_counts_current_month_only(self, app, client):
-        uid, tid = _setup(app)
+        _uid, tid = _setup(app)
         acid = _add_aircraft(app, tid)
         # Flight this month
         _add_flight(
@@ -318,7 +317,7 @@ class TestDashboardStats:
         assert b"2.0" in r.data  # only this month's 2.0 h
 
     def test_flights_this_month_shows_count(self, app, client):
-        uid, tid = _setup(app)
+        _uid, tid = _setup(app)
         acid = _add_aircraft(app, tid)
         _add_flight(app, acid, flight_date=date.today())
         _add_flight(
@@ -330,14 +329,14 @@ class TestDashboardStats:
         assert b"This month" in r.data
 
     def test_hours_this_month_zero_when_no_flights(self, app, client):
-        uid, tid = _setup(app)
+        _uid, tid = _setup(app)
         _add_aircraft(app, tid)
         _login(app, client)
         r = client.get("/")
         assert b"0.0" in r.data
 
     def test_maintenance_alerts_count(self, app, client):
-        uid, tid = _setup(app)
+        _uid, tid = _setup(app)
         acid = _add_aircraft(app, tid)
         # One overdue trigger
         _add_trigger(
@@ -385,7 +384,7 @@ class TestStatCardPluralization:
     # ── Hours this month ─────────────────────────────────────────────────
 
     def test_hours_shown_in_combined_badge(self, app, client):
-        uid, tid = _setup(app, email="pl_hr1@example.com")
+        _uid, tid = _setup(app, email="pl_hr1@example.com")
         acid = _add_aircraft(app, tid)
         _add_flight(
             app, acid, hobbs_start=100.0, hobbs_end=102.5, flight_date=date.today()
@@ -398,7 +397,7 @@ class TestStatCardPluralization:
     # ── Maintenance alerts ───────────────────────────────────────────────
 
     def test_maintenance_alert_singular(self, app, client):
-        uid, tid = _setup(app, email="pl_ma1@example.com")
+        _uid, tid = _setup(app, email="pl_ma1@example.com")
         acid = _add_aircraft(app, tid)
         _add_trigger(
             app,
@@ -412,7 +411,7 @@ class TestStatCardPluralization:
         assert b"Maintenance alert" in r.data
 
     def test_maintenance_alerts_plural(self, app, client):
-        uid, tid = _setup(app, email="pl_ma2@example.com")
+        _uid, tid = _setup(app, email="pl_ma2@example.com")
         acid = _add_aircraft(app, tid)
         _add_trigger(
             app,
@@ -433,7 +432,7 @@ class TestStatCardPluralization:
     # ── Flights this month ───────────────────────────────────────────────
 
     def test_flights_shown_in_combined_badge(self, app, client):
-        uid, tid = _setup(app, email="pl_fl1@example.com")
+        _uid, tid = _setup(app, email="pl_fl1@example.com")
         acid = _add_aircraft(app, tid)
         _add_flight(app, acid, flight_date=date.today())
         _add_flight(
@@ -447,7 +446,7 @@ class TestStatCardPluralization:
 
 class TestDashboardStatusBadges:
     def test_fleet_shows_ok_badge(self, app, client):
-        uid, tid = _setup(app)
+        _uid, tid = _setup(app)
         acid = _add_aircraft(app, tid)
         _add_trigger(
             app,
@@ -460,7 +459,7 @@ class TestDashboardStatusBadges:
         assert b"ac-status-ok" in r.data
 
     def test_fleet_shows_overdue_badge(self, app, client):
-        uid, tid = _setup(app)
+        _uid, tid = _setup(app)
         acid = _add_aircraft(app, tid)
         _add_trigger(
             app,
@@ -473,7 +472,7 @@ class TestDashboardStatusBadges:
         assert b"ac-status-overdue" in r.data
 
     def test_fleet_shows_due_soon_badge(self, app, client):
-        uid, tid = _setup(app)
+        _uid, tid = _setup(app)
         acid = _add_aircraft(app, tid)
         _add_trigger(
             app,
@@ -488,7 +487,7 @@ class TestDashboardStatusBadges:
 
 class TestDashboardPanels:
     def test_recent_flights_panel_shows_data(self, app, client):
-        uid, tid = _setup(app)
+        _uid, tid = _setup(app)
         acid = _add_aircraft(app, tid)
         _add_flight(app, acid)
         _login(app, client)
@@ -501,7 +500,7 @@ class TestDashboardPanels:
     ):
         """In single_aircraft_mode the registration belongs in the 'Recent
         Flights' panel header, not repeated on every row."""
-        uid, tid = _setup(app)
+        _uid, tid = _setup(app)
         acid = _add_aircraft(app, tid, registration="OO-SOLO")
         _add_flight(app, acid)
         with app.app_context():
@@ -519,7 +518,7 @@ class TestDashboardPanels:
         assert 'oh-reg-plate">OO-SOLO' not in html[table_idx:]
 
     def test_urgent_maintenance_panel_shows_overdue(self, app, client):
-        uid, tid = _setup(app)
+        _uid, tid = _setup(app)
         acid = _add_aircraft(app, tid)
         _add_trigger(
             app,
@@ -532,7 +531,7 @@ class TestDashboardPanels:
         assert b"Overdue" in r.data
 
     def test_urgent_maintenance_empty_when_all_ok(self, app, client):
-        uid, tid = _setup(app)
+        _uid, tid = _setup(app)
         acid = _add_aircraft(app, tid)
         _add_trigger(
             app,
@@ -545,7 +544,7 @@ class TestDashboardPanels:
         assert b"No alerts" in r.data
 
     def test_reservation_links_hidden_when_rental_disabled(self, app, client):
-        uid, tid = _setup(app)
+        _uid, tid = _setup(app)
         _add_aircraft(app, tid)
         with app.app_context():
             db.session.add(TenantProfile(tenant_id=tid, allows_rental=False))
@@ -557,7 +556,7 @@ class TestDashboardPanels:
         assert b"New reservation" not in r.data
 
     def test_reservation_links_shown_when_rental_enabled(self, app, client):
-        uid, tid = _setup(app)
+        _uid, tid = _setup(app)
         _add_aircraft(app, tid)
         with app.app_context():
             db.session.add(TenantProfile(tenant_id=tid, allows_rental=True))
@@ -572,7 +571,7 @@ class TestDashboardPanels:
 
 class TestAircraftListStatusBadges:
     def test_list_shows_ok_badge(self, app, client):
-        uid, tid = _setup(app)
+        _uid, tid = _setup(app)
         acid = _add_aircraft(app, tid)
         _add_trigger(
             app,
@@ -585,7 +584,7 @@ class TestAircraftListStatusBadges:
         assert b"ac-status-ok" in r.data
 
     def test_list_shows_overdue_badge(self, app, client):
-        uid, tid = _setup(app)
+        _uid, tid = _setup(app)
         acid = _add_aircraft(app, tid)
         _add_trigger(
             app,
@@ -625,7 +624,7 @@ class TestDashboardCalendar:
 
     def test_reservation_populates_calendar_day_events(self, app, client):
         """init.py:296-301 — reservation in current month appears in cal_day_events."""
-        uid, tid = _setup(app)
+        _uid, tid = _setup(app)
         acid = _add_aircraft(app, tid)
         today = date.today()
         with app.app_context():
@@ -633,10 +632,10 @@ class TestDashboardCalendar:
                 Reservation(
                     aircraft_id=acid,
                     start_dt=datetime(
-                        today.year, today.month, today.day, 9, 0, tzinfo=timezone.utc
+                        today.year, today.month, today.day, 9, 0, tzinfo=UTC
                     ),
                     end_dt=datetime(
-                        today.year, today.month, today.day, 17, 0, tzinfo=timezone.utc
+                        today.year, today.month, today.day, 17, 0, tzinfo=UTC
                     ),
                     status=ReservationStatus.CONFIRMED,
                 )

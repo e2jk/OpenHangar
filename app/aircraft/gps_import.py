@@ -11,14 +11,17 @@ from __future__ import annotations
 import csv
 import functools
 import io
+import itertools
 import math
 import os
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Callable
-import defusedxml.ElementTree as ET  # guards against XML bomb / entity expansion
+from datetime import UTC, datetime
+from typing import Any
 from xml.etree.ElementTree import ParseError as _ETParseError
+
+import defusedxml.ElementTree as ET  # guards against XML bomb / entity expansion
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -157,7 +160,7 @@ def classify_track(trackpoints: list[TrackPoint]) -> str:
 
     # Check for sustained window above 30kt
     fast_window_s = 0.0
-    for prev, tp in zip(trackpoints, trackpoints[1:]):
+    for prev, tp in itertools.pairwise(trackpoints):
         if tp.speed_kt > _FLIGHT_SPEED_KT:
             dt = (tp.utc_dt - prev.utc_dt).total_seconds()
             fast_window_s += max(0.0, dt)
@@ -217,7 +220,7 @@ def _parse_gpx(data: bytes, filename: str) -> ParsedGpsFile:
         if time_el is None or not time_el.text:
             continue
         try:
-            utc_dt = datetime.fromisoformat(time_el.text.replace("Z", "+00:00"))
+            utc_dt = datetime.fromisoformat(time_el.text)
         except ValueError:
             continue
 
@@ -303,7 +306,7 @@ def _parse_garmin_csv(data: bytes, filename: str) -> ParsedGpsFile:
             time_str = row["Lcl Time"].strip()
             utc_off = row["UTCOfst"].strip()
             local_dt = datetime.fromisoformat(f"{date_str}T{time_str}{utc_off}")
-            utc_dt = local_dt.astimezone(timezone.utc)
+            utc_dt = local_dt.astimezone(UTC)
         except (ValueError, KeyError):
             continue
 
@@ -360,8 +363,8 @@ def _parse_kml(data: bytes, filename: str) -> ParsedGpsFile:
         if child.tag == f"{{{_KML_NS}}}when":
             if child.text:
                 try:
-                    dt = datetime.fromisoformat(child.text.replace("Z", "+00:00"))
-                    whens.append(dt.astimezone(timezone.utc))
+                    dt = datetime.fromisoformat(child.text)
+                    whens.append(dt.astimezone(UTC))
                 except ValueError:
                     whens.append(None)
             else:

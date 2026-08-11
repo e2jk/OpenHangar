@@ -7,10 +7,16 @@ import logging
 import math
 import os
 from collections import defaultdict
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable
+from typing import Any
 
-from flask import abort, redirect, session, url_for  # pyright: ignore[reportMissingImports]
+from flask import (  # pyright: ignore[reportMissingImports]
+    abort,
+    redirect,
+    session,
+    url_for,
+)
 from werkzeug.routing import (  # pyright: ignore[reportMissingImports]
     BaseConverter,
     ValidationError,
@@ -155,6 +161,7 @@ def _make_tile_background(
     holding raw PNG bytes so repeated calls across frames skip network fetches.
     """
     import urllib.request
+
     from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
 
     # Compute pixels-per-degree-lon from the projection function
@@ -166,7 +173,7 @@ def _make_tile_background(
         return None
 
     # Choose zoom so each tile is ~256 canvas pixels wide (clamped 2–14)
-    z = int(round(math.log2(max(scale_x * 360.0 / 256.0, 1.0))))
+    z = round(math.log2(max(scale_x * 360.0 / 256.0, 1.0)))
     z = max(2, min(z, 14))
     n = 2**z
 
@@ -248,7 +255,7 @@ def _make_tile_background(
                         (tile_w, tile_h), _Img.Resampling.LANCZOS
                     )
                     bg.paste(opi_tile.convert("RGB"), (px, py), opi_tile)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 -- one bad tile must not fail the whole image
                 _log.debug("OPI tile unavailable, leaving area as background: %s", exc)
 
     return bg
@@ -366,7 +373,7 @@ def generate_tracks_gif(
     try:
         font = ImageFont.truetype(_font_path, _font_sz)
         font_sm = ImageFont.truetype(_font_path, _font_sz_sm)
-    except (IOError, OSError):
+    except OSError:
         font = font_sm = ImageFont.load_default()
 
     def draw_shadow_text(draw: Any, text: str, font: Any) -> None:
@@ -621,11 +628,11 @@ def generate_single_track_image(
         ex, ey = pts[-1]
         draw.ellipse([ex - r, ey - r, ex + r, ey + r], fill=(200, 40, 40))
 
-    label = f"{date}  {dep} → {arr}".strip("  →").strip()
+    label = f"{date}  {dep} → {arr}".strip(" →").strip()
     if label:
         try:
             font: Any = ImageFont.truetype(_font_path, _font_sz)
-        except (IOError, OSError):
+        except OSError:
             font = ImageFont.load_default()
         draw.text(
             (_txt_margin + 1, _txt_margin + 1), label, fill=(255, 255, 255), font=font
@@ -713,7 +720,7 @@ def generate_single_track_gif(
     try:
         font: Any = ImageFont.truetype(_font_path, _font_sz)
         font_sm: Any = ImageFont.truetype(_font_path, _font_sz_sm)
-    except (IOError, OSError):
+    except OSError:
         font = font_sm = ImageFont.load_default()
 
     def draw_shadow_text(draw: Any, text: str, fnt: Any) -> None:
@@ -790,7 +797,7 @@ def generate_single_track_gif(
             else Image.new("RGB", (canvas_w, canvas_h), _BG_COLOUR)
         )
 
-    label = f"{date}  {dep} → {arr}".strip("  →").strip()
+    label = f"{date}  {dep} → {arr}".strip(" →").strip()
 
     frames: list[Any] = []
     durations: list[int] = []
@@ -1027,7 +1034,7 @@ def _sl(value: object) -> str:
 
 def activity(event: str, **fields: object) -> None:
     """Emit a structured [ACTIVITY] log entry with user_id and ip automatically included."""
-    from flask import request, session  # noqa: PLC0415
+    from flask import request, session
 
     uid = session.get("user_id", "")
     ip = request.remote_addr or ""
@@ -1157,7 +1164,7 @@ def check_update_available() -> bool:
         latest_s = db.session.get(AppSetting, "latest_version")
         latest = latest_s.value if latest_s else None
         return bool(latest and Version(latest) > Version(current))
-    except Exception:
+    except Exception:  # noqa: BLE001 -- cosmetic nav-badge hint, degrade to "no update" on any error
         return False
 
 
@@ -1177,7 +1184,7 @@ def check_legacy_logbook_data() -> bool:
 
         flag = db.session.get(AppSetting, "legacy_logbook_data_present")
         return bool(flag is not None and flag.value == "true")
-    except Exception:
+    except Exception:  # noqa: BLE001 -- cosmetic nav-badge hint, degrade to "no legacy data" on any error
         return False
 
 

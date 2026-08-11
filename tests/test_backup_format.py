@@ -14,7 +14,6 @@ import json
 import zipfile
 
 import pytest  # pyright: ignore[reportMissingImports]
-
 from services.backup_format import (  # pyright: ignore[reportMissingImports]
     BackupArchiveError,
     parse_backup_archive,

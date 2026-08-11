@@ -1,9 +1,18 @@
 """Tests for Phase 18: Pilot Currency & Legality Checks."""
 
-import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from datetime import date, timedelta
 from types import SimpleNamespace
 
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
+from models import (  # pyright: ignore[reportMissingImports]
+    Flight,
+    PilotProfile,
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    db,
+)
 from pilots.currency import (  # pyright: ignore[reportMissingImports]
     STATUS_EXPIRED,
     STATUS_OK,
@@ -16,16 +25,6 @@ from pilots.currency import (  # pyright: ignore[reportMissingImports]
     per_type_currency,
     sep_status,
 )
-from models import (  # pyright: ignore[reportMissingImports]
-    Flight,
-    PilotProfile,
-    Role,
-    Tenant,
-    TenantUser,
-    User,
-    db,
-)
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

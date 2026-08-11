@@ -4,7 +4,7 @@ CRUD routes, the reservation create/confirm guard, and the expiry
 notification digest. See docs/phase37_rental_spec.md § 37c.
 """
 
-from datetime import date, timedelta
+from datetime import UTC, date, timedelta
 from unittest.mock import patch
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
@@ -82,13 +82,13 @@ class TestIsValid:
             assert auth.is_valid is True
 
     def test_revoked_is_invalid(self, app):
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         uid, tid = _make_user(app, "renter2@ex.com")
         aid = _add_authorization(app, tid, uid)
         with app.app_context():
             auth = db.session.get(RenterAuthorization, aid)
-            auth.revoked_at = datetime.now(timezone.utc)
+            auth.revoked_at = datetime.now(UTC)
             db.session.commit()
             assert auth.is_valid is False
 
@@ -160,13 +160,13 @@ class TestValidFor:
 
 class TestRentersListRoute:
     def test_owner_can_view(self, app, client):
-        uid, tid = _make_user(app, "owner1@ex.com", role=Role.OWNER)
+        uid, _tid = _make_user(app, "owner1@ex.com", role=Role.OWNER)
         _login(app, client, uid)
         r = client.get("/config/renters/")
         assert r.status_code == 200
 
     def test_pilot_cannot_view(self, app, client):
-        uid, tid = _make_user(app, "pilot1@ex.com", role=Role.PILOT)
+        uid, _tid = _make_user(app, "pilot1@ex.com", role=Role.PILOT)
         _login(app, client, uid)
         r = client.get("/config/renters/")
         assert r.status_code == 403
@@ -232,7 +232,7 @@ class TestRentersListRoute:
         assert b"Expiring soon" in r.data
 
     def test_revoked_status_badge(self, app, client):
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         uid, tid = _make_user(app, "owner3d@ex.com", role=Role.OWNER)
         renter_uid, _ = _make_user(app, "renter_revoked_badge@ex.com", role=Role.PILOT)
@@ -244,7 +244,7 @@ class TestRentersListRoute:
         aid = _add_authorization(app, tid, renter_uid)
         with app.app_context():
             auth = db.session.get(RenterAuthorization, aid)
-            auth.revoked_at = datetime.now(timezone.utc)
+            auth.revoked_at = datetime.now(UTC)
             db.session.commit()
         _login(app, client, uid)
         r = client.get("/config/renters/")
@@ -256,7 +256,7 @@ class TestRentersListRoute:
 
 class TestRenterAddEdit:
     def test_get_add_form(self, app, client):
-        uid, tid = _make_user(app, "owner4@ex.com", role=Role.OWNER)
+        uid, _tid = _make_user(app, "owner4@ex.com", role=Role.OWNER)
         _login(app, client, uid)
         r = client.get("/config/renters/add")
         assert r.status_code == 200
@@ -557,7 +557,7 @@ class TestRenterAddEdit:
             assert auth.notes == "updated note"
 
     def test_edit_cross_tenant_404(self, app, client):
-        uid, tid = _make_user(app, "owner16@ex.com", role=Role.OWNER)
+        uid, _tid = _make_user(app, "owner16@ex.com", role=Role.OWNER)
         other_uid, other_tid = _make_user(app, "renter_edit2@ex.com", role=Role.PILOT)
         aid = _add_authorization(app, other_tid, other_uid)
         _login(app, client, uid)
@@ -579,7 +579,7 @@ class TestRenterRevoke:
             assert auth.is_valid is False
 
     def test_revoke_cross_tenant_404(self, app, client):
-        uid, tid = _make_user(app, "owner18@ex.com", role=Role.OWNER)
+        uid, _tid = _make_user(app, "owner18@ex.com", role=Role.OWNER)
         other_uid, other_tid = _make_user(app, "renter_rev2@ex.com", role=Role.PILOT)
         aid = _add_authorization(app, other_tid, other_uid)
         _login(app, client, uid)
@@ -796,7 +796,7 @@ class TestUpdateProfilePolicy:
 
 class TestRenterAuthorizationNotification:
     def test_fires_within_threshold(self, app):
-        uid, tid = _make_user(app, "owner_notif1@ex.com", role=Role.OWNER)
+        _uid, tid = _make_user(app, "owner_notif1@ex.com", role=Role.OWNER)
         renter_uid, _ = _make_user(app, "renter_notif1@ex.com", role=Role.PILOT)
         with app.app_context():
             db.session.add(
@@ -806,16 +806,20 @@ class TestRenterAuthorizationNotification:
         _add_authorization(
             app, tid, renter_uid, expires_on=date.today() + timedelta(days=10)
         )
-        with app.app_context():
-            with patch("services.notification_service.dispatch") as mock_dispatch:
-                from services.notification_service import _check_renter_authorizations  # pyright: ignore[reportMissingImports]
+        with (
+            app.app_context(),
+            patch("services.notification_service.dispatch") as mock_dispatch,
+        ):
+            from services.notification_service import (
+                _check_renter_authorizations,  # pyright: ignore[reportMissingImports]
+            )
 
-                _check_renter_authorizations(app)
-                types_dispatched = [c.args[0] for c in mock_dispatch.call_args_list]
-                assert NotificationType.RENTER_AUTHORIZATION_EXPIRY in types_dispatched
+            _check_renter_authorizations(app)
+            types_dispatched = [c.args[0] for c in mock_dispatch.call_args_list]
+            assert NotificationType.RENTER_AUTHORIZATION_EXPIRY in types_dispatched
 
     def test_medical_expiry_also_triggers(self, app):
-        uid, tid = _make_user(app, "owner_notif2@ex.com", role=Role.OWNER)
+        _uid, tid = _make_user(app, "owner_notif2@ex.com", role=Role.OWNER)
         renter_uid, _ = _make_user(app, "renter_notif2@ex.com", role=Role.PILOT)
         with app.app_context():
             db.session.add(
@@ -828,21 +832,25 @@ class TestRenterAuthorizationNotification:
             renter_uid,
             medical_valid_until=date.today() + timedelta(days=5),
         )
-        with app.app_context():
-            with patch("services.notification_service.dispatch") as mock_dispatch:
-                from services.notification_service import _check_renter_authorizations  # pyright: ignore[reportMissingImports]
+        with (
+            app.app_context(),
+            patch("services.notification_service.dispatch") as mock_dispatch,
+        ):
+            from services.notification_service import (
+                _check_renter_authorizations,  # pyright: ignore[reportMissingImports]
+            )
 
-                _check_renter_authorizations(app)
-                assert mock_dispatch.called
-                _args, kwargs_or_ctx = (
-                    mock_dispatch.call_args_list[0].args,
-                    mock_dispatch.call_args_list[0].args[2],
-                )
-                details = kwargs_or_ctx["details"]
-                assert any("medical" in v for _label, v in details)
+            _check_renter_authorizations(app)
+            assert mock_dispatch.called
+            _args, kwargs_or_ctx = (
+                mock_dispatch.call_args_list[0].args,
+                mock_dispatch.call_args_list[0].args[2],
+            )
+            details = kwargs_or_ctx["details"]
+            assert any("medical" in v for _label, v in details)
 
     def test_no_content_no_dispatch(self, app):
-        uid, tid = _make_user(app, "owner_notif3@ex.com", role=Role.OWNER)
+        _uid, tid = _make_user(app, "owner_notif3@ex.com", role=Role.OWNER)
         renter_uid, _ = _make_user(app, "renter_notif3@ex.com", role=Role.PILOT)
         with app.app_context():
             db.session.add(
@@ -852,15 +860,19 @@ class TestRenterAuthorizationNotification:
         _add_authorization(
             app, tid, renter_uid, expires_on=date.today() + timedelta(days=90)
         )
-        with app.app_context():
-            with patch("services.notification_service.dispatch") as mock_dispatch:
-                from services.notification_service import _check_renter_authorizations  # pyright: ignore[reportMissingImports]
+        with (
+            app.app_context(),
+            patch("services.notification_service.dispatch") as mock_dispatch,
+        ):
+            from services.notification_service import (
+                _check_renter_authorizations,  # pyright: ignore[reportMissingImports]
+            )
 
-                _check_renter_authorizations(app)
-                assert not mock_dispatch.called
+            _check_renter_authorizations(app)
+            assert not mock_dispatch.called
 
     def test_revoked_authorization_excluded(self, app):
-        uid, tid = _make_user(app, "owner_notif4@ex.com", role=Role.OWNER)
+        _uid, tid = _make_user(app, "owner_notif4@ex.com", role=Role.OWNER)
         renter_uid, _ = _make_user(app, "renter_notif4@ex.com", role=Role.PILOT)
         with app.app_context():
             db.session.add(
@@ -871,14 +883,16 @@ class TestRenterAuthorizationNotification:
             app, tid, renter_uid, expires_on=date.today() + timedelta(days=5)
         )
         with app.app_context():
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             auth = db.session.get(RenterAuthorization, aid)
-            auth.revoked_at = datetime.now(timezone.utc)
+            auth.revoked_at = datetime.now(UTC)
             db.session.commit()
 
             with patch("services.notification_service.dispatch") as mock_dispatch:
-                from services.notification_service import _check_renter_authorizations  # pyright: ignore[reportMissingImports]
+                from services.notification_service import (
+                    _check_renter_authorizations,  # pyright: ignore[reportMissingImports]
+                )
 
                 _check_renter_authorizations(app)
                 assert not mock_dispatch.called
@@ -886,7 +900,9 @@ class TestRenterAuthorizationNotification:
     def test_respects_disabled_preference(self, app):
         """When the owner disables this notification type, no email is sent
         (exercised through the real dispatch(), not the mocked shortcut)."""
-        from models import NotificationPreference  # pyright: ignore[reportMissingImports]
+        from models import (
+            NotificationPreference,  # pyright: ignore[reportMissingImports]
+        )
 
         uid, tid = _make_user(app, "owner_notif5@ex.com", role=Role.OWNER)
         renter_uid, _ = _make_user(app, "renter_notif5@ex.com", role=Role.PILOT)
@@ -906,30 +922,31 @@ class TestRenterAuthorizationNotification:
         _add_authorization(
             app, tid, renter_uid, expires_on=date.today() + timedelta(days=5)
         )
-        with app.app_context():
-            with patch("services.email_service.send_email") as mock_send:
-                from services.notification_service import _check_renter_authorizations  # pyright: ignore[reportMissingImports]
+        with app.app_context(), patch("services.email_service.send_email") as mock_send:
+            from services.notification_service import (
+                _check_renter_authorizations,  # pyright: ignore[reportMissingImports]
+            )
 
-                _check_renter_authorizations(app)
-                assert not mock_send.called
+            _check_renter_authorizations(app)
+            assert not mock_send.called
 
     def test_run_daily_checks_includes_renter_authorizations(self, app):
-        with app.app_context():
-            with (
-                patch(
-                    "services.notification_service._check_renter_authorizations"
-                ) as mock_check,
-                patch("services.notification_service._check_maintenance"),
-                patch("services.notification_service._check_insurance"),
-                patch("services.notification_service._check_medical_and_sep"),
-                patch("services.notification_service._check_documents"),
-                patch("services.notification_service._check_airworthiness_reviews"),
-                patch(
-                    "services.recurring_expense_service.materialize_recurring_expenses"
-                ),
-                patch("services.co_owner_billing.run_co_owner_billing_pass_all"),
-            ):
-                from services.notification_service import run_daily_checks  # pyright: ignore[reportMissingImports]
+        with (
+            app.app_context(),
+            patch(
+                "services.notification_service._check_renter_authorizations"
+            ) as mock_check,
+            patch("services.notification_service._check_maintenance"),
+            patch("services.notification_service._check_insurance"),
+            patch("services.notification_service._check_medical_and_sep"),
+            patch("services.notification_service._check_documents"),
+            patch("services.notification_service._check_airworthiness_reviews"),
+            patch("services.recurring_expense_service.materialize_recurring_expenses"),
+            patch("services.co_owner_billing.run_co_owner_billing_pass_all"),
+        ):
+            from services.notification_service import (
+                run_daily_checks,  # pyright: ignore[reportMissingImports]
+            )
 
-                run_daily_checks(app)
-                assert mock_check.called
+            run_daily_checks(app)
+            assert mock_check.called

@@ -1,8 +1,9 @@
 """Tests for the phase-26 onboarding wizard and adaptive UI."""
 
+from datetime import UTC
+
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pyotp  # pyright: ignore[reportMissingImports]
-
 from models import (  # pyright: ignore[reportMissingImports]
     OperatingModel,
     Role,
@@ -13,7 +14,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     UserInvitation,
     db,
 )
-
 
 # ── Wizard helpers ─────────────────────────────────────────────────────────────
 
@@ -711,7 +711,7 @@ class TestMultiInvite:
 class TestInviteAcceptDisplayName:
     def _create_invitation(self, app, display_name=None):
         user_id, tenant_id = _create_owner(app)
-        from datetime import datetime, timedelta, timezone
+        from datetime import datetime, timedelta
 
         with app.app_context():
             inv = UserInvitation(
@@ -720,7 +720,7 @@ class TestInviteAcceptDisplayName:
                 email=None,
                 display_name=display_name,
                 role=Role.PILOT,
-                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+                expires_at=datetime.now(UTC) + timedelta(days=7),
             )
             db.session.add(inv)
             db.session.commit()

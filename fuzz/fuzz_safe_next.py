@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 # original Phase 1 form) leaves Atheris blind to every branch inside
 # reservations.routes itself.
 with atheris.instrument_imports(include=["reservations.routes"]):
-    from reservations.routes import _safe_next  # noqa: E402
+    from reservations.routes import _safe_next
 
 _FALLBACK = "/fallback"
 

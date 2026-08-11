@@ -93,6 +93,7 @@ def main() -> None:
         result = subprocess.run(
             ["npm", "ci", "--ignore-scripts"],
             cwd=requirements_dir,
+            check=False,  # returncode checked explicitly below
         )
         if result.returncode != 0:
             sys.exit(result.returncode)

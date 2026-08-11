@@ -20,7 +20,7 @@ import atheris
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 
 with atheris.instrument_imports(include=["documents.routes"]):
-    from documents.routes import _parse_reconcile_filename  # noqa: E402
+    from documents.routes import _parse_reconcile_filename
 
 
 @atheris.instrument_func

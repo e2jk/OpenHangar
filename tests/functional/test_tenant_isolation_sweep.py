@@ -32,7 +32,7 @@ product, for this sweep to do its job.
 """
 
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
@@ -108,7 +108,9 @@ def _build_tenant_world(app, client_factory, suffix: str) -> TenantWorld:
             WeightBalanceEntry,
             db,
         )
-        from models import Document as DocumentModel  # pyright: ignore[reportMissingImports]
+        from models import (
+            Document as DocumentModel,  # pyright: ignore[reportMissingImports]
+        )
 
         tenant = Tenant(name=f"Isolation Sweep Tenant {suffix}")
         db.session.add(tenant)
@@ -182,7 +184,7 @@ def _build_tenant_world(app, client_factory, suffix: str) -> TenantWorld:
         )
         db.session.add(trigger)
 
-        far_future = datetime.now(timezone.utc) + timedelta(days=30)
+        far_future = datetime.now(UTC) + timedelta(days=30)
         reservation = Reservation(
             aircraft_id=aircraft.id,
             pilot_user_id=other_user.id,
@@ -264,25 +266,25 @@ def _build_tenant_world(app, client_factory, suffix: str) -> TenantWorld:
 
         db.session.commit()
 
-        world_ids = dict(
-            tenant_id=tenant.id,
-            admin_user_id=admin.id,
-            aircraft_id=aircraft.id,
-            component_id=component.id,
-            flight_id=flight.id,
-            expense_id=expense.id,
-            snag_id=snag.id,
-            trigger_id=trigger.id,
-            res_id=reservation.id,
-            downtime_id=downtime.id,
-            document_id=document.id,
-            wb_entry_id=wb_entry.id,
-            token_id=share_token.id,
-            user_id=other_user.id,
-            inv_id=invitation.id,
-            auth_id=renter_auth.id,
-            entry_id=pilot_entry.id,
-        )
+        world_ids = {
+            "tenant_id": tenant.id,
+            "admin_user_id": admin.id,
+            "aircraft_id": aircraft.id,
+            "component_id": component.id,
+            "flight_id": flight.id,
+            "expense_id": expense.id,
+            "snag_id": snag.id,
+            "trigger_id": trigger.id,
+            "res_id": reservation.id,
+            "downtime_id": downtime.id,
+            "document_id": document.id,
+            "wb_entry_id": wb_entry.id,
+            "token_id": share_token.id,
+            "user_id": other_user.id,
+            "inv_id": invitation.id,
+            "auth_id": renter_auth.id,
+            "entry_id": pilot_entry.id,
+        }
         admin_email = admin.email
 
     new_client = client_factory()

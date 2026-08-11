@@ -1,4 +1,6 @@
-from datetime import date as _date, timedelta
+from datetime import date as _date
+from datetime import timedelta
+from typing import Any
 
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
@@ -11,11 +13,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
     url_for,
 )
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
-
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
-
-from typing import Any
-
 from models import (
     Aircraft,
     Expense,
@@ -25,14 +23,20 @@ from models import (
     TenantUser,
     db,
 )  # pyright: ignore[reportMissingImports]
-from utils import login_required, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
+from utils import (  # pyright: ignore[reportMissingImports]
+    login_required,
+    require_role,
+    user_can_access_aircraft,
+)
 
 from expenses.cost_dashboard import (  # pyright: ignore[reportMissingImports]
     DEFAULT_PERIOD_MONTHS,
     PERIOD_OPTIONS,
     compute_cost_dashboard,
 )
-from expenses.form_parsing import parse_expense_fields  # pyright: ignore[reportMissingImports]
+from expenses.form_parsing import (
+    parse_expense_fields,  # pyright: ignore[reportMissingImports]
+)
 
 expenses_bp = Blueprint("expenses", __name__)
 
@@ -269,7 +273,9 @@ def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | Non
     if receipt_file is not None:
         import os as _os
 
-        from documents.routes import _ALLOWED_EXTS  # pyright: ignore[reportMissingImports]
+        from documents.routes import (
+            _ALLOWED_EXTS,  # pyright: ignore[reportMissingImports]
+        )
 
         ext = _os.path.splitext(receipt_file.filename or "")[1].lower()
         if ext not in _ALLOWED_EXTS:
@@ -300,13 +306,18 @@ def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | Non
         expense.recurrence_last_date = None
 
     if receipt_file is not None:
-        from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
-
         from documents.routes import (  # pyright: ignore[reportMissingImports]
             _delete_file,
             _save_upload_canonical,
         )
-        from models import DocCategory, Document, Tenant  # pyright: ignore[reportMissingImports]
+        from models import (  # pyright: ignore[reportMissingImports]
+            DocCategory,
+            Document,
+            Tenant,
+        )
+        from werkzeug.utils import (
+            secure_filename,  # pyright: ignore[reportMissingImports]
+        )
 
         db.session.flush()
         title = description or _("Expense receipt %(date)s", date=date_val.isoformat())

@@ -15,7 +15,7 @@ the archives that still exist.
 
 import logging
 import os
-from datetime import date, timedelta
+from datetime import UTC, date, timedelta
 from typing import Any
 
 log = logging.getLogger(__name__)
@@ -203,7 +203,10 @@ def prune_old_backups(keep: "int | None" = None, today: "date | None" = None) ->
 def run_scheduled_backup(app: "object") -> None:
     """One scheduled tick: back up, then prune retention on success only."""
     from models import db  # pyright: ignore[reportMissingImports]
-    from services.advisory_lock import advisory_lock_scope  # pyright: ignore[reportMissingImports]
+
+    from services.advisory_lock import (
+        advisory_lock_scope,  # pyright: ignore[reportMissingImports]
+    )
 
     with app.app_context():  # type: ignore[attr-defined]
         try:
@@ -213,7 +216,9 @@ def run_scheduled_backup(app: "object") -> None:
                         "Scheduled backup: another worker holds the lock — skipping"
                     )
                     return
-                from config.routes import run_backup  # pyright: ignore[reportMissingImports]
+                from config.routes import (
+                    run_backup,  # pyright: ignore[reportMissingImports]
+                )
 
                 try:
                     record = run_backup()
@@ -221,7 +226,9 @@ def run_scheduled_backup(app: "object") -> None:
                     log.exception("Scheduled backup failed — retention pruning skipped")
                     return
                 log.info("Scheduled backup OK: %s", record.filename)
-                from services.backup_verification import verify_and_alert  # pyright: ignore[reportMissingImports]
+                from services.backup_verification import (
+                    verify_and_alert,  # pyright: ignore[reportMissingImports]
+                )
 
                 verify_and_alert(record)
                 removed = prune_old_backups()
@@ -233,17 +240,17 @@ def run_scheduled_backup(app: "object") -> None:
 
 def _backup_daily_loop(app: "object", run_hour: int, run_minute: int) -> None:
     import time
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
     log.info("Backup scheduled daily at %02d:%02d UTC", run_hour, run_minute)
     while True:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         next_run = now.replace(
             hour=run_hour, minute=run_minute, second=0, microsecond=0
         )
         if next_run <= now:
             next_run += timedelta(days=1)
-        time.sleep((next_run - datetime.now(timezone.utc)).total_seconds())
+        time.sleep((next_run - datetime.now(UTC)).total_seconds())
         run_scheduled_backup(app)
 
 

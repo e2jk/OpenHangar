@@ -14,7 +14,8 @@ Hours limits warn inside the last 10 % of the interval; calendar limits warn
 90 days ahead (mirroring the airworthiness document window).
 """
 
-from datetime import date as _date, timedelta
+from datetime import date as _date
+from datetime import timedelta
 from typing import Any
 
 CALENDAR_WARN_DAYS = 90

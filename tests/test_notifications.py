@@ -3,9 +3,11 @@ Tests for Phase 34: Email Notifications.
 Covers: 3-level preference lookup, dispatch, health tracking, notification prefs UI.
 """
 
-import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
+import contextlib
+from datetime import UTC
 from unittest.mock import MagicMock, patch
 
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     AppSetting,
     NotificationPreference,
@@ -17,8 +19,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     User,
     db,
 )
-import contextlib
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -62,7 +62,10 @@ class TestParseNotificationTime:
     def _parse(self, value=None):
         import os
         from unittest.mock import patch as _patch
-        from init import _parse_notification_time  # pyright: ignore[reportMissingImports]
+
+        from init import (
+            _parse_notification_time,  # pyright: ignore[reportMissingImports]
+        )
 
         env = {} if value is None else {"OPENHANGAR_NOTIFICATION_TIME": value}
         with _patch.dict(os.environ, env, clear=(value is None)):
@@ -71,7 +74,10 @@ class TestParseNotificationTime:
     def test_default_returns_07_00(self):
         import os
         from unittest.mock import patch as _patch
-        from init import _parse_notification_time  # pyright: ignore[reportMissingImports]
+
+        from init import (
+            _parse_notification_time,  # pyright: ignore[reportMissingImports]
+        )
 
         with _patch.dict(os.environ, {}, clear=False):
             os.environ.pop("OPENHANGAR_NOTIFICATION_TIME", None)
@@ -118,17 +124,21 @@ class TestParseNotificationTime:
 
     def test_validate_config_raises_on_bad_value(self, app):
         import os
-        import pytest
         from unittest.mock import patch as _patch
+
+        import pytest
         from init import _validate_config  # pyright: ignore[reportMissingImports]
 
-        with _patch.dict(os.environ, {"OPENHANGAR_NOTIFICATION_TIME": "99:99"}):
-            with pytest.raises(RuntimeError, match="OPENHANGAR_NOTIFICATION_TIME"):
-                _validate_config(app)
+        with (
+            _patch.dict(os.environ, {"OPENHANGAR_NOTIFICATION_TIME": "99:99"}),
+            pytest.raises(RuntimeError, match="OPENHANGAR_NOTIFICATION_TIME"),
+        ):
+            _validate_config(app)
 
     def test_validate_config_accepts_valid_value(self, app):
         import os
         from unittest.mock import patch as _patch
+
         from init import _validate_config  # pyright: ignore[reportMissingImports]
 
         with _patch.dict(os.environ, {"OPENHANGAR_NOTIFICATION_TIME": "06:30"}):
@@ -213,7 +223,7 @@ class TestEffectivePreference:
     def test_user_override_wins_over_tenant_default(self, app):
         uid, tid = _make_user(app, "admin3@test.com")
         with app.app_context():
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             db.session.add(
                 TenantNotificationDefault(
@@ -221,7 +231,7 @@ class TestEffectivePreference:
                     notification_type=NotificationType.GROUNDING_SNAG_OPENED,
                     enabled=False,
                     threshold_days=None,
-                    updated_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(UTC),
                 )
             )
             db.session.add(
@@ -231,7 +241,7 @@ class TestEffectivePreference:
                     notification_type=NotificationType.GROUNDING_SNAG_OPENED,
                     enabled=True,
                     threshold_days=None,
-                    updated_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(UTC),
                 )
             )
             db.session.commit()
@@ -246,7 +256,7 @@ class TestEffectivePreference:
     def test_threshold_days_from_tenant_default(self, app):
         uid, tid = _make_user(app, "admin4@test.com")
         with app.app_context():
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             db.session.add(
                 TenantNotificationDefault(
@@ -254,7 +264,7 @@ class TestEffectivePreference:
                     notification_type=NotificationType.MAINTENANCE_DUE_SOON,
                     enabled=True,
                     threshold_days=14,
-                    updated_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(UTC),
                 )
             )
             db.session.commit()
@@ -274,6 +284,7 @@ class TestEmailHealth:
     def test_unconfigured_when_no_smtp_host(self, app):
         with app.app_context():
             import os
+
             from services.email_service import get_email_health
 
             with patch.dict(os.environ, {"OPENHANGAR_SMTP_HOST": ""}, clear=False):
@@ -283,6 +294,7 @@ class TestEmailHealth:
     def test_ok_status_when_no_failures(self, app):
         with app.app_context():
             import os
+
             from services.email_service import get_email_health
 
             with patch.dict(
@@ -304,11 +316,12 @@ class TestEmailHealth:
     def test_degraded_when_had_success_then_failures(self, app):
         with app.app_context():
             import os
+            from datetime import datetime
+
             from services.email_service import get_email_health
-            from datetime import datetime, timezone
 
             for key, val in [
-                ("email_last_success_at", datetime.now(timezone.utc).isoformat()),
+                ("email_last_success_at", datetime.now(UTC).isoformat()),
                 ("email_consecutive_failures", "3"),
             ]:
                 s = db.session.get(AppSetting, key)
@@ -333,6 +346,7 @@ class TestEmailHealth:
     def test_never_worked_when_only_failures(self, app):
         with app.app_context():
             import os
+
             from services.email_service import get_email_health
 
             # Remove any prior success
@@ -371,25 +385,25 @@ class TestDispatch:
         }
 
     def test_dispatch_sends_to_eligible_owner(self, app):
-        uid, tid = _make_user(app, "owner@dispatch.com", role=Role.OWNER)
-        with app.app_context():
-            with (
-                patch("services.email_service.send_email") as mock_send,
-                patch("services.email_service._record_health"),
-                patch(
-                    "services.notification_service._render_email",
-                    return_value=("plain text", "<p>html</p>"),
-                ),
-            ):
-                from services.notification_service import dispatch
+        _uid, tid = _make_user(app, "owner@dispatch.com", role=Role.OWNER)
+        with (
+            app.app_context(),
+            patch("services.email_service.send_email") as mock_send,
+            patch("services.email_service._record_health"),
+            patch(
+                "services.notification_service._render_email",
+                return_value=("plain text", "<p>html</p>"),
+            ),
+        ):
+            from services.notification_service import dispatch
 
-                dispatch(NotificationType.GROUNDING_SNAG_OPENED, tid, self._ctx())
-                assert mock_send.called
+            dispatch(NotificationType.GROUNDING_SNAG_OPENED, tid, self._ctx())
+            assert mock_send.called
 
     def test_dispatch_skips_disabled_preference(self, app):
         uid, tid = _make_user(app, "owner@nodispatch.com", role=Role.OWNER)
         with app.app_context():
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             db.session.add(
                 NotificationPreference(
@@ -398,7 +412,7 @@ class TestDispatch:
                     notification_type=NotificationType.GROUNDING_SNAG_OPENED,
                     enabled=False,
                     threshold_days=None,
-                    updated_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(UTC),
                 )
             )
             db.session.commit()
@@ -560,7 +574,7 @@ class TestNotificationPreferencesRoute:
         uid, tid = _make_user(app, "owner5@prefs.com", role=Role.OWNER)
         _login(client, uid)
         with app.app_context():
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             db.session.add(
                 TenantNotificationDefault(
@@ -568,7 +582,7 @@ class TestNotificationPreferencesRoute:
                     notification_type=NotificationType.MAINTENANCE_DUE_SOON,
                     enabled=True,
                     threshold_days=7,
-                    updated_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(UTC),
                 )
             )
             db.session.commit()
@@ -741,7 +755,9 @@ class TestTryWelcomeLock:
     def test_non_postgresql_returns_true_without_db_call(self):
         from unittest.mock import MagicMock
 
-        from services.notification_service import _try_welcome_lock  # pyright: ignore[reportMissingImports]
+        from services.notification_service import (
+            _try_welcome_lock,  # pyright: ignore[reportMissingImports]
+        )
 
         mock_db = MagicMock()
         mock_db.engine.dialect.name = "sqlite"
@@ -752,7 +768,9 @@ class TestTryWelcomeLock:
     def test_postgresql_returns_true_when_lock_acquired(self):
         from unittest.mock import MagicMock
 
-        from services.notification_service import _try_welcome_lock  # pyright: ignore[reportMissingImports]
+        from services.notification_service import (
+            _try_welcome_lock,  # pyright: ignore[reportMissingImports]
+        )
 
         mock_db = MagicMock()
         mock_db.engine.dialect.name = "postgresql"
@@ -762,7 +780,9 @@ class TestTryWelcomeLock:
     def test_postgresql_returns_false_when_lock_not_acquired(self):
         from unittest.mock import MagicMock
 
-        from services.notification_service import _try_welcome_lock  # pyright: ignore[reportMissingImports]
+        from services.notification_service import (
+            _try_welcome_lock,  # pyright: ignore[reportMissingImports]
+        )
 
         mock_db = MagicMock()
         mock_db.engine.dialect.name = "postgresql"
@@ -794,7 +814,11 @@ class TestDailyChecks:
         ac_id = _make_aircraft(app, tid, "OO-OVD")
         with app.app_context():
             from datetime import date, timedelta
-            from models import MaintenanceTrigger, TriggerType  # pyright: ignore[reportMissingImports]
+
+            from models import (  # pyright: ignore[reportMissingImports]
+                MaintenanceTrigger,
+                TriggerType,
+            )
 
             db.session.add(
                 MaintenanceTrigger(
@@ -818,7 +842,11 @@ class TestDailyChecks:
         ac_id = _make_aircraft(app, tid, "OO-SON")
         with app.app_context():
             from datetime import date, timedelta
-            from models import MaintenanceTrigger, TriggerType  # pyright: ignore[reportMissingImports]
+
+            from models import (  # pyright: ignore[reportMissingImports]
+                MaintenanceTrigger,
+                TriggerType,
+            )
 
             db.session.add(
                 MaintenanceTrigger(
@@ -842,6 +870,7 @@ class TestDailyChecks:
         ac_id = _make_aircraft(app, tid, "OO-INS")
         with app.app_context():
             from datetime import date, timedelta
+
             from models import Aircraft  # pyright: ignore[reportMissingImports]
 
             ac = db.session.get(Aircraft, ac_id)
@@ -860,6 +889,7 @@ class TestDailyChecks:
         ac_id = _make_aircraft(app, tid, "OO-OK")
         with app.app_context():
             from datetime import date, timedelta
+
             from models import Aircraft  # pyright: ignore[reportMissingImports]
 
             ac = db.session.get(Aircraft, ac_id)
@@ -873,9 +903,10 @@ class TestDailyChecks:
                 assert not mock_dispatch.called
 
     def test_medical_expiry_dispatches(self, app):
-        uid, tid = _make_user(app, "pilot@med.com", role=Role.PILOT, is_pilot=True)
+        uid, _tid = _make_user(app, "pilot@med.com", role=Role.PILOT, is_pilot=True)
         with app.app_context():
             from datetime import date, timedelta
+
             from models import PilotProfile  # pyright: ignore[reportMissingImports]
 
             db.session.add(
@@ -894,9 +925,10 @@ class TestDailyChecks:
                 assert NotificationType.MEDICAL_EXPIRING in types_dispatched
 
     def test_sep_expiry_dispatches(self, app):
-        uid, tid = _make_user(app, "pilot@sep.com", role=Role.PILOT, is_pilot=True)
+        uid, _tid = _make_user(app, "pilot@sep.com", role=Role.PILOT, is_pilot=True)
         with app.app_context():
             from datetime import date, timedelta
+
             from models import PilotProfile  # pyright: ignore[reportMissingImports]
 
             db.session.add(
@@ -919,6 +951,7 @@ class TestDailyChecks:
         ac_id = _make_aircraft(app, tid, "OO-DOC")
         with app.app_context():
             from datetime import date, timedelta
+
             from models import Document  # pyright: ignore[reportMissingImports]
 
             db.session.add(
@@ -944,7 +977,11 @@ class TestDailyChecks:
         ac_id = _make_aircraft(app, tid, "OO-AW")
         with app.app_context():
             from datetime import date, timedelta
-            from models import AirworthinessDocument, AirworthinessDocumentStatus  # pyright: ignore[reportMissingImports]
+
+            from models import (  # pyright: ignore[reportMissingImports]
+                AirworthinessDocument,
+                AirworthinessDocumentStatus,
+            )
 
             doc = AirworthinessDocument(
                 doc_type="ARC",
@@ -1012,7 +1049,10 @@ class TestEmailServiceHealthTrackingExtra:
 class TestUserCapsExtra:
     def test_maintenance_role_adds_maint_cap(self):
         from unittest.mock import MagicMock
-        from services.notification_service import _user_caps  # pyright: ignore[reportMissingImports]
+
+        from services.notification_service import (
+            _user_caps,  # pyright: ignore[reportMissingImports]
+        )
 
         user = MagicMock(is_pilot=False, is_maintenance=False)
         caps = _user_caps(Role.MAINTENANCE, user)
@@ -1021,7 +1061,10 @@ class TestUserCapsExtra:
 
     def test_instructor_role_adds_pilot_and_maint_caps(self):
         from unittest.mock import MagicMock
-        from services.notification_service import _user_caps  # pyright: ignore[reportMissingImports]
+
+        from services.notification_service import (
+            _user_caps,  # pyright: ignore[reportMissingImports]
+        )
 
         user = MagicMock(is_pilot=False, is_maintenance=False)
         caps = _user_caps(Role.INSTRUCTOR, user)
@@ -1035,13 +1078,18 @@ class TestUserCapsExtra:
 
 class TestTenantDisplayName:
     def test_none_profile_returns_openhangar(self):
-        from services.notification_service import _tenant_display_name  # pyright: ignore[reportMissingImports]
+        from services.notification_service import (
+            _tenant_display_name,  # pyright: ignore[reportMissingImports]
+        )
 
         assert _tenant_display_name(None) == "OpenHangar"
 
     def test_profile_with_club_name_returns_club_name(self):
         from unittest.mock import MagicMock
-        from services.notification_service import _tenant_display_name  # pyright: ignore[reportMissingImports]
+
+        from services.notification_service import (
+            _tenant_display_name,  # pyright: ignore[reportMissingImports]
+        )
 
         profile = MagicMock(
             club_name="Sky Club", school_name=None, organisation_name=None
@@ -1050,7 +1098,10 @@ class TestTenantDisplayName:
 
     def test_profile_all_none_returns_openhangar(self):
         from unittest.mock import MagicMock
-        from services.notification_service import _tenant_display_name  # pyright: ignore[reportMissingImports]
+
+        from services.notification_service import (
+            _tenant_display_name,  # pyright: ignore[reportMissingImports]
+        )
 
         profile = MagicMock(club_name=None, school_name=None, organisation_name=None)
         assert _tenant_display_name(profile) == "OpenHangar"
@@ -1061,20 +1112,24 @@ class TestTenantDisplayName:
 
 class TestRenderEmail:
     def test_returns_text_and_html_tuple(self, app):
-        with app.app_context():
-            with patch("flask.render_template", return_value="<p>body</p>"):
-                from services.notification_service import _render_email  # pyright: ignore[reportMissingImports]
+        with (
+            app.app_context(),
+            patch("flask.render_template", return_value="<p>body</p>"),
+        ):
+            from services.notification_service import (
+                _render_email,  # pyright: ignore[reportMissingImports]
+            )
 
-                text, html = _render_email(
-                    "generic.html",
-                    text_body="plain",
-                    subject="Subj",
-                    notification_title="T",
-                    notification_message="M",
-                    details=[],
-                )
-                assert text == "plain"
-                assert html == "<p>body</p>"
+            text, html = _render_email(
+                "generic.html",
+                text_body="plain",
+                subject="Subj",
+                notification_title="T",
+                notification_message="M",
+                details=[],
+            )
+            assert text == "plain"
+            assert html == "<p>body</p>"
 
 
 # ── _text_for cta_url path ────────────────────────────────────────────────────
@@ -1082,7 +1137,9 @@ class TestRenderEmail:
 
 class TestTextFor:
     def test_cta_url_appended_to_output(self):
-        from services.notification_service import _text_for  # pyright: ignore[reportMissingImports]
+        from services.notification_service import (
+            _text_for,  # pyright: ignore[reportMissingImports]
+        )
 
         result = _text_for(
             "GROUNDING_SNAG_OPENED",
@@ -1108,56 +1165,68 @@ class TestDispatchEmailExceptions:
         }
 
     def test_email_not_configured_stops_loop(self, app):
-        from services.email_service import EmailNotConfiguredError  # pyright: ignore[reportMissingImports]
+        from services.email_service import (
+            EmailNotConfiguredError,  # pyright: ignore[reportMissingImports]
+        )
 
         _uid, tid = _make_user(app, "owner@exc1.com", role=Role.OWNER)
-        with app.app_context():
-            with (
-                patch(
-                    "services.notification_service._render_email",
-                    return_value=("t", "<p>h</p>"),
-                ),
-                patch(
-                    "services.email_service.send_email",
-                    side_effect=EmailNotConfiguredError,
-                ),
-            ):
-                from services.notification_service import dispatch  # pyright: ignore[reportMissingImports]
+        with (
+            app.app_context(),
+            patch(
+                "services.notification_service._render_email",
+                return_value=("t", "<p>h</p>"),
+            ),
+            patch(
+                "services.email_service.send_email",
+                side_effect=EmailNotConfiguredError,
+            ),
+        ):
+            from services.notification_service import (
+                dispatch,  # pyright: ignore[reportMissingImports]
+            )
 
-                dispatch(NotificationType.GROUNDING_SNAG_OPENED, tid, self._ctx())
+            dispatch(NotificationType.GROUNDING_SNAG_OPENED, tid, self._ctx())
 
     def test_email_send_error_is_logged_and_loop_continues(self, app):
-        from services.email_service import EmailSendError  # pyright: ignore[reportMissingImports]
+        from services.email_service import (
+            EmailSendError,  # pyright: ignore[reportMissingImports]
+        )
 
         _uid, tid = _make_user(app, "owner@exc2.com", role=Role.OWNER)
-        with app.app_context():
-            with (
-                patch(
-                    "services.notification_service._render_email",
-                    return_value=("t", "<p>h</p>"),
-                ),
-                patch(
-                    "services.email_service.send_email",
-                    side_effect=EmailSendError("smtp err"),
-                ),
-            ):
-                from services.notification_service import dispatch  # pyright: ignore[reportMissingImports]
+        with (
+            app.app_context(),
+            patch(
+                "services.notification_service._render_email",
+                return_value=("t", "<p>h</p>"),
+            ),
+            patch(
+                "services.email_service.send_email",
+                side_effect=EmailSendError("smtp err"),
+            ),
+        ):
+            from services.notification_service import (
+                dispatch,  # pyright: ignore[reportMissingImports]
+            )
 
-                dispatch(NotificationType.GROUNDING_SNAG_OPENED, tid, self._ctx())
+            dispatch(NotificationType.GROUNDING_SNAG_OPENED, tid, self._ctx())
 
     def test_unexpected_exception_is_logged_and_loop_continues(self, app):
         """A non-email failure (e.g. a template rendering bug) must not
         propagate out of dispatch() and abort the whole notification run --
         it's logged and the (single, here) recipient loop just ends."""
         _uid, tid = _make_user(app, "owner@exc3.com", role=Role.OWNER)
-        with app.app_context():
-            with patch(
+        with (
+            app.app_context(),
+            patch(
                 "services.notification_service._render_email",
                 side_effect=RuntimeError("template boom"),
-            ):
-                from services.notification_service import dispatch  # pyright: ignore[reportMissingImports]
+            ),
+        ):
+            from services.notification_service import (
+                dispatch,  # pyright: ignore[reportMissingImports]
+            )
 
-                dispatch(NotificationType.GROUNDING_SNAG_OPENED, tid, self._ctx())
+            dispatch(NotificationType.GROUNDING_SNAG_OPENED, tid, self._ctx())
 
 
 # ── run_daily_checks ──────────────────────────────────────────────────────────
@@ -1172,7 +1241,9 @@ class TestRunDailyChecks:
             patch("services.notification_service._check_documents") as m4,
             patch("services.notification_service._check_airworthiness_reviews") as m5,
         ):
-            from services.notification_service import run_daily_checks  # pyright: ignore[reportMissingImports]
+            from services.notification_service import (
+                run_daily_checks,  # pyright: ignore[reportMissingImports]
+            )
 
             run_daily_checks(app)
             assert m1.called
@@ -1186,7 +1257,9 @@ class TestRunDailyChecks:
             "services.notification_service._check_maintenance",
             side_effect=RuntimeError("fail"),
         ):
-            from services.notification_service import run_daily_checks  # pyright: ignore[reportMissingImports]
+            from services.notification_service import (
+                run_daily_checks,  # pyright: ignore[reportMissingImports]
+            )
 
             run_daily_checks(app)  # must not raise
 
@@ -1198,7 +1271,9 @@ class TestRunDailyChecks:
             patch("services.notification_service._check_insurance") as m2,
         ):
             mock_scope.return_value.__enter__.return_value = False
-            from services.notification_service import run_daily_checks  # pyright: ignore[reportMissingImports]
+            from services.notification_service import (
+                run_daily_checks,  # pyright: ignore[reportMissingImports]
+            )
 
             run_daily_checks(app)
             assert not m1.called
@@ -1213,16 +1288,21 @@ class TestDailyCheckSkipPaths:
         _uid, tid = _make_user(app, "owner@ins-null.com", role=Role.OWNER)
         _make_aircraft(app, tid, "OO-NULL-EXP")
         # insurance_expiry is None by default
-        with app.app_context():
-            with patch("services.notification_service.dispatch") as mock_dispatch:
-                from services.notification_service import _check_insurance  # pyright: ignore[reportMissingImports]
+        with (
+            app.app_context(),
+            patch("services.notification_service.dispatch") as mock_dispatch,
+        ):
+            from services.notification_service import (
+                _check_insurance,  # pyright: ignore[reportMissingImports]
+            )
 
-                _check_insurance(app)
-                assert not mock_dispatch.called
+            _check_insurance(app)
+            assert not mock_dispatch.called
 
     def test_medical_skips_inactive_user(self, app):
         with app.app_context():
             from datetime import date, timedelta
+
             from models import PilotProfile  # pyright: ignore[reportMissingImports]
 
             u = User(
@@ -1242,7 +1322,9 @@ class TestDailyCheckSkipPaths:
             db.session.commit()
 
             with patch("services.notification_service.dispatch") as mock_dispatch:
-                from services.notification_service import _check_medical_and_sep  # pyright: ignore[reportMissingImports]
+                from services.notification_service import (
+                    _check_medical_and_sep,  # pyright: ignore[reportMissingImports]
+                )
 
                 _check_medical_and_sep(app)
                 assert not mock_dispatch.called
@@ -1250,6 +1332,7 @@ class TestDailyCheckSkipPaths:
     def test_medical_skips_user_without_tenant_user(self, app):
         with app.app_context():
             from datetime import date, timedelta
+
             from models import PilotProfile  # pyright: ignore[reportMissingImports]
 
             u = User(
@@ -1270,7 +1353,9 @@ class TestDailyCheckSkipPaths:
             db.session.commit()
 
             with patch("services.notification_service.dispatch") as mock_dispatch:
-                from services.notification_service import _check_medical_and_sep  # pyright: ignore[reportMissingImports]
+                from services.notification_service import (
+                    _check_medical_and_sep,  # pyright: ignore[reportMissingImports]
+                )
 
                 _check_medical_and_sep(app)
                 assert not mock_dispatch.called
@@ -1293,7 +1378,9 @@ class TestDailyCheckSkipPaths:
             db.session.commit()
 
             with patch("services.notification_service.dispatch") as mock_dispatch:
-                from services.notification_service import _check_documents  # pyright: ignore[reportMissingImports]
+                from services.notification_service import (
+                    _check_documents,  # pyright: ignore[reportMissingImports]
+                )
 
                 _check_documents(app)
                 assert not mock_dispatch.called
@@ -1302,7 +1389,10 @@ class TestDailyCheckSkipPaths:
         _uid, tid = _make_user(app, "owner@aw-null.com", role=Role.OWNER)
         ac_id = _make_aircraft(app, tid, "OO-NULL-AW")
         with app.app_context():
-            from models import AirworthinessDocument, AirworthinessDocumentStatus  # pyright: ignore[reportMissingImports]
+            from models import (  # pyright: ignore[reportMissingImports]
+                AirworthinessDocument,
+                AirworthinessDocumentStatus,
+            )
 
             doc = AirworthinessDocument(doc_type="ARC", reference="ARC-NULL-001")
             db.session.add(doc)
@@ -1317,7 +1407,9 @@ class TestDailyCheckSkipPaths:
             db.session.commit()
 
             with patch("services.notification_service.dispatch") as mock_dispatch:
-                from services.notification_service import _check_airworthiness_reviews  # pyright: ignore[reportMissingImports]
+                from services.notification_service import (
+                    _check_airworthiness_reviews,  # pyright: ignore[reportMissingImports]
+                )
 
                 _check_airworthiness_reviews(app)
                 assert not mock_dispatch.called
@@ -1329,23 +1421,27 @@ class TestDailyCheckSkipPaths:
 class TestDispatchInContext:
     def test_dispatch_exception_is_swallowed(self, app):
         _uid, tid = _make_user(app, "owner@disp-exc.com", role=Role.OWNER)
-        with app.app_context():
-            with patch(
+        with (
+            app.app_context(),
+            patch(
                 "services.notification_service.dispatch",
                 side_effect=RuntimeError("db gone"),
-            ):
-                from services.notification_service import _dispatch_in_context  # pyright: ignore[reportMissingImports]
+            ),
+        ):
+            from services.notification_service import (
+                _dispatch_in_context,  # pyright: ignore[reportMissingImports]
+            )
 
-                _dispatch_in_context(
-                    NotificationType.GROUNDING_SNAG_OPENED,
-                    tid,
-                    {
-                        "subject": "T",
-                        "notification_title": "T",
-                        "notification_message": "M",
-                        "details": [],
-                    },
-                )  # must not raise
+            _dispatch_in_context(
+                NotificationType.GROUNDING_SNAG_OPENED,
+                tid,
+                {
+                    "subject": "T",
+                    "notification_title": "T",
+                    "notification_message": "M",
+                    "details": [],
+                },
+            )  # must not raise
 
 
 # ── welcome email: no instance admin ─────────────────────────────────────────
@@ -1367,7 +1463,9 @@ class TestWelcomeEmailNoAdmin:
                 clear=False,
             ),
         ):
-            from services.notification_service import send_welcome_email_if_needed  # pyright: ignore[reportMissingImports]
+            from services.notification_service import (
+                send_welcome_email_if_needed,  # pyright: ignore[reportMissingImports]
+            )
 
             send_welcome_email_if_needed(app)
             assert not mock_send.called
@@ -1379,7 +1477,9 @@ class TestWelcomeEmailNoAdmin:
 class TestEmailHealthExtra:
     def test_record_health_success_updates_existing_rows(self, app):
         with app.app_context():
-            from services.email_service import _record_health  # pyright: ignore[reportMissingImports]
+            from services.email_service import (
+                _record_health,  # pyright: ignore[reportMissingImports]
+            )
 
             for key in ("email_last_success_at", "email_consecutive_failures"):
                 row = db.session.get(AppSetting, key)
@@ -1397,14 +1497,18 @@ class TestEmailHealthExtra:
 
     def test_record_health_db_error_is_swallowed(self, app):
         with app.app_context():
-            from services.email_service import _record_health  # pyright: ignore[reportMissingImports]
+            from services.email_service import (
+                _record_health,  # pyright: ignore[reportMissingImports]
+            )
 
             with patch("models.db.session.commit", side_effect=Exception("db error")):
                 _record_health(True)  # must not raise
 
     def test_get_email_health_db_error_returns_ok(self, app):
         with app.app_context():
-            from services.email_service import get_email_health  # pyright: ignore[reportMissingImports]
+            from services.email_service import (
+                get_email_health,  # pyright: ignore[reportMissingImports]
+            )
 
             with (
                 patch.dict(
@@ -1445,7 +1549,7 @@ class TestNotificationPreferencesRouteExtra:
         assert b"Cannot save" in response.data
 
     def test_post_invalid_threshold_uses_none(self, app, client):
-        uid, tid = _make_user(app, "owner9@prefs.com", role=Role.OWNER)
+        uid, _tid = _make_user(app, "owner9@prefs.com", role=Role.OWNER)
         _login(client, uid)
         client.post(
             "/config/notifications/",
@@ -1467,7 +1571,7 @@ class TestNotificationPreferencesRouteExtra:
         uid, tid = _make_user(app, "owner10@prefs.com", role=Role.OWNER)
         _login(client, uid)
         with app.app_context():
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             db.session.add(
                 NotificationPreference(
@@ -1476,7 +1580,7 @@ class TestNotificationPreferencesRouteExtra:
                     notification_type=NotificationType.GROUNDING_SNAG_OPENED,
                     enabled=False,
                     threshold_days=None,
-                    updated_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(UTC),
                 )
             )
             db.session.commit()
@@ -1496,7 +1600,7 @@ class TestNotificationPreferencesRouteExtra:
         uid, tid = _make_user(app, "owner11@prefs.com", role=Role.OWNER)
         _login(client, uid)
         with app.app_context():
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             db.session.add(
                 NotificationPreference(
@@ -1505,7 +1609,7 @@ class TestNotificationPreferencesRouteExtra:
                     notification_type=NotificationType.MAINTENANCE_DUE_SOON,
                     enabled=True,
                     threshold_days=7,
-                    updated_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(UTC),
                 )
             )
             db.session.commit()
@@ -1561,7 +1665,9 @@ class TestNotificationDailyLoop:
                 side_effect=RuntimeError("check failed"),
             ),
         ):
-            from init import _notification_daily_loop  # pyright: ignore[reportMissingImports]
+            from init import (
+                _notification_daily_loop,  # pyright: ignore[reportMissingImports]
+            )
 
             with contextlib.suppress(
                 StopIteration
@@ -1582,7 +1688,9 @@ class TestNotificationDailyLoop:
             patch("time.sleep", side_effect=mock_sleep),
             patch("services.notification_service.run_daily_checks"),
         ):
-            from init import _notification_daily_loop  # pyright: ignore[reportMissingImports]
+            from init import (
+                _notification_daily_loop,  # pyright: ignore[reportMissingImports]
+            )
 
             with contextlib.suppress(StopIteration):
                 _notification_daily_loop(app, 0, 0)
@@ -1596,7 +1704,9 @@ class TestNotificationDailyLoop:
         assert sleep_calls[0] <= 24 * 3600 + 60  # sanity: at most one day ahead
 
     def test_start_notification_scheduler_creates_named_daemon_thread(self, app):
-        from init import _start_notification_scheduler  # pyright: ignore[reportMissingImports]
+        from init import (
+            _start_notification_scheduler,  # pyright: ignore[reportMissingImports]
+        )
 
         with patch("threading.Thread") as MockThread:
             mock_t = MagicMock()
@@ -1614,7 +1724,7 @@ class TestNotificationDailyLoop:
 class TestDispatchI18n:
     def test_subject_key_formatted_with_args_for_english_user(self, app):
         """dispatch() uses subject_key + subject_args; English user gets key % args."""
-        uid, tid = _make_user(app, "owner@i18n-subj.com", role=Role.OWNER)
+        _uid, tid = _make_user(app, "owner@i18n-subj.com", role=Role.OWNER)
         with app.app_context():
             subjects_sent = []
 
@@ -1651,7 +1761,7 @@ class TestDispatchI18n:
 
     def test_translated_title_and_message_passed_to_render(self, app):
         """dispatch() passes per-locale notification_title/message to _render_email."""
-        uid, tid = _make_user(app, "owner@i18n-render.com", role=Role.OWNER)
+        _uid, tid = _make_user(app, "owner@i18n-render.com", role=Role.OWNER)
         with app.app_context():
             render_ctx: list[dict] = []
 
@@ -1689,7 +1799,7 @@ class TestDispatchI18n:
 
     def test_backward_compat_plain_subject_still_works(self, app):
         """dispatch() with legacy plain subject/title/message fields still sends email."""
-        uid, tid = _make_user(app, "owner@i18n-compat.com", role=Role.OWNER)
+        _uid, tid = _make_user(app, "owner@i18n-compat.com", role=Role.OWNER)
         with app.app_context():
             subjects_sent: list[str] = []
 
