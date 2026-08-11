@@ -46,7 +46,7 @@ by J1-J6 and the ~3000-test unit suite (per the plan's own "Existing"
 notes for this journey).
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest  # pyright: ignore[reportMissingImports]
 
@@ -301,7 +301,7 @@ def role_world(owner_env, app, client_factory):
             aircraft_ids=str(aircraft_id),
         )
 
-    start_dt = datetime(2030, 6, 20, 9, 0, tzinfo=timezone.utc)
+    start_dt = datetime(2030, 6, 20, 9, 0, tzinfo=UTC)
     end_dt = start_dt + timedelta(hours=2)
     submit(
         clients["pilot"],

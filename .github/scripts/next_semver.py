@@ -13,7 +13,6 @@ Falls back to 0.1.0 if no semver tag is given.
 import argparse
 import re
 
-
 _SEMVER = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)$")
 
 

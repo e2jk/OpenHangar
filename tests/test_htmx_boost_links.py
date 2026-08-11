@@ -76,9 +76,7 @@ def _tag_references_endpoint(tag: str, endpoint: str, fragment: str | None) -> b
     """Return True if this <a> tag links to the given non-page endpoint."""
     if f"url_for('{endpoint}'" in tag or f'url_for("{endpoint}"' in tag:
         return True
-    if fragment and fragment in tag:
-        return True
-    return False
+    return bool(fragment and fragment in tag)
 
 
 class TestHxBoostFalseOnNonPageLinks:

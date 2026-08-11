@@ -7,8 +7,13 @@ validation branches route-level HTTP tests don't happen to exercise.
 
 from datetime import date
 
-from expenses.form_parsing import parse_expense_fields  # pyright: ignore[reportMissingImports]
-from models import ExpenseRecurrence, ExpenseType  # pyright: ignore[reportMissingImports]
+from expenses.form_parsing import (
+    parse_expense_fields,  # pyright: ignore[reportMissingImports]
+)
+from models import (  # pyright: ignore[reportMissingImports]
+    ExpenseRecurrence,
+    ExpenseType,
+)
 
 
 def _valid_form(**overrides):

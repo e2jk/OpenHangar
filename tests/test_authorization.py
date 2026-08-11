@@ -15,8 +15,9 @@ from models import (  # pyright: ignore[reportMissingImports]
     UserAllAircraftAccess,
     db,
 )
-from services.authorization import AuthorizationService  # pyright: ignore[reportMissingImports]
-
+from services.authorization import (
+    AuthorizationService,  # pyright: ignore[reportMissingImports]
+)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -475,8 +476,9 @@ class TestAccessibleAircraftAllPlanes:
 
 class TestMaintenanceListViewLevel:
     def _setup(self, app):
-        from models import MaintenanceTrigger, TriggerType
         from datetime import date
+
+        from models import MaintenanceTrigger, TriggerType
 
         with app.app_context():
             tenant = Tenant(name="MV Hangar")
@@ -579,7 +581,7 @@ class TestAuthorizationEdgeCases:
 
     def test_can_without_tenant_id_resolves_from_tenant_user(self, app):
         """authorization.py:100-103 — can() without tenant_id resolves it automatically."""
-        tid, uid, acid = _make_env(app, Role.OWNER)
+        _tid, uid, acid = _make_env(app, Role.OWNER)
         with app.app_context():
             result = AuthorizationService.can(uid, "view_aircraft", acid)
         assert result is True
@@ -606,7 +608,7 @@ class TestAuthorizationEdgeCases:
 class TestRequireFlagDecorators:
     def test_viewer_with_is_pilot_can_access_pilot_route(self, app, client):
         """utils.py:56 — VIEWER+is_pilot passes require_pilot_access."""
-        tid, uid, acid = _make_env(app, Role.VIEWER, is_pilot=True)
+        _tid, uid, acid = _make_env(app, Role.VIEWER, is_pilot=True)
         _grant_specific(app, uid, acid)
         _login(client, uid)
         resp = client.get("/pilot/profile")

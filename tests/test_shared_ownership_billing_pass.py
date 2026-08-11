@@ -9,7 +9,6 @@ from decimal import Decimal
 from unittest.mock import patch
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
-
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AircraftOwner,
@@ -34,7 +33,6 @@ from services.co_owner_billing import (  # pyright: ignore[reportMissingImports]
     run_co_owner_billing_pass,
     run_co_owner_billing_pass_all,
 )
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -262,7 +260,7 @@ class TestBuyIn:
         _run_pass(app, acid)
         with app.app_context():
             owner = db.session.get(AircraftOwner, oid)
-            owner.buy_in_amount = Decimal("1500")
+            owner.buy_in_amount = Decimal(1500)
             db.session.commit()
         _run_pass(app, acid)
 
@@ -405,8 +403,8 @@ class TestFixedExpenseShares:
         assert _balance(app, tid, bob, acid) == Decimal("50.00")
 
         with app.app_context():
-            db.session.get(AircraftOwner, alice_owner_id).share_pct = Decimal("70")
-            db.session.get(AircraftOwner, bob_owner_id).share_pct = Decimal("30")
+            db.session.get(AircraftOwner, alice_owner_id).share_pct = Decimal(70)
+            db.session.get(AircraftOwner, bob_owner_id).share_pct = Decimal(30)
             db.session.commit()
         _run_pass(app, acid)
 
@@ -614,7 +612,7 @@ class TestCapitalArithmetic:
             BillingService.post(
                 acc,
                 LedgerEntryType.PAYMENT,
-                Decimal("-150"),
+                Decimal(-150),
                 "Payment",
                 date(2026, 2, 5),
                 source_type="payment",
@@ -664,23 +662,23 @@ class TestRunAllAircraft:
         assert _balance(app, tid, alice, acid2) == Decimal("-200.00")
 
     def test_run_daily_checks_includes_co_owner_billing_pass(self, app):
-        with app.app_context():
-            with (
-                patch(
-                    "services.co_owner_billing.run_co_owner_billing_pass_all"
-                ) as mock_pass,
-                patch("services.notification_service._check_maintenance"),
-                patch("services.notification_service._check_insurance"),
-                patch("services.notification_service._check_medical_and_sep"),
-                patch("services.notification_service._check_documents"),
-                patch("services.notification_service._check_airworthiness_reviews"),
-                patch("services.notification_service._check_renter_authorizations"),
-                patch("services.notification_service._check_personal_minimums_recency"),
-                patch(
-                    "services.recurring_expense_service.materialize_recurring_expenses"
-                ),
-            ):
-                from services.notification_service import run_daily_checks  # pyright: ignore[reportMissingImports]
+        with (
+            app.app_context(),
+            patch(
+                "services.co_owner_billing.run_co_owner_billing_pass_all"
+            ) as mock_pass,
+            patch("services.notification_service._check_maintenance"),
+            patch("services.notification_service._check_insurance"),
+            patch("services.notification_service._check_medical_and_sep"),
+            patch("services.notification_service._check_documents"),
+            patch("services.notification_service._check_airworthiness_reviews"),
+            patch("services.notification_service._check_renter_authorizations"),
+            patch("services.notification_service._check_personal_minimums_recency"),
+            patch("services.recurring_expense_service.materialize_recurring_expenses"),
+        ):
+            from services.notification_service import (
+                run_daily_checks,  # pyright: ignore[reportMissingImports]
+            )
 
-                run_daily_checks(app)
-                assert mock_pass.called
+            run_daily_checks(app)
+            assert mock_pass.called

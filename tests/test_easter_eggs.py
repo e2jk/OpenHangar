@@ -4,10 +4,16 @@ Tests for implemented Easter eggs.
 Each class maps to one EE entry in docs/easter-eggs.md.
 """
 
-import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import init as _init
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pyotp  # pyright: ignore[reportMissingImports]
-from models import Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
+from models import (  # pyright: ignore[reportMissingImports]
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    db,
+)
 
 
 def _create_and_login(app, client, email="ee_test@example.com", password="testpass123"):

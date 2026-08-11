@@ -20,10 +20,10 @@ import html as _html
 import logging
 import os
 import smtplib
-from datetime import datetime, timezone
-from typing import Any
+from datetime import UTC, datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from typing import Any
 
 from init import _env_or_file  # pyright: ignore[reportMissingImports]
 
@@ -90,7 +90,7 @@ def _record_health(success: bool) -> None:
         from models import AppSetting, db  # pyright: ignore[reportMissingImports]
 
         if success:
-            now = datetime.now(timezone.utc).isoformat()
+            now = datetime.now(UTC).isoformat()
             for key, val in [
                 ("email_last_success_at", now),
                 ("email_consecutive_failures", "0"),
@@ -110,7 +110,7 @@ def _record_health(success: bool) -> None:
                     AppSetting(key="email_consecutive_failures", value=str(count))
                 )
         db.session.commit()
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 -- non-fatal health tracking, must not break the send path
         log.debug("email health tracking failed (non-fatal): %s", exc)
 
 
@@ -144,7 +144,7 @@ def get_email_health() -> dict[str, Any]:
             "consecutive_failures": consecutive_failures,
             "last_success_at": last_success_at,
         }
-    except Exception:
+    except Exception:  # noqa: BLE001 -- cosmetic health widget, degrade to "ok" rather than 500
         return {"status": "ok", "consecutive_failures": 0, "last_success_at": None}
 
 

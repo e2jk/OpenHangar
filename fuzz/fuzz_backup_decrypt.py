@@ -21,7 +21,7 @@ import atheris
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 
 with atheris.instrument_imports(include=["services.backup_verification"]):
-    from services.backup_verification import (  # noqa: E402
+    from services.backup_verification import (
         BackupVerificationError,
         _decrypt_if_needed,
     )

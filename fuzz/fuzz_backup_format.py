@@ -17,7 +17,7 @@ import atheris
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 
 with atheris.instrument_imports(include=["services.backup_format"]):
-    from services.backup_format import (  # noqa: E402
+    from services.backup_format import (
         BackupArchiveError,
         parse_backup_archive,
     )

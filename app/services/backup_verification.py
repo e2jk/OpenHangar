@@ -18,6 +18,7 @@ import os
 
 from init import _env_or_file  # pyright: ignore[reportMissingImports]
 from models import BackupRecord  # pyright: ignore[reportMissingImports]
+
 from services.backup_format import (  # pyright: ignore[reportMissingImports]
     BackupArchiveError,
     parse_backup_archive,
@@ -39,7 +40,9 @@ def _decrypt_if_needed(payload: bytes, filename: str) -> bytes:
             "archive is encrypted but OPENHANGAR_BACKUP_ENCRYPTION_KEY is not set"
         )
     from config.routes import _derive_key  # pyright: ignore[reportMissingImports]
-    from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # pyright: ignore[reportMissingImports]
+    from cryptography.hazmat.primitives.ciphers.aead import (
+        AESGCM,  # pyright: ignore[reportMissingImports]
+    )
 
     key = _derive_key(key_raw)
     nonce, ct = payload[:12], payload[12:]

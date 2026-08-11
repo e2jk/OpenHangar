@@ -10,16 +10,16 @@ Covers:
   delete_document, update_status, add_stc, delete_stc, trigger_sync
 """
 
-import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
+from datetime import UTC
 from unittest.mock import MagicMock, patch
 
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
-
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
-    AirworthinessDocument,
     AirworthinessDocStatus,
     AirworthinessDocType,
+    AirworthinessDocument,
     AirworthinessDocumentStatus,
     Component,
     EASASourceNode,
@@ -30,7 +30,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     User,
     db,
 )
-
 
 # ── Shared helpers ─────────────────────────────────────────────────────────────
 
@@ -335,6 +334,7 @@ class TestFetchReferences:
 
     def test_raises_on_http_error(self, app):
         import urllib.error
+
         import airworthiness_sync  # pyright: ignore[reportMissingImports]
 
         with patch("airworthiness_sync.urllib.request.urlopen") as mock_urlopen:
@@ -387,17 +387,19 @@ class TestProcessNode:
         comp_id = _add_component(app, ac_id)
         node_id = _add_easa_node(app, comp_id)
 
-        with patch.object(
-            airworthiness_sync,
-            "_fetch_references",
-            return_value=[
-                ("AD 2023-0048", AirworthinessDocType.AD),
-                ("SIB 2024-01", AirworthinessDocType.SIB),
-            ],
+        with (
+            patch.object(
+                airworthiness_sync,
+                "_fetch_references",
+                return_value=[
+                    ("AD 2023-0048", AirworthinessDocType.AD),
+                    ("SIB 2024-01", AirworthinessDocType.SIB),
+                ],
+            ),
+            app.app_context(),
         ):
-            with app.app_context():
-                node = db.session.get(EASASourceNode, node_id)
-                added, had_error = airworthiness_sync._process_node(node)
+            node = db.session.get(EASASourceNode, node_id)
+            added, had_error = airworthiness_sync._process_node(node)
 
         assert added == 2
         assert had_error is False
@@ -417,14 +419,16 @@ class TestProcessNode:
         comp_id = _add_component(app, ac_id)
         node_id = _add_easa_node(app, comp_id)
 
-        with patch.object(
-            airworthiness_sync,
-            "_fetch_references",
-            return_value=[("AD 2023-0001", AirworthinessDocType.AD)],
+        with (
+            patch.object(
+                airworthiness_sync,
+                "_fetch_references",
+                return_value=[("AD 2023-0001", AirworthinessDocType.AD)],
+            ),
+            app.app_context(),
         ):
-            with app.app_context():
-                node = db.session.get(EASASourceNode, node_id)
-                airworthiness_sync._process_node(node)
+            node = db.session.get(EASASourceNode, node_id)
+            airworthiness_sync._process_node(node)
 
         with app.app_context():
             doc = AirworthinessDocument.query.filter_by(
@@ -446,17 +450,19 @@ class TestProcessNode:
         node_id = _add_easa_node(app, comp_id)
         _add_synced_document(app, node_id, reference="AD 2023-0048")
 
-        with patch.object(
-            airworthiness_sync,
-            "_fetch_references",
-            return_value=[
-                ("AD 2023-0048", AirworthinessDocType.AD),  # already exists
-                ("AD 2024-0001", AirworthinessDocType.AD),  # new
-            ],
+        with (
+            patch.object(
+                airworthiness_sync,
+                "_fetch_references",
+                return_value=[
+                    ("AD 2023-0048", AirworthinessDocType.AD),  # already exists
+                    ("AD 2024-0001", AirworthinessDocType.AD),  # new
+                ],
+            ),
+            app.app_context(),
         ):
-            with app.app_context():
-                node = db.session.get(EASASourceNode, node_id)
-                added, had_error = airworthiness_sync._process_node(node)
+            node = db.session.get(EASASourceNode, node_id)
+            added, had_error = airworthiness_sync._process_node(node)
 
         assert added == 1
         assert had_error is False
@@ -473,14 +479,16 @@ class TestProcessNode:
         comp_id = _add_component(app, ac_id)
         node_id = _add_easa_node(app, comp_id)
 
-        with patch.object(
-            airworthiness_sync,
-            "_fetch_references",
-            side_effect=Exception("Network error"),
+        with (
+            patch.object(
+                airworthiness_sync,
+                "_fetch_references",
+                side_effect=Exception("Network error"),
+            ),
+            app.app_context(),
         ):
-            with app.app_context():
-                node = db.session.get(EASASourceNode, node_id)
-                added, had_error = airworthiness_sync._process_node(node)
+            node = db.session.get(EASASourceNode, node_id)
+            added, had_error = airworthiness_sync._process_node(node)
 
         assert added == 0
         assert had_error is True
@@ -503,14 +511,16 @@ class TestProcessNode:
             node.consecutive_errors = 3
             db.session.commit()
 
-        with patch.object(
-            airworthiness_sync,
-            "_fetch_references",
-            return_value=[],
+        with (
+            patch.object(
+                airworthiness_sync,
+                "_fetch_references",
+                return_value=[],
+            ),
+            app.app_context(),
         ):
-            with app.app_context():
-                node = db.session.get(EASASourceNode, node_id)
-                airworthiness_sync._process_node(node)
+            node = db.session.get(EASASourceNode, node_id)
+            airworthiness_sync._process_node(node)
 
         with app.app_context():
             node = db.session.get(EASASourceNode, node_id)
@@ -524,14 +534,16 @@ class TestProcessNode:
         comp_id = _add_component(app, ac_id)
         node_id = _add_easa_node(app, comp_id)
 
-        with patch.object(
-            airworthiness_sync,
-            "_fetch_references",
-            return_value=[],
+        with (
+            patch.object(
+                airworthiness_sync,
+                "_fetch_references",
+                return_value=[],
+            ),
+            app.app_context(),
         ):
-            with app.app_context():
-                node = db.session.get(EASASourceNode, node_id)
-                airworthiness_sync._process_node(node)
+            node = db.session.get(EASASourceNode, node_id)
+            airworthiness_sync._process_node(node)
 
         with app.app_context():
             node = db.session.get(EASASourceNode, node_id)
@@ -545,14 +557,16 @@ class TestProcessNode:
         comp_id = _add_component(app, ac_id)
         node_id = _add_easa_node(app, comp_id)
 
-        with patch.object(
-            airworthiness_sync,
-            "_fetch_references",
-            return_value=[],
+        with (
+            patch.object(
+                airworthiness_sync,
+                "_fetch_references",
+                return_value=[],
+            ),
+            app.app_context(),
         ):
-            with app.app_context():
-                node = db.session.get(EASASourceNode, node_id)
-                added, had_error = airworthiness_sync._process_node(node)
+            node = db.session.get(EASASourceNode, node_id)
+            added, had_error = airworthiness_sync._process_node(node)
 
         assert added == 0
         assert had_error is False
@@ -574,10 +588,10 @@ class TestSyncAircraft:
                 "_process_node",
                 return_value=(3, False),
             ),
+            app.app_context(),
         ):
-            with app.app_context():
-                ac = db.session.get(Aircraft, ac_id)
-                total_added, total_errors = airworthiness_sync.sync_aircraft(ac)
+            ac = db.session.get(Aircraft, ac_id)
+            total_added, total_errors = airworthiness_sync.sync_aircraft(ac)
 
         assert total_added == 3
         assert total_errors == 0
@@ -597,10 +611,10 @@ class TestSyncAircraft:
                 "_process_node",
                 return_value=(0, True),
             ),
+            app.app_context(),
         ):
-            with app.app_context():
-                ac = db.session.get(Aircraft, ac_id)
-                total_added, total_errors = airworthiness_sync.sync_aircraft(ac)
+            ac = db.session.get(Aircraft, ac_id)
+            total_added, total_errors = airworthiness_sync.sync_aircraft(ac)
 
         assert total_added == 0
         assert total_errors == 1
@@ -620,10 +634,10 @@ class TestSyncAircraft:
                 "_process_node",
                 return_value=(0, False),
             ),
+            app.app_context(),
         ):
-            with app.app_context():
-                ac = db.session.get(Aircraft, ac_id)
-                airworthiness_sync.sync_aircraft(ac)
+            ac = db.session.get(Aircraft, ac_id)
+            airworthiness_sync.sync_aircraft(ac)
 
         mock_sleep.assert_not_called()
 
@@ -644,10 +658,10 @@ class TestSyncAircraft:
                 "_process_node",
                 return_value=(0, False),
             ),
+            app.app_context(),
         ):
-            with app.app_context():
-                ac = db.session.get(Aircraft, ac_id)
-                airworthiness_sync.sync_aircraft(ac)
+            ac = db.session.get(Aircraft, ac_id)
+            airworthiness_sync.sync_aircraft(ac)
 
         assert mock_sleep.call_count == 1
 
@@ -658,10 +672,9 @@ class TestSyncAircraft:
         ac_id = _add_aircraft(app, tenant_id)
         _add_component(app, ac_id)  # component with no EASA nodes
 
-        with patch("airworthiness_sync.time.sleep"):
-            with app.app_context():
-                ac = db.session.get(Aircraft, ac_id)
-                total_added, total_errors = airworthiness_sync.sync_aircraft(ac)
+        with patch("airworthiness_sync.time.sleep"), app.app_context():
+            ac = db.session.get(Aircraft, ac_id)
+            total_added, total_errors = airworthiness_sync.sync_aircraft(ac)
 
         assert total_added == 0
         assert total_errors == 0
@@ -684,10 +697,10 @@ class TestSyncAircraft:
                 "_process_node",
                 side_effect=call_results,
             ),
+            app.app_context(),
         ):
-            with app.app_context():
-                ac = db.session.get(Aircraft, ac_id)
-                total_added, total_errors = airworthiness_sync.sync_aircraft(ac)
+            ac = db.session.get(Aircraft, ac_id)
+            total_added, total_errors = airworthiness_sync.sync_aircraft(ac)
 
         assert total_added == 3
         assert total_errors == 1
@@ -766,8 +779,9 @@ class TestSyncAllNodes:
         assert mock_sleep.call_count == 2
 
     def test_warns_for_overdue_nodes(self, app):
+        from datetime import datetime, timedelta
+
         import airworthiness_sync  # pyright: ignore[reportMissingImports]
-        from datetime import datetime, timezone, timedelta
 
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
@@ -777,7 +791,7 @@ class TestSyncAllNodes:
         # Set last_synced_at to far in the past (overdue)
         with app.app_context():
             node = db.session.get(EASASourceNode, node_id)
-            node.last_synced_at = datetime.now(timezone.utc) - timedelta(hours=100)
+            node.last_synced_at = datetime.now(UTC) - timedelta(hours=100)
             db.session.commit()
 
         with (
@@ -787,9 +801,9 @@ class TestSyncAllNodes:
                 "_process_node",
                 return_value=(0, False),
             ),
+            patch.object(airworthiness_sync._log, "warning") as mock_warn,
         ):
-            with patch.object(airworthiness_sync._log, "warning") as mock_warn:
-                airworthiness_sync.sync_all_nodes(app)
+            airworthiness_sync.sync_all_nodes(app)
 
         # Should have issued at least one overdue warning
         assert mock_warn.called
@@ -823,8 +837,9 @@ class TestSyncAllNodes:
             airworthiness_sync.sync_all_nodes(app)
 
     def test_backoff_skips_node_with_repeated_errors(self, app):
+        from datetime import datetime, timedelta
+
         import airworthiness_sync  # pyright: ignore[reportMissingImports]
-        from datetime import datetime, timezone, timedelta
 
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
@@ -835,7 +850,7 @@ class TestSyncAllNodes:
         with app.app_context():
             node = db.session.get(EASASourceNode, node_id)
             node.consecutive_errors = 2
-            node.last_synced_at = datetime.now(timezone.utc) - timedelta(days=1)
+            node.last_synced_at = datetime.now(UTC) - timedelta(days=1)
             db.session.commit()
 
         with (
@@ -849,8 +864,9 @@ class TestSyncAllNodes:
         mock_process.assert_not_called()
 
     def test_backoff_retries_after_window_expires(self, app):
+        from datetime import datetime, timedelta
+
         import airworthiness_sync  # pyright: ignore[reportMissingImports]
-        from datetime import datetime, timezone, timedelta
 
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
@@ -861,7 +877,7 @@ class TestSyncAllNodes:
         with app.app_context():
             node = db.session.get(EASASourceNode, node_id)
             node.consecutive_errors = 2
-            node.last_synced_at = datetime.now(timezone.utc) - timedelta(days=5)
+            node.last_synced_at = datetime.now(UTC) - timedelta(days=5)
             db.session.commit()
 
         with (
@@ -875,8 +891,9 @@ class TestSyncAllNodes:
         mock_process.assert_called_once()
 
     def test_no_backoff_after_single_error(self, app):
+        from datetime import datetime, timedelta
+
         import airworthiness_sync  # pyright: ignore[reportMissingImports]
-        from datetime import datetime, timezone, timedelta
 
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
@@ -887,7 +904,7 @@ class TestSyncAllNodes:
         with app.app_context():
             node = db.session.get(EASASourceNode, node_id)
             node.consecutive_errors = 1
-            node.last_synced_at = datetime.now(timezone.utc) - timedelta(hours=1)
+            node.last_synced_at = datetime.now(UTC) - timedelta(hours=1)
             db.session.commit()
 
         with (
@@ -1374,7 +1391,9 @@ class TestUpdateStatus:
 
     def test_pilot_can_update_status(self, app, client):
         """CREW roles (including PILOT) should be allowed to update status."""
-        from models import UserAllAircraftAccess  # pyright: ignore[reportMissingImports]
+        from models import (
+            UserAllAircraftAccess,  # pyright: ignore[reportMissingImports]
+        )
 
         _, tenant_id = _create_user_and_tenant(
             app, "admin@example.com", role=Role.ADMIN
@@ -1642,9 +1661,13 @@ class TestTenantIdGuard:
     """Covers airworthiness/routes.py:40 — abort(403) when user has no TenantUser."""
 
     def test_403_when_user_has_no_tenant_user(self, app):
-        from werkzeug.exceptions import Forbidden  # pyright: ignore[reportMissingImports]
-        from airworthiness.routes import _tenant_id  # pyright: ignore[reportMissingImports]
+        from airworthiness.routes import (
+            _tenant_id,  # pyright: ignore[reportMissingImports]
+        )
         from flask import session  # pyright: ignore[reportMissingImports]
+        from werkzeug.exceptions import (
+            Forbidden,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             user = User(
@@ -1695,9 +1718,9 @@ class TestEasaSyncScheduler:
         with (
             patch("time.sleep"),
             patch.object(airworthiness_sync, "sync_all_nodes", side_effect=fake_sync),
+            pytest.raises(SystemExit),
         ):
-            with pytest.raises(SystemExit):
-                _easa_sync_loop(app)
+            _easa_sync_loop(app)
 
         assert len(calls) == 1
 
@@ -1707,13 +1730,13 @@ class TestEasaSyncScheduler:
         random sync minute or the real time of day the suite happens to run
         at, forcing the 'next_run += timedelta(days=1)' branch deterministically."""
         import os
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         import airworthiness_sync  # pyright: ignore[reportMissingImports]
         from init import _easa_sync_loop  # pyright: ignore[reportMissingImports]
 
         real_datetime = datetime
-        frozen_now = real_datetime(2024, 6, 15, 12, 0, 0, tzinfo=timezone.utc)
+        frozen_now = real_datetime(2024, 6, 15, 12, 0, 0, tzinfo=UTC)
 
         class _FrozenDatetime(real_datetime):  # type: ignore[misc]
             @classmethod
@@ -1728,12 +1751,13 @@ class TestEasaSyncScheduler:
             patch("time.sleep"),
             patch("datetime.datetime", _FrozenDatetime),
             patch.object(airworthiness_sync, "sync_all_nodes", side_effect=fake_sync),
+            pytest.raises(SystemExit),
         ):
-            with pytest.raises(SystemExit):
-                _easa_sync_loop(app)
+            _easa_sync_loop(app)
 
     def test_easa_sync_loop_falls_back_to_random_on_invalid_hour(self, app):
         import os
+
         import airworthiness_sync  # pyright: ignore[reportMissingImports]
         from init import _easa_sync_loop  # pyright: ignore[reportMissingImports]
 
@@ -1744,12 +1768,14 @@ class TestEasaSyncScheduler:
             patch.dict(os.environ, {"OPENHANGAR_AIRWORTHINESS_EASA_SYNC_HOUR": "bad"}),
             patch("time.sleep"),
             patch.object(airworthiness_sync, "sync_all_nodes", side_effect=fake_sync),
+            pytest.raises(SystemExit),
         ):
-            with pytest.raises(SystemExit):
-                _easa_sync_loop(app)
+            _easa_sync_loop(app)
 
     def test_start_easa_sync_scheduler_creates_named_daemon_thread(self, app):
-        from init import _start_easa_sync_scheduler  # pyright: ignore[reportMissingImports]
+        from init import (
+            _start_easa_sync_scheduler,  # pyright: ignore[reportMissingImports]
+        )
 
         with patch("threading.Thread") as mock_thread_cls:
             mock_thread = MagicMock()

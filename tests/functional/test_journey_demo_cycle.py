@@ -36,7 +36,7 @@ never asserting what a *second* visitor sees.
 """
 
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
@@ -139,7 +139,7 @@ def test_two_visitors_get_different_slots_unaffected_by_each_others_edits(demo_a
     # slot 2 -- LRU-first order is deterministic: visitor A gets slot 1,
     # and once /demo/enter touches it to "now", slot 2 becomes the oldest
     # remaining, so visitor B is guaranteed slot 2 next.
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     aircraft_1 = _make_demo_slot(demo_app, 1, now - timedelta(hours=2))
     aircraft_2 = _make_demo_slot(demo_app, 2, now - timedelta(hours=1))
 

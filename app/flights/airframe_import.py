@@ -16,7 +16,6 @@ from datetime import date, time, timedelta
 from typing import Any
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
-
 from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     ParsedFile,
     parse_date_value,
@@ -233,7 +232,9 @@ def _clean_icao(raw: Any) -> str:
 
 
 def _is_subtotal(row: list[Any], date_idx: int | None) -> bool:
-    from pilots.logbook_import import _is_subtotal_row  # pyright: ignore[reportMissingImports]
+    from pilots.logbook_import import (
+        _is_subtotal_row,  # pyright: ignore[reportMissingImports]
+    )
 
     return _is_subtotal_row(row, date_idx)
 
@@ -297,22 +298,22 @@ def _fields_to_flight_entry_kwargs(fields: dict[str, Any]) -> dict[str, Any]:
     constructor kwargs (model-column keys) — the two differ for the counter
     fields (flight_counter_end → flight_time_counter_end etc). Shared by the
     normal insert path and the review step's overwrite/new-entry handling."""
-    return dict(
-        date=fields["date"],
-        departure_icao=fields.get("departure_icao") or "ZZZZ",
-        arrival_icao=fields.get("arrival_icao") or "ZZZZ",
-        departure_time=fields.get("departure_time"),
-        arrival_time=fields.get("arrival_time"),
-        flight_time=fields.get("flight_time"),
-        flight_time_counter_start=fields.get("flight_counter_start"),
-        flight_time_counter_end=fields.get("flight_counter_end"),
-        engine_time_counter_start=fields.get("engine_counter_start"),
-        engine_time_counter_end=fields.get("engine_counter_end"),
-        landing_count=fields.get("landing_count"),
-        passenger_count=fields.get("passenger_count"),
-        nature_of_flight=fields.get("nature_of_flight"),
-        notes=fields.get("notes"),
-    )
+    return {
+        "date": fields["date"],
+        "departure_icao": fields.get("departure_icao") or "ZZZZ",
+        "arrival_icao": fields.get("arrival_icao") or "ZZZZ",
+        "departure_time": fields.get("departure_time"),
+        "arrival_time": fields.get("arrival_time"),
+        "flight_time": fields.get("flight_time"),
+        "flight_time_counter_start": fields.get("flight_counter_start"),
+        "flight_time_counter_end": fields.get("flight_counter_end"),
+        "engine_time_counter_start": fields.get("engine_counter_start"),
+        "engine_time_counter_end": fields.get("engine_counter_end"),
+        "landing_count": fields.get("landing_count"),
+        "passenger_count": fields.get("passenger_count"),
+        "nature_of_flight": fields.get("nature_of_flight"),
+        "notes": fields.get("notes"),
+    }
 
 
 def execute_airframe_import(

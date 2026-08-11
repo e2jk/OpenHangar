@@ -16,8 +16,13 @@ import logging
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pyotp  # pyright: ignore[reportMissingImports]
-
-from models import Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
+from models import (  # pyright: ignore[reportMissingImports]
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    db,
+)
 
 PASSWORD = "SecurePass1!"
 

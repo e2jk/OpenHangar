@@ -17,7 +17,7 @@ import atheris
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 
 with atheris.instrument_imports(include=["aircraft.routes"]):
-    from aircraft.routes import _point_in_polygon  # noqa: E402
+    from aircraft.routes import _point_in_polygon
 
 _MAX_POINTS = 8
 

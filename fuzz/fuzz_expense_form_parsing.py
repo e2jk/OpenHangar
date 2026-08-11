@@ -19,7 +19,7 @@ import atheris
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 
 with atheris.instrument_imports(include=["expenses.form_parsing"]):
-    from expenses.form_parsing import parse_expense_fields  # noqa: E402
+    from expenses.form_parsing import parse_expense_fields
 
 _FIELD_KEYS = (
     "date",

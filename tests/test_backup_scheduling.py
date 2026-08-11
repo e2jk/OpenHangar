@@ -9,11 +9,11 @@ Tests for built-in backup scheduling and retention:
 """
 
 import contextlib
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from unittest.mock import patch
 
-import pytest  # pyright: ignore[reportMissingImports]
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
+import pytest  # pyright: ignore[reportMissingImports]
 from models import (
     BackupRecord,
     Role,
@@ -61,9 +61,9 @@ def _add_record(app, tmp_path, name, status="ok", age_days=0, with_file=True, on
         if with_file:
             (tmp_path / name).write_bytes(b"backup-bytes")
         created_at = (
-            datetime(on.year, on.month, on.day, 12, 0, tzinfo=timezone.utc)
+            datetime(on.year, on.month, on.day, 12, 0, tzinfo=UTC)
             if on is not None
-            else datetime.now(timezone.utc) - timedelta(days=age_days)
+            else datetime.now(UTC) - timedelta(days=age_days)
         )
         record = BackupRecord(
             filename=name, path=path, status=status, created_at=created_at
@@ -338,9 +338,9 @@ class TestSchedulerThread:
         with (
             patch("time.sleep", side_effect=mock_sleep),
             patch("services.backup_scheduler.run_scheduled_backup") as mock_run,
+            contextlib.suppress(StopIteration),
         ):
-            with contextlib.suppress(StopIteration):
-                _backup_daily_loop(app, 0, 0)
+            _backup_daily_loop(app, 0, 0)
 
         # run_hour=0 has always passed → the +1 day branch gives a positive sleep
         assert sleep_calls and sleep_calls[0] > 0

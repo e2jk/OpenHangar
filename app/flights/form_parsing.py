@@ -10,15 +10,25 @@ import math
 from collections.abc import Mapping
 from datetime import (
     date as _date,
+)
+from datetime import (
     datetime as _datetime,
+)
+from datetime import (
     time as _time,
+)
+from datetime import (
     timedelta as _timedelta,
 )
 from typing import Any
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
-
-from models import Aircraft, CrewRole, Flight, db  # pyright: ignore[reportMissingImports]
+from models import (  # pyright: ignore[reportMissingImports]
+    Aircraft,
+    CrewRole,
+    Flight,
+    db,
+)
 
 # engine_time/flight_time are never taken as free-text user input — always
 # recomputed from counters (preferred) or clock times (departure/arrival for

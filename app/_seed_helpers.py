@@ -16,16 +16,16 @@ import mimetypes
 import os
 import shutil
 import uuid
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import UTC, date, datetime, time, timedelta
 
 from models import (
     Aircraft,
     AircraftBookingSettings,
     AircraftGpsImportBatch,
     AircraftPhoto,
-    AirworthinessDocument,
     AirworthinessDocStatus,
     AirworthinessDocType,
+    AirworthinessDocument,
     AirworthinessDocumentStatus,
     BackupRecord,
     Component,
@@ -49,8 +49,8 @@ from models import (
     PilotProfile,
     Reservation,
     ReservationStatus,
-    Snag,
     ShareToken,
+    Snag,
     Tenant,
     TenantProfile,
     TriggerType,
@@ -59,6 +59,8 @@ from models import (
     WeightBalanceStation,
     db,
 )
+
+_log = logging.getLogger(__name__)
 
 # Placeholder seed documents bundled in the repo
 _SEED_DOCS_DIR = os.path.join(os.path.dirname(__file__), "dev_seed_docs")
@@ -917,7 +919,7 @@ def seed_fleet(tenant_id: int) -> list:
             description="Door pops open during rollout. Possible broken latch mechanism. Observed on last 3 landings.",
             reporter="J. Klein",
             is_grounding=True,
-            reported_at=_dt(datetime(2026, 4, 10, 14, 32, 0, tzinfo=timezone.utc)),
+            reported_at=_dt(datetime(2026, 4, 10, 14, 32, 0, tzinfo=UTC)),
         )
     )
     # OO-ABC: one non-grounding cosmetic snag
@@ -928,7 +930,7 @@ def seed_fleet(tenant_id: int) -> list:
             description="Seal visibly worn near upper hinge. Annoying but not safety-critical.",
             reporter="M. Dupont",
             is_grounding=False,
-            reported_at=_dt(datetime(2026, 3, 25, 9, 15, 0, tzinfo=timezone.utc)),
+            reported_at=_dt(datetime(2026, 3, 25, 9, 15, 0, tzinfo=UTC)),
         )
     )
     # OO-GRN: no open snags (clean aircraft)
@@ -961,7 +963,7 @@ def _copy_seed_doc(
             shutil.copy2(src, dest)
             size = os.path.getsize(dest)
         except OSError:
-            logging.warning("Seed file copy failed for %s", src_name, exc_info=True)
+            _log.warning("Seed file copy failed for %s", src_name, exc_info=True)
     return stored, mime, size
 
 
@@ -1017,7 +1019,7 @@ def _seed_one_photo(
         fname = f"{order:02d}-{uuid.uuid4().hex[:6]}.jpg"
         shutil.copy2(src, os.path.join(photo_dir, fname))
     except OSError as exc:
-        logging.warning("Seed photo copy failed for %s: %s", orig_name, exc)
+        _log.warning("Seed photo copy failed for %s: %s", orig_name, exc)
         return
     db.session.add(
         AircraftPhoto(
@@ -1270,7 +1272,7 @@ def _seed_backup_records(_dt) -> None:
                 path=path,
                 size_bytes=stat.st_size,
                 sha256=h.hexdigest(),
-                created_at=datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc),
+                created_at=datetime.fromtimestamp(stat.st_mtime, tz=UTC),
                 status="ok",
             )
         )
@@ -1518,7 +1520,7 @@ def _seed_gps_tracks(
     """
     data_path = os.path.join(os.path.dirname(__file__), "data", "seed_tracks.json")
     if not os.path.exists(data_path):
-        logging.warning("seed_tracks.json not found — GPS tracks not seeded")
+        _log.warning("seed_tracks.json not found — GPS tracks not seeded")
         return
 
     with open(data_path, encoding="utf-8") as fh:
@@ -2852,7 +2854,8 @@ def seed_pilot_profiles(
     # *updates the same row in place* (claiming pic_user_id) rather than
     # creating a second, linked PilotLogbookEntry row — user_id here is the
     # same person as the free-text "J. Klein" pic_name.
-    from models import Aircraft as _AC, TenantUser as _TU  # pyright: ignore[reportMissingImports]
+    from models import Aircraft as _AC  # pyright: ignore[reportMissingImports]
+    from models import TenantUser as _TU
 
     _tu = _TU.query.filter_by(user_id=user_id).first()
     # Use an explicit fleet_tenant_id when the user's own tenant has no aircraft
@@ -2989,7 +2992,7 @@ def seed_reservations(aircraft_list: list, user_ids: list[int]) -> None:
     def _rdt(days: int, hour: int, minute: int = 0) -> datetime:
         """Return a UTC datetime that is `days` days from today at HH:MM."""
         d = date.today() + timedelta(days=days)
-        return datetime(d.year, d.month, d.day, hour, minute, tzinfo=timezone.utc)
+        return datetime(d.year, d.month, d.day, hour, minute, tzinfo=UTC)
 
     if not user_ids:
         return
@@ -3209,7 +3212,7 @@ def seed_rental_cycle(
 
     def _rdt(days: int, hour: int, minute: int = 0) -> datetime:
         d = date.today() + timedelta(days=days)
-        return datetime(d.year, d.month, d.day, hour, minute, tzinfo=timezone.utc)
+        return datetime(d.year, d.month, d.day, hour, minute, tzinfo=UTC)
 
     # ── Renter authorizations ────────────────────────────────────────────────
     db.session.add(

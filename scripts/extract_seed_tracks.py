@@ -22,7 +22,7 @@ from datetime import date, timedelta
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(_ROOT, "app"))
 
-from aircraft.gps_import import (  # noqa: E402
+from aircraft.gps_import import (
     detect_segments,
     merge_and_sort,
     parse_gps_file,

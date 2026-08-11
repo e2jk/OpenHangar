@@ -15,10 +15,9 @@ intentionally skipped because demo always starts from a clean slate.
 import os
 
 from flask_migrate import stamp, upgrade
-from sqlalchemy import inspect
-
 from init import _env_or_file, create_app
 from models import User, db, reset_schema
+from sqlalchemy import inspect
 
 
 def _apply_env_settings(app: object) -> None:
@@ -37,7 +36,8 @@ def _apply_env_settings(app: object) -> None:
     }
 
     with app.app_context():
-        from models import AppSetting, db as _db
+        from models import AppSetting
+        from models import db as _db
 
         changed = False
         for key, value in env_map.items():

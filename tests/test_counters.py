@@ -374,7 +374,7 @@ class TestAircraftSettings:
             assert float(ac.flight_counter_offset) == 0.3
 
     def test_settings_persist_via_form(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         with app.app_context():
             ac = Aircraft(tenant_id=tid, registration="OO-T6", make="X", model="X")
             db.session.add(ac)
@@ -396,7 +396,7 @@ class TestAircraftSettings:
             assert float(ac.flight_counter_offset) == 0.5
 
     def test_negative_flight_counter_offset_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app, email="pilot2@example.com")
+        _uid, tid = _create_user_and_tenant(app, email="pilot2@example.com")
         with app.app_context():
             ac = Aircraft(tenant_id=tid, registration="OO-T7", make="X", model="X")
             db.session.add(ac)
@@ -419,7 +419,7 @@ class TestAircraftSettings:
             assert float(ac.flight_counter_offset) == 0.3  # unchanged
 
     def test_invalid_flight_counter_offset_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app, email="pilot3@example.com")
+        _uid, tid = _create_user_and_tenant(app, email="pilot3@example.com")
         with app.app_context():
             ac = Aircraft(tenant_id=tid, registration="OO-T8", make="X", model="X")
             db.session.add(ac)

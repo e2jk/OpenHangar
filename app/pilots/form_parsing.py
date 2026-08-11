@@ -13,12 +13,16 @@ standalone-entry set. A *linked* entry (aircraft_id set) only ever exposes
 
 import math
 from collections.abc import Mapping
-from datetime import date as _date, time as _time
+from datetime import date as _date
+from datetime import time as _time
 from typing import Any
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
-
-from models import Flight, FstdType, LogbookEntryType  # pyright: ignore[reportMissingImports]
+from models import (  # pyright: ignore[reportMissingImports]
+    Flight,
+    FstdType,
+    LogbookEntryType,
+)
 
 
 def _parse_time(val: str, field: str) -> tuple[_time | None, str | None]:

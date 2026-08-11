@@ -14,9 +14,8 @@ from typing import Any
 # gunicorn execs this config file, regardless of the launch directory.
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from gunicorn.glogging import Logger  # noqa: E402
-
-from log_redaction import redact_sensitive_path  # noqa: E402
+from gunicorn.glogging import Logger
+from log_redaction import redact_sensitive_path
 
 
 class RedactingLogger(Logger):  # type: ignore[misc]  # gunicorn ships no stubs

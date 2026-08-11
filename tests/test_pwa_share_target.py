@@ -185,7 +185,7 @@ class TestShareConfirm:
         return uid, ac_id
 
     def test_document_creates_record(self, client, app):
-        uid, ac_id = self._setup_pending(client, app, "docok@test.com")
+        _uid, ac_id = self._setup_pending(client, app, "docok@test.com")
         r = client.post(
             "/pwa/shared/confirm",
             data={"destination": "document", "aircraft_id": str(ac_id)},
@@ -200,7 +200,7 @@ class TestShareConfirm:
             assert doc.original_filename == "test.pdf"
 
     def test_document_with_category_creates_record(self, client, app):
-        uid, ac_id = self._setup_pending(client, app, "doccat@test.com")
+        _uid, ac_id = self._setup_pending(client, app, "doccat@test.com")
         r = client.post(
             "/pwa/shared/confirm",
             data={
@@ -221,7 +221,7 @@ class TestShareConfirm:
             assert doc.is_sensitive is True
 
     def test_document_invalid_category_ignored(self, client, app):
-        uid, ac_id = self._setup_pending(client, app, "badcat@test.com")
+        _uid, ac_id = self._setup_pending(client, app, "badcat@test.com")
         r = client.post(
             "/pwa/shared/confirm",
             data={
@@ -239,7 +239,7 @@ class TestShareConfirm:
             assert doc.category is None
 
     def test_document_invalid_valid_until_ignored(self, client, app):
-        uid, ac_id = self._setup_pending(client, app, "baddate@test.com")
+        _uid, ac_id = self._setup_pending(client, app, "baddate@test.com")
         r = client.post(
             "/pwa/shared/confirm",
             data={
@@ -288,7 +288,7 @@ class TestShareConfirm:
             db.session.commit()
             other_ac_id = other_ac.id
 
-        uid, _ = self._setup_pending(client, app, "xten@test.com")
+        _uid, _ = self._setup_pending(client, app, "xten@test.com")
         r = client.post(
             "/pwa/shared/confirm",
             data={"destination": "document", "aircraft_id": str(other_ac_id)},
@@ -307,7 +307,7 @@ class TestShareConfirm:
         assert r.status_code == 403
 
     def test_expense_redirects_with_aircraft(self, client, app):
-        uid, ac_id = self._setup_pending(client, app, "exp@test.com")
+        _uid, ac_id = self._setup_pending(client, app, "exp@test.com")
         r = client.post(
             "/pwa/shared/confirm",
             data={"destination": "expense", "aircraft_id": str(ac_id)},
@@ -332,7 +332,7 @@ class TestShareConfirm:
         assert r.status_code == 302
 
     def test_maintenance_redirects_with_aircraft(self, client, app):
-        uid, ac_id = self._setup_pending(client, app, "maint@test.com")
+        _uid, ac_id = self._setup_pending(client, app, "maint@test.com")
         r = client.post(
             "/pwa/shared/confirm",
             data={"destination": "maintenance", "aircraft_id": str(ac_id)},
@@ -437,7 +437,7 @@ class TestShareConfirm:
             )
 
     def test_session_cleared_after_confirm(self, client, app):
-        uid, ac_id = self._setup_pending(client, app, "sessclr@test.com")
+        _uid, ac_id = self._setup_pending(client, app, "sessclr@test.com")
         client.post(
             "/pwa/shared/confirm",
             data={"destination": "document", "aircraft_id": str(ac_id)},

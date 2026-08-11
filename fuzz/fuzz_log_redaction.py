@@ -19,7 +19,7 @@ import atheris
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 
 with atheris.instrument_imports(include=["log_redaction"]):
-    from log_redaction import redact_sensitive_path  # noqa: E402
+    from log_redaction import redact_sensitive_path
 
 _SENSITIVE_PREFIXES = ("/reset-password/", "/share/", "/config/users/invite/")
 

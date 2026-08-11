@@ -102,6 +102,7 @@ pairs rather than raw lines, e.g.:
 
 ```python
 import polib
+
 before = polib.pofile("path/to/old.po")
 after = polib.pofile("path/to/new.po")
 # compare {e.msgid: e.msgstr for e in before} against the same for `after`

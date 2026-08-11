@@ -9,17 +9,21 @@ import os
 import shutil
 import tempfile
 import zipfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
-
-from sqlalchemy.pool import StaticPool  # pyright: ignore[reportMissingImports]
-
 from init import create_app  # pyright: ignore[reportMissingImports]
-from models import BackupRecord, Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
-
+from models import (  # pyright: ignore[reportMissingImports]
+    BackupRecord,
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    db,
+)
+from sqlalchemy.pool import StaticPool  # pyright: ignore[reportMissingImports]
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -149,8 +153,13 @@ class TestCryptoHelpers:
             assert _derive_key("abc") != _derive_key("xyz")
 
     def test_encrypt_decrypt_roundtrip(self, app):
-        from config.routes import _derive_key, _encrypt_bytes  # pyright: ignore[reportMissingImports]
-        from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # pyright: ignore[reportMissingImports]
+        from config.routes import (  # pyright: ignore[reportMissingImports]
+            _derive_key,
+            _encrypt_bytes,
+        )
+        from cryptography.hazmat.primitives.ciphers.aead import (
+            AESGCM,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             key = _derive_key("testpass")
@@ -161,7 +170,10 @@ class TestCryptoHelpers:
             assert recovered == plaintext
 
     def test_encrypt_nonce_is_random(self, app):
-        from config.routes import _derive_key, _encrypt_bytes  # pyright: ignore[reportMissingImports]
+        from config.routes import (  # pyright: ignore[reportMissingImports]
+            _derive_key,
+            _encrypt_bytes,
+        )
 
         with app.app_context():
             key = _derive_key("testpass")
@@ -186,9 +198,11 @@ class TestPgDump:
         fake_result = MagicMock()
         fake_result.returncode = 1
         fake_result.stderr = b"connection refused"
-        with patch("config.routes.subprocess.run", return_value=fake_result):
-            with pytest.raises(RuntimeError, match="connection refused"):
-                _pg_dump("postgresql://user:pw@localhost/db")
+        with (
+            patch("config.routes.subprocess.run", return_value=fake_result),
+            pytest.raises(RuntimeError, match="connection refused"),
+        ):
+            _pg_dump("postgresql://user:pw@localhost/db")
 
     def test_returns_stdout_on_success(self):
         from config.routes import _pg_dump  # pyright: ignore[reportMissingImports]
@@ -242,16 +256,23 @@ class TestRunBackup:
             assert "development" in record.filename  # version embedded in filename
 
     def test_encrypted_when_key_set(self, app):
-        from config.routes import _derive_key, run_backup  # pyright: ignore[reportMissingImports]
-        from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # pyright: ignore[reportMissingImports]
+        from config.routes import (  # pyright: ignore[reportMissingImports]
+            _derive_key,
+            run_backup,
+        )
+        from cryptography.hazmat.primitives.ciphers.aead import (
+            AESGCM,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
-            with patch.dict(os.environ, {"OPENHANGAR_BACKUP_ENCRYPTION_KEY": "mykey"}):
-                with patch(
+            with (
+                patch.dict(os.environ, {"OPENHANGAR_BACKUP_ENCRYPTION_KEY": "mykey"}),
+                patch(
                     "config.routes.subprocess.run", return_value=self._mock_pg_dump()
-                ):
-                    record = run_backup()
+                ),
+            ):
+                record = run_backup()
             with open(record.path, "rb") as fh:
                 data = fh.read()
             key = _derive_key("mykey")
@@ -270,11 +291,13 @@ class TestRunBackup:
                 for k, v in os.environ.items()
                 if k != "OPENHANGAR_BACKUP_ENCRYPTION_KEY"
             }
-            with patch.dict(os.environ, env, clear=True):
-                with patch(
+            with (
+                patch.dict(os.environ, env, clear=True),
+                patch(
                     "config.routes.subprocess.run", return_value=self._mock_pg_dump()
-                ):
-                    record = run_backup()
+                ),
+            ):
+                record = run_backup()
             with open(record.path, "rb") as fh:
                 data = fh.read()
             with zipfile.ZipFile(io.BytesIO(data)) as zf:
@@ -322,11 +345,13 @@ class TestRunBackup:
                 for k, v in os.environ.items()
                 if k != "OPENHANGAR_BACKUP_ENCRYPTION_KEY"
             }
-            with patch.dict(os.environ, env, clear=True):
-                with patch(
+            with (
+                patch.dict(os.environ, env, clear=True),
+                patch(
                     "config.routes.subprocess.run", return_value=self._mock_pg_dump()
-                ):
-                    record = run_backup()
+                ),
+            ):
+                record = run_backup()
             with open(record.path, "rb") as fh:
                 data = fh.read()
             with zipfile.ZipFile(io.BytesIO(data)) as zf:
@@ -345,11 +370,13 @@ class TestRunBackup:
                 for k, v in os.environ.items()
                 if k != "OPENHANGAR_BACKUP_ENCRYPTION_KEY"
             }
-            with patch.dict(os.environ, env, clear=True):
-                with patch(
+            with (
+                patch.dict(os.environ, env, clear=True),
+                patch(
                     "config.routes.subprocess.run", return_value=self._mock_pg_dump()
-                ):
-                    record = run_backup()
+                ),
+            ):
+                record = run_backup()
             assert record.status == "ok"
 
     def test_failed_record_committed_on_pg_dump_error(self, app):
@@ -360,9 +387,11 @@ class TestRunBackup:
             bad = MagicMock()
             bad.returncode = 1
             bad.stderr = b"error"
-            with patch("config.routes.subprocess.run", return_value=bad):
-                with pytest.raises(RuntimeError):
-                    run_backup()
+            with (
+                patch("config.routes.subprocess.run", return_value=bad),
+                pytest.raises(RuntimeError),
+            ):
+                run_backup()
         with app.app_context():
             r = BackupRecord.query.order_by(BackupRecord.id.desc()).first()
             assert r is not None
@@ -398,7 +427,7 @@ class TestListBackups:
                     path="/data/backups/openhangar_backup_20260101T020000Z.zip.enc",
                     size_bytes=204800,
                     sha256="a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
-                    created_at=datetime(2026, 1, 1, 2, 0, 0, tzinfo=timezone.utc),
+                    created_at=datetime(2026, 1, 1, 2, 0, 0, tzinfo=UTC),
                     status="ok",
                 )
             )
@@ -530,10 +559,12 @@ class TestTriggerBackup:
 
     def test_success_redirects_with_flash(self, app, client):
         _login(app, client)
-        with patch("config.routes.subprocess.run", return_value=self._mock_pg_dump()):
-            with patch.dict(os.environ, {"OPENHANGAR_BACKUP_ENCRYPTION_KEY": "key"}):
-                app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
-                resp = client.post("/config/run", follow_redirects=True)
+        with (
+            patch("config.routes.subprocess.run", return_value=self._mock_pg_dump()),
+            patch.dict(os.environ, {"OPENHANGAR_BACKUP_ENCRYPTION_KEY": "key"}),
+        ):
+            app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
+            resp = client.post("/config/run", follow_redirects=True)
         assert resp.status_code == 200
         assert b"Backup completed" in resp.data
 
@@ -585,7 +616,9 @@ class TestBackupRecordModel:
 
 class TestGetAlembicHead:
     def test_returns_none_when_table_missing(self, app):
-        from config.routes import _get_alembic_head  # pyright: ignore[reportMissingImports]
+        from config.routes import (
+            _get_alembic_head,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             # SQLite test DB has no alembic_version table
@@ -612,9 +645,11 @@ class TestBackupMetadata:
         env["OPENHANGAR_VERSION"] = version
         with app.app_context():
             app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
-            with patch("config.routes.subprocess.run", return_value=fake):
-                with patch.dict(os.environ, env, clear=True):
-                    record = run_backup()
+            with (
+                patch("config.routes.subprocess.run", return_value=fake),
+                patch.dict(os.environ, env, clear=True),
+            ):
+                record = run_backup()
             return {
                 "id": record.id,
                 "path": record.path,
@@ -662,9 +697,11 @@ class TestBackupMetadata:
         }
         with app.app_context():
             app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
-            with patch("config.routes.subprocess.run", return_value=fake):
-                with patch.dict(os.environ, env, clear=True):
-                    record = run_backup()
+            with (
+                patch("config.routes.subprocess.run", return_value=fake),
+                patch.dict(os.environ, env, clear=True),
+            ):
+                record = run_backup()
             assert record.app_version == "development"
 
     def test_failed_backup_does_not_write_sidecar(self, app):
@@ -675,9 +712,11 @@ class TestBackupMetadata:
         bad.stderr = b"connection refused"
         with app.app_context():
             app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
-            with patch("config.routes.subprocess.run", return_value=bad):
-                with pytest.raises(RuntimeError):
-                    run_backup()
+            with (
+                patch("config.routes.subprocess.run", return_value=bad),
+                pytest.raises(RuntimeError),
+            ):
+                run_backup()
         backup_folder = app.config["BACKUP_FOLDER"]
         meta_files = [f for f in os.listdir(backup_folder) if f.endswith(".meta")]
         assert meta_files == []
@@ -700,9 +739,10 @@ class TestCheckEmptyDb:
         assert result.exit_code == 1
 
     def test_exits_0_when_schema_missing(self, app):
-        from sqlalchemy.exc import ProgrammingError  # pyright: ignore[reportMissingImports]
-
         from models import User  # pyright: ignore[reportMissingImports]
+        from sqlalchemy.exc import (
+            ProgrammingError,  # pyright: ignore[reportMissingImports]
+        )
 
         runner = app.test_cli_runner()
         with app.app_context(), patch.object(User, "query") as mock_query:
@@ -735,7 +775,9 @@ class TestDropAndRestoreSchema:
         )
 
     def test_calls_psql_with_sql_bytes(self, app):
-        from init import _drop_and_restore_schema  # pyright: ignore[reportMissingImports]
+        from init import (
+            _drop_and_restore_schema,  # pyright: ignore[reportMissingImports]
+        )
         from models import db as _db  # pyright: ignore[reportMissingImports]
 
         fake = MagicMock()
@@ -744,10 +786,13 @@ class TestDropAndRestoreSchema:
 
         with app.app_context():
             p_dispose, p_remove = self._pg_patches(_db)
-            with patch.object(_db.engine, "connect", return_value=mock_conn):
-                with patch("subprocess.run", return_value=fake) as mock_sub:
-                    with p_dispose, p_remove:
-                        _drop_and_restore_schema("postgresql://u:p@h/db", b"-- sql")
+            with (
+                patch.object(_db.engine, "connect", return_value=mock_conn),
+                patch("subprocess.run", return_value=fake) as mock_sub,
+                p_dispose,
+                p_remove,
+            ):
+                _drop_and_restore_schema("postgresql://u:p@h/db", b"-- sql")
 
         cmd = mock_sub.call_args[0][0]
         assert cmd[:2] == ["psql", "--no-password"]
@@ -756,7 +801,9 @@ class TestDropAndRestoreSchema:
         assert cmd[4] == "postgresql://u:p@h/db"
 
     def test_raises_on_psql_failure(self, app):
-        from init import _drop_and_restore_schema  # pyright: ignore[reportMissingImports]
+        from init import (
+            _drop_and_restore_schema,  # pyright: ignore[reportMissingImports]
+        )
         from models import db as _db  # pyright: ignore[reportMissingImports]
 
         fake = MagicMock()
@@ -765,32 +812,40 @@ class TestDropAndRestoreSchema:
 
         with app.app_context():
             p_dispose, p_remove = self._pg_patches(_db)
-            with patch.object(_db.engine, "connect", return_value=mock_conn):
-                with patch("subprocess.run", return_value=fake):
-                    with p_dispose, p_remove:
-                        with pytest.raises(RuntimeError, match="psql exited with code"):
-                            _drop_and_restore_schema("postgresql://u:p@h/db", b"-- sql")
+            with (
+                patch.object(_db.engine, "connect", return_value=mock_conn),
+                patch("subprocess.run", return_value=fake),
+                p_dispose,
+                p_remove,
+                pytest.raises(RuntimeError, match="psql exited with code"),
+            ):
+                _drop_and_restore_schema("postgresql://u:p@h/db", b"-- sql")
 
     def test_raises_on_psql_timeout(self, app):
         import subprocess as _sp
 
-        from init import _drop_and_restore_schema  # pyright: ignore[reportMissingImports]
+        from init import (
+            _drop_and_restore_schema,  # pyright: ignore[reportMissingImports]
+        )
         from models import db as _db  # pyright: ignore[reportMissingImports]
 
         mock_conn = self._mock_conn()
 
         with app.app_context():
             p_dispose, p_remove = self._pg_patches(_db)
-            with patch.object(_db.engine, "connect", return_value=mock_conn):
-                with patch(
-                    "subprocess.run", side_effect=_sp.TimeoutExpired("psql", 600)
-                ):
-                    with p_dispose, p_remove:
-                        with pytest.raises(RuntimeError, match="timed out"):
-                            _drop_and_restore_schema("postgresql://u:p@h/db", b"-- sql")
+            with (
+                patch.object(_db.engine, "connect", return_value=mock_conn),
+                patch("subprocess.run", side_effect=_sp.TimeoutExpired("psql", 600)),
+                p_dispose,
+                p_remove,
+                pytest.raises(RuntimeError, match="timed out"),
+            ):
+                _drop_and_restore_schema("postgresql://u:p@h/db", b"-- sql")
 
     def test_executes_drop_schema(self, app):
-        from init import _drop_and_restore_schema  # pyright: ignore[reportMissingImports]
+        from init import (
+            _drop_and_restore_schema,  # pyright: ignore[reportMissingImports]
+        )
         from models import db as _db  # pyright: ignore[reportMissingImports]
 
         fake = MagicMock()
@@ -799,10 +854,13 @@ class TestDropAndRestoreSchema:
 
         with app.app_context():
             p_dispose, p_remove = self._pg_patches(_db)
-            with patch.object(_db.engine, "connect", return_value=mock_conn):
-                with patch("subprocess.run", return_value=fake):
-                    with p_dispose, p_remove:
-                        _drop_and_restore_schema("postgresql://u:p@h/db", b"-- sql")
+            with (
+                patch.object(_db.engine, "connect", return_value=mock_conn),
+                patch("subprocess.run", return_value=fake),
+                p_dispose,
+                p_remove,
+            ):
+                _drop_and_restore_schema("postgresql://u:p@h/db", b"-- sql")
 
         sqls = [str(c.args[0]) for c in mock_conn.execute.call_args_list]
         assert any("DROP SCHEMA" in s for s in sqls)
@@ -832,7 +890,10 @@ class TestRestoreBackup:
         zip_bytes = buf.getvalue()
 
         if encrypt_key:
-            from config.routes import _derive_key, _encrypt_bytes  # pyright: ignore[reportMissingImports]
+            from config.routes import (  # pyright: ignore[reportMissingImports]
+                _derive_key,
+                _encrypt_bytes,
+            )
 
             payload = _encrypt_bytes(zip_bytes, _derive_key(encrypt_key))
             ext = ".zip.enc"
@@ -938,11 +999,13 @@ class TestRestoreBackup:
         backup_dir = app.config["BACKUP_FOLDER"]
         archive = self._make_archive(backup_dir)
         runner = app.test_cli_runner()
-        with patch.dict(
-            app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+        with (
+            patch.dict(
+                app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+            ),
+            patch("init._drop_and_restore_schema"),
         ):
-            with patch("init._drop_and_restore_schema"):
-                result = runner.invoke(args=["restore-backup", archive])
+            result = runner.invoke(args=["restore-backup", archive])
         assert result.exit_code == 0
         assert "Restore complete" in result.output
 
@@ -950,14 +1013,16 @@ class TestRestoreBackup:
         backup_dir = app.config["BACKUP_FOLDER"]
         archive = self._make_archive(backup_dir)
         runner = app.test_cli_runner()
-        with patch.dict(
-            app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
-        ):
-            with patch(
+        with (
+            patch.dict(
+                app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+            ),
+            patch(
                 "init._drop_and_restore_schema",
                 side_effect=RuntimeError("psql: error: connection refused"),
-            ):
-                result = runner.invoke(args=["restore-backup", archive])
+            ),
+        ):
+            result = runner.invoke(args=["restore-backup", archive])
         assert result.exit_code == 1
         assert "psql restore failed" in result.output
 
@@ -984,11 +1049,13 @@ class TestRestoreBackup:
             fh.write(buf.getvalue())
 
         runner = app.test_cli_runner()
-        with patch.dict(
-            app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+        with (
+            patch.dict(
+                app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+            ),
+            patch("init._drop_and_restore_schema"),
         ):
-            with patch("init._drop_and_restore_schema"):
-                result = runner.invoke(args=["restore-backup", archive_path])
+            result = runner.invoke(args=["restore-backup", archive_path])
 
         assert result.exit_code == 0
         assert os.path.exists(os.path.join(upload_folder, "testdoc.pdf"))
@@ -1017,11 +1084,13 @@ class TestRestoreBackup:
             fh.write(buf.getvalue())
 
         runner = app.test_cli_runner()
-        with patch.dict(
-            app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+        with (
+            patch.dict(
+                app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+            ),
+            patch("init._drop_and_restore_schema"),
         ):
-            with patch("init._drop_and_restore_schema"):
-                result = runner.invoke(args=["restore-backup", archive_path])
+            result = runner.invoke(args=["restore-backup", archive_path])
 
         assert result.exit_code == 0
         assert os.path.exists(
@@ -1054,11 +1123,13 @@ class TestRestoreBackup:
             fh.write(buf.getvalue())
 
         runner = app.test_cli_runner()
-        with patch.dict(
-            app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+        with (
+            patch.dict(
+                app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+            ),
+            patch("init._drop_and_restore_schema"),
         ):
-            with patch("init._drop_and_restore_schema"):
-                result = runner.invoke(args=["restore-backup", archive_path])
+            result = runner.invoke(args=["restore-backup", archive_path])
 
         assert result.exit_code == 1
         assert "outside the upload folder" in result.output
@@ -1079,11 +1150,13 @@ class TestRestoreBackup:
 
         archive = self._make_archive(backup_dir)
         runner = app.test_cli_runner()
-        with patch.dict(
-            app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+        with (
+            patch.dict(
+                app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+            ),
+            patch("init._drop_and_restore_schema"),
         ):
-            with patch("init._drop_and_restore_schema"):
-                result = runner.invoke(args=["restore-backup", archive])
+            result = runner.invoke(args=["restore-backup", archive])
 
         assert result.exit_code == 0
         # Stale file must be gone from uploads
@@ -1112,14 +1185,14 @@ class TestRestoreBackup:
 
         archive = self._make_archive(backup_dir)
         runner = app.test_cli_runner()
-        with patch.dict(
-            app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+        with (
+            patch.dict(
+                app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+            ),
+            patch("init._drop_and_restore_schema"),
+            patch.dict(os.environ, {"OPENHANGAR_BACKUP_ENCRYPTION_KEY": "snap-key"}),
         ):
-            with patch("init._drop_and_restore_schema"):
-                with patch.dict(
-                    os.environ, {"OPENHANGAR_BACKUP_ENCRYPTION_KEY": "snap-key"}
-                ):
-                    result = runner.invoke(args=["restore-backup", archive])
+            result = runner.invoke(args=["restore-backup", archive])
 
         assert result.exit_code == 0
         snapshots = [
@@ -1130,7 +1203,9 @@ class TestRestoreBackup:
         assert len(snapshots) == 1
         # Verify it decrypts correctly
         from config.routes import _derive_key  # pyright: ignore[reportMissingImports]
-        from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # pyright: ignore[reportMissingImports]
+        from cryptography.hazmat.primitives.ciphers.aead import (
+            AESGCM,  # pyright: ignore[reportMissingImports]
+        )
 
         with open(os.path.join(backup_dir, snapshots[0]), "rb") as fh:
             payload = fh.read()
@@ -1144,11 +1219,13 @@ class TestRestoreBackup:
         backup_dir = app.config["BACKUP_FOLDER"]
         archive = self._make_archive(backup_dir)
         runner = app.test_cli_runner()
-        with patch.dict(
-            app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+        with (
+            patch.dict(
+                app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+            ),
+            patch("init._drop_and_restore_schema"),
         ):
-            with patch("init._drop_and_restore_schema"):
-                result = runner.invoke(args=["restore-backup", archive])
+            result = runner.invoke(args=["restore-backup", archive])
 
         assert result.exit_code == 0
         snapshots = [
@@ -1215,11 +1292,13 @@ class TestRestoreBackup:
             fh.write(buf.getvalue())
 
         runner = app.test_cli_runner()
-        with patch.dict(
-            app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+        with (
+            patch.dict(
+                app.config, {"SQLALCHEMY_DATABASE_URI": "postgresql://u:p@h/db"}
+            ),
+            patch("init._drop_and_restore_schema"),
         ):
-            with patch("init._drop_and_restore_schema"):
-                result = runner.invoke(args=["restore-backup", archive_path])
+            result = runner.invoke(args=["restore-backup", archive_path])
 
         assert result.exit_code == 0
         assert os.path.exists(os.path.join(upload_folder, "real.pdf"))
@@ -1234,9 +1313,15 @@ class TestRestoreDecryption:
     def test_restore_script_decrypts_backup(self, app):
         """The HKDF snippet shown in docs/backup_restore.md must decrypt a backup."""
         from config.routes import run_backup  # pyright: ignore[reportMissingImports]
-        from cryptography.hazmat.primitives import hashes  # pyright: ignore[reportMissingImports]
-        from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # pyright: ignore[reportMissingImports]
-        from cryptography.hazmat.primitives.kdf.hkdf import HKDF  # pyright: ignore[reportMissingImports]
+        from cryptography.hazmat.primitives import (
+            hashes,  # pyright: ignore[reportMissingImports]
+        )
+        from cryptography.hazmat.primitives.ciphers.aead import (
+            AESGCM,  # pyright: ignore[reportMissingImports]
+        )
+        from cryptography.hazmat.primitives.kdf.hkdf import (
+            HKDF,  # pyright: ignore[reportMissingImports]
+        )
 
         passphrase = "restore-test-key"
         with app.app_context():
@@ -1244,11 +1329,13 @@ class TestRestoreDecryption:
             fake = MagicMock()
             fake.returncode = 0
             fake.stdout = _make_valid_dump()
-            with patch("config.routes.subprocess.run", return_value=fake):
-                with patch.dict(
+            with (
+                patch("config.routes.subprocess.run", return_value=fake),
+                patch.dict(
                     os.environ, {"OPENHANGAR_BACKUP_ENCRYPTION_KEY": passphrase}
-                ):
-                    record = run_backup()
+                ),
+            ):
+                record = run_backup()
             backup_path = record.path
 
         with open(backup_path, "rb") as fh:
@@ -1269,21 +1356,31 @@ class TestRestoreDecryption:
 
     def test_wrong_key_cannot_decrypt(self, app):
         from config.routes import run_backup  # pyright: ignore[reportMissingImports]
-        from cryptography.exceptions import InvalidTag  # pyright: ignore[reportMissingImports]
-        from cryptography.hazmat.primitives import hashes  # pyright: ignore[reportMissingImports]
-        from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # pyright: ignore[reportMissingImports]
-        from cryptography.hazmat.primitives.kdf.hkdf import HKDF  # pyright: ignore[reportMissingImports]
+        from cryptography.exceptions import (
+            InvalidTag,  # pyright: ignore[reportMissingImports]
+        )
+        from cryptography.hazmat.primitives import (
+            hashes,  # pyright: ignore[reportMissingImports]
+        )
+        from cryptography.hazmat.primitives.ciphers.aead import (
+            AESGCM,  # pyright: ignore[reportMissingImports]
+        )
+        from cryptography.hazmat.primitives.kdf.hkdf import (
+            HKDF,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
             fake = MagicMock()
             fake.returncode = 0
             fake.stdout = _make_valid_dump()
-            with patch("config.routes.subprocess.run", return_value=fake):
-                with patch.dict(
+            with (
+                patch("config.routes.subprocess.run", return_value=fake),
+                patch.dict(
                     os.environ, {"OPENHANGAR_BACKUP_ENCRYPTION_KEY": "correct-key"}
-                ):
-                    record = run_backup()
+                ),
+            ):
+                record = run_backup()
             backup_path = record.path
 
         with open(backup_path, "rb") as fh:
@@ -1306,7 +1403,9 @@ class TestRestoreDecryption:
 
 class TestAddUploadsToZip:
     def test_adds_files_under_uploads_prefix(self, app):
-        from config.routes import _add_uploads_to_zip  # pyright: ignore[reportMissingImports]
+        from config.routes import (
+            _add_uploads_to_zip,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             upload_folder = app.config["UPLOAD_FOLDER"]
@@ -1324,7 +1423,9 @@ class TestAddUploadsToZip:
             assert "uploads/file2.jpg" in names
 
     def test_adds_files_in_subdirectories(self, app):
-        from config.routes import _add_uploads_to_zip  # pyright: ignore[reportMissingImports]
+        from config.routes import (
+            _add_uploads_to_zip,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             upload_folder = app.config["UPLOAD_FOLDER"]
@@ -1341,7 +1442,9 @@ class TestAddUploadsToZip:
             assert "uploads/tenant/OO-TST/photos/01-abc.jpg" in names
 
     def test_empty_folder_produces_no_entries(self, app):
-        from config.routes import _add_uploads_to_zip  # pyright: ignore[reportMissingImports]
+        from config.routes import (
+            _add_uploads_to_zip,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             upload_folder = app.config["UPLOAD_FOLDER"]
@@ -1353,7 +1456,9 @@ class TestAddUploadsToZip:
                 assert zf.namelist() == []
 
     def test_nonexistent_folder_is_silently_skipped(self, app):
-        from config.routes import _add_uploads_to_zip  # pyright: ignore[reportMissingImports]
+        from config.routes import (
+            _add_uploads_to_zip,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             buf = io.BytesIO()

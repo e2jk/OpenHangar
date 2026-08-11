@@ -2,7 +2,9 @@
 
 from unittest.mock import MagicMock
 
-from services.advisory_lock import advisory_lock_scope  # pyright: ignore[reportMissingImports]
+from services.advisory_lock import (
+    advisory_lock_scope,  # pyright: ignore[reportMissingImports]
+)
 
 
 class TestAdvisoryLockScope:

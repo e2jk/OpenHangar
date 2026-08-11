@@ -1,7 +1,9 @@
 from flask import current_app  # pyright: ignore[reportMissingImports]
 from flask_caching import Cache  # pyright: ignore[reportMissingImports]
 from flask_limiter import Limiter  # pyright: ignore[reportMissingImports]
-from flask_limiter.util import get_remote_address  # pyright: ignore[reportMissingImports]
+from flask_limiter.util import (
+    get_remote_address,  # pyright: ignore[reportMissingImports]
+)
 
 
 def _rate_limiting_disabled() -> bool:

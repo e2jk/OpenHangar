@@ -11,7 +11,6 @@ Covers the checks added to create_app() / _validate_config():
 """
 
 import pytest
-
 from init import _validate_config  # pyright: ignore[reportMissingImports]
 
 
