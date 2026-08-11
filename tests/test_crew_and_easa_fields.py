@@ -3,9 +3,9 @@ Tests for Phase 16: crew identity fields on Flight, EASA fields, counter
 pre-fill, flight_time derivation.
 """
 
-import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from datetime import date, time
 
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     CrewRole,
@@ -16,7 +16,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     User,
     db,
 )
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -174,7 +173,7 @@ class TestFlightCrewModel:
 
 class TestCounterPreFill:
     def test_new_flight_prefills_flight_counter_start(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _add_flight(app, acid, hs=100.0, he=102.0)
         _login(app, client)
@@ -182,7 +181,7 @@ class TestCounterPreFill:
         assert b"102.0" in resp.data
 
     def test_new_flight_prefills_engine_counter_start(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _add_flight(app, acid, ts=500.0, te=501.3)
         _login(app, client)
@@ -190,7 +189,7 @@ class TestCounterPreFill:
         assert b"501.3" in resp.data
 
     def test_new_flight_no_prefill_without_prior_flight(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.get(f"/flights/new?aircraft_id={acid}")
@@ -202,7 +201,7 @@ class TestCounterPreFill:
 
 class TestFlightTimeDerivation:
     def test_flight_time_from_counter_diff(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         _post_flight(
@@ -219,7 +218,7 @@ class TestFlightTimeDerivation:
         value is silently ignored in favour of the counter-derived one
         (whether that's an honest client bug, a stale re-submit, or a
         tampered request; the field is readonly in the real form)."""
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         _post_flight(
@@ -236,7 +235,7 @@ class TestFlightTimeDerivation:
             assert float(fe.flight_time) == 1.5
 
     def test_flight_time_engine_offset_for_tach_only(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid, tach_only=True)
         _login(app, client)
         _post_flight(
@@ -254,7 +253,7 @@ class TestFlightTimeDerivation:
             assert float(fe.flight_time) == 1.2  # 1.5 - 0.3 offset
 
     def test_flight_time_null_when_no_counters(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         _post_flight(
@@ -275,14 +274,14 @@ class TestFlightTimeDerivation:
 
 class TestNatureSuggestions:
     def test_nature_suggestions_in_new_flight_form(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.get(f"/flights/new?aircraft_id={acid}")
         assert b"Cross-country" in resp.data
 
     def test_previously_used_nature_appears_in_suggestions(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _add_flight(app, acid, nature="Aerobatics")
         _login(app, client)
@@ -290,7 +289,7 @@ class TestNatureSuggestions:
         assert b"Aerobatics" in resp.data
 
     def test_nature_saved_on_post(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         _post_flight(client, acid, {"nature_of_flight": "Training"})
@@ -304,7 +303,7 @@ class TestNatureSuggestions:
 
 class TestNewFields:
     def test_departure_arrival_time_saved(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         _post_flight(client, acid, {"departure_time": "09:30", "arrival_time": "11:00"})
@@ -315,14 +314,14 @@ class TestNewFields:
             assert fe.arrival_time.hour == 11
 
     def test_invalid_departure_time_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = _post_flight(client, acid, {"departure_time": "not-a-time"})
         assert b"valid UTC time" in resp.data
 
     def test_invalid_arrival_time_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = _post_flight(client, acid, {"arrival_time": "99:99"})
@@ -334,7 +333,7 @@ class TestNewFields:
         """flight_time is never taken as free-text user input — with no
         counters and no takeoff/landing times to compute it from, a posted
         value is simply ignored rather than accepted (no interpolation)."""
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         _post_flight(
@@ -353,7 +352,7 @@ class TestNewFields:
     def test_engine_time_manual_value_ignored_with_no_source_stays_none(
         self, app, client
     ):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         _post_flight(client, acid, {"engine_time": "1.7"})
@@ -362,7 +361,7 @@ class TestNewFields:
             assert fe.engine_time is None
 
     def test_engine_time_derived_from_engine_counters(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         _post_flight(
@@ -378,7 +377,7 @@ class TestNewFields:
             assert float(fe.engine_time) == 1.8
 
     def test_engine_time_derived_from_departure_arrival_clock_times(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         _post_flight(
@@ -391,7 +390,7 @@ class TestNewFields:
             assert float(fe.engine_time) == 1.8
 
     def test_engine_time_from_clock_times_crossing_midnight(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         _post_flight(
@@ -404,7 +403,7 @@ class TestNewFields:
             assert float(fe.engine_time) == 0.8
 
     def test_flight_time_derived_from_takeoff_landing_clock_times(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         _post_flight(
@@ -424,7 +423,7 @@ class TestNewFields:
     def test_engine_time_mismatch_between_counters_and_clock_times_blocks_save(
         self, app, client
     ):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = _post_flight(
@@ -445,7 +444,7 @@ class TestNewFields:
     def test_flight_time_mismatch_between_counters_and_clock_times_blocks_save(
         self, app, client
     ):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = _post_flight(
@@ -466,7 +465,7 @@ class TestNewFields:
     def test_engine_time_within_tolerance_of_clock_times_saves_fine(self, app, client):
         """A few minutes of rounding slop between the counter reading and
         the clock times is expected, not an error."""
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = _post_flight(
@@ -486,7 +485,7 @@ class TestNewFields:
             assert float(fe.engine_time) == 1.8
 
     def test_passenger_count_saved(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         _post_flight(client, acid, {"passenger_count": "3"})
@@ -495,14 +494,14 @@ class TestNewFields:
             assert fe.passenger_count == 3
 
     def test_negative_passenger_count_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = _post_flight(client, acid, {"passenger_count": "-1"})
         assert b"non-negative" in resp.data
 
     def test_landing_count_derived_from_pilot_fields(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         _post_flight(client, acid, {"landings_day": "3", "landings_night": "1"})
@@ -511,7 +510,7 @@ class TestNewFields:
             assert fe.landing_count == 4
 
     def test_form_renders_new_fields_on_edit(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         fid = _add_flight(app, acid, nature="Ferry flight")
         with app.app_context():
@@ -526,7 +525,7 @@ class TestNewFields:
         assert b"3" in resp.data
 
     def test_takeoff_landing_time_saved(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         _post_flight(client, acid, {"takeoff_time": "09:35", "landing_time": "10:55"})
@@ -539,7 +538,7 @@ class TestNewFields:
             assert fe.landing_time.minute == 55
 
     def test_takeoff_landing_time_blank_by_default(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         _post_flight(client, acid, {"departure_time": "09:00", "arrival_time": "11:00"})
@@ -549,21 +548,21 @@ class TestNewFields:
             assert fe.landing_time is None
 
     def test_invalid_takeoff_time_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = _post_flight(client, acid, {"takeoff_time": "not-a-time"})
         assert b"valid UTC time" in resp.data
 
     def test_invalid_landing_time_shows_error(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = _post_flight(client, acid, {"landing_time": "99:99"})
         assert b"valid UTC time" in resp.data
 
     def test_form_renders_takeoff_landing_on_edit(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         fid = _add_flight(app, acid)
         with app.app_context():
@@ -583,7 +582,7 @@ class TestNewFields:
 
 class TestTwoCrewMembers:
     def test_two_crew_saved(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         _post_flight(
@@ -596,7 +595,7 @@ class TestTwoCrewMembers:
             assert fe.second_crew_role == "COPILOT"
 
     def test_one_crew_when_second_blank(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         _post_flight(client, acid)
@@ -606,7 +605,7 @@ class TestTwoCrewMembers:
             assert fe.second_crew_name is None
 
     def test_crew_name_required(self, app, client):
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = _post_flight(client, acid, {"crew_name_0": "", "crew_role_0": "PIC"})
@@ -622,7 +621,7 @@ class TestTwoCrewMembers:
         default to the blank placeholder option — not silently land on the
         first listed non-PIC option (Instructor), and not silently imply a
         role (e.g. Co-Pilot) when there is no second crew member at all."""
-        uid, tid = _create_user_and_tenant(app)
+        _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         fid = _add_flight(app, acid)
         with app.app_context():

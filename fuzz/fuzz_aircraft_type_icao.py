@@ -19,7 +19,7 @@ import atheris
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 
 with atheris.instrument_imports(include=["utils"]):
-    from utils import _load_aircraft_types, resolve_aircraft_type_icao  # noqa: E402
+    from utils import _load_aircraft_types, resolve_aircraft_type_icao
 
 _KNOWN_TYPES = frozenset(_load_aircraft_types())
 

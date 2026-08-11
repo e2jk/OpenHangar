@@ -181,6 +181,7 @@ class TestGPSAjax:
         ac_id = seed["ac_gps"]
 
         from pathlib import Path
+
         from playwright.sync_api import expect as pw_expect
 
         gpx_path = str(Path(__file__).parent / "fixtures" / "test_flight.gpx")
@@ -211,6 +212,7 @@ class TestGPSFormStatePreservation:
         self, logged_in_page, live_server_url, seed
     ):
         from pathlib import Path
+
         from playwright.sync_api import expect as pw_expect
 
         page = logged_in_page

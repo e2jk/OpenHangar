@@ -14,7 +14,7 @@ Covers:
 import json
 import re
 from pathlib import Path
-
+from typing import ClassVar
 
 _STATIC_DIR = Path(__file__).parent.parent / "app" / "static"
 _TEMPLATES_DIR = Path(__file__).parent.parent / "app" / "templates"
@@ -258,9 +258,9 @@ class TestCheckFlightDuplicateAPI:
         assert data["duplicate"] is False
 
     def test_detects_existing_flight(self, client, app):
-        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from datetime import date
 
+        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from models import Aircraft, Flight, Role, Tenant, TenantUser, User, db
 
         with app.app_context():
@@ -309,9 +309,9 @@ class TestCheckFlightDuplicateAPI:
         """An offline edit replays with the same date/aircraft/route it
         already had (e.g. only a comment changed) — exclude_flight_id must
         stop it being flagged as a duplicate of itself."""
-        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from datetime import date
 
+        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from models import Aircraft, Flight, Role, Tenant, TenantUser, User, db
 
         with app.app_context():
@@ -369,9 +369,9 @@ class TestCheckFlightDuplicateAPI:
     def test_aircraft_duplicate_is_tenant_scoped(self, client, app):
         """A user must not learn whether a flight exists on another tenant's
         aircraft (cross-tenant existence oracle — N-24 / CWE-639)."""
-        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from datetime import date
 
+        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from models import Aircraft, Flight, Role, Tenant, TenantUser, User, db
 
         with app.app_context():
@@ -480,9 +480,9 @@ class TestCheckFlightDuplicateAPI:
         assert json.loads(r.data)["duplicate"] is False
 
     def test_detects_pilot_logbook_duplicate(self, client, app):
-        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from datetime import date
 
+        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from models import Flight, Role, Tenant, TenantUser, User, db
 
         with app.app_context():
@@ -526,9 +526,9 @@ class TestCheckFlightDuplicateAPI:
         the unified model no longer has a separate linked PilotLogbookEntry)
         which would otherwise match itself as a duplicate on the pilot-side
         query too."""
-        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from datetime import date
 
+        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from models import (
             Aircraft,
             Flight,
@@ -813,8 +813,9 @@ class TestShareTargetEdgeCases:
 
     def test_get_user_aircraft_returns_empty_for_orphan_user(self, app, client):
         """Line 98: _get_user_aircraft() → [] when user has no TenantUser."""
-        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from io import BytesIO
+
+        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from models import User, db
 
         with app.app_context():
@@ -842,7 +843,9 @@ class TestShareTargetEdgeCases:
     def test_ensure_tenant_slug_deduplication(self, app):
         """Lines 114-115: slug collision loop increments suffix until unique."""
         from models import Tenant, db
-        from pwa.routes import _ensure_tenant_slug  # pyright: ignore[reportMissingImports]
+        from pwa.routes import (
+            _ensure_tenant_slug,  # pyright: ignore[reportMissingImports]
+        )
 
         with app.app_context():
             # Simulate two tenants that would derive the same base slug
@@ -859,9 +862,10 @@ class TestShareTargetEdgeCases:
     def test_document_upload_deduplicates_filename(self, app, client, tmp_path):
         """Lines 301-303: when destination file already exists, a UUID suffix is added."""
         import os
-        from models import Aircraft, DocCategory, Role, Tenant, TenantUser, User, db
-        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
         from datetime import date
+
+        import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
+        from models import Aircraft, DocCategory, Role, Tenant, TenantUser, User, db
 
         # Create tenant, admin, aircraft with a known slug so we can pre-create the file
         with app.app_context():
@@ -934,7 +938,7 @@ class TestSWRRouteCoverage:
     # Routes that aren't real navigable pages (JSON/API, images, CSV/binary
     # downloads, redirect-only utility endpoints, the SW/manifest/health
     # infrastructure itself) — out of scope for cache classification.
-    _NOT_A_PAGE = {
+    _NOT_A_PAGE: ClassVar[set[str]] = {
         "/favicon.ico",
         "/robots.txt",
         "/manifest.json",

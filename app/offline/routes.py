@@ -1,7 +1,8 @@
 import decimal
-from datetime import datetime, timezone
+from collections.abc import Callable
+from datetime import UTC, datetime
 from functools import wraps
-from typing import Any, Callable, cast
+from typing import Any, cast
 
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
@@ -17,7 +18,6 @@ from flask_wtf.csrf import (  # pyright: ignore[reportMissingImports]
     CSRFError,
     generate_csrf,
 )
-
 from flights.form_parsing import (  # pyright: ignore[reportMissingImports]
     apply_flight_fields,
     parse_flight_fields,
@@ -133,7 +133,7 @@ def aircraft_logbook_snapshot(aircraft_id: int) -> ResponseReturnValue:
                 "has_flight_counter": ac.has_flight_counter,
                 "flight_counter_offset": str(ac.flight_counter_offset),
             },
-            "snapshot_taken_at": datetime.now(timezone.utc).isoformat(),
+            "snapshot_taken_at": datetime.now(UTC).isoformat(),
             "entries": [
                 {
                     "id": fe.id,
@@ -208,7 +208,7 @@ def _parse_easa_decimal(raw: str) -> decimal.Decimal | None:
     try:
         v = decimal.Decimal(raw)
         return v if v >= 0 else None
-    except Exception:
+    except decimal.InvalidOperation:
         return None
 
 
@@ -218,7 +218,7 @@ def _parse_easa_int(raw: str) -> int | None:
     try:
         v = int(raw)
         return v if v >= 0 else None
-    except Exception:
+    except ValueError:
         return None
 
 
@@ -337,7 +337,7 @@ def pilot_logbook_snapshot() -> ResponseReturnValue:
     )
     return jsonify(
         {
-            "snapshot_taken_at": datetime.now(timezone.utc).isoformat(),
+            "snapshot_taken_at": datetime.now(UTC).isoformat(),
             "entries": [
                 {"id": pe.id, "fields": canonical_pilot_entry(pe)} for pe in entries
             ],

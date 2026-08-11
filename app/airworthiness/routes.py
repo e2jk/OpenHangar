@@ -12,13 +12,13 @@ from flask import (  # pyright: ignore[reportMissingImports]
     url_for,
 )
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
-from flask_babel import gettext as _, ngettext  # pyright: ignore[reportMissingImports]
-
+from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+from flask_babel import ngettext
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
-    AirworthinessDocument,
     AirworthinessDocStatus,
     AirworthinessDocType,
+    AirworthinessDocument,
     AirworthinessDocumentStatus,
     Component,
     EASASourceNode,
@@ -27,7 +27,11 @@ from models import (  # pyright: ignore[reportMissingImports]
     TenantUser,
     db,
 )
-from utils import login_required, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
+from utils import (  # pyright: ignore[reportMissingImports]
+    login_required,
+    require_role,
+    user_can_access_aircraft,
+)
 
 airworthiness_bp = Blueprint("airworthiness", __name__)
 
@@ -194,7 +198,9 @@ def trigger_sync(aircraft_id: int) -> ResponseReturnValue:
     if os.environ.get("OPENHANGAR_ENV", "production") != "production":
         abort(403)
     ac = _get_aircraft_or_404(aircraft_id)
-    from airworthiness_sync import sync_aircraft  # pyright: ignore[reportMissingImports]
+    from airworthiness_sync import (
+        sync_aircraft,  # pyright: ignore[reportMissingImports]
+    )
 
     added, errors = sync_aircraft(ac)
     if errors:

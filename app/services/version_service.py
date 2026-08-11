@@ -5,6 +5,7 @@ Kept in services/ so both init.py (thread start) and config/routes.py
 (force-refresh endpoint) can import from here without creating a cycle.
 """
 
+from datetime import UTC
 from typing import Any
 from urllib.parse import urlparse
 
@@ -40,7 +41,7 @@ def fetch_versions() -> list[str]:
         with opener.open(req, timeout=10) as resp:  # nosec B310
             data = json.loads(resp.read())
             return data if isinstance(data, list) else []
-    except Exception:
+    except Exception:  # noqa: BLE001 -- non-critical background check, network/JSON errors mean "no update info"
         return []
 
 
@@ -68,7 +69,7 @@ def _persist_update_flag(db_session: Any, current: str, latest: str | None) -> N
         available = bool(
             latest and current != "development" and Version(latest) > Version(current)
         )
-    except Exception:
+    except Exception:  # noqa: BLE001 -- docstring: silently ignores errors, cosmetic UI flag only
         available = False
     upsert_app_setting(db_session, "update_available", "true" if available else "false")
 
@@ -77,7 +78,7 @@ def run_version_check(app: Any) -> None:
     """Check GitHub Pages for the versions list and cache results in AppSetting."""
     import json
     import os
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
 
     from models import AppSetting, db  # pyright: ignore[reportMissingImports]
 
@@ -85,9 +86,9 @@ def run_version_check(app: Any) -> None:
         last = db.session.get(AppSetting, "version_last_checked_at")
         if last and last.value:
             try:
-                if datetime.now(timezone.utc) - datetime.fromisoformat(
-                    last.value
-                ) < timedelta(hours=23):
+                if datetime.now(UTC) - datetime.fromisoformat(last.value) < timedelta(
+                    hours=23
+                ):
                     return
             except ValueError:
                 pass  # malformed stored timestamp — proceed with the check
@@ -96,7 +97,7 @@ def run_version_check(app: Any) -> None:
         upsert_app_setting(
             db.session,
             "version_last_checked_at",
-            datetime.now(timezone.utc).isoformat(),
+            datetime.now(UTC).isoformat(),
         )
         if versions:
             upsert_app_setting(db.session, "latest_version", versions[0])

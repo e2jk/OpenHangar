@@ -53,9 +53,9 @@ def test_counter_continuity_across_form_edit_and_import(owner_env, app):
 
     # A third entry via the airframe CSV import: 1003.0 -> 1004.5.
     csv_content = (
-        "Date,Pilot,From,To,Flight time,Landings,Counter start,Counter end,Remarks\n"
-        "2024-06-03,Jean Dupont,EBBR,EBOS,1.5,1,1003.0,1004.5,Imported flight\n"
-    ).encode()
+        b"Date,Pilot,From,To,Flight time,Landings,Counter start,Counter end,Remarks\n"
+        b"2024-06-03,Jean Dupont,EBBR,EBOS,1.5,1,1003.0,1004.5,Imported flight\n"
+    )
     upload_resp = client.post(
         f"/aircraft/{aircraft_id}/flights/import",
         data={

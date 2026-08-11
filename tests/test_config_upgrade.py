@@ -11,8 +11,13 @@ import tempfile
 from unittest.mock import MagicMock, patch
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
-from models import Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
-
+from models import (  # pyright: ignore[reportMissingImports]
+    Role,
+    Tenant,
+    TenantUser,
+    User,
+    db,
+)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -51,9 +56,11 @@ class TestUpgradeActiveFlag:
     def test_upgrade_active_false_when_dir_empty(self, app, client, captured_templates):
         uid = _setup_admin(app)
         _login(client, uid)
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}):
-                resp = client.get("/config/")
+        with (
+            tempfile.TemporaryDirectory() as tmpdir,
+            patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}),
+        ):
+            resp = client.get("/config/")
         assert resp.status_code == 200
         ctx = captured_templates[-1][1]
         assert ctx["upgrade_active"] is False
@@ -99,9 +106,11 @@ class TestTriggerUpgrade:
         """Tenant ADMIN without instance-admin flag cannot trigger a global upgrade (N-27)."""
         uid = _setup_admin(app, is_instance_admin=False)
         _login(client, uid)
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}):
-                resp = client.post("/config/trigger-upgrade")
+        with (
+            tempfile.TemporaryDirectory() as tmpdir,
+            patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}),
+        ):
+            resp = client.post("/config/trigger-upgrade")
         assert resp.status_code == 403
 
     def test_returns_404_when_upgrade_dir_not_set(self, app, client):
@@ -159,12 +168,12 @@ class TestTriggerUpgrade:
         uid = _setup_admin(app)
         _login(client, uid)
         fake_record = MagicMock(filename="openhangar_backup_fake.zip.enc")
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with (
-                patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}),
-                patch("config.routes.run_backup", return_value=fake_record),
-            ):
-                client.post("/config/trigger-upgrade")
+        with (
+            tempfile.TemporaryDirectory() as tmpdir,
+            patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}),
+            patch("config.routes.run_backup", return_value=fake_record),
+        ):
+            client.post("/config/trigger-upgrade")
         with client.session_transaction() as sess:
             flashes = sess.get("_flashes", [])
         assert any("restart shortly" in msg for _, msg in flashes)
@@ -174,14 +183,12 @@ class TestTriggerUpgrade:
         uid = _setup_admin(app)
         _login(client, uid)
         fake_record = MagicMock(filename="openhangar_backup_fake.zip.enc")
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with (
-                patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}),
-                patch(
-                    "config.routes.run_backup", return_value=fake_record
-                ) as mock_backup,
-            ):
-                client.post("/config/trigger-upgrade")
+        with (
+            tempfile.TemporaryDirectory() as tmpdir,
+            patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}),
+            patch("config.routes.run_backup", return_value=fake_record) as mock_backup,
+        ):
+            client.post("/config/trigger-upgrade")
         assert mock_backup.called
 
     def test_backup_failure_blocks_upgrade_and_flashes(self, app, client):
@@ -220,9 +227,11 @@ class TestUpgradeStatus:
         """Tenant ADMIN without instance-admin flag cannot poll upgrade status (N-27)."""
         uid = _setup_admin(app, is_instance_admin=False)
         _login(client, uid)
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}):
-                resp = client.get("/config/upgrade-status")
+        with (
+            tempfile.TemporaryDirectory() as tmpdir,
+            patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}),
+        ):
+            resp = client.get("/config/upgrade-status")
         assert resp.status_code == 403
 
     def test_returns_404_when_upgrade_dir_not_set(self, app, client):
@@ -283,9 +292,11 @@ class TestUpgradeStatus:
     def test_no_files_returns_idle(self, app, client):
         uid = _setup_admin(app)
         _login(client, uid)
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}):
-                resp = client.get("/config/upgrade-status")
+        with (
+            tempfile.TemporaryDirectory() as tmpdir,
+            patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}),
+        ):
+            resp = client.get("/config/upgrade-status")
         assert resp.status_code == 200
         assert resp.get_json() == {"status": "idle"}
 
@@ -295,9 +306,11 @@ class TestUpgradeStatus:
         with tempfile.TemporaryDirectory() as tmpdir:
             done_path = os.path.join(tmpdir, "trigger.done")
             open(done_path, "w").close()
-            with patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}):
-                with patch("os.remove", side_effect=OSError("permission denied")):
-                    resp = client.get("/config/upgrade-status")
+            with (
+                patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}),
+                patch("os.remove", side_effect=OSError("permission denied")),
+            ):
+                resp = client.get("/config/upgrade-status")
         assert resp.status_code == 200
         assert resp.get_json() == {"status": "done"}
 
@@ -307,9 +320,11 @@ class TestUpgradeStatus:
         with tempfile.TemporaryDirectory() as tmpdir:
             failed_path = os.path.join(tmpdir, "trigger.failed")
             open(failed_path, "w").close()
-            with patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}):
-                with patch("builtins.open", side_effect=OSError("permission denied")):
-                    resp = client.get("/config/upgrade-status")
+            with (
+                patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}),
+                patch("builtins.open", side_effect=OSError("permission denied")),
+            ):
+                resp = client.get("/config/upgrade-status")
         assert resp.status_code == 200
         data = resp.get_json()
         assert data["status"] == "failed"

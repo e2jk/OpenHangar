@@ -27,6 +27,8 @@ def get_effective_preference(
     """Return {"enabled": bool, "threshold_days": int|None} for this user/tenant/type."""
     from models import (  # pyright: ignore[reportMissingImports]
         NotificationPreference as NP,
+    )
+    from models import (
         NotificationType,
         TenantNotificationDefault,
         db,
@@ -138,6 +140,7 @@ def _render_email(
 ) -> tuple[str, str]:
     """Return (text_body, html_body) for a notification email."""
     import os
+
     from flask import render_template  # pyright: ignore[reportMissingImports]
     from flask_babel import force_locale  # pyright: ignore[reportMissingImports]
 
@@ -181,6 +184,7 @@ def dispatch(
     """
     from flask_babel import force_locale  # pyright: ignore[reportMissingImports]
     from models import TenantProfile  # pyright: ignore[reportMissingImports]
+
     from services.email_service import (  # pyright: ignore[reportMissingImports]
         EmailNotConfiguredError,
         EmailSendError,
@@ -264,7 +268,10 @@ def run_daily_checks(app: Any) -> None:
     the four production workers would send its own copy of every alert email.
     """
     from models import db  # pyright: ignore[reportMissingImports]
-    from services.advisory_lock import advisory_lock_scope  # pyright: ignore[reportMissingImports]
+
+    from services.advisory_lock import (
+        advisory_lock_scope,  # pyright: ignore[reportMissingImports]
+    )
 
     with app.app_context():
         try:
@@ -381,9 +388,12 @@ def _check_maintenance(app: Any) -> None:
 def _check_insurance(app: Any) -> None:
     from flask_babel import (  # pyright: ignore[reportMissingImports]
         lazy_gettext as _l,
+    )
+    from flask_babel import (
         lazy_ngettext as _ln,
     )
-    from models import Aircraft, NotificationType as NT, Tenant  # pyright: ignore[reportMissingImports]
+    from models import Aircraft, Tenant  # pyright: ignore[reportMissingImports]
+    from models import NotificationType as NT
 
     today = date.today()
     for tenant in Tenant.query.filter_by(is_active=True).all():
@@ -433,9 +443,12 @@ def _check_insurance(app: Any) -> None:
 def _check_medical_and_sep(app: Any) -> None:
     from flask_babel import (  # pyright: ignore[reportMissingImports]
         lazy_gettext as _l,
+    )
+    from flask_babel import (
         lazy_ngettext as _ln,
     )
-    from models import NotificationType as NT, PilotProfile, TenantUser, User, db  # pyright: ignore[reportMissingImports]
+    from models import NotificationType as NT  # pyright: ignore[reportMissingImports]
+    from models import PilotProfile, TenantUser, User, db
 
     today = date.today()
     for profile in PilotProfile.query.all():
@@ -490,9 +503,16 @@ def _check_medical_and_sep(app: Any) -> None:
 def _check_documents(app: Any) -> None:
     from flask_babel import (  # pyright: ignore[reportMissingImports]
         lazy_gettext as _l,
+    )
+    from flask_babel import (
         lazy_ngettext as _ln,
     )
-    from models import Aircraft, Document, NotificationType as NT, Tenant  # pyright: ignore[reportMissingImports]
+    from models import (  # pyright: ignore[reportMissingImports]
+        Aircraft,
+        Document,
+        Tenant,
+    )
+    from models import NotificationType as NT
 
     today = date.today()
     threshold = NT.SYSTEM_DEFAULTS[NT.DOCUMENT_EXPIRING]["threshold_days"] or 30
@@ -542,13 +562,17 @@ def _check_documents(app: Any) -> None:
 def _check_airworthiness_reviews(app: Any) -> None:
     from flask_babel import (  # pyright: ignore[reportMissingImports]
         lazy_gettext as _l,
+    )
+    from flask_babel import (
         lazy_ngettext as _ln,
     )
     from models import (  # pyright: ignore[reportMissingImports]
         Aircraft,
         AirworthinessDocumentStatus,
-        NotificationType as NT,
         Tenant,
+    )
+    from models import (
+        NotificationType as NT,
     )
 
     today = date.today()
@@ -607,10 +631,14 @@ def _check_renter_authorizations(app: Any) -> None:
     means no dispatch call at all)."""
     from flask_babel import (  # pyright: ignore[reportMissingImports]
         lazy_gettext as _l,
+    )
+    from flask_babel import (
         lazy_ngettext as _ln,
     )
     from models import (  # pyright: ignore[reportMissingImports]
         NotificationType as NT,
+    )
+    from models import (
         RenterAuthorization,
         Tenant,
     )
@@ -692,17 +720,23 @@ def _check_personal_minimums_recency(app: Any) -> None:
     item are considered."""
     from flask_babel import (  # pyright: ignore[reportMissingImports]
         lazy_gettext as _l,
+    )
+    from flask_babel import (
         lazy_ngettext as _ln,
     )
     from models import (  # pyright: ignore[reportMissingImports]
         NotificationType as NT,
+    )
+    from models import (
         PersonalMinimumsRevision,
         PersonalMinimumsStatus,
         TenantUser,
         User,
         db,
     )
-    from pilots.personal_minimums import recency_breaches  # pyright: ignore[reportMissingImports]
+    from pilots.personal_minimums import (
+        recency_breaches,  # pyright: ignore[reportMissingImports]
+    )
 
     for revision in PersonalMinimumsRevision.query.filter_by(
         status=PersonalMinimumsStatus.ACTIVE
@@ -764,7 +798,7 @@ def _dispatch_in_context(
     """Call dispatch() safely, logging any errors."""
     try:
         dispatch(notification_type, tenant_id, email_context, target_user_ids)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 -- caller name says it: dispatch safely, never raise
         log.error(
             "Error dispatching notification for tenant %d: %s",
             tenant_id,
@@ -793,7 +827,13 @@ def send_welcome_email_if_needed(app: Any) -> None:
     try:
         with app.app_context():
             import os
-            from models import AppSetting, User, db  # pyright: ignore[reportMissingImports]
+
+            from models import (  # pyright: ignore[reportMissingImports]
+                AppSetting,
+                User,
+                db,
+            )
+
             from services.email_service import (  # pyright: ignore[reportMissingImports]
                 send_email,
             )
@@ -820,7 +860,10 @@ def send_welcome_email_if_needed(app: Any) -> None:
                 return
 
             from flask import render_template  # pyright: ignore[reportMissingImports]
-            from flask_babel import force_locale, gettext  # pyright: ignore[reportMissingImports]
+            from flask_babel import (  # pyright: ignore[reportMissingImports]
+                force_locale,
+                gettext,
+            )
 
             locale = owner.language or "en"
             instance_url = os.environ.get("OPENHANGAR_INSTANCE_URL", "").strip() or None
@@ -861,5 +904,5 @@ def send_welcome_email_if_needed(app: Any) -> None:
             db.session.add(AppSetting(key="welcome_email_sent", value="true"))
             db.session.commit()
             log.info("Welcome email sent to %s", owner.email)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 -- best-effort, explicitly will not retry
         log.error("Failed to send welcome email (will not retry): %s", exc)

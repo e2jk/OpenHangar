@@ -4,11 +4,10 @@ import io
 import json
 import os
 import tempfile
-from datetime import date, time, timedelta
+from datetime import UTC, date, time, timedelta
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest
-
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     CrewRole,
@@ -47,7 +46,6 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     propose_mapping,
     type_hints,
 )
-
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -432,12 +430,12 @@ class TestExecuteImport:
         with app.app_context():
             uid = _make_user("exec1@example.com")
             # Create a placeholder batch id by inserting a real batch
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             batch = LogbookImportBatch(
                 pilot_user_id=uid,
                 source_filename="test.csv",
-                imported_at=datetime.now(timezone.utc),
+                imported_at=datetime.now(UTC),
             )
             db.session.add(batch)
             db.session.flush()
@@ -472,12 +470,12 @@ class TestExecuteImport:
         exercised place/duration ones."""
         with app.app_context():
             uid = _make_user("exec1b@example.com")
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             batch = LogbookImportBatch(
                 pilot_user_id=uid,
                 source_filename="test.csv",
-                imported_at=datetime.now(timezone.utc),
+                imported_at=datetime.now(UTC),
             )
             db.session.add(batch)
             db.session.flush()
@@ -511,12 +509,12 @@ class TestExecuteImport:
         is kept as-is."""
         with app.app_context():
             uid = _make_user("exec_dual@example.com")
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             batch = LogbookImportBatch(
                 pilot_user_id=uid,
                 source_filename="test.csv",
-                imported_at=datetime.now(timezone.utc),
+                imported_at=datetime.now(UTC),
             )
             db.session.add(batch)
             db.session.flush()
@@ -547,12 +545,12 @@ class TestExecuteImport:
     def test_subtotal_rows_skipped(self, app):
         with app.app_context():
             uid = _make_user("exec2@example.com")
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             batch = LogbookImportBatch(
                 pilot_user_id=uid,
                 source_filename="t.csv",
-                imported_at=datetime.now(timezone.utc),
+                imported_at=datetime.now(UTC),
             )
             db.session.add(batch)
             db.session.flush()
@@ -579,12 +577,12 @@ class TestExecuteImport:
     def test_unparseable_date_skipped(self, app):
         with app.app_context():
             uid = _make_user("exec3@example.com")
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             batch = LogbookImportBatch(
                 pilot_user_id=uid,
                 source_filename="t.csv",
-                imported_at=datetime.now(timezone.utc),
+                imported_at=datetime.now(UTC),
             )
             db.session.add(batch)
             db.session.flush()
@@ -611,12 +609,12 @@ class TestExecuteImport:
     def test_opening_balance_creates_extra_entry(self, app):
         with app.app_context():
             uid = _make_user("exec4@example.com")
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             batch = LogbookImportBatch(
                 pilot_user_id=uid,
                 source_filename="t.csv",
-                imported_at=datetime.now(timezone.utc),
+                imported_at=datetime.now(UTC),
             )
             db.session.add(batch)
             db.session.flush()
@@ -652,12 +650,12 @@ class TestExecuteImport:
     def test_duration_from_time_object(self, app):
         with app.app_context():
             uid = _make_user("exec5@example.com")
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             batch = LogbookImportBatch(
                 pilot_user_id=uid,
                 source_filename="t.csv",
-                imported_at=datetime.now(timezone.utc),
+                imported_at=datetime.now(UTC),
             )
             db.session.add(batch)
             db.session.flush()
@@ -685,14 +683,15 @@ class TestExecuteImport:
 
     def test_aircraft_type_icao_resolved_on_import(self, app):
         """Importing a row with a known aircraft_type populates aircraft_type_icao."""
-        from datetime import date as _date, datetime, timezone
+        from datetime import date as _date
+        from datetime import datetime
 
         with app.app_context():
             uid = _make_user("exec_icao@example.com")
             batch = LogbookImportBatch(
                 pilot_user_id=uid,
                 source_filename="icao.csv",
-                imported_at=datetime.now(timezone.utc),
+                imported_at=datetime.now(UTC),
             )
             db.session.add(batch)
             db.session.flush()
@@ -722,7 +721,7 @@ class TestExecuteImport:
         """Re-running the same import a second time must not double every row."""
         with app.app_context():
             uid = _make_user("exec_dup1@example.com")
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             mapping = {
                 "date": "date",
@@ -739,7 +738,7 @@ class TestExecuteImport:
             batch1 = LogbookImportBatch(
                 pilot_user_id=uid,
                 source_filename="log.csv",
-                imported_at=datetime.now(timezone.utc),
+                imported_at=datetime.now(UTC),
             )
             db.session.add(batch1)
             db.session.flush()
@@ -751,7 +750,7 @@ class TestExecuteImport:
             batch2 = LogbookImportBatch(
                 pilot_user_id=uid,
                 source_filename="log.csv",
-                imported_at=datetime.now(timezone.utc),
+                imported_at=datetime.now(UTC),
             )
             db.session.add(batch2)
             db.session.flush()
@@ -773,7 +772,7 @@ class TestExecuteImport:
         """
         with app.app_context():
             uid = _make_user("exec_dup2@example.com")
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             mapping = {
                 "date": "date",
@@ -785,7 +784,7 @@ class TestExecuteImport:
             batch1 = LogbookImportBatch(
                 pilot_user_id=uid,
                 source_filename="a.csv",
-                imported_at=datetime.now(timezone.utc),
+                imported_at=datetime.now(UTC),
             )
             db.session.add(batch1)
             db.session.flush()
@@ -800,7 +799,7 @@ class TestExecuteImport:
             batch2 = LogbookImportBatch(
                 pilot_user_id=uid,
                 source_filename="b.csv",
-                imported_at=datetime.now(timezone.utc),
+                imported_at=datetime.now(UTC),
             )
             db.session.add(batch2)
             db.session.flush()
@@ -825,7 +824,7 @@ class TestExecuteImport:
         failed."""
         with app.app_context():
             uid = _make_user("exec_dup_noroute@example.com")
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             # First import: route columns mapped to "ignore", as an older
             # saved mapping might do — departure_place/time end up NULL.
@@ -839,7 +838,7 @@ class TestExecuteImport:
             batch1 = LogbookImportBatch(
                 pilot_user_id=uid,
                 source_filename="a.csv",
-                imported_at=datetime.now(timezone.utc),
+                imported_at=datetime.now(UTC),
             )
             db.session.add(batch1)
             db.session.flush()
@@ -865,7 +864,7 @@ class TestExecuteImport:
             batch2 = LogbookImportBatch(
                 pilot_user_id=uid,
                 source_filename="a.csv",
-                imported_at=datetime.now(timezone.utc),
+                imported_at=datetime.now(UTC),
             )
             db.session.add(batch2)
             db.session.flush()
@@ -884,7 +883,7 @@ class TestExecuteImport:
     def test_opening_balance_not_duplicated_on_second_import(self, app):
         with app.app_context():
             uid = _make_user("exec_dup_ob@example.com")
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             mapping = {
                 "date": "date",
@@ -899,7 +898,7 @@ class TestExecuteImport:
             batch1 = LogbookImportBatch(
                 pilot_user_id=uid,
                 source_filename="a.csv",
-                imported_at=datetime.now(timezone.utc),
+                imported_at=datetime.now(UTC),
             )
             db.session.add(batch1)
             db.session.flush()
@@ -912,7 +911,7 @@ class TestExecuteImport:
             batch2 = LogbookImportBatch(
                 pilot_user_id=uid,
                 source_filename="a.csv",
-                imported_at=datetime.now(timezone.utc),
+                imported_at=datetime.now(UTC),
             )
             db.session.add(batch2)
             db.session.flush()
@@ -934,14 +933,14 @@ class TestExecuteImport:
 
 class TestParseWarnings:
     def _make_batch(self, uid: int) -> int:
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         from models import LogbookImportBatch, db
 
         batch = LogbookImportBatch(
             pilot_user_id=uid,
             source_filename="x.csv",
-            imported_at=datetime.now(timezone.utc),
+            imported_at=datetime.now(UTC),
             row_count=0,
             subtotal_count=0,
             skipped_count=0,
@@ -963,7 +962,7 @@ class TestParseWarnings:
             mapping = {"date": "date", "se": "single_pilot_se"}
             result = execute_import(parsed, mapping, uid, bid)
             assert len(result.parse_warnings) == 1
-            row_num, col, target, raw = result.parse_warnings[0]
+            row_num, _col, target, raw = result.parse_warnings[0]
             assert row_num == 1
             assert target == "single_pilot_se"
             assert "not a duration" in raw
@@ -1105,7 +1104,7 @@ class TestTypeHints:
         from datetime import date as _date
 
         with app.app_context():
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             uid = _make_user("isnonempty@example.com")
             from models import LogbookImportBatch, db
@@ -1113,7 +1112,7 @@ class TestTypeHints:
             batch = LogbookImportBatch(
                 pilot_user_id=uid,
                 source_filename="x.csv",
-                imported_at=datetime.now(timezone.utc),
+                imported_at=datetime.now(UTC),
                 row_count=0,
                 subtotal_count=0,
                 skipped_count=0,
@@ -1143,12 +1142,12 @@ class TestImportRollback:
         _login(client, uid)
 
         with app.app_context():
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             batch = LogbookImportBatch(
                 pilot_user_id=uid,
                 source_filename="rb.csv",
-                imported_at=datetime.now(timezone.utc),
+                imported_at=datetime.now(UTC),
                 row_count=2,
             )
             db.session.add(batch)
@@ -1179,12 +1178,12 @@ class TestImportRollback:
         _login(client, uid)
 
         with app.app_context():
-            from datetime import datetime, timezone
+            from datetime import datetime
 
             batch = LogbookImportBatch(
                 pilot_user_id=other_uid,
                 source_filename="rb.csv",
-                imported_at=datetime.now(timezone.utc),
+                imported_at=datetime.now(UTC),
             )
             db.session.add(batch)
             db.session.commit()
@@ -1247,7 +1246,9 @@ class TestImportUploadRoute:
 
 class TestParserEdgeCases:
     def test_is_numeric_str_returns_true(self):
-        from pilots.logbook_import import _is_numeric_str  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import (
+            _is_numeric_str,  # pyright: ignore[reportMissingImports]
+        )
 
         assert _is_numeric_str("3.14")
         assert _is_numeric_str("42")
@@ -1300,13 +1301,17 @@ class TestParserEdgeCases:
         assert parse_duration_value("nan") is None
 
     def test_parse_int_value_float(self):
-        from pilots.logbook_import import parse_int_value  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import (
+            parse_int_value,  # pyright: ignore[reportMissingImports]
+        )
 
         assert parse_int_value(2.0) == 2
         assert parse_int_value(-1.0) is None
 
     def test_parse_int_value_str(self):
-        from pilots.logbook_import import parse_int_value  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import (
+            parse_int_value,  # pyright: ignore[reportMissingImports]
+        )
 
         assert parse_int_value("3") == 3
         assert parse_int_value("") is None
@@ -1316,13 +1321,17 @@ class TestParserEdgeCases:
         # float("1e400") overflows to inf, and int(inf) raises OverflowError
         # rather than ValueError — found by the fuzz_logbook_value_parsers
         # harness fuzzing an uploaded landings_day/landings_night cell.
-        from pilots.logbook_import import parse_int_value  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import (
+            parse_int_value,  # pyright: ignore[reportMissingImports]
+        )
 
         assert parse_int_value("1e400") is None
         assert parse_int_value("-1e400") is None
 
     def test_parse_int_value_overflow_float_returns_none(self):
-        from pilots.logbook_import import parse_int_value  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import (
+            parse_int_value,  # pyright: ignore[reportMissingImports]
+        )
 
         assert parse_int_value(float("inf")) is None
 
@@ -1332,7 +1341,9 @@ class TestParserEdgeCases:
         # the fuzz_logbook_value_parsers harness. A negative landings_day/
         # landings_night cell must be rejected like any other invalid value,
         # not silently stored as a negative count.
-        from pilots.logbook_import import parse_int_value  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import (
+            parse_int_value,  # pyright: ignore[reportMissingImports]
+        )
 
         assert parse_int_value("-2") is None
         assert parse_int_value("-2.5") is None
@@ -1889,12 +1900,16 @@ class TestCSVEdgeCases:
 
 class TestParseIntEdgeCases:
     def test_negative_int_returns_none(self):
-        from pilots.logbook_import import parse_int_value  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import (
+            parse_int_value,  # pyright: ignore[reportMissingImports]
+        )
 
         assert parse_int_value(-1) is None
 
     def test_none_returns_none(self):
-        from pilots.logbook_import import parse_int_value  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import (
+            parse_int_value,  # pyright: ignore[reportMissingImports]
+        )
 
         assert parse_int_value(None) is None  # type: ignore[arg-type]
 
@@ -2414,7 +2429,9 @@ class TestGroupHeaderExcelIntegration:
         assert len(pf.data_rows) == 1
 
     def test_alias_mapping_resolves_group_prefixed_columns(self):
-        from pilots.logbook_import import _alias_mapping  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import (
+            _alias_mapping,  # pyright: ignore[reportMissingImports]
+        )
 
         data = _make_xlsx_with_merges(
             group_row=[("DEPARTURE & ARRIVAL", 4), ("LANDINGS", 2)],
@@ -2746,20 +2763,20 @@ class TestConflictScoring:
         assert _kwargs_duration({}) is None
 
     def _entry(self, app, **kw):
-        defaults: dict = dict(
-            pic_user_id=1,
-            date=date(2024, 3, 15),
-            other_aircraft_registration=None,
-            departure_icao=None,
-            arrival_icao=None,
-            departure_time=None,
-            arrival_time=None,
-            single_pilot_se=None,
-            single_pilot_me=None,
-            multi_pilot=None,
-            landings_day=None,
-            landings_night=None,
-        )
+        defaults: dict = {
+            "pic_user_id": 1,
+            "date": date(2024, 3, 15),
+            "other_aircraft_registration": None,
+            "departure_icao": None,
+            "arrival_icao": None,
+            "departure_time": None,
+            "arrival_time": None,
+            "single_pilot_se": None,
+            "single_pilot_me": None,
+            "multi_pilot": None,
+            "landings_day": None,
+            "landings_night": None,
+        }
         defaults.update(kw)
         return Flight(**defaults)
 

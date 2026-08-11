@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
@@ -11,11 +11,20 @@ from flask import (  # pyright: ignore[reportMissingImports]
     url_for,
 )
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
-
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
-
-from models import Aircraft, Role, Snag, TenantUser, db  # pyright: ignore[reportMissingImports]
-from utils import activity, login_required, require_role, user_can_access_aircraft  # pyright: ignore[reportMissingImports]
+from models import (  # pyright: ignore[reportMissingImports]
+    Aircraft,
+    Role,
+    Snag,
+    TenantUser,
+    db,
+)
+from utils import (  # pyright: ignore[reportMissingImports]
+    activity,
+    login_required,
+    require_role,
+    user_can_access_aircraft,
+)
 
 snags_bp = Blueprint("snags", __name__)
 
@@ -139,9 +148,13 @@ def _save_snag(ac: Aircraft, s: Snag | None) -> ResponseReturnValue:
             is_grounding=is_grounding,
         )
         try:
-            from flask_babel import lazy_gettext as _l  # pyright: ignore[reportMissingImports]
+            from flask_babel import (
+                lazy_gettext as _l,  # pyright: ignore[reportMissingImports]
+            )
             from models import NotificationType  # pyright: ignore[reportMissingImports]
-            from services.notification_service import dispatch  # pyright: ignore[reportMissingImports]
+            from services.notification_service import (
+                dispatch,  # pyright: ignore[reportMissingImports]
+            )
 
             tid = _tenant_id()
             notif_type = (
@@ -177,9 +190,12 @@ def _save_snag(ac: Aircraft, s: Snag | None) -> ResponseReturnValue:
             )
 
             if is_grounding:
-                from models import Reservation, ReservationStatus  # pyright: ignore[reportMissingImports]
+                from models import (  # pyright: ignore[reportMissingImports]
+                    Reservation,
+                    ReservationStatus,
+                )
 
-                now = datetime.now(timezone.utc)
+                now = datetime.now(UTC)
                 affected = (
                     Reservation.query.filter(
                         Reservation.aircraft_id == ac.id,
@@ -252,7 +268,7 @@ def resolve_snag(aircraft_id: int, snag_id: int) -> ResponseReturnValue:
         if not note:
             flash(_("A resolution note is required."), "danger")
             return render_template("snags/resolve_form.html", aircraft=ac, snag=s)
-        s.resolved_at = datetime.now(timezone.utc)
+        s.resolved_at = datetime.now(UTC)
         s.resolution_note = note
         db.session.commit()
         activity(

@@ -8,7 +8,6 @@ from datetime import date
 from decimal import Decimal
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
-
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AircraftOwner,
@@ -21,7 +20,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     UserAircraftAccess,
     db,
 )
-
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 

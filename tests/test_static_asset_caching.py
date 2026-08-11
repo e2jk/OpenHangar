@@ -11,7 +11,6 @@ by a `?v=<version>` cache-buster appended to every generated static URL.
 import os
 
 from flask import url_for  # pyright: ignore[reportMissingImports]
-
 from init import (  # pyright: ignore[reportMissingImports]
     _static_cache_version,
     _static_folder_mtime_token,

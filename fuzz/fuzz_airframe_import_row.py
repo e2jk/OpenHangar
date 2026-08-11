@@ -22,7 +22,7 @@ import atheris
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "app"))
 
 with atheris.instrument_imports(include=["flights.airframe_import"]):
-    from flights.airframe_import import (  # noqa: E402
+    from flights.airframe_import import (
         AIRFRAME_TARGET_FIELDS,
         _build_airframe_fields,
         _clean_icao,

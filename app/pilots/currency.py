@@ -1,4 +1,5 @@
-from datetime import date as _date, timedelta
+from datetime import date as _date
+from datetime import timedelta
 from typing import Any
 
 WINDOW_DAYS = 90
@@ -94,7 +95,9 @@ def per_type_currency(entries: Any, today: _date | None = None) -> dict[str, Any
     if today is None:
         today = _date.today()
 
-    from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+    from utils import (
+        resolve_aircraft_type_icao,  # pyright: ignore[reportMissingImports]
+    )
 
     buckets: dict[str, list[Any]] = {}
     unresolved_count = 0

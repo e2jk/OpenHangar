@@ -59,7 +59,9 @@ def _scan_once(app: Any) -> None:
         Tenant,
         db,
     )
-    from services.advisory_lock import advisory_lock_scope  # pyright: ignore[reportMissingImports]
+    from services.advisory_lock import (
+        advisory_lock_scope,  # pyright: ignore[reportMissingImports]
+    )
 
     folder = app.config.get("UPLOAD_FOLDER", "/data/uploads")
     if not os.path.isdir(folder):
@@ -109,7 +111,7 @@ def _scan_once(app: Any) -> None:
 
             for dirpath, _dirs, filenames in os.walk(slug_dir):
                 for fname in filenames:
-                    if fname.startswith(".") or fname.startswith("_"):
+                    if fname.startswith((".", "_")):
                         continue
 
                     full = os.path.join(dirpath, fname)
@@ -135,7 +137,7 @@ def _scan_once(app: Any) -> None:
         db.session.commit()
 
 
-def _process_file(  # noqa: PLR0913
+def _process_file(
     app: Any,
     full_path: str,
     relpath: str,

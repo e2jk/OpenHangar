@@ -4,7 +4,7 @@ maintenance downtimes, and the RESERVATION_AIRCRAFT_GROUNDED notification.
 See docs/phase37_rental_spec.md § 37f.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
@@ -79,7 +79,7 @@ def _make_reservation(
     app, aircraft_id, pilot_user_id, status=ReservationStatus.PENDING, start_offset=1
 ):
     with app.app_context():
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         r = Reservation(
             aircraft_id=aircraft_id,
             pilot_user_id=pilot_user_id,
@@ -356,8 +356,8 @@ class TestDowntimeCrud:
             assert db.session.get(MaintenanceDowntime, did) is None
 
     def test_cross_tenant_404(self, app, client):
-        uid, tid = _make_user(app, "dt_owner6@ex.com", role=Role.OWNER)
-        other_uid, other_tid = _make_user(app, "dt_owner7@ex.com", role=Role.OWNER)
+        uid, _tid = _make_user(app, "dt_owner6@ex.com", role=Role.OWNER)
+        _other_uid, other_tid = _make_user(app, "dt_owner7@ex.com", role=Role.OWNER)
         other_acid = _make_aircraft(app, other_tid, "OO-DT8")
         _login(app, client, uid)
         r = client.get(f"/aircraft/{other_acid}/downtimes/new")
@@ -389,8 +389,8 @@ class TestDowntimeConflicts:
             db.session.add(
                 MaintenanceDowntime(
                     aircraft_id=acid,
-                    start_dt=datetime(2026, 8, 20, 0, 0, tzinfo=timezone.utc),
-                    end_dt=datetime(2026, 8, 22, 0, 0, tzinfo=timezone.utc),
+                    start_dt=datetime(2026, 8, 20, 0, 0, tzinfo=UTC),
+                    end_dt=datetime(2026, 8, 22, 0, 0, tzinfo=UTC),
                     reason="Shop visit",
                 )
             )
@@ -403,8 +403,8 @@ class TestDowntimeConflicts:
             r = Reservation(
                 aircraft_id=acid,
                 pilot_user_id=pilot_uid,
-                start_dt=datetime(2026, 8, 21, 9, 0, tzinfo=timezone.utc),
-                end_dt=datetime(2026, 8, 21, 11, 0, tzinfo=timezone.utc),
+                start_dt=datetime(2026, 8, 21, 9, 0, tzinfo=UTC),
+                end_dt=datetime(2026, 8, 21, 11, 0, tzinfo=UTC),
                 status=ReservationStatus.PENDING,
             )
             db.session.add(r)
@@ -430,8 +430,8 @@ class TestDowntimeConflicts:
             r = Reservation(
                 aircraft_id=acid,
                 pilot_user_id=pilot_uid,
-                start_dt=datetime(2026, 8, 21, 9, 0, tzinfo=timezone.utc),
-                end_dt=datetime(2026, 8, 21, 11, 0, tzinfo=timezone.utc),
+                start_dt=datetime(2026, 8, 21, 9, 0, tzinfo=UTC),
+                end_dt=datetime(2026, 8, 21, 11, 0, tzinfo=UTC),
                 status=ReservationStatus.CONFIRMED,
             )
             db.session.add(r)
@@ -457,8 +457,8 @@ class TestDowntimeConflicts:
             r = Reservation(
                 aircraft_id=acid,
                 pilot_user_id=pilot_uid,
-                start_dt=datetime(2026, 8, 21, 9, 0, tzinfo=timezone.utc),
-                end_dt=datetime(2026, 8, 21, 11, 0, tzinfo=timezone.utc),
+                start_dt=datetime(2026, 8, 21, 9, 0, tzinfo=UTC),
+                end_dt=datetime(2026, 8, 21, 11, 0, tzinfo=UTC),
                 status=ReservationStatus.CONFIRMED,
             )
             db.session.add(r)
@@ -484,7 +484,7 @@ class TestDowntimeCalendar:
     def test_downtime_renders_on_calendar(self, app, client):
         uid, tid = _make_user(app, "cal_owner1@ex.com", role=Role.OWNER)
         acid = _make_aircraft(app, tid, "OO-CAL1")
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         start_dt = now + timedelta(days=1)
         with app.app_context():
             db.session.add(

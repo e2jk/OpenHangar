@@ -1,5 +1,5 @@
-from datetime import date as _date, timedelta
-
+from datetime import date as _date
+from datetime import timedelta
 from typing import Any
 
 from flask import (  # pyright: ignore[reportMissingImports]
@@ -13,13 +13,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
     url_for,
 )
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
-
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
-
-from maintenance.form_parsing import (  # pyright: ignore[reportMissingImports]
-    parse_service_fields,
-    parse_trigger_fields,
-)
 from models import (
     Aircraft,
     HoursBasis,
@@ -31,7 +25,9 @@ from models import (
     TriggerType,
     db,
 )  # pyright: ignore[reportMissingImports]
-from services.authorization import AuthorizationService  # pyright: ignore[reportMissingImports]
+from services.authorization import (
+    AuthorizationService,  # pyright: ignore[reportMissingImports]
+)
 from utils import (
     accessible_aircraft,
     activity,
@@ -41,6 +37,11 @@ from utils import (
     require_role,
     user_can_access_aircraft,
 )  # pyright: ignore[reportMissingImports]
+
+from maintenance.form_parsing import (  # pyright: ignore[reportMissingImports]
+    parse_service_fields,
+    parse_trigger_fields,
+)
 
 maintenance_bp = Blueprint("maintenance", __name__)
 
@@ -96,7 +97,8 @@ def fleet_overview() -> ResponseReturnValue:
         else []
     )
 
-    from datetime import date as _date_cls, datetime as _datetime
+    from datetime import date as _date_cls
+    from datetime import datetime as _datetime
 
     # Annotate each trigger with its status
     trigger_rows = [
@@ -118,7 +120,7 @@ def fleet_overview() -> ResponseReturnValue:
     _far_future = _date_cls(9999, 12, 31)
 
     def _trigger_sort_key(row: Any) -> Any:
-        t, status, ac = row
+        t, status, _ac = row
         due = (
             t.due_date
             if t.trigger_type == TriggerType.CALENDAR and t.due_date
@@ -196,7 +198,9 @@ def fleet_overview() -> ResponseReturnValue:
     view = request.args.get("view", "by-type")
 
     # Component TBO / calendar life limits that need attention
-    from services.component_limits import aircraft_limit_infos  # pyright: ignore[reportMissingImports]
+    from services.component_limits import (
+        aircraft_limit_infos,  # pyright: ignore[reportMissingImports]
+    )
 
     component_limit_rows = []
     for ac in aircraft:

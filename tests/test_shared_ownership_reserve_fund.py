@@ -8,7 +8,6 @@ from datetime import date
 from decimal import Decimal
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
-
 from aircraft.co_owner_form_parsing import (  # pyright: ignore[reportMissingImports]
     parse_reserve_fields,
 )
@@ -24,8 +23,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     User,
     db,
 )
-import services.co_owner_billing as co_owner_billing  # pyright: ignore[reportMissingImports]
-
+from services import co_owner_billing  # pyright: ignore[reportMissingImports]
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -173,7 +171,7 @@ class TestParseReserveFields:
         assert errors == []
 
     def test_both_set_is_rejected(self):
-        hourly, monthly, errors = parse_reserve_fields(
+        _hourly, _monthly, errors = parse_reserve_fields(
             _FakeForm(
                 {
                     "reserve_contribution_hourly": "15.00",

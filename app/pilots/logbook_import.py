@@ -8,9 +8,10 @@ import io
 import json
 import math
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
-from typing import Any, Callable
+from typing import Any
 
 import openpyxl  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
@@ -287,8 +288,7 @@ def _trim_trailing_empty_cols(
     for row in all_rows[:max_scan]:
         for j in range(len(row) - 1, -1, -1):
             if row[j] is not None and str(row[j]).strip():
-                if j + 1 > max_col:
-                    max_col = j + 1
+                max_col = max(max_col, j + 1)
                 break
     if max_col == 0:
         return (
@@ -475,7 +475,7 @@ def _parse_excel(data: bytes, filename: str) -> ParsedFile:
         wb_full = openpyxl.load_workbook(io.BytesIO(data), data_only=True)
         excel_merge_map = _merge_label_map(wb_full[sheet_name])
         wb_full.close()
-    except Exception:  # noqa: S110  # fall back to heuristic in _build_parsed_file
+    except Exception:  # noqa: S110, BLE001  # fall back to heuristic in _build_parsed_file
         pass
 
     return _build_parsed_file(all_rows, filename, excel_merge_map=excel_merge_map)
@@ -616,9 +616,7 @@ def _is_subtotal_row(row: list[Any], date_col_idx: int | None) -> bool:
         return True
     if val is None or (isinstance(val, str) and not val.strip()):
         return True
-    if isinstance(val, str) and "total" in val.lower():
-        return True
-    return False
+    return bool(isinstance(val, str) and "total" in val.lower())
 
 
 # ── Value parsing ─────────────────────────────────────────────────────────────
@@ -870,7 +868,9 @@ def _build_entry_kwargs(
             val = str(raw).strip() if raw is not None else None
             kwargs["other_aircraft_type"] = val
             if val:
-                from utils import resolve_aircraft_type_icao  # pyright: ignore[reportMissingImports]
+                from utils import (
+                    resolve_aircraft_type_icao,  # pyright: ignore[reportMissingImports]
+                )
 
                 kwargs["other_aircraft_type_icao"] = resolve_aircraft_type_icao(val)
         elif target == "aircraft_registration":
@@ -914,9 +914,8 @@ def _dup_key(kwargs: dict[str, Any]) -> tuple[Any, ...]:
 
 
 def _fetch_existing_dedup_keys(pilot_user_id: int) -> set[tuple[Any, ...]]:
-    from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
-
     from models import Aircraft, Flight, db  # pyright: ignore[reportMissingImports]
+    from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
 
     # Registration is Aircraft.registration for a managed-aircraft row, or
     # the free-text other_aircraft_registration for a standalone one.
@@ -1254,9 +1253,12 @@ def find_conflicting_rows(
     already logged from the airframe side — it silently creates a second,
     duplicate Flight row instead of surfacing a conflict to resolve.
     """
+    from models import (  # pyright: ignore[reportMissingImports]
+        Aircraft,
+        Flight,
+        TenantUser,
+    )
     from sqlalchemy import and_, or_  # pyright: ignore[reportMissingImports]
-
-    from models import Aircraft, Flight, TenantUser  # pyright: ignore[reportMissingImports]
 
     exclude_row_nums = exclude_row_nums or set()
     date_idx = _date_col_index(parsed.norm_cols, mapping)
@@ -1331,7 +1333,12 @@ def link_entries_to_aircraft(entries: list[Any]) -> int:
     row that already exists — no second row, no separate crew row (the
     row's pic_user_id/pic_name are already whatever the CSV import set).
     """
-    from models import Aircraft, TenantUser, User, db  # pyright: ignore[reportMissingImports]
+    from models import (  # pyright: ignore[reportMissingImports]
+        Aircraft,
+        TenantUser,
+        User,
+        db,
+    )
 
     def _norm_reg(reg: str) -> str:
         return reg.upper().replace("-", "").replace(" ", "")

@@ -29,7 +29,7 @@ import atheris
 atheris.instrument_imports = lambda *args, **kwargs: contextlib.nullcontext()
 atheris.instrument_func = lambda func: func
 
-import coverage  # noqa: E402 — must follow the atheris monkeypatch above
+import coverage
 
 _ROOT = Path(__file__).resolve().parent.parent
 _FUZZ_DIR = _ROOT / "fuzz"
@@ -85,7 +85,7 @@ def main() -> int:
         for f in files:
             try:
                 module.TestOneInput(f.read_bytes())
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 -- replay-only, see comment below
                 # Replaying a corpus of previously-accepted, non-crashing
                 # inputs — a replay-time exception just means the crash file
                 # was never pruned from the corpus dir; don't let it abort

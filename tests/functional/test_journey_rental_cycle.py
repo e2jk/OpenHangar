@@ -10,7 +10,7 @@ mostly single-actor requests; no test runs the loop through HTTP as two
 users.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from tests.functional.conftest import second_user, submit
 
@@ -72,7 +72,7 @@ def test_full_rental_cycle_two_users(owner_env, app, client_factory):
     )
 
     # Renter reserves a slot; owner-only pages reject the renter throughout.
-    start_dt = datetime(2024, 6, 20, 9, 0, tzinfo=timezone.utc)
+    start_dt = datetime(2024, 6, 20, 9, 0, tzinfo=UTC)
     end_dt = start_dt + timedelta(hours=2)
     submit(
         renter,

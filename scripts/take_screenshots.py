@@ -29,8 +29,10 @@ try:
         Browser,
         BrowserContext,
         Page,
-        TimeoutError as PlaywrightTimeoutError,
         sync_playwright,
+    )
+    from playwright.sync_api import (
+        TimeoutError as PlaywrightTimeoutError,
     )
 except ImportError as e:
     print(f"Missing dependency: {e}")
