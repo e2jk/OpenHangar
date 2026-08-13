@@ -2795,15 +2795,19 @@ class TestConflictScoring:
             assert _score_candidate(kwargs, existing) == 7
 
     def test_score_same_pair_graduated_tiers(self, app):
-        """existing.departure_time set — scored tight
-        (SAME_PAIR_STEP_MINUTES=5) against the new row's departure_time,
-        expecting a near-exact repeat of the same real instant."""
+        """existing.departure_time set — scored against the new row's
+        departure_time with a ring width of 1/3 of flight_counter_offset
+        (6min at the 0.3h default, which this standalone row — no managed
+        aircraft — falls back to). Matches pilots' actual logging precision
+        (0.1h/6min increments): an ordinary rounding difference should land
+        in the generous ring, not the stingy one a flat few-minutes
+        tolerance would put it in."""
         with app.app_context():
             existing = self._entry(app, departure_time=time(9, 0))
             assert _score_candidate({"departure_time": time(9, 0)}, existing) == 1.0
-            assert _score_candidate({"departure_time": time(9, 5)}, existing) == 0.75
-            assert _score_candidate({"departure_time": time(9, 10)}, existing) == 0.5
-            assert _score_candidate({"departure_time": time(9, 11)}, existing) == 0.0
+            assert _score_candidate({"departure_time": time(9, 6)}, existing) == 0.75
+            assert _score_candidate({"departure_time": time(9, 12)}, existing) == 0.5
+            assert _score_candidate({"departure_time": time(9, 13)}, existing) == 0.0
 
     def test_score_cross_pair_fallback_against_airframe_placeholder(self, app):
         """existing.departure_time absent but existing.takeoff_time set (a

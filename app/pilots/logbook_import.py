@@ -1163,7 +1163,7 @@ def _score_candidate(kwargs: dict[str, Any], existing: Any) -> float:
     see services.time_band_matching.
     """
     from services.time_band_matching import (  # pyright: ignore[reportMissingImports]
-        SAME_PAIR_STEP_MINUTES,
+        DEFAULT_OFFSET_HOURS,
         offset_ring_step_minutes,
         shift_time,
         time_band_score,
@@ -1187,23 +1187,30 @@ def _score_candidate(kwargs: dict[str, Any], existing: Any) -> float:
         score += 1
 
     # Same-pair (existing.departure_time/arrival_time set) is scored tight,
-    # expecting a near-exact repeat of the same real instant. Cross-pair
+    # expecting a near-exact repeat of the same real instant, with a ring
+    # width of 1/3 of the managed aircraft's flight_counter_offset — pilots
+    # log to a fixed precision (0.1h/6min at the 0.3h default), so a flat
+    # few-minutes tolerance would put an ordinary rounding difference in the
+    # wrong ring. Falls back to the model's own 0.3h default when this row
+    # has no managed aircraft to read a real offset from. Cross-pair
     # (existing only has takeoff_time/landing_time — an airframe-import
     # placeholder, e.g. a hand-entered row from before this pilot ever ran
-    # a logbook import) is scored against that time shifted by the managed
-    # aircraft's own flight_counter_offset, the closest estimate available
-    # of the block-to-airborne time gap. A standalone existing row (no
-    # aircraft_id, e.g. a rental logged nowhere else) has neither
-    # takeoff_time nor an aircraft to get an offset from, so this is
-    # skipped — same as it always was.
+    # a logbook import) is scored against that time shifted by this same
+    # offset, the closest estimate available of the block-to-airborne time
+    # gap — this needs a *real* managed-aircraft offset, so a standalone
+    # existing row (no aircraft_id, e.g. a rental logged nowhere else) has
+    # this comparison skipped entirely rather than guessing one.
     offset_hours = (
         float(existing.aircraft.flight_counter_offset) if existing.aircraft else None
+    )
+    same_pair_step = offset_ring_step_minutes(
+        offset_hours if offset_hours is not None else DEFAULT_OFFSET_HOURS
     )
 
     dep_time_new = kwargs.get("departure_time")
     if existing.departure_time is not None:
         score += time_band_score(
-            dep_time_new, (existing.departure_time,), SAME_PAIR_STEP_MINUTES
+            dep_time_new, (existing.departure_time,), same_pair_step
         )
     elif existing.takeoff_time is not None and offset_hours is not None:
         offset_minutes = round(offset_hours * 60)
@@ -1214,9 +1221,7 @@ def _score_candidate(kwargs: dict[str, Any], existing: Any) -> float:
 
     arr_time_new = kwargs.get("arrival_time")
     if existing.arrival_time is not None:
-        score += time_band_score(
-            arr_time_new, (existing.arrival_time,), SAME_PAIR_STEP_MINUTES
-        )
+        score += time_band_score(arr_time_new, (existing.arrival_time,), same_pair_step)
     elif existing.landing_time is not None and offset_hours is not None:
         offset_minutes = round(offset_hours * 60)
         center = shift_time(existing.landing_time, offset_minutes)
