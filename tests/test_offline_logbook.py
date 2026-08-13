@@ -168,10 +168,11 @@ def test_snapshot_fully_populated_entry(app, client):
         engine_time=Decimal("1.4"),
         engine_time_counter_start=Decimal("2200.0"),
         engine_time_counter_end=Decimal("2201.3"),
-        fuel_added_qty=Decimal("45.50"),
-        fuel_added_unit="L",
+        fuel_added_before_qty=Decimal("45.50"),
+        fuel_added_before_unit="L",
+        fuel_added_after_qty=Decimal("12.00"),
+        fuel_added_after_unit="L",
         fuel_remaining_qty=Decimal("30.25"),
-        fuel_event="before",
         oil_added_l=Decimal("0.50"),
         passenger_count=2,
         landing_count=3,
@@ -219,15 +220,16 @@ def test_snapshot_fully_populated_entry(app, client):
         "engine_time": "1.4",
         "engine_time_counter_start": "2200.0",
         "engine_time_counter_end": "2201.3",
-        "fuel_added_qty": "45.50",
+        "fuel_added_before_qty": "45.50",
+        "fuel_added_before_unit": "L",
+        "fuel_added_after_qty": "12.00",
+        "fuel_added_after_unit": "L",
         "fuel_remaining_qty": "30.25",
         "oil_added_l": "0.50",
         "passenger_count": "2",
         "landing_count": "3",
         "nature_of_flight": "Training",
         "notes": "Some notes",
-        "fuel_added_unit": "L",
-        "fuel_event": "before",
         "crew_name_0": "Alice",
         "crew_name_1": "Bob",
         "crew_role_1": "COPILOT",
@@ -270,15 +272,16 @@ def test_snapshot_all_nulls_entry(app, client):
         "engine_time",
         "engine_time_counter_start",
         "engine_time_counter_end",
-        "fuel_added_qty",
+        "fuel_added_before_qty",
+        "fuel_added_before_unit",
+        "fuel_added_after_qty",
+        "fuel_added_after_unit",
         "fuel_remaining_qty",
         "oil_added_l",
         "passenger_count",
         "landing_count",
         "nature_of_flight",
         "notes",
-        "fuel_added_unit",
-        "fuel_event",
         "crew_name_0",
         "crew_name_1",
         "crew_role_1",
@@ -336,13 +339,13 @@ def test_snapshot_decimal_precision(app, client):
         app,
         ac_id,
         flight_time_counter_start=Decimal("1424.50"),
-        fuel_added_qty=Decimal("45.5"),
+        fuel_added_before_qty=Decimal("45.5"),
     )
 
     resp = client.get(f"/api/offline/aircraft/{ac_id}/logbook")
     fields = resp.get_json()["entries"][0]["fields"]
     assert fields["flight_time_counter_start"] == "1424.5"
-    assert fields["fuel_added_qty"] == "45.50"
+    assert fields["fuel_added_before_qty"] == "45.50"
 
 
 def test_snapshot_archived_aircraft_included(app, client):

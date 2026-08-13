@@ -279,8 +279,8 @@ msgstr[1] "%(n)s bestanden overgeslagen — geen beweging gedetecteerd."
 msgid "No valid GPS files to import."
 msgstr "Geen geldige GPS-bestanden om te importeren."
 
-#: app/aircraft/routes.py:1895 app/aircraft/routes.py:2242
-#: app/aircraft/routes.py:2438 app/pilots/routes.py:2110
+#: app/aircraft/routes.py:1895 app/aircraft/routes.py:2236
+#: app/aircraft/routes.py:2432 app/pilots/routes.py:2110
 #: app/pilots/routes.py:2214
 msgid "Session expired — please upload your GPS files again."
 msgstr "Sessie verlopen — upload uw GPS-bestanden opnieuw."
@@ -290,21 +290,21 @@ msgstr "Sessie verlopen — upload uw GPS-bestanden opnieuw."
 msgid "Could not read %(fn)s — please upload again."
 msgstr "Kan %(fn)s niet lezen — upload het bestand opnieuw."
 
-#: app/aircraft/routes.py:2247 app/pilots/routes.py:2219
+#: app/aircraft/routes.py:2241 app/pilots/routes.py:2219
 msgid "No segments to import."
 msgstr "Geen segmenten om te importeren."
 
-#: app/aircraft/routes.py:2253 app/aircraft/routes.py:2257
-#: app/aircraft/routes.py:2443 app/pilots/routes.py:2225
+#: app/aircraft/routes.py:2247 app/aircraft/routes.py:2251
+#: app/aircraft/routes.py:2437 app/pilots/routes.py:2225
 #: app/pilots/routes.py:2229
 msgid "Invalid segment index."
 msgstr "Ongeldig segmentindex."
 
-#: app/aircraft/routes.py:2262 app/pilots/routes.py:2234
+#: app/aircraft/routes.py:2256 app/pilots/routes.py:2234
 msgid "This segment has already been confirmed."
 msgstr "Dit segment is al bevestigd."
 
-#: app/aircraft/routes.py:2282 app/aircraft/routes.py:2409
+#: app/aircraft/routes.py:2276 app/aircraft/routes.py:2403
 #: app/pilots/routes.py:2255 app/pilots/routes.py:2473
 #, python-format
 msgid "%(n)s flight imported successfully."
@@ -312,42 +312,42 @@ msgid_plural "%(n)s flights imported successfully."
 msgstr[0] "%(n)s vlucht succesvol geïmporteerd."
 msgstr[1] "%(n)s vluchten succesvol geïmporteerd."
 
-#: app/aircraft/routes.py:2291 app/pilots/routes.py:2264
+#: app/aircraft/routes.py:2285 app/pilots/routes.py:2264
 #, python-format
 msgid "%(n)s segment skipped."
 msgid_plural "%(n)s segments skipped."
 msgstr[0] "%(n)s segment overgeslagen."
 msgstr[1] "%(n)s segmenten overgeslagen."
 
-#: app/aircraft/routes.py:2304 app/pilots/routes.py:2274
+#: app/aircraft/routes.py:2298 app/pilots/routes.py:2274
 msgid "Segment skipped."
 msgstr "Segment overgeslagen."
 
-#: app/aircraft/routes.py:2420 app/pilots/routes.py:2482
+#: app/aircraft/routes.py:2414 app/pilots/routes.py:2482
 msgid "Flight confirmed."
 msgstr "Vlucht bevestigd."
 
-#: app/aircraft/routes.py:2528
+#: app/aircraft/routes.py:2522
 msgid "GPS import batch rolled back and all linked flight entries removed."
 msgstr "GPS-importbatch teruggedraaid en alle gekoppelde vluchtvermeldingen verwijderd."
 
-#: app/aircraft/routes.py:2739
+#: app/aircraft/routes.py:2733
 msgid "No files selected."
 msgstr "Geen bestanden geselecteerd."
 
-#: app/aircraft/routes.py:2759
+#: app/aircraft/routes.py:2753
 #, python-format
 msgid "%(name)s: unsupported format (use JPEG, PNG, WEBP or HEIC)."
 msgstr "%(name)s: niet-ondersteund formaat (gebruik JPEG, PNG, WEBP of HEIC)."
 
-#: app/aircraft/routes.py:2781
+#: app/aircraft/routes.py:2775
 #, python-format
 msgid "%(n)s photo uploaded."
 msgid_plural "%(n)s photos uploaded."
 msgstr[0] "%(n)s foto geüpload."
 msgstr[1] "%(n)s foto's geüpload."
 
-#: app/aircraft/routes.py:2837
+#: app/aircraft/routes.py:2831
 msgid "Photo deleted."
 msgstr "Foto verwijderd."
 
@@ -921,14 +921,18 @@ msgid "Landing count must be a non-negative integer."
 msgstr "Aantal landingen moet een niet-negatief geheel getal zijn."
 
 #: app/flights/form_parsing.py:296
-msgid "Fuel quantity added must be a non-negative number."
-msgstr "Toegevoegde brandstofeenheid moet een niet-negatief getal zijn."
+msgid "Fuel quantity added before the flight must be a non-negative number."
+msgstr "De hoeveelheid brandstof toegevoegd voor de vlucht moet een positief getal zijn."
 
-#: app/flights/form_parsing.py:308
+#: app/flights/form_parsing.py:311
+msgid "Fuel quantity added after the flight must be a non-negative number."
+msgstr "De hoeveelheid brandstof toegevoegd na de vlucht moet een positief getal zijn."
+
+#: app/flights/form_parsing.py:324
 msgid "Fuel remaining must be a non-negative number."
 msgstr "Resterende brandstof moet een niet-negatief getal zijn."
 
-#: app/flights/form_parsing.py:319
+#: app/flights/form_parsing.py:335
 msgid "Oil added must be a non-negative number."
 msgstr "Toegevoegde olie moet een niet-negatief getal zijn."
 
@@ -2509,7 +2513,7 @@ msgstr "Deze maand"
 #: app/templates/aircraft/detail.html:551 app/templates/dashboard.html:173
 #: app/templates/offline/changes.html:35
 #: app/templates/offline/pilot_workbench.html:170
-#: app/templates/offline/workbench.html:199
+#: app/templates/offline/workbench.html:202
 #: app/templates/reservations/calendar.html:114
 #: app/templates/reservations/fleet.html:59
 msgid "Pending"
@@ -2824,10 +2828,10 @@ msgstr "Einde"
 #: app/templates/airworthiness/stc_form.html:43
 #: app/templates/config/renter_form.html:83 app/templates/dashboard.html:709
 #: app/templates/flights/airframe_import_review.html:35
-#: app/templates/flights/flight_form.html:712
+#: app/templates/flights/flight_form.html:718
 #: app/templates/maintenance/service_form.html:102
 #: app/templates/maintenance/trigger_form.html:189
-#: app/templates/offline/workbench.html:149
+#: app/templates/offline/workbench.html:152
 #: app/templates/reservations/detail.html:50
 #: app/templates/reservations/fleet.html:36
 #: app/templates/reservations/form.html:69
@@ -3162,8 +3166,8 @@ msgstr "%(reg)s bewerken"
 #: app/templates/flights/airframe_import_map.html:144
 #: app/templates/flights/flight_form.html:45
 #: app/templates/flights/flight_form.html:49
-#: app/templates/flights/flight_form.html:725
-#: app/templates/flights/flight_form.html:727
+#: app/templates/flights/flight_form.html:731
+#: app/templates/flights/flight_form.html:733
 #: app/templates/maintenance/service_form.html:20
 #: app/templates/maintenance/service_form.html:113
 #: app/templates/maintenance/trigger_form.html:19
@@ -3344,7 +3348,7 @@ msgstr "Totale brandstoftankcapaciteit"
 #: app/templates/flights/flight_form.html:521
 #: app/templates/flights/flight_form.html:532
 #: app/templates/flights/flight_form.html:580
-#: app/templates/flights/flight_form.html:712
+#: app/templates/flights/flight_form.html:718
 #: app/templates/maintenance/service_form.html:70
 #: app/templates/maintenance/service_form.html:92
 #: app/templates/maintenance/service_form.html:102
@@ -3391,7 +3395,7 @@ msgstr "Bepaalt hoe GPS-geïmporteerde vluchttijden worden afgerond in het logbo
 #: app/templates/config/settings.html:446
 #: app/templates/documents/edit_form.html:79
 #: app/templates/expenses/expense_form.html:182
-#: app/templates/flights/flight_form.html:721
+#: app/templates/flights/flight_form.html:727
 #: app/templates/maintenance/trigger_form.html:196
 #: app/templates/pwa/share_target.html:116
 #: app/templates/reservations/downtime_form.html:70
@@ -4129,8 +4133,8 @@ msgid "Block on (UTC)"
 msgstr "Blok aankomst (UTC)"
 
 #: app/templates/aircraft/flight_detail.html:110
-#: app/templates/flights/flight_form.html:662
-#: app/templates/offline/workbench.html:158
+#: app/templates/flights/flight_form.html:668
+#: app/templates/offline/workbench.html:161
 #: app/templates/pilots/logbook.html:16
 msgid "Pilot logbook"
 msgstr "Pilootlogboek"
@@ -4150,7 +4154,7 @@ msgstr "PIC"
 
 #: app/templates/aircraft/flight_detail.html:120
 #: app/templates/flights/flight_form.html:329
-#: app/templates/offline/workbench.html:136
+#: app/templates/offline/workbench.html:139
 msgid "Second crew"
 msgstr "Tweede bemanningslid"
 
@@ -4170,7 +4174,7 @@ msgid "Instrument"
 msgstr "Instrumenten"
 
 #: app/templates/aircraft/flight_detail.html:127
-#: app/templates/flights/flight_form.html:698
+#: app/templates/flights/flight_form.html:704
 #: app/templates/pilots/entry_detail.html:105
 #: app/templates/pilots/entry_form.html:230
 #: app/templates/pilots/logbook.html:176
@@ -4411,7 +4415,7 @@ msgstr "Details toevoegen"
 #: app/templates/aircraft/gps_import_review.html:218
 #: app/templates/flights/airframe_import_review.html:34
 #: app/templates/flights/flight_form.html:505
-#: app/templates/offline/workbench.html:128
+#: app/templates/offline/workbench.html:131
 msgid "Nature of flight"
 msgstr "Aard van de vlucht"
 
@@ -5412,7 +5416,7 @@ msgstr "Details"
 
 #: app/templates/auth/setup.html:43
 #: app/templates/offline/pilot_workbench.html:175
-#: app/templates/offline/workbench.html:204
+#: app/templates/offline/workbench.html:207
 msgid "Review"
 msgstr "Overzicht"
 
@@ -7004,8 +7008,10 @@ msgid "Quantity"
 msgstr "Hoeveelheid"
 
 #: app/templates/expenses/expense_form.html:150
-#: app/templates/flights/flight_form.html:606
-#: app/templates/offline/workbench.html:113
+#: app/templates/flights/flight_form.html:593
+#: app/templates/flights/flight_form.html:612
+#: app/templates/offline/workbench.html:105
+#: app/templates/offline/workbench.html:116
 msgid "Unit"
 msgstr "Eenheid"
 
@@ -7481,13 +7487,13 @@ msgid "Not logging in my pilot logbook"
 msgstr "Niet registreren in mijn vliegboek"
 
 #: app/templates/flights/flight_form.html:321
-#: app/templates/offline/workbench.html:132
+#: app/templates/offline/workbench.html:135
 msgid "PIC / Commander"
 msgstr "PIC / Gezagvoerder"
 
 #: app/templates/flights/flight_form.html:339
 #: app/templates/offline/pilot_workbench.html:67
-#: app/templates/offline/workbench.html:140
+#: app/templates/offline/workbench.html:143
 #: app/templates/pilots/entry_form.html:71
 msgid "Select…"
 msgstr "Selecteer…"
@@ -7548,84 +7554,74 @@ msgstr "Aard &amp; Passagiers"
 msgid "Post-flight photos — taken after shutdown, for the counter/fuel readings above."
 msgstr "Foto's na de vlucht — genomen na het uitschakelen van de motor, voor de teller-/brandstofstanden hierboven."
 
-#: app/templates/flights/flight_form.html:583
-msgid "Refuel"
-msgstr "Bijtanken"
-
-#: app/templates/flights/flight_form.html:585
-msgid "No fuel added"
-msgstr "Geen brandstof toegevoegd"
-
-#: app/templates/flights/flight_form.html:585
+#: app/templates/flights/flight_form.html:587
+#: app/templates/offline/workbench.html:101
 msgid "Fuel added before flight"
 msgstr "Brandstof toegevoegd vóór vlucht"
 
-#: app/templates/flights/flight_form.html:585
+#: app/templates/flights/flight_form.html:606
+#: app/templates/offline/workbench.html:112
 msgid "Fuel added after flight"
 msgstr "Brandstof toegevoegd na vlucht"
 
-#: app/templates/flights/flight_form.html:600
-msgid "Quantity added"
-msgstr "Toegevoegde hoeveelheid"
-
-#: app/templates/flights/flight_form.html:620
+#: app/templates/flights/flight_form.html:626
 msgid "Fuel remaining at end of flight"
 msgstr "Resterende brandstof aan einde van vlucht"
 
-#: app/templates/flights/flight_form.html:624
+#: app/templates/flights/flight_form.html:630
 msgid "estimated"
 msgstr "geschat"
 
-#: app/templates/flights/flight_form.html:629
+#: app/templates/flights/flight_form.html:635
 msgid "Quick-fill from tank fraction"
 msgstr "Snel invullen via tankfractie"
 
-#: app/templates/flights/flight_form.html:634
+#: app/templates/flights/flight_form.html:640
 #, python-format
 msgid "Estimated liters for the selected fraction of a full %(capacity)s L tank, rounded to the nearest 5 L."
 msgstr "Geschatte liters voor de geselecteerde tankfractie, bij een volle tank van %(capacity)s L, afgerond op het dichtstbijzijnde veelvoud van 5 L."
 
-#: app/templates/flights/flight_form.html:637
+#: app/templates/flights/flight_form.html:643
 msgid "Set the tank capacity on the aircraft page to get quick fraction-of-tank buttons here."
 msgstr "Stel de tankcapaciteit in op de vliegtuigpagina om hier snelknoppen voor tankfracties te krijgen."
 
-#: app/templates/flights/flight_form.html:638
+#: app/templates/flights/flight_form.html:644
 msgid "Aircraft settings"
 msgstr "Vliegtuiginstellingen"
 
-#: app/templates/flights/flight_form.html:643
+#: app/templates/flights/flight_form.html:649
 #, python-format
 msgid "Estimated consumption: ~%(est)s L based on engine time"
 msgstr "Geschat verbruik: ~%(est)s L op basis van motortijd"
 
-#: app/templates/flights/flight_form.html:647
+#: app/templates/flights/flight_form.html:653
 msgid "Oil added"
 msgstr "Olie toegevoegd"
 
-#: app/templates/flights/flight_form.html:667
+#: app/templates/flights/flight_form.html:673
 #: app/templates/offline/pilot_workbench.html:109
-#: app/templates/offline/workbench.html:161
+#: app/templates/offline/workbench.html:164
 #: app/templates/pilots/import_map.html:146
 msgid "Night time"
 msgstr "Nachtvliegtijd"
 
-#: app/templates/flights/flight_form.html:675
+#: app/templates/flights/flight_form.html:681
 #: app/templates/offline/pilot_workbench.html:113
-#: app/templates/offline/workbench.html:165
+#: app/templates/offline/workbench.html:168
 msgid "Instrument time"
 msgstr "Instrumentvliegtijd"
 
-#: app/templates/flights/flight_form.html:685
+#: app/templates/flights/flight_form.html:691
 msgid "Landings day"
 msgstr "Overdag landingen"
 
-#: app/templates/flights/flight_form.html:691
-#: app/templates/offline/workbench.html:173
+#: app/templates/flights/flight_form.html:697
+#: app/templates/offline/workbench.html:176
 #: app/templates/pilots/entry_detail.html:143
 msgid "Night landings"
 msgstr "Nachtlandingen"
 
-#: app/templates/flights/flight_form.html:715
+#: app/templates/flights/flight_form.html:721
 msgid "Remarks, weather…"
 msgstr "Opmerkingen, weer…"
 
@@ -8034,19 +8030,19 @@ msgstr "Terugzetten"
 
 #: app/templates/offline/changes.html:36
 #: app/templates/offline/pilot_workbench.html:172
-#: app/templates/offline/workbench.html:201
+#: app/templates/offline/workbench.html:204
 msgid "Conflict"
 msgstr "Conflict"
 
 #: app/templates/offline/changes.html:37
 #: app/templates/offline/pilot_workbench.html:173
-#: app/templates/offline/workbench.html:202
+#: app/templates/offline/workbench.html:205
 msgid "Duplicate"
 msgstr "Duplicaat"
 
 #: app/templates/offline/changes.html:38
 #: app/templates/offline/pilot_workbench.html:174
-#: app/templates/offline/workbench.html:203
+#: app/templates/offline/workbench.html:206
 msgid "Error"
 msgstr "Fout"
 
@@ -8192,7 +8188,7 @@ msgid "M/E time"
 msgstr "Vliegtijd meermotorig"
 
 #: app/templates/offline/pilot_workbench.html:125
-#: app/templates/offline/workbench.html:177
+#: app/templates/offline/workbench.html:180
 #: app/templates/pilots/import_map.html:145
 msgid "Multi-pilot time"
 msgstr "Vliegtijd meerpiloot"
@@ -8220,14 +8216,14 @@ msgid "Aircraft type (ICAO)"
 msgstr "Vliegtuigtype (ICAO)"
 
 #: app/templates/offline/pilot_workbench.html:159
-#: app/templates/offline/workbench.html:188
+#: app/templates/offline/workbench.html:191
 msgid "Working offline — changes are stored on this device and will upload automatically."
 msgstr "Offline modus — wijzigingen worden op dit apparaat opgeslagen en automatisch geüpload."
 
 #: app/templates/offline/pilot_workbench.html:160
 #: app/templates/offline/pilot_workbench.html:165
-#: app/templates/offline/workbench.html:189
-#: app/templates/offline/workbench.html:194
+#: app/templates/offline/workbench.html:192
+#: app/templates/offline/workbench.html:197
 #, python-brace-format
 msgid "Working offline — one change will upload automatically once you're back online."
 msgid_plural "Working offline — {n} changes will upload automatically once you're back online."
@@ -8235,12 +8231,12 @@ msgstr[0] "Offline modus — één wijziging wordt automatisch geüpload zodra u
 msgstr[1] "Offline modus — {n} wijzigingen worden automatisch geüpload zodra u weer online bent."
 
 #: app/templates/offline/pilot_workbench.html:171
-#: app/templates/offline/workbench.html:200
+#: app/templates/offline/workbench.html:203
 msgid "Syncing…"
 msgstr "Synchroniseren…"
 
 #: app/templates/offline/pilot_workbench.html:176
-#: app/templates/offline/workbench.html:205
+#: app/templates/offline/workbench.html:208
 msgid "This field is required."
 msgstr "Dit veld is verplicht."
 
@@ -8280,43 +8276,25 @@ msgstr "Automatisch berekend op basis van de motortellers en/of de vertrek-/aank
 msgid "Actual flight segment, if different from departure/arrival"
 msgstr "Werkelijk vluchtsegment, indien anders dan vertrek/aankomst"
 
-#: app/templates/offline/workbench.html:101
-msgid "Fuel event"
-msgstr "Brandstofgebeurtenis"
-
-#: app/templates/offline/workbench.html:103
-msgid "None"
-msgstr "Geen"
-
-#: app/templates/offline/workbench.html:104
-msgid "Before flight"
-msgstr "Voor de vlucht"
-
-#: app/templates/offline/workbench.html:105
-msgid "After flight"
-msgstr "Na de vlucht"
-
-#: app/templates/offline/workbench.html:109
-msgid "Fuel added"
-msgstr "Brandstof bijgevuld"
-
-#: app/templates/offline/workbench.html:115
+#: app/templates/offline/workbench.html:107
+#: app/templates/offline/workbench.html:118
 msgid "litres"
 msgstr "liter"
 
-#: app/templates/offline/workbench.html:116
+#: app/templates/offline/workbench.html:108
+#: app/templates/offline/workbench.html:119
 msgid "gallons"
 msgstr "gallon"
 
-#: app/templates/offline/workbench.html:120
+#: app/templates/offline/workbench.html:123
 msgid "Fuel remaining"
 msgstr "Resterende brandstof"
 
-#: app/templates/offline/workbench.html:124
+#: app/templates/offline/workbench.html:127
 msgid "Oil added (L)"
 msgstr "Olie bijgevuld (L)"
 
-#: app/templates/offline/workbench.html:141
+#: app/templates/offline/workbench.html:144
 #: app/templates/pilots/entry_detail.html:91
 #: app/templates/pilots/entry_form.html:271
 #: app/templates/pilots/import_map.html:151
@@ -8325,32 +8303,32 @@ msgstr "Olie bijgevuld (L)"
 msgid "Instructor"
 msgstr "Instructeur"
 
-#: app/templates/offline/workbench.html:142
+#: app/templates/offline/workbench.html:145
 msgid "Safety Pilot"
 msgstr "Veiligheidspiloot"
 
-#: app/templates/offline/workbench.html:143
+#: app/templates/offline/workbench.html:146
 msgid "Co-Pilot"
 msgstr "Copiloot"
 
-#: app/templates/offline/workbench.html:144
+#: app/templates/offline/workbench.html:147
 msgid "Student"
 msgstr "Student"
 
-#: app/templates/offline/workbench.html:169
+#: app/templates/offline/workbench.html:172
 #: app/templates/pilots/entry_detail.html:137
 msgid "Day landings"
 msgstr "Daglandingen"
 
-#: app/templates/offline/workbench.html:206
+#: app/templates/offline/workbench.html:209
 msgid "End must not be less than start."
 msgstr "Einde mag niet kleiner zijn dan begin."
 
-#: app/templates/offline/workbench.html:207
+#: app/templates/offline/workbench.html:210
 msgid "Does not match the previous entry's end value."
 msgstr "Komt niet overeen met de eindwaarde van de vorige invoer."
 
-#: app/templates/offline/workbench.html:208
+#: app/templates/offline/workbench.html:211
 msgid "No flight entries cached for offline editing yet — visit this aircraft's logbook once while online."
 msgstr "Nog geen vluchtinvoeren gecachet voor offline bewerking — bezoek het logboek van dit toestel eenmaal terwijl u online bent."
 

@@ -579,35 +579,41 @@
             <h6 class="text-muted mb-3"><i class="bi bi-fuel-pump me-1"></i>{{ _('Fuel & oil') }}
               <span class="fw-normal small">({{ _('optional') }})</span></h6>
 
-            <div class="mb-3">
-              <label class="form-label">{{ _('Refuel') }}</label>
-              <div class="d-flex gap-3">
-                {% set fuel_labels = {'none': _('No fuel added'), 'before': _('Fuel added before flight'), 'after': _('Fuel added after flight')} %}
-                {% for val, lbl in [('none', fuel_labels['none']), ('before', fuel_labels['before']), ('after', fuel_labels['after'])] %}
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="fuel_event"
-                         id="fuel_event_{{ val }}" value="{{ val }}"
-                         {% if flight and flight.fuel_event == val %}checked
-                         {% elif not flight and val == 'none' %}checked{% endif %}>
-                  <label class="form-check-label" for="fuel_event_{{ val }}">{{ lbl }}</label>
-                </div>
-                {% endfor %}
-              </div>
-            </div>
-
-            <div id="fuel-added-fields" class="row mb-3 d-none">
+            {# Refueling before and after are independent — a flight can have
+               neither, either, or both (e.g. topped off before departure,
+               then topped off again after landing). #}
+            <div class="row mb-3">
               <div class="col-7">
-                <label for="fuel_added_qty" class="form-label">{{ _('Quantity added') }}</label>
-                <input type="number" class="form-control" id="fuel_added_qty" name="fuel_added_qty"
-                       value="{{ '%.1f'|format(flight.fuel_added_qty|float) if flight and flight.fuel_added_qty is not none else '' }}"
+                <label for="fuel_added_before_qty" class="form-label">{{ _('Fuel added before flight') }}</label>
+                <input type="number" class="form-control" id="fuel_added_before_qty" name="fuel_added_before_qty"
+                       value="{{ '%.1f'|format(flight.fuel_added_before_qty|float) if flight and flight.fuel_added_before_qty is not none else '' }}"
                        step="0.1" min="0" placeholder="e.g. 40.0">
               </div>
               <div class="col-5">
-                <label for="fuel_added_unit" class="form-label">{{ _('Unit') }}</label>
-                <select class="form-select" id="fuel_added_unit" name="fuel_added_unit">
+                <label for="fuel_added_before_unit" class="form-label">{{ _('Unit') }}</label>
+                <select class="form-select" id="fuel_added_before_unit" name="fuel_added_before_unit">
                   {% for u in fuel_units %}
                   <option value="{{ u }}"
-                    {% if flight and flight.fuel_added_unit == u %}selected
+                    {% if flight and flight.fuel_added_before_unit == u %}selected
+                    {% elif not flight and u == 'L' %}selected{% endif %}>{{ u }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-7">
+                <label for="fuel_added_after_qty" class="form-label">{{ _('Fuel added after flight') }}</label>
+                <input type="number" class="form-control" id="fuel_added_after_qty" name="fuel_added_after_qty"
+                       value="{{ '%.1f'|format(flight.fuel_added_after_qty|float) if flight and flight.fuel_added_after_qty is not none else '' }}"
+                       step="0.1" min="0" placeholder="e.g. 40.0">
+              </div>
+              <div class="col-5">
+                <label for="fuel_added_after_unit" class="form-label">{{ _('Unit') }}</label>
+                <select class="form-select" id="fuel_added_after_unit" name="fuel_added_after_unit">
+                  {% for u in fuel_units %}
+                  <option value="{{ u }}"
+                    {% if flight and flight.fuel_added_after_unit == u %}selected
                     {% elif not flight and u == 'L' %}selected{% endif %}>{{ u }}</option>
                   {% endfor %}
                 </select>

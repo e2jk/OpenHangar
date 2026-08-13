@@ -67,10 +67,8 @@
       document.querySelectorAll('input[name="pilot_role"]').forEach(function (r) { r.addEventListener('change', applyRoleHint); });
     }
 
-    var fuelAddedFields = document.getElementById('fuel-added-fields');
     var fuelHint = document.getElementById('fuel-consumption-hint');
     var fuelFlow = fuelHint ? parseFloat(fuelHint.dataset.fuelFlow) : NaN;
-    var fuelRadios = document.querySelectorAll('input[name="fuel_event"]');
 
     function updateFuelHint() {
       if (!fuelHint || isNaN(fuelFlow)) return;
@@ -82,18 +80,11 @@
         fuelHint.textContent = '';
       }
     }
-    function updateFuelUI() {
-      var checked = document.querySelector('input[name="fuel_event"]:checked');
-      var val = checked ? checked.value : '';
-      if (fuelAddedFields) fuelAddedFields.classList.toggle('d-none', !(val === 'before' || val === 'after'));
-      updateFuelHint();
-    }
-    fuelRadios.forEach(function (r) { r.addEventListener('change', updateFuelUI); });
     ['engine_time_counter_start', 'engine_time_counter_end'].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.addEventListener('input', updateFuelHint);
     });
-    updateFuelUI();
+    updateFuelHint();
 
     var fuelFractionGroup = document.getElementById('fuel-fraction-buttons');
     var fuelRemainingInput = document.getElementById('fuel_remaining_qty');

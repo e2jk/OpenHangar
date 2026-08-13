@@ -98,20 +98,23 @@
           <input type="time" class="form-control form-control-sm" data-field="landing_time">
         </div>
         <div class="col-md-2">
-          <label class="form-label oh-fs-075 mb-0">{{ _('Fuel event') }}</label>
-          <select class="form-select form-select-sm" data-field="fuel_event">
-            <option value="">{{ _('None') }}</option>
-            <option value="before">{{ _('Before flight') }}</option>
-            <option value="after">{{ _('After flight') }}</option>
-          </select>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label oh-fs-075 mb-0">{{ _('Fuel added') }}</label>
-          <input type="number" step="0.01" min="0" class="form-control form-control-sm" data-field="fuel_added_qty">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Fuel added before flight') }}</label>
+          <input type="number" step="0.01" min="0" class="form-control form-control-sm" data-field="fuel_added_before_qty">
         </div>
         <div class="col-md-2">
           <label class="form-label oh-fs-075 mb-0">{{ _('Unit') }}</label>
-          <select class="form-select form-select-sm" data-field="fuel_added_unit">
+          <select class="form-select form-select-sm" data-field="fuel_added_before_unit">
+            <option value="L">{{ _('litres') }}</option>
+            <option value="gal">{{ _('gallons') }}</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Fuel added after flight') }}</label>
+          <input type="number" step="0.01" min="0" class="form-control form-control-sm" data-field="fuel_added_after_qty">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label oh-fs-075 mb-0">{{ _('Unit') }}</label>
+          <select class="form-select form-select-sm" data-field="fuel_added_after_unit">
             <option value="L">{{ _('litres') }}</option>
             <option value="gal">{{ _('gallons') }}</option>
           </select>

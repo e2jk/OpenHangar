@@ -826,9 +826,13 @@ class Flight(db.Model):
     engine_time = db.Column(db.Numeric(4, 1), nullable=True)
     flight_counter_photo = db.Column(db.String(255), nullable=True)
     engine_counter_photo = db.Column(db.String(255), nullable=True)
-    fuel_event = db.Column(db.String(8), nullable=True)  # 'before' | 'after' | None
-    fuel_added_qty = db.Column(db.Numeric(8, 2), nullable=True)
-    fuel_added_unit = db.Column(db.String(8), nullable=True)
+    # Refueling before and after are independent events — a flight can have
+    # neither, either, or both (e.g. topped off before departure, then
+    # topped off again after landing).
+    fuel_added_before_qty = db.Column(db.Numeric(8, 2), nullable=True)
+    fuel_added_before_unit = db.Column(db.String(8), nullable=True)
+    fuel_added_after_qty = db.Column(db.Numeric(8, 2), nullable=True)
+    fuel_added_after_unit = db.Column(db.String(8), nullable=True)
     fuel_remaining_qty = db.Column(db.Numeric(8, 2), nullable=True)
     fuel_photo = db.Column(db.String(255), nullable=True)
     oil_added_l = db.Column(db.Numeric(4, 2), nullable=True)
