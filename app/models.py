@@ -364,6 +364,10 @@ class Aircraft(db.Model):
     fuel_type = db.Column(
         db.String(8), nullable=False, default="avgas"
     )  # "avgas" | "jet_a1"
+    # Total usable fuel capacity across all tanks, in liters; null = not
+    # configured (hides the tank-fraction quick-fill buttons on the flight
+    # form). Per-tank capacity is not tracked yet — see docs/backlog.md.
+    fuel_capacity_liters = db.Column(db.Numeric(6, 1), nullable=True)
     # Oil consumption warning threshold in L/h; null = no warning on the
     # cost dashboard.
     oil_warning_lph = db.Column(db.Numeric(4, 2), nullable=True)
