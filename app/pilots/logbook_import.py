@@ -1169,7 +1169,7 @@ def _score_candidate(kwargs: dict[str, Any], existing: Any) -> float:
         time_band_score,
     )
 
-    score: float = 0
+    score: float = 0.0
 
     reg_new = (kwargs.get("other_aircraft_registration") or "").strip().upper()
     reg_old = (existing.display_registration or "").strip().upper()
