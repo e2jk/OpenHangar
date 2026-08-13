@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import date, time, timedelta
+from datetime import date, timedelta
 from typing import Any
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
@@ -452,7 +452,6 @@ def execute_airframe_import(
 # ── Near-match conflict detection (possible corrections) ───────────────────────
 
 _CANDIDATE_MIN_SCORE = 3
-_CANDIDATE_TIME_TOLERANCE_MINUTES = 120
 _CANDIDATE_DURATION_TOLERANCE = 1.0
 _CANDIDATE_COUNTER_TOLERANCE = 0.3
 
@@ -469,64 +468,13 @@ class AirframeConflictRow:
     candidates: list[tuple[float, int]]  # (score, existing_flight_id), best first
 
 
-def _time_close(t1: time | None, t2: time | None, tolerance_minutes: int) -> bool:
-    if t1 is None or t2 is None:
-        return False
-    m1 = t1.hour * 60 + t1.minute
-    m2 = t2.hour * 60 + t2.minute
-    return abs(m1 - m2) <= tolerance_minutes
-
-
-# Graduated fallback thresholds, offset from the aircraft's own
-# flight_counter_offset (see _fallback_time_score below).
-_FALLBACK_TIME_SCORE_STEP_MINUTES = 6  # 0.1h
-
-
-def _fallback_time_score(
-    new_time: time | None, existing_ref_time: time | None, offset_hours: float
-) -> float:
-    """Graduated match score for a parsed takeoff/landing time against an
-    existing row's departure_time/arrival_time — used only when that
-    existing row has no takeoff_time/landing_time of its own to compare
-    against (e.g. a placeholder created by a pilot-logbook import, which
-    never sets those). Block-off/on and wheels-up/down aren't simultaneous,
-    so a flat tolerance would either miss real matches or accept unrelated
-    ones; graduated confidence bands centred on the aircraft's own
-    flight_counter_offset (the pilot's own estimate of the typical
-    engine-vs-flight-hours gap for this aircraft, reused here as a proxy for
-    the typical block-to-airborne time gap) approximate that without ever
-    writing one pair's value into the other.
-    """
-    if new_time is None or existing_ref_time is None:
-        return 0.0
-    new_minutes = new_time.hour * 60 + new_time.minute
-    ref_minutes = existing_ref_time.hour * 60 + existing_ref_time.minute
-    # Integer minutes throughout (like _time_close above) — comparing
-    # offset_hours * 60 as a float here would be liable to binary
-    # floating-point rounding (e.g. 0.3 - 0.1 != 0.2) right at the
-    # threshold boundaries.
-    diff_minutes = abs(new_minutes - ref_minutes)
-    offset_minutes = round(offset_hours * 60)
-    step = _FALLBACK_TIME_SCORE_STEP_MINUTES
-    if diff_minutes <= offset_minutes - step:
-        return 1.0
-    if diff_minutes <= offset_minutes:
-        return 0.75
-    if diff_minutes <= offset_minutes + step:
-        return 0.5
-    return 0.0
-
-
-def _score_airframe_candidate(
-    fields: dict[str, Any], existing: Any, offset_hours: float
-) -> float:
-    """Score how likely *existing* (a Flight row) is the same real-world
-    flight as *fields* (a freshly parsed row), across 7 points: departure,
-    arrival, takeoff time, landing time, duration, landings, flight
-    counter reading. A point only counts toward the score if both sides
-    have meaningful data for it — "ZZZZ" (unmapped ICAO) and missing values
-    are neutral, never a mismatch. The two time points can be fractional —
-    see _fallback_time_score.
+def _score_airframe_non_time_signals(fields: dict[str, Any], existing: Any) -> float:
+    """The 5 of 7 _score_airframe_candidate signals that aren't a time of
+    day: departure, arrival, duration, landings, flight counter reading.
+    Factored out so aircraft/gps_import.py's fuzzy match can reuse them with
+    its own time-matching logic (a GPS track's single recorded start/end
+    instant needs a wider comparison than a same-source re-import does —
+    see _score_airframe_candidate below) instead of duplicating this.
     """
     score: float = 0
 
@@ -539,26 +487,6 @@ def _score_airframe_candidate(
     arr_old = (existing.arrival_icao or "ZZZZ").strip().upper()
     if arr_new != "ZZZZ" and arr_old != "ZZZZ" and arr_new == arr_old:
         score += 1
-
-    takeoff_new = fields.get("takeoff_time")
-    if existing.takeoff_time is not None:
-        if _time_close(
-            takeoff_new, existing.takeoff_time, _CANDIDATE_TIME_TOLERANCE_MINUTES
-        ):
-            score += 1
-    else:
-        score += _fallback_time_score(
-            takeoff_new, existing.departure_time, offset_hours
-        )
-
-    landing_new = fields.get("landing_time")
-    if existing.landing_time is not None:
-        if _time_close(
-            landing_new, existing.landing_time, _CANDIDATE_TIME_TOLERANCE_MINUTES
-        ):
-            score += 1
-    else:
-        score += _fallback_time_score(landing_new, existing.arrival_time, offset_hours)
 
     dur_new = _num(fields.get("flight_time"))
     dur_old = _num(existing.flight_time)
@@ -582,6 +510,56 @@ def _score_airframe_candidate(
         and abs(ctr_new - ctr_old) <= _CANDIDATE_COUNTER_TOLERANCE
     ):
         score += 1
+
+    return score
+
+
+def _score_airframe_candidate(
+    fields: dict[str, Any], existing: Any, offset_hours: float
+) -> float:
+    """Score how likely *existing* (a Flight row) is the same real-world
+    flight as *fields* (a freshly parsed row), across 7 points: departure,
+    arrival, takeoff time, landing time, duration, landings, flight
+    counter reading. A point only counts toward the score if both sides
+    have meaningful data for it — "ZZZZ" (unmapped ICAO) and missing values
+    are neutral, never a mismatch. The two time points can be fractional —
+    see services.time_band_matching.
+    """
+    from services.time_band_matching import (  # pyright: ignore[reportMissingImports]
+        SAME_PAIR_STEP_MINUTES,
+        offset_ring_step_minutes,
+        shift_time,
+        time_band_score,
+    )
+
+    score = _score_airframe_non_time_signals(fields, existing)
+
+    # Same-pair (existing.takeoff_time/landing_time set — likely a previous
+    # airframe import) is scored tight, expecting a near-exact repeat of the
+    # same real instant. Cross-pair (existing only has departure_time/
+    # arrival_time — a pilot-import placeholder) is scored against that
+    # time shifted by this aircraft's flight_counter_offset, the closest
+    # estimate available of the block-to-airborne time gap.
+    offset_step = offset_ring_step_minutes(offset_hours)
+    offset_minutes = round(offset_hours * 60)
+
+    takeoff_new = fields.get("takeoff_time")
+    if existing.takeoff_time is not None:
+        score += time_band_score(
+            takeoff_new, (existing.takeoff_time,), SAME_PAIR_STEP_MINUTES
+        )
+    elif existing.departure_time is not None:
+        center = shift_time(existing.departure_time, offset_minutes)
+        score += time_band_score(takeoff_new, (center,), offset_step)
+
+    landing_new = fields.get("landing_time")
+    if existing.landing_time is not None:
+        score += time_band_score(
+            landing_new, (existing.landing_time,), SAME_PAIR_STEP_MINUTES
+        )
+    elif existing.arrival_time is not None:
+        center = shift_time(existing.arrival_time, -offset_minutes)
+        score += time_band_score(landing_new, (center,), offset_step)
 
     return score
 

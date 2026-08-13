@@ -1939,12 +1939,9 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
     from datetime import timedelta as _td
     from functools import partial
 
-    from flights.airframe_import import (
-        _CANDIDATE_MIN_SCORE,
-        _score_airframe_candidate,
-    )
+    from flights.airframe_import import _CANDIDATE_MIN_SCORE
 
-    from aircraft.gps_import import score_gps_candidates
+    from aircraft.gps_import import _score_gps_candidate, score_gps_candidates
 
     _BLOCK_TOLERANCE = _td(minutes=15)
 
@@ -1976,14 +1973,13 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
         # duration/landings match against this aircraft's flights that
         # don't yet have real GPS block data (typically logged manually
         # or imported from a CSV, airframe or pilot logbook — see
-        # docs/backlog.md's GPS-vs-CSV reconciliation note). Reuses the
-        # exact same near-match scorer the airframe-import review already
-        # uses, rather than a second implementation.
-        # takeoff_time/landing_time (airframe-log-facing), not departure_time/
-        # arrival_time (pilot-log-facing) — a GPS track's block times belong
-        # to the aircraft's own flight-time record, matching what
-        # _score_airframe_candidate now compares against on the existing-row
-        # side too. See models.py's Flight docstring.
+        # docs/backlog.md's GPS-vs-CSV reconciliation note). _score_gps_candidate
+        # reuses the airframe-import review's non-time signals, with its own
+        # wider time-of-day matching (see its docstring).
+        # takeoff_time/landing_time here just labels *which* GPS-observed
+        # instant this is (block-off vs block-on) — _score_gps_candidate
+        # itself compares each against whichever of the existing row's
+        # departure_time/takeoff_time (or landing_time/arrival_time) is set.
         fields = {
             "departure_icao": seg["departure_icao"],
             "arrival_icao": seg["arrival_icao"],
@@ -2004,9 +2000,7 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
         candidates = score_gps_candidates(
             fields,
             same_day,
-            partial(
-                _score_airframe_candidate, offset_hours=float(ac.flight_counter_offset)
-            ),
+            partial(_score_gps_candidate, offset_hours=float(ac.flight_counter_offset)),
             _CANDIDATE_MIN_SCORE,
         )
         if candidates:
