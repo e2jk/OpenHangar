@@ -95,6 +95,27 @@
     });
     updateFuelUI();
 
+    var fuelFractionGroup = document.getElementById('fuel-fraction-buttons');
+    var fuelRemainingInput = document.getElementById('fuel_remaining_qty');
+    if (fuelFractionGroup && fuelRemainingInput) {
+      var capacity = parseFloat(fuelFractionGroup.dataset.capacity);
+      if (!isNaN(capacity)) {
+        fuelFractionGroup.querySelectorAll('.fuel-fraction-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var numerator = parseFloat(btn.dataset.numerator);
+            var denominator = parseFloat(btn.dataset.denominator);
+            var raw = (numerator / denominator) * capacity;
+            var rounded = Math.round(raw / 5) * 5;
+            fuelRemainingInput.value = rounded.toFixed(1);
+            fuelRemainingInput.dispatchEvent(new Event('input'));
+            fuelFractionGroup.querySelectorAll('.fuel-fraction-btn').forEach(function (b) {
+              b.classList.toggle('active', b === btn);
+            });
+          });
+        });
+      }
+    }
+
     var counterWarn = document.getElementById('counter-warn');
     if (counterWarn) {
       ['flight_time_counter_start', 'engine_time_counter_start'].forEach(function (id) {

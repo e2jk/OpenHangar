@@ -33,6 +33,21 @@ pilot silently overwrite the header fields the first pilot logged.
 
 ---
 
+## Per-tank fuel capacity tracking
+
+`Aircraft.fuel_capacity_liters` (added alongside the flight-log tank-fraction
+quick-fill buttons) tracks only a single combined total across all tanks.
+Aircraft with multiple independent tanks (e.g. left/right wing tanks, or a
+main + aux tank) can't currently model per-tank capacity, per-tank quantity
+remaining, or a per-tank fraction quick-fill. Would need a new
+`AircraftFuelTank` table (name, capacity) replacing the scalar column, plus
+matching UI on both the aircraft form and the flight form (one set of
+fraction buttons per tank, or a tank picker before the fraction buttons).
+Deferred until a real multi-tank use case shows up — single total capacity
+covers the common case.
+
+---
+
 ## Shared ownership: deferred scope from Phase 39
 
 Phase 39 (Shared Ownership) deliberately excluded the following; none of it
