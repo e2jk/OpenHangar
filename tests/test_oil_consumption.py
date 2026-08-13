@@ -1,6 +1,7 @@
 """
 Tests for oil consumption tracking:
-  - oil_added_l saved from the flight form (create + edit) with validation
+  - oil_added_before_l/oil_added_after_l saved from the flight form
+    (create + edit) with validation, independently of each other
   - oil_warning_lph saved from the aircraft form with validation
   - cost dashboard oil stats: total, L/h rate, and warning threshold
 """
@@ -64,8 +65,8 @@ def _add_aircraft(app, tenant_id, registration="OO-OIL", **kwargs):
         return ac.id
 
 
-def _add_flight(app, aircraft_id, on, hours, oil_l=None):
-    """Add a flight of `hours` flight-counter hours with optional oil top-up."""
+def _add_flight(app, aircraft_id, on, hours, oil_before_l=None, oil_after_l=None):
+    """Add a flight of `hours` flight-counter hours with optional oil top-up(s)."""
     with app.app_context():
         prev_end = (
             db.session.query(db.func.max(Flight.flight_time_counter_end))
@@ -80,7 +81,8 @@ def _add_flight(app, aircraft_id, on, hours, oil_l=None):
             arrival_icao="EBBR",
             flight_time_counter_start=float(prev_end),
             flight_time_counter_end=float(prev_end) + hours,
-            oil_added_l=oil_l,
+            oil_added_before_l=oil_before_l,
+            oil_added_after_l=oil_after_l,
         )
         db.session.add(fe)
         db.session.commit()
@@ -103,36 +105,57 @@ def _flight_form(acid, **kwargs):
 
 
 class TestFlightFormOil:
-    def test_oil_added_saved(self, app, client):
+    def test_oil_added_before_and_after_saved_independently(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
             "/flights/new",
-            data=_flight_form(acid, oil_added_l="0.5"),
+            data=_flight_form(acid, oil_added_before_l="0.5", oil_added_after_l="0.25"),
             follow_redirects=False,
         )
         assert resp.status_code == 302
         with app.app_context():
             fe = Flight.query.filter_by(aircraft_id=acid).first()
-            assert float(fe.oil_added_l) == 0.5
+            assert float(fe.oil_added_before_l) == 0.5
+            assert float(fe.oil_added_after_l) == 0.25
 
     def test_oil_blank_saved_as_none(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        client.post("/flights/new", data=_flight_form(acid, oil_added_l=""))
+        client.post(
+            "/flights/new",
+            data=_flight_form(acid, oil_added_before_l="", oil_added_after_l=""),
+        )
         with app.app_context():
             fe = Flight.query.filter_by(aircraft_id=acid).first()
-            assert fe.oil_added_l is None
+            assert fe.oil_added_before_l is None
+            assert fe.oil_added_after_l is None
 
-    def test_negative_oil_shows_error(self, app, client):
+    def test_negative_oil_before_shows_error(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        resp = client.post("/flights/new", data=_flight_form(acid, oil_added_l="-0.5"))
+        resp = client.post(
+            "/flights/new", data=_flight_form(acid, oil_added_before_l="-0.5")
+        )
         assert resp.status_code == 200
-        assert b"Oil added must be a non-negative number." in resp.data
+        assert (
+            b"Oil added before the flight must be a non-negative number." in resp.data
+        )
+        with app.app_context():
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 0
+
+    def test_negative_oil_after_shows_error(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            "/flights/new", data=_flight_form(acid, oil_added_after_l="-0.5")
+        )
+        assert resp.status_code == 200
+        assert b"Oil added after the flight must be a non-negative number." in resp.data
         with app.app_context():
             assert Flight.query.filter_by(aircraft_id=acid).count() == 0
 
@@ -140,24 +163,28 @@ class TestFlightFormOil:
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
-        resp = client.post("/flights/new", data=_flight_form(acid, oil_added_l="a lot"))
+        resp = client.post(
+            "/flights/new", data=_flight_form(acid, oil_added_before_l="a lot")
+        )
         assert resp.status_code == 200
-        assert b"Oil added must be a non-negative number." in resp.data
+        assert (
+            b"Oil added before the flight must be a non-negative number." in resp.data
+        )
 
     def test_oil_updated_on_edit(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
-        fid = _add_flight(app, acid, date(2024, 6, 1), 1.5, oil_l=0.5)
+        fid = _add_flight(app, acid, date(2024, 6, 1), 1.5, oil_after_l=0.5)
         _login(app, client)
         resp = client.post(
             f"/flights/{fid}/edit",
-            data=_flight_form(acid, oil_added_l="1.25"),
+            data=_flight_form(acid, oil_added_after_l="1.25"),
             follow_redirects=False,
         )
         assert resp.status_code == 302
         with app.app_context():
             fe = db.session.get(Flight, fid)
-            assert float(fe.oil_added_l) == 1.25
+            assert float(fe.oil_added_after_l) == 1.25
 
 
 class TestAircraftFormOilThreshold:
@@ -208,9 +235,9 @@ class TestOilDashboardStats:
     def test_oil_added_sums_period_only(self, app):
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
-        _add_flight(app, acid, date(2024, 6, 1), 2.0, oil_l=0.5)
-        _add_flight(app, acid, date(2024, 6, 15), 2.0, oil_l=0.25)
-        _add_flight(app, acid, date(2020, 1, 1), 2.0, oil_l=9.0)  # outside window
+        _add_flight(app, acid, date(2024, 6, 1), 2.0, oil_after_l=0.5)
+        _add_flight(app, acid, date(2024, 6, 15), 2.0, oil_after_l=0.25)
+        _add_flight(app, acid, date(2020, 1, 1), 2.0, oil_after_l=9.0)  # outside window
         with app.app_context():
             assert oil_added(acid, date(2024, 1, 1), date(2024, 12, 31)) == 0.75
             assert oil_added(acid, None, date(2024, 12, 31)) == 9.75
@@ -218,8 +245,8 @@ class TestOilDashboardStats:
     def test_dashboard_oil_rate_and_no_warning_without_threshold(self, app):
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
-        _add_flight(app, acid, date(2024, 5, 1), 5.0, oil_l=0.25)
-        _add_flight(app, acid, date(2024, 6, 1), 5.0, oil_l=0.25)
+        _add_flight(app, acid, date(2024, 5, 1), 5.0, oil_after_l=0.25)
+        _add_flight(app, acid, date(2024, 6, 1), 5.0, oil_after_l=0.25)
         with app.app_context():
             ac = db.session.get(Aircraft, acid)
             d = compute_cost_dashboard(ac, 12, today=date(2024, 7, 1))
@@ -230,7 +257,7 @@ class TestOilDashboardStats:
     def test_dashboard_oil_warning_above_threshold(self, app):
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid, oil_warning_lph=0.1)
-        _add_flight(app, acid, date(2024, 6, 1), 5.0, oil_l=1.0)
+        _add_flight(app, acid, date(2024, 6, 1), 5.0, oil_after_l=1.0)
         with app.app_context():
             ac = db.session.get(Aircraft, acid)
             d = compute_cost_dashboard(ac, 12, today=date(2024, 7, 1))
@@ -240,7 +267,7 @@ class TestOilDashboardStats:
     def test_dashboard_oil_no_warning_below_threshold(self, app):
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid, oil_warning_lph=0.3)
-        _add_flight(app, acid, date(2024, 6, 1), 5.0, oil_l=1.0)
+        _add_flight(app, acid, date(2024, 6, 1), 5.0, oil_after_l=1.0)
         with app.app_context():
             ac = db.session.get(Aircraft, acid)
             d = compute_cost_dashboard(ac, 12, today=date(2024, 7, 1))
@@ -259,7 +286,7 @@ class TestOilDashboardStats:
     def test_dashboard_page_shows_warning(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid, oil_warning_lph=0.1)
-        _add_flight(app, acid, date.today(), 5.0, oil_l=1.0)
+        _add_flight(app, acid, date.today(), 5.0, oil_after_l=1.0)
         _login(app, client)
         resp = client.get(f"/aircraft/{acid}/costs")
         assert resp.status_code == 200

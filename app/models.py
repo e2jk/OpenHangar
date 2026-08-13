@@ -835,7 +835,10 @@ class Flight(db.Model):
     fuel_added_after_unit = db.Column(db.String(8), nullable=True)
     fuel_remaining_qty = db.Column(db.Numeric(8, 2), nullable=True)
     fuel_photo = db.Column(db.String(255), nullable=True)
-    oil_added_l = db.Column(db.Numeric(4, 2), nullable=True)
+    # Same independence as the fuel_added_before/after pair above — oil can
+    # be topped off before departure, after landing, or both.
+    oil_added_before_l = db.Column(db.Numeric(4, 2), nullable=True)
+    oil_added_after_l = db.Column(db.Numeric(4, 2), nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

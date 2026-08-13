@@ -17,7 +17,7 @@
     'engine_time', 'engine_time_counter_start', 'engine_time_counter_end',
     'fuel_added_before_qty', 'fuel_added_before_unit',
     'fuel_added_after_qty', 'fuel_added_after_unit',
-    'fuel_remaining_qty', 'oil_added_l',
+    'fuel_remaining_qty', 'oil_added_before_l', 'oil_added_after_l',
     'passenger_count', 'landing_count', 'nature_of_flight', 'notes',
     'crew_name_0',
     'crew_name_1', 'crew_role_1',

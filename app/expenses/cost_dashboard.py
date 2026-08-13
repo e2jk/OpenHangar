@@ -8,7 +8,7 @@ from datetime import date as _date
 from datetime import timedelta
 from typing import Any
 
-from models import Aircraft, Expense, ExpenseCategory, ExpenseType, Flight
+from models import Aircraft, Expense, ExpenseCategory, ExpenseType, Flight, db
 
 DEFAULT_PERIOD_MONTHS = 12
 PERIOD_OPTIONS = (3, 6, 12, 24, 0)  # 0 = all time
@@ -58,15 +58,23 @@ def hours_flown(
 
 
 def oil_added(aircraft_id: int, period_start: _date | None, period_end: _date) -> float:
-    """Sum of oil top-ups (L) logged on flights within [period_start, period_end]."""
+    """Sum of oil top-ups (L) logged on flights within [period_start, period_end],
+    combining independent before-flight and after-flight top-ups."""
     query = Flight.query.filter(
         Flight.aircraft_id == aircraft_id,
         Flight.date <= period_end,
-        Flight.oil_added_l.isnot(None),
+        db.or_(
+            Flight.oil_added_before_l.isnot(None), Flight.oil_added_after_l.isnot(None)
+        ),
     )
     if period_start is not None:
         query = query.filter(Flight.date >= period_start)
-    return round(sum(float(f.oil_added_l) for f in query.all()), 2)
+    total = sum(
+        (float(f.oil_added_before_l) if f.oil_added_before_l is not None else 0.0)
+        + (float(f.oil_added_after_l) if f.oil_added_after_l is not None else 0.0)
+        for f in query.all()
+    )
+    return round(total, 2)
 
 
 def _in_period(expense: Expense, period_start: _date | None, period_end: _date) -> bool:
