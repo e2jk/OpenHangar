@@ -33,6 +33,36 @@ pilot silently overwrite the header fields the first pilot logged.
 
 ---
 
+## Cost tracking: treat fuel-added entries as independent purchases
+
+`Flight.fuel_added_before_qty`/`fuel_added_after_qty` (added alongside the
+before/after refuel split) are currently just descriptive logbook figures —
+nothing in `app/expenses/` or `app/services/` reads them, so there's no
+automated cost tracking yet. Whenever that gets built (e.g. auto-suggesting
+an expense from a logged refuel, or a "fuel cost per hour" line on the cost
+dashboard), treat a before-entry and an after-entry on the same flight as
+two fully independent purchases — only the date and the aircraft link
+matter, not which flight row they happen to be attached to. Two flights
+refueled back-to-back (after landing flight N, before departing flight N+1)
+should cost-account identically whether the pilot logged that fuel as
+flight N's "after" or flight N+1's "before".
+
+---
+
+## Fuel: log a refuel not tied to any flight
+
+Right now `fuel_added_before_qty`/`fuel_added_after_qty` only exist on a
+`Flight` row, so refueling that doesn't bracket a flight (e.g. the owner
+stops by the airfield for maintenance and tops off the tank while there)
+has no home — it has to be misattributed to the nearest flight's
+before/after fields, or dropped. Needs a lightweight standalone "refuel"
+record (date, aircraft, quantity, unit — no flight linkage required),
+findable from the aircraft page. Relevant to the cost-tracking item above:
+whatever independent-purchase model that ends up building should treat a
+standalone refuel the same as a flight-linked one.
+
+---
+
 ## Per-tank fuel capacity tracking
 
 `Aircraft.fuel_capacity_liters` (added alongside the flight-log tank-fraction

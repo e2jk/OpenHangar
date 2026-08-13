@@ -612,37 +612,27 @@ class TestFuelDensityHint:
         assert "0.72" in hint.inner_text()
 
 
-# ── Flight form: fuel-added fields toggle ─────────────────────────────────────
+# ── Flight form: independent before/after fuel-added fields ────────────────────
 
 
-class TestFuelFieldsToggle:
-    """Selecting a 'Fuel added' refuel option must show the quantity fields;
-    selecting 'No fuel added' must hide them."""
+class TestFuelFieldsIndependence:
+    """The 'fuel added before flight' and 'fuel added after flight' quantity
+    fields are always visible and independently fillable — a flight can be
+    refueled before, after, both, or neither."""
 
-    def test_fuel_fields_show_and_hide(self, logged_in_page, live_server_url, seed):
-        from playwright.sync_api import expect as pw_expect
-
+    def test_before_and_after_fields_both_accept_values(
+        self, logged_in_page, live_server_url, seed
+    ):
         page = logged_in_page
         ac_id = seed["ac_gps"]
         page.goto(f"{live_server_url}/flights/new?aircraft_id={ac_id}")
         page.wait_for_load_state("networkidle")
 
-        fuel_fields = page.locator("#fuel-added-fields")
+        page.locator("#fuel_added_before_qty").fill("20")
+        page.locator("#fuel_added_after_qty").fill("15")
 
-        # Default: "No fuel added" selected → fields hidden
-        pw_expect(fuel_fields).to_be_hidden()
-
-        # Select "before" → fields appear
-        page.locator("#fuel_event_before").click()
-        pw_expect(fuel_fields).to_be_visible()
-
-        # Select "after" → fields stay visible
-        page.locator("#fuel_event_after").click()
-        pw_expect(fuel_fields).to_be_visible()
-
-        # Back to "none" → fields hide
-        page.locator("#fuel_event_none").click()
-        pw_expect(fuel_fields).to_be_hidden()
+        assert page.locator("#fuel_added_before_qty").input_value() == "20"
+        assert page.locator("#fuel_added_after_qty").input_value() == "15"
 
 
 # ── Other-aircraft: registration lookup ───────────────────────────────────────
