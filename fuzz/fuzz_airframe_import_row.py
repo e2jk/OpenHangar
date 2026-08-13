@@ -12,7 +12,7 @@ since a single bad historical logbook row must never 500 the whole import.
 """
 
 import sys
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -72,6 +72,15 @@ def _fuzzed_number_or_none(fdp: "atheris.FuzzedDataProvider") -> float | None:
     return fdp.ConsumeRegularFloat()
 
 
+def _fuzzed_time_or_none(fdp: "atheris.FuzzedDataProvider") -> time | None:
+    """Stand-in for a Time ORM column value (departure_time/arrival_time/
+    takeoff_time/landing_time) — never a raw cell; the real `existing`
+    argument is always a persisted Flight row."""
+    if fdp.ConsumeBool():
+        return None
+    return time(fdp.ConsumeIntInRange(0, 23), fdp.ConsumeIntInRange(0, 59))
+
+
 @atheris.instrument_func
 def TestOneInput(data: bytes) -> None:
     fdp = atheris.FuzzedDataProvider(data)
@@ -103,14 +112,20 @@ def TestOneInput(data: bytes) -> None:
     existing = SimpleNamespace(
         departure_icao=_clean_icao(_fuzzed_cell(fdp)),
         arrival_icao=_clean_icao(_fuzzed_cell(fdp)),
-        departure_time=None,
-        arrival_time=None,
+        departure_time=_fuzzed_time_or_none(fdp),
+        arrival_time=_fuzzed_time_or_none(fdp),
+        takeoff_time=_fuzzed_time_or_none(fdp),
+        landing_time=_fuzzed_time_or_none(fdp),
         flight_time=_fuzzed_number_or_none(fdp),
         landing_count=_fuzzed_number_or_none(fdp),
         flight_time_counter_end=_fuzzed_number_or_none(fdp),
     )
-    score = _score_airframe_candidate(fields, existing)
-    assert isinstance(score, int) and 0 <= score <= 7, (
+    # Real values always come from Aircraft.flight_counter_offset
+    # (Numeric(3,1), default 0.3) — same range fuzz_flight_form_parsing.py
+    # already uses for the same field.
+    offset_hours = fdp.ConsumeFloatInRange(0.0, 5.0)
+    score = _score_airframe_candidate(fields, existing, offset_hours)
+    assert isinstance(score, float) and 0 <= score <= 7, (
         f"_score_airframe_candidate returned {score!r}"
     )
 
