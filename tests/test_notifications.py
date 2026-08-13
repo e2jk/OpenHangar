@@ -149,8 +149,8 @@ class TestParseNotificationTime:
 
 
 class TestNotificationTypeConstants:
-    def test_all_has_17_types(self):
-        assert len(NotificationType.ALL) == 17
+    def test_all_has_18_types(self):
+        assert len(NotificationType.ALL) == 18
 
     def test_system_defaults_cover_all_types(self):
         for t in NotificationType.ALL:
@@ -900,6 +900,43 @@ class TestDailyChecks:
                 from services.notification_service import _check_insurance
 
                 _check_insurance(app)
+                assert not mock_dispatch.called
+
+    def test_arc_dispatches_within_threshold(self, app):
+        _uid, tid = _make_user(app, "owner@arc.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid, "OO-ARC")
+        with app.app_context():
+            from datetime import date, timedelta
+
+            from models import Aircraft  # pyright: ignore[reportMissingImports]
+
+            ac = db.session.get(Aircraft, ac_id)
+            ac.arc_expiry = date.today() + timedelta(days=10)
+            db.session.commit()
+
+            with patch("services.notification_service.dispatch") as mock_dispatch:
+                from services.notification_service import _check_arc
+
+                _check_arc(app)
+                types_dispatched = [c.args[0] for c in mock_dispatch.call_args_list]
+                assert NotificationType.ARC_EXPIRY in types_dispatched
+
+    def test_arc_skips_when_far_away(self, app):
+        _uid, tid = _make_user(app, "owner@arc-ok.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid, "OO-AOK")
+        with app.app_context():
+            from datetime import date, timedelta
+
+            from models import Aircraft  # pyright: ignore[reportMissingImports]
+
+            ac = db.session.get(Aircraft, ac_id)
+            ac.arc_expiry = date.today() + timedelta(days=90)
+            db.session.commit()
+
+            with patch("services.notification_service.dispatch") as mock_dispatch:
+                from services.notification_service import _check_arc
+
+                _check_arc(app)
                 assert not mock_dispatch.called
 
     def test_medical_expiry_dispatches(self, app):

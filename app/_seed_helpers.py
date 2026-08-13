@@ -94,6 +94,7 @@ def seed_fleet(tenant_id: int) -> list:
         model="172S Skyhawk",
         year=2004,
         insurance_expiry=_d(date(2027, 5, 9)),  # OK (~1 year)
+        arc_expiry=_d(date(2026, 3, 15)),  # expired ~2 months ago — grounded via ARC
     )
     db.session.add(c172)
     db.session.flush()
@@ -329,6 +330,7 @@ def seed_fleet(tenant_id: int) -> list:
         model="PA-44-180 Seminole",
         year=1998,
         insurance_expiry=_d(date(2026, 5, 23)),  # expiring soon (~2 weeks)
+        arc_expiry=_d(date(2026, 6, 1)),  # expiring soon (~3 weeks)
     )
     db.session.add(seminole)
     db.session.flush()
@@ -473,6 +475,7 @@ def seed_fleet(tenant_id: int) -> list:
         model="DR-401/155CDI",
         year=2020,
         insurance_expiry=_d(date(2026, 4, 17)),  # expired ~3 weeks ago
+        arc_expiry=_d(date(2027, 3, 1)),  # OK (~10 months)
     )
     db.session.add(robin)
     db.session.flush()
@@ -1230,6 +1233,15 @@ def _seed_documents(
         label = f"comp{comp.id}" if comp else f"ac{aircraft.id}"
         stored, mime, size = _copy_seed_doc(src_name, label, upload_folder)
         is_insurance = title == "Insurance Certificate 2025"
+        is_arc = title.startswith("Annual Review Certificate") and not comp
+        doc_type = None
+        valid_until = None
+        if is_insurance:
+            doc_type = DocType.INSURANCE_CERT
+            valid_until = aircraft.insurance_expiry
+        elif is_arc:
+            doc_type = DocType.ARC
+            valid_until = aircraft.arc_expiry
         db.session.add(
             Document(
                 aircraft_id=aircraft.id,
@@ -1239,8 +1251,8 @@ def _seed_documents(
                 mime_type=mime,
                 size_bytes=size,
                 title=title,
-                doc_type=DocType.INSURANCE_CERT if is_insurance else None,
-                valid_until=aircraft.insurance_expiry if is_insurance else None,
+                doc_type=doc_type,
+                valid_until=valid_until,
                 is_sensitive=sensitive,
             )
         )

@@ -372,11 +372,14 @@ class TestPilotProfileDocuments:
 class TestInsuranceCertUpload:
     def test_upload_creates_doc_with_insurance_cert_type(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
-        ac_id = _add_aircraft(app, tid, insurance_expiry=date(2027, 6, 1))
+        ac_id = _add_aircraft(app, tid)
         _login(app, client)
         rv = client.post(
             f"/aircraft/{ac_id}/insurance-cert/upload",
-            data={"file": _fake_file("cert.pdf", b"%PDF-1.4", "application/pdf")},
+            data={
+                "file": _fake_file("cert.pdf", b"%PDF-1.4", "application/pdf"),
+                "valid_until": "2027-06-01",
+            },
             content_type="multipart/form-data",
         )
         assert rv.status_code == 302
@@ -388,6 +391,8 @@ class TestInsuranceCertUpload:
             assert doc.valid_until == date(2027, 6, 1)
             assert doc.is_sensitive is True
             assert doc.superseded_by_id is None
+            ac = db.session.get(Aircraft, ac_id)
+            assert ac.insurance_expiry == date(2027, 6, 1)
 
     def test_upload_supersedes_previous_cert(self, app, client):
         _uid, tid = _create_user_and_tenant(app)

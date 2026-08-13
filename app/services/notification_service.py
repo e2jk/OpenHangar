@@ -292,6 +292,7 @@ def run_daily_checks(app: Any) -> None:
                 run_co_owner_billing_pass_all()
                 _check_maintenance(app)
                 _check_insurance(app)
+                _check_arc(app)
                 _check_medical_and_sep(app)
                 _check_documents(app)
                 _check_airworthiness_reviews(app)
@@ -434,6 +435,57 @@ def _check_insurance(app: Any) -> None:
                         "details": [
                             ("Aircraft", ac.registration),
                             ("Expires", ac.insurance_expiry.isoformat()),
+                            ("Days left", str(days_left)),
+                        ],
+                    },
+                )
+
+
+def _check_arc(app: Any) -> None:
+    from flask_babel import (  # pyright: ignore[reportMissingImports]
+        lazy_gettext as _l,
+    )
+    from flask_babel import (
+        lazy_ngettext as _ln,
+    )
+    from models import Aircraft, Tenant  # pyright: ignore[reportMissingImports]
+    from models import NotificationType as NT
+
+    today = date.today()
+    for tenant in Tenant.query.filter_by(is_active=True).all():
+        for ac in Aircraft.query.filter_by(tenant_id=tenant.id, archived_at=None).all():
+            if ac.arc_expiry is None:
+                continue
+            days_left = (ac.arc_expiry - today).days
+            # Use system default threshold; recipient-level override applied in dispatch()
+            threshold = NT.SYSTEM_DEFAULTS[NT.ARC_EXPIRY]["threshold_days"] or 60
+            if 0 <= days_left <= threshold:
+                _dispatch_in_context(
+                    NT.ARC_EXPIRY,
+                    tenant.id,
+                    {
+                        "subject_key": _ln(
+                            "ARC expiring in one day: %(reg)s",
+                            "ARC expiring in %(days)s days: %(reg)s",
+                            days_left,
+                            days=days_left,
+                            reg=ac.registration,
+                        ),
+                        "subject_args": {},
+                        "notification_title_key": _l("ARC expiring soon: %(reg)s"),
+                        "notification_title_args": {"reg": ac.registration},
+                        "notification_message_key": _ln(
+                            "The ARC for %(reg)s expires on %(date)s (one day remaining).",
+                            "The ARC for %(reg)s expires on %(date)s (%(days)s days remaining).",
+                            days_left,
+                            reg=ac.registration,
+                            date=ac.arc_expiry.isoformat(),
+                            days=days_left,
+                        ),
+                        "notification_message_args": {},
+                        "details": [
+                            ("Aircraft", ac.registration),
+                            ("Expires", ac.arc_expiry.isoformat()),
                             ("Days left", str(days_left)),
                         ],
                     },
