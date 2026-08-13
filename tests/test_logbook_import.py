@@ -2842,6 +2842,34 @@ class TestConflictScoring:
             assert _score_candidate({"departure_time": time(8, 48)}, existing) == 0.5
             assert _score_candidate({"departure_time": time(8, 47)}, existing) == 0.0
 
+    def test_score_arrival_cross_pair_fallback_shifts_later(self, app):
+        """Mirror of the departure/takeoff case above, on the arrival side:
+        existing.arrival_time absent but existing.landing_time set — scored
+        against landing_time shifted *later* by flight_counter_offset (wheels-
+        down happens before block-on/engine-off, the opposite direction from
+        departure/takeoff)."""
+        with app.app_context():
+            tenant = Tenant(name="Cross-pair Landing Hangar")
+            db.session.add(tenant)
+            db.session.flush()
+            ac = Aircraft(
+                registration="OO-XPG",
+                tenant_id=tenant.id,
+                make="Cessna",
+                model="172S",
+                flight_counter_offset=0.3,
+            )
+            db.session.add(ac)
+            db.session.flush()
+            existing = self._entry(app, arrival_time=None, landing_time=time(10, 0))
+            existing.aircraft = ac
+
+            # Centre is landing_time(10:00) + 18min = 10:18.
+            assert _score_candidate({"arrival_time": time(10, 18)}, existing) == 1.0
+            assert _score_candidate({"arrival_time": time(10, 24)}, existing) == 0.75
+            assert _score_candidate({"arrival_time": time(10, 30)}, existing) == 0.5
+            assert _score_candidate({"arrival_time": time(10, 31)}, existing) == 0.0
+
     def test_score_cross_pair_fallback_needs_an_aircraft_for_the_offset(self, app):
         """A standalone existing row (no aircraft_id — e.g. a rental logged
         nowhere else) has no flight_counter_offset to fall back to, so the
