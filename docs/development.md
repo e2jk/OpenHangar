@@ -14,11 +14,16 @@ when you edit Python files or templates.
 python3 scripts/install_vendor_assets.py
 ```
 
-This runs `npm ci --ignore-scripts` in `requirements/` (integrity-verified against
+This runs `npm ci --ignore-scripts` (integrity-verified against
 `requirements/package-lock.json`) and copies the needed files into
 `app/static/vendor/`. Re-run after pulling when `requirements/package-lock.json`
-has changed. Pass `--copy-only` to skip npm and copy from an existing
-`requirements/node_modules/`.
+has changed.
+
+By default `npm ci` runs inside the same pinned `node:*-alpine` image the
+Dockerfile's vendor stage uses — Docker is already a prerequisite for running
+the app at all, so this means **no Node/npm install needed on the host**.
+Pass `--host-npm` to use a local npm install instead, or `--copy-only` to skip
+npm entirely and copy from an existing `requirements/node_modules/`.
 
 **2. Configure your `.env`** and point your dev `docker-compose.yml` at the project:
 
@@ -96,11 +101,19 @@ Docker build verifies every package against the SHA-512 hashes in
 ### Upgrading a library manually
 
 Edit the version in `requirements/package.json`, then regenerate the lock file
-and refresh your local vendor folder:
+and refresh your local vendor folder. Regenerating the lock file needs `npm
+install` (not `npm ci`, which only replays an existing lock file), so this one
+step still needs npm — either installed locally, or run via the same pinned
+Docker image `install_vendor_assets.py` uses elsewhere:
 
 ```bash
+# With npm installed locally:
 cd requirements && npm install && cd ..
-python3 scripts/install_vendor_assets.py --no-install
+# Or via Docker, no local npm needed:
+docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp \
+    -v "$(pwd)/requirements:/work" -w /work node:24-alpine npm install
+
+python3 scripts/install_vendor_assets.py --copy-only
 git add requirements/package.json requirements/package-lock.json
 git commit -m "chore(deps): upgrade bootstrap 5.3.3 → 5.3.8"
 ```
@@ -111,8 +124,9 @@ refresh their local vendor folder. The Docker image build does this automaticall
 ### Adding a new library
 
 1. Add it to `requirements/package.json` and run `cd requirements && npm install`
+   (or the Docker equivalent shown above)
 2. Add the file mapping to `_FILES` in `scripts/install_vendor_assets.py`
-3. Run `python3 scripts/install_vendor_assets.py --no-install` to copy the files
+3. Run `python3 scripts/install_vendor_assets.py --copy-only` to copy the files
 4. Reference it from templates via `url_for('static', filename='vendor/<lib>/...')`
 5. Commit `requirements/package.json`, `requirements/package-lock.json`, and
    `scripts/install_vendor_assets.py`
