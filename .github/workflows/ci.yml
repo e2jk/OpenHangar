@@ -233,7 +233,12 @@ jobs:
           cache-dependency-path: requirements/package-lock.json
 
       - name: Install vendor assets for Pages
-        run: python3 scripts/install_vendor_assets.py
+        # --host-npm: use the actions/setup-node install above (cached by
+        # cache-dependency-path) instead of install_vendor_assets.py's
+        # Docker-by-default path — pulling node:*-alpine here would both
+        # bypass that cache and duplicate the setup-node step above for no
+        # benefit, since npm is already set up on the runner.
+        run: python3 scripts/install_vendor_assets.py --host-npm
 
       - name: Assemble Pages site
         run: |
