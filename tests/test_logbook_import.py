@@ -35,7 +35,6 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     _norm,
     _parse_row_date,
     _score_candidate,
-    _time_close,
     execute_import,
     find_conflicting_rows,
     parse_date_value,
@@ -2745,16 +2744,6 @@ class TestParseRowDate:
 
 
 class TestConflictScoring:
-    def test_time_close_within_tolerance(self):
-        assert _time_close(time(9, 30), time(9, 45), 120) is True
-
-    def test_time_close_outside_tolerance(self):
-        assert _time_close(time(9, 0), time(20, 0), 120) is False
-
-    def test_time_close_none_is_never_close(self):
-        assert _time_close(None, time(9, 0), 120) is False
-        assert _time_close(time(9, 0), None, 120) is False
-
     def test_kwargs_duration_sums_components(self):
         kwargs = {"single_pilot_se": 0.5, "single_pilot_me": 0.3, "multi_pilot": None}
         assert _kwargs_duration(kwargs) == 0.8
@@ -2797,13 +2786,99 @@ class TestConflictScoring:
                 "other_aircraft_registration": "oo-abc",
                 "departure_icao": "ebnm",
                 "arrival_icao": "ebaw",
-                "departure_time": time(9, 5),
-                "arrival_time": time(10, 10),
+                "departure_time": time(9, 0),
+                "arrival_time": time(10, 0),
                 "single_pilot_se": 1.0,
                 "landings_day": 1,
                 "landings_night": 0,
             }
             assert _score_candidate(kwargs, existing) == 7
+
+    def test_score_same_pair_graduated_tiers(self, app):
+        """existing.departure_time set — scored against the new row's
+        departure_time with a ring width of 1/3 of flight_counter_offset
+        (6min at the 0.3h default, which this standalone row — no managed
+        aircraft — falls back to). Matches pilots' actual logging precision
+        (0.1h/6min increments): an ordinary rounding difference should land
+        in the generous ring, not the stingy one a flat few-minutes
+        tolerance would put it in."""
+        with app.app_context():
+            existing = self._entry(app, departure_time=time(9, 0))
+            assert _score_candidate({"departure_time": time(9, 0)}, existing) == 1.0
+            assert _score_candidate({"departure_time": time(9, 6)}, existing) == 0.75
+            assert _score_candidate({"departure_time": time(9, 12)}, existing) == 0.5
+            assert _score_candidate({"departure_time": time(9, 13)}, existing) == 0.0
+
+    def test_score_cross_pair_fallback_against_airframe_placeholder(self, app):
+        """existing.departure_time absent but existing.takeoff_time set (a
+        row created by an airframe import, on a managed aircraft) — scored
+        against takeoff_time shifted *earlier* by the aircraft's own
+        flight_counter_offset, the mirror image of
+        flights.airframe_import._score_airframe_candidate's fallback in the
+        other direction."""
+        with app.app_context():
+            tenant = Tenant(name="Cross-pair Hangar")
+            db.session.add(tenant)
+            db.session.flush()
+            ac = Aircraft(
+                registration="OO-XPF",
+                tenant_id=tenant.id,
+                make="Cessna",
+                model="172S",
+                flight_counter_offset=0.3,
+            )
+            db.session.add(ac)
+            db.session.flush()
+            existing = self._entry(app, departure_time=None, takeoff_time=time(9, 18))
+            # Relationship assignment (not the raw aircraft_id FK column) so
+            # existing.aircraft resolves without needing to persist this
+            # scoring-only fixture — matches how every sibling test here
+            # builds a transient Flight and never commits it.
+            existing.aircraft = ac
+
+            # Centre is takeoff_time(9:18) - 18min = 9:00.
+            assert _score_candidate({"departure_time": time(9, 0)}, existing) == 1.0
+            assert _score_candidate({"departure_time": time(8, 54)}, existing) == 0.75
+            assert _score_candidate({"departure_time": time(8, 48)}, existing) == 0.5
+            assert _score_candidate({"departure_time": time(8, 47)}, existing) == 0.0
+
+    def test_score_arrival_cross_pair_fallback_shifts_later(self, app):
+        """Mirror of the departure/takeoff case above, on the arrival side:
+        existing.arrival_time absent but existing.landing_time set — scored
+        against landing_time shifted *later* by flight_counter_offset (wheels-
+        down happens before block-on/engine-off, the opposite direction from
+        departure/takeoff)."""
+        with app.app_context():
+            tenant = Tenant(name="Cross-pair Landing Hangar")
+            db.session.add(tenant)
+            db.session.flush()
+            ac = Aircraft(
+                registration="OO-XPG",
+                tenant_id=tenant.id,
+                make="Cessna",
+                model="172S",
+                flight_counter_offset=0.3,
+            )
+            db.session.add(ac)
+            db.session.flush()
+            existing = self._entry(app, arrival_time=None, landing_time=time(10, 0))
+            existing.aircraft = ac
+
+            # Centre is landing_time(10:00) + 18min = 10:18.
+            assert _score_candidate({"arrival_time": time(10, 18)}, existing) == 1.0
+            assert _score_candidate({"arrival_time": time(10, 24)}, existing) == 0.75
+            assert _score_candidate({"arrival_time": time(10, 30)}, existing) == 0.5
+            assert _score_candidate({"arrival_time": time(10, 31)}, existing) == 0.0
+
+    def test_score_cross_pair_fallback_needs_an_aircraft_for_the_offset(self, app):
+        """A standalone existing row (no aircraft_id — e.g. a rental logged
+        nowhere else) has no flight_counter_offset to fall back to, so the
+        cross-pair comparison is skipped entirely rather than guessing one."""
+        with app.app_context():
+            existing = self._entry(
+                app, aircraft_id=None, departure_time=None, takeoff_time=time(9, 18)
+            )
+            assert _score_candidate({"departure_time": time(9, 0)}, existing) == 0.0
 
     def test_score_missing_data_is_neutral_not_mismatch(self, app):
         """Registration + duration (within tolerance) + landings = 3, even

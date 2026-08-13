@@ -693,6 +693,53 @@ class TestSaveAircraftValidation:
             ac = Aircraft.query.filter_by(registration="OO-PNH").first()
             assert float(ac.reserve_hourly_rate) == 15.50
 
+    def test_negative_fuel_capacity_shows_error(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        response = client.post(
+            "/aircraft/new",
+            data={
+                "registration": "OO-PNH",
+                "make": "Cessna",
+                "model": "172S",
+                "fuel_capacity_liters": "-5",
+            },
+        )
+        assert response.status_code == 200
+        assert b"positive" in response.data
+
+    def test_zero_fuel_capacity_shows_error(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        response = client.post(
+            "/aircraft/new",
+            data={
+                "registration": "OO-PNH",
+                "make": "Cessna",
+                "model": "172S",
+                "fuel_capacity_liters": "0",
+            },
+        )
+        assert response.status_code == 200
+        assert b"positive" in response.data
+
+    def test_valid_fuel_capacity_saves(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        client.post(
+            "/aircraft/new",
+            data={
+                "registration": "OO-PNH",
+                "make": "Cessna",
+                "model": "172S",
+                "fuel_capacity_liters": "110",
+            },
+            follow_redirects=False,
+        )
+        with app.app_context():
+            ac = Aircraft.query.filter_by(registration="OO-PNH").first()
+            assert float(ac.fuel_capacity_liters) == 110.0
+
 
 # ── Registration uniqueness (rejects a collision, incl. sanitized form) ────────
 

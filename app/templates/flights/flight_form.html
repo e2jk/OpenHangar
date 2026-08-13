@@ -579,60 +579,90 @@
             <h6 class="text-muted mb-3"><i class="bi bi-fuel-pump me-1"></i>{{ _('Fuel & oil') }}
               <span class="fw-normal small">({{ _('optional') }})</span></h6>
 
-            <div class="mb-3">
-              <label class="form-label">{{ _('Refuel') }}</label>
-              <div class="d-flex gap-3">
-                {% set fuel_labels = {'none': _('No fuel added'), 'before': _('Fuel added before flight'), 'after': _('Fuel added after flight')} %}
-                {% for val, lbl in [('none', fuel_labels['none']), ('before', fuel_labels['before']), ('after', fuel_labels['after'])] %}
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="fuel_event"
-                         id="fuel_event_{{ val }}" value="{{ val }}"
-                         {% if flight and flight.fuel_event == val %}checked
-                         {% elif not flight and val == 'none' %}checked{% endif %}>
-                  <label class="form-check-label" for="fuel_event_{{ val }}">{{ lbl }}</label>
-                </div>
-                {% endfor %}
-              </div>
-            </div>
-
-            <div id="fuel-added-fields" class="row mb-3 d-none">
-              <div class="col-7">
-                <label for="fuel_added_qty" class="form-label">{{ _('Quantity added') }}</label>
-                <input type="number" class="form-control" id="fuel_added_qty" name="fuel_added_qty"
-                       value="{{ '%.1f'|format(flight.fuel_added_qty|float) if flight and flight.fuel_added_qty is not none else '' }}"
+            {# Refueling before and after are independent — a flight can have
+               neither, either, or both (e.g. topped off before departure,
+               then topped off again after landing). #}
+            <div class="row mb-3">
+              <div class="col-5">
+                <label for="fuel_added_before_qty" class="form-label">{{ _('Fuel added before flight') }}</label>
+                <input type="number" class="form-control" id="fuel_added_before_qty" name="fuel_added_before_qty"
+                       value="{{ '%.1f'|format(flight.fuel_added_before_qty|float) if flight and flight.fuel_added_before_qty is not none else '' }}"
                        step="0.1" min="0" placeholder="e.g. 40.0">
               </div>
-              <div class="col-5">
-                <label for="fuel_added_unit" class="form-label">{{ _('Unit') }}</label>
-                <select class="form-select" id="fuel_added_unit" name="fuel_added_unit">
+              <div class="col-3">
+                <label for="fuel_added_before_unit" class="form-label">{{ _('Unit') }}</label>
+                <select class="form-select" id="fuel_added_before_unit" name="fuel_added_before_unit">
                   {% for u in fuel_units %}
                   <option value="{{ u }}"
-                    {% if flight and flight.fuel_added_unit == u %}selected
+                    {% if flight and flight.fuel_added_before_unit == u %}selected
                     {% elif not flight and u == 'L' %}selected{% endif %}>{{ u }}</option>
                   {% endfor %}
                 </select>
               </div>
+              <div class="col-4">
+                <label for="oil_added_before_l" class="form-label">
+                  {{ _('Oil added before flight') }} <span class="text-muted small">(L)</span>
+                </label>
+                <input type="number" class="form-control" id="oil_added_before_l" name="oil_added_before_l"
+                       value="{{ '%.2f'|format(flight.oil_added_before_l|float) if flight and flight.oil_added_before_l is not none else '' }}"
+                       step="0.05" min="0" placeholder="e.g. 0.5">
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <div class="col-5">
+                <label for="fuel_added_after_qty" class="form-label">{{ _('Fuel added after flight') }}</label>
+                <input type="number" class="form-control" id="fuel_added_after_qty" name="fuel_added_after_qty"
+                       value="{{ '%.1f'|format(flight.fuel_added_after_qty|float) if flight and flight.fuel_added_after_qty is not none else '' }}"
+                       step="0.1" min="0" placeholder="e.g. 40.0">
+              </div>
+              <div class="col-3">
+                <label for="fuel_added_after_unit" class="form-label">{{ _('Unit') }}</label>
+                <select class="form-select" id="fuel_added_after_unit" name="fuel_added_after_unit">
+                  {% for u in fuel_units %}
+                  <option value="{{ u }}"
+                    {% if flight and flight.fuel_added_after_unit == u %}selected
+                    {% elif not flight and u == 'L' %}selected{% endif %}>{{ u }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-4">
+                <label for="oil_added_after_l" class="form-label">
+                  {{ _('Oil added after flight') }} <span class="text-muted small">(L)</span>
+                </label>
+                <input type="number" class="form-control" id="oil_added_after_l" name="oil_added_after_l"
+                       value="{{ '%.2f'|format(flight.oil_added_after_l|float) if flight and flight.oil_added_after_l is not none else '' }}"
+                       step="0.05" min="0" placeholder="e.g. 0.5">
+              </div>
             </div>
 
             <div class="row mb-4">
-              <div class="col-7">
+              <div class="col-md-7">
                 <label for="fuel_remaining_qty" class="form-label">
                   {{ _('Fuel remaining at end of flight') }} <span class="text-muted small">(L)</span>
                 </label>
                 <input type="number" class="form-control" id="fuel_remaining_qty" name="fuel_remaining_qty"
                        value="{{ '%.1f'|format(flight.fuel_remaining_qty|float) if flight and flight.fuel_remaining_qty is not none else '' }}"
                        step="0.1" min="0" placeholder="{{ _('estimated') }}">
+                {% if aircraft and aircraft.fuel_capacity_liters %}
+                <div class="btn-group btn-group-sm flex-wrap mt-2" role="group"
+                     id="fuel-fraction-buttons"
+                     data-capacity="{{ aircraft.fuel_capacity_liters | float }}"
+                     aria-label="{{ _('Quick-fill from tank fraction') }}">
+                  {% for n in range(1, 9) %}
+                  <button type="button" class="btn btn-outline-secondary fuel-fraction-btn" data-numerator="{{ n }}" data-denominator="8">{{ n }}/8</button>
+                  {% endfor %}
+                </div>
+                <div class="form-text">{{ _('Estimated liters for the selected fraction of a full %(capacity)s L tank, rounded to the nearest 5 L.', capacity='%.0f'|format(aircraft.fuel_capacity_liters|float)) }}</div>
+                {% elif aircraft %}
+                <div class="form-text">
+                  {{ _('Set the tank capacity on the aircraft page to get quick fraction-of-tank buttons here.') }}
+                  <a href="{{ url_for('aircraft.edit_aircraft', aircraft_id=aircraft.id) }}">{{ _('Aircraft settings') }}</a>
+                </div>
+                {% endif %}
                 <div class="form-text" id="fuel-consumption-hint"
                      data-fuel-flow="{{ (aircraft.fuel_flow | float) if aircraft and aircraft.fuel_flow else '' }}"
                      data-template="{{ _('Estimated consumption: ~%(est)s L based on engine time', est='__EST__') }}"></div>
-              </div>
-              <div class="col-5">
-                <label for="oil_added_l" class="form-label">
-                  {{ _('Oil added') }} <span class="text-muted small">(L)</span>
-                </label>
-                <input type="number" class="form-control" id="oil_added_l" name="oil_added_l"
-                       value="{{ '%.2f'|format(flight.oil_added_l|float) if flight and flight.oil_added_l is not none else '' }}"
-                       step="0.05" min="0" placeholder="e.g. 0.5">
               </div>
             </div>
 

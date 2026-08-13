@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import date, time, timedelta
+from datetime import date, timedelta
 from typing import Any
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
@@ -29,8 +29,8 @@ AIRFRAME_TARGET_FIELDS: list[str] = [
     "crew_name",
     "departure_icao",
     "arrival_icao",
-    "departure_time",
-    "arrival_time",
+    "takeoff_time",
+    "landing_time",
     "flight_time",
     "flight_counter_start",
     "flight_counter_end",
@@ -57,14 +57,19 @@ _AIRFRAME_ALIASES: dict[str, str] = {
     "to": "arrival_icao",
     "arrival": "arrival_icao",
     "arr": "arrival_icao",
-    "time": "departure_time",  # first TIME → departure
-    "time_2": "arrival_time",  # second TIME → arrival
-    "departure time": "departure_time",
-    "off block": "departure_time",
-    "off-block": "departure_time",
-    "arrival time": "arrival_time",
-    "on block": "arrival_time",
-    "on-block": "arrival_time",
+    # Airframe-log block/flight times feed takeoff_time/landing_time
+    # (flight_time_counter_*/flight_time — airframe-log-facing), never
+    # departure_time/arrival_time (engine_time_counter_*/engine_time —
+    # pilot-log-facing; see models.py's Flight docstring). The two pairs
+    # are never defaulted from each other.
+    "time": "takeoff_time",  # first TIME → takeoff
+    "time_2": "landing_time",  # second TIME → landing
+    "departure time": "takeoff_time",
+    "off block": "takeoff_time",
+    "off-block": "takeoff_time",
+    "arrival time": "landing_time",
+    "on block": "landing_time",
+    "on-block": "landing_time",
     "flight time": "flight_time",
     "block time": "flight_time",
     "duration": "flight_time",
@@ -97,8 +102,8 @@ _AIRFRAME_ALIASES: dict[str, str] = {
 
 # Target field → parser (None = keep trimmed string)
 _AIRFRAME_PARSERS: dict[str, Any] = {
-    "departure_time": parse_time_value,
-    "arrival_time": parse_time_value,
+    "takeoff_time": parse_time_value,
+    "landing_time": parse_time_value,
     "flight_time": parse_duration_value,
     "flight_counter_start": parse_duration_value,
     "flight_counter_end": parse_duration_value,
@@ -185,8 +190,8 @@ def propose_airframe_mapping(
 _HINT_SAMPLE_ROWS = 25
 
 _TYPE_NAMES: dict[str, str] = {
-    "departure_time": "time",
-    "arrival_time": "time",
+    "takeoff_time": "time",
+    "landing_time": "time",
     "flight_time": "duration",
     "flight_counter_start": "counter value",
     "flight_counter_end": "counter value",
@@ -297,13 +302,18 @@ def _fields_to_flight_entry_kwargs(fields: dict[str, Any]) -> dict[str, Any]:
     """Map parsed row *fields* (mapping-target-field keys) to Flight
     constructor kwargs (model-column keys) — the two differ for the counter
     fields (flight_counter_end → flight_time_counter_end etc). Shared by the
-    normal insert path and the review step's overwrite/new-entry handling."""
+    normal insert path and the review step's overwrite/new-entry handling.
+
+    Only ever touches the airframe-facing takeoff_time/landing_time pair —
+    never departure_time/arrival_time, which is pilot-log-facing (fed by
+    pilots/logbook_import.py instead) and must not be clobbered when this
+    row is merged onto an existing placeholder created from that side."""
     return {
         "date": fields["date"],
         "departure_icao": fields.get("departure_icao") or "ZZZZ",
         "arrival_icao": fields.get("arrival_icao") or "ZZZZ",
-        "departure_time": fields.get("departure_time"),
-        "arrival_time": fields.get("arrival_time"),
+        "takeoff_time": fields.get("takeoff_time"),
+        "landing_time": fields.get("landing_time"),
         "flight_time": fields.get("flight_time"),
         "flight_time_counter_start": fields.get("flight_counter_start"),
         "flight_time_counter_end": fields.get("flight_counter_end"),
@@ -442,7 +452,6 @@ def execute_airframe_import(
 # ── Near-match conflict detection (possible corrections) ───────────────────────
 
 _CANDIDATE_MIN_SCORE = 3
-_CANDIDATE_TIME_TOLERANCE_MINUTES = 120
 _CANDIDATE_DURATION_TOLERANCE = 1.0
 _CANDIDATE_COUNTER_TOLERANCE = 0.3
 
@@ -456,26 +465,18 @@ class AirframeConflictRow:
     row_num: int
     fields: dict[str, Any]
     crew_name: str | None
-    candidates: list[tuple[int, int]]  # (score, existing_flight_id), best first
+    candidates: list[tuple[float, int]]  # (score, existing_flight_id), best first
 
 
-def _time_close(t1: time | None, t2: time | None, tolerance_minutes: int) -> bool:
-    if t1 is None or t2 is None:
-        return False
-    m1 = t1.hour * 60 + t1.minute
-    m2 = t2.hour * 60 + t2.minute
-    return abs(m1 - m2) <= tolerance_minutes
-
-
-def _score_airframe_candidate(fields: dict[str, Any], existing: Any) -> int:
-    """Score how likely *existing* (a Flight row) is the same real-world
-    flight as *fields* (a freshly parsed row), across 7 points: departure,
-    arrival, departure time, arrival time, duration, landings, flight
-    counter reading. A point only counts toward the score if both sides
-    have meaningful data for it — "ZZZZ" (unmapped ICAO) and missing values
-    are neutral, never a mismatch.
+def _score_airframe_non_time_signals(fields: dict[str, Any], existing: Any) -> float:
+    """The 5 of 7 _score_airframe_candidate signals that aren't a time of
+    day: departure, arrival, duration, landings, flight counter reading.
+    Factored out so aircraft/gps_import.py's fuzzy match can reuse them with
+    its own time-matching logic (a GPS track's single recorded start/end
+    instant needs a wider comparison than a same-source re-import does —
+    see _score_airframe_candidate below) instead of duplicating this.
     """
-    score = 0
+    score: float = 0
 
     dep_new = (fields.get("departure_icao") or "ZZZZ").strip().upper()
     dep_old = (existing.departure_icao or "ZZZZ").strip().upper()
@@ -485,20 +486,6 @@ def _score_airframe_candidate(fields: dict[str, Any], existing: Any) -> int:
     arr_new = (fields.get("arrival_icao") or "ZZZZ").strip().upper()
     arr_old = (existing.arrival_icao or "ZZZZ").strip().upper()
     if arr_new != "ZZZZ" and arr_old != "ZZZZ" and arr_new == arr_old:
-        score += 1
-
-    if _time_close(
-        fields.get("departure_time"),
-        existing.departure_time,
-        _CANDIDATE_TIME_TOLERANCE_MINUTES,
-    ):
-        score += 1
-
-    if _time_close(
-        fields.get("arrival_time"),
-        existing.arrival_time,
-        _CANDIDATE_TIME_TOLERANCE_MINUTES,
-    ):
         score += 1
 
     dur_new = _num(fields.get("flight_time"))
@@ -527,6 +514,55 @@ def _score_airframe_candidate(fields: dict[str, Any], existing: Any) -> int:
     return score
 
 
+def _score_airframe_candidate(
+    fields: dict[str, Any], existing: Any, offset_hours: float
+) -> float:
+    """Score how likely *existing* (a Flight row) is the same real-world
+    flight as *fields* (a freshly parsed row), across 7 points: departure,
+    arrival, takeoff time, landing time, duration, landings, flight
+    counter reading. A point only counts toward the score if both sides
+    have meaningful data for it — "ZZZZ" (unmapped ICAO) and missing values
+    are neutral, never a mismatch. The two time points can be fractional —
+    see services.time_band_matching.
+    """
+    from services.time_band_matching import (  # pyright: ignore[reportMissingImports]
+        offset_ring_step_minutes,
+        shift_time,
+        time_band_score,
+    )
+
+    score = _score_airframe_non_time_signals(fields, existing)
+
+    # Both same-pair (existing.takeoff_time/landing_time set — likely a
+    # previous airframe import) and cross-pair (existing only has
+    # departure_time/arrival_time — a pilot-import placeholder) use the same
+    # ring width: 1/3 of this aircraft's flight_counter_offset. Pilots log
+    # to a fixed precision (0.1h/6min at the 0.3h default) — a flat few-
+    # minutes tolerance would put an ordinary rounding difference in the
+    # wrong ring, so the same offset-derived step is used for both instead
+    # of a separate hardcoded constant. Cross-pair additionally shifts the
+    # centre by that offset, the closest estimate available of the
+    # block-to-airborne time gap.
+    offset_step = offset_ring_step_minutes(offset_hours)
+    offset_minutes = round(offset_hours * 60)
+
+    takeoff_new = fields.get("takeoff_time")
+    if existing.takeoff_time is not None:
+        score += time_band_score(takeoff_new, (existing.takeoff_time,), offset_step)
+    elif existing.departure_time is not None:
+        center = shift_time(existing.departure_time, offset_minutes)
+        score += time_band_score(takeoff_new, (center,), offset_step)
+
+    landing_new = fields.get("landing_time")
+    if existing.landing_time is not None:
+        score += time_band_score(landing_new, (existing.landing_time,), offset_step)
+    elif existing.arrival_time is not None:
+        center = shift_time(existing.arrival_time, -offset_minutes)
+        score += time_band_score(landing_new, (center,), offset_step)
+
+    return score
+
+
 def find_conflicting_airframe_rows(
     parsed: ParsedFile,
     mapping: dict[str, str],
@@ -543,7 +579,7 @@ def find_conflicting_airframe_rows(
     *exclude_row_nums* — typically rows already resolved in an earlier pass
     of this same review.
     """
-    from models import Flight  # pyright: ignore[reportMissingImports]
+    from models import Aircraft, Flight, db  # pyright: ignore[reportMissingImports]
 
     exclude_row_nums = exclude_row_nums or set()
     col_index = {col: i for i, col in enumerate(parsed.norm_cols)}
@@ -551,6 +587,8 @@ def find_conflicting_airframe_rows(
         (col_index[c] for c, t in mapping.items() if t == "date" and c in col_index),
         None,
     )
+    aircraft = db.session.get(Aircraft, aircraft_id)
+    offset_hours = float(aircraft.flight_counter_offset) if aircraft else 0.0
     existing_keys = _fetch_existing_dedup_keys(aircraft_id)
     conflicts: list[AirframeConflictRow] = []
 
@@ -573,7 +611,7 @@ def find_conflicting_airframe_rows(
         scored = [
             (score, existing.id)
             for existing in same_day
-            if (score := _score_airframe_candidate(fields, existing))
+            if (score := _score_airframe_candidate(fields, existing, offset_hours))
             >= _CANDIDATE_MIN_SCORE
         ]
         if scored:

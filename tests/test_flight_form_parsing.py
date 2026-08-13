@@ -35,11 +35,14 @@ class TestNegativeValuesResetToNone:
         assert values["landing_count"] is None
         assert any("Landing count" in e for e in errors)
 
-    def test_negative_fuel_added_qty_returns_none_not_negative(self):
-        values, errors = parse_flight_fields(
-            {"fuel_event": "before", "fuel_added_qty": "-10"}, None
-        )
-        assert values["fuel_added_qty"] is None
+    def test_negative_fuel_added_before_qty_returns_none_not_negative(self):
+        values, errors = parse_flight_fields({"fuel_added_before_qty": "-10"}, None)
+        assert values["fuel_added_before_qty"] is None
+        assert any("Fuel quantity added" in e for e in errors)
+
+    def test_negative_fuel_added_after_qty_returns_none_not_negative(self):
+        values, errors = parse_flight_fields({"fuel_added_after_qty": "-10"}, None)
+        assert values["fuel_added_after_qty"] is None
         assert any("Fuel quantity added" in e for e in errors)
 
     def test_negative_fuel_remaining_qty_returns_none_not_negative(self):
@@ -47,9 +50,9 @@ class TestNegativeValuesResetToNone:
         assert values["fuel_remaining_qty"] is None
         assert any("Fuel remaining" in e for e in errors)
 
-    def test_negative_oil_added_l_returns_none_not_negative(self):
-        values, errors = parse_flight_fields({"oil_added_l": "-1"}, None)
-        assert values["oil_added_l"] is None
+    def test_negative_oil_added_before_l_returns_none_not_negative(self):
+        values, errors = parse_flight_fields({"oil_added_before_l": "-1"}, None)
+        assert values["oil_added_before_l"] is None
         assert any("Oil added" in e for e in errors)
 
 
@@ -61,11 +64,9 @@ class TestNonFiniteValuesRejected:
     through. int(float("inf")) then raises OverflowError downstream
     (see pilots/personal_minimums.py::recency_breaches)."""
 
-    def test_nan_fuel_added_qty_rejected(self):
-        values, errors = parse_flight_fields(
-            {"fuel_event": "before", "fuel_added_qty": "nan"}, None
-        )
-        assert values["fuel_added_qty"] is None
+    def test_nan_fuel_added_before_qty_rejected(self):
+        values, errors = parse_flight_fields({"fuel_added_before_qty": "nan"}, None)
+        assert values["fuel_added_before_qty"] is None
         assert any("Fuel quantity added" in e for e in errors)
 
     def test_infinite_fuel_remaining_qty_rejected(self):
@@ -73,9 +74,9 @@ class TestNonFiniteValuesRejected:
         assert values["fuel_remaining_qty"] is None
         assert any("Fuel remaining" in e for e in errors)
 
-    def test_infinite_oil_added_l_rejected(self):
-        values, errors = parse_flight_fields({"oil_added_l": "inf"}, None)
-        assert values["oil_added_l"] is None
+    def test_infinite_oil_added_before_l_rejected(self):
+        values, errors = parse_flight_fields({"oil_added_before_l": "inf"}, None)
+        assert values["oil_added_before_l"] is None
         assert any("Oil added" in e for e in errors)
 
     def test_infinite_counter_value_rejected(self):
@@ -83,6 +84,51 @@ class TestNonFiniteValuesRejected:
         values, errors = parse_flight_fields({"flight_time_counter_start": "inf"}, ac)
         assert values["flight_time_counter_start"] is None
         assert any("Counter value" in e for e in errors)
+
+
+class TestFuelAddedBeforeAndAfterAreIndependent:
+    def test_both_before_and_after_can_be_set_on_the_same_flight(self):
+        values, errors = parse_flight_fields(
+            {
+                "date": "2025-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "fuel_added_before_qty": "20",
+                "fuel_added_before_unit": "L",
+                "fuel_added_after_qty": "15",
+                "fuel_added_after_unit": "gal",
+            },
+            None,
+        )
+        assert errors == []
+        assert values["fuel_added_before_qty"] == 20.0
+        assert values["fuel_added_before_unit"] == "L"
+        assert values["fuel_added_after_qty"] == 15.0
+        assert values["fuel_added_after_unit"] == "gal"
+
+    def test_unit_defaults_to_none_when_qty_not_provided(self):
+        values, _errors = parse_flight_fields({}, None)
+        assert values["fuel_added_before_qty"] is None
+        assert values["fuel_added_before_unit"] is None
+        assert values["fuel_added_after_qty"] is None
+        assert values["fuel_added_after_unit"] is None
+
+
+class TestOilAddedBeforeAndAfterAreIndependent:
+    def test_both_before_and_after_can_be_set_on_the_same_flight(self):
+        values, errors = parse_flight_fields(
+            {
+                "date": "2025-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "oil_added_before_l": "0.5",
+                "oil_added_after_l": "0.25",
+            },
+            None,
+        )
+        assert errors == []
+        assert values["oil_added_before_l"] == 0.5
+        assert values["oil_added_after_l"] == 0.25
 
 
 class TestUtcOffsetClockTimeRejected:

@@ -44,11 +44,13 @@ _FIELD_KEYS = (
     "flight_time",
     "passenger_count",
     "landing_count",
-    "fuel_event",
-    "fuel_added_qty",
-    "fuel_added_unit",
+    "fuel_added_before_qty",
+    "fuel_added_before_unit",
+    "fuel_added_after_qty",
+    "fuel_added_after_unit",
     "fuel_remaining_qty",
-    "oil_added_l",
+    "oil_added_before_l",
+    "oil_added_after_l",
     "nature_of_flight",
     "notes",
 )
@@ -81,9 +83,11 @@ def TestOneInput(data: bytes) -> None:
         "flight_time_counter_end",
         "engine_time_counter_start",
         "engine_time_counter_end",
-        "fuel_added_qty",
+        "fuel_added_before_qty",
+        "fuel_added_after_qty",
         "fuel_remaining_qty",
-        "oil_added_l",
+        "oil_added_before_l",
+        "oil_added_after_l",
     ):
         v = values[key]
         assert v is None or (isinstance(v, float) and math.isfinite(v) and v >= 0), (

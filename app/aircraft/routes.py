@@ -424,6 +424,7 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     insurance_expiry_raw = request.form.get("insurance_expiry", "").strip()
     reserve_hourly_rate_raw = request.form.get("reserve_hourly_rate", "").strip()
     oil_warning_lph_raw = request.form.get("oil_warning_lph", "").strip()
+    fuel_capacity_liters_raw = request.form.get("fuel_capacity_liters", "").strip()
     logbook_time_precision = request.form.get(
         "logbook_time_precision", "tenth_hour"
     ).strip()
@@ -504,6 +505,15 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
                 _("Oil consumption warning threshold must be a non-negative number.")
             )
 
+    fuel_capacity_liters = None
+    if fuel_capacity_liters_raw:
+        try:
+            fuel_capacity_liters = float(fuel_capacity_liters_raw)
+            if fuel_capacity_liters <= 0:
+                raise ValueError
+        except ValueError:
+            errors.append(_("Fuel tank capacity must be a positive number."))
+
     if errors:
         for msg in errors:
             flash(msg, "danger")
@@ -525,6 +535,7 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     ac.logbook_time_precision = logbook_time_precision
     ac.reserve_hourly_rate = reserve_hourly_rate
     ac.oil_warning_lph = oil_warning_lph
+    ac.fuel_capacity_liters = fuel_capacity_liters
     db.session.commit()
 
     if is_new:
@@ -1937,13 +1948,11 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
     # Duplicate detection: find existing Flight records that overlap each segment.
     from datetime import datetime as _dt
     from datetime import timedelta as _td
+    from functools import partial
 
-    from flights.airframe_import import (
-        _CANDIDATE_MIN_SCORE,
-        _score_airframe_candidate,
-    )
+    from flights.airframe_import import _CANDIDATE_MIN_SCORE
 
-    from aircraft.gps_import import score_gps_candidates
+    from aircraft.gps_import import _score_gps_candidate, score_gps_candidates
 
     _BLOCK_TOLERANCE = _td(minutes=15)
 
@@ -1975,14 +1984,18 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
         # duration/landings match against this aircraft's flights that
         # don't yet have real GPS block data (typically logged manually
         # or imported from a CSV, airframe or pilot logbook — see
-        # docs/backlog.md's GPS-vs-CSV reconciliation note). Reuses the
-        # exact same near-match scorer the airframe-import review already
-        # uses, rather than a second implementation.
+        # docs/backlog.md's GPS-vs-CSV reconciliation note). _score_gps_candidate
+        # reuses the airframe-import review's non-time signals, with its own
+        # wider time-of-day matching (see its docstring).
+        # takeoff_time/landing_time here just labels *which* GPS-observed
+        # instant this is (block-off vs block-on) — _score_gps_candidate
+        # itself compares each against whichever of the existing row's
+        # departure_time/takeoff_time (or landing_time/arrival_time) is set.
         fields = {
             "departure_icao": seg["departure_icao"],
             "arrival_icao": seg["arrival_icao"],
-            "departure_time": block_off.time(),
-            "arrival_time": block_on.time(),
+            "takeoff_time": block_off.time(),
+            "landing_time": block_on.time(),
             "flight_time": seg["flight_time_rounded_h"],
             "landing_count": seg["landing_count"],
         }
@@ -1996,7 +2009,10 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
             Flight.block_off_utc.is_(None),
         ).all()
         candidates = score_gps_candidates(
-            fields, same_day, _score_airframe_candidate, _CANDIDATE_MIN_SCORE
+            fields,
+            same_day,
+            partial(_score_gps_candidate, offset_hours=float(ac.flight_counter_offset)),
+            _CANDIDATE_MIN_SCORE,
         )
         if candidates:
             seg["matched_flight_id"] = candidates[0].id

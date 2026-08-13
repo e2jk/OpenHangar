@@ -2365,16 +2365,49 @@ class TestSaveFlightEdgeCases:
             assert fe is not None
             assert fe.landing_count is None
 
-    def test_negative_fuel_added_qty_shows_error(self, app, client):
+    def test_negative_fuel_added_before_qty_shows_error(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _login(app, client)
         resp = client.post(
             "/flights/new",
-            data=self._base_data(acid, fuel_event="before", fuel_added_qty="-5"),
+            data=self._base_data(acid, fuel_added_before_qty="-5"),
         )
         assert resp.status_code == 200
         assert b"Fuel" in resp.data
+
+    def test_negative_fuel_added_after_qty_shows_error(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data=self._base_data(acid, fuel_added_after_qty="-5"),
+        )
+        assert resp.status_code == 200
+        assert b"Fuel" in resp.data
+
+    def test_fuel_added_before_and_after_both_save_independently(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data=self._base_data(
+                acid,
+                fuel_added_before_qty="20",
+                fuel_added_before_unit="L",
+                fuel_added_after_qty="15",
+                fuel_added_after_unit="L",
+            ),
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
+            assert fe is not None
+            assert float(fe.fuel_added_before_qty) == 20.0
+            assert float(fe.fuel_added_after_qty) == 15.0
 
     def test_negative_fuel_remaining_shows_error(self, app, client):
         _uid, tid = _create_user_and_tenant(app)

@@ -2478,7 +2478,14 @@ class TestLinkEntriesToAircraft:
             assert entry.aircraft_id is None
             assert entry.other_aircraft_registration == "OO-NOI"
 
-    def test_departure_time_offset_applied(self, app):
+    def test_departure_time_not_shifted_by_flight_counter_offset(self, app):
+        """flight_counter_offset is an engine/flight-*hours* duration
+        estimate for aircraft with no separate flight counter (see
+        form_parsing.py) — a wall-clock departure_time must never be shifted
+        by it. A prior version of this function did exactly that, silently
+        moving every promoted entry's departure_time earlier by the
+        aircraft's offset (18 minutes at the 0.3h default); the times
+        imported into a pilot logbook must match the source file exactly."""
         from datetime import time
 
         from pilots.logbook_import import (
@@ -2501,7 +2508,8 @@ class TestLinkEntriesToAircraft:
             link_entries_to_aircraft([entry])
             db.session.commit()
             assert entry.aircraft_id == ac_id
-            assert entry.departure_time == time(9, 0)
+            assert entry.departure_time == time(9, 30)
+            assert entry.arrival_time == time(10, 30)
 
     def test_keeps_existing_pic_identity_and_fills_name(self, app):
         """The row's pic_user_id is already whatever the CSV import set —

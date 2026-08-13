@@ -662,7 +662,7 @@ def build_geojson(trackpoints: list[TrackPoint]) -> dict[str, Any]:
 def score_gps_candidates(
     fields: dict[str, Any],
     candidates: list[Any],
-    scorer: Callable[[dict[str, Any], Any], int],
+    scorer: Callable[[dict[str, Any], Any], float],
     min_score: int,
 ) -> list[Any]:
     """Rank *candidates* (Flight rows) against a parsed GPS segment's
@@ -673,15 +673,62 @@ def score_gps_candidates(
     via CSV import (airframe or pilot logbook) has neither, so the exact
     block-time overlap check the review routes try first can never find
     it. This is the fallback: reuse the exact same near-match scorers the
-    CSV-import review flows already use
-    (flights.airframe_import._score_airframe_candidate for aircraft-linked
-    rows, pilots.logbook_import._score_candidate for standalone ones) so a
-    previously-imported flight is recognised instead of silently
-    duplicated — rather than inventing a second scoring implementation
-    that could drift from the first.
+    CSV-import review flows already use where possible
+    (_score_gps_candidate below, built on
+    flights.airframe_import._score_airframe_non_time_signals, for
+    aircraft-linked rows; pilots.logbook_import._score_candidate directly
+    for standalone ones) so a previously-imported flight is recognised
+    instead of silently duplicated — rather than inventing a second scoring
+    implementation that could drift from the first.
     """
     scored = [
         (score, c) for c in candidates if (score := scorer(fields, c)) >= min_score
     ]
     scored.sort(key=lambda t: -t[0])
     return [c for _score, c in scored]
+
+
+def _score_gps_candidate(
+    fields: dict[str, Any], existing: Any, offset_hours: float
+) -> float:
+    """Score how likely *existing* (a Flight row) is the same real-world
+    flight as *fields* (a parsed GPS segment) — the 5 non-time signals from
+    flights.airframe_import._score_airframe_non_time_signals, plus a
+    GPS-specific comparison for the other 2.
+
+    A GPS track's block_off/block_on record a single observed instant per
+    end, and — unlike a same-source CSV re-import — there's no guarantee it
+    lines up tightly with either departure_time (engine start) or
+    takeoff_time (wheels-up): recording can start before the engine does
+    (setting up a flight plan on a tablet) and keep running a little after
+    landing. So instead of preferring one time field over the other, the
+    full-credit window spans whichever of departure_time/takeoff_time (and
+    landing_time/arrival_time) the existing row has, widened further on
+    each side — see services.time_band_matching.widened_span_score.
+    """
+    from flights.airframe_import import (  # pyright: ignore[reportMissingImports]
+        _score_airframe_non_time_signals,
+    )
+    from services.time_band_matching import (  # pyright: ignore[reportMissingImports]
+        offset_ring_step_minutes,
+        widened_span_score,
+    )
+
+    score = _score_airframe_non_time_signals(fields, existing)
+    widen_minutes = offset_ring_step_minutes(offset_hours)
+
+    takeoff_edges = tuple(
+        t for t in (existing.departure_time, existing.takeoff_time) if t is not None
+    )
+    score += widened_span_score(
+        fields.get("takeoff_time"), takeoff_edges, widen_minutes
+    )
+
+    landing_edges = tuple(
+        t for t in (existing.landing_time, existing.arrival_time) if t is not None
+    )
+    score += widened_span_score(
+        fields.get("landing_time"), landing_edges, widen_minutes
+    )
+
+    return score

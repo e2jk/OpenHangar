@@ -67,10 +67,8 @@
       document.querySelectorAll('input[name="pilot_role"]').forEach(function (r) { r.addEventListener('change', applyRoleHint); });
     }
 
-    var fuelAddedFields = document.getElementById('fuel-added-fields');
     var fuelHint = document.getElementById('fuel-consumption-hint');
     var fuelFlow = fuelHint ? parseFloat(fuelHint.dataset.fuelFlow) : NaN;
-    var fuelRadios = document.querySelectorAll('input[name="fuel_event"]');
 
     function updateFuelHint() {
       if (!fuelHint || isNaN(fuelFlow)) return;
@@ -82,18 +80,32 @@
         fuelHint.textContent = '';
       }
     }
-    function updateFuelUI() {
-      var checked = document.querySelector('input[name="fuel_event"]:checked');
-      var val = checked ? checked.value : '';
-      if (fuelAddedFields) fuelAddedFields.classList.toggle('d-none', !(val === 'before' || val === 'after'));
-      updateFuelHint();
-    }
-    fuelRadios.forEach(function (r) { r.addEventListener('change', updateFuelUI); });
     ['engine_time_counter_start', 'engine_time_counter_end'].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.addEventListener('input', updateFuelHint);
     });
-    updateFuelUI();
+    updateFuelHint();
+
+    var fuelFractionGroup = document.getElementById('fuel-fraction-buttons');
+    var fuelRemainingInput = document.getElementById('fuel_remaining_qty');
+    if (fuelFractionGroup && fuelRemainingInput) {
+      var capacity = parseFloat(fuelFractionGroup.dataset.capacity);
+      if (!isNaN(capacity)) {
+        fuelFractionGroup.querySelectorAll('.fuel-fraction-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var numerator = parseFloat(btn.dataset.numerator);
+            var denominator = parseFloat(btn.dataset.denominator);
+            var raw = (numerator / denominator) * capacity;
+            var rounded = Math.round(raw / 5) * 5;
+            fuelRemainingInput.value = rounded.toFixed(1);
+            fuelRemainingInput.dispatchEvent(new Event('input'));
+            fuelFractionGroup.querySelectorAll('.fuel-fraction-btn').forEach(function (b) {
+              b.classList.toggle('active', b === btn);
+            });
+          });
+        });
+      }
+    }
 
     var counterWarn = document.getElementById('counter-warn');
     if (counterWarn) {

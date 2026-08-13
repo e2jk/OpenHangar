@@ -714,7 +714,7 @@ class TestFuelOnFlightForm:
             data.update(extra)
         return client.post("/flights/new", data=data, follow_redirects=True)
 
-    def test_flight_with_fuel_before_saves_fuel_fields(self, client, app):
+    def test_flight_with_fuel_before_and_after_saves_fuel_fields(self, client, app):
         _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
@@ -722,18 +722,20 @@ class TestFuelOnFlightForm:
             client,
             ac_id,
             {
-                "fuel_event": "before",
-                "fuel_added_qty": "45.0",
-                "fuel_added_unit": "L",
+                "fuel_added_before_qty": "45.0",
+                "fuel_added_before_unit": "L",
+                "fuel_added_after_qty": "10.0",
+                "fuel_added_after_unit": "L",
                 "fuel_remaining_qty": "30.0",
             },
         )
         with app.app_context():
             fe = Flight.query.filter_by(aircraft_id=ac_id).first()
             assert fe is not None
-            assert fe.fuel_event == "before"
-            assert float(fe.fuel_added_qty) == 45.0
-            assert fe.fuel_added_unit == "L"
+            assert float(fe.fuel_added_before_qty) == 45.0
+            assert fe.fuel_added_before_unit == "L"
+            assert float(fe.fuel_added_after_qty) == 10.0
+            assert fe.fuel_added_after_unit == "L"
             assert float(fe.fuel_remaining_qty) == 30.0
 
     def test_flight_without_fuel_creates_no_expense(self, client, app):
@@ -759,8 +761,7 @@ class TestFuelOnFlightForm:
             client,
             ac_id,
             {
-                "fuel_event": "before",
-                "fuel_added_qty": "-10",
+                "fuel_added_before_qty": "-10",
             },
         )
         assert b"non-negative" in resp.data
@@ -771,24 +772,22 @@ class TestFuelOnFlightForm:
         flight_id = _add_flight(app, ac_id)
         with app.app_context():
             fe = db.session.get(Flight, flight_id)
-            fe.fuel_event = "before"
-            fe.fuel_added_qty = 45.0
-            fe.fuel_added_unit = "L"
+            fe.fuel_added_before_qty = 45.0
+            fe.fuel_added_before_unit = "L"
             fe.fuel_remaining_qty = 30.0
             db.session.commit()
         _login(app, client)
         resp = client.get(f"/flights/{flight_id}/edit")
         assert b"45.0" in resp.data
 
-    def test_edit_flight_clears_fuel_when_none_selected(self, client, app):
+    def test_edit_flight_clears_fuel_when_fields_left_blank(self, client, app):
         _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         flight_id = _add_flight(app, ac_id, hobbs_start=200.0, hobbs_end=201.5)
         with app.app_context():
             fe = db.session.get(Flight, flight_id)
-            fe.fuel_event = "before"
-            fe.fuel_added_qty = 45.0
-            fe.fuel_added_unit = "L"
+            fe.fuel_added_before_qty = 45.0
+            fe.fuel_added_before_unit = "L"
             db.session.commit()
         _login(app, client)
         client.post(
@@ -801,11 +800,10 @@ class TestFuelOnFlightForm:
                 "flight_time_counter_end": "201.5",
                 "crew_name_0": "Test Pilot",
                 "crew_role_0": "PIC",
-                "fuel_event": "none",
             },
             follow_redirects=True,
         )
         with app.app_context():
             fe = db.session.get(Flight, flight_id)
-            assert fe.fuel_event is None
-            assert fe.fuel_added_qty is None
+            assert fe.fuel_added_before_qty is None
+            assert fe.fuel_added_before_unit is None

@@ -1130,7 +1130,6 @@ def execute_import(
 # ── Near-match conflict detection (possible corrections) ───────────────────────
 
 _CANDIDATE_MIN_SCORE = 3
-_CANDIDATE_TIME_TOLERANCE_MINUTES = 120
 _CANDIDATE_DURATION_TOLERANCE = 1.0
 
 
@@ -1142,7 +1141,7 @@ class ConflictRow:
 
     row_num: int
     kwargs: dict[str, Any]
-    candidates: list[tuple[int, int]]  # (score, existing_entry_id), best first
+    candidates: list[tuple[float, int]]  # (score, existing_entry_id), best first
 
 
 def _kwargs_duration(kwargs: dict[str, Any]) -> float | None:
@@ -1153,24 +1152,24 @@ def _kwargs_duration(kwargs: dict[str, Any]) -> float | None:
     return round(sum(vals), 1) if vals else None
 
 
-def _time_close(t1: time | None, t2: time | None, tolerance_minutes: int) -> bool:
-    if t1 is None or t2 is None:
-        return False
-    m1 = t1.hour * 60 + t1.minute
-    m2 = t2.hour * 60 + t2.minute
-    return abs(m1 - m2) <= tolerance_minutes
-
-
-def _score_candidate(kwargs: dict[str, Any], existing: Any) -> int:
+def _score_candidate(kwargs: dict[str, Any], existing: Any) -> float:
     """Score how likely *existing* (a Flight row) is the same real-world
     flight as *kwargs* (a freshly parsed row), across 7 points: registration,
     departure, arrival, departure time, arrival time, total duration,
     landings. A point only counts toward the score if both sides have data
     for it — missing data on either side is neutral, never a mismatch, so a
     row whose route/time isn't captured on one side can still be recognised
-    via duration + landings alone.
+    via duration + landings alone. The two time points can be fractional —
+    see services.time_band_matching.
     """
-    score = 0
+    from services.time_band_matching import (  # pyright: ignore[reportMissingImports]
+        DEFAULT_OFFSET_HOURS,
+        offset_ring_step_minutes,
+        shift_time,
+        time_band_score,
+    )
+
+    score: float = 0
 
     reg_new = (kwargs.get("other_aircraft_registration") or "").strip().upper()
     reg_old = (existing.display_registration or "").strip().upper()
@@ -1187,19 +1186,48 @@ def _score_candidate(kwargs: dict[str, Any], existing: Any) -> int:
     if arr_new and arr_old and arr_new == arr_old:
         score += 1
 
-    if _time_close(
-        kwargs.get("departure_time"),
-        existing.departure_time,
-        _CANDIDATE_TIME_TOLERANCE_MINUTES,
-    ):
-        score += 1
+    # Same-pair (existing.departure_time/arrival_time set) is scored tight,
+    # expecting a near-exact repeat of the same real instant, with a ring
+    # width of 1/3 of the managed aircraft's flight_counter_offset — pilots
+    # log to a fixed precision (0.1h/6min at the 0.3h default), so a flat
+    # few-minutes tolerance would put an ordinary rounding difference in the
+    # wrong ring. Falls back to the model's own 0.3h default when this row
+    # has no managed aircraft to read a real offset from. Cross-pair
+    # (existing only has takeoff_time/landing_time — an airframe-import
+    # placeholder, e.g. a hand-entered row from before this pilot ever ran
+    # a logbook import) is scored against that time shifted by this same
+    # offset, the closest estimate available of the block-to-airborne time
+    # gap — this needs a *real* managed-aircraft offset, so a standalone
+    # existing row (no aircraft_id, e.g. a rental logged nowhere else) has
+    # this comparison skipped entirely rather than guessing one.
+    offset_hours = (
+        float(existing.aircraft.flight_counter_offset) if existing.aircraft else None
+    )
+    same_pair_step = offset_ring_step_minutes(
+        offset_hours if offset_hours is not None else DEFAULT_OFFSET_HOURS
+    )
 
-    if _time_close(
-        kwargs.get("arrival_time"),
-        existing.arrival_time,
-        _CANDIDATE_TIME_TOLERANCE_MINUTES,
-    ):
-        score += 1
+    dep_time_new = kwargs.get("departure_time")
+    if existing.departure_time is not None:
+        score += time_band_score(
+            dep_time_new, (existing.departure_time,), same_pair_step
+        )
+    elif existing.takeoff_time is not None and offset_hours is not None:
+        offset_minutes = round(offset_hours * 60)
+        center = shift_time(existing.takeoff_time, -offset_minutes)
+        score += time_band_score(
+            dep_time_new, (center,), offset_ring_step_minutes(offset_hours)
+        )
+
+    arr_time_new = kwargs.get("arrival_time")
+    if existing.arrival_time is not None:
+        score += time_band_score(arr_time_new, (existing.arrival_time,), same_pair_step)
+    elif existing.landing_time is not None and offset_hours is not None:
+        offset_minutes = round(offset_hours * 60)
+        center = shift_time(existing.landing_time, offset_minutes)
+        score += time_band_score(
+            arr_time_new, (center,), offset_ring_step_minutes(offset_hours)
+        )
 
     dur_new = _kwargs_duration(kwargs)
     dur_old = existing.total_flight_time
@@ -1378,12 +1406,6 @@ def link_entries_to_aircraft(entries: list[Any]) -> int:
                 break
         if ac is None:
             continue
-
-        if entry.departure_time is not None:
-            dummy = datetime.combine(date.min, entry.departure_time) - timedelta(
-                hours=float(ac.flight_counter_offset)
-            )
-            entry.departure_time = dummy.time()
 
         entry.aircraft_id = ac.id
         entry.departure_icao = _place_icao(entry.departure_icao)
