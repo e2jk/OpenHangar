@@ -662,7 +662,7 @@ def build_geojson(trackpoints: list[TrackPoint]) -> dict[str, Any]:
 def score_gps_candidates(
     fields: dict[str, Any],
     candidates: list[Any],
-    scorer: Callable[[dict[str, Any], Any], int],
+    scorer: Callable[[dict[str, Any], Any], float],
     min_score: int,
 ) -> list[Any]:
     """Rank *candidates* (Flight rows) against a parsed GPS segment's
