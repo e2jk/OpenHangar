@@ -641,8 +641,12 @@ class TestAirframeConflictScoring:
 
     def test_score_same_pair_graduated_tiers(self, app):
         """existing.takeoff_time set (a previous airframe import) — scored
-        tight (SAME_PAIR_STEP_MINUTES=5) against the new row's takeoff_time,
-        not the offset-derived band used for the cross-pair fallback below."""
+        against the new row's takeoff_time with the same offset-derived ring
+        width as the cross-pair fallback below (1/3 of flight_counter_offset,
+        6min at the 0.3h default), not a separate hardcoded constant.
+        Matches pilots' actual logging precision (0.1h/6min increments) —
+        an ordinary rounding difference should land in the generous ring,
+        not the stingy one a flat few-minutes tolerance would put it in."""
         with app.app_context():
             existing = self._entry(takeoff_time=time(9, 0))
             assert (
@@ -650,15 +654,15 @@ class TestAirframeConflictScoring:
                 == 1.0
             )
             assert (
-                _score_airframe_candidate({"takeoff_time": time(9, 5)}, existing, 0.3)
+                _score_airframe_candidate({"takeoff_time": time(9, 6)}, existing, 0.3)
                 == 0.75
             )
             assert (
-                _score_airframe_candidate({"takeoff_time": time(9, 10)}, existing, 0.3)
+                _score_airframe_candidate({"takeoff_time": time(9, 12)}, existing, 0.3)
                 == 0.5
             )
             assert (
-                _score_airframe_candidate({"takeoff_time": time(9, 11)}, existing, 0.3)
+                _score_airframe_candidate({"takeoff_time": time(9, 13)}, existing, 0.3)
                 == 0.0
             )
 

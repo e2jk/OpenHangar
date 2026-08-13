@@ -526,7 +526,6 @@ def _score_airframe_candidate(
     see services.time_band_matching.
     """
     from services.time_band_matching import (  # pyright: ignore[reportMissingImports]
-        SAME_PAIR_STEP_MINUTES,
         offset_ring_step_minutes,
         shift_time,
         time_band_score,
@@ -534,29 +533,29 @@ def _score_airframe_candidate(
 
     score = _score_airframe_non_time_signals(fields, existing)
 
-    # Same-pair (existing.takeoff_time/landing_time set — likely a previous
-    # airframe import) is scored tight, expecting a near-exact repeat of the
-    # same real instant. Cross-pair (existing only has departure_time/
-    # arrival_time — a pilot-import placeholder) is scored against that
-    # time shifted by this aircraft's flight_counter_offset, the closest
-    # estimate available of the block-to-airborne time gap.
+    # Both same-pair (existing.takeoff_time/landing_time set — likely a
+    # previous airframe import) and cross-pair (existing only has
+    # departure_time/arrival_time — a pilot-import placeholder) use the same
+    # ring width: 1/3 of this aircraft's flight_counter_offset. Pilots log
+    # to a fixed precision (0.1h/6min at the 0.3h default) — a flat few-
+    # minutes tolerance would put an ordinary rounding difference in the
+    # wrong ring, so the same offset-derived step is used for both instead
+    # of a separate hardcoded constant. Cross-pair additionally shifts the
+    # centre by that offset, the closest estimate available of the
+    # block-to-airborne time gap.
     offset_step = offset_ring_step_minutes(offset_hours)
     offset_minutes = round(offset_hours * 60)
 
     takeoff_new = fields.get("takeoff_time")
     if existing.takeoff_time is not None:
-        score += time_band_score(
-            takeoff_new, (existing.takeoff_time,), SAME_PAIR_STEP_MINUTES
-        )
+        score += time_band_score(takeoff_new, (existing.takeoff_time,), offset_step)
     elif existing.departure_time is not None:
         center = shift_time(existing.departure_time, offset_minutes)
         score += time_band_score(takeoff_new, (center,), offset_step)
 
     landing_new = fields.get("landing_time")
     if existing.landing_time is not None:
-        score += time_band_score(
-            landing_new, (existing.landing_time,), SAME_PAIR_STEP_MINUTES
-        )
+        score += time_band_score(landing_new, (existing.landing_time,), offset_step)
     elif existing.arrival_time is not None:
         center = shift_time(existing.arrival_time, -offset_minutes)
         score += time_band_score(landing_new, (center,), offset_step)

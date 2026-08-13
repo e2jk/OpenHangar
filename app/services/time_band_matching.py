@@ -23,10 +23,11 @@ from __future__ import annotations
 import math
 from datetime import time
 
-# Same-pair matches are expected to be near-exact (the same real instant
-# reported twice) — a few minutes of tolerance covers rounding/manual-entry
-# corrections without accepting an unrelated flight.
-SAME_PAIR_STEP_MINUTES = 5
+# Fallback for offset_ring_step_minutes when no aircraft-specific
+# flight_counter_offset is available (e.g. same-pair matching against a
+# standalone entry with no managed aircraft) — matches Aircraft.flight_counter_offset's
+# own column default in models.py.
+DEFAULT_OFFSET_HOURS = 0.3
 
 
 def offset_ring_step_minutes(offset_hours: float) -> int:
