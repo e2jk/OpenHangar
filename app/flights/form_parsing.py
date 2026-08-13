@@ -323,16 +323,31 @@ def parse_flight_fields(
             fuel_remaining_qty = None
             errors.append(_("Fuel remaining must be a non-negative number."))
 
-    oil_added_l_raw = (f.get("oil_added_l") or "").strip()
-    oil_added_l: float | None = None
-    if oil_added_l_raw:
+    oil_added_before_l_raw = (f.get("oil_added_before_l") or "").strip()
+    oil_added_before_l: float | None = None
+    if oil_added_before_l_raw:
         try:
-            oil_added_l = float(oil_added_l_raw)
-            if not math.isfinite(oil_added_l) or oil_added_l < 0:
+            oil_added_before_l = float(oil_added_before_l_raw)
+            if not math.isfinite(oil_added_before_l) or oil_added_before_l < 0:
                 raise ValueError
         except (ValueError, TypeError):
-            oil_added_l = None
-            errors.append(_("Oil added must be a non-negative number."))
+            oil_added_before_l = None
+            errors.append(
+                _("Oil added before the flight must be a non-negative number.")
+            )
+
+    oil_added_after_l_raw = (f.get("oil_added_after_l") or "").strip()
+    oil_added_after_l: float | None = None
+    if oil_added_after_l_raw:
+        try:
+            oil_added_after_l = float(oil_added_after_l_raw)
+            if not math.isfinite(oil_added_after_l) or oil_added_after_l < 0:
+                raise ValueError
+        except (ValueError, TypeError):
+            oil_added_after_l = None
+            errors.append(
+                _("Oil added after the flight must be a non-negative number.")
+            )
 
     nature_of_flight = (f.get("nature_of_flight") or "").strip() or None
     notes = (f.get("notes") or "").strip() or None
@@ -360,7 +375,8 @@ def parse_flight_fields(
         if fuel_added_after_qty is not None
         else None,
         "fuel_remaining_qty": fuel_remaining_qty,
-        "oil_added_l": oil_added_l,
+        "oil_added_before_l": oil_added_before_l,
+        "oil_added_after_l": oil_added_after_l,
         "passenger_count": passenger_count,
         "landing_count": landing_count,
         "nature_of_flight": nature_of_flight,
@@ -411,7 +427,8 @@ def apply_flight_fields(fe: Flight, values: dict[str, Any]) -> None:
     fe.fuel_added_after_qty = values["fuel_added_after_qty"]
     fe.fuel_added_after_unit = values["fuel_added_after_unit"]
     fe.fuel_remaining_qty = values["fuel_remaining_qty"]
-    fe.oil_added_l = values["oil_added_l"]
+    fe.oil_added_before_l = values["oil_added_before_l"]
+    fe.oil_added_after_l = values["oil_added_after_l"]
 
     fe.pic_name = values["crew_name_0"] or None
     if values["crew_name_1"]:

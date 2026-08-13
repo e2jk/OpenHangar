@@ -50,9 +50,9 @@ class TestNegativeValuesResetToNone:
         assert values["fuel_remaining_qty"] is None
         assert any("Fuel remaining" in e for e in errors)
 
-    def test_negative_oil_added_l_returns_none_not_negative(self):
-        values, errors = parse_flight_fields({"oil_added_l": "-1"}, None)
-        assert values["oil_added_l"] is None
+    def test_negative_oil_added_before_l_returns_none_not_negative(self):
+        values, errors = parse_flight_fields({"oil_added_before_l": "-1"}, None)
+        assert values["oil_added_before_l"] is None
         assert any("Oil added" in e for e in errors)
 
 
@@ -74,10 +74,16 @@ class TestNonFiniteValuesRejected:
         assert values["fuel_remaining_qty"] is None
         assert any("Fuel remaining" in e for e in errors)
 
-    def test_infinite_oil_added_l_rejected(self):
-        values, errors = parse_flight_fields({"oil_added_l": "inf"}, None)
-        assert values["oil_added_l"] is None
+    def test_infinite_oil_added_before_l_rejected(self):
+        values, errors = parse_flight_fields({"oil_added_before_l": "inf"}, None)
+        assert values["oil_added_before_l"] is None
         assert any("Oil added" in e for e in errors)
+
+    def test_infinite_counter_value_rejected(self):
+        ac = SimpleNamespace(has_flight_counter=True, flight_counter_offset=0.3)
+        values, errors = parse_flight_fields({"flight_time_counter_start": "inf"}, ac)
+        assert values["flight_time_counter_start"] is None
+        assert any("Counter value" in e for e in errors)
 
 
 class TestFuelAddedBeforeAndAfterAreIndependent:
@@ -107,11 +113,22 @@ class TestFuelAddedBeforeAndAfterAreIndependent:
         assert values["fuel_added_after_qty"] is None
         assert values["fuel_added_after_unit"] is None
 
-    def test_infinite_counter_value_rejected(self):
-        ac = SimpleNamespace(has_flight_counter=True, flight_counter_offset=0.3)
-        values, errors = parse_flight_fields({"flight_time_counter_start": "inf"}, ac)
-        assert values["flight_time_counter_start"] is None
-        assert any("Counter value" in e for e in errors)
+
+class TestOilAddedBeforeAndAfterAreIndependent:
+    def test_both_before_and_after_can_be_set_on_the_same_flight(self):
+        values, errors = parse_flight_fields(
+            {
+                "date": "2025-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "oil_added_before_l": "0.5",
+                "oil_added_after_l": "0.25",
+            },
+            None,
+        )
+        assert errors == []
+        assert values["oil_added_before_l"] == 0.5
+        assert values["oil_added_after_l"] == 0.25
 
 
 class TestUtcOffsetClockTimeRejected:
