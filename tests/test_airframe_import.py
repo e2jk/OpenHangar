@@ -13,6 +13,7 @@ from io import BytesIO
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from flights.airframe_import import (  # pyright: ignore[reportMissingImports]
     _clean_icao,
+    _fallback_time_score,
     _score_airframe_candidate,
     _time_close,
     airframe_type_hints,
@@ -609,8 +610,8 @@ class TestAirframeConflictScoring:
             "date": date(2024, 3, 15),
             "departure_icao": "ZZZZ",
             "arrival_icao": "ZZZZ",
-            "departure_time": None,
-            "arrival_time": None,
+            "takeoff_time": None,
+            "landing_time": None,
             "flight_time": None,
             "landing_count": None,
             "flight_time_counter_end": None,
@@ -627,13 +628,34 @@ class TestAirframeConflictScoring:
     def test_time_close_none_is_never_close(self):
         assert _time_close(None, time(9, 0), 120) is False
 
+    def test_fallback_time_score_within_tight_band(self):
+        """diff <= offset - step (12 min diff, default 0.3h offset →
+        0.2h/12min tight band) → full point."""
+        assert _fallback_time_score(time(9, 12), time(9, 0), 0.3) == 1.0
+
+    def test_fallback_time_score_within_offset_band(self):
+        """diff <= offset (18 min diff, 0.3h offset) → 3/4 point."""
+        assert _fallback_time_score(time(9, 18), time(9, 0), 0.3) == 0.75
+
+    def test_fallback_time_score_within_loose_band(self):
+        """diff <= offset + step (24 min diff, 0.3h offset) → 1/2 point."""
+        assert _fallback_time_score(time(9, 24), time(9, 0), 0.3) == 0.5
+
+    def test_fallback_time_score_beyond_loose_band(self):
+        """diff > offset + step (30 min diff, 0.3h offset) → no credit."""
+        assert _fallback_time_score(time(9, 30), time(9, 0), 0.3) == 0.0
+
+    def test_fallback_time_score_none_is_zero(self):
+        assert _fallback_time_score(None, time(9, 0), 0.3) == 0.0
+        assert _fallback_time_score(time(9, 0), None, 0.3) == 0.0
+
     def test_score_full_match(self, app):
         with app.app_context():
             existing = self._entry(
                 departure_icao="EBOS",
                 arrival_icao="EBBR",
-                departure_time=time(9, 0),
-                arrival_time=time(10, 0),
+                takeoff_time=time(9, 0),
+                landing_time=time(10, 0),
                 flight_time=1.5,
                 landing_count=2,
                 flight_time_counter_end=101.6,
@@ -641,13 +663,13 @@ class TestAirframeConflictScoring:
             fields = {
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
-                "departure_time": time(9, 5),
-                "arrival_time": time(10, 10),
+                "takeoff_time": time(9, 5),
+                "landing_time": time(10, 10),
                 "flight_time": 1.5,
                 "landing_count": 2,
                 "flight_counter_end": 101.7,
             }
-            assert _score_airframe_candidate(fields, existing) == 7
+            assert _score_airframe_candidate(fields, existing, 0.3) == 7
 
     def test_score_zzzz_route_is_neutral_not_a_match(self, app):
         """Unmapped ICAO ('ZZZZ' on both sides) must not count as a match —
@@ -661,13 +683,13 @@ class TestAirframeConflictScoring:
                 "landing_count": 2,
             }
             # Only duration + landings — route is neutral, not counted.
-            assert _score_airframe_candidate(fields, existing) == 2
+            assert _score_airframe_candidate(fields, existing, 0.3) == 2
 
     def test_score_mismatched_route_not_counted(self, app):
         with app.app_context():
             existing = self._entry(departure_icao="EBOS")
             fields = {"departure_icao": "EBBR"}
-            assert _score_airframe_candidate(fields, existing) == 0
+            assert _score_airframe_candidate(fields, existing, 0.3) == 0
 
     def test_score_duration_outside_tolerance_not_counted(self, app):
         with app.app_context():
@@ -679,7 +701,7 @@ class TestAirframeConflictScoring:
                 "arrival_icao": "EBBR",
                 "flight_time": 5.0,
             }
-            assert _score_airframe_candidate(fields, existing) == 2
+            assert _score_airframe_candidate(fields, existing, 0.3) == 2
 
 
 class TestFindConflictingAirframeRows:
@@ -1001,7 +1023,14 @@ class TestAirframeImportReviewRoute:
         pilot-side identity/EASA data already on the row — the existing
         overwrite resolution already only ever touches airframe fields
         (_fields_to_flight_entry_kwargs has no EASA/identity keys), so this
-        locks that behaviour in for the placeholder-row case specifically."""
+        locks that behaviour in for the placeholder-row case specifically.
+
+        Also covers the departure_time/arrival_time (pilot-log-facing, set
+        by the earlier pilot import) vs takeoff_time/landing_time
+        (airframe-log-facing, set by this import) split: the airframe file
+        uses deliberately different clock times than the placeholder so a
+        regression that clobbers the wrong pair would show up as a value
+        mismatch, not just a missing assertion."""
         from decimal import Decimal
 
         uid, tid = _create_user_and_tenant(app, email="arv7b@example.com")
@@ -1029,7 +1058,7 @@ class TestAirframeImportReviewRoute:
         csv_text = (
             "Date,From,To,Departure,Arrival,Flight time,"
             "Flight counter start,Flight counter end\n"
-            "2020-05-01,EBOS,EBBR,09:00,10:30,1.5,500.0,501.5\n"
+            "2020-05-01,EBOS,EBBR,09:06,10:24,1.5,500.0,501.5\n"
         )
         _upload(client, acid, csv_text=csv_text)
         client.post(
@@ -1038,8 +1067,8 @@ class TestAirframeImportReviewRoute:
                 "mapping_date": "date",
                 "mapping_from": "departure_icao",
                 "mapping_to": "arrival_icao",
-                "mapping_departure": "departure_time",
-                "mapping_arrival": "arrival_time",
+                "mapping_departure": "takeoff_time",
+                "mapping_arrival": "landing_time",
                 "mapping_flight time": "flight_time",
                 "mapping_flight counter start": "flight_counter_start",
                 "mapping_flight counter end": "flight_counter_end",
@@ -1057,12 +1086,18 @@ class TestAirframeImportReviewRoute:
             # Filled in from the airframe side.
             assert float(entry.flight_time_counter_start) == 500.0
             assert float(entry.flight_time_counter_end) == 501.5
-            # Untouched — the pilot import's identity/EASA data survives.
+            assert entry.takeoff_time == time(9, 6)
+            assert entry.landing_time == time(10, 24)
+            # Untouched — the pilot import's identity/EASA data and its own
+            # departure_time/arrival_time (a different pair, different
+            # times) survive.
             assert entry.pic_user_id == uid
             assert entry.pic_name == "Jean Dupont"
             assert float(entry.single_pilot_se) == 1.5
             assert float(entry.function_pic) == 1.5
             assert entry.landings_day == 1
+            assert entry.departure_time == time(9, 0)
+            assert entry.arrival_time == time(10, 30)
             assert Flight.query.filter_by(aircraft_id=acid).count() == 1
 
     def test_resolve_new_creates_separate_entry(self, app, client):

@@ -29,8 +29,8 @@ AIRFRAME_TARGET_FIELDS: list[str] = [
     "crew_name",
     "departure_icao",
     "arrival_icao",
-    "departure_time",
-    "arrival_time",
+    "takeoff_time",
+    "landing_time",
     "flight_time",
     "flight_counter_start",
     "flight_counter_end",
@@ -57,14 +57,19 @@ _AIRFRAME_ALIASES: dict[str, str] = {
     "to": "arrival_icao",
     "arrival": "arrival_icao",
     "arr": "arrival_icao",
-    "time": "departure_time",  # first TIME → departure
-    "time_2": "arrival_time",  # second TIME → arrival
-    "departure time": "departure_time",
-    "off block": "departure_time",
-    "off-block": "departure_time",
-    "arrival time": "arrival_time",
-    "on block": "arrival_time",
-    "on-block": "arrival_time",
+    # Airframe-log block/flight times feed takeoff_time/landing_time
+    # (flight_time_counter_*/flight_time — airframe-log-facing), never
+    # departure_time/arrival_time (engine_time_counter_*/engine_time —
+    # pilot-log-facing; see models.py's Flight docstring). The two pairs
+    # are never defaulted from each other.
+    "time": "takeoff_time",  # first TIME → takeoff
+    "time_2": "landing_time",  # second TIME → landing
+    "departure time": "takeoff_time",
+    "off block": "takeoff_time",
+    "off-block": "takeoff_time",
+    "arrival time": "landing_time",
+    "on block": "landing_time",
+    "on-block": "landing_time",
     "flight time": "flight_time",
     "block time": "flight_time",
     "duration": "flight_time",
@@ -97,8 +102,8 @@ _AIRFRAME_ALIASES: dict[str, str] = {
 
 # Target field → parser (None = keep trimmed string)
 _AIRFRAME_PARSERS: dict[str, Any] = {
-    "departure_time": parse_time_value,
-    "arrival_time": parse_time_value,
+    "takeoff_time": parse_time_value,
+    "landing_time": parse_time_value,
     "flight_time": parse_duration_value,
     "flight_counter_start": parse_duration_value,
     "flight_counter_end": parse_duration_value,
@@ -185,8 +190,8 @@ def propose_airframe_mapping(
 _HINT_SAMPLE_ROWS = 25
 
 _TYPE_NAMES: dict[str, str] = {
-    "departure_time": "time",
-    "arrival_time": "time",
+    "takeoff_time": "time",
+    "landing_time": "time",
     "flight_time": "duration",
     "flight_counter_start": "counter value",
     "flight_counter_end": "counter value",
@@ -297,13 +302,18 @@ def _fields_to_flight_entry_kwargs(fields: dict[str, Any]) -> dict[str, Any]:
     """Map parsed row *fields* (mapping-target-field keys) to Flight
     constructor kwargs (model-column keys) — the two differ for the counter
     fields (flight_counter_end → flight_time_counter_end etc). Shared by the
-    normal insert path and the review step's overwrite/new-entry handling."""
+    normal insert path and the review step's overwrite/new-entry handling.
+
+    Only ever touches the airframe-facing takeoff_time/landing_time pair —
+    never departure_time/arrival_time, which is pilot-log-facing (fed by
+    pilots/logbook_import.py instead) and must not be clobbered when this
+    row is merged onto an existing placeholder created from that side."""
     return {
         "date": fields["date"],
         "departure_icao": fields.get("departure_icao") or "ZZZZ",
         "arrival_icao": fields.get("arrival_icao") or "ZZZZ",
-        "departure_time": fields.get("departure_time"),
-        "arrival_time": fields.get("arrival_time"),
+        "takeoff_time": fields.get("takeoff_time"),
+        "landing_time": fields.get("landing_time"),
         "flight_time": fields.get("flight_time"),
         "flight_time_counter_start": fields.get("flight_counter_start"),
         "flight_time_counter_end": fields.get("flight_counter_end"),
@@ -456,7 +466,7 @@ class AirframeConflictRow:
     row_num: int
     fields: dict[str, Any]
     crew_name: str | None
-    candidates: list[tuple[int, int]]  # (score, existing_flight_id), best first
+    candidates: list[tuple[float, int]]  # (score, existing_flight_id), best first
 
 
 def _time_close(t1: time | None, t2: time | None, tolerance_minutes: int) -> bool:
@@ -467,15 +477,58 @@ def _time_close(t1: time | None, t2: time | None, tolerance_minutes: int) -> boo
     return abs(m1 - m2) <= tolerance_minutes
 
 
-def _score_airframe_candidate(fields: dict[str, Any], existing: Any) -> int:
+# Graduated fallback thresholds, offset from the aircraft's own
+# flight_counter_offset (see _fallback_time_score below).
+_FALLBACK_TIME_SCORE_STEP_MINUTES = 6  # 0.1h
+
+
+def _fallback_time_score(
+    new_time: time | None, existing_ref_time: time | None, offset_hours: float
+) -> float:
+    """Graduated match score for a parsed takeoff/landing time against an
+    existing row's departure_time/arrival_time — used only when that
+    existing row has no takeoff_time/landing_time of its own to compare
+    against (e.g. a placeholder created by a pilot-logbook import, which
+    never sets those). Block-off/on and wheels-up/down aren't simultaneous,
+    so a flat tolerance would either miss real matches or accept unrelated
+    ones; graduated confidence bands centred on the aircraft's own
+    flight_counter_offset (the pilot's own estimate of the typical
+    engine-vs-flight-hours gap for this aircraft, reused here as a proxy for
+    the typical block-to-airborne time gap) approximate that without ever
+    writing one pair's value into the other.
+    """
+    if new_time is None or existing_ref_time is None:
+        return 0.0
+    new_minutes = new_time.hour * 60 + new_time.minute
+    ref_minutes = existing_ref_time.hour * 60 + existing_ref_time.minute
+    # Integer minutes throughout (like _time_close above) — comparing
+    # offset_hours * 60 as a float here would be liable to binary
+    # floating-point rounding (e.g. 0.3 - 0.1 != 0.2) right at the
+    # threshold boundaries.
+    diff_minutes = abs(new_minutes - ref_minutes)
+    offset_minutes = round(offset_hours * 60)
+    step = _FALLBACK_TIME_SCORE_STEP_MINUTES
+    if diff_minutes <= offset_minutes - step:
+        return 1.0
+    if diff_minutes <= offset_minutes:
+        return 0.75
+    if diff_minutes <= offset_minutes + step:
+        return 0.5
+    return 0.0
+
+
+def _score_airframe_candidate(
+    fields: dict[str, Any], existing: Any, offset_hours: float
+) -> float:
     """Score how likely *existing* (a Flight row) is the same real-world
     flight as *fields* (a freshly parsed row), across 7 points: departure,
-    arrival, departure time, arrival time, duration, landings, flight
+    arrival, takeoff time, landing time, duration, landings, flight
     counter reading. A point only counts toward the score if both sides
     have meaningful data for it — "ZZZZ" (unmapped ICAO) and missing values
-    are neutral, never a mismatch.
+    are neutral, never a mismatch. The two time points can be fractional —
+    see _fallback_time_score.
     """
-    score = 0
+    score: float = 0
 
     dep_new = (fields.get("departure_icao") or "ZZZZ").strip().upper()
     dep_old = (existing.departure_icao or "ZZZZ").strip().upper()
@@ -487,19 +540,25 @@ def _score_airframe_candidate(fields: dict[str, Any], existing: Any) -> int:
     if arr_new != "ZZZZ" and arr_old != "ZZZZ" and arr_new == arr_old:
         score += 1
 
-    if _time_close(
-        fields.get("departure_time"),
-        existing.departure_time,
-        _CANDIDATE_TIME_TOLERANCE_MINUTES,
-    ):
-        score += 1
+    takeoff_new = fields.get("takeoff_time")
+    if existing.takeoff_time is not None:
+        if _time_close(
+            takeoff_new, existing.takeoff_time, _CANDIDATE_TIME_TOLERANCE_MINUTES
+        ):
+            score += 1
+    else:
+        score += _fallback_time_score(
+            takeoff_new, existing.departure_time, offset_hours
+        )
 
-    if _time_close(
-        fields.get("arrival_time"),
-        existing.arrival_time,
-        _CANDIDATE_TIME_TOLERANCE_MINUTES,
-    ):
-        score += 1
+    landing_new = fields.get("landing_time")
+    if existing.landing_time is not None:
+        if _time_close(
+            landing_new, existing.landing_time, _CANDIDATE_TIME_TOLERANCE_MINUTES
+        ):
+            score += 1
+    else:
+        score += _fallback_time_score(landing_new, existing.arrival_time, offset_hours)
 
     dur_new = _num(fields.get("flight_time"))
     dur_old = _num(existing.flight_time)
@@ -543,7 +602,7 @@ def find_conflicting_airframe_rows(
     *exclude_row_nums* — typically rows already resolved in an earlier pass
     of this same review.
     """
-    from models import Flight  # pyright: ignore[reportMissingImports]
+    from models import Aircraft, Flight, db  # pyright: ignore[reportMissingImports]
 
     exclude_row_nums = exclude_row_nums or set()
     col_index = {col: i for i, col in enumerate(parsed.norm_cols)}
@@ -551,6 +610,8 @@ def find_conflicting_airframe_rows(
         (col_index[c] for c, t in mapping.items() if t == "date" and c in col_index),
         None,
     )
+    aircraft = db.session.get(Aircraft, aircraft_id)
+    offset_hours = float(aircraft.flight_counter_offset) if aircraft else 0.0
     existing_keys = _fetch_existing_dedup_keys(aircraft_id)
     conflicts: list[AirframeConflictRow] = []
 
@@ -573,7 +634,7 @@ def find_conflicting_airframe_rows(
         scored = [
             (score, existing.id)
             for existing in same_day
-            if (score := _score_airframe_candidate(fields, existing))
+            if (score := _score_airframe_candidate(fields, existing, offset_hours))
             >= _CANDIDATE_MIN_SCORE
         ]
         if scored:

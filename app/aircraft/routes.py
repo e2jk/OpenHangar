@@ -1937,6 +1937,7 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
     # Duplicate detection: find existing Flight records that overlap each segment.
     from datetime import datetime as _dt
     from datetime import timedelta as _td
+    from functools import partial
 
     from flights.airframe_import import (
         _CANDIDATE_MIN_SCORE,
@@ -1978,11 +1979,16 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
         # docs/backlog.md's GPS-vs-CSV reconciliation note). Reuses the
         # exact same near-match scorer the airframe-import review already
         # uses, rather than a second implementation.
+        # takeoff_time/landing_time (airframe-log-facing), not departure_time/
+        # arrival_time (pilot-log-facing) — a GPS track's block times belong
+        # to the aircraft's own flight-time record, matching what
+        # _score_airframe_candidate now compares against on the existing-row
+        # side too. See models.py's Flight docstring.
         fields = {
             "departure_icao": seg["departure_icao"],
             "arrival_icao": seg["arrival_icao"],
-            "departure_time": block_off.time(),
-            "arrival_time": block_on.time(),
+            "takeoff_time": block_off.time(),
+            "landing_time": block_on.time(),
             "flight_time": seg["flight_time_rounded_h"],
             "landing_count": seg["landing_count"],
         }
@@ -1996,7 +2002,12 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
             Flight.block_off_utc.is_(None),
         ).all()
         candidates = score_gps_candidates(
-            fields, same_day, _score_airframe_candidate, _CANDIDATE_MIN_SCORE
+            fields,
+            same_day,
+            partial(
+                _score_airframe_candidate, offset_hours=float(ac.flight_counter_offset)
+            ),
+            _CANDIDATE_MIN_SCORE,
         )
         if candidates:
             seg["matched_flight_id"] = candidates[0].id

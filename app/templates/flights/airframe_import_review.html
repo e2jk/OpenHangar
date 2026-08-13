@@ -23,8 +23,8 @@
   {% set field_labels = [
     ('departure_icao', 'departure_icao', _('Departure')),
     ('arrival_icao', 'arrival_icao', _('Arrival')),
-    ('departure_time', 'departure_time', _('Departure time')),
-    ('arrival_time', 'arrival_time', _('Arrival time')),
+    ('takeoff_time', 'takeoff_time', _('Takeoff')),
+    ('landing_time', 'landing_time', _('Landing')),
     ('landing_count', 'landing_count', _('Landings')),
     ('passenger_count', 'passenger_count', _('Passengers')),
     ('flight_time_counter_start', 'flight_counter_start', _('Flight counter start')),
@@ -74,7 +74,7 @@
                 {% for model_field, source_field, label in field_labels %}
                 {% set old_val = entry[model_field] %}
                 {% set new_val = row.fields.get(source_field) %}
-                {% if model_field in ('departure_time', 'arrival_time') %}
+                {% if model_field in ('takeoff_time', 'landing_time') %}
                   {% set old_val = old_val.strftime('%H:%M') if old_val else none %}
                   {% set new_val = new_val.strftime('%H:%M') if new_val else none %}
                 {% endif %}
