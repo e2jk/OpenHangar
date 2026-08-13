@@ -4,7 +4,7 @@ import io
 import json
 import os
 import tempfile
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, time, timedelta
 from textwrap import dedent
 from unittest.mock import patch
 
@@ -17,6 +17,7 @@ from aircraft.gps_import import (  # pyright: ignore[reportMissingImports]
     _haversine_km,
     _load_airports,
     _reset_airports_cache,
+    _score_gps_candidate,
     _split_into_raw_groups,
     build_geojson,
     classify_track,
@@ -31,6 +32,7 @@ from aircraft.gps_import import (  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AircraftGpsImportBatch,
+    Flight,
     Role,
     Tenant,
     TenantUser,
@@ -2072,6 +2074,96 @@ class TestGpsCandidateStr:
         assert "09:00" in s
         assert "10:30" in s
         assert "1.5 h" in s
+
+
+class TestScoreGpsCandidate:
+    """Unit coverage of _score_gps_candidate's time matching — a GPS track's
+    single recorded block_off/block_on instant is compared against whichever
+    of the existing row's departure_time/takeoff_time (or landing_time/
+    arrival_time) are set, widened by offset_ring_step_minutes(offset_hours)
+    on each side, since the track can start before engine start (setting up
+    a flight plan on a tablet) or keep running a little after landing."""
+
+    def _entry(self, **kw):
+        defaults: dict = {
+            "aircraft_id": 1,
+            "departure_icao": "ZZZZ",
+            "arrival_icao": "ZZZZ",
+            "departure_time": None,
+            "arrival_time": None,
+            "takeoff_time": None,
+            "landing_time": None,
+            "flight_time": None,
+            "landing_count": None,
+            "flight_time_counter_end": None,
+        }
+        defaults.update(kw)
+        return Flight(**defaults)
+
+    def test_credit_spans_both_departure_and_takeoff_time(self, app):
+        """GPS recording starting anywhere from departure_time to
+        takeoff_time — not just close to one of them — scores full credit."""
+        with app.app_context():
+            existing = self._entry(departure_time=time(9, 0), takeoff_time=time(9, 18))
+            for gps_time in (time(9, 0), time(9, 9), time(9, 18)):
+                assert (
+                    _score_gps_candidate({"takeoff_time": gps_time}, existing, 0.3)
+                    == 1.0
+                )
+
+    def test_credit_extends_before_departure_time(self, app):
+        """The exact scenario reported: GPS recording starts before engine
+        start (setting up a flight plan on a tablet) — still full credit
+        within the widened window before departure_time."""
+        with app.app_context():
+            existing = self._entry(departure_time=time(9, 0), takeoff_time=time(9, 18))
+            assert (
+                _score_gps_candidate({"takeoff_time": time(8, 54)}, existing, 0.3)
+                == 1.0
+            )
+
+    def test_single_known_edge_still_widened(self, app):
+        with app.app_context():
+            existing = self._entry(takeoff_time=time(9, 0))
+            assert (
+                _score_gps_candidate({"takeoff_time": time(8, 54)}, existing, 0.3)
+                == 1.0
+            )
+            assert (
+                _score_gps_candidate({"takeoff_time": time(8, 48)}, existing, 0.3)
+                == 0.75
+            )
+
+    def test_landing_side_spans_landing_and_arrival_time(self, app):
+        with app.app_context():
+            existing = self._entry(landing_time=time(10, 0), arrival_time=time(10, 18))
+            assert (
+                _score_gps_candidate({"landing_time": time(10, 24)}, existing, 0.3)
+                == 1.0
+            )
+
+    def test_no_existing_time_scores_zero_for_that_dimension(self, app):
+        with app.app_context():
+            existing = self._entry()
+            assert (
+                _score_gps_candidate({"takeoff_time": time(9, 0)}, existing, 0.3) == 0.0
+            )
+
+    def test_reuses_non_time_signals(self, app):
+        """Route/duration/landings/counter still count via
+        _score_airframe_non_time_signals — not reimplemented here."""
+        with app.app_context():
+            existing = self._entry(
+                departure_icao="EBOS", arrival_icao="EBBR", flight_time=1.5
+            )
+            fields = {
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time": 1.5,
+            }
+            # departure(1) + arrival(1) + duration(1) — no time-of-day data
+            # on either side, no landing_count/counter in fields.
+            assert _score_gps_candidate(fields, existing, 0.3) == 3
 
 
 class TestFuzzyGpsMatchAircraftSide:

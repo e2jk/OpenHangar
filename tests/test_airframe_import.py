@@ -13,9 +13,7 @@ from io import BytesIO
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from flights.airframe_import import (  # pyright: ignore[reportMissingImports]
     _clean_icao,
-    _fallback_time_score,
     _score_airframe_candidate,
-    _time_close,
     airframe_type_hints,
     find_conflicting_airframe_rows,
     propose_airframe_mapping,
@@ -619,36 +617,6 @@ class TestAirframeConflictScoring:
         defaults.update(kw)
         return Flight(**defaults)
 
-    def test_time_close_within_tolerance(self):
-        assert _time_close(time(9, 30), time(9, 45), 120) is True
-
-    def test_time_close_outside_tolerance(self):
-        assert _time_close(time(9, 0), time(20, 0), 120) is False
-
-    def test_time_close_none_is_never_close(self):
-        assert _time_close(None, time(9, 0), 120) is False
-
-    def test_fallback_time_score_within_tight_band(self):
-        """diff <= offset - step (12 min diff, default 0.3h offset →
-        0.2h/12min tight band) → full point."""
-        assert _fallback_time_score(time(9, 12), time(9, 0), 0.3) == 1.0
-
-    def test_fallback_time_score_within_offset_band(self):
-        """diff <= offset (18 min diff, 0.3h offset) → 3/4 point."""
-        assert _fallback_time_score(time(9, 18), time(9, 0), 0.3) == 0.75
-
-    def test_fallback_time_score_within_loose_band(self):
-        """diff <= offset + step (24 min diff, 0.3h offset) → 1/2 point."""
-        assert _fallback_time_score(time(9, 24), time(9, 0), 0.3) == 0.5
-
-    def test_fallback_time_score_beyond_loose_band(self):
-        """diff > offset + step (30 min diff, 0.3h offset) → no credit."""
-        assert _fallback_time_score(time(9, 30), time(9, 0), 0.3) == 0.0
-
-    def test_fallback_time_score_none_is_zero(self):
-        assert _fallback_time_score(None, time(9, 0), 0.3) == 0.0
-        assert _fallback_time_score(time(9, 0), None, 0.3) == 0.0
-
     def test_score_full_match(self, app):
         with app.app_context():
             existing = self._entry(
@@ -663,13 +631,85 @@ class TestAirframeConflictScoring:
             fields = {
                 "departure_icao": "EBOS",
                 "arrival_icao": "EBBR",
-                "takeoff_time": time(9, 5),
-                "landing_time": time(10, 10),
+                "takeoff_time": time(9, 0),
+                "landing_time": time(10, 0),
                 "flight_time": 1.5,
                 "landing_count": 2,
                 "flight_counter_end": 101.7,
             }
             assert _score_airframe_candidate(fields, existing, 0.3) == 7
+
+    def test_score_same_pair_graduated_tiers(self, app):
+        """existing.takeoff_time set (a previous airframe import) — scored
+        tight (SAME_PAIR_STEP_MINUTES=5) against the new row's takeoff_time,
+        not the offset-derived band used for the cross-pair fallback below."""
+        with app.app_context():
+            existing = self._entry(takeoff_time=time(9, 0))
+            assert (
+                _score_airframe_candidate({"takeoff_time": time(9, 0)}, existing, 0.3)
+                == 1.0
+            )
+            assert (
+                _score_airframe_candidate({"takeoff_time": time(9, 5)}, existing, 0.3)
+                == 0.75
+            )
+            assert (
+                _score_airframe_candidate({"takeoff_time": time(9, 10)}, existing, 0.3)
+                == 0.5
+            )
+            assert (
+                _score_airframe_candidate({"takeoff_time": time(9, 11)}, existing, 0.3)
+                == 0.0
+            )
+
+    def test_score_cross_pair_fallback_centred_on_offset(self, app):
+        """existing.takeoff_time absent, existing.departure_time set (a
+        pilot-import placeholder) — scored against departure_time shifted
+        by the aircraft's flight_counter_offset (0.3h → centre at +18min,
+        ring width 6min), not against departure_time itself."""
+        with app.app_context():
+            existing = self._entry(departure_time=time(9, 0), takeoff_time=None)
+            assert (
+                _score_airframe_candidate({"takeoff_time": time(9, 18)}, existing, 0.3)
+                == 1.0
+            )
+            assert (
+                _score_airframe_candidate({"takeoff_time": time(9, 24)}, existing, 0.3)
+                == 0.75
+            )
+            assert (
+                _score_airframe_candidate({"takeoff_time": time(9, 30)}, existing, 0.3)
+                == 0.5
+            )
+            assert (
+                _score_airframe_candidate({"takeoff_time": time(9, 31)}, existing, 0.3)
+                == 0.0
+            )
+            # Same as departure_time itself (0 diff from the centre would
+            # be 9:18, so departure_time=9:00 is 18 min away — outside even
+            # the loose ring at the default 0.3h offset).
+            assert (
+                _score_airframe_candidate({"takeoff_time": time(9, 0)}, existing, 0.3)
+                == 0.0
+            )
+
+    def test_score_landing_cross_pair_fallback_shifts_earlier(self, app):
+        """landing_time (wheels-down) is expected *before* arrival_time
+        (block-on) — the opposite direction from takeoff_time/departure_time."""
+        with app.app_context():
+            existing = self._entry(arrival_time=time(10, 30), landing_time=None)
+            assert (
+                _score_airframe_candidate({"landing_time": time(10, 12)}, existing, 0.3)
+                == 1.0
+            )
+
+    def test_score_no_existing_time_at_all_scores_zero_for_that_dimension(self, app):
+        with app.app_context():
+            existing = self._entry()
+            assert (
+                _score_airframe_candidate({"takeoff_time": time(9, 0)}, existing, 0.3)
+                == 0.0
+            )
 
     def test_score_zzzz_route_is_neutral_not_a_match(self, app):
         """Unmapped ICAO ('ZZZZ' on both sides) must not count as a match —
