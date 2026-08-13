@@ -1,6 +1,6 @@
 import enum
 import secrets
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import ClassVar
 
 from flask_sqlalchemy import SQLAlchemy  # pyright: ignore[reportMissingImports]
@@ -371,7 +371,11 @@ class Aircraft(db.Model):
     # Oil consumption warning threshold in L/h; null = no warning on the
     # cost dashboard.
     oil_warning_lph = db.Column(db.Numeric(4, 2), nullable=True)
+    # Both insurance_expiry and arc_expiry are synced caches, kept in step with
+    # the currently-active (non-superseded) Document of the matching doc_type
+    # by app/documents/routes.py — not directly user-editable.
     insurance_expiry = db.Column(db.Date, nullable=True)
+    arc_expiry = db.Column(db.Date, nullable=True)
     # Phase 30: GPS import time rounding preference
     logbook_time_precision = db.Column(
         db.String(16), nullable=False, default="tenth_hour"
@@ -578,26 +582,38 @@ class Aircraft(db.Model):
 
     @property
     def is_grounded(self) -> bool:
-        """True when any unresolved grounding snag exists, or insurance has expired."""
+        """True when any unresolved grounding snag exists, or insurance/the
+        ARC has expired."""
         from datetime import date as _date
 
-        if self.insurance_expiry is not None and self.insurance_expiry < _date.today():
+        today = _date.today()
+        if self.insurance_expiry is not None and self.insurance_expiry < today:
+            return True
+        if self.arc_expiry is not None and self.arc_expiry < today:
             return True
         return any(s.is_grounding and s.is_open for s in self.snags)
 
-    @property
-    def insurance_status(self) -> str:
-        """Return 'expired', 'expiring_soon' (≤30 days), or 'ok'."""
-        from datetime import date as _date
-
-        if self.insurance_expiry is None:
+    @staticmethod
+    def _expiry_status(expiry: date | None) -> str:
+        """Return 'expired', 'expiring_soon' (≤30 days), or 'ok' for a given date."""
+        if expiry is None:
             return "ok"
-        delta = (self.insurance_expiry - _date.today()).days
+        delta = (expiry - date.today()).days
         if delta < 0:
             return "expired"
         if delta <= 30:
             return "expiring_soon"
         return "ok"
+
+    @property
+    def insurance_status(self) -> str:
+        """Return 'expired', 'expiring_soon' (≤30 days), or 'ok'."""
+        return self._expiry_status(self.insurance_expiry)
+
+    @property
+    def arc_status(self) -> str:
+        """Return 'expired', 'expiring_soon' (≤30 days), or 'ok'."""
+        return self._expiry_status(self.arc_expiry)
 
 
 class AircraftPhoto(db.Model):
@@ -1621,6 +1637,7 @@ class DocType:
     LICENSE = "license"
     MEDICAL = "medical"
     INSURANCE_CERT = "insurance_certificate"
+    ARC = "arc_certificate"
 
 
 class DocCategory:
@@ -2476,6 +2493,7 @@ class NotificationType:
     MAINTENANCE_DUE_SOON = "maintenance_due_soon"
     MAINTENANCE_OVERDUE = "maintenance_overdue"
     INSURANCE_EXPIRING = "insurance_expiring"
+    ARC_EXPIRY = "arc_expiry"
     MEDICAL_EXPIRING = "medical_expiring"
     SEP_RATING_EXPIRING = "sep_rating_expiring"
     DOCUMENT_EXPIRING = "document_expiring"
@@ -2495,6 +2513,7 @@ class NotificationType:
         MAINTENANCE_DUE_SOON,
         MAINTENANCE_OVERDUE,
         INSURANCE_EXPIRING,
+        ARC_EXPIRY,
         MEDICAL_EXPIRING,
         SEP_RATING_EXPIRING,
         DOCUMENT_EXPIRING,
@@ -2516,6 +2535,7 @@ class NotificationType:
         MAINTENANCE_DUE_SOON: {"enabled": True, "threshold_days": 30},
         MAINTENANCE_OVERDUE: {"enabled": True, "threshold_days": None},
         INSURANCE_EXPIRING: {"enabled": True, "threshold_days": 30},
+        ARC_EXPIRY: {"enabled": True, "threshold_days": 60},
         MEDICAL_EXPIRING: {"enabled": True, "threshold_days": 60},
         SEP_RATING_EXPIRING: {"enabled": True, "threshold_days": 60},
         DOCUMENT_EXPIRING: {"enabled": True, "threshold_days": 30},
@@ -2538,6 +2558,7 @@ class NotificationType:
         MAINTENANCE_DUE_SOON: ["is_owner", "is_maint"],
         MAINTENANCE_OVERDUE: ["is_owner", "is_maint"],
         INSURANCE_EXPIRING: ["is_owner"],
+        ARC_EXPIRY: ["is_owner"],
         MEDICAL_EXPIRING: ["is_pilot"],
         SEP_RATING_EXPIRING: ["is_pilot"],
         DOCUMENT_EXPIRING: ["is_owner", "is_maint"],
@@ -2554,6 +2575,7 @@ class NotificationType:
     HAS_THRESHOLD: ClassVar[set[str]] = {
         MAINTENANCE_DUE_SOON,
         INSURANCE_EXPIRING,
+        ARC_EXPIRY,
         MEDICAL_EXPIRING,
         SEP_RATING_EXPIRING,
         DOCUMENT_EXPIRING,

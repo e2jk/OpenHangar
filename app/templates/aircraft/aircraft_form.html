@@ -111,12 +111,6 @@
                data-with-density="{{ _('Used for mass & balance — density: __DENSITY__ kg/L.') }}"
                data-plain="{{ _('Used for mass & balance.') }}">{{ _('Used for mass & balance — density: %(density)s kg/L.', density='0.72') }}</div>
         </div>
-        <div class="col-sm-4">
-          <label for="insurance_expiry" class="form-label">{{ _('Insurance expiry') }}</label>
-          <input type="date" class="form-control" id="insurance_expiry" name="insurance_expiry"
-                 value="{{ aircraft.insurance_expiry.isoformat() if aircraft and aircraft.insurance_expiry else '' }}">
-          <div class="form-text">{{ _('Aircraft shown as grounded when expired, expiring soon within 30 days.') }}</div>
-        </div>
       </div>
 
       <div class="row g-3 mb-4">

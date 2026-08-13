@@ -200,6 +200,19 @@ class TestComputeAircraftStatuses:
             result = compute_aircraft_statuses([ac], [], {})
             assert result[1] == "grounded"
 
+    def test_arc_expired_returns_grounded(self, app):
+        with app.app_context():
+            ac = Aircraft(
+                id=1,
+                tenant_id=1,
+                registration="OO-X",
+                make="X",
+                model="X",
+                arc_expiry=date.today() - timedelta(days=1),
+            )
+            result = compute_aircraft_statuses([ac], [], {})
+            assert result[1] == "grounded"
+
     def test_insurance_ok_does_not_affect_status(self, app):
         with app.app_context():
             ac = Aircraft(

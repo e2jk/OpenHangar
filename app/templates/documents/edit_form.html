@@ -54,6 +54,20 @@
             </select>
           </div>
 
+          {% if not doc.component_id %}
+          <div class="mb-3">
+            <label for="doc_type" class="form-label">{{ _('Document type') }}</label>
+            <select class="form-select" id="doc_type" name="doc_type">
+              <option value="">{{ _('— none —') }}</option>
+              {% for value, label in doc_types %}
+              <option value="{{ value }}" {% if doc.doc_type == value %}selected{% endif %}>
+                {{ label }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+
           <div class="mb-3">
             <label for="valid_until" class="form-label">{{ _('Valid until') }}</label>
             <input type="date" class="form-control" id="valid_until" name="valid_until"

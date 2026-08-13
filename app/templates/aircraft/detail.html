@@ -38,6 +38,9 @@
       {% if aircraft.insurance_status == 'expired' %}
       {{ _('Insurance expired on %(date)s.', date=aircraft.insurance_expiry.strftime('%Y-%m-%d')) }}
       {% endif %}
+      {% if aircraft.arc_status == 'expired' %}
+      {{ _('ARC expired on %(date)s.', date=aircraft.arc_expiry.strftime('%Y-%m-%d')) }}
+      {% endif %}
       {% set grounding_snags = open_snags | selectattr('is_grounding') | list %}
       {% if grounding_snags %}
       {{ ngettext('There is %(n)s unresolved grounding snag.', 'There are %(n)s unresolved grounding snags.', grounding_snags | length, n=grounding_snags | length) }}
@@ -691,13 +694,15 @@
   {% set ins = aircraft.insurance_status %}
   <div class="d-flex align-items-center justify-content-between mb-3" id="insurance-section">
     <h2 class="section-title mb-0"><i class="bi bi-shield me-2"></i>{{ _('Insurance') }}</h2>
-    <div class="d-flex gap-2 flex-wrap">
-      {% if is_owner %}
+    {% if is_owner %}
+    <div class="d-flex gap-2 flex-wrap align-items-center">
       <form method="post"
             action="{{ url_for('documents.upload_insurance_cert', aircraft_id=aircraft.id) }}"
             enctype="multipart/form-data"
             hx-swap="innerHTML show:none" data-scroll-anchor="insurance-section"
-            class="d-inline">
+            class="d-flex gap-2 align-items-center">
+        <input type="date" name="valid_until" class="form-control form-control-sm w-auto" required
+               aria-label="{{ _('New expiry date') }}">
         <label class="btn btn-ac-primary btn-sm mb-0 oh-cursor-pointer">
           <i class="bi bi-upload me-1"></i>{{ _('Upload cert') }}
           <input type="file" name="file"
@@ -705,12 +710,8 @@
                  class="d-none" data-auto-submit>
         </label>
       </form>
-      <a href="{{ url_for('aircraft.edit_aircraft', aircraft_id=aircraft.id) }}"
-         class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
-      </a>
-      {% endif %}
     </div>
+    {% endif %}
   </div>
   <div class="ac-form-card p-3 mb-3">
     <p class="mb-0 oh-fs-09">
@@ -738,6 +739,65 @@
     {% endif %}
   </div>
   {% endif %}
+  {% endmacro %}
+
+  {# ── Airworthiness Review Certificate (ARC) ────────────────────────────── #}
+  {% macro arc_section() %}
+  {% if aircraft.arc_expiry %}
+  {% set arc = aircraft.arc_status %}
+  <div class="d-flex align-items-center justify-content-between mb-3" id="arc-section">
+    <h2 class="section-title mb-0"><i class="bi bi-patch-check me-2"></i>{{ _('Airworthiness Review Certificate (ARC)') }}</h2>
+    {% if is_owner %}
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+      <form method="post"
+            action="{{ url_for('documents.upload_arc_cert', aircraft_id=aircraft.id) }}"
+            enctype="multipart/form-data"
+            hx-swap="innerHTML show:none" data-scroll-anchor="arc-section"
+            class="d-flex gap-2 align-items-center">
+        <input type="date" name="valid_until" class="form-control form-control-sm w-auto" required
+               aria-label="{{ _('New expiry date') }}">
+        <label class="btn btn-ac-primary btn-sm mb-0 oh-cursor-pointer">
+          <i class="bi bi-upload me-1"></i>{{ _('Upload cert') }}
+          <input type="file" name="file"
+                 accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+                 class="d-none" data-auto-submit>
+        </label>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+  <div class="ac-form-card p-3 mb-3">
+    <p class="mb-0 oh-fs-09">
+      {% if arc == 'expired' %}
+      <span class="ac-status-badge ac-status-overdue">
+        <i class="bi bi-patch-exclamation me-1"></i>{{ _('ARC expired') }} — {{ aircraft.arc_expiry.strftime('%Y-%m-%d') }}
+      </span>
+      {% elif arc == 'expiring_soon' %}
+      <span class="ac-status-badge ac-status-warn">
+        <i class="bi bi-patch-exclamation me-1"></i>{{ _('ARC expires') }} {{ aircraft.arc_expiry.strftime('%Y-%m-%d') }}
+      </span>
+      {% else %}
+      <span class="ac-status-badge ac-status-ok">
+        <i class="bi bi-patch-check me-1"></i>{{ _('ARC valid until') }} {{ aircraft.arc_expiry.strftime('%Y-%m-%d') }}
+      </span>
+      {% endif %}
+    </p>
+    {% if active_arc_cert %}
+    <div class="mt-2 oh-fs-09">
+      <a href="{{ url_for('flights.serve_upload', filename=active_arc_cert.filename) }}"
+         class="btn btn-ac-secondary btn-sm" target="_blank">
+        <i class="bi bi-file-earmark-text me-1"></i>{{ _('View certificate') }}
+      </a>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% endmacro %}
+
+  {# ── Insurance + ARC, stacked (shared column slot) ──────────────────────── #}
+  {% macro compliance_section() %}
+  {{ insurance_section() }}
+  {{ arc_section() }}
   {% endmacro %}
 
   {# ── Documents ─────────────────────────────────────────────────────────── #}
@@ -894,11 +954,11 @@
   {% endif %}
   {% endmacro %}
 
-  {# ── Insurance + Documents paired row (owner / maintenance / viewer) ──── #}
+  {# ── Insurance/ARC + Documents paired row (owner / maintenance / viewer) ─ #}
   {% macro insurance_documents_row() %}
   <div class="row g-4 mt-5">
-    {% if aircraft.insurance_expiry %}
-    <div class="col-lg-6">{{ insurance_section() }}</div>
+    {% if aircraft.insurance_expiry or aircraft.arc_expiry %}
+    <div class="col-lg-6">{{ compliance_section() }}</div>
     <div class="col-lg-6">{{ documents_section() }}</div>
     {% else %}
     <div class="col-12">{{ documents_section() }}</div>
@@ -1088,9 +1148,9 @@
   {# ──────────────────────────── Pilot / Renter / Instructor / Student ─────── #}
 
   <div class="row g-4 mt-5">
-    <div class="{% if aircraft.insurance_expiry %}col-lg-6{% else %}col-12{% endif %}">{{ snags_section() }}</div>
-    {% if aircraft.insurance_expiry %}
-    <div class="col-lg-6">{{ insurance_section() }}</div>
+    <div class="{% if aircraft.insurance_expiry or aircraft.arc_expiry %}col-lg-6{% else %}col-12{% endif %}">{{ snags_section() }}</div>
+    {% if aircraft.insurance_expiry or aircraft.arc_expiry %}
+    <div class="col-lg-6">{{ compliance_section() }}</div>
     {% endif %}
   </div>
 

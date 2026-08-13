@@ -183,6 +183,21 @@ Each aircraft has an **Airworthiness** page tracking Airworthiness Directives, S
 
 ![Airworthiness tracker](screenshots/airworthiness.png)
 
+### Insurance and the Airworthiness Review Certificate (ARC)
+
+An aircraft's insurance and ARC status are both driven by documents, not by a
+manually-typed date: upload the current insurance certificate or ARC (via the
+aircraft's Documents section, or the quick "Upload cert" button in its
+Insurance/ARC panel) with a **Valid until** date, and OpenHangar tracks the
+expiry from there. Uploading a new certificate of the same type automatically
+supersedes the previous one and becomes the one driving the aircraft's status.
+
+A lapsed insurance certificate or ARC marks the aircraft **grounded**, exactly
+like an open grounding snag — reservations warn or block the same way, and
+both send an "expiring soon" reminder email (default 30 days ahead for
+insurance, 60 days for the ARC; configurable per user under **Configuration →
+Notifications**).
+
 ### Understanding operating costs
 
 The **Cost dashboard** (linked from the aircraft's Expenses section) splits expenses into fixed and operating categories and divides them by the hours actually flown, giving the true all-in hourly (wet) rate over a selectable period.
@@ -195,7 +210,7 @@ When rental is enabled in your usage profile, each aircraft has a **booking cale
 
 ![Reservations calendar](screenshots/reservations_calendar.png)
 
-Creating or confirming a reservation on a **grounded** aircraft (an open grounding snag) shows a warning; a per-tenant setting can escalate this to a hard block for renters — owners are always allowed to proceed, since they may be booking the aircraft for the shop visit itself. Owners can also block out a period for planned maintenance downtime (e.g. an annual inspection) directly from the calendar; it conflicts with confirmed reservations the same way another confirmed reservation would.
+Creating or confirming a reservation on a **grounded** aircraft (an open grounding snag, expired insurance, or an expired ARC) shows a warning; a per-tenant setting can escalate this to a hard block for renters — owners are always allowed to proceed, since they may be booking the aircraft for the shop visit itself. Owners can also block out a period for planned maintenance downtime (e.g. an annual inspection) directly from the calendar; it conflicts with confirmed reservations the same way another confirmed reservation would.
 
 ### Renting your aircraft
 

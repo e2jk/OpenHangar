@@ -24,6 +24,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
 )
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+from flask_babel import lazy_gettext as _l
 from flask_babel import ngettext
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
@@ -68,9 +69,23 @@ _ALLOWED_EXTS = {
 }
 
 _PILOT_DOC_TYPES = [
-    (DocType.LICENSE, "Licence"),
-    (DocType.MEDICAL, "Medical certificate"),
+    (DocType.LICENSE, _l("Licence")),
+    (DocType.MEDICAL, _l("Medical certificate")),
 ]
+
+_AIRCRAFT_DOC_TYPES = [
+    (DocType.INSURANCE_CERT, _l("Insurance certificate")),
+    (DocType.ARC, _l("Airworthiness Review Certificate (ARC)")),
+]
+
+# doc_type -> Aircraft attribute it drives. Aircraft.insurance_expiry/arc_expiry
+# are synced caches, not directly user-editable — see the comment on those
+# columns in models.py. Kept in step by _recompute_expiry_field() below
+# whenever a Document of one of these types is uploaded, edited, or deleted.
+_EXPIRY_DRIVING_DOC_TYPES: dict[str, str] = {
+    DocType.INSURANCE_CERT: "insurance_expiry",
+    DocType.ARC: "arc_expiry",
+}
 
 # Human-readable labels for each DocCategory value
 _CATEGORY_LABELS: dict[str, str] = {
@@ -112,6 +127,28 @@ def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
     ):
         abort(404)
     return ac
+
+
+def _recompute_expiry_field(ac: Aircraft, doc_type: str | None) -> None:
+    """Keep Aircraft.insurance_expiry/arc_expiry in step with whichever
+    Document of that doc_type is currently active (non-superseded) for this
+    aircraft. Called after any create/edit/delete that could change which
+    document is active — safe to call for any doc_type, a no-op for ones
+    that don't drive an Aircraft field."""
+    field = _EXPIRY_DRIVING_DOC_TYPES.get(doc_type or "")
+    if not field:
+        return
+    active = (
+        Document.query.filter_by(
+            aircraft_id=ac.id,
+            doc_type=doc_type,
+            superseded_by_id=None,
+            component_id=None,
+        )
+        .order_by(Document.uploaded_at.desc())
+        .first()
+    )
+    setattr(ac, field, active.valid_until if active else None)
 
 
 def _get_aircraft_document_or_404(aircraft: Aircraft, document_id: int) -> Document:
@@ -391,7 +428,7 @@ def upload_document(aircraft_id: int) -> ResponseReturnValue:
                 "documents/upload_form.html",
                 aircraft=ac,
                 component=component,
-                doc_types=_PILOT_DOC_TYPES,
+                doc_types=_AIRCRAFT_DOC_TYPES,
                 categories=list(_CATEGORY_LABELS.items()),
             )
 
@@ -430,22 +467,26 @@ def upload_document(aircraft_id: int) -> ResponseReturnValue:
         )
         db.session.add(doc)
 
-        # Insurance document with an expiry date: auto-update the aircraft's
-        # insurance_expiry (if the new date is later) and make this document
-        # the active certificate so the "View certificate" link appears.
-        if category == DocCategory.INSURANCE and valid_until and not component:
+        # Insurance document without an explicit type: infer it from the
+        # category for backward compatibility with the category-only flow.
+        if doc.doc_type is None and category == DocCategory.INSURANCE and not component:
             doc.doc_type = DocType.INSURANCE_CERT
-            if ac.insurance_expiry is None or valid_until > ac.insurance_expiry:
-                ac.insurance_expiry = valid_until
+
+        # A new insurance/ARC document becomes the active certificate for its
+        # type — supersede whichever one was active before it, then recompute
+        # the aircraft's synced insurance_expiry/arc_expiry from what's now
+        # active (see _recompute_expiry_field).
+        if doc.doc_type in _EXPIRY_DRIVING_DOC_TYPES and not component:
             db.session.flush()
             prev_cert = Document.query.filter(
                 Document.aircraft_id == ac.id,
-                Document.doc_type == DocType.INSURANCE_CERT,
+                Document.doc_type == doc.doc_type,
                 Document.superseded_by_id.is_(None),
                 Document.id != doc.id,
             ).first()
             if prev_cert:
                 prev_cert.superseded_by_id = doc.id
+            _recompute_expiry_field(ac, doc.doc_type)
 
         db.session.commit()
         activity(
@@ -462,7 +503,7 @@ def upload_document(aircraft_id: int) -> ResponseReturnValue:
         "documents/upload_form.html",
         aircraft=ac,
         component=component,
-        doc_types=_PILOT_DOC_TYPES,
+        doc_types=_AIRCRAFT_DOC_TYPES,
         categories=list(_CATEGORY_LABELS.items()),
     )
 
@@ -486,6 +527,12 @@ def edit_document(aircraft_id: int, document_id: int) -> ResponseReturnValue:
         category = request.form.get("category") or None
         if category and category not in DocCategory.ALL:
             category = None
+
+        old_doc_type = doc.doc_type
+        if not doc.component_id:
+            new_doc_type = request.form.get("doc_type") or None
+            if new_doc_type in dict(_AIRCRAFT_DOC_TYPES) or new_doc_type is None:
+                doc.doc_type = new_doc_type
 
         old_category = doc.category
         doc.category = category
@@ -513,6 +560,12 @@ def edit_document(aircraft_id: int, document_id: int) -> ResponseReturnValue:
                 doc.valid_until = _date.fromisoformat(valid_until_str)
             except ValueError as exc:
                 log.debug("Invalid valid_until date: %s", exc)
+
+        # Recompute whichever Aircraft field(s) this document could affect —
+        # both its old and new doc_type, in case the type itself changed.
+        _recompute_expiry_field(ac, old_doc_type)
+        _recompute_expiry_field(ac, doc.doc_type)
+
         db.session.commit()
         flash(_("Document updated."), "success")
         return redirect(url_for("documents.list_documents", aircraft_id=ac.id))
@@ -521,6 +574,7 @@ def edit_document(aircraft_id: int, document_id: int) -> ResponseReturnValue:
         "documents/edit_form.html",
         aircraft=ac,
         doc=doc,
+        doc_types=_AIRCRAFT_DOC_TYPES,
         categories=list(_CATEGORY_LABELS.items()),
     )
 
@@ -537,10 +591,20 @@ def edit_document(aircraft_id: int, document_id: int) -> ResponseReturnValue:
 def delete_document(aircraft_id: int, document_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     doc = _get_aircraft_document_or_404(ac, document_id)
+    doc_type = doc.doc_type
     activity("document.deleted", document_id=document_id, aircraft_id=aircraft_id)
     _delete_file(doc.filename)
     db.session.delete(doc)
     db.session.commit()
+
+    # If the deleted document drove an Aircraft expiry field, recompute it —
+    # deleting the active cert reactivates whatever it had superseded (its
+    # own superseded_by_id is cleared by the FK's ON DELETE SET NULL) or
+    # clears the field if nothing is left.
+    if doc_type in _EXPIRY_DRIVING_DOC_TYPES:
+        _recompute_expiry_field(ac, doc_type)
+        db.session.commit()
+
     flash(_("Document deleted."), "success")
     return redirect(url_for("documents.list_documents", aircraft_id=ac.id))
 
@@ -590,15 +654,15 @@ def download_all_documents(aircraft_id: int) -> ResponseReturnValue:
     )
 
 
-# ── Insurance certificate upload ──────────────────────────────────────────────
+# ── Insurance / ARC certificate quick upload ──────────────────────────────────
 
 
-@documents_bp.route(
-    "/aircraft/<aircraft_ref:aircraft_id>/insurance-cert/upload", methods=["POST"]
-)
-@login_required
-@require_role(*_OWNER_ROLES)
-def upload_insurance_cert(aircraft_id: int) -> ResponseReturnValue:
+def _upload_expiry_cert(
+    aircraft_id: int, doc_type: str, category: str, title: str
+) -> ResponseReturnValue:
+    """Shared handler for the small "Upload cert" forms on the aircraft
+    detail page's Insurance and ARC sections — a file plus its valid-until
+    date, which becomes the new active certificate for that doc_type."""
     ac = _get_aircraft_or_404(aircraft_id)
     file = request.files.get("file")
 
@@ -612,21 +676,23 @@ def upload_insurance_cert(aircraft_id: int) -> ResponseReturnValue:
         flash(_("File type '%(ext)s' is not allowed.", ext=ext or "unknown"), "danger")
         return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
 
-    # Insurance certificates go into the canonical insurance folder
-    tenant = _get_tenant()
-    stored, mime, size = _save_upload_canonical(
-        file, tenant, ac, DocCategory.INSURANCE, _("Insurance Certificate")
-    )
+    valid_until_str = request.form.get("valid_until", "").strip()
+    valid_until = None
+    if valid_until_str:
+        try:
+            valid_until = _date.fromisoformat(valid_until_str)
+        except ValueError as exc:
+            log.debug("Invalid valid_until date: %s", exc)
 
-    # Mark previous insurance certificate as superseded
-    prev = (
-        Document.query.filter_by(
-            aircraft_id=ac.id,
-            doc_type=DocType.INSURANCE_CERT,
-        )
-        .filter(Document.superseded_by_id.is_(None))
-        .first()
-    )
+    tenant = _get_tenant()
+    stored, mime, size = _save_upload_canonical(file, tenant, ac, category, title)
+
+    prev = Document.query.filter_by(
+        aircraft_id=ac.id,
+        doc_type=doc_type,
+        superseded_by_id=None,
+        component_id=None,
+    ).first()
 
     new_cert = Document(
         aircraft_id=ac.id,
@@ -634,10 +700,10 @@ def upload_insurance_cert(aircraft_id: int) -> ResponseReturnValue:
         original_filename=original,
         mime_type=mime,
         size_bytes=size,
-        title=_("Insurance Certificate"),
-        doc_type=DocType.INSURANCE_CERT,
-        category=DocCategory.INSURANCE,
-        valid_until=ac.insurance_expiry,
+        title=title,
+        doc_type=doc_type,
+        category=category,
+        valid_until=valid_until,
         is_sensitive=True,
     )
     db.session.add(new_cert)
@@ -646,9 +712,38 @@ def upload_insurance_cert(aircraft_id: int) -> ResponseReturnValue:
     if prev:
         prev.superseded_by_id = new_cert.id
 
+    _recompute_expiry_field(ac, doc_type)
     db.session.commit()
-    flash(_("Insurance certificate uploaded."), "success")
+    flash(_("Certificate uploaded."), "success")
     return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
+
+
+@documents_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/insurance-cert/upload", methods=["POST"]
+)
+@login_required
+@require_role(*_OWNER_ROLES)
+def upload_insurance_cert(aircraft_id: int) -> ResponseReturnValue:
+    return _upload_expiry_cert(
+        aircraft_id,
+        DocType.INSURANCE_CERT,
+        DocCategory.INSURANCE,
+        _("Insurance Certificate"),
+    )
+
+
+@documents_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/arc-cert/upload", methods=["POST"]
+)
+@login_required
+@require_role(*_OWNER_ROLES)
+def upload_arc_cert(aircraft_id: int) -> ResponseReturnValue:
+    return _upload_expiry_cert(
+        aircraft_id,
+        DocType.ARC,
+        DocCategory.AIRWORTHINESS,
+        _("Airworthiness Review Certificate"),
+    )
 
 
 # ── Pilot document upload ─────────────────────────────────────────────────────

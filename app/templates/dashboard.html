@@ -373,19 +373,28 @@
             <dt class="col-5 text-muted fw-normal">{{ _('Engine hours') }}</dt>
             <dd class="col-7 mb-0 fw-semibold oh-text-navy">{{ "%.1f"|format(ac.total_engine_hours|float) }} h</dd>
             {% endif %}
+            {% if ac.insurance_expiry %}
             <dt class="col-5 text-muted fw-normal">{{ _('Insurance') }}</dt>
             <dd class="col-7 mb-0">
-              {% if ac.insurance_expiry %}
                 <span class="fw-semibold oh-text-navy">{{ ac.insurance_expiry.strftime('%Y-%m-%d') }}</span>
                 {% if ac.insurance_status == 'expired' %}
                   <span class="ac-status-badge ac-status-overdue ms-1">{{ _('Expired') }}</span>
                 {% elif ac.insurance_status == 'expiring_soon' %}
                   <span class="ac-status-badge ac-status-warn ms-1">{{ _('Expiring soon') }}</span>
                 {% endif %}
-              {% else %}
-                <span class="text-muted">{{ _('Not set') }}</span>
-              {% endif %}
             </dd>
+            {% endif %}
+            {% if ac.arc_expiry %}
+            <dt class="col-5 text-muted fw-normal">{{ _('ARC') }}</dt>
+            <dd class="col-7 mb-0">
+                <span class="fw-semibold oh-text-navy">{{ ac.arc_expiry.strftime('%Y-%m-%d') }}</span>
+                {% if ac.arc_status == 'expired' %}
+                  <span class="ac-status-badge ac-status-overdue ms-1">{{ _('Expired') }}</span>
+                {% elif ac.arc_status == 'expiring_soon' %}
+                  <span class="ac-status-badge ac-status-warn ms-1">{{ _('Expiring soon') }}</span>
+                {% endif %}
+            </dd>
+            {% endif %}
             {% set ac_triggers = triggers | selectattr('aircraft_id', 'equalto', ac.id) | selectattr('due_date') | sort(attribute='due_date') | list %}
             {% if ac_triggers %}
             <dt class="col-5 text-muted fw-normal">{{ _('Next due') }}</dt>
