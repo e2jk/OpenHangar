@@ -1379,12 +1379,6 @@ def link_entries_to_aircraft(entries: list[Any]) -> int:
         if ac is None:
             continue
 
-        if entry.departure_time is not None:
-            dummy = datetime.combine(date.min, entry.departure_time) - timedelta(
-                hours=float(ac.flight_counter_offset)
-            )
-            entry.departure_time = dummy.time()
-
         entry.aircraft_id = ac.id
         entry.departure_icao = _place_icao(entry.departure_icao)
         entry.arrival_icao = _place_icao(entry.arrival_icao)
