@@ -476,7 +476,7 @@ def _score_airframe_non_time_signals(fields: dict[str, Any], existing: Any) -> f
     instant needs a wider comparison than a same-source re-import does —
     see _score_airframe_candidate below) instead of duplicating this.
     """
-    score: float = 0
+    score: float = 0.0
 
     dep_new = (fields.get("departure_icao") or "ZZZZ").strip().upper()
     dep_old = (existing.departure_icao or "ZZZZ").strip().upper()
