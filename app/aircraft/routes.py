@@ -289,6 +289,14 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         .filter(Document.superseded_by_id.is_(None))
         .first()
     )
+    active_arc_cert = (
+        Document.query.filter_by(
+            aircraft_id=ac.id,
+            doc_type=DocType.ARC,
+        )
+        .filter(Document.superseded_by_id.is_(None))
+        .first()
+    )
     open_snags = (
         Snag.query.filter_by(aircraft_id=ac.id, resolved_at=None)
         .order_by(Snag.is_grounding.desc(), Snag.reported_at.desc())
@@ -380,6 +388,7 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         recent_documents=recent_documents,
         document_count=document_count,
         active_insurance_cert=active_insurance_cert,
+        active_arc_cert=active_arc_cert,
         open_snags=open_snags,
         wb_config=wb_cfg,
         last_wb_entry=last_wb_entry,
@@ -421,7 +430,6 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     fuel_type = request.form.get("fuel_type", "avgas").strip()
     if fuel_type not in ("avgas", "ul91", "mogas", "jet_a1"):
         fuel_type = "avgas"
-    insurance_expiry_raw = request.form.get("insurance_expiry", "").strip()
     reserve_hourly_rate_raw = request.form.get("reserve_hourly_rate", "").strip()
     oil_warning_lph_raw = request.form.get("oil_warning_lph", "").strip()
     fuel_capacity_liters_raw = request.form.get("fuel_capacity_liters", "").strip()
@@ -476,15 +484,6 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
         except ValueError:
             errors.append(_("Fuel consumption must be a non-negative number."))
 
-    insurance_expiry = None
-    if insurance_expiry_raw:
-        from datetime import date as _date
-
-        try:
-            insurance_expiry = _date.fromisoformat(insurance_expiry_raw)
-        except ValueError:
-            errors.append(_("Insurance expiry must be a valid date (YYYY-MM-DD)."))
-
     reserve_hourly_rate = None
     if reserve_hourly_rate_raw:
         try:
@@ -531,7 +530,6 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     ac.flight_counter_offset = flight_counter_offset
     ac.fuel_flow = fuel_flow
     ac.fuel_type = fuel_type
-    ac.insurance_expiry = insurance_expiry
     ac.logbook_time_precision = logbook_time_precision
     ac.reserve_hourly_rate = reserve_hourly_rate
     ac.oil_warning_lph = oil_warning_lph

@@ -631,36 +631,6 @@ class TestSaveAircraftValidation:
         assert response.status_code == 200
         assert b"non-negative" in response.data
 
-    def test_invalid_insurance_expiry_shows_error(self, app, client):
-        _create_user_and_tenant(app)
-        _login(app, client)
-        response = client.post(
-            "/aircraft/new",
-            data={
-                "registration": "OO-PNH",
-                "make": "Cessna",
-                "model": "172S",
-                "insurance_expiry": "not-a-date",
-            },
-        )
-        assert response.status_code == 200
-        assert b"Insurance expiry" in response.data
-
-    def test_valid_insurance_expiry_saves(self, app, client):
-        _create_user_and_tenant(app)
-        _login(app, client)
-        response = client.post(
-            "/aircraft/new",
-            data={
-                "registration": "OO-PNH",
-                "make": "Cessna",
-                "model": "172S",
-                "insurance_expiry": "2027-06-30",
-            },
-            follow_redirects=False,
-        )
-        assert response.status_code == 302
-
     def test_negative_reserve_hourly_rate_shows_error(self, app, client):
         _create_user_and_tenant(app)
         _login(app, client)

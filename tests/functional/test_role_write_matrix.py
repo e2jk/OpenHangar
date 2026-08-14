@@ -138,6 +138,7 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
     "documents.edit_document": _OWNER_ROLES,
     "documents.delete_document": _OWNER_ROLES,
     "documents.upload_insurance_cert": _OWNER_ROLES,
+    "documents.upload_arc_cert": _OWNER_ROLES,
     "documents.upload_pilot_document": _ANY_ROLE,
     "documents.delete_pilot_document": _ANY_ROLE,
     "documents.scan_documents": _OWNER_ROLES,

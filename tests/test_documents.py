@@ -788,9 +788,12 @@ class TestInsuranceDocumentAutoFill:
             ac = db.session.get(Aircraft, ac_id)
             assert ac.insurance_expiry is None
 
-    def test_insurance_upload_does_not_regress_later_expiry(
+    def test_insurance_upload_always_becomes_the_active_certificate(
         self, app, client, tmp_path
     ):
+        """insurance_expiry is a synced cache of the active (non-superseded)
+        certificate — a newly uploaded one always takes over, even to an
+        earlier date, since it supersedes whatever was active before it."""
         import datetime
 
         from models import (  # pyright: ignore[reportMissingImports]
@@ -810,7 +813,7 @@ class TestInsuranceDocumentAutoFill:
         client.post(
             f"/aircraft/{ac_id}/documents/upload",
             data={
-                "file": _fake_file("old.pdf", b"%PDF", "application/pdf"),
+                "file": _fake_file("new.pdf", b"%PDF", "application/pdf"),
                 "category": DocCategory.INSURANCE,
                 "valid_until": "2026-12-31",
             },
@@ -819,7 +822,7 @@ class TestInsuranceDocumentAutoFill:
 
         with app.app_context():
             ac = db.session.get(Aircraft, ac_id)
-            assert ac.insurance_expiry == datetime.date(2028, 1, 1)
+            assert ac.insurance_expiry == datetime.date(2026, 12, 31)
 
     def test_insurance_upload_supersedes_previous_cert(self, app, client, tmp_path):
         from models import DocCategory, DocType  # pyright: ignore[reportMissingImports]
@@ -851,6 +854,219 @@ class TestInsuranceDocumentAutoFill:
             assert len(docs) == 2
             assert docs[0].superseded_by_id == docs[1].id
             assert docs[1].superseded_by_id is None
+
+    def test_arc_upload_via_generic_form_updates_arc_expiry(
+        self, app, client, tmp_path
+    ):
+        import datetime
+
+        from models import (  # pyright: ignore[reportMissingImports]
+            Aircraft,
+            DocCategory,
+            DocType,
+        )
+
+        _uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        rv = client.post(
+            f"/aircraft/{ac_id}/documents/upload",
+            data={
+                "file": _fake_file("arc.pdf", b"%PDF", "application/pdf"),
+                "category": DocCategory.AIRWORTHINESS,
+                "doc_type": DocType.ARC,
+                "valid_until": "2027-09-08",
+            },
+            content_type="multipart/form-data",
+        )
+        assert rv.status_code == 302
+
+        with app.app_context():
+            ac = db.session.get(Aircraft, ac_id)
+            assert ac.arc_expiry == datetime.date(2027, 9, 8)
+            assert ac.is_grounded is False
+
+    def test_deleting_active_insurance_document_reactivates_previous(
+        self, app, client, tmp_path
+    ):
+        import datetime
+
+        from models import (  # pyright: ignore[reportMissingImports]
+            Aircraft,
+            DocType,
+        )
+
+        _uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        with app.app_context():
+            older = Document(
+                aircraft_id=ac_id,
+                filename="older.pdf",
+                original_filename="older.pdf",
+                doc_type=DocType.INSURANCE_CERT,
+                valid_until=datetime.date(2026, 12, 31),
+            )
+            db.session.add(older)
+            db.session.flush()
+            newer = Document(
+                aircraft_id=ac_id,
+                filename="newer.pdf",
+                original_filename="newer.pdf",
+                doc_type=DocType.INSURANCE_CERT,
+                valid_until=datetime.date(2027, 12, 31),
+            )
+            db.session.add(newer)
+            db.session.flush()
+            older.superseded_by_id = newer.id
+            ac = db.session.get(Aircraft, ac_id)
+            ac.insurance_expiry = newer.valid_until
+            db.session.commit()
+            newer_id = newer.id
+            older_id = older.id
+
+        rv = client.post(f"/aircraft/{ac_id}/documents/{newer_id}/delete")
+        assert rv.status_code == 302
+
+        with app.app_context():
+            ac = db.session.get(Aircraft, ac_id)
+            assert ac.insurance_expiry == datetime.date(2026, 12, 31)
+            assert db.session.get(Document, older_id).superseded_by_id is None
+
+    def test_deleting_only_arc_document_clears_arc_expiry(self, app, client, tmp_path):
+        import datetime
+
+        from models import (  # pyright: ignore[reportMissingImports]
+            Aircraft,
+            DocType,
+        )
+
+        _uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        with app.app_context():
+            doc = Document(
+                aircraft_id=ac_id,
+                filename="arc.pdf",
+                original_filename="arc.pdf",
+                doc_type=DocType.ARC,
+                valid_until=datetime.date(2026, 9, 8),
+            )
+            db.session.add(doc)
+            ac = db.session.get(Aircraft, ac_id)
+            ac.arc_expiry = doc.valid_until
+            db.session.commit()
+            doc_id = doc.id
+
+        rv = client.post(f"/aircraft/{ac_id}/documents/{doc_id}/delete")
+        assert rv.status_code == 302
+
+        with app.app_context():
+            ac = db.session.get(Aircraft, ac_id)
+            assert ac.arc_expiry is None
+
+    def test_edit_document_changes_doc_type_and_recomputes_expiry(
+        self, app, client, tmp_path
+    ):
+        import datetime
+
+        from models import (  # pyright: ignore[reportMissingImports]
+            Aircraft,
+            DocType,
+        )
+
+        _uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        with app.app_context():
+            doc = Document(
+                aircraft_id=ac_id,
+                filename="doc.pdf",
+                original_filename="doc.pdf",
+                doc_type=DocType.INSURANCE_CERT,
+                valid_until=datetime.date(2027, 6, 30),
+            )
+            db.session.add(doc)
+            ac = db.session.get(Aircraft, ac_id)
+            ac.insurance_expiry = doc.valid_until
+            db.session.commit()
+            doc_id = doc.id
+
+        rv = client.post(
+            f"/aircraft/{ac_id}/documents/{doc_id}/edit",
+            data={"doc_type": DocType.ARC, "valid_until": "2027-06-30"},
+        )
+        assert rv.status_code == 302
+
+        with app.app_context():
+            ac = db.session.get(Aircraft, ac_id)
+            assert ac.insurance_expiry is None
+            assert ac.arc_expiry == datetime.date(2027, 6, 30)
+
+    def test_arc_cert_upload_creates_active_document(self, app, client, tmp_path):
+        import datetime
+
+        from models import (  # pyright: ignore[reportMissingImports]
+            Aircraft,
+            DocType,
+        )
+
+        _uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        rv = client.post(
+            f"/aircraft/{ac_id}/arc-cert/upload",
+            data={
+                "file": _fake_file("arc.pdf", b"%PDF-1.4", "application/pdf"),
+                "valid_until": "2027-09-08",
+            },
+            content_type="multipart/form-data",
+        )
+        assert rv.status_code == 302
+
+        with app.app_context():
+            doc = Document.query.filter_by(
+                aircraft_id=ac_id, doc_type=DocType.ARC
+            ).first()
+            assert doc is not None
+            assert doc.valid_until == datetime.date(2027, 9, 8)
+            assert doc.is_sensitive is True
+            ac = db.session.get(Aircraft, ac_id)
+            assert ac.arc_expiry == datetime.date(2027, 9, 8)
+
+    def test_expiry_cert_upload_with_invalid_date_is_ignored(
+        self, app, client, tmp_path
+    ):
+        _uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client)
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        rv = client.post(
+            f"/aircraft/{ac_id}/insurance-cert/upload",
+            data={
+                "file": _fake_file("cert.pdf", b"%PDF-1.4", "application/pdf"),
+                "valid_until": "not-a-date",
+            },
+            content_type="multipart/form-data",
+        )
+        assert rv.status_code == 302
+
+        with app.app_context():
+            from models import Aircraft  # pyright: ignore[reportMissingImports]
+
+            ac = db.session.get(Aircraft, ac_id)
+            assert ac.insurance_expiry is None
 
 
 # ── Reconcile routes ──────────────────────────────────────────────────────────
