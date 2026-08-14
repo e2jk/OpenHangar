@@ -23,7 +23,7 @@ pillow==12.3.0
 pyotp==2.10.0
 flask-babel==4.0.0
 polib==1.2.0
-ruff==0.16.0
+ruff==0.16.1
 mypy==2.3.0
 bandit==1.9.4
 pip-audit==2.10.1
