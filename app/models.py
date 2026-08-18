@@ -364,14 +364,6 @@ class Aircraft(db.Model):
     fuel_type = db.Column(
         db.String(8), nullable=False, default="avgas"
     )  # "avgas" | "jet_a1"
-    # Total usable fuel capacity across all tanks, in liters; null = not
-    # configured (hides the tank-fraction quick-fill buttons on the flight
-    # form). This is the simple single-tank path; aircraft with genuinely
-    # independent tanks (left/right wing, main+aux, ...) can additionally
-    # define AircraftFuelTank rows (see fuel_tanks below), which turns the
-    # flight form's quick-fill into a per-tank picker instead of relying on
-    # this combined total.
-    fuel_capacity_liters = db.Column(db.Numeric(6, 1), nullable=True)
     # Oil consumption warning threshold in L/h; null = no warning on the
     # cost dashboard.
     oil_warning_lph = db.Column(db.Numeric(4, 2), nullable=True)
@@ -1685,9 +1677,9 @@ class Refuel(db.Model):
 
 class AircraftFuelTank(db.Model):
     """One independently-tracked fuel tank on an aircraft (e.g. left/right
-    wing, or a main + aux tank). Optional and additive: aircraft with a
-    single combined tank keep using Aircraft.fuel_capacity_liters and never
-    need a row here — see the comment on that column."""
+    wing, or a main + aux tank). An aircraft with a single combined tank
+    still needs exactly one row here (name it e.g. "Main") — there is no
+    separate scalar-capacity fallback."""
 
     __tablename__ = "aircraft_fuel_tanks"
 
