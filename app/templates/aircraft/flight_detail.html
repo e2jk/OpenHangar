@@ -142,6 +142,44 @@
     </div>
   </div>
 
+  {# Fuel added — before/after refuel are independent purchases; each gets
+     its own "Log as expense" link, pre-filled and linked to this flight. #}
+  {% if entry.fuel_added_before_qty is not none or entry.fuel_added_after_qty is not none %}
+  <div class="ac-form-card p-4 mb-4">
+    <div class="text-muted small mb-2">{{ _('Fuel added') }}</div>
+    <div class="row g-3">
+      {% if entry.fuel_added_before_qty is not none %}
+      <div class="col-sm-6">
+        <div class="text-muted small">{{ _('Fuel added before flight') }}</div>
+        <div class="fw-semibold">
+          {{ '%.1f'|format(entry.fuel_added_before_qty|float) }} {{ entry.fuel_added_before_unit or 'L' }}
+        </div>
+        {% if is_owner %}
+        <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id, flight_entry_id=entry.id, quantity=entry.fuel_added_before_qty, unit=entry.fuel_added_before_unit or 'L') }}"
+           class="oh-fs-08 text-decoration-none">
+          <i class="bi bi-receipt me-1"></i>{{ _('Log as expense') }}
+        </a>
+        {% endif %}
+      </div>
+      {% endif %}
+      {% if entry.fuel_added_after_qty is not none %}
+      <div class="col-sm-6">
+        <div class="text-muted small">{{ _('Fuel added after flight') }}</div>
+        <div class="fw-semibold">
+          {{ '%.1f'|format(entry.fuel_added_after_qty|float) }} {{ entry.fuel_added_after_unit or 'L' }}
+        </div>
+        {% if is_owner %}
+        <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id, flight_entry_id=entry.id, quantity=entry.fuel_added_after_qty, unit=entry.fuel_added_after_unit or 'L') }}"
+           class="oh-fs-08 text-decoration-none">
+          <i class="bi bi-receipt me-1"></i>{{ _('Log as expense') }}
+        </a>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
   {# GPS track map #}
   {% set _detail_track = entry.gps_track %}
   {% set _detail_dep   = entry.departure_icao %}

@@ -72,6 +72,28 @@ def _get_expense_or_404(aircraft: Aircraft, expense_id: int) -> Expense:
     return exp
 
 
+def _fuel_expense_prefill(aircraft: Aircraft) -> dict[str, Any] | None:
+    """Build "add expense" form defaults from a `?flight_entry_id=...` link
+    off a logged refuel (see aircraft/flight_detail.html). A flight's
+    before-refuel and after-refuel quantities are independent purchases —
+    each gets its own "Log as expense" link, both pointing at this same
+    flight_entry_id; only the date and aircraft matter for cost tracking,
+    not which one a given amount happens to be logged against."""
+    flight_entry_id_raw = request.args.get("flight_entry_id", "").strip()
+    if not flight_entry_id_raw.isdigit():
+        return None
+    flight = db.session.get(Flight, int(flight_entry_id_raw))
+    if flight is None or flight.aircraft_id != aircraft.id:
+        return None
+    unit = request.args.get("unit", "").strip()
+    return {
+        "flight_entry_id": flight.id,
+        "date": flight.date.isoformat(),
+        "quantity": request.args.get("quantity", "").strip() or None,
+        "unit": unit if unit in _UNITS else "L",
+    }
+
+
 def _compute_stats(
     expenses: list[Any], aircraft_id: int, period_months: int
 ) -> tuple[float, float | None, str]:
@@ -198,6 +220,7 @@ def add_expense(aircraft_id: int) -> ResponseReturnValue:
         currencies=_CURRENCIES,
         units=_UNITS,
         today=_date.today().isoformat(),
+        prefill=_fuel_expense_prefill(ac) if request.method == "GET" else None,
     )
 
 
@@ -229,6 +252,7 @@ def edit_expense(aircraft_id: int, expense_id: int) -> ResponseReturnValue:
         currencies=_CURRENCIES,
         units=_UNITS,
         today=_date.today().isoformat(),
+        prefill=None,
     )
 
 
@@ -288,6 +312,11 @@ def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | Non
 
     if expense is None:
         expense = Expense(aircraft_id=aircraft.id, created_by_id=session.get("user_id"))
+        flight_entry_id_raw = request.form.get("flight_entry_id", "").strip()
+        if flight_entry_id_raw.isdigit():
+            flight = db.session.get(Flight, int(flight_entry_id_raw))
+            if flight is not None and flight.aircraft_id == aircraft.id:
+                expense.flight_entry_id = flight.id
         db.session.add(expense)
 
     expense.date = date_val
