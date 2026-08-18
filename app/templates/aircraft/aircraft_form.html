@@ -114,7 +114,7 @@
       </div>
 
       <div class="row g-3 mb-4">
-        <div class="col-sm-4">
+        <div class="col-sm-6">
           <label for="reserve_hourly_rate" class="form-label">
             {{ _('Overhaul reserve accrual') }} <span class="text-muted small">({{ _('per hour, optional') }})</span>
           </label>
@@ -123,7 +123,7 @@
                  step="0.01" min="0" placeholder="e.g. 15.00">
           <div class="form-text">{{ _('Set aside per flight hour toward a future engine/component overhaul; shown as a line on the cost dashboard.') }}</div>
         </div>
-        <div class="col-sm-4">
+        <div class="col-sm-6">
           <label for="oil_warning_lph" class="form-label">
             {{ _('Oil consumption warning') }} <span class="text-muted small">({{ _('L/h, optional') }})</span>
           </label>
@@ -132,25 +132,15 @@
                  step="0.01" min="0" placeholder="e.g. 0.10">
           <div class="form-text">{{ _('The cost dashboard warns when oil consumption exceeds this rate — an early sign of engine wear.') }}</div>
         </div>
-        <div class="col-sm-4">
-          <label for="fuel_capacity_liters" class="form-label">
-            {{ _('Total fuel tank capacity') }} <span class="text-muted small">(L, {{ _('optional') }})</span>
-          </label>
-          <input type="number" class="form-control" id="fuel_capacity_liters" name="fuel_capacity_liters"
-                 value="{{ '%.1f'|format(aircraft.fuel_capacity_liters|float) if aircraft and aircraft.fuel_capacity_liters is not none else '' }}"
-                 step="0.1" min="0" placeholder="e.g. 110.0">
-          <div class="form-text">{{ _('All tanks combined. Enables quick fraction-of-tank buttons on the flight log.') }}</div>
-        </div>
       </div>
 
-      {# Per-tank capacity — optional, additive to the combined total above.
-         Aircraft with independent tanks (e.g. left/right wing) can define
-         them here to get a per-tank picker on the flight log instead of a
-         single fraction-of-total. Leave empty to keep using the combined
-         total only. #}
+      {# Fuel tanks — a single-tank aircraft still needs exactly one row
+         here (e.g. "Main") to get the quick fraction-of-tank buttons on
+         the flight log; an aircraft with independent tanks (e.g. left/right
+         wing) can define each one to get a per-tank picker instead. #}
       <div class="mb-4">
         <label class="form-label">{{ _('Fuel tanks') }} <span class="text-muted small">({{ _('optional') }})</span></label>
-        <div class="form-text mb-2">{{ _('Define independent tanks (e.g. left/right wing) to get a per-tank picker on the flight log, instead of relying on the combined total above.') }}</div>
+        <div class="form-text mb-2">{{ _('Define one row per tank (just one for a single combined tank) to get quick fraction-of-tank buttons on the flight log.') }}</div>
         <div id="fuel-tanks-container">
           {% for tank in (aircraft.fuel_tanks if aircraft else []) %}
           <div class="fuel-tank-row row g-2 align-items-end mb-2">

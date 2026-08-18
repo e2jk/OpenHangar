@@ -441,7 +441,6 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
         fuel_type = "avgas"
     reserve_hourly_rate_raw = request.form.get("reserve_hourly_rate", "").strip()
     oil_warning_lph_raw = request.form.get("oil_warning_lph", "").strip()
-    fuel_capacity_liters_raw = request.form.get("fuel_capacity_liters", "").strip()
     logbook_time_precision = request.form.get(
         "logbook_time_precision", "tenth_hour"
     ).strip()
@@ -513,18 +512,9 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
                 _("Oil consumption warning threshold must be a non-negative number.")
             )
 
-    fuel_capacity_liters = None
-    if fuel_capacity_liters_raw:
-        try:
-            fuel_capacity_liters = float(fuel_capacity_liters_raw)
-            if fuel_capacity_liters <= 0:
-                raise ValueError
-        except ValueError:
-            errors.append(_("Fuel tank capacity must be a positive number."))
-
-    # Per-tank capacity (optional, additive — see AircraftFuelTank docstring).
-    # Same "replace all rows" pattern as the W&B stations form: blank-name
-    # rows are silently dropped, a non-positive/invalid capacity is an error.
+    # Fuel tanks (see AircraftFuelTank docstring). Same "replace all rows"
+    # pattern as the W&B stations form: blank-name rows are silently
+    # dropped, a non-positive/invalid capacity is an error.
     tank_names = request.form.getlist("tank_name[]")
     tank_capacities_raw = request.form.getlist("tank_capacity[]")
     tanks_data: list[tuple[str, float]] = []
@@ -561,7 +551,6 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     ac.logbook_time_precision = logbook_time_precision
     ac.reserve_hourly_rate = reserve_hourly_rate
     ac.oil_warning_lph = oil_warning_lph
-    ac.fuel_capacity_liters = fuel_capacity_liters
     db.session.commit()
 
     # Replace fuel tanks (same "delete all, recreate" strategy as W&B stations)
