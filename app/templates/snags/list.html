@@ -124,7 +124,8 @@
             <th class="ps-3">{{ _('Title') }}</th>
             <th>{{ _('Reporter') }}</th>
             <th>{{ _('Resolved') }}</th>
-            <th class="pe-3">{{ _('Resolution note') }}</th>
+            <th>{{ _('Resolution note') }}</th>
+            <th class="pe-3"></th>
           </tr>
         </thead>
         <tbody>
@@ -133,7 +134,23 @@
             <td class="ps-3 text-muted">{{ snag.title }}</td>
             <td class="text-muted">{{ snag.reporter or '—' }}</td>
             <td class="text-muted text-nowrap">{{ snag.resolved_at.strftime('%Y-%m-%d') }}</td>
-            <td class="pe-3 text-muted">{{ snag.resolution_note or '—' }}</td>
+            <td class="text-muted">{{ snag.resolution_note or '—' }}</td>
+            <td class="pe-3 text-end align-middle text-nowrap">
+              {% if is_crew %}
+              <a href="{{ url_for('snags.edit_snag', aircraft_id=aircraft.id, snag_id=snag.id) }}"
+                 class="btn btn-ac-secondary btn-xs me-1" title="{{ _('Edit') }}">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <form method="post"
+                    action="{{ url_for('snags.reopen_snag', aircraft_id=aircraft.id, snag_id=snag.id) }}"
+                    class="d-inline"
+                    data-confirm="{{ _('Reopen this snag?') }}">
+                <button type="submit" class="btn btn-ac-secondary btn-xs" title="{{ _('Reopen') }}">
+                  <i class="bi bi-arrow-counterclockwise"></i>
+                </button>
+              </form>
+              {% endif %}
+            </td>
           </tr>
           {% endfor %}
         </tbody>

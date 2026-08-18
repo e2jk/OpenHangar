@@ -27,6 +27,14 @@
   <div class="ac-form-card">
     <form method="post">
 
+      <div class="mb-3">
+        <label for="resolved_at" class="form-label fw-semibold">
+          {{ _('Resolution date') }} <span class="text-danger">*</span>
+        </label>
+        <input type="date" class="form-control" id="resolved_at" name="resolved_at"
+               value="{{ today }}" required>
+      </div>
+
       <div class="mb-4">
         <label for="resolution_note" class="form-label fw-semibold">
           {{ _('Resolution note') }} <span class="text-danger">*</span>

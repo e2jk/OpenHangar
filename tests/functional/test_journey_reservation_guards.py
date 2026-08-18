@@ -167,7 +167,7 @@ def test_reservation_guards_interplay(owner_env, app, client_factory):
     submit(
         owner,
         f"/aircraft/{aircraft_id}/snags/new",
-        {"title": "Flat tyre", "is_grounding": "1"},
+        {"title": "Flat tyre", "is_grounding": "1", "reported_at": "2024-07-01"},
     )
     with app.app_context():
         from models import Snag  # pyright: ignore[reportMissingImports]
@@ -208,7 +208,7 @@ def test_reservation_guards_interplay(owner_env, app, client_factory):
     submit(
         owner,
         f"/aircraft/{aircraft_id}/snags/{snag_id}/resolve",
-        {"resolution_note": "Tyre replaced"},
+        {"resolution_note": "Tyre replaced", "resolved_at": "2024-07-02"},
     )
     resolved_resp = submit(
         user_b,
