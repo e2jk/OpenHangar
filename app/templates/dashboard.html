@@ -144,6 +144,29 @@
       </a>
     </div>
     <div class="col-6 col-lg">
+      {% if single_aircraft_mode and aircraft %}
+      <a href="{{ url_for('snags.list_snags', aircraft_id=aircraft[0].id) }}" class="stat-card-link">
+      {% else %}
+      <a href="{{ url_for('aircraft.list_aircraft') }}" class="stat-card-link">
+      {% endif %}
+        <div class="stat-card">
+          <div class="stat-icon {{ 'icon-red' if grounding_snags else 'icon-blue' }}"><i class="bi bi-cone-striped"></i></div>
+          <div class="d-flex justify-content-center align-items-flex-start gap-3 mb-1">
+            <div class="text-center">
+              <div class="stat-value {{ 'text-danger' if grounding_snags else '' }}">{{ grounding_snags | length }}</div>
+              <div class="stat-sublabel">{{ _('Grounding') }}</div>
+            </div>
+            <div class="stat-divider"></div>
+            <div class="text-center">
+              <div class="stat-value">{{ open_other_snags }}</div>
+              <div class="stat-sublabel">{{ _('Other') }}</div>
+            </div>
+          </div>
+          <div class="stat-label">{{ _('Open snags') }}</div>
+        </div>
+      </a>
+    </div>
+    <div class="col-6 col-lg">
       <a href="{{ url_for('flights.fleet_flights') }}" class="stat-card-link">
         <div class="stat-card">
           <div class="stat-icon icon-green"><i class="bi bi-send"></i></div>

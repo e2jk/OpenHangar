@@ -60,6 +60,7 @@ _EXCLUDED_CONVERTERS = {
     "section_id": "personal minimums sections — same as revision_id",
     "item_id": "personal minimums items — same as revision_id",
     "pending_id": "pending-reconcile rows — same _get_aircraft_or_404-style pattern as document_id",
+    "refuel_id": "standalone refuel records — same _get_aircraft_or_404-style ownership check as snag_id",
 }
 
 

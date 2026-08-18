@@ -2,7 +2,7 @@
 Tests for Phase 12: Snag List routes, model, and grounding propagation.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
@@ -228,6 +228,7 @@ class TestNewSnag:
                 "title": "Fuel cap missing",
                 "description": "Left wing fuel cap not found after flight.",
                 "reporter": "J. Smith",
+                "reported_at": "2026-01-05",
             },
             follow_redirects=True,
         )
@@ -243,6 +244,7 @@ class TestNewSnag:
             data={
                 "title": "Main gear collapse",
                 "is_grounding": "on",
+                "reported_at": "2026-01-05",
             },
         )
         with app.app_context():
@@ -253,9 +255,56 @@ class TestNewSnag:
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
-        resp = client.post(f"/aircraft/{ac_id}/snags/new", data={"title": ""})
+        resp = client.post(
+            f"/aircraft/{ac_id}/snags/new",
+            data={"title": "", "reported_at": "2026-01-05"},
+        )
         assert resp.status_code == 200
         assert b"Title is required" in resp.data
+
+    def test_post_retroactive_reported_at_is_saved(self, app, client):
+        """A snag can be logged with an earlier signalled date than today."""
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/snags/new",
+            data={"title": "Retroactive snag", "reported_at": "2020-06-15"},
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            s = Snag.query.filter_by(title="Retroactive snag").first()
+            assert s.reported_at.date().isoformat() == "2020-06-15"
+
+    def test_post_missing_reported_at_shows_error(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/snags/new", data={"title": "x", "reported_at": ""}
+        )
+        assert b"Date signalled is required" in resp.data
+
+    def test_post_invalid_reported_at_shows_error(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/snags/new",
+            data={"title": "x", "reported_at": "not-a-date"},
+        )
+        assert b"must be a valid date" in resp.data
+
+    def test_post_future_reported_at_shows_error(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/snags/new",
+            data={"title": "x", "reported_at": "2999-01-01"},
+        )
+        assert b"cannot be in the future" in resp.data
 
     def test_redirects_when_not_logged_in(self, client, app):
         _, tenant_id = _create_user_and_tenant(app)
@@ -286,21 +335,122 @@ class TestEditSnag:
             f"/aircraft/{ac_id}/snags/{snag_id}/edit",
             data={
                 "title": "Updated title",
+                "reported_at": "2026-01-05",
             },
             follow_redirects=True,
         )
         assert resp.status_code == 200
         assert b"Updated title" in resp.data
 
-    def test_cannot_edit_closed_snag(self, app, client):
+    def test_post_updates_reported_at(self, app, client):
+        """Editing an open snag can also correct the date it was signalled."""
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        snag_id = _add_snag(app, ac_id, title="Old title")
+        _login(app, client)
+        client.post(
+            f"/aircraft/{ac_id}/snags/{snag_id}/edit",
+            data={"title": "Old title", "reported_at": "2019-03-02"},
+        )
+        with app.app_context():
+            s = db.session.get(Snag, snag_id)
+            assert s.reported_at.date().isoformat() == "2019-03-02"
+
+    def test_closed_snag_can_be_edited(self, app, client):
+        """Closed snags used to be locked; a mistake (e.g. reporter name
+        case, a wrong date) must be fixable without reopening the snag."""
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        snag_id = _add_snag(app, ac_id, reporter="j. smith", resolved=True)
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/snags/{snag_id}/edit")
+        assert resp.status_code == 200
+        assert b"closed. Changes to a closed snag are logged" in resp.data
+
+        resp = client.post(
+            f"/aircraft/{ac_id}/snags/{snag_id}/edit",
+            data={
+                "title": "Cracked cowling fastener",
+                "reporter": "J. Smith",
+                "reported_at": "2026-01-01",
+                "resolved_at": "2026-01-10",
+                "resolution_note": "Replaced fastener (corrected note).",
+            },
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            s = db.session.get(Snag, snag_id)
+            assert s.reporter == "J. Smith"
+            assert s.reported_at.date().isoformat() == "2026-01-01"
+            assert s.resolved_at.date().isoformat() == "2026-01-10"
+            assert s.resolution_note == "Replaced fastener (corrected note)."
+            assert s.is_open is False
+
+    def test_closed_snag_edit_logs_activity(self, app, client, caplog):
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         snag_id = _add_snag(app, ac_id, resolved=True)
         _login(app, client)
-        resp = client.get(
-            f"/aircraft/{ac_id}/snags/{snag_id}/edit", follow_redirects=True
+        with caplog.at_level("INFO"):
+            client.post(
+                f"/aircraft/{ac_id}/snags/{snag_id}/edit",
+                data={
+                    "title": "Cracked cowling fastener",
+                    "reported_at": "2026-01-01",
+                    "resolved_at": "2026-01-10",
+                    "resolution_note": "Replaced fastener.",
+                },
+            )
+        assert any("snag.edited_closed" in r.message for r in caplog.records)
+
+    def test_closed_snag_edit_missing_resolved_at_shows_error(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        snag_id = _add_snag(app, ac_id, resolved=True)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/snags/{snag_id}/edit",
+            data={
+                "title": "Cracked cowling fastener",
+                "reported_at": "2026-01-01",
+                "resolved_at": "",
+                "resolution_note": "Replaced fastener.",
+            },
         )
-        assert b"cannot be edited" in resp.data
+        assert b"Resolution date is required" in resp.data
+
+    def test_closed_snag_edit_rejects_resolved_before_reported(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        snag_id = _add_snag(app, ac_id, resolved=True)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/snags/{snag_id}/edit",
+            data={
+                "title": "Cracked cowling fastener",
+                "reported_at": "2026-01-10",
+                "resolved_at": "2026-01-01",
+                "resolution_note": "Replaced fastener.",
+            },
+        )
+        assert b"cannot be before the date signalled" in resp.data
+
+    def test_closed_snag_edit_requires_resolution_note(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        snag_id = _add_snag(app, ac_id, resolved=True)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/snags/{snag_id}/edit",
+            data={
+                "title": "Cracked cowling fastener",
+                "reported_at": "2026-01-01",
+                "resolved_at": "2026-01-10",
+                "resolution_note": "",
+            },
+        )
+        assert b"resolution note is required" in resp.data.lower()
 
     def test_404_wrong_aircraft(self, app, client):
         _, t1 = _create_user_and_tenant(app, "a@example.com")
@@ -318,7 +468,8 @@ class TestEditSnag:
         snag_id = _add_snag(app, ac_id)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{ac_id}/snags/{snag_id}/edit", data={"title": ""}
+            f"/aircraft/{ac_id}/snags/{snag_id}/edit",
+            data={"title": "", "reported_at": "2026-01-05"},
         )
         assert b"Title is required" in resp.data
 
@@ -341,9 +492,10 @@ class TestResolveSnag:
         ac_id = _add_aircraft(app, tenant_id)
         snag_id = _add_snag(app, ac_id)
         _login(app, client)
+        today = date.today().isoformat()
         resp = client.post(
             f"/aircraft/{ac_id}/snags/{snag_id}/resolve",
-            data={"resolution_note": "Fixed by mechanic."},
+            data={"resolution_note": "Fixed by mechanic.", "resolved_at": today},
             follow_redirects=True,
         )
         assert resp.status_code == 200
@@ -351,6 +503,7 @@ class TestResolveSnag:
             s = db.session.get(Snag, snag_id)
             assert s.is_open is False
             assert s.resolution_note == "Fixed by mechanic."
+            assert s.resolved_at.date().isoformat() == today
 
     def test_resolving_grounding_snag_ungrounds_aircraft(self, app, client):
         _, tenant_id = _create_user_and_tenant(app)
@@ -361,7 +514,10 @@ class TestResolveSnag:
             assert db.session.get(Aircraft, ac_id).is_grounded is True
         client.post(
             f"/aircraft/{ac_id}/snags/{snag_id}/resolve",
-            data={"resolution_note": "Gear door repaired."},
+            data={
+                "resolution_note": "Gear door repaired.",
+                "resolved_at": date.today().isoformat(),
+            },
         )
         with app.app_context():
             assert db.session.get(Aircraft, ac_id).is_grounded is False
@@ -372,9 +528,73 @@ class TestResolveSnag:
         snag_id = _add_snag(app, ac_id)
         _login(app, client)
         resp = client.post(
-            f"/aircraft/{ac_id}/snags/{snag_id}/resolve", data={"resolution_note": ""}
+            f"/aircraft/{ac_id}/snags/{snag_id}/resolve",
+            data={"resolution_note": "", "resolved_at": "2026-01-05"},
         )
         assert b"resolution note is required" in resp.data.lower()
+
+    def test_retroactive_resolved_at_is_saved(self, app, client):
+        """A snag can be resolved retroactively, back-dating resolved_at."""
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        with app.app_context():
+            s = Snag(
+                aircraft_id=ac_id,
+                title="Test",
+                reported_at=datetime(2020, 6, 1, tzinfo=UTC),
+            )
+            db.session.add(s)
+            db.session.commit()
+            snag_id = s.id
+        _login(app, client)
+        client.post(
+            f"/aircraft/{ac_id}/snags/{snag_id}/resolve",
+            data={"resolution_note": "Fixed last week.", "resolved_at": "2020-06-20"},
+        )
+        with app.app_context():
+            s = db.session.get(Snag, snag_id)
+            assert s.resolved_at.date().isoformat() == "2020-06-20"
+
+    def test_resolved_at_before_reported_at_shows_error(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        with app.app_context():
+            s = Snag(
+                aircraft_id=ac_id,
+                title="Test",
+                reported_at=datetime(2026, 1, 10, tzinfo=UTC),
+            )
+            db.session.add(s)
+            db.session.commit()
+            snag_id = s.id
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/snags/{snag_id}/resolve",
+            data={"resolution_note": "Fixed.", "resolved_at": "2026-01-01"},
+        )
+        assert b"cannot be before the date signalled" in resp.data
+
+    def test_resolved_at_missing_shows_error(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        snag_id = _add_snag(app, ac_id)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/snags/{snag_id}/resolve",
+            data={"resolution_note": "Fixed.", "resolved_at": ""},
+        )
+        assert b"Resolution date is required" in resp.data
+
+    def test_resolved_at_future_shows_error(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        snag_id = _add_snag(app, ac_id)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/snags/{snag_id}/resolve",
+            data={"resolution_note": "Fixed.", "resolved_at": "2999-01-01"},
+        )
+        assert b"cannot be in the future" in resp.data
 
     def test_already_closed_snag_redirects(self, app, client):
         _, tenant_id = _create_user_and_tenant(app)
@@ -397,6 +617,59 @@ class TestResolveSnag:
             follow_redirects=True,
         )
         assert b"already closed" in resp.data.lower()
+
+
+# ── Reopen snag ───────────────────────────────────────────────────────────────
+
+
+class TestReopenSnag:
+    def test_reopen_makes_snag_open_again(self, app, client, caplog):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        snag_id = _add_snag(app, ac_id, resolved=True)
+        _login(app, client)
+        with caplog.at_level("INFO"):
+            resp = client.post(
+                f"/aircraft/{ac_id}/snags/{snag_id}/reopen", follow_redirects=True
+            )
+        assert resp.status_code == 200
+        with app.app_context():
+            s = db.session.get(Snag, snag_id)
+            assert s.is_open is True
+            assert s.resolved_at is None
+            assert s.resolution_note is None
+        assert any("snag.reopened" in r.message for r in caplog.records)
+
+    def test_reopening_grounding_snag_regrounds_aircraft(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        snag_id = _add_snag(app, ac_id, is_grounding=True, resolved=True)
+        _login(app, client)
+        with app.app_context():
+            assert db.session.get(Aircraft, ac_id).is_grounded is False
+        client.post(f"/aircraft/{ac_id}/snags/{snag_id}/reopen")
+        with app.app_context():
+            assert db.session.get(Aircraft, ac_id).is_grounded is True
+
+    def test_reopen_already_open_snag_shows_error(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        snag_id = _add_snag(app, ac_id)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/snags/{snag_id}/reopen", follow_redirects=True
+        )
+        assert b"already open" in resp.data.lower()
+
+    def test_404_wrong_aircraft(self, app, client):
+        _, t1 = _create_user_and_tenant(app, "a@example.com")
+        _, t2 = _create_user_and_tenant(app, "b@example.com")
+        ac1 = _add_aircraft(app, t1, "OO-A")
+        ac2 = _add_aircraft(app, t2, "OO-B")
+        snag_id = _add_snag(app, ac2, resolved=True)
+        _login(app, client, "a@example.com")
+        resp = client.post(f"/aircraft/{ac1}/snags/{snag_id}/reopen")
+        assert resp.status_code == 404
 
 
 # ── Delete snag ───────────────────────────────────────────────────────────────
@@ -424,6 +697,21 @@ class TestDeleteSnag:
         _login(app, client, "a@example.com")
         resp = client.post(f"/aircraft/{ac1}/snags/{snag_id}/delete")
         assert resp.status_code == 404
+
+    def test_cannot_delete_closed_snag(self, app, client):
+        """Closed snags are archived, not deletable — even via a direct POST
+        (the UI never renders a delete button for them, but the route must
+        enforce this itself)."""
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        snag_id = _add_snag(app, ac_id, title="Old issue", resolved=True)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/snags/{snag_id}/delete", follow_redirects=True
+        )
+        assert b"cannot be deleted" in resp.data
+        with app.app_context():
+            assert db.session.get(Snag, snag_id) is not None
 
 
 # ── Grounding status in aircraft list / dashboard ─────────────────────────────
@@ -504,7 +792,7 @@ class TestSnagNotificationExceptions:
         ):
             resp = client.post(
                 f"/aircraft/{ac_id}/snags/new",
-                data={"title": "Broken trim tab"},
+                data={"title": "Broken trim tab", "reported_at": "2026-01-05"},
                 follow_redirects=True,
             )
         assert resp.status_code == 200
@@ -530,7 +818,7 @@ class TestSnagNotificationI18n:
         with patch("services.notification_service.dispatch", side_effect=_capture):
             client.post(
                 f"/aircraft/{ac_id}/snags/new",
-                data={"title": "Fuel cap missing"},
+                data={"title": "Fuel cap missing", "reported_at": "2026-01-05"},
                 follow_redirects=True,
             )
 
@@ -557,7 +845,11 @@ class TestSnagNotificationI18n:
         with patch("services.notification_service.dispatch", side_effect=_capture):
             client.post(
                 f"/aircraft/{ac_id}/snags/new",
-                data={"title": "Gear door collapse", "is_grounding": "on"},
+                data={
+                    "title": "Gear door collapse",
+                    "is_grounding": "on",
+                    "reported_at": "2026-01-05",
+                },
                 follow_redirects=True,
             )
 

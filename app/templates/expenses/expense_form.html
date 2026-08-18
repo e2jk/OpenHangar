@@ -22,14 +22,31 @@
 
   <div class="row justify-content-center">
     <div class="col-lg-6">
+
+      {% if not expense and prefill %}
+      <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
+        <i class="bi bi-fuel-pump me-2"></i>
+        <div>
+          {% if prefill.flight_entry_id %}
+          {{ _('Pre-filled from a logged refuel — linked to this flight.') }}
+          {% else %}
+          {{ _('Pre-filled from a logged refuel.') }}
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
       <div class="ac-form-card">
         <form method="post" enctype="multipart/form-data">
+          {% if not expense and prefill and prefill.flight_entry_id %}
+          <input type="hidden" name="flight_entry_id" value="{{ prefill.flight_entry_id }}">
+          {% endif %}
 
           <div class="row mb-3">
             <div class="col-6">
               <label for="date" class="form-label">{{ _('Date') }} <span class="text-danger">*</span></label>
               <input type="date" class="form-control" id="date" name="date"
-                     value="{{ expense.date.isoformat() if expense else today }}" required>
+                     value="{{ expense.date.isoformat() if expense else (prefill.date if prefill else today) }}" required>
             </div>
             <div class="col-6">
               <label for="expense_type" class="form-label">{{ _('Type') }} <span class="text-danger">*</span></label>
@@ -143,7 +160,7 @@
                 {{ _('Quantity') }} <span class="text-muted small">({{ _('optional') }})</span>
               </label>
               <input type="number" class="form-control" id="quantity" name="quantity"
-                     value="{{ '%.1f'|format(expense.quantity|float) if expense and expense.quantity is not none else '' }}"
+                     value="{{ '%.1f'|format(expense.quantity|float) if expense and expense.quantity is not none else (prefill.quantity if prefill and prefill.quantity else '') }}"
                      step="0.1" min="0" placeholder="e.g. 40.0">
             </div>
             <div class="col-4">
@@ -152,7 +169,8 @@
                 {% for u in units %}
                 <option value="{{ u }}"
                   {% if expense and expense.unit == u %}selected
-                  {% elif not expense and u == 'L' %}selected{% endif %}>
+                  {% elif not expense and prefill and prefill.unit == u %}selected
+                  {% elif not expense and not prefill and u == 'L' %}selected{% endif %}>
                   {{ u }}
                 </option>
                 {% endfor %}

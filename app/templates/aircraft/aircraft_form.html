@@ -114,7 +114,7 @@
       </div>
 
       <div class="row g-3 mb-4">
-        <div class="col-sm-4">
+        <div class="col-sm-6">
           <label for="reserve_hourly_rate" class="form-label">
             {{ _('Overhaul reserve accrual') }} <span class="text-muted small">({{ _('per hour, optional') }})</span>
           </label>
@@ -123,7 +123,7 @@
                  step="0.01" min="0" placeholder="e.g. 15.00">
           <div class="form-text">{{ _('Set aside per flight hour toward a future engine/component overhaul; shown as a line on the cost dashboard.') }}</div>
         </div>
-        <div class="col-sm-4">
+        <div class="col-sm-6">
           <label for="oil_warning_lph" class="form-label">
             {{ _('Oil consumption warning') }} <span class="text-muted small">({{ _('L/h, optional') }})</span>
           </label>
@@ -132,15 +132,48 @@
                  step="0.01" min="0" placeholder="e.g. 0.10">
           <div class="form-text">{{ _('The cost dashboard warns when oil consumption exceeds this rate — an early sign of engine wear.') }}</div>
         </div>
-        <div class="col-sm-4">
-          <label for="fuel_capacity_liters" class="form-label">
-            {{ _('Total fuel tank capacity') }} <span class="text-muted small">(L, {{ _('optional') }})</span>
-          </label>
-          <input type="number" class="form-control" id="fuel_capacity_liters" name="fuel_capacity_liters"
-                 value="{{ '%.1f'|format(aircraft.fuel_capacity_liters|float) if aircraft and aircraft.fuel_capacity_liters is not none else '' }}"
-                 step="0.1" min="0" placeholder="e.g. 110.0">
-          <div class="form-text">{{ _('All tanks combined. Enables quick fraction-of-tank buttons on the flight log.') }}</div>
+      </div>
+
+      {# Fuel tanks — a single-tank aircraft still needs exactly one row
+         here (e.g. "Main") to get the quick fraction-of-tank buttons on
+         the flight log; an aircraft with independent tanks (e.g. left/right
+         wing) can define each one to get a per-tank picker instead. #}
+      <div class="mb-4">
+        <label class="form-label">{{ _('Fuel tanks') }} <span class="text-muted small">({{ _('optional') }})</span></label>
+        <div class="form-text mb-2">{{ _('Define one row per tank (just one for a single combined tank) to get quick fraction-of-tank buttons on the flight log.') }}</div>
+        <div id="fuel-tanks-container">
+          {% for tank in (aircraft.fuel_tanks if aircraft else []) %}
+          <div class="fuel-tank-row row g-2 align-items-end mb-2">
+            <div class="col-sm-6">
+              <label class="form-label form-label-sm">{{ _('Name') }}</label>
+              <input type="text" class="form-control form-control-sm" name="tank_name[]"
+                     value="{{ tank.name }}" placeholder="{{ _('e.g. Left wing') }}">
+            </div>
+            <div class="col-sm-4">
+              <label class="form-label form-label-sm">{{ _('Capacity') }} (L)</label>
+              <input type="number" class="form-control form-control-sm" name="tank_capacity[]"
+                     value="{{ '%.1f'|format(tank.capacity_liters|float) }}" step="0.1" min="0">
+            </div>
+            <div class="col-sm-2 d-flex align-items-end">
+              <button type="button" class="btn btn-ac-danger btn-xs remove-fuel-tank" title="{{ _('Remove') }}">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+          {% endfor %}
         </div>
+        <button type="button" id="add-fuel-tank" class="btn btn-ac-secondary btn-sm">
+          <i class="bi bi-plus-circle me-1"></i>{{ _('Add tank') }}
+        </button>
+      </div>
+
+      <div class="mb-4">
+        <label for="showcase_blurb" class="form-label">
+          {{ _('About this aircraft') }} <span class="text-muted small">({{ _('optional') }})</span>
+        </label>
+        <textarea class="form-control" id="showcase_blurb" name="showcase_blurb" rows="3"
+                  placeholder="{{ _('A short blurb shown on the public showcase page — history, why you love flying it, etc.') }}">{{ aircraft.showcase_blurb or '' if aircraft else '' }}</textarea>
+        <div class="form-text">{{ _('Only shown on the public showcase page (photos + this text, no operational data) — see Share Links below.') }}</div>
       </div>
 
       <div class="mb-4">
@@ -178,5 +211,25 @@
   </div>
 
 </div>
+
+<template id="fuel-tank-row-template">
+  <div class="fuel-tank-row row g-2 align-items-end mb-2">
+    <div class="col-sm-6">
+      <label class="form-label form-label-sm">{{ _('Name') }}</label>
+      <input type="text" class="form-control form-control-sm" name="tank_name[]"
+             placeholder="{{ _('e.g. Left wing') }}">
+    </div>
+    <div class="col-sm-4">
+      <label class="form-label form-label-sm">{{ _('Capacity') }} (L)</label>
+      <input type="number" class="form-control form-control-sm" name="tank_capacity[]"
+             step="0.1" min="0">
+    </div>
+    <div class="col-sm-2 d-flex align-items-end">
+      <button type="button" class="btn btn-ac-danger btn-xs remove-fuel-tank" title="{{ _('Remove') }}">
+        <i class="bi bi-trash"></i>
+      </button>
+    </div>
+  </div>
+</template>
 {% endblock %}
 

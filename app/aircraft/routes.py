@@ -23,6 +23,7 @@ from models import (
     FUEL_DENSITY,
     GAL_TO_L,
     Aircraft,
+    AircraftFuelTank,
     AircraftGpsImportBatch,
     AircraftOwner,
     AircraftPhoto,
@@ -38,6 +39,7 @@ from models import (
     GpsTrack,
     MaintenanceTrigger,
     OperatingModel,
+    Refuel,
     Reservation,
     ReservationStatus,
     Role,
@@ -274,6 +276,12 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         .limit(3)
         .all()
     )
+    recent_refuels = (
+        Refuel.query.filter_by(aircraft_id=ac.id)
+        .order_by(Refuel.date.desc(), Refuel.id.desc())
+        .limit(3)
+        .all()
+    )
     recent_documents = (
         Document.query.filter_by(aircraft_id=ac.id, is_sensitive=False)
         .order_by(Document.uploaded_at.desc())
@@ -385,6 +393,7 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         maintenance_summary=maintenance_summary,
         recent_expenses=recent_expenses,
         expense_type_labels=ExpenseType.LABELS,
+        recent_refuels=recent_refuels,
         recent_documents=recent_documents,
         document_count=document_count,
         active_insurance_cert=active_insurance_cert,
@@ -432,7 +441,7 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
         fuel_type = "avgas"
     reserve_hourly_rate_raw = request.form.get("reserve_hourly_rate", "").strip()
     oil_warning_lph_raw = request.form.get("oil_warning_lph", "").strip()
-    fuel_capacity_liters_raw = request.form.get("fuel_capacity_liters", "").strip()
+    showcase_blurb = request.form.get("showcase_blurb", "").strip() or None
     logbook_time_precision = request.form.get(
         "logbook_time_precision", "tenth_hour"
     ).strip()
@@ -504,14 +513,24 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
                 _("Oil consumption warning threshold must be a non-negative number.")
             )
 
-    fuel_capacity_liters = None
-    if fuel_capacity_liters_raw:
+    # Fuel tanks (see AircraftFuelTank docstring). Same "replace all rows"
+    # pattern as the W&B stations form: blank-name rows are silently
+    # dropped, a non-positive/invalid capacity is an error.
+    tank_names = request.form.getlist("tank_name[]")
+    tank_capacities_raw = request.form.getlist("tank_capacity[]")
+    tanks_data: list[tuple[str, float]] = []
+    for i, tname in enumerate(tank_names):
+        tname = tname.strip()
+        if not tname:
+            continue
         try:
-            fuel_capacity_liters = float(fuel_capacity_liters_raw)
-            if fuel_capacity_liters <= 0:
+            tcap = float(tank_capacities_raw[i])
+            if tcap <= 0:
                 raise ValueError
-        except ValueError:
+        except (ValueError, IndexError):
             errors.append(_("Fuel tank capacity must be a positive number."))
+            continue
+        tanks_data.append((tname, tcap))
 
     if errors:
         for msg in errors:
@@ -533,7 +552,18 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     ac.logbook_time_precision = logbook_time_precision
     ac.reserve_hourly_rate = reserve_hourly_rate
     ac.oil_warning_lph = oil_warning_lph
-    ac.fuel_capacity_liters = fuel_capacity_liters
+    ac.showcase_blurb = showcase_blurb
+    db.session.commit()
+
+    # Replace fuel tanks (same "delete all, recreate" strategy as W&B stations)
+    for t in list(ac.fuel_tanks):
+        db.session.delete(t)
+    for i, (tname, tcap) in enumerate(tanks_data):
+        db.session.add(
+            AircraftFuelTank(
+                aircraft_id=ac.id, name=tname, capacity_liters=tcap, sort_order=i
+            )
+        )
     db.session.commit()
 
     if is_new:

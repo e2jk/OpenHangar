@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, time
 
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
@@ -56,6 +56,22 @@ def _get_snag_or_404(aircraft: Aircraft, snag_id: int) -> Snag:
     return s
 
 
+def _parse_required_date(raw: str, label: str) -> tuple[date | None, str | None]:
+    """Parse a required ``YYYY-MM-DD`` form field. Returns ``(value, None)``
+    on success or ``(None, error_message)`` on the first failure — mirrors
+    the ``(values, error)`` idiom used by other blueprints' form parsers."""
+    raw = raw.strip()
+    if not raw:
+        return None, str(_("%(label)s is required.", label=label))
+    try:
+        d = date.fromisoformat(raw)
+    except ValueError:
+        return None, str(_("%(label)s must be a valid date (YYYY-MM-DD).", label=label))
+    if d > datetime.now(UTC).date():
+        return None, str(_("%(label)s cannot be in the future.", label=label))
+    return d, None
+
+
 # ── Snag list ─────────────────────────────────────────────────────────────────
 
 
@@ -90,7 +106,12 @@ def new_snag(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     if request.method == "POST":
         return _save_snag(ac, None)
-    return render_template("snags/snag_form.html", aircraft=ac, snag=None)
+    return render_template(
+        "snags/snag_form.html",
+        aircraft=ac,
+        snag=None,
+        today=date.today().isoformat(),
+    )
 
 
 # ── Edit snag ─────────────────────────────────────────────────────────────────
@@ -105,12 +126,11 @@ def new_snag(aircraft_id: int) -> ResponseReturnValue:
 def edit_snag(aircraft_id: int, snag_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     s = _get_snag_or_404(ac, snag_id)
-    if not s.is_open:
-        flash(_("Closed snags cannot be edited."), "danger")
-        return redirect(url_for("snags.list_snags", aircraft_id=ac.id))
     if request.method == "POST":
         return _save_snag(ac, s)
-    return render_template("snags/snag_form.html", aircraft=ac, snag=s)
+    return render_template(
+        "snags/snag_form.html", aircraft=ac, snag=s, today=date.today().isoformat()
+    )
 
 
 def _save_snag(ac: Aircraft, s: Snag | None) -> ResponseReturnValue:
@@ -118,17 +138,57 @@ def _save_snag(ac: Aircraft, s: Snag | None) -> ResponseReturnValue:
     description = request.form.get("description", "").strip() or None
     reporter = request.form.get("reporter", "").strip() or None
     is_grounding = bool(request.form.get("is_grounding"))
+    reported_at_raw = request.form.get("reported_at", "").strip()
 
     errors = []
     if not title:
         errors.append(_("Title is required."))
 
+    reported_date, date_error = _parse_required_date(
+        reported_at_raw, str(_("Date signalled"))
+    )
+    if date_error:
+        errors.append(date_error)
+
+    # Editing an already-closed snag also exposes the resolution fields, so a
+    # mistake made when it was originally closed (wrong date, typo in the
+    # note) can be fixed without leaving the snag stuck unresolved.
+    editing_closed = s is not None and not s.is_open
+    resolved_date = None
+    resolution_note = None
+    if editing_closed:
+        resolved_at_raw = request.form.get("resolved_at", "").strip()
+        resolution_note = request.form.get("resolution_note", "").strip()
+        resolved_date, resolved_error = _parse_required_date(
+            resolved_at_raw, str(_("Resolution date"))
+        )
+        if resolved_error:
+            errors.append(resolved_error)
+        if not resolution_note:
+            errors.append(_("A resolution note is required."))
+        if reported_date and resolved_date and resolved_date < reported_date:
+            errors.append(_("Resolution date cannot be before the date signalled."))
+
     if errors:
         for msg in errors:
             flash(msg, "danger")
-        return render_template("snags/snag_form.html", aircraft=ac, snag=s)
+        return render_template(
+            "snags/snag_form.html", aircraft=ac, snag=s, today=date.today().isoformat()
+        )
 
     _snag_is_new = s is None
+    old_values = None
+    if s is not None and not s.is_open:
+        old_values = {
+            "title": s.title,
+            "description": s.description,
+            "reporter": s.reporter,
+            "is_grounding": s.is_grounding,
+            "reported_at": s.reported_at.isoformat(),
+            "resolved_at": s.resolved_at.isoformat() if s.resolved_at else None,
+            "resolution_note": s.resolution_note,
+        }
+
     if s is None:
         s = Snag(aircraft_id=ac.id)
         db.session.add(s)
@@ -137,7 +197,30 @@ def _save_snag(ac: Aircraft, s: Snag | None) -> ResponseReturnValue:
     s.description = description
     s.reporter = reporter
     s.is_grounding = is_grounding
+    assert reported_date is not None
+    s.reported_at = datetime.combine(reported_date, time.min, tzinfo=UTC)
+    if editing_closed:
+        assert resolved_date is not None
+        s.resolved_at = datetime.combine(resolved_date, time.min, tzinfo=UTC)
+        s.resolution_note = resolution_note
     db.session.commit()
+
+    if old_values is not None:
+        activity(
+            "snag.edited_closed",
+            snag_id=s.id,
+            aircraft_id=ac.id,
+            old=old_values,
+            new={
+                "title": s.title,
+                "description": s.description,
+                "reporter": s.reporter,
+                "is_grounding": s.is_grounding,
+                "reported_at": s.reported_at.isoformat(),
+                "resolved_at": s.resolved_at.isoformat() if s.resolved_at else None,
+                "resolution_note": s.resolution_note,
+            },
+        )
 
     if _snag_is_new:
         activity(
@@ -265,19 +348,79 @@ def resolve_snag(aircraft_id: int, snag_id: int) -> ResponseReturnValue:
 
     if request.method == "POST":
         note = request.form.get("resolution_note", "").strip()
+        resolved_at_raw = request.form.get("resolved_at", "").strip()
+
+        errors = []
         if not note:
-            flash(_("A resolution note is required."), "danger")
-            return render_template("snags/resolve_form.html", aircraft=ac, snag=s)
-        s.resolved_at = datetime.now(UTC)
+            errors.append(_("A resolution note is required."))
+        resolved_date, date_error = _parse_required_date(
+            resolved_at_raw, str(_("Resolution date"))
+        )
+        if date_error:
+            errors.append(date_error)
+        if resolved_date and resolved_date < s.reported_at.date():
+            errors.append(_("Resolution date cannot be before the date signalled."))
+
+        if errors:
+            for msg in errors:
+                flash(msg, "danger")
+            return render_template(
+                "snags/resolve_form.html",
+                aircraft=ac,
+                snag=s,
+                today=date.today().isoformat(),
+            )
+
+        assert resolved_date is not None
+        s.resolved_at = datetime.combine(resolved_date, time.min, tzinfo=UTC)
         s.resolution_note = note
         db.session.commit()
         activity(
-            "snag.resolved", snag_id=snag_id, aircraft_id=aircraft_id, title=s.title
+            "snag.resolved",
+            snag_id=snag_id,
+            aircraft_id=aircraft_id,
+            title=s.title,
+            resolved_at=s.resolved_at.isoformat(),
         )
         flash(_("Snag '%(title)s' closed.", title=s.title), "success")
         return redirect(url_for("snags.list_snags", aircraft_id=ac.id))
 
-    return render_template("snags/resolve_form.html", aircraft=ac, snag=s)
+    return render_template(
+        "snags/resolve_form.html", aircraft=ac, snag=s, today=date.today().isoformat()
+    )
+
+
+# ── Reopen snag ───────────────────────────────────────────────────────────────
+
+
+@snags_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/snags/<int:snag_id>/reopen",
+    methods=["POST"],
+)
+@login_required
+@require_role(*_CREW_ROLES)
+def reopen_snag(aircraft_id: int, snag_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    s = _get_snag_or_404(ac, snag_id)
+    if s.is_open:
+        flash(_("Snag is already open."), "danger")
+        return redirect(url_for("snags.list_snags", aircraft_id=ac.id))
+
+    previous_resolved_at = s.resolved_at
+    s.resolved_at = None
+    s.resolution_note = None
+    db.session.commit()
+    activity(
+        "snag.reopened",
+        snag_id=s.id,
+        aircraft_id=ac.id,
+        title=s.title,
+        previous_resolved_at=(
+            previous_resolved_at.isoformat() if previous_resolved_at else None
+        ),
+    )
+    flash(_("Snag '%(title)s' reopened.", title=s.title), "warning")
+    return redirect(url_for("snags.list_snags", aircraft_id=ac.id))
 
 
 # ── Delete snag ───────────────────────────────────────────────────────────────
@@ -291,6 +434,9 @@ def resolve_snag(aircraft_id: int, snag_id: int) -> ResponseReturnValue:
 def delete_snag(aircraft_id: int, snag_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     s = _get_snag_or_404(ac, snag_id)
+    if not s.is_open:
+        flash(_("Closed snags are archived and cannot be deleted."), "danger")
+        return redirect(url_for("snags.list_snags", aircraft_id=ac.id))
     title = s.title
     db.session.delete(s)
     db.session.commit()

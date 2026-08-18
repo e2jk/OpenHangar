@@ -33,51 +33,6 @@ pilot silently overwrite the header fields the first pilot logged.
 
 ---
 
-## Cost tracking: treat fuel-added entries as independent purchases
-
-`Flight.fuel_added_before_qty`/`fuel_added_after_qty` (added alongside the
-before/after refuel split) are currently just descriptive logbook figures —
-nothing in `app/expenses/` or `app/services/` reads them, so there's no
-automated cost tracking yet. Whenever that gets built (e.g. auto-suggesting
-an expense from a logged refuel, or a "fuel cost per hour" line on the cost
-dashboard), treat a before-entry and an after-entry on the same flight as
-two fully independent purchases — only the date and the aircraft link
-matter, not which flight row they happen to be attached to. Two flights
-refueled back-to-back (after landing flight N, before departing flight N+1)
-should cost-account identically whether the pilot logged that fuel as
-flight N's "after" or flight N+1's "before".
-
----
-
-## Fuel: log a refuel not tied to any flight
-
-Right now `fuel_added_before_qty`/`fuel_added_after_qty` only exist on a
-`Flight` row, so refueling that doesn't bracket a flight (e.g. the owner
-stops by the airfield for maintenance and tops off the tank while there)
-has no home — it has to be misattributed to the nearest flight's
-before/after fields, or dropped. Needs a lightweight standalone "refuel"
-record (date, aircraft, quantity, unit — no flight linkage required),
-findable from the aircraft page. Relevant to the cost-tracking item above:
-whatever independent-purchase model that ends up building should treat a
-standalone refuel the same as a flight-linked one.
-
----
-
-## Per-tank fuel capacity tracking
-
-`Aircraft.fuel_capacity_liters` (added alongside the flight-log tank-fraction
-quick-fill buttons) tracks only a single combined total across all tanks.
-Aircraft with multiple independent tanks (e.g. left/right wing tanks, or a
-main + aux tank) can't currently model per-tank capacity, per-tank quantity
-remaining, or a per-tank fraction quick-fill. Would need a new
-`AircraftFuelTank` table (name, capacity) replacing the scalar column, plus
-matching UI on both the aircraft form and the flight form (one set of
-fraction buttons per tank, or a tank picker before the fraction buttons).
-Deferred until a real multi-tank use case shows up — single total capacity
-covers the common case.
-
----
-
 ## Shared ownership: deferred scope from Phase 39
 
 Phase 39 (Shared Ownership) deliberately excluded the following; none of it
@@ -96,45 +51,6 @@ is scheduled, but each is a plausible follow-up if a real need surfaces:
   export covers this instead).
 - Multi-currency (the shared billing ledger core is single-currency by
   design).
-
----
-
-## Public showcase page per aircraft ("brag page")
-
-A public, no-login page an owner can send to friends/family — photos and
-high-level type info, nothing operational. Distinct from the existing share
-link (`share/routes.py`, `ShareToken.access_level` = `summary`/`full`), which
-is aimed at co-owners/renters/mechanics and exposes real status data
-(airworthiness, maintenance triggers, flight/cost history). This is a third,
-lighter tier with a different audience and different content:
-
-- **Photos**: the existing `AircraftPhoto` gallery (already has `sort_order`),
-  shown large/carousel-style rather than as a management list.
-- **High-level type info**: make/model/year, maybe a short free-text
-  "about this aircraft" blurb (new nullable column on `Aircraft`, or reuse an
-  existing notes field if one already fits) — no counters, no
-  maintenance/document data at all.
-- Explicitly **not** included: flight logs, maintenance status, costs,
-  documents, pilot names, or anything from the `summary`/`full` share tiers.
-
-URL: `/showcase/<registration>/<token>` — the registration makes the link
-readable/brandable (and registrations are public info anyway), but the
-opaque token remains the actual access control, so the page stays
-individually revocable and isn't guessable/enumerable from the registration
-alone. A registration change (sale/re-registration) would break existing
-links under this scheme — acceptable since re-sharing is cheap for this
-casual use case.
-
-Implementation sketch:
-- New `access_level` value (e.g. `"showcase"`) on `ShareToken`, or a separate
-  token model/table if reusing `ShareToken` muddies the existing
-  summary/full semantics — decide once the template/route split is clear.
-- New route + template in `share/`, e.g. `share/showcase.html`, following the
-  same standalone-page pattern as `share/public.html` (no `base.html`
-  extension, so it's one of the two templates allowed a `<script nonce>` if
-  any JS is needed for a photo carousel).
-- Owner-facing UI: a way to generate/copy/revoke this link, alongside the
-  existing share-link management on the aircraft detail page.
 
 ---
 
@@ -848,20 +764,6 @@ high-utilization one, too little warning; a projected-date threshold ("due in
 Why deferred: needs a sensible minimum-data guard (an aircraft flown twice in
 90 days produces a meaningless trend) and careful UI wording so the estimate
 is never mistaken for a real due date.
-
----
-
-## Reports: annual utilization & insurance-renewal summary
-
-Per aircraft, for a selectable period (default rolling 12 months, or an
-arbitrary policy year): engine hours and flight hours flown, number of
-flights, landings, fuel added, oil added. Insurance renewals commonly ask
-for hours flown in the past policy year and expected hours for the next;
-today this requires manually summing logbook pages.
-
-Candidate to fold into Phase 45 (Advanced Reporting & Exports) as an
-additional report; kept here as a separate item so it isn't lost if Phase 45
-is trimmed, since all the underlying data already exists.
 
 ---
 

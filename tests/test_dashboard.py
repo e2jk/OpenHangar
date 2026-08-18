@@ -2,6 +2,7 @@
 Tests for Phase 5: Real Dashboard — stat cards, status badges, panel data.
 """
 
+import re
 from datetime import UTC, date, datetime, timedelta
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
@@ -12,6 +13,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     Reservation,
     ReservationStatus,
     Role,
+    Snag,
     Tenant,
     TenantProfile,
     TenantUser,
@@ -361,6 +363,75 @@ class TestDashboardStats:
         _login(app, client)
         r = client.get("/")
         assert b"Maintenance alert" in r.data
+
+
+class TestDashboardSnagStat:
+    """The 'Open snags' stat card: aggressive (red) when grounding, subtle
+    otherwise — and present both in single-aircraft and fleet mode."""
+
+    def _add_snag(self, app, aircraft_id, title, is_grounding):
+        with app.app_context():
+            s = Snag(aircraft_id=aircraft_id, title=title, is_grounding=is_grounding)
+            db.session.add(s)
+            db.session.commit()
+
+    def test_shows_zero_when_no_open_snags(self, app, client):
+        _uid, tid = _setup(app)
+        _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.get("/")
+        assert b"Open snags" in r.data
+
+    def test_grounding_snag_uses_danger_styling(self, app, client):
+        _uid, tid = _setup(app)
+        acid = _add_aircraft(app, tid)
+        self._add_snag(app, acid, "Gear door unsafe", is_grounding=True)
+        _login(app, client)
+        r = client.get("/")
+        assert b"icon-red" in r.data
+        assert b"stat-value text-danger" in r.data
+
+    def test_non_grounding_snag_stays_subtle(self, app, client):
+        _uid, tid = _setup(app)
+        acid = _add_aircraft(app, tid)
+        self._add_snag(app, acid, "Cosmetic scratch", is_grounding=False)
+        _login(app, client)
+        r = client.get("/")
+        assert b"icon-blue" in r.data
+        assert b"stat-value text-danger" not in r.data
+        # The "Other" sub-count reflects the non-grounding open snag.
+        assert re.search(
+            r'stat-value">\s*1\s*</div>\s*<div class="stat-sublabel">\s*Other',
+            r.data.decode(),
+        )
+
+    def test_resolved_snags_not_counted(self, app, client):
+        _uid, tid = _setup(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            s = Snag(
+                aircraft_id=acid,
+                title="Old issue",
+                is_grounding=True,
+                resolved_at=datetime.now(UTC),
+                resolution_note="Fixed.",
+            )
+            db.session.add(s)
+            db.session.commit()
+        _login(app, client)
+        r = client.get("/")
+        assert b"icon-red" not in r.data
+
+    def test_single_aircraft_mode_links_to_snag_list(self, app, client):
+        _uid, tid = _setup(app)
+        _add_aircraft(app, tid, registration="OO-SNG")
+        with app.app_context():
+            profile = TenantProfile(tenant_id=tid, planned_aircraft_count=1)
+            db.session.add(profile)
+            db.session.commit()
+        _login(app, client)
+        r = client.get("/")
+        assert b"/aircraft/OO-SNG/snags" in r.data
 
 
 class TestStatCardPluralization:

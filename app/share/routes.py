@@ -19,6 +19,7 @@ from flask import (
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from models import (
     Aircraft,
+    AircraftPhoto,
     Document,
     ExpenseType,
     Flight,
@@ -67,7 +68,7 @@ def _get_aircraft_or_403(aircraft_id: int) -> Aircraft:
 def create_token(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_403(aircraft_id)
     access_level = request.form.get("access_level", "summary")
-    if access_level not in ("summary", "full"):
+    if access_level not in ("summary", "full", "showcase"):
         access_level = "summary"
     token = _generate_token()
     db.session.add(
@@ -106,8 +107,11 @@ def token_qr(aircraft_id: int, token_id: int) -> ResponseReturnValue:
     import qrcode  # pyright: ignore[reportMissingImports]
 
     safe_reg = ac.registration.replace("/", "-").replace(" ", "-")
+    endpoint = (
+        "share.showcase_view" if st.access_level == "showcase" else "share.public_view"
+    )
     share_url = request.host_url.rstrip("/") + url_for(
-        "share.public_view", token=st.token, registration=safe_reg
+        endpoint, token=st.token, registration=safe_reg
     )
     qr = qrcode.QRCode(
         error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=8, border=4
@@ -138,7 +142,7 @@ def public_view(token: str, registration: str | None = None) -> ResponseReturnVa
     # the URL (e.g. after a re-registration) is simply ignored rather than
     # validated.
     st = ShareToken.query.filter_by(token=token).first()
-    if not st or not st.is_active:
+    if not st or not st.is_active or st.access_level == "showcase":
         abort(404)
 
     ac = st.aircraft
@@ -194,3 +198,53 @@ def public_view(token: str, registration: str | None = None) -> ResponseReturnVa
     )
     resp.headers["X-Robots-Tag"] = "noindex, nofollow"
     return resp
+
+
+# ── Public showcase view (backlog: "brag page") ─────────────────────────────
+#
+# A third, lighter share tier, deliberately separate from public_view above:
+# photos and high-level type info only — never flight logs, maintenance
+# status, costs, documents, or pilot names. Looking the token up scoped to
+# access_level == "showcase" (rather than reusing public_view's any-active-
+# token lookup) keeps the tiers from leaking into each other: a showcase
+# token can't be used to pull up the operational public_view page, and a
+# summary/full token can't be used to pull up this one.
+
+
+@share_bp.route("/showcase/<token>")
+@share_bp.route("/showcase/<registration>/<token>")
+def showcase_view(token: str, registration: str | None = None) -> ResponseReturnValue:
+    st = ShareToken.query.filter_by(token=token, access_level="showcase").first()
+    if not st or not st.is_active:
+        abort(404)
+
+    resp = make_response(
+        render_template("share/showcase.html", aircraft=st.aircraft, token=st)
+    )
+    resp.headers["X-Robots-Tag"] = "noindex, nofollow"
+    return resp
+
+
+@share_bp.route("/showcase/<token>/photos/<int:photo_id>/img")
+def showcase_photo(token: str, photo_id: int) -> ResponseReturnValue:
+    import os
+
+    from flask import (  # pyright: ignore[reportMissingImports]
+        current_app,
+        send_from_directory,
+    )
+
+    st = ShareToken.query.filter_by(token=token, access_level="showcase").first()
+    if not st or not st.is_active:
+        abort(404)
+    photo = db.session.get(AircraftPhoto, photo_id)
+    if not photo or photo.aircraft_id != st.aircraft_id:
+        abort(404)
+
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    directory = os.path.join(folder, os.path.dirname(photo.filename))
+    fname = os.path.basename(photo.filename)
+    response = send_from_directory(directory, fname, max_age=31536000)
+    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    response.headers["X-Robots-Tag"] = "noindex, nofollow"
+    return response

@@ -128,7 +128,12 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
     "snags.new_snag": _CREW_ROLES,
     "snags.edit_snag": _CREW_ROLES,
     "snags.resolve_snag": _CREW_ROLES,
+    "snags.reopen_snag": _CREW_ROLES,
     "snags.delete_snag": _CREW_ROLES,
+    # refuels_bp
+    "refuels.new_refuel": _CREW_ROLES,
+    "refuels.edit_refuel": _CREW_ROLES,
+    "refuels.delete_refuel": _CREW_ROLES,
     # expenses_bp
     "expenses.add_expense": _OWNER_ROLES,
     "expenses.edit_expense": _OWNER_ROLES,
