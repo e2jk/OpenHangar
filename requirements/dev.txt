@@ -31,4 +31,4 @@ openpyxl==3.1.5
 # Screenshot script (scripts/take_screenshots.py) — run `playwright install chromium` after
 playwright==1.62.0
 PyYAML==6.0.3
-zizmor==1.28.0
+zizmor==1.29.0
