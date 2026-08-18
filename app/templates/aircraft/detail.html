@@ -19,6 +19,7 @@
   url_for('snags.list_snags', aircraft_id=aircraft.id),
   url_for('maintenance.list_triggers', aircraft_id=aircraft.id),
   url_for('refuels.list_refuels', aircraft_id=aircraft.id),
+  url_for('reports.utilization_report', aircraft_id=aircraft.id),
 ] %}
 {% if is_crew %}
 {% set ns.urls = ns.urls + [url_for('airworthiness.dashboard', aircraft_id=aircraft.id)] %}
@@ -665,6 +666,10 @@
       <a href="{{ url_for('expenses.cost_dashboard', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost btn-sm">
         <i class="bi bi-graph-up-arrow me-1"></i>{{ _('Cost dashboard') }}
+      </a>
+      <a href="{{ url_for('reports.utilization_report', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-clipboard-data me-1"></i>{{ _('Utilization report') }}
       </a>
     </div>
   </div>

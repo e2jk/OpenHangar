@@ -1934,6 +1934,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
+- [x] Utilization & insurance-renewal summary — per-aircraft report (`/aircraft/<id>/reports/utilization`): flight/engine hours, flight count, landings, fuel added, oil added, for a rolling preset period or an arbitrary policy-year date range, with the immediately preceding period of the same length shown for comparison; CSV export; print-friendly web view (no PDF pipeline needed)
 - [ ] Airframe / engine / propeller logbook PDF export (per aircraft or per component)
 - [ ] Cost report PDF — period-selectable, grouped by type, with cost-per-hour
 - [ ] Fleet health summary — one-page printable status sheet for all aircraft
