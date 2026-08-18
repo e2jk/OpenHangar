@@ -718,6 +718,10 @@ def create_app() -> Flask:
 
     app.register_blueprint(snags_bp)
 
+    from refuels.routes import refuels_bp
+
+    app.register_blueprint(refuels_bp)
+
     from pilots.routes import pilots_bp
 
     app.register_blueprint(pilots_bp)

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}{% if refuel %}{{ _('Edit Refuel') }}{% else %}{{ _('Log a refuel') }}{% endif %} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        {% if refuel %}{{ _('Edit Refuel') }}{% else %}{{ _('Log a refuel') }}{% endif %}
+      </h1>
+      <p class="page-sub"><span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+  </div>
+
+  <div class="ac-form-card">
+    <form method="post">
+
+      <div class="mb-3">
+        <label for="date" class="form-label fw-semibold">{{ _('Date') }} <span class="text-danger">*</span></label>
+        <input type="date" class="form-control" id="date" name="date"
+               value="{{ refuel.date.strftime('%Y-%m-%d') if refuel else today }}"
+               required>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col-8">
+          <label for="quantity" class="form-label fw-semibold">{{ _('Quantity') }} <span class="text-danger">*</span></label>
+          <input type="number" class="form-control" id="quantity" name="quantity"
+                 value="{{ '%.1f'|format(refuel.quantity|float) if refuel else '' }}"
+                 step="0.1" min="0" placeholder="e.g. 40.0" required>
+        </div>
+        <div class="col-4">
+          <label for="unit" class="form-label fw-semibold">{{ _('Unit') }}</label>
+          <select class="form-select" id="unit" name="unit">
+            {% for u in units %}
+            <option value="{{ u }}"
+              {% if refuel and refuel.unit == u %}selected
+              {% elif not refuel and u == 'L' %}selected{% endif %}>
+              {{ u }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label for="note" class="form-label fw-semibold">{{ _('Note') }}</label>
+        <input type="text" class="form-control" id="note" name="note"
+               value="{{ refuel.note if refuel and refuel.note else '' }}"
+               placeholder="{{ _('e.g. topped off before maintenance') }}">
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-ac-primary">
+          <i class="bi bi-floppy me-1"></i>{{ _('Save') }}
+        </button>
+        <a href="{{ url_for('refuels.list_refuels', aircraft_id=aircraft.id) }}"
+           class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
+      </div>
+
+    </form>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Refuels') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-fuel-pump me-2"></i>{{ _('Refuels') }}
+      </h1>
+      <p class="page-sub"><span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      {% if is_crew %}
+      <a href="{{ url_for('refuels.new_refuel', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-primary">
+        <i class="bi bi-plus-circle me-1"></i>{{ _('Log a refuel') }}
+      </a>
+      {% endif %}
+      <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost">
+        <i class="bi bi-arrow-left me-1"></i>{{ aircraft.registration }}
+      </a>
+    </div>
+  </div>
+
+  {% if refuels %}
+  <div class="ac-form-card p-0 mb-4">
+    <table class="table table-hover mb-0 oh-fs-09">
+      <thead class="oh-bg-light">
+        <tr>
+          <th class="ps-3">{{ _('Date') }}</th>
+          <th>{{ _('Quantity') }}</th>
+          <th>{{ _('Note') }}</th>
+          <th class="pe-3"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in refuels %}
+        <tr>
+          <td class="ps-3 align-middle text-nowrap">{{ r.date.strftime('%Y-%m-%d') }}</td>
+          <td class="align-middle fw-semibold oh-text-navy">{{ '%.1f'|format(r.quantity|float) }} {{ r.unit }}</td>
+          <td class="align-middle text-muted">{{ r.note or '—' }}</td>
+          <td class="pe-3 text-end align-middle text-nowrap">
+            {% if is_owner %}
+            <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id, date=r.date.isoformat(), quantity=r.quantity, unit=r.unit) }}"
+               class="btn btn-ac-secondary btn-xs me-1" title="{{ _('Log as expense') }}">
+              <i class="bi bi-receipt"></i>
+            </a>
+            {% endif %}
+            {% if is_crew %}
+            <a href="{{ url_for('refuels.edit_refuel', aircraft_id=aircraft.id, refuel_id=r.id) }}"
+               class="btn btn-ac-secondary btn-xs me-1" title="{{ _('Edit') }}">
+              <i class="bi bi-pencil"></i>
+            </a>
+            <form method="post"
+                  action="{{ url_for('refuels.delete_refuel', aircraft_id=aircraft.id, refuel_id=r.id) }}"
+                  class="d-inline"
+                  data-confirm="{{ _('Delete this refuel?') }}">
+              <button type="submit" class="btn btn-ac-danger btn-xs">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="ac-empty mb-4">
+    <i class="bi bi-fuel-pump ac-empty-icon"></i>
+    <p>{{ _('No refuels logged yet.') }}</p>
+    {% if is_crew %}
+    <a href="{{ url_for('refuels.new_refuel', aircraft_id=aircraft.id) }}"
+       class="btn btn-ac-primary">
+      <i class="bi bi-plus-circle me-1"></i>{{ _('Log a refuel') }}
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -84,6 +84,7 @@ var SWR_PATTERNS = [
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/expenses$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/costs$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/snags$/,
+  /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/refuels$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/maintenance$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/airworthiness\/$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/reservations\/$/,

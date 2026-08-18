@@ -59,210 +59,210 @@ msgstr "De reservefondsbijdrage (per maand) moet een niet-negatief getal zijn."
 msgid "Set either an hourly or a monthly reserve contribution, not both."
 msgstr "Stel voor het reservefonds een bijdrage per uur óf per maand in, niet beide."
 
-#: app/aircraft/routes.py:444
+#: app/aircraft/routes.py:452
 msgid "Registration is required."
 msgstr "Kenteken is verplicht."
 
-#: app/aircraft/routes.py:450
+#: app/aircraft/routes.py:458
 #, python-format
 msgid "%(reg)s is already used by another aircraft in this hangar (registrations that only differ by spaces or slashes still count as the same, since they'd otherwise share a URL)."
 msgstr "%(reg)s wordt al gebruikt door een ander vliegtuig in deze hangar (registraties die alleen verschillen door spaties of schuine strepen worden als identiek beschouwd, aangezien ze anders dezelfde URL zouden delen)."
 
-#: app/aircraft/routes.py:457 app/aircraft/routes.py:1234
+#: app/aircraft/routes.py:465 app/aircraft/routes.py:1242
 msgid "Manufacturer is required."
 msgstr "Fabrikant is verplicht."
 
-#: app/aircraft/routes.py:459 app/aircraft/routes.py:1236
+#: app/aircraft/routes.py:467 app/aircraft/routes.py:1244
 msgid "Model is required."
 msgstr "Model is verplicht."
 
-#: app/aircraft/routes.py:467
+#: app/aircraft/routes.py:475
 msgid "Year must be a valid 4-digit year."
 msgstr "Jaar moet een geldig 4-cijferig jaar zijn."
 
-#: app/aircraft/routes.py:476
+#: app/aircraft/routes.py:484
 msgid "Flight counter offset must be a non-negative number."
 msgstr "Vluchtteller-offset moet een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:485
+#: app/aircraft/routes.py:493
 msgid "Fuel consumption must be a non-negative number."
 msgstr "Brandstofverbruik moet een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:494
+#: app/aircraft/routes.py:502
 msgid "Overhaul reserve accrual must be a non-negative number."
 msgstr "De reservering voor revisie moet een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:504
+#: app/aircraft/routes.py:512
 msgid "Oil consumption warning threshold must be a non-negative number."
 msgstr "De waarschuwingsdrempel voor olieverbruik moet een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:514
+#: app/aircraft/routes.py:522
 msgid "Fuel tank capacity must be a positive number."
 msgstr "De brandstoftankcapaciteit moet een positief getal zijn."
 
-#: app/aircraft/routes.py:551
+#: app/aircraft/routes.py:559
 #, python-format
 msgid "%(reg)s saved."
 msgstr "%(reg)s opgeslagen."
 
-#: app/aircraft/routes.py:623
+#: app/aircraft/routes.py:631
 msgid "Ownership updated."
 msgstr "Eigendom bijgewerkt."
 
-#: app/aircraft/routes.py:826 app/config/routes.py:1519
+#: app/aircraft/routes.py:834 app/config/routes.py:1519
 msgid "Payment amount must be positive."
 msgstr "Het betalingsbedrag moet positief zijn."
 
-#: app/aircraft/routes.py:829 app/config/routes.py:1522
+#: app/aircraft/routes.py:837 app/config/routes.py:1522
 msgid "Invalid payment amount."
 msgstr "Ongeldig betalingsbedrag."
 
-#: app/aircraft/routes.py:836 app/config/routes.py:1529
+#: app/aircraft/routes.py:844 app/config/routes.py:1529
 msgid "Invalid payment date."
 msgstr "Ongeldige betalingsdatum."
 
-#: app/aircraft/routes.py:847
+#: app/aircraft/routes.py:855
 #, python-format
 msgid "Payment — %(note)s"
 msgstr "Betaling — %(note)s"
 
-#: app/aircraft/routes.py:847
+#: app/aircraft/routes.py:855
 msgid "Payment"
 msgstr "Betaling"
 
-#: app/aircraft/routes.py:858 app/config/routes.py:1552
+#: app/aircraft/routes.py:866 app/config/routes.py:1552
 msgid "Payment recorded."
 msgstr "Betaling geregistreerd."
 
-#: app/aircraft/routes.py:888
+#: app/aircraft/routes.py:896
 msgid "Payment reversed"
 msgstr "Betaling teruggedraaid"
 
-#: app/aircraft/routes.py:890
+#: app/aircraft/routes.py:898
 msgid "Entry reversed."
 msgstr "Boeking teruggedraaid."
 
-#: app/aircraft/routes.py:940
+#: app/aircraft/routes.py:948
 msgid "Valuation snapshot recorded."
 msgstr "Waarderingsmoment vastgelegd."
 
-#: app/aircraft/routes.py:1087
+#: app/aircraft/routes.py:1095
 #, python-format
 msgid "%(reg)s has been archived — its history stays available, but it no longer appears in the active fleet."
 msgstr "%(reg)s is gearchiveerd — de geschiedenis blijft beschikbaar, maar het toestel verschijnt niet langer in de actieve vloot."
 
-#: app/aircraft/routes.py:1105
+#: app/aircraft/routes.py:1113
 #, python-format
 msgid "%(reg)s is back in the active fleet."
 msgstr "%(reg)s is terug in de actieve vloot."
 
-#: app/aircraft/routes.py:1118
+#: app/aircraft/routes.py:1126
 #, python-format
 msgid "%(reg)s and all its components have been deleted."
 msgstr "%(reg)s en alle onderdelen zijn verwijderd."
 
-#: app/aircraft/routes.py:1162
+#: app/aircraft/routes.py:1170
 #, python-format
 msgid "Engine and propeller added — fill in the details when ready."
 msgid_plural "%(n)s engines and propellers added — fill in the details when ready."
 msgstr[0] "Motor en propeller toegevoegd — vul de details in wanneer u klaar bent."
 msgstr[1] "%(n)s motoren en propellers toegevoegd — vul de details in wanneer u klaar bent."
 
-#: app/aircraft/routes.py:1232
+#: app/aircraft/routes.py:1240
 msgid "Component type is required."
 msgstr "Onderdeeltype is verplicht."
 
-#: app/aircraft/routes.py:1245
+#: app/aircraft/routes.py:1253
 msgid "Time at install must be a positive number."
 msgstr "Uren bij installatie moet een positief getal zijn."
 
-#: app/aircraft/routes.py:1254
+#: app/aircraft/routes.py:1262
 msgid "TBO must be a positive number of hours."
 msgstr "TBO moet een positief aantal uren zijn."
 
-#: app/aircraft/routes.py:1263
+#: app/aircraft/routes.py:1271
 msgid "Last overhaul hours must be a non-negative number."
 msgstr "De uren van de laatste revisie moeten een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:1272 app/snags/routes.py:69
+#: app/aircraft/routes.py:1280 app/refuels/routes.py:67 app/snags/routes.py:69
 #, python-format
 msgid "%(label)s must be a valid date (YYYY-MM-DD)."
 msgstr "%(label)s moet een geldige datum zijn (JJJJ-MM-DD)."
 
-#: app/aircraft/routes.py:1319
+#: app/aircraft/routes.py:1327
 #, python-format
 msgid "%(make)s %(model)s saved."
 msgstr "%(make)s %(model)s opgeslagen."
 
-#: app/aircraft/routes.py:1343
+#: app/aircraft/routes.py:1351
 #, python-format
 msgid "%(label)s removed."
 msgstr "%(label)s verwijderd."
 
-#: app/aircraft/routes.py:1401
+#: app/aircraft/routes.py:1409
 #, python-format
 msgid "%(field)s must be a positive number."
 msgstr "%(field)s moet een positief getal zijn."
 
-#: app/aircraft/routes.py:1424
+#: app/aircraft/routes.py:1432
 msgid "At least one loading station is required."
 msgstr "Minimaal één laadpunt is vereist."
 
-#: app/aircraft/routes.py:1491
+#: app/aircraft/routes.py:1499
 msgid "W&B configuration saved."
 msgstr "W&B-configuratie opgeslagen."
 
-#: app/aircraft/routes.py:1505 app/aircraft/routes.py:1529
+#: app/aircraft/routes.py:1513 app/aircraft/routes.py:1537
 msgid "Configure W&B envelope first."
 msgstr "Configureer eerst de W&B-envelop."
 
-#: app/aircraft/routes.py:1548
+#: app/aircraft/routes.py:1556
 msgid "A valid date is required."
 msgstr "Een geldige datum is vereist."
 
-#: app/aircraft/routes.py:1563
+#: app/aircraft/routes.py:1571
 #, python-format
 msgid "Volume for %(station)s exceeds tank capacity."
 msgstr "Het volume voor %(station)s overschrijdt de tankinhoud."
 
-#: app/aircraft/routes.py:1571
+#: app/aircraft/routes.py:1579
 #, python-format
 msgid "Volume for %(station)s must be a non-negative number."
 msgstr "Het volume voor %(station)s moet een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:1585
+#: app/aircraft/routes.py:1593
 #, python-format
 msgid "Weight for %(station)s must be a non-negative number."
 msgstr "Het gewicht voor %(station)s moet een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:1634
+#: app/aircraft/routes.py:1642
 msgid "W&B calculation saved."
 msgstr "W&B-berekening opgeslagen."
 
-#: app/aircraft/routes.py:1663
+#: app/aircraft/routes.py:1671
 msgid "W&B calculation deleted."
 msgstr "W&B-berekening verwijderd."
 
-#: app/aircraft/routes.py:1794 app/pilots/routes.py:2002
+#: app/aircraft/routes.py:1802 app/pilots/routes.py:2002
 msgid "Please select at least one GPS log file."
 msgstr "Selecteer ten minste één GPS-logbestand."
 
-#: app/aircraft/routes.py:1810 app/pilots/routes.py:2021
+#: app/aircraft/routes.py:1818 app/pilots/routes.py:2021
 #, python-format
 msgid "%(fn)s: unsupported file type (use .gpx, .kml, or .csv)."
 msgstr "%(fn)s: niet-ondersteund bestandstype (gebruik .gpx, .kml of .csv)."
 
-#: app/aircraft/routes.py:1818 app/pilots/routes.py:2028
+#: app/aircraft/routes.py:1826 app/pilots/routes.py:2028
 #, python-format
 msgid "%(fn)s: file too large (20 MB limit)."
 msgstr "%(fn)s: bestand te groot (limiet 20 MB)."
 
-#: app/aircraft/routes.py:1824 app/pilots/routes.py:2033
+#: app/aircraft/routes.py:1832 app/pilots/routes.py:2033
 #, python-format
 msgid "%(fn)s: %(err)s"
 msgstr "%(fn)s: %(err)s"
 
-#: app/aircraft/routes.py:1858 app/pilots/routes.py:2061
+#: app/aircraft/routes.py:1866 app/pilots/routes.py:2061
 #: app/templates/aircraft/gps_import_review.html:25
 #: app/templates/pilots/gps_import_review.html:24
 #, python-format
@@ -271,36 +271,36 @@ msgid_plural "%(n)s files skipped — no movement detected."
 msgstr[0] "%(n)s bestand overgeslagen — geen beweging gedetecteerd."
 msgstr[1] "%(n)s bestanden overgeslagen — geen beweging gedetecteerd."
 
-#: app/aircraft/routes.py:1867 app/pilots/routes.py:2069
+#: app/aircraft/routes.py:1875 app/pilots/routes.py:2069
 msgid "No valid GPS files to import."
 msgstr "Geen geldige GPS-bestanden om te importeren."
 
-#: app/aircraft/routes.py:1893 app/aircraft/routes.py:2234
-#: app/aircraft/routes.py:2430 app/pilots/routes.py:2110
+#: app/aircraft/routes.py:1901 app/aircraft/routes.py:2242
+#: app/aircraft/routes.py:2438 app/pilots/routes.py:2110
 #: app/pilots/routes.py:2214
 msgid "Session expired — please upload your GPS files again."
 msgstr "Sessie verlopen — upload uw GPS-bestanden opnieuw."
 
-#: app/aircraft/routes.py:1915 app/pilots/routes.py:2138
+#: app/aircraft/routes.py:1923 app/pilots/routes.py:2138
 #, python-format
 msgid "Could not read %(fn)s — please upload again."
 msgstr "Kan %(fn)s niet lezen — upload het bestand opnieuw."
 
-#: app/aircraft/routes.py:2239 app/pilots/routes.py:2219
+#: app/aircraft/routes.py:2247 app/pilots/routes.py:2219
 msgid "No segments to import."
 msgstr "Geen segmenten om te importeren."
 
-#: app/aircraft/routes.py:2245 app/aircraft/routes.py:2249
-#: app/aircraft/routes.py:2435 app/pilots/routes.py:2225
+#: app/aircraft/routes.py:2253 app/aircraft/routes.py:2257
+#: app/aircraft/routes.py:2443 app/pilots/routes.py:2225
 #: app/pilots/routes.py:2229
 msgid "Invalid segment index."
 msgstr "Ongeldig segmentindex."
 
-#: app/aircraft/routes.py:2254 app/pilots/routes.py:2234
+#: app/aircraft/routes.py:2262 app/pilots/routes.py:2234
 msgid "This segment has already been confirmed."
 msgstr "Dit segment is al bevestigd."
 
-#: app/aircraft/routes.py:2274 app/aircraft/routes.py:2401
+#: app/aircraft/routes.py:2282 app/aircraft/routes.py:2409
 #: app/pilots/routes.py:2255 app/pilots/routes.py:2473
 #, python-format
 msgid "%(n)s flight imported successfully."
@@ -308,42 +308,42 @@ msgid_plural "%(n)s flights imported successfully."
 msgstr[0] "%(n)s vlucht succesvol geïmporteerd."
 msgstr[1] "%(n)s vluchten succesvol geïmporteerd."
 
-#: app/aircraft/routes.py:2283 app/pilots/routes.py:2264
+#: app/aircraft/routes.py:2291 app/pilots/routes.py:2264
 #, python-format
 msgid "%(n)s segment skipped."
 msgid_plural "%(n)s segments skipped."
 msgstr[0] "%(n)s segment overgeslagen."
 msgstr[1] "%(n)s segmenten overgeslagen."
 
-#: app/aircraft/routes.py:2296 app/pilots/routes.py:2274
+#: app/aircraft/routes.py:2304 app/pilots/routes.py:2274
 msgid "Segment skipped."
 msgstr "Segment overgeslagen."
 
-#: app/aircraft/routes.py:2412 app/pilots/routes.py:2482
+#: app/aircraft/routes.py:2420 app/pilots/routes.py:2482
 msgid "Flight confirmed."
 msgstr "Vlucht bevestigd."
 
-#: app/aircraft/routes.py:2520
+#: app/aircraft/routes.py:2528
 msgid "GPS import batch rolled back and all linked flight entries removed."
 msgstr "GPS-importbatch teruggedraaid en alle gekoppelde vluchtvermeldingen verwijderd."
 
-#: app/aircraft/routes.py:2731
+#: app/aircraft/routes.py:2739
 msgid "No files selected."
 msgstr "Geen bestanden geselecteerd."
 
-#: app/aircraft/routes.py:2751
+#: app/aircraft/routes.py:2759
 #, python-format
 msgid "%(name)s: unsupported format (use JPEG, PNG, WEBP or HEIC)."
 msgstr "%(name)s: niet-ondersteund formaat (gebruik JPEG, PNG, WEBP of HEIC)."
 
-#: app/aircraft/routes.py:2773
+#: app/aircraft/routes.py:2781
 #, python-format
 msgid "%(n)s photo uploaded."
 msgid_plural "%(n)s photos uploaded."
 msgstr[0] "%(n)s foto geüpload."
 msgstr[1] "%(n)s foto's geüpload."
 
-#: app/aircraft/routes.py:2829
+#: app/aircraft/routes.py:2837
 msgid "Photo deleted."
 msgstr "Foto verwijderd."
 
@@ -704,7 +704,7 @@ msgstr "Medisch certificaat"
 msgid "Insurance Certificate"
 msgstr "Verzekeringscertificaat"
 
-#: app/documents/routes.py:78 app/templates/aircraft/detail.html:749
+#: app/documents/routes.py:78 app/templates/aircraft/detail.html:784
 msgid "Airworthiness Review Certificate (ARC)"
 msgstr "Certificaat van beoordeling van luchtwaardigheid (ARC)"
 
@@ -845,23 +845,23 @@ msgstr "Ongeldig formaat voor de einddatum van de herhaling."
 msgid "The recurrence end date must not be before the expense date."
 msgstr "De einddatum van de herhaling mag niet vóór de datum van de uitgave liggen."
 
-#: app/expenses/routes.py:211
+#: app/expenses/routes.py:228
 msgid "Expense recorded."
 msgstr "Uitgave geregistreerd."
 
-#: app/expenses/routes.py:243
+#: app/expenses/routes.py:260
 msgid "Expense updated."
 msgstr "Uitgave bijgewerkt."
 
-#: app/expenses/routes.py:273
+#: app/expenses/routes.py:290
 msgid "Expense deleted."
 msgstr "Uitgave verwijderd."
 
-#: app/expenses/routes.py:306
+#: app/expenses/routes.py:323
 msgid "This file type is not allowed for receipts."
 msgstr "Dit bestandstype is niet toegestaan voor bewijsstukken."
 
-#: app/expenses/routes.py:352
+#: app/expenses/routes.py:369
 #, python-format
 msgid "Expense receipt %(date)s"
 msgstr "Bewijsstuk uitgave %(date)s"
@@ -1610,7 +1610,7 @@ msgstr "Onderhoudsregistratie"
 msgid "Flight photo"
 msgstr "Vluchtfoto"
 
-#: app/pwa/routes.py:100 app/templates/aircraft/detail.html:213
+#: app/pwa/routes.py:100 app/templates/aircraft/detail.html:214
 #: app/templates/base.html:195 app/templates/landing.html:39
 #: app/templates/landing.html:247 app/templates/maintenance/fleet.html:3
 #: app/templates/maintenance/fleet.html:12
@@ -1621,7 +1621,7 @@ msgstr "Vluchtfoto"
 msgid "Maintenance"
 msgstr "Onderhoud"
 
-#: app/pwa/routes.py:101 app/templates/aircraft/detail.html:696
+#: app/pwa/routes.py:101 app/templates/aircraft/detail.html:731
 #: app/templates/dashboard.html:400
 msgid "Insurance"
 msgstr "Verzekering"
@@ -1630,13 +1630,13 @@ msgstr "Verzekering"
 msgid "POH / Flight Manual"
 msgstr "POH / Vlieghandboek"
 
-#: app/pwa/routes.py:103 app/templates/aircraft/detail.html:262
+#: app/pwa/routes.py:103 app/templates/aircraft/detail.html:263
 #: app/templates/airworthiness/dashboard.html:3
 #: app/templates/airworthiness/dashboard.html:12
 msgid "Airworthiness"
 msgstr "Luchtwaardigheid"
 
-#: app/pwa/routes.py:104 app/templates/aircraft/detail.html:377
+#: app/pwa/routes.py:104 app/templates/aircraft/detail.html:378
 #: app/templates/dashboard.html:223
 #: app/templates/flights/logbook_component.html:4
 #: app/templates/flights/logbook_component.html:15
@@ -1684,6 +1684,58 @@ msgstr "Bestand ontvangen — verwijs ernaar in de onderhoudsnoten."
 #: app/pwa/routes.py:256
 msgid "File received — please attach it manually when logging the flight."
 msgstr "Bestand ontvangen — voeg het handmatig toe bij het registreren van de vlucht."
+
+#: app/refuels/routes.py:63 app/snags/routes.py:65
+#, python-format
+msgid "%(label)s is required."
+msgstr "%(label)s is verplicht."
+
+#: app/refuels/routes.py:69 app/snags/routes.py:71
+#, python-format
+msgid "%(label)s cannot be in the future."
+msgstr "%(label)s kan niet in de toekomst liggen."
+
+#: app/refuels/routes.py:139 app/templates/aircraft/flight_detail.html:35
+#: app/templates/aircraft/gps_import_history.html:42
+#: app/templates/aircraft/owner_account.html:46
+#: app/templates/aircraft/owners_billing.html:91
+#: app/templates/aircraft/owners_billing.html:152
+#: app/templates/aircraft/wb_entry.html:29
+#: app/templates/aircraft/wb_list.html:70
+#: app/templates/config/renter_account.html:47
+#: app/templates/config/renter_account.html:67
+#: app/templates/documents/reconcile.html:64
+#: app/templates/expenses/expense_form.html:47
+#: app/templates/expenses/list.html:81 app/templates/flights/fleet.html:24
+#: app/templates/flights/flight_form.html:278
+#: app/templates/flights/list.html:91
+#: app/templates/flights/logbook_component.html:95
+#: app/templates/offline/pilot_workbench.html:34
+#: app/templates/offline/workbench.html:34
+#: app/templates/partials/_flight_tracks_map.html:129
+#: app/templates/pilots/entry_detail.html:46
+#: app/templates/pilots/entry_form.html:117
+#: app/templates/pilots/import_history.html:31
+#: app/templates/pilots/logbook.html:168 app/templates/refuels/list.html:35
+#: app/templates/refuels/refuel_form.html:22
+msgid "Date"
+msgstr "Datum"
+
+#: app/refuels/routes.py:145
+msgid "Quantity is required."
+msgstr "Hoeveelheid is verplicht."
+
+#: app/refuels/routes.py:152
+msgid "Quantity must be a positive number."
+msgstr "Hoeveelheid moet een positief getal zijn."
+
+#: app/refuels/routes.py:187
+msgid "Refuel recorded."
+msgstr "Tankbeurt geregistreerd."
+
+#: app/refuels/routes.py:205
+msgid "Refuel deleted."
+msgstr "Tankbeurt verwijderd."
 
 #: app/reservations/routes.py:165 app/templates/reservations/settings.html:70
 msgid "Wet"
@@ -2188,16 +2240,6 @@ msgstr ""
 "\n"
 "Het OpenHangar-team"
 
-#: app/snags/routes.py:65
-#, python-format
-msgid "%(label)s is required."
-msgstr "%(label)s is verplicht."
-
-#: app/snags/routes.py:71
-#, python-format
-msgid "%(label)s cannot be in the future."
-msgstr "%(label)s kan niet in de toekomst liggen."
-
 #: app/snags/routes.py:145
 msgid "Title is required."
 msgstr "Titel is verplicht."
@@ -2399,7 +2441,7 @@ msgstr[1] "Luchtvaartuigen"
 msgid "Pilot"
 msgstr "Piloot"
 
-#: app/templates/aircraft/detail.html:480 app/templates/base.html:204
+#: app/templates/aircraft/detail.html:481 app/templates/base.html:204
 #: app/templates/base.html:308 app/templates/dashboard.html:620
 #: app/templates/dashboard.html:640 app/templates/dashboard.html:687
 #: app/templates/dashboard.html:795 app/templates/flights/fleet.html:15
@@ -2513,7 +2555,7 @@ msgstr "Vliegtuigkalender"
 msgid "Fleet Calendar"
 msgstr "Vlootkalender"
 
-#: app/templates/aircraft/detail.html:539 app/templates/dashboard.html:38
+#: app/templates/aircraft/detail.html:540 app/templates/dashboard.html:38
 #: app/templates/dashboard.html:730 app/templates/reservations/calendar.html:22
 #: app/templates/reservations/fleet.html:16
 #: app/templates/reservations/form.html:3
@@ -2563,7 +2605,7 @@ msgid_plural "Maintenance alerts"
 msgstr[0] "Onderhoudswaarschuwing"
 msgstr[1] "Onderhoudswaarschuwingen"
 
-#: app/templates/aircraft/detail.html:181 app/templates/dashboard.html:157
+#: app/templates/aircraft/detail.html:182 app/templates/dashboard.html:157
 #: app/templates/reservations/checkout.html:35 app/templates/snags/list.html:54
 #: app/templates/snags/list.html:71 app/templates/snags/resolve_form.html:23
 msgid "Grounding"
@@ -2588,7 +2630,7 @@ msgstr "Uren"
 msgid "This month"
 msgstr "Deze maand"
 
-#: app/templates/aircraft/detail.html:554 app/templates/dashboard.html:196
+#: app/templates/aircraft/detail.html:555 app/templates/dashboard.html:196
 #: app/templates/offline/changes.html:35
 #: app/templates/offline/pilot_workbench.html:170
 #: app/templates/offline/workbench.html:206
@@ -2605,7 +2647,7 @@ msgstr "7 dagen"
 msgid "30 days"
 msgstr "30 dagen"
 
-#: app/templates/aircraft/detail.html:532 app/templates/dashboard.html:209
+#: app/templates/aircraft/detail.html:533 app/templates/dashboard.html:209
 #: app/templates/reservations/calendar.html:3
 #: app/templates/reservations/calendar.html:13
 msgid "Reservations"
@@ -2735,7 +2777,7 @@ msgstr "Details →"
 msgid "Open"
 msgstr "Openen"
 
-#: app/templates/aircraft/detail.html:96 app/templates/aircraft/list.html:71
+#: app/templates/aircraft/detail.html:97 app/templates/aircraft/list.html:71
 #: app/templates/dashboard.html:384 app/templates/dashboard.html:468
 #: app/templates/snags/list.html:14
 msgid "GROUNDED"
@@ -2762,7 +2804,7 @@ msgstr "Vervallen"
 msgid "Due soon"
 msgstr "Bijna vervallen"
 
-#: app/templates/aircraft/detail.html:618 app/templates/aircraft/list.html:77
+#: app/templates/aircraft/detail.html:619 app/templates/aircraft/list.html:77
 #: app/templates/aircraft/wb_entry.html:142
 #: app/templates/aircraft/wb_list.html:87
 #: app/templates/config/settings.html:292 app/templates/dashboard.html:390
@@ -2829,7 +2871,7 @@ msgstr "Aan de grond"
 msgid "No alerts."
 msgstr "Geen waarschuwingen."
 
-#: app/templates/aircraft/detail.html:473 app/templates/dashboard.html:580
+#: app/templates/aircraft/detail.html:474 app/templates/dashboard.html:580
 #: app/templates/share/public.html:79
 msgid "Recent Flights"
 msgstr "Recente vluchten"
@@ -2856,7 +2898,7 @@ msgstr "Onderhoud bekijken"
 
 #: app/templates/aircraft/aircraft_form.html:3
 #: app/templates/aircraft/aircraft_form.html:12
-#: app/templates/aircraft/detail.html:138 app/templates/aircraft/list.html:43
+#: app/templates/aircraft/detail.html:139 app/templates/aircraft/list.html:43
 #: app/templates/aircraft/list.html:103 app/templates/dashboard.html:682
 msgid "Add aircraft"
 msgstr "Vliegtuig toevoegen"
@@ -2872,7 +2914,7 @@ msgstr "Mijn vluchtlogboek"
 msgid "Licence & medical"
 msgstr "Licentie & medisch"
 
-#: app/templates/aircraft/detail.html:943 app/templates/dashboard.html:706
+#: app/templates/aircraft/detail.html:978 app/templates/dashboard.html:706
 #: app/templates/flights/flight_form.html:148
 #: app/templates/flights/list.html:75 app/templates/flights/list.html:114
 #: app/templates/pilots/entry_form.html:87
@@ -2922,7 +2964,7 @@ msgstr "Einde"
 msgid "Notes"
 msgstr "Notities"
 
-#: app/templates/aircraft/detail.html:1062
+#: app/templates/aircraft/detail.html:1099
 #: app/templates/aircraft/wb_list.html:75 app/templates/dashboard.html:742
 #: app/templates/documents/list.html:64
 #: app/templates/documents/reconcile.html:66
@@ -2993,7 +3035,7 @@ msgstr "OpenHangar is een zelf te hosten, open-source operatiebeheerder voor pil
 msgid "Try the demo — choose a role to explore:"
 msgstr "Probeer de demo — kies een rol om te verkennen:"
 
-#: app/templates/aircraft/detail.html:987
+#: app/templates/aircraft/detail.html:1022
 #: app/templates/aircraft/manage_owners.html:31
 #: app/templates/aircraft/owners_billing.html:175
 #: app/templates/auth/setup.html:304 app/templates/landing.html:27
@@ -3227,7 +3269,7 @@ msgstr "%(reg)s bewerken"
 #: app/templates/aircraft/aircraft_form.html:174
 #: app/templates/aircraft/component_form.html:17
 #: app/templates/aircraft/component_form.html:136
-#: app/templates/aircraft/detail.html:1227
+#: app/templates/aircraft/detail.html:1268
 #: app/templates/aircraft/manage_owners.html:16
 #: app/templates/aircraft/manage_owners.html:129
 #: app/templates/aircraft/wb_config.html:16
@@ -3246,7 +3288,7 @@ msgstr "%(reg)s bewerken"
 #: app/templates/documents/upload_form.html:22
 #: app/templates/documents/upload_form.html:101
 #: app/templates/expenses/expense_form.html:19
-#: app/templates/expenses/expense_form.html:197
+#: app/templates/expenses/expense_form.html:203
 #: app/templates/flights/airframe_import_map.html:144
 #: app/templates/flights/flight_form.html:45
 #: app/templates/flights/flight_form.html:49
@@ -3261,6 +3303,7 @@ msgstr "%(reg)s bewerken"
 #: app/templates/pilots/import_map.html:170
 #: app/templates/pilots/minimums_edit.html:15
 #: app/templates/pwa/share_target.html:14
+#: app/templates/refuels/refuel_form.html:61
 #: app/templates/reservations/charge.html:108
 #: app/templates/reservations/checkin.html:59
 #: app/templates/reservations/checkout.html:93
@@ -3410,12 +3453,12 @@ msgstr "Totale brandstoftankcapaciteit"
 #: app/templates/airworthiness/stc_form.html:43
 #: app/templates/auth/setup.html:62 app/templates/auth/setup.html:292
 #: app/templates/auth/setup.html:297 app/templates/config/settings.html:434
-#: app/templates/expenses/expense_form.html:82
-#: app/templates/expenses/expense_form.html:89
-#: app/templates/expenses/expense_form.html:113
-#: app/templates/expenses/expense_form.html:122
-#: app/templates/expenses/expense_form.html:154
-#: app/templates/expenses/expense_form.html:177
+#: app/templates/expenses/expense_form.html:88
+#: app/templates/expenses/expense_form.html:95
+#: app/templates/expenses/expense_form.html:119
+#: app/templates/expenses/expense_form.html:128
+#: app/templates/expenses/expense_form.html:160
+#: app/templates/expenses/expense_form.html:183
 #: app/templates/flights/flight_form.html:149
 #: app/templates/flights/flight_form.html:329
 #: app/templates/flights/flight_form.html:438
@@ -3470,10 +3513,11 @@ msgstr "Bepaalt hoe GPS-geïmporteerde vluchttijden worden afgerond in het logbo
 #: app/templates/config/settings.html:203
 #: app/templates/config/settings.html:446
 #: app/templates/documents/edit_form.html:93
-#: app/templates/expenses/expense_form.html:194
+#: app/templates/expenses/expense_form.html:200
 #: app/templates/flights/flight_form.html:735
 #: app/templates/maintenance/trigger_form.html:196
 #: app/templates/pwa/share_target.html:116
+#: app/templates/refuels/refuel_form.html:58
 #: app/templates/reservations/downtime_form.html:70
 #: app/templates/users/list.html:87
 msgid "Save"
@@ -3486,7 +3530,7 @@ msgstr "Onderdeel bewerken"
 
 #: app/templates/aircraft/component_form.html:3
 #: app/templates/aircraft/component_form.html:12
-#: app/templates/aircraft/detail.html:310
+#: app/templates/aircraft/detail.html:311
 msgid "Add component"
 msgstr "Onderdeel toevoegen"
 
@@ -3494,7 +3538,7 @@ msgstr "Onderdeel toevoegen"
 #: app/templates/aircraft/owner_account.html:47
 #: app/templates/airworthiness/dashboard.html:86
 #: app/templates/config/renter_account.html:68
-#: app/templates/expenses/expense_form.html:46
+#: app/templates/expenses/expense_form.html:52
 #: app/templates/expenses/list.html:55 app/templates/expenses/list.html:82
 #: app/templates/maintenance/fleet.html:167
 #: app/templates/maintenance/fleet.html:313
@@ -3524,8 +3568,8 @@ msgid "Propeller"
 msgstr "Propeller"
 
 #: app/templates/aircraft/component_form.html:40
-#: app/templates/aircraft/detail.html:304
-#: app/templates/aircraft/detail.html:434
+#: app/templates/aircraft/detail.html:305
+#: app/templates/aircraft/detail.html:435
 msgid "Avionics"
 msgstr "Avionica"
 
@@ -3542,7 +3586,7 @@ msgid "Serial number"
 msgstr "Serienummer"
 
 #: app/templates/aircraft/component_form.html:77
-#: app/templates/aircraft/detail.html:343
+#: app/templates/aircraft/detail.html:344
 msgid "Time at install"
 msgstr "Uren bij installatie"
 
@@ -3600,233 +3644,233 @@ msgstr "Zet het TBO-referentiepunt terug zonder de geschiedenis te verliezen."
 msgid "Last overhaul date"
 msgstr "Datum laatste revisie"
 
-#: app/templates/aircraft/detail.html:37 app/templates/snags/list.html:37
+#: app/templates/aircraft/detail.html:38 app/templates/snags/list.html:37
 msgid "Aircraft grounded."
 msgstr "Vliegtuig aan de grond gezet."
 
-#: app/templates/aircraft/detail.html:39
+#: app/templates/aircraft/detail.html:40
 #, python-format
 msgid "Insurance expired on %(date)s."
 msgstr "Verzekering vervallen op %(date)s."
 
-#: app/templates/aircraft/detail.html:42
+#: app/templates/aircraft/detail.html:43
 #, python-format
 msgid "ARC expired on %(date)s."
 msgstr "De ARC is verlopen op %(date)s."
 
-#: app/templates/aircraft/detail.html:46
+#: app/templates/aircraft/detail.html:47
 #, python-format
 msgid "There is %(n)s unresolved grounding snag."
 msgid_plural "There are %(n)s unresolved grounding snags."
 msgstr[0] "Er is %(n)s onopgelost vliegverbod-defect."
 msgstr[1] "Er zijn %(n)s onopgeloste vliegverbod-defecten."
 
-#: app/templates/aircraft/detail.html:47
+#: app/templates/aircraft/detail.html:48
 msgid "View snag list"
 msgstr "Defectenlijst bekijken"
 
-#: app/templates/aircraft/detail.html:58
+#: app/templates/aircraft/detail.html:59
 msgid "Add components?"
 msgstr "Componenten toevoegen?"
 
-#: app/templates/aircraft/detail.html:59
+#: app/templates/aircraft/detail.html:60
 #, python-format
 msgid "This looks like a single-engine piston aircraft — add an engine and a propeller component now?"
 msgid_plural "This looks like a %(n)s-engine piston aircraft — add %(n)s engine and propeller components now?"
 msgstr[0] "Dit ziet eruit als een eenmotorig zuigervliegtuig — nu een motor en propeller toevoegen?"
 msgstr[1] "Dit ziet eruit als een %(n)s-motorig zuigervliegtuig — %(n)s motoren en propellers toevoegen?"
 
-#: app/templates/aircraft/detail.html:68
+#: app/templates/aircraft/detail.html:69
 msgid "Add components"
 msgstr "Componenten toevoegen"
 
-#: app/templates/aircraft/detail.html:73
+#: app/templates/aircraft/detail.html:74
 #: app/templates/aircraft/gps_import_review.html:249
 #: app/templates/pilots/gps_import_review.html:269
 msgid "Skip"
 msgstr "Overslaan"
 
-#: app/templates/aircraft/detail.html:93
+#: app/templates/aircraft/detail.html:94
 msgid "ARCHIVED"
 msgstr "GEARCHIVEERD"
 
-#: app/templates/aircraft/detail.html:105
-#: app/templates/aircraft/detail.html:396
-#: app/templates/aircraft/detail.html:626
+#: app/templates/aircraft/detail.html:106
+#: app/templates/aircraft/detail.html:397
+#: app/templates/aircraft/detail.html:627
 #: app/templates/aircraft/flight_detail.html:22
 #: app/templates/aircraft/wb_list.html:96
 #: app/templates/config/renters_list.html:60
 #: app/templates/pilots/entry_detail.html:35
-#: app/templates/pilots/logbook.html:238
+#: app/templates/pilots/logbook.html:238 app/templates/refuels/list.html:56
 #: app/templates/reservations/calendar.html:145
 #: app/templates/snags/list.html:141
 msgid "Edit"
 msgstr "Bewerken"
 
-#: app/templates/aircraft/detail.html:111
+#: app/templates/aircraft/detail.html:112
 msgid "Unarchive"
 msgstr "Dearchiveren"
 
-#: app/templates/aircraft/detail.html:117
+#: app/templates/aircraft/detail.html:118
 #, python-format
 msgid "Archive %(reg)s? Its history stays available, but it is removed from the active fleet, reservations and notifications."
 msgstr "%(reg)s archiveren? De geschiedenis blijft beschikbaar, maar het toestel wordt verwijderd uit de actieve vloot, reserveringen en meldingen."
 
-#: app/templates/aircraft/detail.html:119
+#: app/templates/aircraft/detail.html:120
 msgid "Archive"
 msgstr "Archiveren"
 
-#: app/templates/aircraft/detail.html:125
+#: app/templates/aircraft/detail.html:126
 #, python-format
 msgid "Delete %(reg)s and all its components?"
 msgstr "%(reg)s en alle onderdelen verwijderen?"
 
-#: app/templates/aircraft/detail.html:127
-#: app/templates/aircraft/detail.html:918
+#: app/templates/aircraft/detail.html:128
+#: app/templates/aircraft/detail.html:953
 #: app/templates/pilots/import_history.html:74
 #: app/templates/pilots/logbook.html:246
 msgid "Delete"
 msgstr "Verwijderen"
 
-#: app/templates/aircraft/detail.html:133
+#: app/templates/aircraft/detail.html:134
 msgid "My share"
 msgstr "Mijn aandeel"
 
-#: app/templates/aircraft/detail.html:142 app/templates/aircraft/list.html:3
+#: app/templates/aircraft/detail.html:143 app/templates/aircraft/list.html:3
 #: app/templates/aircraft/list.html:28
 msgid "Fleet"
 msgstr "Vloot"
 
-#: app/templates/aircraft/detail.html:158
+#: app/templates/aircraft/detail.html:159
 msgid "Active Known Points"
 msgstr "Actieve bekende defecten"
 
-#: app/templates/aircraft/detail.html:168 app/templates/snags/list.html:23
+#: app/templates/aircraft/detail.html:169 app/templates/snags/list.html:23
 #: app/templates/snags/list.html:108 app/templates/snags/snag_form.html:3
 #: app/templates/snags/snag_form.html:12
 msgid "Log a snag"
 msgstr "Defect registreren"
 
-#: app/templates/aircraft/detail.html:190
+#: app/templates/aircraft/detail.html:191
 #: app/templates/maintenance/fleet.html:82
 #: app/templates/maintenance/fleet.html:138
 #: app/templates/maintenance/fleet.html:372 app/templates/snags/list.html:79
 msgid "Resolve"
 msgstr "Oplossen"
 
-#: app/templates/aircraft/detail.html:200
+#: app/templates/aircraft/detail.html:201
 #: app/templates/maintenance/fleet.html:153
 #: app/templates/reservations/checkout.html:42
 msgid "No open snags."
 msgstr "Geen openstaande defecten."
 
-#: app/templates/aircraft/detail.html:220
+#: app/templates/aircraft/detail.html:221
 #: app/templates/maintenance/list.html:29
 #: app/templates/pilots/minimums_edit.html:96
 msgid "Add item"
 msgstr "Item toevoegen"
 
-#: app/templates/aircraft/detail.html:233
+#: app/templates/aircraft/detail.html:234
 msgid "overdue"
 msgstr "vervallen"
 
-#: app/templates/aircraft/detail.html:241
+#: app/templates/aircraft/detail.html:242
 msgid "due soon"
 msgstr "bijna vervallen"
 
-#: app/templates/aircraft/detail.html:248
+#: app/templates/aircraft/detail.html:249
 msgid "All maintenance items OK."
 msgstr "Alle onderhoudsitems in orde."
 
-#: app/templates/aircraft/detail.html:252
+#: app/templates/aircraft/detail.html:253
 msgid "No maintenance items defined."
 msgstr "Geen onderhoudsitems gedefinieerd."
 
-#: app/templates/aircraft/detail.html:272
+#: app/templates/aircraft/detail.html:273
 msgid "No airworthiness documents configured."
 msgstr "Geen luchtwaardigheidsbewijzen geconfigureerd."
 
-#: app/templates/aircraft/detail.html:278
+#: app/templates/aircraft/detail.html:279
 msgid "pending review"
 msgstr "in behandeling"
 
-#: app/templates/aircraft/detail.html:285
+#: app/templates/aircraft/detail.html:286
 msgid "question"
 msgstr "vraag"
 
-#: app/templates/aircraft/detail.html:290
+#: app/templates/aircraft/detail.html:291
 msgid "deferred"
 msgstr "uitgesteld"
 
-#: app/templates/aircraft/detail.html:295
+#: app/templates/aircraft/detail.html:296
 msgid "All airworthiness items reviewed."
 msgstr "Alle luchtwaardigheidsitems beoordeeld."
 
-#: app/templates/aircraft/detail.html:304
-#: app/templates/aircraft/detail.html:434
+#: app/templates/aircraft/detail.html:305
+#: app/templates/aircraft/detail.html:435
 msgid "Engines"
 msgstr "Motoren"
 
-#: app/templates/aircraft/detail.html:304
-#: app/templates/aircraft/detail.html:434
+#: app/templates/aircraft/detail.html:305
+#: app/templates/aircraft/detail.html:435
 msgid "Propellers"
 msgstr "Propellers"
 
-#: app/templates/aircraft/detail.html:306
-#: app/templates/aircraft/detail.html:441
+#: app/templates/aircraft/detail.html:307
+#: app/templates/aircraft/detail.html:442
 msgid "Components"
 msgstr "Onderdelen"
 
-#: app/templates/aircraft/detail.html:333
-#: app/templates/aircraft/detail.html:349
+#: app/templates/aircraft/detail.html:334
+#: app/templates/aircraft/detail.html:350
 #: app/templates/flights/logbook_component.html:81
 msgid "Removed"
 msgstr "Verwijderd"
 
-#: app/templates/aircraft/detail.html:335
-#: app/templates/aircraft/detail.html:346
+#: app/templates/aircraft/detail.html:336
+#: app/templates/aircraft/detail.html:347
 #: app/templates/airworthiness/dashboard.html:255
 #: app/templates/flights/logbook_component.html:76
 msgid "Installed"
 msgstr "Geïnstalleerd"
 
-#: app/templates/aircraft/detail.html:340
+#: app/templates/aircraft/detail.html:341
 msgid "S/N"
 msgstr "S/N"
 
-#: app/templates/aircraft/detail.html:353
+#: app/templates/aircraft/detail.html:354
 #: app/templates/flights/logbook_component.html:60
 msgid "TBO"
 msgstr "TBO"
 
-#: app/templates/aircraft/detail.html:357
+#: app/templates/aircraft/detail.html:358
 msgid "Overhaul overdue"
 msgstr "Revisie over tijd"
 
-#: app/templates/aircraft/detail.html:359
+#: app/templates/aircraft/detail.html:360
 msgid "Approaching TBO"
 msgstr "TBO nadert"
 
-#: app/templates/aircraft/detail.html:364
+#: app/templates/aircraft/detail.html:365
 msgid "Life limit"
 msgstr "Levensduurlimiet"
 
-#: app/templates/aircraft/detail.html:370
+#: app/templates/aircraft/detail.html:371
 msgid "Overhauled"
 msgstr "Gereviseerd"
 
-#: app/templates/aircraft/detail.html:389
+#: app/templates/aircraft/detail.html:390
 #: app/templates/airworthiness/node_form.html:3
 #: app/templates/airworthiness/node_form.html:10
 msgid "Add EASA source node"
 msgstr "EASA-knooppunt toevoegen"
 
-#: app/templates/aircraft/detail.html:402
+#: app/templates/aircraft/detail.html:403
 #, python-format
 msgid "Remove %(make)s %(model)s?"
 msgstr "%(make)s %(model)s verwijderen?"
 
-#: app/templates/aircraft/detail.html:404
+#: app/templates/aircraft/detail.html:405
 #: app/templates/aircraft/manage_owners.html:34
 #: app/templates/aircraft/wb_config.html:116
 #: app/templates/aircraft/wb_config.html:167
@@ -3838,40 +3882,40 @@ msgstr "%(make)s %(model)s verwijderen?"
 msgid "Remove"
 msgstr "Wissen"
 
-#: app/templates/aircraft/detail.html:420
+#: app/templates/aircraft/detail.html:421
 msgid "No components recorded yet."
 msgstr "Nog geen onderdelen geregistreerd."
 
-#: app/templates/aircraft/detail.html:424
+#: app/templates/aircraft/detail.html:425
 msgid "Add first component"
 msgstr "Eerste onderdeel toevoegen"
 
-#: app/templates/aircraft/detail.html:454
+#: app/templates/aircraft/detail.html:455
 msgid "installed"
 msgstr "geïnstalleerd op"
 
-#: app/templates/aircraft/detail.html:484 app/templates/flights/list.html:27
+#: app/templates/aircraft/detail.html:485 app/templates/flights/list.html:27
 #: app/templates/pilots/logbook.html:30
 msgid "Import GPS"
 msgstr "GPS importeren"
 
-#: app/templates/aircraft/detail.html:489 app/templates/flights/list.html:42
+#: app/templates/aircraft/detail.html:490 app/templates/flights/list.html:42
 #: app/templates/pilots/logbook.html:33
 msgid "Tracks"
 msgstr "Sporen"
 
-#: app/templates/aircraft/detail.html:516 app/templates/flights/list.html:198
+#: app/templates/aircraft/detail.html:517 app/templates/flights/list.html:198
 #, python-format
 msgid "No flights logged yet for %(reg)s."
 msgstr "Nog geen vluchten geregistreerd voor %(reg)s."
 
-#: app/templates/aircraft/detail.html:520 app/templates/flights/fleet.html:120
+#: app/templates/aircraft/detail.html:521 app/templates/flights/fleet.html:120
 #: app/templates/flights/list.html:202
 #: app/templates/flights/logbook_component.html:160
 msgid "Log first flight"
 msgstr "Eerste vlucht registreren"
 
-#: app/templates/aircraft/detail.html:552
+#: app/templates/aircraft/detail.html:553
 #: app/templates/aircraft/gps_import_review.html:109
 #: app/templates/pilots/gps_import_review.html:88
 #: app/templates/reservations/calendar.html:115
@@ -3880,124 +3924,139 @@ msgstr "Eerste vlucht registreren"
 msgid "Confirmed"
 msgstr "Bevestigd"
 
-#: app/templates/aircraft/detail.html:575
+#: app/templates/aircraft/detail.html:576
 msgid "No upcoming reservations."
 msgstr "Geen aankomende reserveringen."
 
-#: app/templates/aircraft/detail.html:586
-#: app/templates/aircraft/detail.html:589
+#: app/templates/aircraft/detail.html:587
+#: app/templates/aircraft/detail.html:590
 #: app/templates/aircraft/wb_list.html:11
 msgid "Mass & Balance"
 msgstr "Massa & zwaartepunt"
 
-#: app/templates/aircraft/detail.html:597
+#: app/templates/aircraft/detail.html:598
 #: app/templates/aircraft/wb_list.html:19
 msgid "New calculation"
 msgstr "Nieuwe berekening"
 
-#: app/templates/aircraft/detail.html:603
+#: app/templates/aircraft/detail.html:604
 msgid "Configure W&B"
 msgstr "W&B configureren"
 
-#: app/templates/aircraft/detail.html:620
+#: app/templates/aircraft/detail.html:621
 #: app/templates/aircraft/wb_entry.html:143
 #: app/templates/aircraft/wb_list.html:89
 msgid "OUT"
 msgstr "BUITEN"
 
-#: app/templates/aircraft/detail.html:631
+#: app/templates/aircraft/detail.html:632
 #: app/templates/aircraft/wb_list.html:101
 msgid "Delete this W&B calculation?"
 msgstr "Deze W&B-berekening verwijderen?"
 
-#: app/templates/aircraft/detail.html:641
+#: app/templates/aircraft/detail.html:642
 msgid "No calculations yet."
 msgstr "Nog geen berekeningen."
 
-#: app/templates/aircraft/detail.html:642
+#: app/templates/aircraft/detail.html:643
 msgid "Create the first one."
 msgstr "Maak de eerste aan."
 
-#: app/templates/aircraft/detail.html:646
+#: app/templates/aircraft/detail.html:647
 msgid "W&B envelope not configured yet."
 msgstr "W&B-envelop nog niet geconfigureerd."
 
-#: app/templates/aircraft/detail.html:656 app/templates/expenses/list.html:3
+#: app/templates/aircraft/detail.html:657 app/templates/expenses/list.html:3
 #: app/templates/expenses/list.html:11
 msgid "Expenses"
 msgstr "Uitgaven"
 
-#: app/templates/aircraft/detail.html:662
+#: app/templates/aircraft/detail.html:663
 #: app/templates/expenses/expense_form.html:3
 #: app/templates/expenses/expense_form.html:13
 #: app/templates/expenses/list.html:18
 msgid "Add expense"
 msgstr "Uitgave toevoegen"
 
-#: app/templates/aircraft/detail.html:666
+#: app/templates/aircraft/detail.html:667
 #: app/templates/expenses/cost_dashboard.html:3
 #: app/templates/expenses/cost_dashboard.html:11
 msgid "Cost dashboard"
 msgstr "Kostendashboard"
 
-#: app/templates/aircraft/detail.html:686
+#: app/templates/aircraft/detail.html:687
 msgid "No expenses recorded yet."
 msgstr "Nog geen uitgaven geregistreerd."
 
-#: app/templates/aircraft/detail.html:705
-#: app/templates/aircraft/detail.html:758
+#: app/templates/aircraft/detail.html:697 app/templates/refuels/list.html:3
+#: app/templates/refuels/list.html:12
+msgid "Refuels"
+msgstr "Tankbeurten"
+
+#: app/templates/aircraft/detail.html:703 app/templates/refuels/list.html:20
+#: app/templates/refuels/list.html:81 app/templates/refuels/refuel_form.html:3
+#: app/templates/refuels/refuel_form.html:12
+msgid "Log a refuel"
+msgstr "Tankbeurt registreren"
+
+#: app/templates/aircraft/detail.html:721 app/templates/refuels/list.html:77
+msgid "No refuels logged yet."
+msgstr "Nog geen tankbeurten geregistreerd."
+
+#: app/templates/aircraft/detail.html:740
+#: app/templates/aircraft/detail.html:793
 msgid "New expiry date"
 msgstr "Nieuwe vervaldatum"
 
-#: app/templates/aircraft/detail.html:707
-#: app/templates/aircraft/detail.html:760
+#: app/templates/aircraft/detail.html:742
+#: app/templates/aircraft/detail.html:795
 msgid "Upload cert"
 msgstr "Certificaat uploaden"
 
-#: app/templates/aircraft/detail.html:720
+#: app/templates/aircraft/detail.html:755
 msgid "Insurance expired"
 msgstr "Verzekering vervallen"
 
-#: app/templates/aircraft/detail.html:724
+#: app/templates/aircraft/detail.html:759
 msgid "Insurance expires"
 msgstr "Verzekering vervalt op"
 
-#: app/templates/aircraft/detail.html:728
+#: app/templates/aircraft/detail.html:763
 msgid "Insurance valid until"
 msgstr "Verzekering geldig tot"
 
-#: app/templates/aircraft/detail.html:736
-#: app/templates/aircraft/detail.html:789
+#: app/templates/aircraft/detail.html:771
+#: app/templates/aircraft/detail.html:824
 msgid "View certificate"
 msgstr "Certificaat bekijken"
 
-#: app/templates/aircraft/detail.html:773
+#: app/templates/aircraft/detail.html:808
 msgid "ARC expired"
 msgstr "ARC verlopen"
 
-#: app/templates/aircraft/detail.html:777
+#: app/templates/aircraft/detail.html:812
 msgid "ARC expires"
 msgstr "ARC verloopt"
 
-#: app/templates/aircraft/detail.html:781
+#: app/templates/aircraft/detail.html:816
 msgid "ARC valid until"
 msgstr "ARC geldig tot"
 
-#: app/templates/aircraft/detail.html:808
+#: app/templates/aircraft/detail.html:843
 #: app/templates/airworthiness/dashboard.html:58
 #: app/templates/documents/list.html:3 app/templates/documents/list.html:11
 #: app/templates/pilots/profile.html:154 app/templates/share/public.html:101
 msgid "Documents"
 msgstr "Documenten"
 
-#: app/templates/aircraft/detail.html:818
-#: app/templates/aircraft/detail.html:885
+#: app/templates/aircraft/detail.html:853
+#: app/templates/aircraft/detail.html:920
 #: app/templates/documents/pilot_upload_form.html:65
 #: app/templates/documents/upload_form.html:98
 msgid "Upload"
 msgstr "Uploaden"
 
-#: app/templates/aircraft/detail.html:852 app/templates/documents/list.html:142
+#: app/templates/aircraft/detail.html:887 app/templates/documents/list.html:142
 #: app/templates/flights/list.html:145
 #: app/templates/partials/_flight_tracks_map.html:147
 #: app/templates/pilots/logbook.html:234
@@ -4006,180 +4065,155 @@ msgstr "Uploaden"
 msgid "View"
 msgstr "Bekijken"
 
-#: app/templates/aircraft/detail.html:857 app/templates/documents/list.html:147
+#: app/templates/aircraft/detail.html:892 app/templates/documents/list.html:147
 #: app/templates/pilots/profile.html:214
 msgid "Download"
 msgstr "Downloaden"
 
-#: app/templates/aircraft/detail.html:866 app/templates/pilots/profile.html:233
+#: app/templates/aircraft/detail.html:901 app/templates/pilots/profile.html:233
 msgid "No documents uploaded yet."
 msgstr "Nog geen documenten geüpload."
 
-#: app/templates/aircraft/detail.html:875
+#: app/templates/aircraft/detail.html:910
 #: app/templates/flights/flight_form.html:531
 msgid "Photos"
 msgstr "Foto's"
 
-#: app/templates/aircraft/detail.html:889
+#: app/templates/aircraft/detail.html:924
 #: app/templates/airworthiness/document_form.html:62
 #: app/templates/airworthiness/stc_form.html:48
 msgid "Add"
 msgstr "Toevoegen"
 
-#: app/templates/aircraft/detail.html:899
-#: app/templates/aircraft/detail.html:910
+#: app/templates/aircraft/detail.html:934
+#: app/templates/aircraft/detail.html:945
 msgid "Cover"
 msgstr "Omslag"
 
-#: app/templates/aircraft/detail.html:917
+#: app/templates/aircraft/detail.html:952
 msgid "Delete this photo?"
 msgstr "Deze foto verwijderen?"
 
-#: app/templates/aircraft/detail.html:928
+#: app/templates/aircraft/detail.html:963
 msgid "Drag to reorder — first photo is the cover."
 msgstr "Sleep om te herordenen — de eerste foto is de omslag."
 
-#: app/templates/aircraft/detail.html:933
+#: app/templates/aircraft/detail.html:968
 msgid "No photos yet."
 msgstr "Nog geen foto's."
 
-#: app/templates/aircraft/detail.html:973
+#: app/templates/aircraft/detail.html:1008
 msgid "Ownership"
 msgstr "Eigendom"
 
-#: app/templates/aircraft/detail.html:976
+#: app/templates/aircraft/detail.html:1011
 #: app/templates/aircraft/owner_account.html:18
 #: app/templates/aircraft/owners_billing.html:3
 #: app/templates/aircraft/owners_billing.html:11
 msgid "Billing dashboard"
 msgstr "Factureringsdashboard"
 
-#: app/templates/aircraft/detail.html:979
+#: app/templates/aircraft/detail.html:1014
 #: app/templates/aircraft/manage_owners.html:3
 #: app/templates/aircraft/manage_owners.html:11
 #: app/templates/aircraft/owners_billing.html:17
 msgid "Manage owners"
 msgstr "Eigenaars beheren"
 
-#: app/templates/aircraft/detail.html:988
+#: app/templates/aircraft/detail.html:1023
 #: app/templates/aircraft/owners_billing.html:176
 msgid "Share"
 msgstr "Aandeel"
 
-#: app/templates/aircraft/detail.html:989
+#: app/templates/aircraft/detail.html:1024
 msgid "Buy-in"
 msgstr "Instap"
 
-#: app/templates/aircraft/detail.html:1003
+#: app/templates/aircraft/detail.html:1038
 msgid "No co-owners defined yet."
 msgstr "Nog geen mede-eigenaars gedefinieerd."
 
-#: app/templates/aircraft/detail.html:1047
+#: app/templates/aircraft/detail.html:1084
 msgid "Share Links"
 msgstr "Deellinks"
 
-#: app/templates/aircraft/detail.html:1049
+#: app/templates/aircraft/detail.html:1086
 msgid "New link"
 msgstr "Nieuwe link"
 
-#: app/templates/aircraft/detail.html:1059
+#: app/templates/aircraft/detail.html:1096
 msgid "Token"
 msgstr "Token"
 
-#: app/templates/aircraft/detail.html:1060
+#: app/templates/aircraft/detail.html:1097
 msgid "Access"
 msgstr "Toegang"
 
-#: app/templates/aircraft/detail.html:1061
+#: app/templates/aircraft/detail.html:1098
 #: app/templates/config/settings.html:281
 #: app/templates/config/tenant_list.html:29
 msgid "Created"
 msgstr "Aangemaakt"
 
-#: app/templates/aircraft/detail.html:1076
-#: app/templates/aircraft/detail.html:1221
+#: app/templates/aircraft/detail.html:1113
+#: app/templates/aircraft/detail.html:1262
 #: app/templates/pilots/minimums_start.html:46
 msgid "Full"
 msgstr "Volledig"
 
-#: app/templates/aircraft/detail.html:1078
-#: app/templates/aircraft/detail.html:1215
+#: app/templates/aircraft/detail.html:1115
+#: app/templates/aircraft/detail.html:1256
 msgid "Summary"
 msgstr "Samenvatting"
 
-#: app/templates/aircraft/detail.html:1084
+#: app/templates/aircraft/detail.html:1121
 msgid "Download QR code"
 msgstr "QR-code downloaden"
 
-#: app/templates/aircraft/detail.html:1092
+#: app/templates/aircraft/detail.html:1129
 msgid "Revoke this share link?"
 msgstr "Deze deellink intrekken?"
 
-#: app/templates/aircraft/detail.html:1094
+#: app/templates/aircraft/detail.html:1131
 #: app/templates/config/renters_list.html:66 app/templates/users/list.html:132
 #: app/templates/users/list.html:183
 msgid "Revoke"
 msgstr "Intrekken"
 
-#: app/templates/aircraft/detail.html:1103
+#: app/templates/aircraft/detail.html:1140
 msgid "No active share links."
 msgstr "Geen actieve deellinks."
 
-#: app/templates/aircraft/detail.html:1109
+#: app/templates/aircraft/detail.html:1146
 #, python-format
 msgid "%(n)s revoked link"
 msgid_plural "%(n)s revoked links"
 msgstr[0] "%(n)s ingetrokken link"
 msgstr[1] "%(n)s ingetrokken links"
 
-#: app/templates/aircraft/detail.html:1204
+#: app/templates/aircraft/detail.html:1245
 msgid "New share link"
 msgstr "Nieuwe deellink"
 
-#: app/templates/aircraft/detail.html:1209
+#: app/templates/aircraft/detail.html:1250
 msgid "Choose the access level for this link. Anyone with the URL can view the page — no login required."
 msgstr "Kies het toegangsniveau voor deze link. Iedereen met de URL kan de pagina bekijken — inloggen is niet vereist."
 
-#: app/templates/aircraft/detail.html:1211
+#: app/templates/aircraft/detail.html:1252
 msgid "Access level"
 msgstr "Toegangsniveau"
 
-#: app/templates/aircraft/detail.html:1215
+#: app/templates/aircraft/detail.html:1256
 msgid "status badges and maintenance item names only"
 msgstr "alleen statusbadges en namen van onderhoudsitems"
 
-#: app/templates/aircraft/detail.html:1221
+#: app/templates/aircraft/detail.html:1262
 msgid "adds due dates, hobbs values, recent flights and documents"
 msgstr "voegt vervaldatums, hobbs-waarden, recente vluchten en documenten toe"
 
-#: app/templates/aircraft/detail.html:1228
+#: app/templates/aircraft/detail.html:1269
 msgid "Create link"
 msgstr "Link aanmaken"
-
-#: app/templates/aircraft/flight_detail.html:35
-#: app/templates/aircraft/gps_import_history.html:42
-#: app/templates/aircraft/owner_account.html:46
-#: app/templates/aircraft/owners_billing.html:91
-#: app/templates/aircraft/owners_billing.html:152
-#: app/templates/aircraft/wb_entry.html:29
-#: app/templates/aircraft/wb_list.html:70
-#: app/templates/config/renter_account.html:47
-#: app/templates/config/renter_account.html:67
-#: app/templates/documents/reconcile.html:64
-#: app/templates/expenses/expense_form.html:41
-#: app/templates/expenses/list.html:81 app/templates/flights/fleet.html:24
-#: app/templates/flights/flight_form.html:278
-#: app/templates/flights/list.html:91
-#: app/templates/flights/logbook_component.html:95
-#: app/templates/offline/pilot_workbench.html:34
-#: app/templates/offline/workbench.html:34
-#: app/templates/partials/_flight_tracks_map.html:129
-#: app/templates/pilots/entry_detail.html:46
-#: app/templates/pilots/entry_form.html:117
-#: app/templates/pilots/import_history.html:31
-#: app/templates/pilots/logbook.html:168
-msgid "Date"
-msgstr "Datum"
 
 #: app/templates/aircraft/flight_detail.html:39
 #: app/templates/flights/airframe_import_review.html:24
@@ -4291,6 +4325,7 @@ msgstr "Brandstof toegevoegd vóór vlucht"
 
 #: app/templates/aircraft/flight_detail.html:160
 #: app/templates/aircraft/flight_detail.html:174
+#: app/templates/refuels/list.html:50
 msgid "Log as expense"
 msgstr "Registreren als uitgave"
 
@@ -4713,7 +4748,7 @@ msgstr "Rekeninguittreksel downloaden (CSV)"
 
 #: app/templates/aircraft/owner_account.html:48
 #: app/templates/config/renter_account.html:69
-#: app/templates/expenses/expense_form.html:122
+#: app/templates/expenses/expense_form.html:128
 #: app/templates/expenses/list.html:83 app/templates/snags/snag_form.html:37
 msgid "Description"
 msgstr "Omschrijving"
@@ -4721,7 +4756,7 @@ msgstr "Omschrijving"
 #: app/templates/aircraft/owner_account.html:49
 #: app/templates/aircraft/owners_billing.html:86
 #: app/templates/config/renter_account.html:70
-#: app/templates/expenses/expense_form.html:131
+#: app/templates/expenses/expense_form.html:137
 #: app/templates/expenses/list.html:84
 msgid "Amount"
 msgstr "Bedrag"
@@ -5977,6 +6012,7 @@ msgid "Amount (EUR)"
 msgstr "Bedrag (EUR)"
 
 #: app/templates/config/renter_account.html:51
+#: app/templates/refuels/list.html:37 app/templates/refuels/refuel_form.html:50
 msgid "Note"
 msgstr "Notitie"
 
@@ -7071,84 +7107,90 @@ msgstr "Geen vlieguren geregistreerd in de geselecteerde periode — uurcijfers 
 msgid "Edit Expense"
 msgstr "Uitgave bewerken"
 
-#: app/templates/expenses/expense_form.html:29
+#: app/templates/expenses/expense_form.html:31
 msgid "Pre-filled from a logged refuel — linked to this flight."
 msgstr "Vooraf ingevuld op basis van een geregistreerde tankbeurt — gekoppeld aan deze vlucht."
 
-#: app/templates/expenses/expense_form.html:62
+#: app/templates/expenses/expense_form.html:33
+msgid "Pre-filled from a logged refuel."
+msgstr "Vooraf ingevuld op basis van een geregistreerde tankbeurt."
+
+#: app/templates/expenses/expense_form.html:68
 msgid "Cost category"
 msgstr "Kostencategorie"
 
-#: app/templates/expenses/expense_form.html:63
+#: app/templates/expenses/expense_form.html:69
 msgid "Fixed costs (e.g. insurance) are pro-rated over time; operating costs scale with usage. Used by the cost dashboard."
 msgstr "Vaste kosten (bijv. verzekering) worden naar rato van de tijd verdeeld; operationele kosten schalen met het gebruik. Gebruikt door het kostendashboard."
 
-#: app/templates/expenses/expense_form.html:70
+#: app/templates/expenses/expense_form.html:76
 msgid "Operating"
 msgstr "Operationeel"
 
-#: app/templates/expenses/expense_form.html:73
+#: app/templates/expenses/expense_form.html:79
 msgid "Fixed"
 msgstr "Vast"
 
-#: app/templates/expenses/expense_form.html:82
+#: app/templates/expenses/expense_form.html:88
 msgid "Coverage start"
 msgstr "Begin dekkingsperiode"
 
-#: app/templates/expenses/expense_form.html:89
+#: app/templates/expenses/expense_form.html:95
 msgid "Coverage end"
 msgstr "Einde dekkingsperiode"
 
-#: app/templates/expenses/expense_form.html:99
+#: app/templates/expenses/expense_form.html:105
 msgid "Repeats"
 msgstr "Herhaling"
 
-#: app/templates/expenses/expense_form.html:100
+#: app/templates/expenses/expense_form.html:106
 msgid "A repeating expense is re-created automatically each period (e.g. monthly hangar rent, annual insurance). Generated entries stay editable; edit this entry to change future periods."
 msgstr "Een terugkerende uitgave wordt elke periode automatisch opnieuw aangemaakt (bv. maandelijkse hangarhuur, jaarlijkse verzekering). Gegenereerde regels blijven bewerkbaar; bewerk deze regel om toekomstige periodes te wijzigen."
 
-#: app/templates/expenses/expense_form.html:105
+#: app/templates/expenses/expense_form.html:111
 msgid "Does not repeat"
 msgstr "Herhaalt niet"
 
-#: app/templates/expenses/expense_form.html:106
+#: app/templates/expenses/expense_form.html:112
 msgid "Monthly"
 msgstr "Maandelijks"
 
-#: app/templates/expenses/expense_form.html:107
+#: app/templates/expenses/expense_form.html:113
 msgid "Quarterly"
 msgstr "Per kwartaal"
 
-#: app/templates/expenses/expense_form.html:108
+#: app/templates/expenses/expense_form.html:114
 msgid "Yearly"
 msgstr "Jaarlijks"
 
-#: app/templates/expenses/expense_form.html:113
+#: app/templates/expenses/expense_form.html:119
 msgid "Repeat until"
 msgstr "Herhalen tot"
 
-#: app/templates/expenses/expense_form.html:137
+#: app/templates/expenses/expense_form.html:143
 msgid "Currency"
 msgstr "Valuta"
 
-#: app/templates/expenses/expense_form.html:154
-#: app/templates/expenses/list.html:85
+#: app/templates/expenses/expense_form.html:160
+#: app/templates/expenses/list.html:85 app/templates/refuels/list.html:36
+#: app/templates/refuels/refuel_form.html:30
 msgid "Quantity"
 msgstr "Hoeveelheid"
 
-#: app/templates/expenses/expense_form.html:161
+#: app/templates/expenses/expense_form.html:167
 #: app/templates/flights/flight_form.html:593
 #: app/templates/flights/flight_form.html:620
 #: app/templates/offline/workbench.html:105
 #: app/templates/offline/workbench.html:116
+#: app/templates/refuels/refuel_form.html:36
 msgid "Unit"
 msgstr "Eenheid"
 
-#: app/templates/expenses/expense_form.html:177
+#: app/templates/expenses/expense_form.html:183
 msgid "Receipt / invoice"
 msgstr "Bewijsstuk / factuur"
 
-#: app/templates/expenses/expense_form.html:185
+#: app/templates/expenses/expense_form.html:191
 msgid "uploading a new file replaces it"
 msgstr "een nieuw bestand uploaden vervangt het"
 
@@ -9323,6 +9365,19 @@ msgstr "Geen compatibele bestemming gevonden voor deze bestandstypen."
 #: app/templates/pwa/share_target.html:92
 msgid "select"
 msgstr "selecteer"
+
+#: app/templates/refuels/list.html:62
+msgid "Delete this refuel?"
+msgstr "Deze tankbeurt verwijderen?"
+
+#: app/templates/refuels/refuel_form.html:3
+#: app/templates/refuels/refuel_form.html:12
+msgid "Edit Refuel"
+msgstr "Tankbeurt bewerken"
+
+#: app/templates/refuels/refuel_form.html:53
+msgid "e.g. topped off before maintenance"
+msgstr "bijv. bijgetankt vóór onderhoud"
 
 #: app/templates/reservations/calendar.html:28
 #: app/templates/reservations/downtime_form.html:3

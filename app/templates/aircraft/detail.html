@@ -18,6 +18,7 @@
   url_for('expenses.cost_dashboard', aircraft_id=aircraft.id),
   url_for('snags.list_snags', aircraft_id=aircraft.id),
   url_for('maintenance.list_triggers', aircraft_id=aircraft.id),
+  url_for('refuels.list_refuels', aircraft_id=aircraft.id),
 ] %}
 {% if is_crew %}
 {% set ns.urls = ns.urls + [url_for('airworthiness.dashboard', aircraft_id=aircraft.id)] %}
@@ -688,6 +689,40 @@
   </div>
   {% endmacro %}
 
+  {# ── Refuels (standalone, not tied to a flight) ──────────────────────────── #}
+  {% macro refuels_section() %}
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="section-title mb-0">
+      <a href="{{ url_for('refuels.list_refuels', aircraft_id=aircraft.id) }}" class="section-title-link">
+        <i class="bi bi-fuel-pump me-2"></i>{{ _('Refuels') }}
+      </a>
+    </h2>
+    {% if is_crew %}
+    <a href="{{ url_for('refuels.new_refuel', aircraft_id=aircraft.id) }}"
+       class="btn btn-ac-primary btn-sm">
+      <i class="bi bi-plus-circle me-1"></i>{{ _('Log a refuel') }}
+    </a>
+    {% endif %}
+  </div>
+  <div class="ac-form-card {% if recent_refuels %}p-0{% else %}p-3{% endif %} mb-3">
+  {% if recent_refuels %}
+    <table class="table table-hover mb-0 oh-fs-09">
+      <tbody>
+        {% for r in recent_refuels %}
+        <tr>
+          <td class="ps-3 text-muted text-nowrap">{{ r.date.strftime('%Y-%m-%d') }}</td>
+          <td class="oh-text-navy fw-semibold">{{ '%.1f'|format(r.quantity|float) }} {{ r.unit }}</td>
+          <td class="text-end pe-3 text-muted">{{ r.note or '' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="text-muted mb-0 oh-fs-09">{{ _('No refuels logged yet.') }}</p>
+  {% endif %}
+  </div>
+  {% endmacro %}
+
   {# ── Insurance ─────────────────────────────────────────────────────────── #}
   {% macro insurance_section() %}
   {% if aircraft.insurance_expiry %}
@@ -1038,6 +1073,8 @@
     <div class="col-lg-6">{{ expenses_section() }}</div>
   </div>
 
+  <div class="row mt-5"><div class="col-lg-6">{{ refuels_section() }}</div></div>
+
   {{ insurance_documents_row() }}
 
   <div class="mt-5">{{ photos_section() }}</div>
@@ -1140,6 +1177,8 @@
 
   <div class="mt-5">{{ tracks_section() }}</div>
 
+  <div class="row mt-5"><div class="col-lg-6">{{ refuels_section() }}</div></div>
+
   {{ insurance_documents_row() }}
 
   <div class="mt-5">{{ photos_section() }}</div>
@@ -1169,6 +1208,8 @@
   <div class="row mt-5"><div class="col-lg-6">{{ airworthiness_section() }}</div></div>
 
   <div class="mt-5">{{ components_summary_section() }}</div>
+
+  <div class="row mt-5"><div class="col-lg-6">{{ refuels_section() }}</div></div>
 
   <div class="mt-5">{{ documents_section() }}</div>
 

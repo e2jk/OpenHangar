@@ -73,22 +73,39 @@ def _get_expense_or_404(aircraft: Aircraft, expense_id: int) -> Expense:
 
 
 def _fuel_expense_prefill(aircraft: Aircraft) -> dict[str, Any] | None:
-    """Build "add expense" form defaults from a `?flight_entry_id=...` link
-    off a logged refuel (see aircraft/flight_detail.html). A flight's
-    before-refuel and after-refuel quantities are independent purchases —
-    each gets its own "Log as expense" link, both pointing at this same
-    flight_entry_id; only the date and aircraft matter for cost tracking,
-    not which one a given amount happens to be logged against."""
+    """Build "add expense" form defaults from a "Log as expense" link off a
+    logged refuel — either flight-linked (`?flight_entry_id=...`, from
+    aircraft/flight_detail.html) or standalone (`?date=...`, from a Refuel
+    record with no flight, see refuels/list.html). A flight's before/after
+    refuel quantities, and a standalone Refuel, are all independent
+    purchases for cost-tracking purposes — only the date and aircraft
+    matter, not which record a given amount happens to be logged against."""
     flight_entry_id_raw = request.args.get("flight_entry_id", "").strip()
-    if not flight_entry_id_raw.isdigit():
+    date_raw = request.args.get("date", "").strip()
+
+    flight_id: int | None = None
+    prefill_date: str | None = None
+
+    if flight_entry_id_raw.isdigit():
+        flight = db.session.get(Flight, int(flight_entry_id_raw))
+        if flight is not None and flight.aircraft_id == aircraft.id:
+            flight_id = flight.id
+            prefill_date = flight.date.isoformat()
+    elif date_raw:
+        try:
+            _date.fromisoformat(date_raw)
+        except ValueError:
+            pass
+        else:
+            prefill_date = date_raw
+
+    if prefill_date is None:
         return None
-    flight = db.session.get(Flight, int(flight_entry_id_raw))
-    if flight is None or flight.aircraft_id != aircraft.id:
-        return None
+
     unit = request.args.get("unit", "").strip()
     return {
-        "flight_entry_id": flight.id,
-        "date": flight.date.isoformat(),
+        "flight_entry_id": flight_id,
+        "date": prefill_date,
         "quantity": request.args.get("quantity", "").strip() or None,
         "unit": unit if unit in _UNITS else "L",
     }
