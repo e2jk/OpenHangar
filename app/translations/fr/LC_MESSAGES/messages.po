@@ -59,210 +59,210 @@ msgstr "La contribution (mensuelle) au fonds de réserve doit être un nombre po
 msgid "Set either an hourly or a monthly reserve contribution, not both."
 msgstr "Définissez soit une contribution horaire, soit une contribution mensuelle au fonds de réserve, pas les deux."
 
-#: app/aircraft/routes.py:452
+#: app/aircraft/routes.py:453
 msgid "Registration is required."
 msgstr "L'immatriculation est obligatoire."
 
-#: app/aircraft/routes.py:458
+#: app/aircraft/routes.py:459
 #, python-format
 msgid "%(reg)s is already used by another aircraft in this hangar (registrations that only differ by spaces or slashes still count as the same, since they'd otherwise share a URL)."
 msgstr "%(reg)s est déjà utilisé par un autre avion de ce hangar (les immatriculations qui ne diffèrent que par des espaces ou des barres obliques sont considérées comme identiques, car elles partageraient sinon la même URL)."
 
-#: app/aircraft/routes.py:465 app/aircraft/routes.py:1242
+#: app/aircraft/routes.py:466 app/aircraft/routes.py:1273
 msgid "Manufacturer is required."
 msgstr "Le fabricant est obligatoire."
 
-#: app/aircraft/routes.py:467 app/aircraft/routes.py:1244
+#: app/aircraft/routes.py:468 app/aircraft/routes.py:1275
 msgid "Model is required."
 msgstr "Le modèle est obligatoire."
 
-#: app/aircraft/routes.py:475
+#: app/aircraft/routes.py:476
 msgid "Year must be a valid 4-digit year."
 msgstr "L'année doit être une année valide à 4 chiffres."
 
-#: app/aircraft/routes.py:484
+#: app/aircraft/routes.py:485
 msgid "Flight counter offset must be a non-negative number."
 msgstr "Le décalage du compteur de vol doit être un nombre positif ou nul."
 
-#: app/aircraft/routes.py:493
+#: app/aircraft/routes.py:494
 msgid "Fuel consumption must be a non-negative number."
 msgstr "La consommation de carburant doit être un nombre positif ou nul."
 
-#: app/aircraft/routes.py:502
+#: app/aircraft/routes.py:503
 msgid "Overhaul reserve accrual must be a non-negative number."
 msgstr "La provision pour révision doit être un nombre non négatif."
 
-#: app/aircraft/routes.py:512
+#: app/aircraft/routes.py:513
 msgid "Oil consumption warning threshold must be a non-negative number."
 msgstr "Le seuil d'alerte de consommation d'huile doit être un nombre positif ou nul."
 
-#: app/aircraft/routes.py:522
+#: app/aircraft/routes.py:523 app/aircraft/routes.py:540
 msgid "Fuel tank capacity must be a positive number."
 msgstr "La capacité du réservoir de carburant doit être un nombre positif."
 
-#: app/aircraft/routes.py:559
+#: app/aircraft/routes.py:590
 #, python-format
 msgid "%(reg)s saved."
 msgstr "%(reg)s enregistré."
 
-#: app/aircraft/routes.py:631
+#: app/aircraft/routes.py:662
 msgid "Ownership updated."
 msgstr "Propriété mise à jour."
 
-#: app/aircraft/routes.py:834 app/config/routes.py:1519
+#: app/aircraft/routes.py:865 app/config/routes.py:1519
 msgid "Payment amount must be positive."
 msgstr "Le montant du paiement doit être positif."
 
-#: app/aircraft/routes.py:837 app/config/routes.py:1522
+#: app/aircraft/routes.py:868 app/config/routes.py:1522
 msgid "Invalid payment amount."
 msgstr "Montant de paiement invalide."
 
-#: app/aircraft/routes.py:844 app/config/routes.py:1529
+#: app/aircraft/routes.py:875 app/config/routes.py:1529
 msgid "Invalid payment date."
 msgstr "Date de paiement invalide."
 
-#: app/aircraft/routes.py:855
+#: app/aircraft/routes.py:886
 #, python-format
 msgid "Payment — %(note)s"
 msgstr "Paiement — %(note)s"
 
-#: app/aircraft/routes.py:855
+#: app/aircraft/routes.py:886
 msgid "Payment"
 msgstr "Paiement"
 
-#: app/aircraft/routes.py:866 app/config/routes.py:1552
+#: app/aircraft/routes.py:897 app/config/routes.py:1552
 msgid "Payment recorded."
 msgstr "Paiement enregistré."
 
-#: app/aircraft/routes.py:896
+#: app/aircraft/routes.py:927
 msgid "Payment reversed"
 msgstr "Paiement annulé"
 
-#: app/aircraft/routes.py:898
+#: app/aircraft/routes.py:929
 msgid "Entry reversed."
 msgstr "Écriture annulée."
 
-#: app/aircraft/routes.py:948
+#: app/aircraft/routes.py:979
 msgid "Valuation snapshot recorded."
 msgstr "Instantané de valorisation enregistré."
 
-#: app/aircraft/routes.py:1095
+#: app/aircraft/routes.py:1126
 #, python-format
 msgid "%(reg)s has been archived — its history stays available, but it no longer appears in the active fleet."
 msgstr "%(reg)s a été archivé — son historique reste disponible, mais il n'apparaît plus dans la flotte active."
 
-#: app/aircraft/routes.py:1113
+#: app/aircraft/routes.py:1144
 #, python-format
 msgid "%(reg)s is back in the active fleet."
 msgstr "%(reg)s est de retour dans la flotte active."
 
-#: app/aircraft/routes.py:1126
+#: app/aircraft/routes.py:1157
 #, python-format
 msgid "%(reg)s and all its components have been deleted."
 msgstr "%(reg)s et tous ses composants ont été supprimés."
 
-#: app/aircraft/routes.py:1170
+#: app/aircraft/routes.py:1201
 #, python-format
 msgid "Engine and propeller added — fill in the details when ready."
 msgid_plural "%(n)s engines and propellers added — fill in the details when ready."
 msgstr[0] "Moteur et hélice ajoutés — complétez les détails quand vous êtes prêt."
 msgstr[1] "%(n)s moteurs et hélices ajoutés — complétez les détails quand vous êtes prêt."
 
-#: app/aircraft/routes.py:1240
+#: app/aircraft/routes.py:1271
 msgid "Component type is required."
 msgstr "Le type de composant est obligatoire."
 
-#: app/aircraft/routes.py:1253
+#: app/aircraft/routes.py:1284
 msgid "Time at install must be a positive number."
 msgstr "Le temps à l'installation doit être un nombre positif."
 
-#: app/aircraft/routes.py:1262
+#: app/aircraft/routes.py:1293
 msgid "TBO must be a positive number of hours."
 msgstr "Le TBO doit être un nombre d'heures positif."
 
-#: app/aircraft/routes.py:1271
+#: app/aircraft/routes.py:1302
 msgid "Last overhaul hours must be a non-negative number."
 msgstr "Les heures de la dernière révision générale doivent être un nombre positif ou nul."
 
-#: app/aircraft/routes.py:1280 app/refuels/routes.py:67 app/snags/routes.py:69
+#: app/aircraft/routes.py:1311 app/refuels/routes.py:67 app/snags/routes.py:69
 #, python-format
 msgid "%(label)s must be a valid date (YYYY-MM-DD)."
 msgstr "%(label)s doit être une date valide (AAAA-MM-JJ)."
 
-#: app/aircraft/routes.py:1327
+#: app/aircraft/routes.py:1358
 #, python-format
 msgid "%(make)s %(model)s saved."
 msgstr "%(make)s %(model)s enregistré."
 
-#: app/aircraft/routes.py:1351
+#: app/aircraft/routes.py:1382
 #, python-format
 msgid "%(label)s removed."
 msgstr "%(label)s supprimé."
 
-#: app/aircraft/routes.py:1409
+#: app/aircraft/routes.py:1440
 #, python-format
 msgid "%(field)s must be a positive number."
 msgstr "%(field)s doit être un nombre positif."
 
-#: app/aircraft/routes.py:1432
+#: app/aircraft/routes.py:1463
 msgid "At least one loading station is required."
 msgstr "Au moins un point de chargement est requis."
 
-#: app/aircraft/routes.py:1499
+#: app/aircraft/routes.py:1530
 msgid "W&B configuration saved."
 msgstr "Configuration centrage/masse enregistrée."
 
-#: app/aircraft/routes.py:1513 app/aircraft/routes.py:1537
+#: app/aircraft/routes.py:1544 app/aircraft/routes.py:1568
 msgid "Configure W&B envelope first."
 msgstr "Configurez d'abord l'enveloppe de centrage/masse."
 
-#: app/aircraft/routes.py:1556
+#: app/aircraft/routes.py:1587
 msgid "A valid date is required."
 msgstr "Une date valide est requise."
 
-#: app/aircraft/routes.py:1571
+#: app/aircraft/routes.py:1602
 #, python-format
 msgid "Volume for %(station)s exceeds tank capacity."
 msgstr "Le volume pour %(station)s dépasse la capacité du réservoir."
 
-#: app/aircraft/routes.py:1579
+#: app/aircraft/routes.py:1610
 #, python-format
 msgid "Volume for %(station)s must be a non-negative number."
 msgstr "Le volume pour %(station)s doit être un nombre positif ou nul."
 
-#: app/aircraft/routes.py:1593
+#: app/aircraft/routes.py:1624
 #, python-format
 msgid "Weight for %(station)s must be a non-negative number."
 msgstr "La masse pour %(station)s doit être un nombre positif ou nul."
 
-#: app/aircraft/routes.py:1642
+#: app/aircraft/routes.py:1673
 msgid "W&B calculation saved."
 msgstr "Calcul centrage/masse enregistré."
 
-#: app/aircraft/routes.py:1671
+#: app/aircraft/routes.py:1702
 msgid "W&B calculation deleted."
 msgstr "Calcul centrage/masse supprimé."
 
-#: app/aircraft/routes.py:1802 app/pilots/routes.py:2002
+#: app/aircraft/routes.py:1833 app/pilots/routes.py:2002
 msgid "Please select at least one GPS log file."
 msgstr "Veuillez sélectionner au moins un fichier journal GPS."
 
-#: app/aircraft/routes.py:1818 app/pilots/routes.py:2021
+#: app/aircraft/routes.py:1849 app/pilots/routes.py:2021
 #, python-format
 msgid "%(fn)s: unsupported file type (use .gpx, .kml, or .csv)."
 msgstr "%(fn)s : type de fichier non pris en charge (utilisez .gpx, .kml ou .csv)."
 
-#: app/aircraft/routes.py:1826 app/pilots/routes.py:2028
+#: app/aircraft/routes.py:1857 app/pilots/routes.py:2028
 #, python-format
 msgid "%(fn)s: file too large (20 MB limit)."
 msgstr "%(fn)s : fichier trop volumineux (limite 20 Mo)."
 
-#: app/aircraft/routes.py:1832 app/pilots/routes.py:2033
+#: app/aircraft/routes.py:1863 app/pilots/routes.py:2033
 #, python-format
 msgid "%(fn)s: %(err)s"
 msgstr "%(fn)s : %(err)s"
 
-#: app/aircraft/routes.py:1866 app/pilots/routes.py:2061
+#: app/aircraft/routes.py:1897 app/pilots/routes.py:2061
 #: app/templates/aircraft/gps_import_review.html:25
 #: app/templates/pilots/gps_import_review.html:24
 #, python-format
@@ -271,36 +271,36 @@ msgid_plural "%(n)s files skipped — no movement detected."
 msgstr[0] "%(n)s fichier ignoré — aucun mouvement détecté."
 msgstr[1] "%(n)s fichiers ignorés — aucun mouvement détecté."
 
-#: app/aircraft/routes.py:1875 app/pilots/routes.py:2069
+#: app/aircraft/routes.py:1906 app/pilots/routes.py:2069
 msgid "No valid GPS files to import."
 msgstr "Aucun fichier GPS valide à importer."
 
-#: app/aircraft/routes.py:1901 app/aircraft/routes.py:2242
-#: app/aircraft/routes.py:2438 app/pilots/routes.py:2110
+#: app/aircraft/routes.py:1932 app/aircraft/routes.py:2273
+#: app/aircraft/routes.py:2469 app/pilots/routes.py:2110
 #: app/pilots/routes.py:2214
 msgid "Session expired — please upload your GPS files again."
 msgstr "Session expirée — veuillez retéléverser vos fichiers GPS."
 
-#: app/aircraft/routes.py:1923 app/pilots/routes.py:2138
+#: app/aircraft/routes.py:1954 app/pilots/routes.py:2138
 #, python-format
 msgid "Could not read %(fn)s — please upload again."
 msgstr "Impossible de lire %(fn)s — veuillez retéléverser le fichier."
 
-#: app/aircraft/routes.py:2247 app/pilots/routes.py:2219
+#: app/aircraft/routes.py:2278 app/pilots/routes.py:2219
 msgid "No segments to import."
 msgstr "Aucun segment à importer."
 
-#: app/aircraft/routes.py:2253 app/aircraft/routes.py:2257
-#: app/aircraft/routes.py:2443 app/pilots/routes.py:2225
+#: app/aircraft/routes.py:2284 app/aircraft/routes.py:2288
+#: app/aircraft/routes.py:2474 app/pilots/routes.py:2225
 #: app/pilots/routes.py:2229
 msgid "Invalid segment index."
 msgstr "Index de segment invalide."
 
-#: app/aircraft/routes.py:2262 app/pilots/routes.py:2234
+#: app/aircraft/routes.py:2293 app/pilots/routes.py:2234
 msgid "This segment has already been confirmed."
 msgstr "Ce segment a déjà été confirmé."
 
-#: app/aircraft/routes.py:2282 app/aircraft/routes.py:2409
+#: app/aircraft/routes.py:2313 app/aircraft/routes.py:2440
 #: app/pilots/routes.py:2255 app/pilots/routes.py:2473
 #, python-format
 msgid "%(n)s flight imported successfully."
@@ -308,42 +308,42 @@ msgid_plural "%(n)s flights imported successfully."
 msgstr[0] "%(n)s vol importé avec succès."
 msgstr[1] "%(n)s vols importés avec succès."
 
-#: app/aircraft/routes.py:2291 app/pilots/routes.py:2264
+#: app/aircraft/routes.py:2322 app/pilots/routes.py:2264
 #, python-format
 msgid "%(n)s segment skipped."
 msgid_plural "%(n)s segments skipped."
 msgstr[0] "%(n)s segment ignoré."
 msgstr[1] "%(n)s segments ignorés."
 
-#: app/aircraft/routes.py:2304 app/pilots/routes.py:2274
+#: app/aircraft/routes.py:2335 app/pilots/routes.py:2274
 msgid "Segment skipped."
 msgstr "Segment ignoré."
 
-#: app/aircraft/routes.py:2420 app/pilots/routes.py:2482
+#: app/aircraft/routes.py:2451 app/pilots/routes.py:2482
 msgid "Flight confirmed."
 msgstr "Vol confirmé."
 
-#: app/aircraft/routes.py:2528
+#: app/aircraft/routes.py:2559
 msgid "GPS import batch rolled back and all linked flight entries removed."
 msgstr "L'import GPS a été annulé et tous les vols liés ont été supprimés."
 
-#: app/aircraft/routes.py:2739
+#: app/aircraft/routes.py:2770
 msgid "No files selected."
 msgstr "Aucun fichier sélectionné."
 
-#: app/aircraft/routes.py:2759
+#: app/aircraft/routes.py:2790
 #, python-format
 msgid "%(name)s: unsupported format (use JPEG, PNG, WEBP or HEIC)."
 msgstr "%(name)s : format non pris en charge (utilisez JPEG, PNG, WEBP ou HEIC)."
 
-#: app/aircraft/routes.py:2781
+#: app/aircraft/routes.py:2812
 #, python-format
 msgid "%(n)s photo uploaded."
 msgid_plural "%(n)s photos uploaded."
 msgstr[0] "%(n)s photo téléversée."
 msgstr[1] "%(n)s photos téléversées."
 
-#: app/aircraft/routes.py:2837
+#: app/aircraft/routes.py:2868
 msgid "Photo deleted."
 msgstr "Photo supprimée."
 
@@ -2954,7 +2954,7 @@ msgstr "Fin"
 #: app/templates/airworthiness/stc_form.html:43
 #: app/templates/config/renter_form.html:83 app/templates/dashboard.html:741
 #: app/templates/flights/airframe_import_review.html:35
-#: app/templates/flights/flight_form.html:726
+#: app/templates/flights/flight_form.html:748
 #: app/templates/maintenance/service_form.html:102
 #: app/templates/maintenance/trigger_form.html:189
 #: app/templates/offline/workbench.html:156
@@ -3266,7 +3266,7 @@ msgid "Edit %(reg)s"
 msgstr "Modifier %(reg)s"
 
 #: app/templates/aircraft/aircraft_form.html:17
-#: app/templates/aircraft/aircraft_form.html:174
+#: app/templates/aircraft/aircraft_form.html:208
 #: app/templates/aircraft/component_form.html:17
 #: app/templates/aircraft/component_form.html:136
 #: app/templates/aircraft/detail.html:1268
@@ -3292,8 +3292,8 @@ msgstr "Modifier %(reg)s"
 #: app/templates/flights/airframe_import_map.html:144
 #: app/templates/flights/flight_form.html:45
 #: app/templates/flights/flight_form.html:49
-#: app/templates/flights/flight_form.html:739
-#: app/templates/flights/flight_form.html:741
+#: app/templates/flights/flight_form.html:761
+#: app/templates/flights/flight_form.html:763
 #: app/templates/maintenance/service_form.html:20
 #: app/templates/maintenance/service_form.html:113
 #: app/templates/maintenance/trigger_form.html:19
@@ -3441,6 +3441,7 @@ msgid "Total fuel tank capacity"
 msgstr "Capacité totale du réservoir de carburant"
 
 #: app/templates/aircraft/aircraft_form.html:137
+#: app/templates/aircraft/aircraft_form.html:152
 #: app/templates/aircraft/component_form.html:98
 #: app/templates/aircraft/wb_config.html:88
 #: app/templates/aircraft/wb_config.html:97
@@ -3467,7 +3468,7 @@ msgstr "Capacité totale du réservoir de carburant"
 #: app/templates/flights/flight_form.html:521
 #: app/templates/flights/flight_form.html:532
 #: app/templates/flights/flight_form.html:580
-#: app/templates/flights/flight_form.html:726
+#: app/templates/flights/flight_form.html:748
 #: app/templates/maintenance/service_form.html:70
 #: app/templates/maintenance/service_form.html:92
 #: app/templates/maintenance/service_form.html:102
@@ -3487,23 +3488,69 @@ msgstr "facultatif"
 msgid "All tanks combined. Enables quick fraction-of-tank buttons on the flight log."
 msgstr "Tous les réservoirs combinés. Active les boutons de remplissage rapide par fraction de réservoir dans le carnet de vol."
 
-#: app/templates/aircraft/aircraft_form.html:147
+#: app/templates/aircraft/aircraft_form.html:152
+msgid "Fuel tanks"
+msgstr "Réservoirs de carburant"
+
+#: app/templates/aircraft/aircraft_form.html:153
+msgid "Define independent tanks (e.g. left/right wing) to get a per-tank picker on the flight log, instead of relying on the combined total above."
+msgstr "Définissez des réservoirs indépendants (p. ex. aile gauche/droite) pour obtenir un sélecteur par réservoir dans le carnet de vol, au lieu de vous fier au total combiné ci-dessus."
+
+#: app/templates/aircraft/aircraft_form.html:158
+#: app/templates/aircraft/aircraft_form.html:219
+#: app/templates/auth/setup.html:292 app/templates/auth/setup.html:344
+#: app/templates/config/tenant_list.html:28
+#: app/templates/maintenance/trigger_form.html:29
+msgid "Name"
+msgstr "Nom"
+
+#: app/templates/aircraft/aircraft_form.html:160
+#: app/templates/aircraft/aircraft_form.html:221
+msgid "e.g. Left wing"
+msgstr "p. ex. Aile gauche"
+
+#: app/templates/aircraft/aircraft_form.html:163
+#: app/templates/aircraft/aircraft_form.html:224
+#: app/templates/aircraft/wb_config.html:135
+#: app/templates/aircraft/wb_config.html:152
+msgid "Capacity"
+msgstr "Capacité"
+
+#: app/templates/aircraft/aircraft_form.html:168
+#: app/templates/aircraft/aircraft_form.html:229
+#: app/templates/aircraft/detail.html:405
+#: app/templates/aircraft/manage_owners.html:34
+#: app/templates/aircraft/wb_config.html:116
+#: app/templates/aircraft/wb_config.html:167
+#: app/templates/aircraft/wb_config.html:199
+#: app/templates/aircraft/wb_config.html:248
+#: app/templates/aircraft/wb_config.html:268
+#: app/templates/reservations/calendar.html:152
+#: app/templates/reservations/downtime_form.html:78
+msgid "Remove"
+msgstr "Déposer"
+
+#: app/templates/aircraft/aircraft_form.html:176
+msgid "Add tank"
+msgstr "Ajouter un réservoir"
+
+#: app/templates/aircraft/aircraft_form.html:181
 msgid "Flight time precision"
 msgstr "Précision du temps de vol"
 
-#: app/templates/aircraft/aircraft_form.html:154
+#: app/templates/aircraft/aircraft_form.html:188
 msgid "1/10 h (EASA standard)"
 msgstr "1/10 h (standard EASA)"
 
-#: app/templates/aircraft/aircraft_form.html:162
+#: app/templates/aircraft/aircraft_form.html:196
 msgid "1 minute"
 msgstr "1 minute"
 
-#: app/templates/aircraft/aircraft_form.html:166
+#: app/templates/aircraft/aircraft_form.html:200
 msgid "Controls how GPS-imported flight times are rounded in the logbook."
 msgstr "Détermine comment les temps de vol importés via GPS sont arrondis dans le carnet de vol."
 
-#: app/templates/aircraft/aircraft_form.html:171
+#: app/templates/aircraft/aircraft_form.html:205
 #: app/templates/aircraft/component_form.html:133
 #: app/templates/aircraft/manage_owners.html:127
 #: app/templates/aircraft/wb_entry.html:115
@@ -3514,7 +3561,7 @@ msgstr "Détermine comment les temps de vol importés via GPS sont arrondis dans
 #: app/templates/config/settings.html:446
 #: app/templates/documents/edit_form.html:93
 #: app/templates/expenses/expense_form.html:200
-#: app/templates/flights/flight_form.html:735
+#: app/templates/flights/flight_form.html:757
 #: app/templates/maintenance/trigger_form.html:196
 #: app/templates/pwa/share_target.html:116
 #: app/templates/refuels/refuel_form.html:58
@@ -3869,18 +3916,6 @@ msgstr "Ajouter un nœud EASA"
 #, python-format
 msgid "Remove %(make)s %(model)s?"
 msgstr "Déposer %(make)s %(model)s ?"
-
-#: app/templates/aircraft/detail.html:405
-#: app/templates/aircraft/manage_owners.html:34
-#: app/templates/aircraft/wb_config.html:116
-#: app/templates/aircraft/wb_config.html:167
-#: app/templates/aircraft/wb_config.html:199
-#: app/templates/aircraft/wb_config.html:248
-#: app/templates/aircraft/wb_config.html:268
-#: app/templates/reservations/calendar.html:152
-#: app/templates/reservations/downtime_form.html:78
-msgid "Remove"
-msgstr "Déposer"
 
 #: app/templates/aircraft/detail.html:421
 msgid "No components recorded yet."
@@ -4261,7 +4296,7 @@ msgid "Block on (UTC)"
 msgstr "Bloc arrivée (UTC)"
 
 #: app/templates/aircraft/flight_detail.html:110
-#: app/templates/flights/flight_form.html:676
+#: app/templates/flights/flight_form.html:698
 #: app/templates/offline/workbench.html:165
 #: app/templates/pilots/logbook.html:16
 msgid "Pilot logbook"
@@ -4302,7 +4337,7 @@ msgid "Instrument"
 msgstr "Instruments"
 
 #: app/templates/aircraft/flight_detail.html:127
-#: app/templates/flights/flight_form.html:712
+#: app/templates/flights/flight_form.html:734
 #: app/templates/pilots/entry_detail.html:105
 #: app/templates/pilots/entry_form.html:230
 #: app/templates/pilots/logbook.html:176
@@ -4996,11 +5031,6 @@ msgstr "Définissez chaque station (sièges, bagages, carburant) avec sa distanc
 #: app/templates/aircraft/wb_config.html:237
 msgid "Max"
 msgstr "Max"
-
-#: app/templates/aircraft/wb_config.html:135
-#: app/templates/aircraft/wb_config.html:152
-msgid "Capacity"
-msgstr "Capacité"
 
 #: app/templates/aircraft/wb_config.html:141
 #: app/templates/aircraft/wb_config.html:178
@@ -5700,12 +5730,6 @@ msgstr "Invitez vos copropriétaires"
 #: app/templates/auth/setup.html:282
 msgid "Add your co-owners here. We'll generate a secure link for each person to create their account. You can add more later."
 msgstr "Ajoutez vos copropriétaires ici. Nous générerons un lien sécurisé pour que chaque personne puisse créer son compte. Vous pourrez en ajouter d'autres plus tard."
-
-#: app/templates/auth/setup.html:292 app/templates/auth/setup.html:344
-#: app/templates/config/tenant_list.html:28
-#: app/templates/maintenance/trigger_form.html:29
-msgid "Name"
-msgstr "Nom"
 
 #: app/templates/auth/setup.html:294 app/templates/users/list.html:209
 msgid "e.g. Alice Dupont"
@@ -7743,52 +7767,65 @@ msgstr "Carburant restant en fin de vol"
 msgid "estimated"
 msgstr "estimé"
 
-#: app/templates/flights/flight_form.html:651
+#: app/templates/flights/flight_form.html:650
+msgid "Tank"
+msgstr "Réservoir"
+
+#: app/templates/flights/flight_form.html:652
+msgid "All tanks"
+msgstr "Tous les réservoirs"
+
+#: app/templates/flights/flight_form.html:663
+#: app/templates/flights/flight_form.html:673
 msgid "Quick-fill from tank fraction"
 msgstr "Remplissage rapide par fraction de réservoir"
 
-#: app/templates/flights/flight_form.html:656
+#: app/templates/flights/flight_form.html:668
+msgid "Estimated liters for the selected fraction of the selected tank, rounded to the nearest 5 L."
+msgstr "Litres estimés pour la fraction sélectionnée du réservoir choisi, arrondis au 5 L le plus proche."
+
+#: app/templates/flights/flight_form.html:678
 #, python-format
 msgid "Estimated liters for the selected fraction of a full %(capacity)s L tank, rounded to the nearest 5 L."
 msgstr "Litres estimés pour la fraction de réservoir sélectionnée, sur une capacité totale de %(capacity)s L, arrondis au multiple de 5 L le plus proche."
 
-#: app/templates/flights/flight_form.html:659
+#: app/templates/flights/flight_form.html:681
 msgid "Set the tank capacity on the aircraft page to get quick fraction-of-tank buttons here."
 msgstr "Configurez la capacité du réservoir sur la page de l'avion pour obtenir ici des boutons de remplissage rapide par fraction de réservoir."
 
-#: app/templates/flights/flight_form.html:660
+#: app/templates/flights/flight_form.html:682
 msgid "Aircraft settings"
 msgstr "Paramètres de l'avion"
 
-#: app/templates/flights/flight_form.html:665
+#: app/templates/flights/flight_form.html:687
 #, python-format
 msgid "Estimated consumption: ~%(est)s L based on engine time"
 msgstr "Consommation estimée : ~%(est)s L basée sur le temps moteur"
 
-#: app/templates/flights/flight_form.html:681
+#: app/templates/flights/flight_form.html:703
 #: app/templates/offline/pilot_workbench.html:109
 #: app/templates/offline/workbench.html:168
 #: app/templates/pilots/import_map.html:146
 msgid "Night time"
 msgstr "Temps de nuit"
 
-#: app/templates/flights/flight_form.html:689
+#: app/templates/flights/flight_form.html:711
 #: app/templates/offline/pilot_workbench.html:113
 #: app/templates/offline/workbench.html:172
 msgid "Instrument time"
 msgstr "Temps aux instruments"
 
-#: app/templates/flights/flight_form.html:699
+#: app/templates/flights/flight_form.html:721
 msgid "Landings day"
 msgstr "Atterrissages de jour"
 
-#: app/templates/flights/flight_form.html:705
+#: app/templates/flights/flight_form.html:727
 #: app/templates/offline/workbench.html:180
 #: app/templates/pilots/entry_detail.html:143
 msgid "Night landings"
 msgstr "Atterrissages nuit"
 
-#: app/templates/flights/flight_form.html:729
+#: app/templates/flights/flight_form.html:751
 msgid "Remarks, weather…"
 msgstr "Remarques, météo…"
 

@@ -375,6 +375,23 @@ class TestEditAircraft:
         data = client.get(f"/aircraft/{ac_id}/edit").data
         assert b"OO-PNH" in data
 
+    def test_get_shows_prefilled_fuel_tanks(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            from models import AircraftFuelTank  # pyright: ignore[reportMissingImports]
+
+            db.session.add(
+                AircraftFuelTank(
+                    aircraft_id=ac_id, name="Left wing", capacity_liters=55.0
+                )
+            )
+            db.session.commit()
+        _login(app, client)
+        data = client.get(f"/aircraft/{ac_id}/edit").data
+        assert b"Left wing" in data
+        assert b'value="55.0"' in data
+
     def test_valid_post_updates_aircraft(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
@@ -709,6 +726,110 @@ class TestSaveAircraftValidation:
         with app.app_context():
             ac = Aircraft.query.filter_by(registration="OO-PNH").first()
             assert float(ac.fuel_capacity_liters) == 110.0
+
+    def test_fuel_tanks_saved(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        client.post(
+            "/aircraft/new",
+            data={
+                "registration": "OO-PNH",
+                "make": "Cessna",
+                "model": "172S",
+                "tank_name[]": ["Left wing", "Right wing"],
+                "tank_capacity[]": ["55.0", "55.0"],
+            },
+            follow_redirects=False,
+        )
+        with app.app_context():
+            ac = Aircraft.query.filter_by(registration="OO-PNH").first()
+            tanks = ac.fuel_tanks
+            assert len(tanks) == 2
+            assert tanks[0].name == "Left wing"
+            assert float(tanks[0].capacity_liters) == 55.0
+            assert tanks[1].name == "Right wing"
+
+    def test_fuel_tank_blank_name_rows_skipped(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        client.post(
+            "/aircraft/new",
+            data={
+                "registration": "OO-PNH",
+                "make": "Cessna",
+                "model": "172S",
+                "tank_name[]": ["Main", ""],
+                "tank_capacity[]": ["100.0", "50.0"],
+            },
+            follow_redirects=False,
+        )
+        with app.app_context():
+            ac = Aircraft.query.filter_by(registration="OO-PNH").first()
+            assert len(ac.fuel_tanks) == 1
+            assert ac.fuel_tanks[0].name == "Main"
+
+    def test_fuel_tank_invalid_capacity_shows_error(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        response = client.post(
+            "/aircraft/new",
+            data={
+                "registration": "OO-PNH",
+                "make": "Cessna",
+                "model": "172S",
+                "tank_name[]": ["Main"],
+                "tank_capacity[]": ["-10"],
+            },
+        )
+        assert response.status_code == 200
+        assert b"positive" in response.data
+
+    def test_editing_aircraft_replaces_fuel_tanks(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id, registration="OO-PNH")
+        with app.app_context():
+            from models import AircraftFuelTank  # pyright: ignore[reportMissingImports]
+
+            db.session.add(
+                AircraftFuelTank(aircraft_id=ac_id, name="Old tank", capacity_liters=1)
+            )
+            db.session.commit()
+        _login(app, client)
+        client.post(
+            f"/aircraft/{ac_id}/edit",
+            data={
+                "registration": "OO-PNH",
+                "make": "Cessna",
+                "model": "172S",
+                "tank_name[]": ["New tank"],
+                "tank_capacity[]": ["70.0"],
+            },
+        )
+        with app.app_context():
+            ac = db.session.get(Aircraft, ac_id)
+            assert len(ac.fuel_tanks) == 1
+            assert ac.fuel_tanks[0].name == "New tank"
+
+    def test_editing_aircraft_with_no_tank_rows_clears_existing_tanks(
+        self, app, client
+    ):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id, registration="OO-PNH")
+        with app.app_context():
+            from models import AircraftFuelTank  # pyright: ignore[reportMissingImports]
+
+            db.session.add(
+                AircraftFuelTank(aircraft_id=ac_id, name="Old tank", capacity_liters=1)
+            )
+            db.session.commit()
+        _login(app, client)
+        client.post(
+            f"/aircraft/{ac_id}/edit",
+            data={"registration": "OO-PNH", "make": "Cessna", "model": "172S"},
+        )
+        with app.app_context():
+            ac = db.session.get(Aircraft, ac_id)
+            assert ac.fuel_tanks == []
 
 
 # ── Registration uniqueness (rejects a collision, incl. sanitized form) ────────
