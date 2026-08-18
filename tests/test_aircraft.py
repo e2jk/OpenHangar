@@ -392,6 +392,17 @@ class TestEditAircraft:
         assert b"Left wing" in data
         assert b'value="55.0"' in data
 
+    def test_get_shows_prefilled_showcase_blurb(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            ac = db.session.get(Aircraft, ac_id)
+            ac.showcase_blurb = "A lovely old taildragger."
+            db.session.commit()
+        _login(app, client)
+        data = client.get(f"/aircraft/{ac_id}/edit").data
+        assert b"A lovely old taildragger." in data
+
     def test_valid_post_updates_aircraft(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
@@ -679,6 +690,40 @@ class TestSaveAircraftValidation:
         with app.app_context():
             ac = Aircraft.query.filter_by(registration="OO-PNH").first()
             assert float(ac.reserve_hourly_rate) == 15.50
+
+    def test_showcase_blurb_saved(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        client.post(
+            "/aircraft/new",
+            data={
+                "registration": "OO-PNH",
+                "make": "Cessna",
+                "model": "172S",
+                "showcase_blurb": "Bought her in 2019, best decision ever.",
+            },
+            follow_redirects=False,
+        )
+        with app.app_context():
+            ac = Aircraft.query.filter_by(registration="OO-PNH").first()
+            assert ac.showcase_blurb == "Bought her in 2019, best decision ever."
+
+    def test_showcase_blurb_blank_saves_as_none(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        client.post(
+            "/aircraft/new",
+            data={
+                "registration": "OO-PNH",
+                "make": "Cessna",
+                "model": "172S",
+                "showcase_blurb": "   ",
+            },
+            follow_redirects=False,
+        )
+        with app.app_context():
+            ac = Aircraft.query.filter_by(registration="OO-PNH").first()
+            assert ac.showcase_blurb is None
 
     def test_fuel_tanks_saved(self, app, client):
         _create_user_and_tenant(app)

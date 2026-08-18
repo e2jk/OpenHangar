@@ -168,6 +168,15 @@
       </div>
 
       <div class="mb-4">
+        <label for="showcase_blurb" class="form-label">
+          {{ _('About this aircraft') }} <span class="text-muted small">({{ _('optional') }})</span>
+        </label>
+        <textarea class="form-control" id="showcase_blurb" name="showcase_blurb" rows="3"
+                  placeholder="{{ _('A short blurb shown on the public showcase page — history, why you love flying it, etc.') }}">{{ aircraft.showcase_blurb or '' if aircraft else '' }}</textarea>
+        <div class="form-text">{{ _('Only shown on the public showcase page (photos + this text, no operational data) — see Share Links below.') }}</div>
+      </div>
+
+      <div class="mb-4">
         <label class="form-label">{{ _('Flight time precision') }}</label>
         <div class="d-flex gap-3">
           <div class="form-check">

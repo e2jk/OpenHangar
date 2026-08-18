@@ -3,10 +3,12 @@ Tests for Phase 11: Read-only Share Links.
 """
 
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
+    AircraftPhoto,
     Flight,
     MaintenanceTrigger,
     Role,
@@ -59,6 +61,25 @@ def _add_token(
         db.session.add(st)
         db.session.commit()
         return st.id
+
+
+def _add_photo(app, aircraft_id, order=1):
+    """Create a file in the app's upload dir + a DB row; return photo_id."""
+    fname = f"showcase-{order}.jpg"
+    photo_dir = Path(app.config["UPLOAD_FOLDER"]) / "showcase-test" / "photos"
+    photo_dir.mkdir(parents=True, exist_ok=True)
+    (photo_dir / fname).write_bytes(b"\xff\xd8\xff")
+    relpath = f"showcase-test/photos/{fname}"
+    with app.app_context():
+        p = AircraftPhoto(
+            aircraft_id=aircraft_id,
+            filename=relpath,
+            original_filename="photo.jpg",
+            sort_order=order,
+        )
+        db.session.add(p)
+        db.session.commit()
+        return p.id
 
 
 # ── Model tests ───────────────────────────────────────────────────────────────
@@ -166,6 +187,14 @@ class TestCreateToken:
             st = ShareToken.query.filter_by(aircraft_id=acid).first()
             assert st.access_level == "full"
 
+    def test_creates_showcase_token(self, app, client):
+        uid, _tid, acid = _setup(app)
+        _login(app, client, uid)
+        client.post(f"/aircraft/{acid}/share/create", data={"access_level": "showcase"})
+        with app.app_context():
+            st = ShareToken.query.filter_by(aircraft_id=acid).first()
+            assert st.access_level == "showcase"
+
     def test_invalid_access_level_defaults_to_summary(self, app, client):
         uid, _tid, acid = _setup(app)
         _login(app, client, uid)
@@ -260,6 +289,14 @@ class TestPublicView:
         _uid, _tid, acid = _setup(app)
         _add_token(app, acid, "rvk12345", revoked=True)
         resp = client.get("/share/rvk12345")
+        assert resp.status_code == 404
+
+    def test_404_for_showcase_token(self, app, client):
+        """A showcase-tier token must not unlock the operational public_view
+        page — the tiers are kept from leaking into each other."""
+        _uid, _tid, acid = _setup(app)
+        _add_token(app, acid, "shw12345", access_level="showcase")
+        resp = client.get("/share/shw12345")
         assert resp.status_code == 404
 
     def test_200_for_valid_token(self, app, client):
@@ -512,3 +549,163 @@ class TestTokenQr:
         token_id = _add_token(app, acid, "qrfn1234")
         resp = client.get(f"/aircraft/{acid}/share/{token_id}/qr")
         assert b"qrfn1234" in resp.headers["Content-Disposition"].encode()
+
+    def test_embeds_showcase_url_for_showcase_token(self, app, client):
+        from unittest.mock import patch
+
+        uid, _tid, acid = _setup(app)
+        _login(app, client, uid)
+        token_id = _add_token(app, acid, "qrshow123", access_level="showcase")
+        with patch("qrcode.QRCode.add_data") as mock_add_data:
+            resp = client.get(f"/aircraft/{acid}/share/{token_id}/qr")
+        assert resp.status_code == 200
+        embedded_url = mock_add_data.call_args[0][0]
+        assert "/showcase/OO-TST/qrshow123" in embedded_url
+
+
+# ── Public showcase view ("brag page") ──────────────────────────────────────
+
+
+class TestShowcaseView:
+    def test_404_for_unknown_token(self, client):
+        resp = client.get("/showcase/zzzzzzzz")
+        assert resp.status_code == 404
+
+    def test_404_for_revoked_token(self, app, client):
+        _uid, _tid, acid = _setup(app)
+        _add_token(app, acid, "rvk_show1", access_level="showcase", revoked=True)
+        resp = client.get("/showcase/rvk_show1")
+        assert resp.status_code == 404
+
+    def test_404_for_summary_or_full_token(self, app, client):
+        """A summary/full token must not unlock the showcase page either —
+        the tiers are kept from leaking into each other in both directions."""
+        _uid, _tid, acid = _setup(app)
+        _add_token(app, acid, "sum_show1", access_level="summary")
+        _add_token(app, acid, "full_show1", access_level="full")
+        assert client.get("/showcase/sum_show1").status_code == 404
+        assert client.get("/showcase/full_show1").status_code == 404
+
+    def test_200_for_valid_showcase_token(self, app, client):
+        _uid, _tid, acid = _setup(app)
+        _add_token(app, acid, "ok_show1", access_level="showcase")
+        resp = client.get("/showcase/ok_show1")
+        assert resp.status_code == 200
+        assert b"OO-TST" in resp.data
+
+    def test_200_with_registration_prefix(self, app, client):
+        _uid, _tid, acid = _setup(app)
+        _add_token(app, acid, "reg_show1", access_level="showcase")
+        resp = client.get("/showcase/OO-TST/reg_show1")
+        assert resp.status_code == 200
+        assert b"OO-TST" in resp.data
+
+    def test_noindex_header_set(self, app, client):
+        _uid, _tid, acid = _setup(app)
+        _add_token(app, acid, "hdr_show1", access_level="showcase")
+        resp = client.get("/showcase/hdr_show1")
+        assert "noindex" in resp.headers.get("X-Robots-Tag", "")
+        assert "nofollow" in resp.headers.get("X-Robots-Tag", "")
+
+    def test_shows_blurb_when_set(self, app, client):
+        _uid, _tid, acid = _setup(app)
+        with app.app_context():
+            ac = db.session.get(Aircraft, acid)
+            ac.showcase_blurb = "Bought her in 2019, best decision ever."
+            db.session.commit()
+        _add_token(app, acid, "blurb_show1", access_level="showcase")
+        resp = client.get("/showcase/blurb_show1")
+        assert b"Bought her in 2019, best decision ever." in resp.data
+
+    def test_falls_back_to_make_model_when_no_blurb(self, app, client):
+        _uid, _tid, acid = _setup(app)
+        _add_token(app, acid, "noblurb_show1", access_level="showcase")
+        resp = client.get("/showcase/noblurb_show1")
+        assert b"Cessna" in resp.data
+        assert b"172S" in resp.data
+
+    def test_shows_photo_carousel_when_photos_exist(self, app, client):
+        _uid, _tid, acid = _setup(app)
+        _add_photo(app, acid, order=1)
+        _add_photo(app, acid, order=2)
+        _add_token(app, acid, "photo_show1", access_level="showcase")
+        resp = client.get("/showcase/photo_show1")
+        assert b"showcaseCarousel" in resp.data
+        assert resp.data.count(b"carousel-item") == 2
+
+    def test_no_carousel_when_no_photos(self, app, client):
+        _uid, _tid, acid = _setup(app)
+        _add_token(app, acid, "nophoto_show1", access_level="showcase")
+        resp = client.get("/showcase/nophoto_show1")
+        assert b"showcaseCarousel" not in resp.data
+
+    def test_never_shows_operational_data(self, app, client):
+        """The showcase page must never leak flight/maintenance/cost data —
+        confirmed by seeding a maintenance trigger with a distinctive name
+        and asserting it never appears."""
+        _uid, _tid, acid = _setup(app)
+        with app.app_context():
+            db.session.add(
+                MaintenanceTrigger(
+                    aircraft_id=acid,
+                    name="Super Secret Annual Inspection",
+                    trigger_type=TriggerType.CALENDAR,
+                )
+            )
+            db.session.commit()
+        _add_token(app, acid, "noleak_show1", access_level="showcase")
+        resp = client.get("/showcase/noleak_show1")
+        assert b"Super Secret Annual Inspection" not in resp.data
+
+
+# ── Public showcase photo serving ───────────────────────────────────────────
+
+
+class TestShowcasePhoto:
+    def test_serves_photo_for_valid_token(self, app, client):
+        _uid, _tid, acid = _setup(app)
+        photo_id = _add_photo(app, acid)
+        _add_token(app, acid, "servephoto1", access_level="showcase")
+        resp = client.get(f"/showcase/servephoto1/photos/{photo_id}/img")
+        assert resp.status_code == 200
+        assert resp.data == b"\xff\xd8\xff"
+
+    def test_404_for_unknown_token(self, app, client):
+        _uid, _tid, acid = _setup(app)
+        photo_id = _add_photo(app, acid)
+        resp = client.get(f"/showcase/zzzzzzzz/photos/{photo_id}/img")
+        assert resp.status_code == 404
+
+    def test_404_for_revoked_token(self, app, client):
+        _uid, _tid, acid = _setup(app)
+        photo_id = _add_photo(app, acid)
+        _add_token(app, acid, "revphoto1", access_level="showcase", revoked=True)
+        resp = client.get(f"/showcase/revphoto1/photos/{photo_id}/img")
+        assert resp.status_code == 404
+
+    def test_404_for_non_showcase_token(self, app, client):
+        _uid, _tid, acid = _setup(app)
+        photo_id = _add_photo(app, acid)
+        _add_token(app, acid, "sumphoto1", access_level="summary")
+        resp = client.get(f"/showcase/sumphoto1/photos/{photo_id}/img")
+        assert resp.status_code == 404
+
+    def test_404_for_photo_on_different_aircraft(self, app, client):
+        _uid, tid, acid = _setup(app)
+        with app.app_context():
+            other_ac = Aircraft(
+                tenant_id=tid, registration="OO-OTH2", make="X", model="Y"
+            )
+            db.session.add(other_ac)
+            db.session.commit()
+            other_acid = other_ac.id
+        other_photo_id = _add_photo(app, other_acid)
+        _add_token(app, acid, "wrongac1", access_level="showcase")
+        resp = client.get(f"/showcase/wrongac1/photos/{other_photo_id}/img")
+        assert resp.status_code == 404
+
+    def test_404_for_unknown_photo_id(self, app, client):
+        _uid, _tid, acid = _setup(app)
+        _add_token(app, acid, "nophotoid1", access_level="showcase")
+        resp = client.get("/showcase/nophotoid1/photos/999999/img")
+        assert resp.status_code == 404

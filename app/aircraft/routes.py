@@ -441,6 +441,7 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
         fuel_type = "avgas"
     reserve_hourly_rate_raw = request.form.get("reserve_hourly_rate", "").strip()
     oil_warning_lph_raw = request.form.get("oil_warning_lph", "").strip()
+    showcase_blurb = request.form.get("showcase_blurb", "").strip() or None
     logbook_time_precision = request.form.get(
         "logbook_time_precision", "tenth_hour"
     ).strip()
@@ -551,6 +552,7 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     ac.logbook_time_precision = logbook_time_precision
     ac.reserve_hourly_rate = reserve_hourly_rate
     ac.oil_warning_lph = oil_warning_lph
+    ac.showcase_blurb = showcase_blurb
     db.session.commit()
 
     # Replace fuel tanks (same "delete all, recreate" strategy as W&B stations)
