@@ -31,6 +31,9 @@ a.stat-card-link:hover .stat-card {
   color: var(--oh-ink);
   line-height: 1;
 }
+.stat-value.text-danger {
+  color: var(--oh-warning);
+}
 .stat-label {
   font-size: .78rem;
   color: #6c757d;
@@ -248,6 +251,7 @@ a.stat-card-link:hover .stat-card {
 [data-bs-theme=dark] .dash-single-ac-cover img { filter: brightness(0.85); }
 [data-bs-theme=dark] .fleet-cal-day.other-month { background: #1e2124; }
 [data-bs-theme=dark] .stat-value { color: #e9ecef; }
+[data-bs-theme=dark] .stat-value.text-danger { color: #f88; }
 [data-bs-theme=dark] .fleet-cal-table th { color: #adb5bd; }
 [data-bs-theme=dark] .fleet-cal-day-num { color: #c0c8d0; }
 [data-bs-theme=dark] .fleet-cal-day.other-month .fleet-cal-day-num { color: #555; }
