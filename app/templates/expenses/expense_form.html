@@ -26,13 +26,19 @@
       {% if not expense and prefill %}
       <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
         <i class="bi bi-fuel-pump me-2"></i>
-        <div>{{ _('Pre-filled from a logged refuel — linked to this flight.') }}</div>
+        <div>
+          {% if prefill.flight_entry_id %}
+          {{ _('Pre-filled from a logged refuel — linked to this flight.') }}
+          {% else %}
+          {{ _('Pre-filled from a logged refuel.') }}
+          {% endif %}
+        </div>
       </div>
       {% endif %}
 
       <div class="ac-form-card">
         <form method="post" enctype="multipart/form-data">
-          {% if not expense and prefill %}
+          {% if not expense and prefill and prefill.flight_entry_id %}
           <input type="hidden" name="flight_entry_id" value="{{ prefill.flight_entry_id }}">
           {% endif %}
 

@@ -560,6 +560,32 @@ class TestFuelExpensePrefill:
         assert resp.status_code == 200
         assert b"linked to this flight" not in resp.data.lower()
 
+    def test_standalone_prefill_from_refuel_populates_form(self, client, app):
+        """A "Log as expense" link off a standalone Refuel (no
+        flight_entry_id, just a date) still prefills the form."""
+        _uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.get(
+            f"/aircraft/{ac_id}/expenses/add?date=2025-07-04&quantity=15.0&unit=L"
+        )
+        assert resp.status_code == 200
+        assert b"2025-07-04" in resp.data
+        assert b"15.0" in resp.data
+        assert b"pre-filled from a logged refuel" in resp.data.lower()
+        assert b"linked to this flight" not in resp.data.lower()
+        assert b"flight_entry_id" not in resp.data
+
+    def test_standalone_prefill_ignored_for_invalid_date(self, client, app):
+        _uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.get(
+            f"/aircraft/{ac_id}/expenses/add?date=not-a-date&quantity=15.0"
+        )
+        assert resp.status_code == 200
+        assert b"pre-filled from a logged refuel" not in resp.data.lower()
+
     def test_flight_detail_shows_fuel_and_log_expense_links(self, client, app):
         _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)

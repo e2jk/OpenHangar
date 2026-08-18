@@ -38,6 +38,7 @@ from models import (
     GpsTrack,
     MaintenanceTrigger,
     OperatingModel,
+    Refuel,
     Reservation,
     ReservationStatus,
     Role,
@@ -274,6 +275,12 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         .limit(3)
         .all()
     )
+    recent_refuels = (
+        Refuel.query.filter_by(aircraft_id=ac.id)
+        .order_by(Refuel.date.desc(), Refuel.id.desc())
+        .limit(3)
+        .all()
+    )
     recent_documents = (
         Document.query.filter_by(aircraft_id=ac.id, is_sensitive=False)
         .order_by(Document.uploaded_at.desc())
@@ -385,6 +392,7 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         maintenance_summary=maintenance_summary,
         recent_expenses=recent_expenses,
         expense_type_labels=ExpenseType.LABELS,
+        recent_refuels=recent_refuels,
         recent_documents=recent_documents,
         document_count=document_count,
         active_insurance_cert=active_insurance_cert,

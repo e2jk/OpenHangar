@@ -414,6 +414,9 @@ class Aircraft(db.Model):
     expenses = db.relationship(
         "Expense", back_populates="aircraft", cascade="all, delete-orphan"
     )
+    refuels = db.relationship(
+        "Refuel", back_populates="aircraft", cascade="all, delete-orphan"
+    )
     documents = db.relationship(
         "Document",
         back_populates="aircraft",
@@ -1628,6 +1631,43 @@ class Expense(db.Model):
     )
 
     __table_args__ = (db.Index("ix_expenses_aircraft_id", aircraft_id),)
+
+
+# ── Fuel: standalone refuel record (backlog) ─────────────────────────────────
+
+
+class Refuel(db.Model):
+    """A refuel not bracketed by a flight (e.g. topping off while at the
+    airfield for maintenance). Mirrors Flight.fuel_added_*_qty/_unit but
+    carries no flight linkage — findable from the aircraft page. Can be
+    turned into a costed Expense the same way a flight's fuel-added figure
+    can (see expenses._fuel_expense_prefill): only the date and aircraft
+    matter for cost tracking, not whether the volume was logged here or
+    on a Flight row."""
+
+    __tablename__ = "refuels"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    date = db.Column(db.Date, nullable=False)
+    quantity = db.Column(db.Numeric(8, 2), nullable=False)
+    unit = db.Column(db.String(8), nullable=False, default="L")  # L, gal
+    note = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+    created_by_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+
+    aircraft = db.relationship("Aircraft", back_populates="refuels")
+    created_by = db.relationship("User", foreign_keys=[created_by_id])
+
+    __table_args__ = (db.Index("ix_refuels_aircraft_id", aircraft_id),)
 
 
 # ── Phase 9 / 27: Document & Photo Uploads ───────────────────────────────────
