@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Utilization report') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-clipboard-data me-2"></i>{{ _('Utilization report') }}</h1>
+      <p class="page-sub"><span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap d-print-none">
+      <a href="{{ url_for('reports.utilization_report_csv', aircraft_id=aircraft.id, period=period_months, **({'from': from_date, 'to': to_date} if period_months is none else {})) }}"
+         class="btn btn-ac-ghost" hx-boost="false">
+        <i class="bi bi-download me-1"></i>{{ _('Export CSV') }}
+      </a>
+      <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost">
+        <i class="bi bi-arrow-left me-1"></i>{{ aircraft.registration }}
+      </a>
+    </div>
+  </div>
+
+  <!-- Period selector -->
+  <form method="get" class="d-flex flex-wrap gap-2 align-items-end mb-3 d-print-none">
+    <div>
+      <label class="form-label small mb-1">{{ _('Period') }}</label>
+      <select name="period" class="form-select form-select-sm" data-auto-submit>
+        {% for months in period_options %}
+        <option value="{{ months }}" {% if period_months == months %}selected{% endif %}>
+          {% if months == 3 %}{{ _('Last 3 months') }}
+          {% elif months == 6 %}{{ _('Last 6 months') }}
+          {% elif months == 12 %}{{ _('Last 12 months') }}
+          {% elif months == 24 %}{{ _('Last 24 months') }}
+          {% else %}{{ _('All time') }}{% endif %}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="text-muted small mb-2">{{ _('or') }}</div>
+    <div>
+      <label for="report-from" class="form-label small mb-1">{{ _('From') }}</label>
+      <input type="date" class="form-control form-control-sm" id="report-from" name="from"
+             value="{{ from_date }}" max="{{ today }}">
+    </div>
+    <div>
+      <label for="report-to" class="form-label small mb-1">{{ _('To') }}</label>
+      <input type="date" class="form-control form-control-sm" id="report-to" name="to"
+             value="{{ to_date }}" max="{{ today }}">
+    </div>
+    <div>
+      <button type="submit" class="btn btn-ac-secondary btn-sm">{{ _('Apply') }}</button>
+    </div>
+  </form>
+
+  <p class="text-muted oh-fs-09 mb-4">
+    {% if report.period_start %}
+      {{ report.period_start.strftime('%Y-%m-%d') }} — {{ report.period_end.strftime('%Y-%m-%d') }}
+    {% else %}
+      {{ _('All time') }} — {{ report.period_end.strftime('%Y-%m-%d') }}
+    {% endif %}
+  </p>
+
+  {% set c = report.current %}
+  {% set p = report.previous %}
+
+  <!-- Stat cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-4">
+      <div class="stat-card">
+        <div class="stat-icon icon-blue"><i class="bi bi-stopwatch"></i></div>
+        <div class="stat-value">{{ "%.1f"|format(c.flight_hours) }}</div>
+        <div class="stat-label">{{ _('Flight hours') }}</div>
+        {% if p %}<div class="text-muted oh-fs-08">{{ _('Previous') }}: {{ "%.1f"|format(p.flight_hours) }}</div>{% endif %}
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="stat-card">
+        <div class="stat-icon icon-teal"><i class="bi bi-gear"></i></div>
+        <div class="stat-value">{{ "%.1f"|format(c.engine_hours) }}</div>
+        <div class="stat-label">{{ _('Engine hours') }}</div>
+        {% if p %}<div class="text-muted oh-fs-08">{{ _('Previous') }}: {{ "%.1f"|format(p.engine_hours) }}</div>{% endif %}
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="stat-card">
+        <div class="stat-icon icon-green"><i class="bi bi-send"></i></div>
+        <div class="stat-value">{{ c.flight_count }}</div>
+        <div class="stat-label">{{ _('Flights') }}</div>
+        {% if p %}<div class="text-muted oh-fs-08">{{ _('Previous') }}: {{ p.flight_count }}</div>{% endif %}
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="stat-card">
+        <div class="stat-icon icon-purple"><i class="bi bi-airplane-engines"></i></div>
+        <div class="stat-value">{{ c.landings }}</div>
+        <div class="stat-label">{{ _('Landings') }}</div>
+        {% if p %}<div class="text-muted oh-fs-08">{{ _('Previous') }}: {{ p.landings }}</div>{% endif %}
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="stat-card">
+        <div class="stat-icon icon-amber"><i class="bi bi-fuel-pump"></i></div>
+        <div class="stat-value">
+          {% if c.fuel_added %}
+            {% for unit, qty in c.fuel_added.items() %}{{ "%.1f"|format(qty) }} {{ unit }}{% if not loop.last %}<br>{% endif %}{% endfor %}
+          {% else %}—{% endif %}
+        </div>
+        <div class="stat-label">{{ _('Fuel added') }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4">
+      <div class="stat-card">
+        <div class="stat-icon icon-red"><i class="bi bi-droplet"></i></div>
+        <div class="stat-value">{{ "%.2f"|format(c.oil_added_l) }}</div>
+        <div class="stat-label">{{ _('Oil added (L)') }}</div>
+        {% if p %}<div class="text-muted oh-fs-08">{{ _('Previous') }}: {{ "%.2f"|format(p.oil_added_l) }}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if p %}
+  <div class="ac-form-card mb-4">
+    <div class="text-muted oh-fs-09 mb-2">
+      {{ _('Compared to the previous period of the same length') }}
+      <span title="{{ _('Insurers often ask for hours flown in the past policy year and expected hours for the next — the previous period is a reasonable baseline for that estimate.') }}">
+        <i class="bi bi-info-circle"></i>
+      </span>
+    </div>
+    <p class="text-muted oh-fs-09 mb-0">
+      {{ p.period_start.strftime('%Y-%m-%d') }} — {{ p.period_end.strftime('%Y-%m-%d') }}
+    </p>
+  </div>
+  {% endif %}
+
+  {% if c.flight_count == 0 %}
+  <div class="ac-empty mt-4">
+    <i class="bi bi-clipboard-data ac-empty-icon"></i>
+    <p>{{ _('No flights logged in the selected period.') }}</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

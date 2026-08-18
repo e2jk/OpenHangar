@@ -722,6 +722,10 @@ def create_app() -> Flask:
 
     app.register_blueprint(refuels_bp)
 
+    from reports.routes import reports_bp
+
+    app.register_blueprint(reports_bp)
+
     from pilots.routes import pilots_bp
 
     app.register_blueprint(pilots_bp)
