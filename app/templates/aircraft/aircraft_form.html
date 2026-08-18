@@ -143,6 +143,40 @@
         </div>
       </div>
 
+      {# Per-tank capacity — optional, additive to the combined total above.
+         Aircraft with independent tanks (e.g. left/right wing) can define
+         them here to get a per-tank picker on the flight log instead of a
+         single fraction-of-total. Leave empty to keep using the combined
+         total only. #}
+      <div class="mb-4">
+        <label class="form-label">{{ _('Fuel tanks') }} <span class="text-muted small">({{ _('optional') }})</span></label>
+        <div class="form-text mb-2">{{ _('Define independent tanks (e.g. left/right wing) to get a per-tank picker on the flight log, instead of relying on the combined total above.') }}</div>
+        <div id="fuel-tanks-container">
+          {% for tank in (aircraft.fuel_tanks if aircraft else []) %}
+          <div class="fuel-tank-row row g-2 align-items-end mb-2">
+            <div class="col-sm-6">
+              <label class="form-label form-label-sm">{{ _('Name') }}</label>
+              <input type="text" class="form-control form-control-sm" name="tank_name[]"
+                     value="{{ tank.name }}" placeholder="{{ _('e.g. Left wing') }}">
+            </div>
+            <div class="col-sm-4">
+              <label class="form-label form-label-sm">{{ _('Capacity') }} (L)</label>
+              <input type="number" class="form-control form-control-sm" name="tank_capacity[]"
+                     value="{{ '%.1f'|format(tank.capacity_liters|float) }}" step="0.1" min="0">
+            </div>
+            <div class="col-sm-2 d-flex align-items-end">
+              <button type="button" class="btn btn-ac-danger btn-xs remove-fuel-tank" title="{{ _('Remove') }}">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <button type="button" id="add-fuel-tank" class="btn btn-ac-secondary btn-sm">
+          <i class="bi bi-plus-circle me-1"></i>{{ _('Add tank') }}
+        </button>
+      </div>
+
       <div class="mb-4">
         <label class="form-label">{{ _('Flight time precision') }}</label>
         <div class="d-flex gap-3">
@@ -178,5 +212,25 @@
   </div>
 
 </div>
+
+<template id="fuel-tank-row-template">
+  <div class="fuel-tank-row row g-2 align-items-end mb-2">
+    <div class="col-sm-6">
+      <label class="form-label form-label-sm">{{ _('Name') }}</label>
+      <input type="text" class="form-control form-control-sm" name="tank_name[]"
+             placeholder="{{ _('e.g. Left wing') }}">
+    </div>
+    <div class="col-sm-4">
+      <label class="form-label form-label-sm">{{ _('Capacity') }} (L)</label>
+      <input type="number" class="form-control form-control-sm" name="tank_capacity[]"
+             step="0.1" min="0">
+    </div>
+    <div class="col-sm-2 d-flex align-items-end">
+      <button type="button" class="btn btn-ac-danger btn-xs remove-fuel-tank" title="{{ _('Remove') }}">
+        <i class="bi bi-trash"></i>
+      </button>
+    </div>
+  </div>
+</template>
 {% endblock %}
 
