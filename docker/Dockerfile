@@ -131,11 +131,10 @@ RUN apk upgrade --no-cache && \
 WORKDIR /app
 
 # Create non-root user early so --chown on COPY instructions below is valid.
-# This avoids a slow recursive chown over /app after the fact. BusyBox's
-# adduser (no useradd on Alpine) picks the same uid/gid 1000 as the old
-# Debian useradd did for the first non-system user — bind-mount ownership
-# instructions elsewhere (docs/development.md) rely on that being 1000.
-RUN adduser -D -s /bin/bash appuser
+# This avoids a slow recursive chown over /app after the fact. uid/gid are
+# pinned to 1000 (rather than left to adduser's default) because bind-mount
+# ownership instructions elsewhere (docs/development.md) rely on that value.
+RUN addgroup -g 1000 appuser && adduser -D -u 1000 -G appuser -s /bin/bash appuser
 
 # Copy the fully-built venv from the builder
 COPY --from=builder /venv /venv
@@ -168,7 +167,7 @@ COPY --chown=appuser:appuser docker/wait-for-postgres.py /usr/local/bin/
 
 RUN mkdir -p /data/uploads /data/backups && chown -R appuser:appuser /data
 
-USER appuser
+USER 1000:1000
 
 EXPOSE 5000
 
