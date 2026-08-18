@@ -168,6 +168,8 @@ tr.clickable-row { cursor: pointer; }
 .oh-card            { background: #fff; border-radius: .5rem; box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 1.25rem; margin-bottom: 1.25rem; }
 .oh-section-title   { font-size: 1rem; font-weight: 600; color: #1a2e4a; margin-bottom: .75rem; }
 .oh-footer          { text-align: center; color: #6c757d; font-size: .8rem; padding: 2rem 0; }
+.oh-showcase-photo { height: 60vh; max-height: 520px; object-fit: cover; }
+.oh-showcase-blurb { white-space: pre-wrap; }
 .status-badge    { display: inline-block; padding: .35em .7em; border-radius: .35rem; font-size: .8rem; font-weight: 600; }
 .status-ok       { background: #d1fae5; color: #065f46; }
 .status-due-soon { background: #fef3c7; color: #92400e; }

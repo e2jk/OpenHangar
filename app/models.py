@@ -391,6 +391,10 @@ class Aircraft(db.Model):
     # Archived (sold/retired) aircraft keep their full history but are hidden
     # from active-fleet views, reservations, and notification passes.
     archived_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    # Free-text "about this aircraft" blurb shown only on the public showcase
+    # page (ShareToken.access_level == "showcase") — never on the owner-facing
+    # aircraft pages or the operational summary/full share tiers.
+    showcase_blurb = db.Column(db.Text, nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
