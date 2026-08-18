@@ -806,20 +806,6 @@ is never mistaken for a real due date.
 
 ---
 
-## Reports: annual utilization & insurance-renewal summary
-
-Per aircraft, for a selectable period (default rolling 12 months, or an
-arbitrary policy year): engine hours and flight hours flown, number of
-flights, landings, fuel added, oil added. Insurance renewals commonly ask
-for hours flown in the past policy year and expected hours for the next;
-today this requires manually summing logbook pages.
-
-Candidate to fold into Phase 45 (Advanced Reporting & Exports) as an
-additional report; kept here as a separate item so it isn't lost if Phase 45
-is trimmed, since all the underlying data already exists.
-
----
-
 ## Process: e2e suite de-flaking (fixture hardening)
 
 The e2e suite has a history of intermittent failures (see commits `0ff5f20`,
