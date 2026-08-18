@@ -15,6 +15,13 @@
     </div>
   </div>
 
+  {% if snag and not snag.is_open %}
+  <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
+    <i class="bi bi-shield-exclamation me-2 fs-5"></i>
+    <div>{{ _('This snag is closed. Changes to a closed snag are logged for auditability.') }}</div>
+  </div>
+  {% endif %}
+
   <div class="ac-form-card">
     <form method="post">
 
@@ -40,6 +47,13 @@
                placeholder="{{ _('Pilot or technician name') }}">
       </div>
 
+      <div class="mb-3">
+        <label for="reported_at" class="form-label fw-semibold">{{ _('Date signalled') }} <span class="text-danger">*</span></label>
+        <input type="date" class="form-control" id="reported_at" name="reported_at"
+               value="{{ snag.reported_at.strftime('%Y-%m-%d') if snag else today }}"
+               required>
+      </div>
+
       <div class="mb-4">
         <div class="form-check">
           <input class="form-check-input" type="checkbox" id="is_grounding" name="is_grounding"
@@ -50,6 +64,22 @@
           </label>
         </div>
       </div>
+
+      {% if snag and not snag.is_open %}
+      <div class="mb-3">
+        <label for="resolved_at" class="form-label fw-semibold">{{ _('Resolution date') }} <span class="text-danger">*</span></label>
+        <input type="date" class="form-control" id="resolved_at" name="resolved_at"
+               value="{{ snag.resolved_at.strftime('%Y-%m-%d') if snag.resolved_at else today }}"
+               required>
+      </div>
+
+      <div class="mb-4">
+        <label for="resolution_note" class="form-label fw-semibold">{{ _('Resolution note') }} <span class="text-danger">*</span></label>
+        <textarea class="form-control" id="resolution_note" name="resolution_note"
+                  rows="4"
+                  required>{{ snag.resolution_note or '' }}</textarea>
+      </div>
+      {% endif %}
 
       <div class="d-flex gap-2">
         <button type="submit" class="btn btn-ac-primary">

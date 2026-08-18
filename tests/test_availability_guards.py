@@ -554,7 +554,11 @@ class TestGroundingNotification:
         try:
             r = client.post(
                 f"/aircraft/{acid}/snags/new",
-                data={"title": "Cracked windshield", "is_grounding": "1"},
+                data={
+                    "title": "Cracked windshield",
+                    "is_grounding": "1",
+                    "reported_at": "2024-07-01",
+                },
             )
             assert r.status_code == 302
         finally:
@@ -588,7 +592,11 @@ class TestGroundingNotification:
         try:
             r = client.post(
                 f"/aircraft/{acid}/snags/new",
-                data={"title": "Cracked windshield", "is_grounding": "1"},
+                data={
+                    "title": "Cracked windshield",
+                    "is_grounding": "1",
+                    "reported_at": "2024-07-01",
+                },
             )
             assert r.status_code == 302
         finally:
@@ -627,7 +635,7 @@ class TestGroundingNotification:
         try:
             r = client.post(
                 f"/aircraft/{acid}/snags/new",
-                data={"title": "Cosmetic scratch"},
+                data={"title": "Cosmetic scratch", "reported_at": "2024-07-01"},
             )
             assert r.status_code == 302
         finally:
@@ -671,7 +679,11 @@ class TestGroundingNotification:
         try:
             r = client.post(
                 f"/aircraft/{acid}/snags/new",
-                data={"title": "Cracked windshield", "is_grounding": "1"},
+                data={
+                    "title": "Cracked windshield",
+                    "is_grounding": "1",
+                    "reported_at": "2024-07-01",
+                },
             )
             assert r.status_code == 302
         finally:

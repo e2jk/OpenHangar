@@ -184,7 +184,7 @@ msgstr "Le TBO doit être un nombre d'heures positif."
 msgid "Last overhaul hours must be a non-negative number."
 msgstr "Les heures de la dernière révision générale doivent être un nombre positif ou nul."
 
-#: app/aircraft/routes.py:1272
+#: app/aircraft/routes.py:1272 app/snags/routes.py:69
 #, python-format
 msgid "%(label)s must be a valid date (YYYY-MM-DD)."
 msgstr "%(label)s doit être une date valide (AAAA-MM-JJ)."
@@ -2188,78 +2188,111 @@ msgstr ""
 "\n"
 "L'équipe OpenHangar"
 
-#: app/snags/routes.py:109
-msgid "Closed snags cannot be edited."
-msgstr "Les pannes clôturées ne peuvent pas être modifiées."
+#: app/snags/routes.py:65
+#, python-format
+msgid "%(label)s is required."
+msgstr "%(label)s est obligatoire."
 
-#: app/snags/routes.py:124
+#: app/snags/routes.py:71
+#, python-format
+msgid "%(label)s cannot be in the future."
+msgstr "%(label)s ne peut pas être dans le futur."
+
+#: app/snags/routes.py:145
 msgid "Title is required."
 msgstr "Le titre est obligatoire."
 
-#: app/snags/routes.py:166
+#: app/snags/routes.py:148 app/templates/snags/snag_form.html:51
+msgid "Date signalled"
+msgstr "Date de signalement"
+
+#: app/snags/routes.py:163 app/snags/routes.py:357
+#: app/templates/snags/resolve_form.html:32
+#: app/templates/snags/snag_form.html:70
+msgid "Resolution date"
+msgstr "Date de résolution"
+
+#: app/snags/routes.py:168 app/snags/routes.py:355
+msgid "A resolution note is required."
+msgstr "Une note de résolution est obligatoire."
+
+#: app/snags/routes.py:170 app/snags/routes.py:362
+msgid "Resolution date cannot be before the date signalled."
+msgstr "La date de résolution ne peut pas être antérieure à la date de signalement."
+
+#: app/snags/routes.py:249
 #, python-format
 msgid "Grounding snag reported: %(title)s — %(reg)s"
 msgstr "Anomalie bloquante signalée : %(title)s — %(reg)s"
 
-#: app/snags/routes.py:167
+#: app/snags/routes.py:250
 #, python-format
 msgid "Grounding snag reported: %(title)s"
 msgstr "Anomalie bloquante signalée : %(title)s"
 
-#: app/snags/routes.py:168
+#: app/snags/routes.py:251
 #, python-format
 msgid "A grounding snag was reported on %(reg)s."
 msgstr "Une anomalie bloquante a été signalée sur %(reg)s."
 
-#: app/snags/routes.py:170
+#: app/snags/routes.py:253
 #, python-format
 msgid "Snag reported: %(title)s — %(reg)s"
 msgstr "Anomalie signalée : %(title)s — %(reg)s"
 
-#: app/snags/routes.py:171
+#: app/snags/routes.py:254
 #, python-format
 msgid "Snag reported: %(title)s"
 msgstr "Anomalie signalée : %(title)s"
 
-#: app/snags/routes.py:172
+#: app/snags/routes.py:255
 #, python-format
 msgid "A snag was reported on %(reg)s."
 msgstr "Une anomalie a été signalée sur %(reg)s."
 
-#: app/snags/routes.py:219
+#: app/snags/routes.py:302
 #, python-format
 msgid "Aircraft grounded — check your reservation: %(reg)s"
 msgstr "Appareil immobilisé au sol — vérifiez votre réservation : %(reg)s"
 
-#: app/snags/routes.py:222
+#: app/snags/routes.py:305
 #, python-format
 msgid "Aircraft grounded: %(reg)s"
 msgstr "Appareil immobilisé au sol : %(reg)s"
 
-#: app/snags/routes.py:225
+#: app/snags/routes.py:308
 #, python-format
 msgid "A grounding snag (%(title)s) was reported on %(reg)s, which you hold a confirmed reservation for."
 msgstr "Un défaut immobilisant (%(title)s) a été signalé sur %(reg)s, pour lequel vous avez une réservation confirmée."
 
-#: app/snags/routes.py:246
+#: app/snags/routes.py:329
 #, python-format
 msgid "Snag '%(title)s' saved."
 msgstr "Panne « %(title)s » enregistrée."
 
-#: app/snags/routes.py:263
+#: app/snags/routes.py:346
 msgid "Snag is already closed."
 msgstr "La panne est déjà clôturée."
 
-#: app/snags/routes.py:269
-msgid "A resolution note is required."
-msgstr "Une note de résolution est obligatoire."
-
-#: app/snags/routes.py:277
+#: app/snags/routes.py:385
 #, python-format
 msgid "Snag '%(title)s' closed."
 msgstr "Panne « %(title)s » clôturée."
 
-#: app/snags/routes.py:297
+#: app/snags/routes.py:406
+msgid "Snag is already open."
+msgstr "La panne est déjà ouverte."
+
+#: app/snags/routes.py:422
+#, python-format
+msgid "Snag '%(title)s' reopened."
+msgstr "Panne « %(title)s » rouverte."
+
+#: app/snags/routes.py:438
+msgid "Closed snags are archived and cannot be deleted."
+msgstr "Les défauts fermés sont archivés et ne peuvent pas être supprimés."
+
+#: app/snags/routes.py:443
 #, python-format
 msgid "Snag '%(title)s' deleted."
 msgstr "Panne « %(title)s » supprimée."
@@ -3223,8 +3256,8 @@ msgstr "Modifier %(reg)s"
 #: app/templates/reservations/checkout.html:93
 #: app/templates/reservations/fleet.html:84
 #: app/templates/reservations/settings.html:103
-#: app/templates/snags/resolve_form.html:46
-#: app/templates/snags/snag_form.html:59
+#: app/templates/snags/resolve_form.html:54
+#: app/templates/snags/snag_form.html:89
 #: app/templates/users/permissions.html:121
 msgid "Cancel"
 msgstr "Annuler"
@@ -3616,6 +3649,7 @@ msgstr "ARCHIVÉ"
 #: app/templates/pilots/entry_detail.html:35
 #: app/templates/pilots/logbook.html:238
 #: app/templates/reservations/calendar.html:145
+#: app/templates/snags/list.html:141
 msgid "Edit"
 msgstr "Modifier"
 
@@ -4655,7 +4689,7 @@ msgstr "Télécharger le relevé (CSV)"
 #: app/templates/aircraft/owner_account.html:48
 #: app/templates/config/renter_account.html:69
 #: app/templates/expenses/expense_form.html:111
-#: app/templates/expenses/list.html:83 app/templates/snags/snag_form.html:30
+#: app/templates/expenses/list.html:83 app/templates/snags/snag_form.html:37
 msgid "Description"
 msgstr "Description"
 
@@ -5190,7 +5224,7 @@ msgstr "Numéro STC"
 #: app/templates/documents/reconcile.html:124
 #: app/templates/documents/upload_form.html:51
 #: app/templates/pwa/share_target.html:83 app/templates/snags/list.html:51
-#: app/templates/snags/list.html:124 app/templates/snags/snag_form.html:22
+#: app/templates/snags/list.html:124 app/templates/snags/snag_form.html:29
 msgid "Title"
 msgstr "Titre"
 
@@ -7806,7 +7840,7 @@ msgstr "Panne"
 
 #: app/templates/maintenance/fleet.html:60
 #: app/templates/maintenance/fleet.html:116 app/templates/snags/list.html:52
-#: app/templates/snags/list.html:125 app/templates/snags/snag_form.html:37
+#: app/templates/snags/list.html:125 app/templates/snags/snag_form.html:44
 msgid "Reporter"
 msgstr "Déclarant"
 
@@ -9769,24 +9803,33 @@ msgstr[1] "%(n)s pannes clôturées"
 msgid "Resolved"
 msgstr "Résolue"
 
-#: app/templates/snags/list.html:127 app/templates/snags/resolve_form.html:32
+#: app/templates/snags/list.html:127 app/templates/snags/resolve_form.html:40
+#: app/templates/snags/snag_form.html:77
 msgid "Resolution note"
 msgstr "Note de résolution"
+
+#: app/templates/snags/list.html:147
+msgid "Reopen this snag?"
+msgstr "Rouvrir cette panne ?"
+
+#: app/templates/snags/list.html:148
+msgid "Reopen"
+msgstr "Rouvrir"
 
 #: app/templates/snags/resolve_form.html:3
 #: app/templates/snags/resolve_form.html:11
 msgid "Resolve Snag"
 msgstr "Résoudre la panne"
 
-#: app/templates/snags/resolve_form.html:36
+#: app/templates/snags/resolve_form.html:44
 msgid "Describe what was done to resolve the snag, who did it, and when."
 msgstr "Décrivez ce qui a été fait pour résoudre le défaut, par qui et quand."
 
-#: app/templates/snags/resolve_form.html:38
+#: app/templates/snags/resolve_form.html:46
 msgid "Required. Closed snags are archived and cannot be deleted."
 msgstr "Obligatoire. Les défauts fermés sont archivés et ne peuvent pas être supprimés."
 
-#: app/templates/snags/resolve_form.html:43
+#: app/templates/snags/resolve_form.html:51
 msgid "Close snag"
 msgstr "Clôturer la panne"
 
@@ -9794,23 +9837,27 @@ msgstr "Clôturer la panne"
 msgid "Edit Snag"
 msgstr "Modifier la panne"
 
-#: app/templates/snags/snag_form.html:33
+#: app/templates/snags/snag_form.html:21
+msgid "This snag is closed. Changes to a closed snag are logged for auditability."
+msgstr "Cette panne est clôturée. Les modifications apportées à une panne clôturée sont journalisées à des fins de traçabilité."
+
+#: app/templates/snags/snag_form.html:40
 msgid "Additional details, conditions when observed, etc."
 msgstr "Détails supplémentaires, conditions d'observation, etc."
 
-#: app/templates/snags/snag_form.html:40
+#: app/templates/snags/snag_form.html:47
 msgid "Pilot or technician name"
 msgstr "Nom du pilote ou du technicien"
 
-#: app/templates/snags/snag_form.html:48
+#: app/templates/snags/snag_form.html:62
 msgid "Grounding snag"
 msgstr "Panne clouante"
 
-#: app/templates/snags/snag_form.html:49
+#: app/templates/snags/snag_form.html:63
 msgid "aircraft must not fly until this is resolved"
 msgstr "l'aéronef ne doit pas voler tant que ce n'est pas résolu"
 
-#: app/templates/snags/snag_form.html:56
+#: app/templates/snags/snag_form.html:86
 msgid "Save snag"
 msgstr "Enregistrer la panne"
 
