@@ -33,20 +33,6 @@ pilot silently overwrite the header fields the first pilot logged.
 
 ---
 
-## Fuel: log a refuel not tied to any flight
-
-Right now `fuel_added_before_qty`/`fuel_added_after_qty` only exist on a
-`Flight` row, so refueling that doesn't bracket a flight (e.g. the owner
-stops by the airfield for maintenance and tops off the tank while there)
-has no home — it has to be misattributed to the nearest flight's
-before/after fields, or dropped. Needs a lightweight standalone "refuel"
-record (date, aircraft, quantity, unit — no flight linkage required),
-findable from the aircraft page. Relevant to the cost-tracking item above:
-whatever independent-purchase model that ends up building should treat a
-standalone refuel the same as a flight-linked one.
-
----
-
 ## Per-tank fuel capacity tracking
 
 `Aircraft.fuel_capacity_liters` (added alongside the flight-log tank-fraction
