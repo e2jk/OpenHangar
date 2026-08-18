@@ -74,7 +74,7 @@ _PILOT_DOC_TYPES = [
 ]
 
 _AIRCRAFT_DOC_TYPES = [
-    (DocType.INSURANCE_CERT, _l("Insurance certificate")),
+    (DocType.INSURANCE_CERT, _l("Insurance Certificate")),
     (DocType.ARC, _l("Airworthiness Review Certificate (ARC)")),
 ]
 
