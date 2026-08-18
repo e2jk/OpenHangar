@@ -991,17 +991,35 @@ class TestFuelOnFlightForm:
         assert b"All tanks" in resp.data
         assert b"110" in resp.data  # combined capacity option
 
-    def test_edit_flight_falls_back_to_single_capacity_without_tanks(self, client, app):
+    def test_edit_flight_no_fraction_buttons_without_any_tank(self, client, app):
+        _uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        flight_id = _add_flight(app, ac_id)
+        _login(app, client)
+        resp = client.get(f"/flights/{flight_id}/edit")
+        assert resp.status_code == 200
+        assert b'id="fuel-fraction-buttons"' not in resp.data
+        assert b"Define a fuel tank on the aircraft page" in resp.data
+
+    def test_edit_flight_single_tank_hides_redundant_picker(self, client, app):
+        """With exactly one tank, the fraction buttons still show (using
+        that tank's capacity), but the tank picker is redundant and hidden
+        — there's nothing to pick between."""
+        from models import AircraftFuelTank  # pyright: ignore[reportMissingImports]
+
         _uid, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         with app.app_context():
-            db.session.get(Aircraft, ac_id).fuel_capacity_liters = 110
+            db.session.add(
+                AircraftFuelTank(aircraft_id=ac_id, name="Main", capacity_liters=110)
+            )
             db.session.commit()
         flight_id = _add_flight(app, ac_id)
         _login(app, client)
         resp = client.get(f"/flights/{flight_id}/edit")
         assert resp.status_code == 200
         assert b'id="fuel-fraction-buttons"' in resp.data
+        assert b'data-capacity="110.0"' in resp.data
         assert b'id="fuel-tank-picker"' not in resp.data
 
     def test_edit_flight_clears_fuel_when_fields_left_blank(self, client, app):
