@@ -366,7 +366,11 @@ class Aircraft(db.Model):
     )  # "avgas" | "jet_a1"
     # Total usable fuel capacity across all tanks, in liters; null = not
     # configured (hides the tank-fraction quick-fill buttons on the flight
-    # form). Per-tank capacity is not tracked yet — see docs/backlog.md.
+    # form). This is the simple single-tank path; aircraft with genuinely
+    # independent tanks (left/right wing, main+aux, ...) can additionally
+    # define AircraftFuelTank rows (see fuel_tanks below), which turns the
+    # flight form's quick-fill into a per-tank picker instead of relying on
+    # this combined total.
     fuel_capacity_liters = db.Column(db.Numeric(6, 1), nullable=True)
     # Oil consumption warning threshold in L/h; null = no warning on the
     # cost dashboard.
@@ -416,6 +420,12 @@ class Aircraft(db.Model):
     )
     refuels = db.relationship(
         "Refuel", back_populates="aircraft", cascade="all, delete-orphan"
+    )
+    fuel_tanks = db.relationship(
+        "AircraftFuelTank",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
+        order_by="AircraftFuelTank.sort_order",
     )
     documents = db.relationship(
         "Document",
@@ -1668,6 +1678,30 @@ class Refuel(db.Model):
     created_by = db.relationship("User", foreign_keys=[created_by_id])
 
     __table_args__ = (db.Index("ix_refuels_aircraft_id", aircraft_id),)
+
+
+# ── Fuel: per-tank capacity tracking (backlog) ───────────────────────────────
+
+
+class AircraftFuelTank(db.Model):
+    """One independently-tracked fuel tank on an aircraft (e.g. left/right
+    wing, or a main + aux tank). Optional and additive: aircraft with a
+    single combined tank keep using Aircraft.fuel_capacity_liters and never
+    need a row here — see the comment on that column."""
+
+    __tablename__ = "aircraft_fuel_tanks"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    name = db.Column(db.String(64), nullable=False)
+    capacity_liters = db.Column(db.Numeric(6, 1), nullable=False)
+    sort_order = db.Column(db.Integer, nullable=False, default=0)
+
+    aircraft = db.relationship("Aircraft", back_populates="fuel_tanks")
+
+    __table_args__ = (db.Index("ix_aircraft_fuel_tanks_aircraft_id", aircraft_id),)
 
 
 # ── Phase 9 / 27: Document & Photo Uploads ───────────────────────────────────

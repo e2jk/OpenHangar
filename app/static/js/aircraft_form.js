@@ -30,6 +30,24 @@
       sel.addEventListener('change', updateFuelHint);
       updateFuelHint();
     }
+
+    var tanksContainer = document.getElementById('fuel-tanks-container');
+    var addTankBtn = document.getElementById('add-fuel-tank');
+    if (tanksContainer && addTankBtn) {
+      function addRemoveListener(row) {
+        row.querySelector('.remove-fuel-tank').addEventListener('click', function () {
+          row.remove();
+        });
+      }
+      tanksContainer.querySelectorAll('.fuel-tank-row').forEach(addRemoveListener);
+      addTankBtn.addEventListener('click', function () {
+        var tmpl = document.getElementById('fuel-tank-row-template');
+        var clone = tmpl.content.cloneNode(true);
+        var row = clone.firstElementChild;
+        tanksContainer.appendChild(row);
+        addRemoveListener(row);
+      });
+    }
   }
   document.addEventListener('DOMContentLoaded', init);
   document.addEventListener('htmx:afterSettle', init);

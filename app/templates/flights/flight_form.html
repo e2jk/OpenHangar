@@ -644,7 +644,29 @@
                 <input type="number" class="form-control" id="fuel_remaining_qty" name="fuel_remaining_qty"
                        value="{{ '%.1f'|format(flight.fuel_remaining_qty|float) if flight and flight.fuel_remaining_qty is not none else '' }}"
                        step="0.1" min="0" placeholder="{{ _('estimated') }}">
-                {% if aircraft and aircraft.fuel_capacity_liters %}
+                {% if aircraft and aircraft.fuel_tanks %}
+                {% set total_tank_capacity = aircraft.fuel_tanks | sum(attribute='capacity_liters') %}
+                <select class="form-select form-select-sm mt-2" id="fuel-tank-picker"
+                        aria-label="{{ _('Tank') }}">
+                  <option value="{{ total_tank_capacity | float }}">
+                    {{ _('All tanks') }} ({{ '%.0f'|format(total_tank_capacity|float) }} L)
+                  </option>
+                  {% for tank in aircraft.fuel_tanks %}
+                  <option value="{{ tank.capacity_liters | float }}">
+                    {{ tank.name }} ({{ '%.0f'|format(tank.capacity_liters|float) }} L)
+                  </option>
+                  {% endfor %}
+                </select>
+                <div class="btn-group btn-group-sm flex-wrap mt-2" role="group"
+                     id="fuel-fraction-buttons"
+                     data-capacity="{{ total_tank_capacity | float }}"
+                     aria-label="{{ _('Quick-fill from tank fraction') }}">
+                  {% for n in range(1, 9) %}
+                  <button type="button" class="btn btn-outline-secondary fuel-fraction-btn" data-numerator="{{ n }}" data-denominator="8">{{ n }}/8</button>
+                  {% endfor %}
+                </div>
+                <div class="form-text">{{ _('Estimated liters for the selected fraction of the selected tank, rounded to the nearest 5 L.') }}</div>
+                {% elif aircraft and aircraft.fuel_capacity_liters %}
                 <div class="btn-group btn-group-sm flex-wrap mt-2" role="group"
                      id="fuel-fraction-buttons"
                      data-capacity="{{ aircraft.fuel_capacity_liters | float }}"

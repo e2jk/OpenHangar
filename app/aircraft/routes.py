@@ -23,6 +23,7 @@ from models import (
     FUEL_DENSITY,
     GAL_TO_L,
     Aircraft,
+    AircraftFuelTank,
     AircraftGpsImportBatch,
     AircraftOwner,
     AircraftPhoto,
@@ -521,6 +522,25 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
         except ValueError:
             errors.append(_("Fuel tank capacity must be a positive number."))
 
+    # Per-tank capacity (optional, additive — see AircraftFuelTank docstring).
+    # Same "replace all rows" pattern as the W&B stations form: blank-name
+    # rows are silently dropped, a non-positive/invalid capacity is an error.
+    tank_names = request.form.getlist("tank_name[]")
+    tank_capacities_raw = request.form.getlist("tank_capacity[]")
+    tanks_data: list[tuple[str, float]] = []
+    for i, tname in enumerate(tank_names):
+        tname = tname.strip()
+        if not tname:
+            continue
+        try:
+            tcap = float(tank_capacities_raw[i])
+            if tcap <= 0:
+                raise ValueError
+        except (ValueError, IndexError):
+            errors.append(_("Fuel tank capacity must be a positive number."))
+            continue
+        tanks_data.append((tname, tcap))
+
     if errors:
         for msg in errors:
             flash(msg, "danger")
@@ -542,6 +562,17 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     ac.reserve_hourly_rate = reserve_hourly_rate
     ac.oil_warning_lph = oil_warning_lph
     ac.fuel_capacity_liters = fuel_capacity_liters
+    db.session.commit()
+
+    # Replace fuel tanks (same "delete all, recreate" strategy as W&B stations)
+    for t in list(ac.fuel_tanks):
+        db.session.delete(t)
+    for i, (tname, tcap) in enumerate(tanks_data):
+        db.session.add(
+            AircraftFuelTank(
+                aircraft_id=ac.id, name=tname, capacity_liters=tcap, sort_order=i
+            )
+        )
     db.session.commit()
 
     if is_new:
