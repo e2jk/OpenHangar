@@ -65,6 +65,7 @@ _SKIP_GET_ENDPOINTS = {
     "reservations.my_account_statement_csv",  # CSV download — needs dedicated UI interaction test
     "aircraft.owner_statement_csv",  # CSV download — covered by tests/test_shared_ownership_statements.py
     "aircraft.my_share_statement_csv",  # CSV download — covered by tests/test_shared_ownership_statements.py
+    "reports.utilization_report_csv",  # CSV download — covered by tests/test_reports.py
     # The next 6 can never resolve a URL via generic ID substitution — either
     # the param is an ephemeral one-time token, or it isn't a DB id at all.
     # Each is covered by dedicated functional tests instead.
