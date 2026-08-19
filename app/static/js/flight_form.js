@@ -88,23 +88,31 @@
 
     var fuelFractionGroup = document.getElementById('fuel-fraction-buttons');
     var fuelRemainingInput = document.getElementById('fuel_remaining_qty');
+    var fuelTankPicker = document.getElementById('fuel-tank-picker');
+    if (fuelTankPicker && fuelFractionGroup) {
+      // Switching tanks just changes which capacity the fraction buttons
+      // below compute against — fuel_remaining_qty stays a single total,
+      // no per-tank remaining-quantity tracking on the Flight row.
+      fuelTankPicker.addEventListener('change', function () {
+        fuelFractionGroup.dataset.capacity = fuelTankPicker.value;
+      });
+    }
     if (fuelFractionGroup && fuelRemainingInput) {
-      var capacity = parseFloat(fuelFractionGroup.dataset.capacity);
-      if (!isNaN(capacity)) {
-        fuelFractionGroup.querySelectorAll('.fuel-fraction-btn').forEach(function (btn) {
-          btn.addEventListener('click', function () {
-            var numerator = parseFloat(btn.dataset.numerator);
-            var denominator = parseFloat(btn.dataset.denominator);
-            var raw = (numerator / denominator) * capacity;
-            var rounded = Math.round(raw / 5) * 5;
-            fuelRemainingInput.value = rounded.toFixed(1);
-            fuelRemainingInput.dispatchEvent(new Event('input'));
-            fuelFractionGroup.querySelectorAll('.fuel-fraction-btn').forEach(function (b) {
-              b.classList.toggle('active', b === btn);
-            });
+      fuelFractionGroup.querySelectorAll('.fuel-fraction-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var capacity = parseFloat(fuelFractionGroup.dataset.capacity);
+          if (isNaN(capacity)) return;
+          var numerator = parseFloat(btn.dataset.numerator);
+          var denominator = parseFloat(btn.dataset.denominator);
+          var raw = (numerator / denominator) * capacity;
+          var rounded = Math.round(raw / 5) * 5;
+          fuelRemainingInput.value = rounded.toFixed(1);
+          fuelRemainingInput.dispatchEvent(new Event('input'));
+          fuelFractionGroup.querySelectorAll('.fuel-fraction-btn').forEach(function (b) {
+            b.classList.toggle('active', b === btn);
           });
         });
-      }
+      });
     }
 
     var counterWarn = document.getElementById('counter-warn');

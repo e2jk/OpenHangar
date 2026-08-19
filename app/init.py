@@ -718,6 +718,14 @@ def create_app() -> Flask:
 
     app.register_blueprint(snags_bp)
 
+    from refuels.routes import refuels_bp
+
+    app.register_blueprint(refuels_bp)
+
+    from reports.routes import reports_bp
+
+    app.register_blueprint(reports_bp)
+
     from pilots.routes import pilots_bp
 
     app.register_blueprint(pilots_bp)
@@ -1101,6 +1109,15 @@ def create_app() -> Flask:
                 else []
             )
             grounding_snags = [(s, ac_by_id[s.aircraft_id]) for s in open_grounding]
+            open_other_snags = (
+                Snag.query.filter(
+                    Snag.aircraft_id.in_(aircraft_ids),
+                    Snag.is_grounding.is_(False),
+                    Snag.resolved_at.is_(None),
+                ).count()
+                if aircraft_ids
+                else 0
+            )
 
             from models import PilotProfile
             from pilots.currency import currency_summary as _currency_summary
@@ -1283,6 +1300,7 @@ def create_app() -> Flask:
                 maintenance_alerts=maintenance_alerts,
                 urgent_maintenance=urgent_maintenance,
                 grounding_snags=grounding_snags,
+                open_other_snags=open_other_snags,
                 aircraft_status=aircraft_status,
                 triggers=triggers,
                 pilot_currency=pilot_currency,

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{{ aircraft.registration }} — OpenHangar</title>
+  <link rel="stylesheet" href="/static/vendor/bootstrap/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/vendor/bootstrap-icons/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+</head>
+<body>
+
+<div class="oh-share-header">
+  <div class="container">
+    <h1><i class="bi bi-airplane me-2"></i><span class="oh-reg-plate">{{ aircraft.registration }}</span></h1>
+    <p>{{ aircraft.make }} {{ aircraft.model }}{% if aircraft.year %} · {{ aircraft.year }}{% endif %}</p>
+  </div>
+</div>
+
+<div class="container pb-5">
+
+  {% if aircraft.photos %}
+  <div id="showcaseCarousel" class="carousel slide oh-card p-0 overflow-hidden mb-4" data-bs-ride="carousel">
+    <div class="carousel-inner">
+      {% for photo in aircraft.photos %}
+      <div class="carousel-item {% if loop.first %}active{% endif %}">
+        <img src="{{ url_for('share.showcase_photo', token=token.token, photo_id=photo.id) }}"
+             class="d-block w-100 oh-showcase-photo" alt="{{ aircraft.registration }}">
+      </div>
+      {% endfor %}
+    </div>
+    {% if aircraft.photos | length > 1 %}
+    <button class="carousel-control-prev" type="button" data-bs-target="#showcaseCarousel" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">{{ _('Previous') }}</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#showcaseCarousel" data-bs-slide="next">
+      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">{{ _('Next') }}</span>
+    </button>
+    <div class="carousel-indicators">
+      {% for photo in aircraft.photos %}
+      <button type="button" data-bs-target="#showcaseCarousel" data-bs-slide-to="{{ loop.index0 }}"
+              {% if loop.first %}class="active" aria-current="true"{% endif %}
+              aria-label="{{ _('Slide %(n)s', n=loop.index) }}"></button>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="oh-card">
+    <div class="oh-section-title"><i class="bi bi-airplane-engines me-2"></i>{{ _('About this aircraft') }}</div>
+    {% if aircraft.showcase_blurb %}
+    <p class="mb-0 oh-showcase-blurb">{{ aircraft.showcase_blurb }}</p>
+    {% else %}
+    <p class="text-muted mb-0">
+      {{ aircraft.make }} {{ aircraft.model }}{% if aircraft.year %}, {{ aircraft.year }}{% endif %}
+    </p>
+    {% endif %}
+  </div>
+
+</div>
+
+<div class="oh-footer">
+  <a href="{{ repo_url }}" class="text-muted text-decoration-none">
+    <i class="bi bi-airplane me-1"></i>{{ _('OpenHangar') }}
+  </a>
+</div>
+
+<script nonce="{{ csp_nonce() }}" src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

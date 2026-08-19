@@ -84,6 +84,8 @@ var SWR_PATTERNS = [
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/expenses$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/costs$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/snags$/,
+  /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/refuels$/,
+  /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/reports\/utilization$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/maintenance$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/airworthiness\/$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/reservations\/$/,
@@ -130,6 +132,9 @@ var NOT_CACHED_PATTERNS = [
   [/^\/reset-password\/[^/]+$/, 'auth form, same reasoning as /login'],
   [/^\/share\/[^/]+$/, 'public share link — a revoked token must actually stop working, not keep serving a stale cached copy to whoever had it cached'],
   [/^\/share\/[^/]+\/[^/]+$/, 'same public share link, with the registration as a cosmetic URL prefix — same reasoning'],
+  [/^\/showcase\/[^/]+$/, 'public showcase link — same "revoked token must stop working" reasoning as /share'],
+  [/^\/showcase\/[^/]+\/[^/]+$/, 'same public showcase link, with the registration as a cosmetic URL prefix — same reasoning'],
+  [/^\/showcase\/[^/]+\/photos\/\d+\/img$/, 'showcase photo — same reasoning, must stop being servable once the token is revoked'],
   [/^\/squawk\/\d+$/, 'easter egg']
 ];
 

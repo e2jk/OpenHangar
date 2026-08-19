@@ -156,6 +156,7 @@ html:not([data-js-ok]) #js-warn-banner { display: block; }
 .icon-green  { background: #dcfce7; color: var(--oh-advisory); }
 .icon-purple { background: #ede9fe; color: #7c3aed; }
 .icon-teal   { background: #ccfbf1; color: #0d9488; }
+.icon-red    { background: #fdecea; color: var(--oh-warning); }
 
 /* ── Language flag dropdown ── */
 .lang-flag-btn {
@@ -494,6 +495,7 @@ nav.navbar.mayday #oh-mayday-banner {
 [data-bs-theme=dark] .icon-green  { background: #0e3320; color: var(--oh-advisory); }
 [data-bs-theme=dark] .icon-purple { background: #2d1b4e; color: #b39ddb; }
 [data-bs-theme=dark] .icon-teal   { background: #0a2e2a; color: #4db6ac; }
+[data-bs-theme=dark] .icon-red    { background: #3a0a0a; color: #f88; }
 [data-bs-theme=dark] .page-title  { color: #e9ecef; }
 [data-bs-theme=dark] .section-title { color: #adb5bd; }
 

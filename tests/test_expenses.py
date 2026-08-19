@@ -15,6 +15,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     Tenant,
     TenantUser,
     User,
+    UserAircraftAccess,
     db,
 )
 
@@ -467,6 +468,189 @@ class TestAddExpense:
         assert resp.status_code == 302
 
 
+# ── Fuel-added → expense prefill (backlog: independent purchases) ─────────────
+
+
+class TestFuelExpensePrefill:
+    def test_prefill_from_flight_populates_form(self, client, app):
+        _uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        flight_id = _add_flight(app, ac_id, flight_date=date(2025, 6, 1))
+        _login(app, client)
+        resp = client.get(
+            f"/aircraft/{ac_id}/expenses/add"
+            f"?flight_entry_id={flight_id}&quantity=42.5&unit=gal"
+        )
+        assert resp.status_code == 200
+        assert b"2025-06-01" in resp.data
+        assert b"42.5" in resp.data
+        assert f'value="{flight_id}"'.encode() in resp.data
+        assert b"linked to this flight" in resp.data.lower()
+
+    def test_post_with_valid_flight_entry_id_links_expense(self, client, app):
+        _uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        flight_id = _add_flight(app, ac_id)
+        _login(app, client)
+        client.post(
+            f"/aircraft/{ac_id}/expenses/add",
+            data={
+                "date": "2025-06-01",
+                "expense_type": "fuel",
+                "amount": "80.00",
+                "currency": "EUR",
+                "quantity": "42.5",
+                "unit": "gal",
+                "flight_entry_id": str(flight_id),
+            },
+            follow_redirects=True,
+        )
+        with app.app_context():
+            exp = Expense.query.filter_by(aircraft_id=ac_id).first()
+            assert exp is not None
+            assert exp.flight_entry_id == flight_id
+
+    def test_prefill_ignored_for_flight_on_another_aircraft(self, client, app):
+        _uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        other_ac_id = _add_aircraft(app, tenant_id)
+        with app.app_context():
+            db.session.get(Aircraft, other_ac_id).registration = "OO-OTH"
+            db.session.commit()
+        other_flight_id = _add_flight(app, other_ac_id)
+        _login(app, client)
+        resp = client.get(
+            f"/aircraft/{ac_id}/expenses/add?flight_entry_id={other_flight_id}"
+        )
+        assert resp.status_code == 200
+        assert b"linked to this flight" not in resp.data.lower()
+
+    def test_post_flight_entry_id_from_another_aircraft_not_linked(self, client, app):
+        """A forged flight_entry_id for someone else's flight must not be
+        accepted — the expense is created but stays unlinked."""
+        _uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        other_ac_id = _add_aircraft(app, tenant_id)
+        with app.app_context():
+            db.session.get(Aircraft, other_ac_id).registration = "OO-OTH"
+            db.session.commit()
+        other_flight_id = _add_flight(app, other_ac_id)
+        _login(app, client)
+        client.post(
+            f"/aircraft/{ac_id}/expenses/add",
+            data={
+                "date": "2025-06-01",
+                "expense_type": "fuel",
+                "amount": "80.00",
+                "currency": "EUR",
+                "flight_entry_id": str(other_flight_id),
+            },
+            follow_redirects=True,
+        )
+        with app.app_context():
+            exp = Expense.query.filter_by(aircraft_id=ac_id).first()
+            assert exp is not None
+            assert exp.flight_entry_id is None
+
+    def test_prefill_ignored_for_nonnumeric_flight_entry_id(self, client, app):
+        _uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/expenses/add?flight_entry_id=abc")
+        assert resp.status_code == 200
+        assert b"linked to this flight" not in resp.data.lower()
+
+    def test_standalone_prefill_from_refuel_populates_form(self, client, app):
+        """A "Log as expense" link off a standalone Refuel (no
+        flight_entry_id, just a date) still prefills the form."""
+        _uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.get(
+            f"/aircraft/{ac_id}/expenses/add?date=2025-07-04&quantity=15.0&unit=L"
+        )
+        assert resp.status_code == 200
+        assert b"2025-07-04" in resp.data
+        assert b"15.0" in resp.data
+        assert b"pre-filled from a logged refuel" in resp.data.lower()
+        assert b"linked to this flight" not in resp.data.lower()
+        assert b"flight_entry_id" not in resp.data
+
+    def test_standalone_prefill_ignored_for_invalid_date(self, client, app):
+        _uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.get(
+            f"/aircraft/{ac_id}/expenses/add?date=not-a-date&quantity=15.0"
+        )
+        assert resp.status_code == 200
+        assert b"pre-filled from a logged refuel" not in resp.data.lower()
+
+    def test_flight_detail_shows_fuel_and_log_expense_links(self, client, app):
+        _uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        with app.app_context():
+            fe = Flight(
+                aircraft_id=ac_id,
+                date=date(2025, 6, 1),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                fuel_added_before_qty=10.0,
+                fuel_added_before_unit="L",
+                fuel_added_after_qty=25.0,
+                fuel_added_after_unit="L",
+            )
+            db.session.add(fe)
+            db.session.commit()
+            flight_id = fe.id
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/flights/{flight_id}")
+        assert resp.status_code == 200
+        assert resp.data.count(b"Log as expense") == 2
+        assert b"Fuel added before flight" in resp.data
+        assert b"Fuel added after flight" in resp.data
+
+    def test_flight_detail_hides_fuel_section_when_no_fuel_logged(self, client, app):
+        _uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        flight_id = _add_flight(app, ac_id)
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/flights/{flight_id}")
+        assert b"Log as expense" not in resp.data
+
+    def test_flight_detail_hides_log_expense_link_for_non_owner(self, client, app):
+        _uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        with app.app_context():
+            pilot = User(
+                email="pilot2@example.com",
+                password_hash=_pw_hash.hash("pw"),
+                is_active=True,
+            )
+            db.session.add(pilot)
+            db.session.flush()
+            db.session.add(
+                TenantUser(user_id=pilot.id, tenant_id=tenant_id, role=Role.PILOT)
+            )
+            db.session.add(UserAircraftAccess(user_id=pilot.id, aircraft_id=ac_id))
+            fe = Flight(
+                aircraft_id=ac_id,
+                date=date(2025, 6, 1),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                fuel_added_before_qty=10.0,
+                fuel_added_before_unit="L",
+            )
+            db.session.add(fe)
+            db.session.commit()
+            flight_id = fe.id
+        _login(app, client, "pilot2@example.com")
+        resp = client.get(f"/aircraft/{ac_id}/flights/{flight_id}")
+        assert resp.status_code == 200
+        assert b"Log as expense" not in resp.data
+        assert b"Fuel added before flight" in resp.data
+
+
 # ── Expense category & coverage period (Phase 36) ─────────────────────────────
 
 
@@ -779,6 +963,64 @@ class TestFuelOnFlightForm:
         _login(app, client)
         resp = client.get(f"/flights/{flight_id}/edit")
         assert b"45.0" in resp.data
+
+    def test_edit_flight_shows_tank_picker_when_tanks_defined(self, client, app):
+        from models import AircraftFuelTank  # pyright: ignore[reportMissingImports]
+
+        _uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        flight_id = _add_flight(app, ac_id)
+        with app.app_context():
+            db.session.add(
+                AircraftFuelTank(
+                    aircraft_id=ac_id, name="Left wing", capacity_liters=55
+                )
+            )
+            db.session.add(
+                AircraftFuelTank(
+                    aircraft_id=ac_id, name="Right wing", capacity_liters=55
+                )
+            )
+            db.session.commit()
+        _login(app, client)
+        resp = client.get(f"/flights/{flight_id}/edit")
+        assert resp.status_code == 200
+        assert b'id="fuel-tank-picker"' in resp.data
+        assert b"Left wing" in resp.data
+        assert b"Right wing" in resp.data
+        assert b"All tanks" in resp.data
+        assert b"110" in resp.data  # combined capacity option
+
+    def test_edit_flight_no_fraction_buttons_without_any_tank(self, client, app):
+        _uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        flight_id = _add_flight(app, ac_id)
+        _login(app, client)
+        resp = client.get(f"/flights/{flight_id}/edit")
+        assert resp.status_code == 200
+        assert b'id="fuel-fraction-buttons"' not in resp.data
+        assert b"Define a fuel tank on the aircraft page" in resp.data
+
+    def test_edit_flight_single_tank_hides_redundant_picker(self, client, app):
+        """With exactly one tank, the fraction buttons still show (using
+        that tank's capacity), but the tank picker is redundant and hidden
+        — there's nothing to pick between."""
+        from models import AircraftFuelTank  # pyright: ignore[reportMissingImports]
+
+        _uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        with app.app_context():
+            db.session.add(
+                AircraftFuelTank(aircraft_id=ac_id, name="Main", capacity_liters=110)
+            )
+            db.session.commit()
+        flight_id = _add_flight(app, ac_id)
+        _login(app, client)
+        resp = client.get(f"/flights/{flight_id}/edit")
+        assert resp.status_code == 200
+        assert b'id="fuel-fraction-buttons"' in resp.data
+        assert b'data-capacity="110.0"' in resp.data
+        assert b'id="fuel-tank-picker"' not in resp.data
 
     def test_edit_flight_clears_fuel_when_fields_left_blank(self, client, app):
         _uid, tenant_id = _create_user_and_tenant(app)
