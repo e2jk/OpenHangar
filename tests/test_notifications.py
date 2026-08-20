@@ -11,6 +11,7 @@ import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     AppSetting,
     NotificationPreference,
+    NotificationSendLog,
     NotificationType,
     Role,
     Tenant,
@@ -1907,3 +1908,92 @@ class TestDispatchI18n:
                 )
 
             assert subjects_sent[0] == "Legacy subject"
+
+
+# ── Send-log dedup ───────────────────────────────────────────────────────────
+
+
+class TestSendLogDedup:
+    def test_already_sent_today_false_when_no_row(self, app):
+        with app.app_context():
+            from services.notification_service import (
+                _already_sent_today,  # pyright: ignore[reportMissingImports]
+            )
+
+            assert _already_sent_today(1, 1, "arc_expiry", "aircraft:1") is False
+
+    def test_record_sent_then_already_sent_today_true(self, app):
+        _uid, tid = _make_user(app, "owner@sendlog1.com", role=Role.OWNER)
+        with app.app_context():
+            from services.notification_service import (
+                _already_sent_today,  # pyright: ignore[reportMissingImports]
+                _record_sent,  # pyright: ignore[reportMissingImports]
+            )
+
+            _record_sent(_uid, tid, NotificationType.ARC_EXPIRY, "aircraft:1")
+            assert (
+                _already_sent_today(
+                    _uid, tid, NotificationType.ARC_EXPIRY, "aircraft:1"
+                )
+                is True
+            )
+            assert (
+                NotificationSendLog.query.filter_by(subject_ref="aircraft:1").count()
+                == 1
+            )
+
+    def test_record_sent_swallows_unique_violation(self, app):
+        _uid, tid = _make_user(app, "owner@sendlog2.com", role=Role.OWNER)
+        with app.app_context():
+            from services.notification_service import (
+                _record_sent,  # pyright: ignore[reportMissingImports]
+            )
+
+            _record_sent(_uid, tid, NotificationType.ARC_EXPIRY, "aircraft:2")
+            _record_sent(_uid, tid, NotificationType.ARC_EXPIRY, "aircraft:2")
+            assert (
+                NotificationSendLog.query.filter_by(subject_ref="aircraft:2").count()
+                == 1
+            )
+
+
+class TestDispatchDedup:
+    def _ctx(self):
+        return {
+            "subject": "Test",
+            "notification_title": "Test title",
+            "notification_message": "msg",
+            "details": [],
+        }
+
+    def test_subject_ref_dedups_same_day_resend(self, app):
+        """Digest/maintenance checks pass subject_ref -- a same-day rerun
+        of dispatch() for the same instance must not resend."""
+        _uid, tid = _make_user(app, "owner@dd1.com", role=Role.OWNER)
+        with (
+            app.app_context(),
+            patch("services.email_service.send_email") as mock_send,
+            patch("services.email_service._record_health"),
+            patch(
+                "services.notification_service._render_email",
+                return_value=("t", "<p>h</p>"),
+            ),
+        ):
+            from services.notification_service import dispatch
+
+            dispatch(
+                NotificationType.MAINTENANCE_DUE_SOON,
+                tid,
+                self._ctx(),
+                subject_ref="trigger:1",
+            )
+            assert mock_send.call_count == 1
+
+            # Second call same day: send-log dedup skips the resend.
+            dispatch(
+                NotificationType.MAINTENANCE_DUE_SOON,
+                tid,
+                self._ctx(),
+                subject_ref="trigger:1",
+            )
+            assert mock_send.call_count == 1

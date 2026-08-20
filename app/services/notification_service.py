@@ -167,6 +167,50 @@ def _text_for(notification_type: str, context: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+# ── Send-log dedup ──────────────────────────────────────────────────────────────
+
+
+def _already_sent_today(
+    user_id: int, tenant_id: int, notification_type: str, subject_ref: str
+) -> bool:
+    from models import NotificationSendLog  # pyright: ignore[reportMissingImports]
+
+    return (
+        NotificationSendLog.query.filter_by(
+            user_id=user_id,
+            tenant_id=tenant_id,
+            notification_type=notification_type,
+            subject_ref=subject_ref,
+            sent_date=date.today(),
+        ).first()
+        is not None
+    )
+
+
+def _record_sent(
+    user_id: int, tenant_id: int, notification_type: str, subject_ref: str
+) -> None:
+    from models import (  # pyright: ignore[reportMissingImports]
+        NotificationSendLog,
+        db,
+    )
+
+    try:
+        db.session.add(
+            NotificationSendLog(
+                user_id=user_id,
+                tenant_id=tenant_id,
+                notification_type=notification_type,
+                subject_ref=subject_ref,
+                sent_date=date.today(),
+            )
+        )
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        log.exception("Failed to record notification send log")
+
+
 # ── Dispatch ──────────────────────────────────────────────────────────────────
 
 
@@ -175,12 +219,20 @@ def dispatch(
     tenant_id: int,
     email_context: dict[str, Any],
     target_user_ids: list[int] | None = None,
+    subject_ref: str | None = None,
 ) -> None:
     """
     Find all eligible recipients and send notification emails.
 
     Must be called within an app context.
     target_user_ids: if set, only notify these users (used for pilot-self events).
+    subject_ref: stable id of the specific thing this notification is about
+    (e.g. "aircraft:12"), passed by the daily checks in run_daily_checks().
+    When set, a per-user-per-day send log means a second run on the same
+    day (e.g. after a restart) does not resend. Callers that don't pass
+    subject_ref (event-driven notifications like a snag being reported)
+    keep today's always-send behaviour -- they're one-shot events, not
+    daily re-evaluations.
     """
     from flask_babel import force_locale  # pyright: ignore[reportMissingImports]
     from models import TenantProfile  # pyright: ignore[reportMissingImports]
@@ -221,6 +273,11 @@ def dispatch(
             else:
                 notif_message = email_context.get("notification_message", "")
 
+        if subject_ref is not None and _already_sent_today(
+            user.id, tenant_id, notification_type, subject_ref
+        ):
+            continue
+
         ctx = dict(email_context)
         ctx.setdefault("threshold_days", pref["threshold_days"])
         # generic.html treats these as optional ({% if %} guards), but under
@@ -249,6 +306,8 @@ def dispatch(
                 html_body=html_body,
                 locale=locale,
             )
+            if subject_ref is not None:
+                _record_sent(user.id, tenant_id, notification_type, subject_ref)
         except EmailNotConfiguredError:
             return  # SMTP not configured — stop trying all recipients
         except EmailSendError as exc:
@@ -354,6 +413,7 @@ def _check_maintenance(app: Any) -> None:
                                 ("Item", trigger.name),
                             ],
                         },
+                        subject_ref=f"trigger:{trigger.id}",
                     )
                 elif status == "due_soon":
                     _dispatch_in_context(
@@ -383,6 +443,7 @@ def _check_maintenance(app: Any) -> None:
                                 ("Item", trigger.name),
                             ],
                         },
+                        subject_ref=f"trigger:{trigger.id}",
                     )
 
 
@@ -438,6 +499,7 @@ def _check_insurance(app: Any) -> None:
                             ("Days left", str(days_left)),
                         ],
                     },
+                    subject_ref=f"aircraft:{ac.id}",
                 )
 
 
@@ -489,6 +551,7 @@ def _check_arc(app: Any) -> None:
                             ("Days left", str(days_left)),
                         ],
                     },
+                    subject_ref=f"aircraft:{ac.id}",
                 )
 
 
@@ -549,6 +612,7 @@ def _check_medical_and_sep(app: Any) -> None:
                         ],
                     },
                     target_user_ids=[user.id],
+                    subject_ref=f"pilot:{profile.id}",
                 )
 
 
@@ -618,6 +682,7 @@ def _check_documents(app: Any) -> None:
                                 ("Expires", doc.valid_until.isoformat()),
                             ],
                         },
+                        subject_ref=f"document:{doc.id}",
                     )
 
 
@@ -683,6 +748,7 @@ def _check_airworthiness_reviews(app: Any) -> None:
                                 ("Due", status_row.next_review_date.isoformat()),
                             ],
                         },
+                        subject_ref=f"airworthiness_status:{status_row.id}",
                     )
 
 
@@ -772,6 +838,7 @@ def _check_renter_authorizations(app: Any) -> None:
                 },
                 "details": details,
             },
+            subject_ref=f"tenant:{tenant.id}",
         )
 
 
@@ -848,6 +915,7 @@ def _check_personal_minimums_recency(app: Any) -> None:
                 "details": details,
             },
             target_user_ids=[user.id],
+            subject_ref=f"user:{user.id}",
         )
 
 
@@ -856,10 +924,17 @@ def _dispatch_in_context(
     tenant_id: int,
     email_context: dict[str, Any],
     target_user_ids: list[int] | None = None,
+    subject_ref: str | None = None,
 ) -> None:
     """Call dispatch() safely, logging any errors."""
     try:
-        dispatch(notification_type, tenant_id, email_context, target_user_ids)
+        dispatch(
+            notification_type,
+            tenant_id,
+            email_context,
+            target_user_ids,
+            subject_ref=subject_ref,
+        )
     except Exception as exc:  # noqa: BLE001 -- caller name says it: dispatch safely, never raise
         log.error(
             "Error dispatching notification for tenant %d: %s",
