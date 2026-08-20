@@ -2712,6 +2712,101 @@ class TenantNotificationDefault(db.Model):
     tenant = db.relationship("Tenant")
 
 
+class NotificationSendLog(db.Model):
+    """Records that a given (user, notification instance) was emailed on a
+    given calendar day -- makes run_daily_checks() idempotent within a day,
+    so a server restart mid-day (or a second manual run) does not resend
+    everything already sent earlier. subject_ref identifies the specific
+    instance a notification is about (e.g. "aircraft:12", "document:34"),
+    distinct from notification_type which identifies the kind of alert."""
+
+    __tablename__ = "notification_send_log"
+    __table_args__ = (
+        db.UniqueConstraint(
+            "user_id",
+            "tenant_id",
+            "notification_type",
+            "subject_ref",
+            "sent_date",
+            name="uq_notif_send_log",
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    tenant_id = db.Column(
+        db.Integer, db.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    notification_type = db.Column(db.String(64), nullable=False)
+    subject_ref = db.Column(db.String(128), nullable=False)
+    sent_date = db.Column(db.Date, nullable=False)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+
+    user = db.relationship("User")
+    tenant = db.relationship("Tenant")
+
+
+class NotificationSnooze(db.Model):
+    """Per-recipient, per-instance reminder snooze, keyed the same way as
+    NotificationSendLog (notification_type + subject_ref). snoozed_value is
+    NULL until the user follows the one-click email link and confirms;
+    once set, it is compared against the live deadline value on every
+    subsequent check -- a match suppresses the email, a mismatch means the
+    underlying deadline changed (e.g. a renewed document was uploaded) and
+    the snooze is treated as stale/cleared automatically."""
+
+    __tablename__ = "notification_snoozes"
+    __table_args__ = (
+        db.UniqueConstraint(
+            "user_id",
+            "tenant_id",
+            "notification_type",
+            "subject_ref",
+            name="uq_notif_snooze",
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    tenant_id = db.Column(
+        db.Integer, db.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    notification_type = db.Column(db.String(64), nullable=False)
+    subject_ref = db.Column(db.String(128), nullable=False)
+    token = db.Column(
+        db.String(64),
+        unique=True,
+        nullable=False,
+        default=lambda: secrets.token_urlsafe(32),
+    )
+    label = db.Column(db.String(256), nullable=False)
+    current_value = db.Column(db.String(64), nullable=False)
+    snoozed_value = db.Column(db.String(64), nullable=True)
+    snoozed_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+
+    user = db.relationship("User")
+    tenant = db.relationship("Tenant")
+
+    @property
+    def is_active(self) -> bool:
+        return (
+            self.snoozed_value is not None and self.snoozed_value == self.current_value
+        )
+
+
 class BillingAccountKind:
     """Shared billing core (Phases 37/39/40) — see docs/billing_service_design.md."""
 

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}OpenHangar — {{ _('Snooze reminder') }}{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+  <div class="auth-card">
+
+    <div class="auth-card-header">
+      <div class="brand-name">
+        <i class="bi bi-airplane brand-icon"></i>OpenHangar
+      </div>
+      <div class="page-title">{{ _('Snooze reminder') }}</div>
+    </div>
+
+    <div class="auth-card-body">
+      <p class="text-muted mb-3 oh-fs-088">{{ snooze.label }}</p>
+
+      {% if snooze.is_active %}
+        <div class="alert alert-success py-2 mb-3 oh-fs-088">
+          {{ _('This reminder is snoozed. You will not be emailed about it again unless the underlying deadline changes.') }}
+        </div>
+      {% else %}
+        <p class="mb-4 oh-fs-088">
+          {{ _('You will stop receiving this specific reminder until the deadline changes (for example, a renewed document is uploaded).') }}
+        </p>
+        <form method="POST" action="{{ url_for('notifications.snooze', token=snooze.token) }}">
+          <button type="submit" class="btn btn-ac-primary w-100">
+            {{ _('Snooze this reminder') }}
+          </button>
+        </form>
+      {% endif %}
+
+      <p class="mt-4 mb-0 oh-fs-088 text-center">
+        <a href="{{ url_for('config.notification_preferences') }}">
+          {{ _('Manage all notification preferences instead') }}
+        </a>
+      </p>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

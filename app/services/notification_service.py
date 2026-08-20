@@ -164,7 +164,118 @@ def _text_for(notification_type: str, context: dict[str, Any]) -> str:
             lines.append(f"{label}: {val}")
     if context.get("cta_url"):
         lines += ["", context["cta_url"]]
+    if context.get("snooze_url"):
+        lines += ["", context["snooze_url"]]
     return "\n".join(lines)
+
+
+# ── Send-log dedup + per-instance snooze ────────────────────────────────────────
+
+
+def _already_sent_today(
+    user_id: int, tenant_id: int, notification_type: str, subject_ref: str
+) -> bool:
+    from models import NotificationSendLog  # pyright: ignore[reportMissingImports]
+
+    return (
+        NotificationSendLog.query.filter_by(
+            user_id=user_id,
+            tenant_id=tenant_id,
+            notification_type=notification_type,
+            subject_ref=subject_ref,
+            sent_date=date.today(),
+        ).first()
+        is not None
+    )
+
+
+def _record_sent(
+    user_id: int, tenant_id: int, notification_type: str, subject_ref: str
+) -> None:
+    from models import (  # pyright: ignore[reportMissingImports]
+        NotificationSendLog,
+        db,
+    )
+
+    try:
+        db.session.add(
+            NotificationSendLog(
+                user_id=user_id,
+                tenant_id=tenant_id,
+                notification_type=notification_type,
+                subject_ref=subject_ref,
+                sent_date=date.today(),
+            )
+        )
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        log.exception("Failed to record notification send log")
+
+
+def _resolve_snooze(
+    user_id: int,
+    tenant_id: int,
+    notification_type: str,
+    subject_ref: str,
+    expiry_value: str,
+    label: str,
+) -> tuple[bool, str]:
+    """Get-or-create the NotificationSnooze row for this (user, instance),
+    refresh it with the live deadline value, and return
+    (suppressed, snooze_url). suppressed is True only when the user has
+    already confirmed a snooze for exactly this deadline value -- if the
+    deadline has since moved (e.g. a renewed document was uploaded), any
+    prior confirmation is stale and is cleared here instead."""
+    from models import (  # pyright: ignore[reportMissingImports]
+        NotificationSnooze,
+        db,
+    )
+
+    row = NotificationSnooze.query.filter_by(
+        user_id=user_id,
+        tenant_id=tenant_id,
+        notification_type=notification_type,
+        subject_ref=subject_ref,
+    ).first()
+
+    if row is not None and row.snoozed_value == expiry_value:
+        return True, _snooze_url(row.token)
+
+    if row is None:
+        row = NotificationSnooze(
+            user_id=user_id,
+            tenant_id=tenant_id,
+            notification_type=notification_type,
+            subject_ref=subject_ref,
+            label=label,
+            current_value=expiry_value,
+        )
+        db.session.add(row)
+    else:
+        row.snoozed_value = None
+        row.snoozed_at = None
+        row.current_value = expiry_value
+        row.label = label
+    db.session.commit()
+    return False, _snooze_url(row.token)
+
+
+def _snooze_url(token: str) -> str:
+    """Build an absolute snooze link without relying on url_for()'s
+    request-context binding -- run_daily_checks() runs in a background
+    thread with only an app context, no active request, so url_for()'s
+    usual host-from-request lookup isn't available. Mirrors the
+    OPENHANGAR_INSTANCE_URL pattern already used for `instance_url` above."""
+    import os
+
+    from flask import current_app  # pyright: ignore[reportMissingImports]
+
+    path = current_app.url_map.bind("localhost").build(
+        "notifications.snooze", {"token": token}
+    )
+    instance_url = os.environ.get("OPENHANGAR_INSTANCE_URL", "").strip()
+    return f"{instance_url.rstrip('/')}{path}" if instance_url else path
 
 
 # ── Dispatch ──────────────────────────────────────────────────────────────────
@@ -175,14 +286,28 @@ def dispatch(
     tenant_id: int,
     email_context: dict[str, Any],
     target_user_ids: list[int] | None = None,
+    subject_ref: str | None = None,
 ) -> None:
     """
     Find all eligible recipients and send notification emails.
 
     Must be called within an app context.
     target_user_ids: if set, only notify these users (used for pilot-self events).
+    subject_ref: stable id of the specific thing this notification is about
+    (e.g. "aircraft:12"), passed by the daily checks in run_daily_checks().
+    When set, enables two things: (1) a per-user-per-day send log so a
+    second run on the same day (e.g. after a restart) does not resend, and
+    (2) when email_context also carries "expiry_value" (an ISO date string
+    snapshot of the live deadline), a one-click snooze link that suppresses
+    future emails for this exact deadline value until it changes. Callers
+    that don't pass subject_ref (event-driven notifications like a snag
+    being reported) keep today's always-send behaviour -- they're one-shot
+    events, not daily re-evaluations.
     """
-    from flask_babel import force_locale  # pyright: ignore[reportMissingImports]
+    from flask_babel import (  # pyright: ignore[reportMissingImports]
+        force_locale,
+        gettext,
+    )
     from models import TenantProfile  # pyright: ignore[reportMissingImports]
 
     from services.email_service import (  # pyright: ignore[reportMissingImports]
@@ -220,6 +345,24 @@ def dispatch(
                 ) % email_context.get("notification_message_args", {})
             else:
                 notif_message = email_context.get("notification_message", "")
+            greeting = gettext("Hello %(name)s,") % {"name": user.display_name}
+
+        snooze_url = None
+        if subject_ref is not None:
+            expiry_value = email_context.get("expiry_value")
+            if expiry_value is not None:
+                suppressed, snooze_url = _resolve_snooze(
+                    user.id,
+                    tenant_id,
+                    notification_type,
+                    subject_ref,
+                    expiry_value,
+                    notif_title,
+                )
+                if suppressed:
+                    continue
+            if _already_sent_today(user.id, tenant_id, notification_type, subject_ref):
+                continue
 
         ctx = dict(email_context)
         ctx.setdefault("threshold_days", pref["threshold_days"])
@@ -232,10 +375,12 @@ def dispatch(
         ctx.setdefault("cta_url", None)
         ctx.setdefault("cta_label", None)
         ctx.setdefault("details", None)
+        ctx["snooze_url"] = snooze_url
         ctx["subject"] = subject
         ctx["notification_title"] = notif_title
         ctx["notification_message"] = notif_message
         ctx["recipient_name"] = user.display_name
+        ctx["greeting"] = greeting
 
         text_body = _text_for(notification_type, ctx)
         try:
@@ -249,6 +394,8 @@ def dispatch(
                 html_body=html_body,
                 locale=locale,
             )
+            if subject_ref is not None:
+                _record_sent(user.id, tenant_id, notification_type, subject_ref)
         except EmailNotConfiguredError:
             return  # SMTP not configured — stop trying all recipients
         except EmailSendError as exc:
@@ -350,10 +497,11 @@ def _check_maintenance(app: Any) -> None:
                                 "reg": ac.registration,
                             },
                             "details": [
-                                ("Aircraft", ac.registration),
-                                ("Item", trigger.name),
+                                (_l("Aircraft"), ac.registration),
+                                (_l("Item"), trigger.name),
                             ],
                         },
+                        subject_ref=f"trigger:{trigger.id}",
                     )
                 elif status == "due_soon":
                     _dispatch_in_context(
@@ -379,10 +527,11 @@ def _check_maintenance(app: Any) -> None:
                                 "reg": ac.registration,
                             },
                             "details": [
-                                ("Aircraft", ac.registration),
-                                ("Item", trigger.name),
+                                (_l("Aircraft"), ac.registration),
+                                (_l("Item"), trigger.name),
                             ],
                         },
+                        subject_ref=f"trigger:{trigger.id}",
                     )
 
 
@@ -433,11 +582,13 @@ def _check_insurance(app: Any) -> None:
                         ),
                         "notification_message_args": {},
                         "details": [
-                            ("Aircraft", ac.registration),
-                            ("Expires", ac.insurance_expiry.isoformat()),
-                            ("Days left", str(days_left)),
+                            (_l("Aircraft"), ac.registration),
+                            (_l("Expires"), ac.insurance_expiry.isoformat()),
+                            (_l("Days left"), str(days_left)),
                         ],
+                        "expiry_value": ac.insurance_expiry.isoformat(),
                     },
+                    subject_ref=f"aircraft:{ac.id}",
                 )
 
 
@@ -484,11 +635,13 @@ def _check_arc(app: Any) -> None:
                         ),
                         "notification_message_args": {},
                         "details": [
-                            ("Aircraft", ac.registration),
-                            ("Expires", ac.arc_expiry.isoformat()),
-                            ("Days left", str(days_left)),
+                            (_l("Aircraft"), ac.registration),
+                            (_l("Expires"), ac.arc_expiry.isoformat()),
+                            (_l("Days left"), str(days_left)),
                         ],
+                        "expiry_value": ac.arc_expiry.isoformat(),
                     },
+                    subject_ref=f"aircraft:{ac.id}",
                 )
 
 
@@ -511,9 +664,23 @@ def _check_medical_and_sep(app: Any) -> None:
         if tu is None:
             continue
 
-        for notif_type, expiry, label in [
-            (NT.MEDICAL_EXPIRING, profile.medical_expiry, "Medical certificate"),
-            (NT.SEP_RATING_EXPIRING, profile.sep_expiry, "SEP rating"),
+        # Two translatable forms per item (not a mechanical .lower() of the
+        # capitalized one) -- lowercasing a translated string isn't a safe
+        # general i18n operation (case rules and even correct wording can
+        # differ by language), so each form is its own msgid.
+        for notif_type, expiry, label, label_lower in [
+            (
+                NT.MEDICAL_EXPIRING,
+                profile.medical_expiry,
+                _l("Medical certificate"),
+                _l("medical certificate"),
+            ),
+            (
+                NT.SEP_RATING_EXPIRING,
+                profile.sep_expiry,
+                _l("SEP rating"),
+                _l("SEP rating"),
+            ),
         ]:
             if expiry is None:
                 continue
@@ -538,21 +705,26 @@ def _check_medical_and_sep(app: Any) -> None:
                             "Your %(label_lower)s expires on %(date)s (one day remaining).",
                             "Your %(label_lower)s expires on %(date)s (%(days)s days remaining).",
                             days_left,
-                            label_lower=label.lower(),
+                            label_lower=label_lower,
                             date=expiry.isoformat(),
                             days=days_left,
                         ),
                         "notification_message_args": {},
                         "details": [
-                            ("Expires", expiry.isoformat()),
-                            ("Days left", str(days_left)),
+                            (_l("Expires"), expiry.isoformat()),
+                            (_l("Days left"), str(days_left)),
                         ],
+                        "expiry_value": expiry.isoformat(),
                     },
                     target_user_ids=[user.id],
+                    subject_ref=f"pilot:{profile.id}",
                 )
 
 
 def _check_documents(app: Any) -> None:
+    from documents.routes import (  # pyright: ignore[reportMissingImports]
+        _EXPIRY_DRIVING_DOC_TYPES,
+    )
     from flask_babel import (  # pyright: ignore[reportMissingImports]
         lazy_gettext as _l,
     )
@@ -572,6 +744,13 @@ def _check_documents(app: Any) -> None:
         for ac in Aircraft.query.filter_by(tenant_id=tenant.id, archived_at=None).all():
             for doc in Document.query.filter_by(aircraft_id=ac.id).all():
                 if doc.valid_until is None:
+                    continue
+                # ARC/Insurance documents already drive their own dedicated
+                # check (_check_arc / _check_insurance) off the synced
+                # Aircraft.arc_expiry/insurance_expiry cache fields -- skip
+                # them here to avoid sending two separate emails for the
+                # same underlying deadline.
+                if doc.doc_type in _EXPIRY_DRIVING_DOC_TYPES:
                     continue
                 days_left = (doc.valid_until - today).days
                 if 0 <= days_left <= threshold:
@@ -603,11 +782,13 @@ def _check_documents(app: Any) -> None:
                             ),
                             "notification_message_args": {},
                             "details": [
-                                ("Aircraft", ac.registration),
-                                ("Document", title),
-                                ("Expires", doc.valid_until.isoformat()),
+                                (_l("Aircraft"), ac.registration),
+                                (_l("Document"), title),
+                                (_l("Expires"), doc.valid_until.isoformat()),
                             ],
+                            "expiry_value": doc.valid_until.isoformat(),
                         },
+                        subject_ref=f"document:{doc.id}",
                     )
 
 
@@ -639,7 +820,7 @@ def _check_airworthiness_reviews(app: Any) -> None:
                 days_left = (status_row.next_review_date - today).days
                 if 0 <= days_left <= threshold:
                     doc = status_row.document
-                    ref = doc.reference if doc else "unknown"
+                    ref = doc.reference if doc else _l("unknown")
                     _dispatch_in_context(
                         NT.AIRWORTHINESS_REVIEW_DUE,
                         tenant.id,
@@ -668,11 +849,13 @@ def _check_airworthiness_reviews(app: Any) -> None:
                             ),
                             "notification_message_args": {},
                             "details": [
-                                ("Aircraft", ac.registration),
-                                ("Document", ref),
-                                ("Due", status_row.next_review_date.isoformat()),
+                                (_l("Aircraft"), ac.registration),
+                                (_l("Document"), ref),
+                                (_l("Due"), status_row.next_review_date.isoformat()),
                             ],
+                            "expiry_value": status_row.next_review_date.isoformat(),
                         },
+                        subject_ref=f"airworthiness_status:{status_row.id}",
                     )
 
 
@@ -717,12 +900,28 @@ def _check_renter_authorizations(app: Any) -> None:
         if not rows:  # has_content guard — nothing soon-expiring, no email
             continue
 
+        # Internal loop markers ("authorization"/"medical") are looked up
+        # against a translated-label map rather than displayed directly --
+        # embedding a lazy string in an f-string would force it to resolve
+        # immediately in whatever locale is active at check-time, not the
+        # eventual recipient's, so the translated value is built with _l()
+        # instead and stays lazy until Jinja renders it per-recipient.
+        _label_text = {"authorization": _l("authorization"), "medical": _l("medical")}
         details = []
         for auth, label, expiry in rows:
             renter_name = (
-                auth.renter_user.display_name if auth.renter_user else "unknown"
+                auth.renter_user.display_name if auth.renter_user else _l("unknown")
             )
-            details.append((renter_name, f"{label} expires {expiry.isoformat()}"))
+            details.append(
+                (
+                    renter_name,
+                    _l(
+                        "%(label)s expires %(date)s",
+                        label=_label_text[label],
+                        date=expiry.isoformat(),
+                    ),
+                )
+            )
 
         # Two independent countable quantities in one sentence (item count and
         # day count) — ngettext only picks one plural form per call, so each
@@ -762,6 +961,7 @@ def _check_renter_authorizations(app: Any) -> None:
                 },
                 "details": details,
             },
+            subject_ref=f"tenant:{tenant.id}",
         )
 
 
@@ -804,13 +1004,21 @@ def _check_personal_minimums_recency(app: Any) -> None:
         if not breaches:  # has_content guard
             continue
 
+        # Same phrasing (and translations) as the identical breach data
+        # shown in app/templates/pilots/logbook.html.
         details = []
         for b in breaches:
-            days_txt = (
-                "no matching flight on record"
-                if b["days_since"] is None
-                else f"{b['days_since']} day(s) since (threshold {b['threshold']})"
-            )
+            if b["days_since"] is None:
+                days_txt = _l(
+                    "no matching flight on record yet (comfort zone: %(threshold)s days).",
+                    threshold=b["threshold"],
+                )
+            else:
+                days_txt = _l(
+                    "%(days)s days since your last matching flight (comfort zone: %(threshold)s days).",
+                    days=b["days_since"],
+                    threshold=b["threshold"],
+                )
             details.append((b["item"].label, days_txt))
 
         _dispatch_in_context(
@@ -838,6 +1046,7 @@ def _check_personal_minimums_recency(app: Any) -> None:
                 "details": details,
             },
             target_user_ids=[user.id],
+            subject_ref=f"user:{user.id}",
         )
 
 
@@ -846,10 +1055,17 @@ def _dispatch_in_context(
     tenant_id: int,
     email_context: dict[str, Any],
     target_user_ids: list[int] | None = None,
+    subject_ref: str | None = None,
 ) -> None:
     """Call dispatch() safely, logging any errors."""
     try:
-        dispatch(notification_type, tenant_id, email_context, target_user_ids)
+        dispatch(
+            notification_type,
+            tenant_id,
+            email_context,
+            target_user_ids,
+            subject_ref=subject_ref,
+        )
     except Exception as exc:  # noqa: BLE001 -- caller name says it: dispatch safely, never raise
         log.error(
             "Error dispatching notification for tenant %d: %s",

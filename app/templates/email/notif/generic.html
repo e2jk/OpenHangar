@@ -1,4 +1,4 @@
-<p>Hello{% if recipient_name %} {{ recipient_name }}{% endif %},</p>
+<p>{{ greeting }}</p>
 
 <h2 class="notif-title">{{ notification_title }}</h2>
 
@@ -16,5 +16,9 @@
 {% endif %}
 
 {% if cta_url %}
-<p><a href="{{ cta_url }}" class="btn">{{ cta_label or 'View in OpenHangar' }}</a></p>
+<p><a href="{{ cta_url }}" class="btn">{{ cta_label or _('View in OpenHangar') }}</a></p>
+{% endif %}
+
+{% if snooze_url %}
+<p><a href="{{ snooze_url }}" class="btn">{{ _('Snooze this reminder') }}</a></p>
 {% endif %}

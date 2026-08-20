@@ -130,6 +130,7 @@ var NOT_CACHED_PATTERNS = [
   [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/my-share$/, 'shows live account balance — staleness here is about money, not a badge'],
   [/^\/config\/users\/invite\/[^/]+$/, 'one-shot invite-acceptance page, token-scoped'],
   [/^\/reset-password\/[^/]+$/, 'auth form, same reasoning as /login'],
+  [/^\/notifications\/snooze\/[^/]+$/, 'one-shot token-scoped confirm action, must show live snoozed/not-yet-snoozed state, not a stale cached copy'],
   [/^\/share\/[^/]+$/, 'public share link — a revoked token must actually stop working, not keep serving a stale cached copy to whoever had it cached'],
   [/^\/share\/[^/]+\/[^/]+$/, 'same public share link, with the registration as a cosmetic URL prefix — same reasoning'],
   [/^\/showcase\/[^/]+$/, 'public showcase link — same "revoked token must stop working" reasoning as /share'],
