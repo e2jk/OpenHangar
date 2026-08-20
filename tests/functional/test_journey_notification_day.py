@@ -7,20 +7,12 @@ routes, not direct model writes.
 Existing: test_notifications.py unit-tests each `_check_*` in isolation;
 the state-built-via-product, exact-recipient-set assertion is new.
 
-Documented deviation (the plan's own "deviate only with a documented
-reason" rule): the plan's "a second run the same day sends nothing new
-(dedup behaviour)" does not hold against current code. There is no
-dedup mechanism anywhere in services/notification_service.py or the
-models it reads -- no NotificationLog/sent-at field, nothing keyed by
-day. `run_daily_checks` recomputes each `_check_*` condition fresh from
-current DB state every call; the only lock (advisory_lock_scope) guards
-concurrent workers within one call, and is a no-op on SQLite anyway.
-Asserting the mock's call count stays flat on a second run would assert
-something false about the current product. Rather than silently drop
-that half of the journey, this test asserts the real (duplicate-send)
-behaviour explicitly, so it reads as a live finding: if dedup is ever
-added, this assertion starts failing and needs updating right alongside
-the fix -- it is not swept under the rug.
+A NotificationSendLog dedup keyed on (user, tenant, notification_type,
+subject_ref, calendar day) now makes a same-day rerun of
+`run_daily_checks` a no-op per recipient/instance -- added so a server
+restart mid-day (e.g. to install a new version) does not resend
+everything already sent earlier that day. See
+services/notification_service.py `_already_sent_today`/`_record_sent`.
 """
 
 from datetime import date, timedelta
@@ -116,12 +108,11 @@ def test_notification_day_exact_recipients_and_no_dedup(owner_env, app, client_f
         }
         first_run_count = mock_send.call_count
 
-        # Second run, same day: with no dedup mechanism in the current
-        # code (see module docstring), every condition is still true, so
-        # every recipient is notified again -- this is today's actual
-        # behaviour, asserted explicitly rather than assumed away.
+        # Second run, same day (e.g. a restart mid-day re-triggers the
+        # scheduler): the send log means every condition is still true but
+        # already-notified recipients are not emailed again.
         run_daily_checks(app)
-        assert mock_send.call_count == first_run_count * 2
+        assert mock_send.call_count == first_run_count
         assert _calls() == {
             (owner_env.email, "maintenance_due_soon"),
             (owner_env.email, "document_expiring"),

@@ -1073,9 +1073,9 @@ class TestPersonalMinimumsNotification:
         sent = []
         original = ns._dispatch_in_context
 
-        def _capture(notification_type, tenant_id, ctx, target_user_ids=None):
+        def _capture(notification_type, tenant_id, ctx, target_user_ids=None, **kw):
             sent.append(notification_type)
-            return original(notification_type, tenant_id, ctx, target_user_ids)
+            return original(notification_type, tenant_id, ctx, target_user_ids, **kw)
 
         ns._dispatch_in_context = _capture
         try:
@@ -1107,9 +1107,9 @@ class TestPersonalMinimumsNotification:
         sent = []
         original = ns._dispatch_in_context
 
-        def _capture(notification_type, tenant_id, ctx, target_user_ids=None):
+        def _capture(notification_type, tenant_id, ctx, target_user_ids=None, **kw):
             sent.append((notification_type, target_user_ids))
-            return original(notification_type, tenant_id, ctx, target_user_ids)
+            return original(notification_type, tenant_id, ctx, target_user_ids, **kw)
 
         ns._dispatch_in_context = _capture
         try:
@@ -1152,9 +1152,9 @@ class TestPersonalMinimumsNotification:
         sent = []
         original = ns._dispatch_in_context
 
-        def _capture(notification_type, tenant_id, ctx, target_user_ids=None):
+        def _capture(notification_type, tenant_id, ctx, target_user_ids=None, **kw):
             sent.append(notification_type)
-            return original(notification_type, tenant_id, ctx, target_user_ids)
+            return original(notification_type, tenant_id, ctx, target_user_ids, **kw)
 
         ns._dispatch_in_context = _capture
         try:
