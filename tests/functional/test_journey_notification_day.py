@@ -120,10 +120,13 @@ def test_notification_day_exact_recipients_and_no_dedup(owner_env, app, client_f
         }
 
 
-def test_arc_document_produces_single_email(owner_env, app):
+def test_arc_document_produces_single_email_and_supports_snooze(
+    owner_env, app, client_factory
+):
     """An ARC-type document upload must trigger exactly one email (the
     dedicated ARC_EXPIRY check), not also a generic DOCUMENT_EXPIRING one
-    for the same underlying deadline."""
+    for the same underlying deadline. The email carries a one-click snooze
+    link that suppresses future reminders until the ARC is renewed."""
     owner = owner_env.client
     aircraft_id = owner_env.aircraft_id
 
@@ -141,11 +144,73 @@ def test_arc_document_produces_single_email(owner_env, app):
 
     from services.notification_service import run_daily_checks
 
+    def _matching_calls(mock_send, needle):
+        return [c for c in mock_send.call_args_list if needle in c.kwargs["subject"]]
+
     with patch("services.email_service.send_email") as mock_send:
         run_daily_checks(app)
 
-        subjects = [c.kwargs["subject"] for c in mock_send.call_args_list]
-        arc_calls = [s for s in subjects if "ARC expiring" in s]
-        doc_calls = [s for s in subjects if "Document expiring" in s]
+        arc_calls = _matching_calls(mock_send, "ARC expiring")
+        doc_calls = _matching_calls(mock_send, "Document expiring")
         assert len(arc_calls) == 1, "expected exactly one ARC_EXPIRY email"
         assert not doc_calls, "ARC document must not also fire DOCUMENT_EXPIRING"
+
+        html_body = arc_calls[0].kwargs["html_body"]
+
+    # Extract the snooze link from the rendered email body.
+    import re
+
+    match = re.search(r'href="([^"]*/notifications/snooze/[^"]+)"', html_body)
+    assert match, "no snooze link found in the ARC reminder email"
+    snooze_path = "/" + match.group(1).split("://", 1)[-1].split("/", 1)[-1]
+
+    fresh_client = client_factory()
+    get_resp = fresh_client.get(snooze_path)
+    assert get_resp.status_code == 200
+    post_resp = fresh_client.post(snooze_path)
+    assert post_resp.status_code == 200
+
+    # Re-running the daily check on a later "day" would still be
+    # suppressed by the snooze (same expiry value) -- simulate by clearing
+    # today's send log entry so only the snooze is under test here.
+    with app.app_context():
+        from models import (  # pyright: ignore[reportMissingImports]
+            NotificationSendLog,
+            db,
+        )
+
+        NotificationSendLog.query.delete()
+        db.session.commit()
+
+    with patch("services.email_service.send_email") as mock_send2:
+        run_daily_checks(app)
+        assert not _matching_calls(mock_send2, "ARC expiring")
+
+    # Upload a renewed ARC with a different (but still within-threshold)
+    # deadline -- the stale snooze, keyed to the old expiry value, must not
+    # suppress the new cycle's reminder.
+    submit(
+        owner,
+        f"/aircraft/{aircraft_id}/documents/upload",
+        {
+            "file": (BytesIO(b"%PDF-1.4 fake arc renewed\n"), "arc2.pdf"),
+            "title": "Airworthiness Review Certificate (renewed)",
+            "doc_type": "arc_certificate",
+            "valid_until": (date.today() + timedelta(days=15)).isoformat(),
+        },
+        content_type="multipart/form-data",
+    )
+    with app.app_context():
+        from models import (  # pyright: ignore[reportMissingImports]
+            NotificationSendLog,
+            db,
+        )
+
+        NotificationSendLog.query.delete()
+        db.session.commit()
+
+    with patch("services.email_service.send_email") as mock_send3:
+        run_daily_checks(app)
+        assert _matching_calls(mock_send3, "ARC expiring"), (
+            "reminder must resume once the deadline actually changed"
+        )

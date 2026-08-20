@@ -2129,191 +2129,191 @@ msgstr "Contribution au fonds de réserve — vol du %(date)s (%(hours)s h)"
 msgid "Reserve fund contribution (%(pct)s%%) — %(month)s"
 msgstr "Contribution au fonds de réserve (%(pct)s%%) — %(month)s"
 
-#: app/services/notification_service.py:335
+#: app/services/notification_service.py:461
 #, python-format
 msgid "Maintenance overdue: %(name)s on %(reg)s"
 msgstr "Maintenance en retard : %(name)s sur %(reg)s"
 
-#: app/services/notification_service.py:342
+#: app/services/notification_service.py:468
 #, python-format
 msgid "Maintenance overdue: %(name)s"
 msgstr "Maintenance en retard : %(name)s"
 
-#: app/services/notification_service.py:346
+#: app/services/notification_service.py:472
 #, python-format
 msgid "%(name)s on %(reg)s is overdue."
 msgstr "%(name)s sur %(reg)s est en retard."
 
-#: app/services/notification_service.py:364
+#: app/services/notification_service.py:491
 #, python-format
 msgid "Maintenance due soon: %(name)s on %(reg)s"
 msgstr "Maintenance à venir : %(name)s sur %(reg)s"
 
-#: app/services/notification_service.py:371
+#: app/services/notification_service.py:498
 #, python-format
 msgid "Maintenance due soon: %(name)s"
 msgstr "Maintenance à venir : %(name)s"
 
-#: app/services/notification_service.py:375
+#: app/services/notification_service.py:502
 #, python-format
 msgid "%(name)s on %(reg)s is coming due."
 msgstr "%(name)s sur %(reg)s arrive à échéance."
 
-#: app/services/notification_service.py:415
+#: app/services/notification_service.py:543
 #, python-format
 msgid "Insurance expiring in one day: %(reg)s"
 msgid_plural "Insurance expiring in %(days)s days: %(reg)s"
 msgstr[0] "Assurance expirant dans un jour : %(reg)s"
 msgstr[1] "Assurance expirant dans %(days)s jours : %(reg)s"
 
-#: app/services/notification_service.py:423
+#: app/services/notification_service.py:551
 #, python-format
 msgid "Insurance expiring soon: %(reg)s"
 msgstr "Assurance bientôt expirée : %(reg)s"
 
-#: app/services/notification_service.py:427
+#: app/services/notification_service.py:555
 #, python-format
 msgid "The insurance for %(reg)s expires on %(date)s (one day remaining)."
 msgid_plural "The insurance for %(reg)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "L'assurance de %(reg)s expire le %(date)s (un jour restant)."
 msgstr[1] "L'assurance de %(reg)s expire le %(date)s (%(days)s jours restants)."
 
-#: app/services/notification_service.py:468
+#: app/services/notification_service.py:598
 #, python-format
 msgid "ARC expiring in one day: %(reg)s"
 msgid_plural "ARC expiring in %(days)s days: %(reg)s"
 msgstr[0] "ARC expirant dans un jour : %(reg)s"
 msgstr[1] "ARC expirant dans %(days)s jours : %(reg)s"
 
-#: app/services/notification_service.py:475
+#: app/services/notification_service.py:605
 #, python-format
 msgid "ARC expiring soon: %(reg)s"
 msgstr "ARC bientôt expiré : %(reg)s"
 
-#: app/services/notification_service.py:478
+#: app/services/notification_service.py:608
 #, python-format
 msgid "The ARC for %(reg)s expires on %(date)s (one day remaining)."
 msgid_plural "The ARC for %(reg)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "L'ARC de %(reg)s expire le %(date)s (un jour restant)."
 msgstr[1] "L'ARC de %(reg)s expire le %(date)s (%(days)s jours restants)."
 
-#: app/services/notification_service.py:528
+#: app/services/notification_service.py:660
 #, python-format
 msgid "%(label)s expiring in one day"
 msgid_plural "%(label)s expiring in %(days)s days"
 msgstr[0] "%(label)s expirant dans un jour"
 msgstr[1] "%(label)s expirant dans %(days)s jours"
 
-#: app/services/notification_service.py:535
+#: app/services/notification_service.py:667
 #, python-format
 msgid "%(label)s expiring soon"
 msgstr "%(label)s bientôt expiré"
 
-#: app/services/notification_service.py:538
+#: app/services/notification_service.py:670
 #, python-format
 msgid "Your %(label_lower)s expires on %(date)s (one day remaining)."
 msgid_plural "Your %(label_lower)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "Votre %(label_lower)s expire le %(date)s (un jour restant)."
 msgstr[1] "Votre %(label_lower)s expire le %(date)s (%(days)s jours restants)."
 
-#: app/services/notification_service.py:584
+#: app/services/notification_service.py:728
 #, python-format
 msgid "Document expiring in one day: %(title)s"
 msgid_plural "Document expiring in %(days)s days: %(title)s"
 msgstr[0] "Document expirant dans un jour : %(title)s"
 msgstr[1] "Document expirant dans %(days)s jours : %(title)s"
 
-#: app/services/notification_service.py:592
+#: app/services/notification_service.py:736
 #, python-format
 msgid "Document expiring soon: %(title)s"
 msgstr "Document bientôt expiré : %(title)s"
 
-#: app/services/notification_service.py:596
+#: app/services/notification_service.py:740
 #, python-format
 msgid "'%(title)s' on %(reg)s expires on %(date)s (one day remaining)."
 msgid_plural "'%(title)s' on %(reg)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "« %(title)s » sur %(reg)s expire le %(date)s (un jour restant)."
 msgstr[1] "« %(title)s » sur %(reg)s expire le %(date)s (%(days)s jours restants)."
 
-#: app/services/notification_service.py:648
+#: app/services/notification_service.py:794
 #, python-format
 msgid "Airworthiness review due in one day: %(ref)s on %(reg)s"
 msgid_plural "Airworthiness review due in %(days)s days: %(ref)s on %(reg)s"
 msgstr[0] "Révision de navigabilité dans un jour : %(ref)s sur %(reg)s"
 msgstr[1] "Révision de navigabilité dans %(days)s jours : %(ref)s sur %(reg)s"
 
-#: app/services/notification_service.py:657
+#: app/services/notification_service.py:803
 #, python-format
 msgid "Airworthiness review due: %(ref)s"
 msgstr "Révision de navigabilité : %(ref)s"
 
-#: app/services/notification_service.py:661
+#: app/services/notification_service.py:807
 #, python-format
 msgid "Document %(ref)s on %(reg)s requires review by %(date)s (one day)."
 msgid_plural "Document %(ref)s on %(reg)s requires review by %(date)s (%(days)s days)."
 msgstr[0] "Le document %(ref)s sur %(reg)s doit être révisé avant le %(date)s (un jour)."
 msgstr[1] "Le document %(ref)s sur %(reg)s doit être révisé avant le %(date)s (%(days)s jours)."
 
-#: app/services/notification_service.py:732
+#: app/services/notification_service.py:880
 #, python-format
 msgid "One renter authorization"
 msgid_plural "%(n)s renter authorizations"
 msgstr[0] "Une autorisation de location"
 msgstr[1] "%(n)s autorisations de location"
 
-#: app/services/notification_service.py:738
+#: app/services/notification_service.py:886
 #, python-format
 msgid "one day"
 msgid_plural "%(threshold)s days"
 msgstr[0] "un jour"
 msgstr[1] "%(threshold)s jours"
 
-#: app/services/notification_service.py:748
+#: app/services/notification_service.py:896
 #, python-format
 msgid "One renter authorization expiring soon"
 msgid_plural "%(n)s renter authorizations expiring soon"
 msgstr[0] "Une autorisation de location arrivant bientôt à expiration"
 msgstr[1] "%(n)s autorisations de location arrivant bientôt à expiration"
 
-#: app/services/notification_service.py:754
+#: app/services/notification_service.py:902
 msgid "Renter authorizations expiring soon"
 msgstr "Autorisations de location bientôt expirées"
 
-#: app/services/notification_service.py:757
+#: app/services/notification_service.py:905
 #, python-format
 msgid "%(items)s or medical validity dates expire within %(days)s."
 msgstr "%(items)s ou dates de validité médicale expirent dans %(days)s."
 
-#: app/services/notification_service.py:821
+#: app/services/notification_service.py:970
 #, python-format
 msgid "Personal minimums: one recency threshold exceeded"
 msgid_plural "Personal minimums: %(n)s recency thresholds exceeded"
 msgstr[0] "Minimums personnels : un seuil de récence dépassé"
 msgstr[1] "Minimums personnels : %(n)s seuils de récence dépassés"
 
-#: app/services/notification_service.py:827
+#: app/services/notification_service.py:976
 #: app/templates/config/notifications.html:47
 msgid "Personal minimums recency reminder"
 msgstr "Rappel de récence — minimums personnels"
 
-#: app/services/notification_service.py:830
+#: app/services/notification_service.py:979
 #, python-format
 msgid "You have exceeded one recency threshold in your personal minimums."
 msgid_plural "You have exceeded %(n)s recency thresholds in your personal minimums."
 msgstr[0] "Vous avez dépassé un seuil de récence dans vos minimums personnels."
 msgstr[1] "Vous avez dépassé %(n)s seuils de récence dans vos minimums personnels."
 
-#: app/services/notification_service.py:923
+#: app/services/notification_service.py:1080
 msgid "Welcome to your OpenHangar instance"
 msgstr "Bienvenue dans votre instance OpenHangar"
 
-#: app/services/notification_service.py:924
+#: app/services/notification_service.py:1081
 #: app/templates/email/notif/welcome.html:1
 #, python-format
 msgid "Hello %(name)s,"
 msgstr "Bonjour %(name)s,"
 
-#: app/services/notification_service.py:926
+#: app/services/notification_service.py:1083
 msgid ""
 "Welcome to OpenHangar! Your instance is set up and email delivery is working.\n"
 "\n"
@@ -7049,6 +7049,11 @@ msgstr "Vous recevez cet e-mail car vous avez un compte sur cette instance OpenH
 msgid "<a href=\"%(url)s\">OpenHangar</a> is open-source software."
 msgstr "<a href=\"%(url)s\">OpenHangar</a> est un logiciel open source."
 
+#: app/templates/email/notif/generic.html:23
+#: app/templates/notifications/snooze.html:29
+msgid "Snooze this reminder"
+msgstr "Reporter ce rappel"
+
 #: app/templates/email/notif/welcome.html:3
 msgid "Welcome to your OpenHangar instance!"
 msgstr "Bienvenue dans votre instance OpenHangar !"
@@ -8265,6 +8270,23 @@ msgstr "Avertir ce nombre d'atterrissages avant l'échéance"
 #: app/templates/maintenance/trigger_form.html:184
 msgid "This relies on landing counts being logged consistently on every flight — a flight logged without a landing count does not advance this trigger."
 msgstr "Ceci suppose que le nombre d'atterrissages soit renseigné de façon cohérente sur chaque vol — un vol enregistré sans nombre d'atterrissages ne fait pas avancer ce déclencheur."
+
+#: app/templates/notifications/snooze.html:3
+#: app/templates/notifications/snooze.html:13
+msgid "Snooze reminder"
+msgstr "Reporter le rappel"
+
+#: app/templates/notifications/snooze.html:21
+msgid "This reminder is snoozed. You will not be emailed about it again unless the underlying deadline changes."
+msgstr "Ce rappel est reporté. Vous ne recevrez plus d'e-mail à ce sujet, sauf si l'échéance concernée change."
+
+#: app/templates/notifications/snooze.html:25
+msgid "You will stop receiving this specific reminder until the deadline changes (for example, a renewed document is uploaded)."
+msgstr "Vous ne recevrez plus ce rappel spécifique tant que l'échéance ne change pas (par exemple, si un document renouvelé est téléchargé)."
+
+#: app/templates/notifications/snooze.html:36
+msgid "Manage all notification preferences instead"
+msgstr "Gérer plutôt l'ensemble des préférences de notification"
 
 #: app/templates/offline/changes.html:3 app/templates/offline/changes.html:10
 msgid "Offline changes"

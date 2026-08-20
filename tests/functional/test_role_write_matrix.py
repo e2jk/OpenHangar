@@ -255,6 +255,7 @@ _EXCLUDED_ENDPOINTS = {
     "auth.setup": "pre-auth first-run tenant creation",
     "auth.reset_password": "token-based pre-auth password reset",
     "users.accept_invite": "token-based pre-auth invite acceptance",
+    "notifications.snooze": "token-based pre-auth reminder snooze confirmation",
     "demo.enter": "pre-auth demo sandbox entry point",
     # A second, non-role guard (`if OPENHANGAR_ENV != "production": abort(403)`,
     # airworthiness/routes.py) stops the real EASA sync from firing outside
