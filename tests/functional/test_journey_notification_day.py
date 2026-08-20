@@ -127,3 +127,34 @@ def test_notification_day_exact_recipients_and_no_dedup(owner_env, app, client_f
             (owner_env.email, "document_expiring"),
             ("maint@example.com", "maintenance_due_soon"),
         }
+
+
+def test_arc_document_produces_single_email(owner_env, app):
+    """An ARC-type document upload must trigger exactly one email (the
+    dedicated ARC_EXPIRY check), not also a generic DOCUMENT_EXPIRING one
+    for the same underlying deadline."""
+    owner = owner_env.client
+    aircraft_id = owner_env.aircraft_id
+
+    submit(
+        owner,
+        f"/aircraft/{aircraft_id}/documents/upload",
+        {
+            "file": (BytesIO(b"%PDF-1.4 fake arc\n"), "arc.pdf"),
+            "title": "Airworthiness Review Certificate",
+            "doc_type": "arc_certificate",
+            "valid_until": (date.today() + timedelta(days=10)).isoformat(),
+        },
+        content_type="multipart/form-data",
+    )
+
+    from services.notification_service import run_daily_checks
+
+    with patch("services.email_service.send_email") as mock_send:
+        run_daily_checks(app)
+
+        subjects = [c.kwargs["subject"] for c in mock_send.call_args_list]
+        arc_calls = [s for s in subjects if "ARC expiring" in s]
+        doc_calls = [s for s in subjects if "Document expiring" in s]
+        assert len(arc_calls) == 1, "expected exactly one ARC_EXPIRY email"
+        assert not doc_calls, "ARC document must not also fire DOCUMENT_EXPIRING"
