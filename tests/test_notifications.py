@@ -12,6 +12,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     AppSetting,
     NotificationPreference,
     NotificationSendLog,
+    NotificationSnooze,
     NotificationType,
     Role,
     Tenant,
@@ -1877,6 +1878,49 @@ class TestDispatchI18n:
             assert render_ctx[0]["notification_title"] == "Title: MyTitle"
             assert render_ctx[0]["notification_message"] == "Message for OO-XYZ"
 
+    def test_expiry_value_first_send_includes_snooze_url(self, app):
+        """When subject_ref + expiry_value are both passed, dispatch() mints
+        a NotificationSnooze row and threads its snooze_url into the render
+        context -- the extension point the email template reads."""
+        _uid, tid = _make_user(app, "owner@dd-snz1.com", role=Role.OWNER)
+        with app.app_context():
+            rendered: dict = {}
+
+            def _capture_render(template, locale="en", text_body="", **ctx):
+                rendered.update(ctx)
+                return ("t", "<p>h</p>")
+
+            with (
+                patch("services.email_service.send_email") as mock_send,
+                patch("services.email_service._record_health"),
+                patch(
+                    "services.notification_service._render_email",
+                    side_effect=_capture_render,
+                ),
+            ):
+                from services.notification_service import dispatch
+
+                dispatch(
+                    NotificationType.ARC_EXPIRY,
+                    tid,
+                    {
+                        "subject": "Test",
+                        "notification_title": "Test title",
+                        "notification_message": "msg",
+                        "details": [],
+                        "expiry_value": "2026-09-01",
+                    },
+                    subject_ref="aircraft:100",
+                )
+            assert mock_send.call_count == 1
+            assert rendered["snooze_url"] is not None
+            assert "/notifications/snooze/" in rendered["snooze_url"]
+
+            row = NotificationSnooze.query.filter_by(subject_ref="aircraft:100").first()
+            assert row is not None
+            assert row.snoozed_value is None
+            assert row.current_value == "2026-09-01"
+
     def test_backward_compat_plain_subject_still_works(self, app):
         """dispatch() with legacy plain subject/title/message fields still sends email."""
         _uid, tid = _make_user(app, "owner@i18n-compat.com", role=Role.OWNER)
@@ -1910,7 +1954,7 @@ class TestDispatchI18n:
             assert subjects_sent[0] == "Legacy subject"
 
 
-# ── Send-log dedup ───────────────────────────────────────────────────────────
+# ── Send-log dedup + per-instance snooze ────────────────────────────────────────
 
 
 class TestSendLogDedup:
@@ -1957,7 +2001,94 @@ class TestSendLogDedup:
             )
 
 
-class TestDispatchDedup:
+class TestResolveSnooze:
+    def test_creates_row_and_returns_not_suppressed(self, app):
+        _uid, tid = _make_user(app, "owner@snooze1.com", role=Role.OWNER)
+        with app.app_context():
+            from services.notification_service import (
+                _resolve_snooze,  # pyright: ignore[reportMissingImports]
+            )
+
+            suppressed, url = _resolve_snooze(
+                _uid,
+                tid,
+                NotificationType.ARC_EXPIRY,
+                "aircraft:9",
+                "2026-09-01",
+                "ARC expiring soon: OO-TST",
+            )
+            assert suppressed is False
+            assert "/notifications/snooze/" in url
+
+            row = NotificationSnooze.query.filter_by(subject_ref="aircraft:9").first()
+            assert row is not None
+            assert row.snoozed_value is None
+            assert row.current_value == "2026-09-01"
+            assert row.label == "ARC expiring soon: OO-TST"
+
+    def test_confirmed_snooze_matching_value_suppresses(self, app):
+        _uid, tid = _make_user(app, "owner@snooze2.com", role=Role.OWNER)
+        with app.app_context():
+            from services.notification_service import (
+                _resolve_snooze,  # pyright: ignore[reportMissingImports]
+            )
+
+            _suppressed, url = _resolve_snooze(
+                _uid, tid, NotificationType.ARC_EXPIRY, "aircraft:10", "2026-09-01", "l"
+            )
+            row = NotificationSnooze.query.filter_by(subject_ref="aircraft:10").first()
+            row.snoozed_value = "2026-09-01"
+            db.session.commit()
+
+            suppressed2, url2 = _resolve_snooze(
+                _uid, tid, NotificationType.ARC_EXPIRY, "aircraft:10", "2026-09-01", "l"
+            )
+            assert suppressed2 is True
+            assert url2 == url
+
+    def test_stale_snooze_cleared_when_value_changes(self, app):
+        _uid, tid = _make_user(app, "owner@snooze3.com", role=Role.OWNER)
+        with app.app_context():
+            from datetime import UTC as _UTC
+            from datetime import datetime as _dt
+
+            from services.notification_service import (
+                _resolve_snooze,  # pyright: ignore[reportMissingImports]
+            )
+
+            _resolve_snooze(
+                _uid,
+                tid,
+                NotificationType.ARC_EXPIRY,
+                "aircraft:11",
+                "2026-09-01",
+                "l1",
+            )
+            row = NotificationSnooze.query.filter_by(subject_ref="aircraft:11").first()
+            row.snoozed_value = "2026-09-01"
+            row.snoozed_at = _dt.now(_UTC)
+            db.session.commit()
+
+            # Deadline moved on (e.g. renewed document) -- the old confirmation
+            # no longer applies to this new deadline value.
+            suppressed, _url = _resolve_snooze(
+                _uid,
+                tid,
+                NotificationType.ARC_EXPIRY,
+                "aircraft:11",
+                "2027-01-01",
+                "l2",
+            )
+            assert suppressed is False
+
+            row2 = NotificationSnooze.query.filter_by(subject_ref="aircraft:11").first()
+            assert row2.snoozed_value is None
+            assert row2.snoozed_at is None
+            assert row2.current_value == "2027-01-01"
+            assert row2.label == "l2"
+
+
+class TestDispatchDedupAndSnooze:
     def _ctx(self):
         return {
             "subject": "Test",
@@ -1966,9 +2097,9 @@ class TestDispatchDedup:
             "details": [],
         }
 
-    def test_subject_ref_dedups_same_day_resend(self, app):
-        """Digest/maintenance checks pass subject_ref -- a same-day rerun
-        of dispatch() for the same instance must not resend."""
+    def test_subject_ref_without_expiry_value_only_dedups(self, app):
+        """Digest/maintenance checks pass subject_ref but no expiry_value --
+        they get reboot-safe dedup without snooze support."""
         _uid, tid = _make_user(app, "owner@dd1.com", role=Role.OWNER)
         with (
             app.app_context(),
@@ -1997,3 +2128,155 @@ class TestDispatchDedup:
                 subject_ref="trigger:1",
             )
             assert mock_send.call_count == 1
+
+    def test_confirmed_snooze_suppresses_and_skips_send_log(self, app):
+        _uid, tid = _make_user(app, "owner@dd3.com", role=Role.OWNER)
+        with app.app_context():
+            from datetime import UTC as _UTC
+            from datetime import datetime as _dt
+
+            from services.notification_service import dispatch
+
+            with (
+                patch("services.email_service.send_email") as mock_send,
+                patch("services.email_service._record_health"),
+                patch(
+                    "services.notification_service._render_email",
+                    return_value=("t", "<p>h</p>"),
+                ),
+            ):
+                dispatch(
+                    NotificationType.ARC_EXPIRY,
+                    tid,
+                    self._ctx() | {"expiry_value": "2026-09-01"},
+                    subject_ref="aircraft:101",
+                )
+            assert mock_send.call_count == 1
+
+            row = NotificationSnooze.query.filter_by(subject_ref="aircraft:101").first()
+            row.snoozed_value = "2026-09-01"
+            row.snoozed_at = _dt.now(_UTC)
+            db.session.commit()
+
+            with (
+                patch("services.email_service.send_email") as mock_send2,
+                patch("services.email_service._record_health"),
+                patch(
+                    "services.notification_service._render_email",
+                    return_value=("t", "<p>h</p>"),
+                ),
+            ):
+                dispatch(
+                    NotificationType.ARC_EXPIRY,
+                    tid,
+                    self._ctx() | {"expiry_value": "2026-09-01"},
+                    subject_ref="aircraft:101",
+                )
+            assert mock_send2.call_count == 0
+            assert (
+                NotificationSendLog.query.filter_by(subject_ref="aircraft:101").count()
+                == 1
+            )
+
+    def test_snooze_auto_clears_when_deadline_changes(self, app):
+        _uid, tid = _make_user(app, "owner@dd4.com", role=Role.OWNER)
+        with app.app_context():
+            from datetime import UTC as _UTC
+            from datetime import datetime as _dt
+
+            from services.notification_service import dispatch
+
+            with (
+                patch("services.email_service.send_email"),
+                patch("services.email_service._record_health"),
+                patch(
+                    "services.notification_service._render_email",
+                    return_value=("t", "<p>h</p>"),
+                ),
+            ):
+                dispatch(
+                    NotificationType.ARC_EXPIRY,
+                    tid,
+                    self._ctx() | {"expiry_value": "2026-09-01"},
+                    subject_ref="aircraft:102",
+                )
+            row = NotificationSnooze.query.filter_by(subject_ref="aircraft:102").first()
+            row.snoozed_value = "2026-09-01"
+            row.snoozed_at = _dt.now(_UTC)
+            db.session.commit()
+            # Isolate the snooze-clearing behaviour from same-day send-log
+            # dedup (tested separately) -- a real renewal would normally
+            # happen on a later calendar day anyway.
+            NotificationSendLog.query.delete()
+            db.session.commit()
+
+            with (
+                patch("services.email_service.send_email") as mock_send,
+                patch("services.email_service._record_health"),
+                patch(
+                    "services.notification_service._render_email",
+                    return_value=("t", "<p>h</p>"),
+                ),
+            ):
+                dispatch(
+                    NotificationType.ARC_EXPIRY,
+                    tid,
+                    self._ctx() | {"expiry_value": "2027-01-01"},
+                    subject_ref="aircraft:102",
+                )
+            assert mock_send.call_count == 1
+            row2 = NotificationSnooze.query.filter_by(
+                subject_ref="aircraft:102"
+            ).first()
+            assert row2.snoozed_value is None
+
+
+# ── notifications.snooze route ──────────────────────────────────────────────────
+
+
+class TestSnoozeRoute:
+    def _make_snooze_row(self, app, uid, tid, subject_ref="aircraft:200"):
+        with app.app_context():
+            row = NotificationSnooze(
+                user_id=uid,
+                tenant_id=tid,
+                notification_type=NotificationType.ARC_EXPIRY,
+                subject_ref=subject_ref,
+                label="ARC expiring soon: OO-RTE",
+                current_value="2026-09-01",
+            )
+            db.session.add(row)
+            db.session.commit()
+            return row.token
+
+    def test_get_unknown_token_404s(self, client):
+        response = client.get("/notifications/snooze/does-not-exist")
+        assert response.status_code == 404
+
+    def test_get_unconfirmed_shows_confirm_form(self, app, client):
+        uid, tid = _make_user(app, "owner@snooze-route1.com", role=Role.OWNER)
+        token = self._make_snooze_row(app, uid, tid)
+        response = client.get(f"/notifications/snooze/{token}")
+        assert response.status_code == 200
+        assert b"Snooze this reminder" in response.data
+        assert response.headers["X-Robots-Tag"] == "noindex, nofollow"
+
+    def test_post_confirms_snooze(self, app, client):
+        uid, tid = _make_user(
+            app, "owner@snooze-route2.com", role=Role.OWNER, is_instance_admin=False
+        )
+        token = self._make_snooze_row(app, uid, tid, subject_ref="aircraft:201")
+        response = client.post(f"/notifications/snooze/{token}")
+        assert response.status_code == 200
+        with app.app_context():
+            row = NotificationSnooze.query.filter_by(token=token).first()
+            assert row.snoozed_value == row.current_value
+            assert row.snoozed_at is not None
+
+    def test_get_after_confirmed_shows_active_state(self, app, client):
+        uid, tid = _make_user(app, "owner@snooze-route3.com", role=Role.OWNER)
+        token = self._make_snooze_row(app, uid, tid, subject_ref="aircraft:202")
+        client.post(f"/notifications/snooze/{token}")
+        response = client.get(f"/notifications/snooze/{token}")
+        assert response.status_code == 200
+        assert b"snoozed" in response.data.lower()

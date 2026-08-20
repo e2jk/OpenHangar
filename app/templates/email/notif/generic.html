@@ -18,3 +18,7 @@
 {% if cta_url %}
 <p><a href="{{ cta_url }}" class="btn">{{ cta_label or 'View in OpenHangar' }}</a></p>
 {% endif %}
+
+{% if snooze_url %}
+<p><a href="{{ snooze_url }}" class="btn">{{ _('Snooze this reminder') }}</a></p>
+{% endif %}

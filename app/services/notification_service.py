@@ -164,10 +164,12 @@ def _text_for(notification_type: str, context: dict[str, Any]) -> str:
             lines.append(f"{label}: {val}")
     if context.get("cta_url"):
         lines += ["", context["cta_url"]]
+    if context.get("snooze_url"):
+        lines += ["", context["snooze_url"]]
     return "\n".join(lines)
 
 
-# ── Send-log dedup ──────────────────────────────────────────────────────────────
+# ── Send-log dedup + per-instance snooze ────────────────────────────────────────
 
 
 def _already_sent_today(
@@ -211,6 +213,71 @@ def _record_sent(
         log.exception("Failed to record notification send log")
 
 
+def _resolve_snooze(
+    user_id: int,
+    tenant_id: int,
+    notification_type: str,
+    subject_ref: str,
+    expiry_value: str,
+    label: str,
+) -> tuple[bool, str]:
+    """Get-or-create the NotificationSnooze row for this (user, instance),
+    refresh it with the live deadline value, and return
+    (suppressed, snooze_url). suppressed is True only when the user has
+    already confirmed a snooze for exactly this deadline value -- if the
+    deadline has since moved (e.g. a renewed document was uploaded), any
+    prior confirmation is stale and is cleared here instead."""
+    from models import (  # pyright: ignore[reportMissingImports]
+        NotificationSnooze,
+        db,
+    )
+
+    row = NotificationSnooze.query.filter_by(
+        user_id=user_id,
+        tenant_id=tenant_id,
+        notification_type=notification_type,
+        subject_ref=subject_ref,
+    ).first()
+
+    if row is not None and row.snoozed_value == expiry_value:
+        return True, _snooze_url(row.token)
+
+    if row is None:
+        row = NotificationSnooze(
+            user_id=user_id,
+            tenant_id=tenant_id,
+            notification_type=notification_type,
+            subject_ref=subject_ref,
+            label=label,
+            current_value=expiry_value,
+        )
+        db.session.add(row)
+    else:
+        row.snoozed_value = None
+        row.snoozed_at = None
+        row.current_value = expiry_value
+        row.label = label
+    db.session.commit()
+    return False, _snooze_url(row.token)
+
+
+def _snooze_url(token: str) -> str:
+    """Build an absolute snooze link without relying on url_for()'s
+    request-context binding -- run_daily_checks() runs in a background
+    thread with only an app context, no active request, so url_for()'s
+    usual host-from-request lookup isn't available. Mirrors the
+    OPENHANGAR_INSTANCE_URL pattern already used for `instance_url` above."""
+    import os
+
+    from flask import current_app  # pyright: ignore[reportMissingImports]
+
+    path = current_app.url_map.bind("localhost").build(
+        "notifications.snooze", {"token": token}
+    )
+    instance_url = os.environ.get("OPENHANGAR_INSTANCE_URL", "").strip()
+    return f"{instance_url.rstrip('/')}{path}" if instance_url else path
+
+
 # ── Dispatch ──────────────────────────────────────────────────────────────────
 
 
@@ -228,11 +295,14 @@ def dispatch(
     target_user_ids: if set, only notify these users (used for pilot-self events).
     subject_ref: stable id of the specific thing this notification is about
     (e.g. "aircraft:12"), passed by the daily checks in run_daily_checks().
-    When set, a per-user-per-day send log means a second run on the same
-    day (e.g. after a restart) does not resend. Callers that don't pass
-    subject_ref (event-driven notifications like a snag being reported)
-    keep today's always-send behaviour -- they're one-shot events, not
-    daily re-evaluations.
+    When set, enables two things: (1) a per-user-per-day send log so a
+    second run on the same day (e.g. after a restart) does not resend, and
+    (2) when email_context also carries "expiry_value" (an ISO date string
+    snapshot of the live deadline), a one-click snooze link that suppresses
+    future emails for this exact deadline value until it changes. Callers
+    that don't pass subject_ref (event-driven notifications like a snag
+    being reported) keep today's always-send behaviour -- they're one-shot
+    events, not daily re-evaluations.
     """
     from flask_babel import force_locale  # pyright: ignore[reportMissingImports]
     from models import TenantProfile  # pyright: ignore[reportMissingImports]
@@ -273,10 +343,22 @@ def dispatch(
             else:
                 notif_message = email_context.get("notification_message", "")
 
-        if subject_ref is not None and _already_sent_today(
-            user.id, tenant_id, notification_type, subject_ref
-        ):
-            continue
+        snooze_url = None
+        if subject_ref is not None:
+            expiry_value = email_context.get("expiry_value")
+            if expiry_value is not None:
+                suppressed, snooze_url = _resolve_snooze(
+                    user.id,
+                    tenant_id,
+                    notification_type,
+                    subject_ref,
+                    expiry_value,
+                    notif_title,
+                )
+                if suppressed:
+                    continue
+            if _already_sent_today(user.id, tenant_id, notification_type, subject_ref):
+                continue
 
         ctx = dict(email_context)
         ctx.setdefault("threshold_days", pref["threshold_days"])
@@ -289,6 +371,7 @@ def dispatch(
         ctx.setdefault("cta_url", None)
         ctx.setdefault("cta_label", None)
         ctx.setdefault("details", None)
+        ctx["snooze_url"] = snooze_url
         ctx["subject"] = subject
         ctx["notification_title"] = notif_title
         ctx["notification_message"] = notif_message
@@ -498,6 +581,7 @@ def _check_insurance(app: Any) -> None:
                             ("Expires", ac.insurance_expiry.isoformat()),
                             ("Days left", str(days_left)),
                         ],
+                        "expiry_value": ac.insurance_expiry.isoformat(),
                     },
                     subject_ref=f"aircraft:{ac.id}",
                 )
@@ -550,6 +634,7 @@ def _check_arc(app: Any) -> None:
                             ("Expires", ac.arc_expiry.isoformat()),
                             ("Days left", str(days_left)),
                         ],
+                        "expiry_value": ac.arc_expiry.isoformat(),
                     },
                     subject_ref=f"aircraft:{ac.id}",
                 )
@@ -610,6 +695,7 @@ def _check_medical_and_sep(app: Any) -> None:
                             ("Expires", expiry.isoformat()),
                             ("Days left", str(days_left)),
                         ],
+                        "expiry_value": expiry.isoformat(),
                     },
                     target_user_ids=[user.id],
                     subject_ref=f"pilot:{profile.id}",
@@ -681,6 +767,7 @@ def _check_documents(app: Any) -> None:
                                 ("Document", title),
                                 ("Expires", doc.valid_until.isoformat()),
                             ],
+                            "expiry_value": doc.valid_until.isoformat(),
                         },
                         subject_ref=f"document:{doc.id}",
                     )
@@ -747,6 +834,7 @@ def _check_airworthiness_reviews(app: Any) -> None:
                                 ("Document", ref),
                                 ("Due", status_row.next_review_date.isoformat()),
                             ],
+                            "expiry_value": status_row.next_review_date.isoformat(),
                         },
                         subject_ref=f"airworthiness_status:{status_row.id}",
                     )
