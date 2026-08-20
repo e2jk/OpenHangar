@@ -696,7 +696,7 @@ msgstr "Paiement reçu"
 msgid "Licence"
 msgstr "Licence"
 
-#: app/documents/routes.py:73
+#: app/documents/routes.py:73 app/services/notification_service.py:675
 msgid "Medical certificate"
 msgstr "Certificat médical"
 
@@ -1745,7 +1745,15 @@ msgstr "tout le temps"
 msgid "to"
 msgstr "à"
 
-#: app/reports/routes.py:114 app/templates/aircraft/wb_list.html:30
+#: app/reports/routes.py:114 app/reservations/routes.py:736
+#: app/reservations/routes.py:850 app/reservations/routes.py:1143
+#: app/services/notification_service.py:500
+#: app/services/notification_service.py:530
+#: app/services/notification_service.py:585
+#: app/services/notification_service.py:638
+#: app/services/notification_service.py:785
+#: app/services/notification_service.py:852 app/snags/routes.py:267
+#: app/snags/routes.py:317 app/templates/aircraft/wb_list.html:30
 #: app/templates/auth/setup.html:363 app/templates/base.html:190
 #: app/templates/base.html:301 app/templates/config/renter_form.html:33
 #: app/templates/config/tenant_list.html:31 app/templates/dashboard.html:128
@@ -1854,15 +1862,15 @@ msgstr "Temps de vol"
 msgid "Your manual rate (%(manual)s EUR/h) differs from the computed cost-dashboard rate (%(computed)s EUR/h) by more than %(pct)s%% — consider reviewing it."
 msgstr "Votre tarif manuel (%(manual)s EUR/h) diffère du tarif calculé par le tableau de bord des coûts (%(computed)s EUR/h) de plus de %(pct)s %% — pensez à le revoir."
 
-#: app/reservations/routes.py:496 app/reservations/routes.py:1040
+#: app/reservations/routes.py:496 app/reservations/routes.py:1066
 msgid "Start date/time is required."
 msgstr "La date/heure de début est requise."
 
-#: app/reservations/routes.py:498 app/reservations/routes.py:1042
+#: app/reservations/routes.py:498 app/reservations/routes.py:1068
 msgid "End date/time is required."
 msgstr "La date/heure de fin est requise."
 
-#: app/reservations/routes.py:500 app/reservations/routes.py:1045
+#: app/reservations/routes.py:500 app/reservations/routes.py:1071
 msgid "End must be after start."
 msgstr "La fin doit être après le début."
 
@@ -1886,213 +1894,289 @@ msgstr "La réservation est déjà annulée."
 msgid "Cannot cancel: this reservation has already been checked out."
 msgstr "Impossible d'annuler : cette réservation a déjà fait l'objet d'un départ."
 
-#: app/reservations/routes.py:736
+#: app/reservations/routes.py:722
+#, python-format
+msgid "Reservation cancelled — %(reg)s"
+msgstr "Réservation annulée — %(reg)s"
+
+#: app/reservations/routes.py:724
+#, python-format
+msgid "Reservation cancelled: %(reg)s"
+msgstr "Réservation annulée : %(reg)s"
+
+#: app/reservations/routes.py:727
+#, python-format
+msgid "Your reservation for %(reg)s from %(start)s to %(end)s UTC has been cancelled."
+msgstr "Votre réservation pour %(reg)s du %(start)s au %(end)s UTC a été annulée."
+
+#: app/reservations/routes.py:737 app/reservations/routes.py:851
+#: app/reservations/routes.py:1144 app/templates/dashboard.html:739
+#: app/templates/reservations/calendar.html:130
+#: app/templates/reservations/calendar.html:185
+#: app/templates/reservations/detail.html:32
+#: app/templates/reservations/downtime_form.html:43
+#: app/templates/reservations/fleet.html:31
+#: app/templates/reservations/form.html:42
+msgid "Start"
+msgstr "Début"
+
+#: app/reservations/routes.py:738 app/reservations/routes.py:852
+#: app/reservations/routes.py:1145 app/templates/dashboard.html:740
+#: app/templates/reservations/calendar.html:131
+#: app/templates/reservations/calendar.html:186
+#: app/templates/reservations/detail.html:35
+#: app/templates/reservations/downtime_form.html:49
+#: app/templates/reservations/fleet.html:32
+#: app/templates/reservations/form.html:48
+msgid "End"
+msgstr "Fin"
+
+#: app/reservations/routes.py:749
 msgid "Reservation cancelled."
 msgstr "Réservation annulée."
 
-#: app/reservations/routes.py:757
+#: app/reservations/routes.py:770
 msgid "Only pending reservations can be confirmed."
 msgstr "Seules les réservations en attente peuvent être confirmées."
 
-#: app/reservations/routes.py:763
+#: app/reservations/routes.py:776
 msgid "Cannot confirm: overlaps an existing confirmed reservation or maintenance downtime."
 msgstr "Impossible de confirmer : chevauche une réservation confirmée ou une indisponibilité de maintenance existante."
 
-#: app/reservations/routes.py:778
+#: app/reservations/routes.py:791
 msgid "Cannot confirm: this renter does not have a valid rental authorization for this aircraft."
 msgstr "Impossible de confirmer : ce locataire ne dispose pas d'une autorisation de location valide pour cet appareil."
 
-#: app/reservations/routes.py:792
+#: app/reservations/routes.py:805
 msgid "Cannot confirm: this aircraft is currently grounded."
 msgstr "Impossible de confirmer : cet appareil est actuellement immobilisé au sol."
 
-#: app/reservations/routes.py:802
+#: app/reservations/routes.py:815
 msgid "Aircraft is currently grounded — reservation confirmed, but verify airworthiness status before dispatch."
 msgstr "L'appareil est actuellement immobilisé au sol — réservation confirmée, mais vérifiez la navigabilité avant le départ."
 
-#: app/reservations/routes.py:837
+#: app/reservations/routes.py:836
+#, python-format
+msgid "Reservation confirmed — %(reg)s"
+msgstr "Réservation confirmée — %(reg)s"
+
+#: app/reservations/routes.py:838
+#, python-format
+msgid "Reservation confirmed: %(reg)s"
+msgstr "Réservation confirmée : %(reg)s"
+
+#: app/reservations/routes.py:841
+#, python-format
+msgid "Your reservation for %(reg)s from %(start)s to %(end)s UTC has been confirmed."
+msgstr "Votre réservation pour %(reg)s du %(start)s au %(end)s UTC a été confirmée."
+
+#: app/reservations/routes.py:863
 msgid "Reservation confirmed."
 msgstr "Réservation confirmée."
 
-#: app/reservations/routes.py:855
+#: app/reservations/routes.py:881
 msgid "Only pending reservations can be declined."
 msgstr "Seules les réservations en attente peuvent être refusées."
 
-#: app/reservations/routes.py:860
+#: app/reservations/routes.py:886
 msgid "Reservation declined."
 msgstr "Réservation refusée."
 
-#: app/reservations/routes.py:910
+#: app/reservations/routes.py:936
 msgid "Minimum booking duration must be positive."
 msgstr "La durée minimale de réservation doit être positive."
 
-#: app/reservations/routes.py:912
+#: app/reservations/routes.py:938
 msgid "Maximum booking duration must be positive."
 msgstr "La durée maximale de réservation doit être positive."
 
-#: app/reservations/routes.py:914
+#: app/reservations/routes.py:940
 msgid "Minimum duration cannot exceed maximum duration."
 msgstr "La durée minimale ne peut pas dépasser la durée maximale."
 
-#: app/reservations/routes.py:916 app/reservations/routes.py:1588
+#: app/reservations/routes.py:942 app/reservations/routes.py:1629
 msgid "Hourly rate cannot be negative."
 msgstr "Le tarif horaire ne peut pas être négatif."
 
-#: app/reservations/routes.py:918
+#: app/reservations/routes.py:944
 msgid "Minimum billed hours per day must be positive."
 msgstr "Les heures minimales facturées par jour doivent être positives."
 
-#: app/reservations/routes.py:920
+#: app/reservations/routes.py:946
 msgid "Invalid rate basis selected."
 msgstr "Base de calcul du tarif invalide."
 
-#: app/reservations/routes.py:922
+#: app/reservations/routes.py:948
 msgid "Invalid rate type selected."
 msgstr "Type de tarif invalide."
 
-#: app/reservations/routes.py:946
+#: app/reservations/routes.py:972
 msgid "Booking settings saved."
 msgstr "Paramètres de réservation enregistrés."
 
-#: app/reservations/routes.py:974
+#: app/reservations/routes.py:1000
 msgid "You do not have a valid rental authorization for this aircraft. Contact the owner to be authorized before booking."
 msgstr "Vous ne disposez pas d'une autorisation de location valide pour cet appareil. Contactez le propriétaire pour être autorisé avant de réserver."
 
-#: app/reservations/routes.py:995
+#: app/reservations/routes.py:1021
 msgid "You do not have a valid rental authorization for this aircraft yet — your booking request was submitted, but check with the owner before flying."
 msgstr "Vous ne disposez pas encore d'une autorisation de location valide pour cet appareil — votre demande de réservation a été soumise, mais vérifiez auprès du propriétaire avant de voler."
 
-#: app/reservations/routes.py:1011
+#: app/reservations/routes.py:1037
 msgid "This aircraft is currently grounded and this hangar requires bookings to be blocked while grounded. Contact the owner."
 msgstr "Cet appareil est actuellement immobilisé au sol et ce hangar exige que les réservations soient bloquées tant qu'il l'est. Contactez le propriétaire."
 
-#: app/reservations/routes.py:1033
+#: app/reservations/routes.py:1059
 msgid "This aircraft currently has an open grounding snag — your booking was submitted, but check its status before flying."
 msgstr "Cet appareil a actuellement un défaut immobilisant ouvert — votre réservation a été soumise, mais vérifiez son statut avant de voler."
 
-#: app/reservations/routes.py:1054
+#: app/reservations/routes.py:1080
 #, python-format
 msgid "Minimum booking duration is %(h)s h."
 msgstr "La durée minimale de réservation est de %(h)s h."
 
-#: app/reservations/routes.py:1063
+#: app/reservations/routes.py:1089
 #, python-format
 msgid "Maximum booking duration is %(h)s h."
 msgstr "La durée maximale de réservation est de %(h)s h."
 
-#: app/reservations/routes.py:1141
+#: app/reservations/routes.py:1149 app/templates/config/renter_account.html:51
+#: app/templates/refuels/list.html:37 app/templates/refuels/refuel_form.html:50
+msgid "Note"
+msgstr "Note"
+
+#: app/reservations/routes.py:1149
+msgid "No valid rental authorization on file"
+msgstr "Aucune autorisation de location valide enregistrée"
+
+#: app/reservations/routes.py:1155
+#, python-format
+msgid "New booking request — %(reg)s"
+msgstr "Nouvelle demande de réservation — %(reg)s"
+
+#: app/reservations/routes.py:1157
+#, python-format
+msgid "New booking request: %(reg)s"
+msgstr "Nouvelle demande de réservation : %(reg)s"
+
+#: app/reservations/routes.py:1160
+#, python-format
+msgid "A new booking request was submitted for %(reg)s from %(start)s to %(end)s UTC."
+msgstr "Une nouvelle demande de réservation a été soumise pour %(reg)s du %(start)s au %(end)s UTC."
+
+#: app/reservations/routes.py:1182
 msgid "Reservation saved."
 msgstr "Réservation enregistrée."
 
-#: app/reservations/routes.py:1173
+#: app/reservations/routes.py:1214
 #, python-format
 msgid "flight time: dispatch shows %(d)s h, logged flights show %(f)s h"
 msgstr "temps de vol : le départ indique %(d)s h, les vols enregistrés indiquent %(f)s h"
 
-#: app/reservations/routes.py:1191
+#: app/reservations/routes.py:1232
 #, python-format
 msgid "engine time: dispatch shows %(d)s h, logged flights show %(f)s h"
 msgstr "temps moteur : le départ indique %(d)s h, les vols enregistrés indiquent %(f)s h"
 
-#: app/reservations/routes.py:1201
+#: app/reservations/routes.py:1242
 #, python-format
 msgid "Dispatch/logbook discrepancy — %(details)s."
 msgstr "Écart entre le départ et le carnet de vol — %(details)s."
 
-#: app/reservations/routes.py:1259
+#: app/reservations/routes.py:1300
 msgid "Only confirmed reservations can be checked out."
 msgstr "Seules les réservations confirmées peuvent faire l'objet d'un départ."
 
-#: app/reservations/routes.py:1266
+#: app/reservations/routes.py:1307
 msgid "This reservation has already been checked out."
 msgstr "Cette réservation a déjà fait l'objet d'un départ."
 
-#: app/reservations/routes.py:1285
+#: app/reservations/routes.py:1326
 msgid "Walk-around confirmation is required."
 msgstr "La confirmation de la visite prévol est obligatoire."
 
-#: app/reservations/routes.py:1287
+#: app/reservations/routes.py:1328
 msgid "You must acknowledge the open snag list."
 msgstr "Vous devez prendre connaissance de la liste des anomalies ouvertes."
 
-#: app/reservations/routes.py:1291
+#: app/reservations/routes.py:1332
 msgid "This aircraft is grounded — dispatch is blocked. An owner may override with an explicit confirmation."
 msgstr "Cet appareil est immobilisé au sol — le départ est bloqué. Un propriétaire peut passer outre avec une confirmation explicite."
 
-#: app/reservations/routes.py:1300 app/reservations/routes.py:1466
+#: app/reservations/routes.py:1341 app/reservations/routes.py:1507
 msgid "Invalid engine counter value."
 msgstr "Valeur du compteur moteur invalide."
 
-#: app/reservations/routes.py:1305 app/reservations/routes.py:1470
+#: app/reservations/routes.py:1346 app/reservations/routes.py:1511
 msgid "Invalid flight counter value."
 msgstr "Valeur du compteur de vol invalide."
 
-#: app/reservations/routes.py:1331
+#: app/reservations/routes.py:1372
 msgid "Checked out."
 msgstr "Départ enregistré."
 
-#: app/reservations/routes.py:1444
+#: app/reservations/routes.py:1485
 msgid "Check out before checking in."
 msgstr "Enregistrez le départ avant le retour."
 
-#: app/reservations/routes.py:1449
+#: app/reservations/routes.py:1490
 msgid "This reservation has already been checked in."
 msgstr "Cette réservation a déjà fait l'objet d'un retour."
 
-#: app/reservations/routes.py:1479
+#: app/reservations/routes.py:1520
 msgid "Engine counter on return cannot be less than the check-out value."
 msgstr "Le compteur moteur au retour ne peut pas être inférieur à la valeur au départ."
 
-#: app/reservations/routes.py:1488
+#: app/reservations/routes.py:1529
 msgid "Flight counter on return cannot be less than the check-out value."
 msgstr "Le compteur de vol au retour ne peut pas être inférieur à la valeur au départ."
 
-#: app/reservations/routes.py:1510
+#: app/reservations/routes.py:1551
 msgid "Checked in."
 msgstr "Retour enregistré."
 
-#: app/reservations/routes.py:1542
+#: app/reservations/routes.py:1583
 msgid "This charge has already been finalized."
 msgstr "Cette facture a déjà été finalisée."
 
-#: app/reservations/routes.py:1578
+#: app/reservations/routes.py:1619
 msgid "Invalid billable hours."
 msgstr "Heures facturables invalides."
 
-#: app/reservations/routes.py:1580
+#: app/reservations/routes.py:1621
 msgid "Invalid hourly rate."
 msgstr "Tarif horaire invalide."
 
-#: app/reservations/routes.py:1582
+#: app/reservations/routes.py:1623
 msgid "Invalid fuel credit."
 msgstr "Crédit carburant invalide."
 
-#: app/reservations/routes.py:1584
+#: app/reservations/routes.py:1625
 msgid "Invalid adjustment."
 msgstr "Ajustement invalide."
 
-#: app/reservations/routes.py:1586
+#: app/reservations/routes.py:1627
 msgid "Billable hours cannot be negative."
 msgstr "Les heures facturables ne peuvent pas être négatives."
 
-#: app/reservations/routes.py:1590
+#: app/reservations/routes.py:1631
 msgid "Fuel credit cannot be negative."
 msgstr "Le crédit carburant ne peut pas être négatif."
 
-#: app/reservations/routes.py:1592
+#: app/reservations/routes.py:1633
 msgid "An adjustment requires a note explaining it."
 msgstr "Un ajustement nécessite une note explicative."
 
-#: app/reservations/routes.py:1635
+#: app/reservations/routes.py:1676
 #, python-format
 msgid "Rental charge — reservation #%(id)s"
 msgstr "Facture de location — réservation nº %(id)s"
 
-#: app/reservations/routes.py:1642
+#: app/reservations/routes.py:1683
 msgid "Rental charge finalized."
 msgstr "Facture de location finalisée."
 
-#: app/reservations/routes.py:1645
+#: app/reservations/routes.py:1686
 msgid "Draft saved."
 msgstr "Brouillon enregistré."
 
@@ -2129,191 +2213,267 @@ msgstr "Contribution au fonds de réserve — vol du %(date)s (%(hours)s h)"
 msgid "Reserve fund contribution (%(pct)s%%) — %(month)s"
 msgstr "Contribution au fonds de réserve (%(pct)s%%) — %(month)s"
 
-#: app/services/notification_service.py:461
+#: app/services/notification_service.py:348
+#: app/services/notification_service.py:1140
+#: app/templates/email/notif/welcome.html:1
+#, python-format
+msgid "Hello %(name)s,"
+msgstr "Bonjour %(name)s,"
+
+#: app/services/notification_service.py:482
 #, python-format
 msgid "Maintenance overdue: %(name)s on %(reg)s"
 msgstr "Maintenance en retard : %(name)s sur %(reg)s"
 
-#: app/services/notification_service.py:468
+#: app/services/notification_service.py:489
 #, python-format
 msgid "Maintenance overdue: %(name)s"
 msgstr "Maintenance en retard : %(name)s"
 
-#: app/services/notification_service.py:472
+#: app/services/notification_service.py:493
 #, python-format
 msgid "%(name)s on %(reg)s is overdue."
 msgstr "%(name)s sur %(reg)s est en retard."
 
-#: app/services/notification_service.py:491
+#: app/services/notification_service.py:501
+#: app/services/notification_service.py:531
+#: app/templates/maintenance/fleet.html:166
+#: app/templates/maintenance/fleet.html:315
+#: app/templates/maintenance/list.html:50
+msgid "Item"
+msgstr "Tâche"
+
+#: app/services/notification_service.py:512
 #, python-format
 msgid "Maintenance due soon: %(name)s on %(reg)s"
 msgstr "Maintenance à venir : %(name)s sur %(reg)s"
 
-#: app/services/notification_service.py:498
+#: app/services/notification_service.py:519
 #, python-format
 msgid "Maintenance due soon: %(name)s"
 msgstr "Maintenance à venir : %(name)s"
 
-#: app/services/notification_service.py:502
+#: app/services/notification_service.py:523
 #, python-format
 msgid "%(name)s on %(reg)s is coming due."
 msgstr "%(name)s sur %(reg)s arrive à échéance."
 
-#: app/services/notification_service.py:543
+#: app/services/notification_service.py:564
 #, python-format
 msgid "Insurance expiring in one day: %(reg)s"
 msgid_plural "Insurance expiring in %(days)s days: %(reg)s"
 msgstr[0] "Assurance expirant dans un jour : %(reg)s"
 msgstr[1] "Assurance expirant dans %(days)s jours : %(reg)s"
 
-#: app/services/notification_service.py:551
+#: app/services/notification_service.py:572
 #, python-format
 msgid "Insurance expiring soon: %(reg)s"
 msgstr "Assurance bientôt expirée : %(reg)s"
 
-#: app/services/notification_service.py:555
+#: app/services/notification_service.py:576
 #, python-format
 msgid "The insurance for %(reg)s expires on %(date)s (one day remaining)."
 msgid_plural "The insurance for %(reg)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "L'assurance de %(reg)s expire le %(date)s (un jour restant)."
 msgstr[1] "L'assurance de %(reg)s expire le %(date)s (%(days)s jours restants)."
 
-#: app/services/notification_service.py:598
+#: app/services/notification_service.py:586
+#: app/services/notification_service.py:639
+#: app/services/notification_service.py:714
+#: app/services/notification_service.py:787
+#: app/templates/config/renters_list.html:31 app/templates/dashboard.html:236
+#: app/templates/dashboard.html:256 app/templates/dashboard.html:275
+#: app/templates/dashboard.html:293 app/templates/users/list.html:156
+msgid "Expires"
+msgstr "Expire"
+
+#: app/services/notification_service.py:587
+#: app/services/notification_service.py:640
+#: app/services/notification_service.py:715
+msgid "Days left"
+msgstr "Jours restants"
+
+#: app/services/notification_service.py:619
 #, python-format
 msgid "ARC expiring in one day: %(reg)s"
 msgid_plural "ARC expiring in %(days)s days: %(reg)s"
 msgstr[0] "ARC expirant dans un jour : %(reg)s"
 msgstr[1] "ARC expirant dans %(days)s jours : %(reg)s"
 
-#: app/services/notification_service.py:605
+#: app/services/notification_service.py:626
 #, python-format
 msgid "ARC expiring soon: %(reg)s"
 msgstr "ARC bientôt expiré : %(reg)s"
 
-#: app/services/notification_service.py:608
+#: app/services/notification_service.py:629
 #, python-format
 msgid "The ARC for %(reg)s expires on %(date)s (one day remaining)."
 msgid_plural "The ARC for %(reg)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "L'ARC de %(reg)s expire le %(date)s (un jour restant)."
 msgstr[1] "L'ARC de %(reg)s expire le %(date)s (%(days)s jours restants)."
 
-#: app/services/notification_service.py:660
+#: app/services/notification_service.py:676
+msgid "medical certificate"
+msgstr "certificat médical"
+
+#: app/services/notification_service.py:681
+#: app/services/notification_service.py:682
+msgid "SEP rating"
+msgstr "qualification SEP"
+
+#: app/services/notification_service.py:695
 #, python-format
 msgid "%(label)s expiring in one day"
 msgid_plural "%(label)s expiring in %(days)s days"
 msgstr[0] "%(label)s expirant dans un jour"
 msgstr[1] "%(label)s expirant dans %(days)s jours"
 
-#: app/services/notification_service.py:667
+#: app/services/notification_service.py:702
 #, python-format
 msgid "%(label)s expiring soon"
 msgstr "%(label)s bientôt expiré"
 
-#: app/services/notification_service.py:670
+#: app/services/notification_service.py:705
 #, python-format
 msgid "Your %(label_lower)s expires on %(date)s (one day remaining)."
 msgid_plural "Your %(label_lower)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "Votre %(label_lower)s expire le %(date)s (un jour restant)."
 msgstr[1] "Votre %(label_lower)s expire le %(date)s (%(days)s jours restants)."
 
-#: app/services/notification_service.py:728
+#: app/services/notification_service.py:763
 #, python-format
 msgid "Document expiring in one day: %(title)s"
 msgid_plural "Document expiring in %(days)s days: %(title)s"
 msgstr[0] "Document expirant dans un jour : %(title)s"
 msgstr[1] "Document expirant dans %(days)s jours : %(title)s"
 
-#: app/services/notification_service.py:736
+#: app/services/notification_service.py:771
 #, python-format
 msgid "Document expiring soon: %(title)s"
 msgstr "Document bientôt expiré : %(title)s"
 
-#: app/services/notification_service.py:740
+#: app/services/notification_service.py:775
 #, python-format
 msgid "'%(title)s' on %(reg)s expires on %(date)s (one day remaining)."
 msgid_plural "'%(title)s' on %(reg)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "« %(title)s » sur %(reg)s expire le %(date)s (un jour restant)."
 msgstr[1] "« %(title)s » sur %(reg)s expire le %(date)s (%(days)s jours restants)."
 
-#: app/services/notification_service.py:794
+#: app/services/notification_service.py:786
+#: app/services/notification_service.py:853
+#: app/templates/documents/list.html:59
+msgid "Document"
+msgstr "Document"
+
+#: app/services/notification_service.py:823
+#: app/services/notification_service.py:913
+msgid "unknown"
+msgstr "inconnu"
+
+#: app/services/notification_service.py:829
 #, python-format
 msgid "Airworthiness review due in one day: %(ref)s on %(reg)s"
 msgid_plural "Airworthiness review due in %(days)s days: %(ref)s on %(reg)s"
 msgstr[0] "Révision de navigabilité dans un jour : %(ref)s sur %(reg)s"
 msgstr[1] "Révision de navigabilité dans %(days)s jours : %(ref)s sur %(reg)s"
 
-#: app/services/notification_service.py:803
+#: app/services/notification_service.py:838
 #, python-format
 msgid "Airworthiness review due: %(ref)s"
 msgstr "Révision de navigabilité : %(ref)s"
 
-#: app/services/notification_service.py:807
+#: app/services/notification_service.py:842
 #, python-format
 msgid "Document %(ref)s on %(reg)s requires review by %(date)s (one day)."
 msgid_plural "Document %(ref)s on %(reg)s requires review by %(date)s (%(days)s days)."
 msgstr[0] "Le document %(ref)s sur %(reg)s doit être révisé avant le %(date)s (un jour)."
 msgstr[1] "Le document %(ref)s sur %(reg)s doit être révisé avant le %(date)s (%(days)s jours)."
 
-#: app/services/notification_service.py:880
+#: app/services/notification_service.py:854
+#: app/templates/maintenance/fleet.html:168
+#: app/templates/maintenance/list.html:52
+msgid "Due"
+msgstr "Échéance"
+
+#: app/services/notification_service.py:909
+msgid "authorization"
+msgstr "autorisation"
+
+#: app/services/notification_service.py:909
+msgid "medical"
+msgstr "certificat médical"
+
+#: app/services/notification_service.py:919
+#, python-format
+msgid "%(label)s expires %(date)s"
+msgstr "%(label)s expire le %(date)s"
+
+#: app/services/notification_service.py:931
 #, python-format
 msgid "One renter authorization"
 msgid_plural "%(n)s renter authorizations"
 msgstr[0] "Une autorisation de location"
 msgstr[1] "%(n)s autorisations de location"
 
-#: app/services/notification_service.py:886
+#: app/services/notification_service.py:937
 #, python-format
 msgid "one day"
 msgid_plural "%(threshold)s days"
 msgstr[0] "un jour"
 msgstr[1] "%(threshold)s jours"
 
-#: app/services/notification_service.py:896
+#: app/services/notification_service.py:947
 #, python-format
 msgid "One renter authorization expiring soon"
 msgid_plural "%(n)s renter authorizations expiring soon"
 msgstr[0] "Une autorisation de location arrivant bientôt à expiration"
 msgstr[1] "%(n)s autorisations de location arrivant bientôt à expiration"
 
-#: app/services/notification_service.py:902
+#: app/services/notification_service.py:953
 msgid "Renter authorizations expiring soon"
 msgstr "Autorisations de location bientôt expirées"
 
-#: app/services/notification_service.py:905
+#: app/services/notification_service.py:956
 #, python-format
 msgid "%(items)s or medical validity dates expire within %(days)s."
 msgstr "%(items)s ou dates de validité médicale expirent dans %(days)s."
 
-#: app/services/notification_service.py:970
+#: app/services/notification_service.py:1013
+#: app/templates/pilots/logbook.html:57
+#, python-format
+msgid "no matching flight on record yet (comfort zone: %(threshold)s days)."
+msgstr "aucun vol correspondant enregistré pour l'instant (zone de confort : %(threshold)s jours)."
+
+#: app/services/notification_service.py:1018
+#: app/templates/pilots/logbook.html:59
+#, python-format
+msgid "%(days)s days since your last matching flight (comfort zone: %(threshold)s days)."
+msgstr "%(days)s jours depuis votre dernier vol correspondant (zone de confort : %(threshold)s jours)."
+
+#: app/services/notification_service.py:1029
 #, python-format
 msgid "Personal minimums: one recency threshold exceeded"
 msgid_plural "Personal minimums: %(n)s recency thresholds exceeded"
 msgstr[0] "Minimums personnels : un seuil de récence dépassé"
 msgstr[1] "Minimums personnels : %(n)s seuils de récence dépassés"
 
-#: app/services/notification_service.py:976
+#: app/services/notification_service.py:1035
 #: app/templates/config/notifications.html:47
 msgid "Personal minimums recency reminder"
 msgstr "Rappel de récence — minimums personnels"
 
-#: app/services/notification_service.py:979
+#: app/services/notification_service.py:1038
 #, python-format
 msgid "You have exceeded one recency threshold in your personal minimums."
 msgid_plural "You have exceeded %(n)s recency thresholds in your personal minimums."
 msgstr[0] "Vous avez dépassé un seuil de récence dans vos minimums personnels."
 msgstr[1] "Vous avez dépassé %(n)s seuils de récence dans vos minimums personnels."
 
-#: app/services/notification_service.py:1080
+#: app/services/notification_service.py:1139
 msgid "Welcome to your OpenHangar instance"
 msgstr "Bienvenue dans votre instance OpenHangar"
 
-#: app/services/notification_service.py:1081
-#: app/templates/email/notif/welcome.html:1
-#, python-format
-msgid "Hello %(name)s,"
-msgstr "Bonjour %(name)s,"
-
-#: app/services/notification_service.py:1083
+#: app/services/notification_service.py:1142
 msgid ""
 "Welcome to OpenHangar! Your instance is set up and email delivery is working.\n"
 "\n"
@@ -2383,6 +2543,25 @@ msgstr "Anomalie signalée : %(title)s"
 msgid "A snag was reported on %(reg)s."
 msgstr "Une anomalie a été signalée sur %(reg)s."
 
+#: app/snags/routes.py:268 app/templates/airworthiness/dashboard.html:253
+#: app/templates/airworthiness/document_form.html:46
+#: app/templates/airworthiness/stc_form.html:27
+#: app/templates/documents/edit_form.html:38
+#: app/templates/documents/pilot_upload_form.html:42
+#: app/templates/documents/reconcile.html:63
+#: app/templates/documents/reconcile.html:124
+#: app/templates/documents/upload_form.html:51
+#: app/templates/pwa/share_target.html:83 app/templates/snags/list.html:51
+#: app/templates/snags/list.html:124 app/templates/snags/snag_form.html:29
+msgid "Title"
+msgstr "Titre"
+
+#: app/snags/routes.py:269 app/templates/maintenance/fleet.html:60
+#: app/templates/maintenance/fleet.html:116 app/templates/snags/list.html:52
+#: app/templates/snags/list.html:125 app/templates/snags/snag_form.html:44
+msgid "Reporter"
+msgstr "Déclarant"
+
 #: app/snags/routes.py:302
 #, python-format
 msgid "Aircraft grounded — check your reservation: %(reg)s"
@@ -2397,6 +2576,16 @@ msgstr "Appareil immobilisé au sol : %(reg)s"
 #, python-format
 msgid "A grounding snag (%(title)s) was reported on %(reg)s, which you hold a confirmed reservation for."
 msgstr "Un défaut immobilisant (%(title)s) a été signalé sur %(reg)s, pour lequel vous avez une réservation confirmée."
+
+#: app/snags/routes.py:318 app/templates/maintenance/fleet.html:59
+#: app/templates/maintenance/fleet.html:115
+#: app/templates/snags/resolve_form.html:17
+msgid "Snag"
+msgstr "Panne"
+
+#: app/snags/routes.py:319
+msgid "Affected reservation date(s)"
+msgstr "Date(s) de réservation concernée(s)"
 
 #: app/snags/routes.py:329
 #, python-format
@@ -2745,12 +2934,6 @@ msgid_plural "%(n)s landings / 90 days"
 msgstr[0] "%(n)s atterrissage / 90 jours"
 msgstr[1] "%(n)s atterrissages / 90 jours"
 
-#: app/templates/config/renters_list.html:31 app/templates/dashboard.html:236
-#: app/templates/dashboard.html:256 app/templates/dashboard.html:275
-#: app/templates/dashboard.html:293 app/templates/users/list.html:156
-msgid "Expires"
-msgstr "Expire"
-
 #: app/templates/config/renters_list.html:47 app/templates/dashboard.html:238
 #: app/templates/dashboard.html:258 app/templates/dashboard.html:277
 #: app/templates/dashboard.html:295 app/templates/dashboard.html:406
@@ -2988,26 +3171,6 @@ msgstr[1] "Traces GPS"
 #: app/templates/dashboard.html:728
 msgid "Pending Reservations"
 msgstr "Réservations en attente"
-
-#: app/templates/dashboard.html:739
-#: app/templates/reservations/calendar.html:130
-#: app/templates/reservations/calendar.html:185
-#: app/templates/reservations/detail.html:32
-#: app/templates/reservations/downtime_form.html:43
-#: app/templates/reservations/fleet.html:31
-#: app/templates/reservations/form.html:42
-msgid "Start"
-msgstr "Début"
-
-#: app/templates/dashboard.html:740
-#: app/templates/reservations/calendar.html:131
-#: app/templates/reservations/calendar.html:186
-#: app/templates/reservations/detail.html:35
-#: app/templates/reservations/downtime_form.html:49
-#: app/templates/reservations/fleet.html:32
-#: app/templates/reservations/form.html:48
-msgid "End"
-msgstr "Fin"
 
 #: app/templates/aircraft/flight_detail.html:102
 #: app/templates/airworthiness/dashboard.html:90
@@ -5369,19 +5532,6 @@ msgstr "Ajouter un STC"
 msgid "STC number"
 msgstr "Numéro STC"
 
-#: app/templates/airworthiness/dashboard.html:253
-#: app/templates/airworthiness/document_form.html:46
-#: app/templates/airworthiness/stc_form.html:27
-#: app/templates/documents/edit_form.html:38
-#: app/templates/documents/pilot_upload_form.html:42
-#: app/templates/documents/reconcile.html:63
-#: app/templates/documents/reconcile.html:124
-#: app/templates/documents/upload_form.html:51
-#: app/templates/pwa/share_target.html:83 app/templates/snags/list.html:51
-#: app/templates/snags/list.html:124 app/templates/snags/snag_form.html:29
-msgid "Title"
-msgstr "Titre"
-
 #: app/templates/airworthiness/dashboard.html:254
 #: app/templates/airworthiness/stc_form.html:32
 msgid "TC holder"
@@ -6098,11 +6248,6 @@ msgstr "Enregistrer un paiement"
 #: app/templates/config/renter_account.html:43
 msgid "Amount (EUR)"
 msgstr "Montant (EUR)"
-
-#: app/templates/config/renter_account.html:51
-#: app/templates/refuels/list.html:37 app/templates/refuels/refuel_form.html:50
-msgid "Note"
-msgstr "Note"
 
 #: app/templates/config/renter_account.html:56
 msgid "Record"
@@ -6907,10 +7052,6 @@ msgstr "Masquer les sensibles (%(n)s)"
 msgid "Show sensitive (%(n)s)"
 msgstr "Afficher les sensibles (%(n)s)"
 
-#: app/templates/documents/list.html:59
-msgid "Document"
-msgstr "Document"
-
 #: app/templates/documents/list.html:63
 msgid "Uploaded"
 msgstr "Téléchargé"
@@ -7048,6 +7189,10 @@ msgstr "Vous recevez cet e-mail car vous avez un compte sur cette instance OpenH
 #, python-format
 msgid "<a href=\"%(url)s\">OpenHangar</a> is open-source software."
 msgstr "<a href=\"%(url)s\">OpenHangar</a> est un logiciel open source."
+
+#: app/templates/email/notif/generic.html:19
+msgid "View in OpenHangar"
+msgstr "Voir dans OpenHangar"
 
 #: app/templates/email/notif/generic.html:23
 #: app/templates/notifications/snooze.html:29
@@ -7997,18 +8142,6 @@ msgstr "Chronologique"
 msgid "Grounding Snags"
 msgstr "Pannes clouantes"
 
-#: app/templates/maintenance/fleet.html:59
-#: app/templates/maintenance/fleet.html:115
-#: app/templates/snags/resolve_form.html:17
-msgid "Snag"
-msgstr "Panne"
-
-#: app/templates/maintenance/fleet.html:60
-#: app/templates/maintenance/fleet.html:116 app/templates/snags/list.html:52
-#: app/templates/snags/list.html:125 app/templates/snags/snag_form.html:44
-msgid "Reporter"
-msgstr "Déclarant"
-
 #: app/templates/maintenance/fleet.html:61
 #: app/templates/maintenance/fleet.html:117 app/templates/snags/list.html:53
 msgid "Reported"
@@ -8031,17 +8164,6 @@ msgstr "Pannes ouvertes"
 #: app/templates/maintenance/fleet.html:158
 msgid "Maintenance Timeline"
 msgstr "Calendrier de maintenance"
-
-#: app/templates/maintenance/fleet.html:166
-#: app/templates/maintenance/fleet.html:315
-#: app/templates/maintenance/list.html:50
-msgid "Item"
-msgstr "Tâche"
-
-#: app/templates/maintenance/fleet.html:168
-#: app/templates/maintenance/list.html:52
-msgid "Due"
-msgstr "Échéance"
 
 #: app/templates/maintenance/fleet.html:169
 #: app/templates/maintenance/list.html:54
@@ -9062,16 +9184,6 @@ msgstr "Minimums personnels"
 #: app/templates/pilots/logbook.html:51
 msgid "Personal minimums — recency reminder"
 msgstr "Minimums personnels — rappel de récence"
-
-#: app/templates/pilots/logbook.html:57
-#, python-format
-msgid "no matching flight on record yet (comfort zone: %(threshold)s days)."
-msgstr "aucun vol correspondant enregistré pour l'instant (zone de confort : %(threshold)s jours)."
-
-#: app/templates/pilots/logbook.html:59
-#, python-format
-msgid "%(days)s days since your last matching flight (comfort zone: %(threshold)s days)."
-msgstr "%(days)s jours depuis votre dernier vol correspondant (zone de confort : %(threshold)s jours)."
 
 #: app/templates/pilots/logbook.html:64
 msgid "Review your personal minimums"

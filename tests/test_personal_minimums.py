@@ -1126,6 +1126,49 @@ class TestPersonalMinimumsNotification:
         assert len(matching) == 1
         assert matching[0][1] == [uid]
 
+    def test_breach_with_no_matching_flight_uses_never_flown_wording(self, app, client):
+        """days_since is None (no matching flight logged at all yet) takes
+        a distinct message branch from the "N days since" one above."""
+        import services.notification_service as ns
+
+        uid, _tid = _make_user(app, "n2b@ex.com")
+        # No _add_logbook_entry call -- no matching flight on record.
+        _login(app, client, uid)
+        client.post("/pilot/minimums/create", data={"starter": "blank"})
+        sid = _add_section(app, client, uid, "Recency")
+        _add_item(
+            app,
+            client,
+            sid,
+            "Days since last flight",
+            "30 days",
+            tag=PersonalMinimumsTag.MAX_DAYS_SINCE_LAST_FLIGHT,
+            numeric="30",
+        )
+        client.post("/pilot/minimums/publish")
+
+        sent = []
+        original = ns._dispatch_in_context
+
+        def _capture(notification_type, tenant_id, ctx, target_user_ids=None, **kw):
+            sent.append((notification_type, target_user_ids))
+            return original(notification_type, tenant_id, ctx, target_user_ids, **kw)
+
+        ns._dispatch_in_context = _capture
+        try:
+            with app.app_context():
+                ns._check_personal_minimums_recency(app)
+        finally:
+            ns._dispatch_in_context = original
+
+        from models import NotificationType
+
+        matching = [
+            c for c in sent if c[0] == NotificationType.PERSONAL_MINIMUMS_RECENCY
+        ]
+        assert len(matching) == 1
+        assert matching[0][1] == [uid]
+
     def test_inactive_user_skipped(self, app, client):
         import services.notification_service as ns
 
