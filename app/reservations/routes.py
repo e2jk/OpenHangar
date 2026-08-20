@@ -705,6 +705,9 @@ def cancel_reservation(aircraft_id: int, res_id: int):
     db.session.commit()
     if r.pilot_user_id:
         try:
+            from flask_babel import (
+                lazy_gettext as _l,  # pyright: ignore[reportMissingImports]
+            )
             from models import NotificationType  # pyright: ignore[reportMissingImports]
             from services.notification_service import (
                 dispatch,  # pyright: ignore[reportMissingImports]
@@ -716,13 +719,23 @@ def cancel_reservation(aircraft_id: int, res_id: int):
                     NotificationType.RESERVATION_CANCELLED,
                     tu.tenant_id,
                     {
-                        "subject": f"Reservation cancelled — {ac.registration}",
-                        "notification_title": f"Reservation cancelled: {ac.registration}",
-                        "notification_message": f"Your reservation for {ac.registration} from {r.start_dt.strftime('%Y-%m-%d %H:%M')} to {r.end_dt.strftime('%Y-%m-%d %H:%M')} UTC has been cancelled.",
+                        "subject_key": _l("Reservation cancelled — %(reg)s"),
+                        "subject_args": {"reg": ac.registration},
+                        "notification_title_key": _l("Reservation cancelled: %(reg)s"),
+                        "notification_title_args": {"reg": ac.registration},
+                        "notification_message_key": _l(
+                            "Your reservation for %(reg)s from %(start)s to "
+                            "%(end)s UTC has been cancelled."
+                        ),
+                        "notification_message_args": {
+                            "reg": ac.registration,
+                            "start": r.start_dt.strftime("%Y-%m-%d %H:%M"),
+                            "end": r.end_dt.strftime("%Y-%m-%d %H:%M"),
+                        },
                         "details": [
-                            ("Aircraft", ac.registration),
-                            ("Start", r.start_dt.strftime("%Y-%m-%d %H:%M UTC")),
-                            ("End", r.end_dt.strftime("%Y-%m-%d %H:%M UTC")),
+                            (_l("Aircraft"), ac.registration),
+                            (_l("Start"), r.start_dt.strftime("%Y-%m-%d %H:%M UTC")),
+                            (_l("End"), r.end_dt.strftime("%Y-%m-%d %H:%M UTC")),
                         ],
                     },
                     target_user_ids=[r.pilot_user_id],
@@ -806,6 +819,9 @@ def confirm_reservation(aircraft_id: int, res_id: int):
         )
     if r.pilot_user_id:
         try:
+            from flask_babel import (
+                lazy_gettext as _l,  # pyright: ignore[reportMissingImports]
+            )
             from models import NotificationType  # pyright: ignore[reportMissingImports]
             from services.notification_service import (
                 dispatch,  # pyright: ignore[reportMissingImports]
@@ -817,13 +833,23 @@ def confirm_reservation(aircraft_id: int, res_id: int):
                     NotificationType.RESERVATION_CONFIRMED,
                     tu.tenant_id,
                     {
-                        "subject": f"Reservation confirmed — {ac.registration}",
-                        "notification_title": f"Reservation confirmed: {ac.registration}",
-                        "notification_message": f"Your reservation for {ac.registration} from {r.start_dt.strftime('%Y-%m-%d %H:%M')} to {r.end_dt.strftime('%Y-%m-%d %H:%M')} UTC has been confirmed.",
+                        "subject_key": _l("Reservation confirmed — %(reg)s"),
+                        "subject_args": {"reg": ac.registration},
+                        "notification_title_key": _l("Reservation confirmed: %(reg)s"),
+                        "notification_title_args": {"reg": ac.registration},
+                        "notification_message_key": _l(
+                            "Your reservation for %(reg)s from %(start)s to "
+                            "%(end)s UTC has been confirmed."
+                        ),
+                        "notification_message_args": {
+                            "reg": ac.registration,
+                            "start": r.start_dt.strftime("%Y-%m-%d %H:%M"),
+                            "end": r.end_dt.strftime("%Y-%m-%d %H:%M"),
+                        },
                         "details": [
-                            ("Aircraft", ac.registration),
-                            ("Start", r.start_dt.strftime("%Y-%m-%d %H:%M UTC")),
-                            ("End", r.end_dt.strftime("%Y-%m-%d %H:%M UTC")),
+                            (_l("Aircraft"), ac.registration),
+                            (_l("Start"), r.start_dt.strftime("%Y-%m-%d %H:%M UTC")),
+                            (_l("End"), r.end_dt.strftime("%Y-%m-%d %H:%M UTC")),
                         ],
                     },
                     target_user_ids=[r.pilot_user_id],
@@ -1103,6 +1129,9 @@ def _save_reservation(
 
     if _is_new_reservation:
         try:
+            from flask_babel import (
+                lazy_gettext as _l,  # pyright: ignore[reportMissingImports]
+            )
             from models import NotificationType  # pyright: ignore[reportMissingImports]
             from services.notification_service import (
                 dispatch,  # pyright: ignore[reportMissingImports]
@@ -1111,19 +1140,31 @@ def _save_reservation(
             tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
             if tu:
                 details = [
-                    ("Aircraft", ac.registration),
-                    ("Start", r.start_dt.strftime("%Y-%m-%d %H:%M UTC")),
-                    ("End", r.end_dt.strftime("%Y-%m-%d %H:%M UTC")),
+                    (_l("Aircraft"), ac.registration),
+                    (_l("Start"), r.start_dt.strftime("%Y-%m-%d %H:%M UTC")),
+                    (_l("End"), r.end_dt.strftime("%Y-%m-%d %H:%M UTC")),
                 ]
                 if renter_auth_warning:
-                    details.append(("Note", "No valid rental authorization on file"))
+                    details.append(
+                        (_l("Note"), _l("No valid rental authorization on file"))
+                    )
                 dispatch(
                     NotificationType.RESERVATION_REQUEST,
                     tu.tenant_id,
                     {
-                        "subject": f"New booking request — {ac.registration}",
-                        "notification_title": f"New booking request: {ac.registration}",
-                        "notification_message": f"A new booking request was submitted for {ac.registration} from {r.start_dt.strftime('%Y-%m-%d %H:%M')} to {r.end_dt.strftime('%Y-%m-%d %H:%M')} UTC.",
+                        "subject_key": _l("New booking request — %(reg)s"),
+                        "subject_args": {"reg": ac.registration},
+                        "notification_title_key": _l("New booking request: %(reg)s"),
+                        "notification_title_args": {"reg": ac.registration},
+                        "notification_message_key": _l(
+                            "A new booking request was submitted for %(reg)s "
+                            "from %(start)s to %(end)s UTC."
+                        ),
+                        "notification_message_args": {
+                            "reg": ac.registration,
+                            "start": r.start_dt.strftime("%Y-%m-%d %H:%M"),
+                            "end": r.end_dt.strftime("%Y-%m-%d %H:%M"),
+                        },
                         "details": details,
                     },
                 )

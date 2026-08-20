@@ -304,7 +304,10 @@ def dispatch(
     being reported) keep today's always-send behaviour -- they're one-shot
     events, not daily re-evaluations.
     """
-    from flask_babel import force_locale  # pyright: ignore[reportMissingImports]
+    from flask_babel import (  # pyright: ignore[reportMissingImports]
+        force_locale,
+        gettext,
+    )
     from models import TenantProfile  # pyright: ignore[reportMissingImports]
 
     from services.email_service import (  # pyright: ignore[reportMissingImports]
@@ -342,6 +345,7 @@ def dispatch(
                 ) % email_context.get("notification_message_args", {})
             else:
                 notif_message = email_context.get("notification_message", "")
+            greeting = gettext("Hello %(name)s,") % {"name": user.display_name}
 
         snooze_url = None
         if subject_ref is not None:
@@ -376,6 +380,7 @@ def dispatch(
         ctx["notification_title"] = notif_title
         ctx["notification_message"] = notif_message
         ctx["recipient_name"] = user.display_name
+        ctx["greeting"] = greeting
 
         text_body = _text_for(notification_type, ctx)
         try:
@@ -492,8 +497,8 @@ def _check_maintenance(app: Any) -> None:
                                 "reg": ac.registration,
                             },
                             "details": [
-                                ("Aircraft", ac.registration),
-                                ("Item", trigger.name),
+                                (_l("Aircraft"), ac.registration),
+                                (_l("Item"), trigger.name),
                             ],
                         },
                         subject_ref=f"trigger:{trigger.id}",
@@ -522,8 +527,8 @@ def _check_maintenance(app: Any) -> None:
                                 "reg": ac.registration,
                             },
                             "details": [
-                                ("Aircraft", ac.registration),
-                                ("Item", trigger.name),
+                                (_l("Aircraft"), ac.registration),
+                                (_l("Item"), trigger.name),
                             ],
                         },
                         subject_ref=f"trigger:{trigger.id}",
@@ -577,9 +582,9 @@ def _check_insurance(app: Any) -> None:
                         ),
                         "notification_message_args": {},
                         "details": [
-                            ("Aircraft", ac.registration),
-                            ("Expires", ac.insurance_expiry.isoformat()),
-                            ("Days left", str(days_left)),
+                            (_l("Aircraft"), ac.registration),
+                            (_l("Expires"), ac.insurance_expiry.isoformat()),
+                            (_l("Days left"), str(days_left)),
                         ],
                         "expiry_value": ac.insurance_expiry.isoformat(),
                     },
@@ -630,9 +635,9 @@ def _check_arc(app: Any) -> None:
                         ),
                         "notification_message_args": {},
                         "details": [
-                            ("Aircraft", ac.registration),
-                            ("Expires", ac.arc_expiry.isoformat()),
-                            ("Days left", str(days_left)),
+                            (_l("Aircraft"), ac.registration),
+                            (_l("Expires"), ac.arc_expiry.isoformat()),
+                            (_l("Days left"), str(days_left)),
                         ],
                         "expiry_value": ac.arc_expiry.isoformat(),
                     },
@@ -659,9 +664,23 @@ def _check_medical_and_sep(app: Any) -> None:
         if tu is None:
             continue
 
-        for notif_type, expiry, label in [
-            (NT.MEDICAL_EXPIRING, profile.medical_expiry, "Medical certificate"),
-            (NT.SEP_RATING_EXPIRING, profile.sep_expiry, "SEP rating"),
+        # Two translatable forms per item (not a mechanical .lower() of the
+        # capitalized one) -- lowercasing a translated string isn't a safe
+        # general i18n operation (case rules and even correct wording can
+        # differ by language), so each form is its own msgid.
+        for notif_type, expiry, label, label_lower in [
+            (
+                NT.MEDICAL_EXPIRING,
+                profile.medical_expiry,
+                _l("Medical certificate"),
+                _l("medical certificate"),
+            ),
+            (
+                NT.SEP_RATING_EXPIRING,
+                profile.sep_expiry,
+                _l("SEP rating"),
+                _l("SEP rating"),
+            ),
         ]:
             if expiry is None:
                 continue
@@ -686,14 +705,14 @@ def _check_medical_and_sep(app: Any) -> None:
                             "Your %(label_lower)s expires on %(date)s (one day remaining).",
                             "Your %(label_lower)s expires on %(date)s (%(days)s days remaining).",
                             days_left,
-                            label_lower=label.lower(),
+                            label_lower=label_lower,
                             date=expiry.isoformat(),
                             days=days_left,
                         ),
                         "notification_message_args": {},
                         "details": [
-                            ("Expires", expiry.isoformat()),
-                            ("Days left", str(days_left)),
+                            (_l("Expires"), expiry.isoformat()),
+                            (_l("Days left"), str(days_left)),
                         ],
                         "expiry_value": expiry.isoformat(),
                     },
@@ -763,9 +782,9 @@ def _check_documents(app: Any) -> None:
                             ),
                             "notification_message_args": {},
                             "details": [
-                                ("Aircraft", ac.registration),
-                                ("Document", title),
-                                ("Expires", doc.valid_until.isoformat()),
+                                (_l("Aircraft"), ac.registration),
+                                (_l("Document"), title),
+                                (_l("Expires"), doc.valid_until.isoformat()),
                             ],
                             "expiry_value": doc.valid_until.isoformat(),
                         },
@@ -801,7 +820,7 @@ def _check_airworthiness_reviews(app: Any) -> None:
                 days_left = (status_row.next_review_date - today).days
                 if 0 <= days_left <= threshold:
                     doc = status_row.document
-                    ref = doc.reference if doc else "unknown"
+                    ref = doc.reference if doc else _l("unknown")
                     _dispatch_in_context(
                         NT.AIRWORTHINESS_REVIEW_DUE,
                         tenant.id,
@@ -830,9 +849,9 @@ def _check_airworthiness_reviews(app: Any) -> None:
                             ),
                             "notification_message_args": {},
                             "details": [
-                                ("Aircraft", ac.registration),
-                                ("Document", ref),
-                                ("Due", status_row.next_review_date.isoformat()),
+                                (_l("Aircraft"), ac.registration),
+                                (_l("Document"), ref),
+                                (_l("Due"), status_row.next_review_date.isoformat()),
                             ],
                             "expiry_value": status_row.next_review_date.isoformat(),
                         },
@@ -881,12 +900,28 @@ def _check_renter_authorizations(app: Any) -> None:
         if not rows:  # has_content guard — nothing soon-expiring, no email
             continue
 
+        # Internal loop markers ("authorization"/"medical") are looked up
+        # against a translated-label map rather than displayed directly --
+        # embedding a lazy string in an f-string would force it to resolve
+        # immediately in whatever locale is active at check-time, not the
+        # eventual recipient's, so the translated value is built with _l()
+        # instead and stays lazy until Jinja renders it per-recipient.
+        _label_text = {"authorization": _l("authorization"), "medical": _l("medical")}
         details = []
         for auth, label, expiry in rows:
             renter_name = (
-                auth.renter_user.display_name if auth.renter_user else "unknown"
+                auth.renter_user.display_name if auth.renter_user else _l("unknown")
             )
-            details.append((renter_name, f"{label} expires {expiry.isoformat()}"))
+            details.append(
+                (
+                    renter_name,
+                    _l(
+                        "%(label)s expires %(date)s",
+                        label=_label_text[label],
+                        date=expiry.isoformat(),
+                    ),
+                )
+            )
 
         # Two independent countable quantities in one sentence (item count and
         # day count) — ngettext only picks one plural form per call, so each
@@ -969,13 +1004,21 @@ def _check_personal_minimums_recency(app: Any) -> None:
         if not breaches:  # has_content guard
             continue
 
+        # Same phrasing (and translations) as the identical breach data
+        # shown in app/templates/pilots/logbook.html.
         details = []
         for b in breaches:
-            days_txt = (
-                "no matching flight on record"
-                if b["days_since"] is None
-                else f"{b['days_since']} day(s) since (threshold {b['threshold']})"
-            )
+            if b["days_since"] is None:
+                days_txt = _l(
+                    "no matching flight on record yet (comfort zone: %(threshold)s days).",
+                    threshold=b["threshold"],
+                )
+            else:
+                days_txt = _l(
+                    "%(days)s days since your last matching flight (comfort zone: %(threshold)s days).",
+                    days=b["days_since"],
+                    threshold=b["threshold"],
+                )
             details.append((b["item"].label, days_txt))
 
         _dispatch_in_context(
