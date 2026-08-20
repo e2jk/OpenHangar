@@ -1422,6 +1422,48 @@ class TestDailyCheckSkipPaths:
                 _check_documents(app)
                 assert not mock_dispatch.called
 
+    def test_documents_skips_arc_and_insurance_doc_types(self, app):
+        """ARC/Insurance documents are already covered by _check_arc /
+        _check_insurance off the synced Aircraft fields -- _check_documents
+        must not double-dispatch a separate DOCUMENT_EXPIRING for them."""
+        _uid, tid = _make_user(app, "owner@doc-arc.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid, "OO-DOC-ARC")
+        with app.app_context():
+            from datetime import date, timedelta
+
+            from models import (  # pyright: ignore[reportMissingImports]
+                DocType,
+                Document,
+            )
+
+            db.session.add(
+                Document(
+                    aircraft_id=ac_id,
+                    filename="arc.pdf",
+                    original_filename="arc.pdf",
+                    title="ARC",
+                    doc_type=DocType.ARC,
+                    valid_until=date.today() + timedelta(days=7),
+                )
+            )
+            db.session.add(
+                Document(
+                    aircraft_id=ac_id,
+                    filename="ins.pdf",
+                    original_filename="ins.pdf",
+                    title="Insurance",
+                    doc_type=DocType.INSURANCE_CERT,
+                    valid_until=date.today() + timedelta(days=7),
+                )
+            )
+            db.session.commit()
+
+            with patch("services.notification_service.dispatch") as mock_dispatch:
+                from services.notification_service import _check_documents
+
+                _check_documents(app)
+                assert not mock_dispatch.called
+
     def test_airworthiness_skips_null_review_date(self, app):
         _uid, tid = _make_user(app, "owner@aw-null.com", role=Role.OWNER)
         ac_id = _make_aircraft(app, tid, "OO-NULL-AW")

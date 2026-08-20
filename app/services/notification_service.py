@@ -553,6 +553,9 @@ def _check_medical_and_sep(app: Any) -> None:
 
 
 def _check_documents(app: Any) -> None:
+    from documents.routes import (  # pyright: ignore[reportMissingImports]
+        _EXPIRY_DRIVING_DOC_TYPES,
+    )
     from flask_babel import (  # pyright: ignore[reportMissingImports]
         lazy_gettext as _l,
     )
@@ -572,6 +575,13 @@ def _check_documents(app: Any) -> None:
         for ac in Aircraft.query.filter_by(tenant_id=tenant.id, archived_at=None).all():
             for doc in Document.query.filter_by(aircraft_id=ac.id).all():
                 if doc.valid_until is None:
+                    continue
+                # ARC/Insurance documents already drive their own dedicated
+                # check (_check_arc / _check_insurance) off the synced
+                # Aircraft.arc_expiry/insurance_expiry cache fields -- skip
+                # them here to avoid sending two separate emails for the
+                # same underlying deadline.
+                if doc.doc_type in _EXPIRY_DRIVING_DOC_TYPES:
                     continue
                 days_left = (doc.valid_until - today).days
                 if 0 <= days_left <= threshold:
