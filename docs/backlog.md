@@ -1058,3 +1058,105 @@ tracking already in `pilots/personal_minimums.py`; whether this belongs in
 `flight_school` operating-model scope specifically or is generally useful
 across models.
 
+---
+
+## Ideas gathered from a friend's single-aircraft records site
+
+A friend built a static, owner-maintained "records site" for one aircraft
+(private, password-protected — not linked here). It's not a fleet-management
+app, but several of its ideas are worth considering for OpenHangar's own
+airworthiness/maintenance/document features. None of this is scoped or
+prioritised; recorded here as raw inspiration.
+
+- **Show the *basis* for a due date, not just the countdown.** Every status
+  tile on their dashboard pairs the due-date/hours-remaining with a one-line
+  "basis": last-done date + interval + the regulation or house rule it comes
+  from (e.g. "Last change 2026-03-02 at tach 4821.3 · Lycoming SB 480F").
+  OpenHangar's airworthiness tracker and maintenance triggers currently show
+  the computed due value; consider always surfacing *how* it was computed
+  (source entry + interval) inline, not just on drill-down.
+
+- **AD/SB compliance board tied to serial numbers, with an exportable annual
+  checklist.** A per-aircraft board of Airworthiness Directives/Service
+  Bulletins, each tagged recurring/conditional/verify-part-number/closed/N-A,
+  with a disclaimer that it's an owner's working summary, not the
+  authoritative FAA record. Below it, a checklist of "applicability items to
+  confirm with the IA at the annual" (checkboxes persisted client-side, plus
+  a "copy as plain text" button to paste into a work order/email). OpenHangar
+  has no AD/SB tracking today — this could be a genuinely new module under
+  `airworthiness`, distinct from the generic document/trigger model, with a
+  print/export view for the annual.
+
+- **A "data integrity" page that discloses record-keeping gaps as a first-class
+  feature**, instead of only tracking what's compliant. Their site has a
+  dedicated page listing every place their own paper trail contradicts itself
+  (e.g. three different computed "hours since overhaul" figures that don't
+  agree), each with severity, consequence, and a suggested resolution — plus
+  documented transcription conventions (`[illegible]`, `[sic]`, etc.) for
+  hand-transcribed historical entries. For OpenHangar this maps to a new kind
+  of audit view — separate from snags — that surfaces things like conflicting
+  hour-meter readings or gaps in the logbook chain, useful for shared
+  ownership handoffs, resale, or partner trust generally.
+
+- **A computed "what's the next thing to do" agenda.** Rather than just
+  listing every trigger sorted by date, their maintenance planner computes
+  one sentence naming the single most urgent action across *all* trigger
+  types (oil, annual, AD, ELT battery, etc.), then an ordered "then, in
+  order" list for the rest. Worth considering as a small addition on top of
+  the existing maintenance-trigger list: a one-line "next action" summary per
+  aircraft.
+
+- **A printable one-page "hangar sheet".** A `@media print`-only view
+  combining open squawks + on-hand parts + parts due for reorder, meant to be
+  printed and carried to the aircraft. OpenHangar's snag list and maintenance
+  triggers could gain an equivalent print stylesheet/view for offline
+  ramp/hangar use — cheap to add, no new data model needed.
+
+- **Oil-analysis trend log with a benchmark reference line.** A dedicated
+  engine-health page charting each wear-metal/viscosity parameter over every
+  logged oil sample, with a "universal average" (manufacturer/fleet
+  benchmark) line on each chart, and short auto-generated findings (e.g. "the
+  January spike was chased with a shortened interval and closed by three
+  clean follow-up samples"). OpenHangar has cost tracking and maintenance
+  triggers but nothing engine-health-specific; an oil-sample log + trend
+  chart (even without auto-narrative) would be a natural airworthiness/
+  maintenance sub-feature for owners who do regular oil analysis.
+
+- **IFR-specific currency items tracked alongside airworthiness**: VOR
+  accuracy check (14 CFR 91.171, 30-day validity) and nav database cycle
+  (28-day), each with the regulatory citation and tolerance shown inline.
+  Currently out of scope for OpenHangar's airworthiness tracker (which is
+  ARC/AD/insurance-oriented) but could be added as configurable/optional
+  trigger types for IFR-equipped aircraft.
+
+- **Owner "insight log" — a tag-filterable decision journal**, separate from
+  the maintenance logbook and from snags: dated entries capturing *why* a
+  decision was made ("the call" + "because"), not just what was done. Useful
+  institutional memory that logbooks don't capture (why a repair was
+  deferred, why a vendor was chosen). Could be a lightweight new note/insight
+  feature tied to an aircraft, filterable by tag, linking out to the
+  relevant document/trigger/squawk.
+
+- **Parts reorder prediction from historical order-date cadence** (not a
+  fixed schedule): for each consumable, compute the average interval between
+  past orders and flag "Due"/"Soon"/"Not yet" based on time since the last
+  one, plus a small "do not reorder blindly" flag list for part numbers known
+  to be wrong/superseded. Distinct from OpenHangar's cost tracking; would
+  need an actual parts/inventory model first.
+
+- **Aggregate flight-statistics view**: total nautical miles, airports/states
+  visited, "corners of the map" (farthest N/S/E/W, highest/lowest field),
+  longest single leg and longest multi-leg day, all computed from existing
+  flight-log data. For shared ownership/flight club, a combined-vs-per-pilot
+  stats table that de-duplicates flights logged by multiple crew. OpenHangar
+  already has flight logging + GPS import; this is a reporting view on top,
+  no new data model needed beyond what `Flight` already has.
+
+- **Avionics/equipment inventory with per-unit status and an upgrade wish
+  list.** A page listing each installed avionics unit with role, status
+  (serviceable/open-squawk/placarded-inoperative), certification history,
+  and STC/AFMS approvals — plus a separate "wish list" of planned upgrades
+  with rough cost and what installing them would require. Could extend
+  OpenHangar's aircraft/document model with an equipment sub-list distinct
+  from generic documents.
+
