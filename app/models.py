@@ -1785,6 +1785,12 @@ class Document(db.Model):
     category = db.Column(
         db.String(32), nullable=True
     )  # DocCategory value; drives on-disk folder
+    # NULL means "in force as soon as uploaded" (the original behaviour,
+    # before valid_from existed) -- only set it to model a document that
+    # shouldn't become the active one until a future date, e.g. next
+    # quarter's insurance cert uploaded ahead of time. See
+    # documents/routes.py active_document_for().
+    valid_from = db.Column(db.Date, nullable=True)
     valid_until = db.Column(db.Date, nullable=True)
     superseded_by_id = db.Column(
         db.Integer, db.ForeignKey("documents.id", ondelete="SET NULL"), nullable=True
@@ -1851,6 +1857,16 @@ class Document(db.Model):
         if self.valid_until is None:
             return False
         return (self.valid_until - _date.today()).days <= 90
+
+    @property
+    def is_upcoming(self) -> bool:
+        """True when valid_from is set and still in the future -- this
+        document is on file but not yet in force."""
+        from datetime import date as _date
+
+        if self.valid_from is None:
+            return False
+        return self.valid_from > _date.today()
 
 
 # ── Syncthing reconcile queue ─────────────────────────────────────────────────

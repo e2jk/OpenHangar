@@ -228,6 +228,65 @@ class TestListDocuments:
         assert rv.status_code in (302, 401)
 
 
+class TestListDocumentsDocTypeFilter:
+    def _make_pair(self, app, ac_id):
+        """One active insurance cert + one upcoming one of the same type."""
+        import datetime
+
+        from models import DocType  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            today = datetime.date.today()
+            current = Document(
+                aircraft_id=ac_id,
+                filename="c.pdf",
+                original_filename="c.pdf",
+                title="Current",
+                doc_type=DocType.INSURANCE_CERT,
+                valid_until=today + datetime.timedelta(days=10),
+            )
+            future = Document(
+                aircraft_id=ac_id,
+                filename="f.pdf",
+                original_filename="f.pdf",
+                title="Future",
+                doc_type=DocType.INSURANCE_CERT,
+                valid_from=today + datetime.timedelta(days=10),
+                valid_until=today + datetime.timedelta(days=100),
+            )
+            db.session.add_all([current, future])
+            db.session.commit()
+            return current.id, future.id
+
+    def test_filter_shows_only_matching_type_with_badges(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, "ldf1@x.com")
+        ac_id = _add_aircraft(app, tid)
+        _add_document(app, ac_id, title="Unrelated")
+        self._make_pair(app, ac_id)
+        _login(app, client, "ldf1@x.com")
+
+        rv = client.get(f"/aircraft/{ac_id}/documents?doc_type=insurance_certificate")
+        assert rv.status_code == 200
+        html = rv.data.decode()
+        assert "Unrelated" not in html
+        assert "Current" in html
+        assert "Future" in html
+        assert "Showing:" in html
+        assert "Document currently active" in html
+        assert "Document upcoming" in html
+
+    def test_invalid_doc_type_is_ignored(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, "ldf2@x.com")
+        ac_id = _add_aircraft(app, tid)
+        _add_document(app, ac_id, title="Unrelated")
+        _login(app, client, "ldf2@x.com")
+
+        rv = client.get(f"/aircraft/{ac_id}/documents?doc_type=not-a-real-type")
+        assert rv.status_code == 200
+        assert "Unrelated" in rv.data.decode()
+        assert "Showing:" not in rv.data.decode()
+
+
 # ── Upload document ───────────────────────────────────────────────────────────
 
 
@@ -571,6 +630,38 @@ class TestAircraftDetailDocuments:
         _login(app, client)
         rv = client.get(f"/aircraft/{ac_id}")
         assert b"Secret" not in rv.data
+
+    def test_insurance_history_link_requests_sensitive_docs(self, app, client):
+        """Insurance/ARC certs are always uploaded sensitive (see
+        _upload_expiry_cert) -- the History link must ask for sensitive=1
+        or it would land on what looks like an empty list."""
+        import datetime
+
+        from models import (  # pyright: ignore[reportMissingImports]
+            Aircraft,
+            DocType,
+        )
+
+        _uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            doc = Document(
+                aircraft_id=ac_id,
+                filename="ins.pdf",
+                original_filename="ins.pdf",
+                doc_type=DocType.INSURANCE_CERT,
+                valid_until=datetime.date(2027, 1, 1),
+                is_sensitive=True,
+            )
+            db.session.add(doc)
+            db.session.get(Aircraft, ac_id).insurance_expiry = datetime.date(2027, 1, 1)
+            db.session.commit()
+        _login(app, client)
+
+        rv = client.get(f"/aircraft/{ac_id}")
+        html = rv.data.decode()
+        assert "doc_type=insurance_certificate" in html
+        assert "sensitive=1" in html
 
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
@@ -1067,6 +1158,310 @@ class TestInsuranceDocumentAutoFill:
 
             ac = db.session.get(Aircraft, ac_id)
             assert ac.insurance_expiry is None
+
+
+# ── active_document_for() — the centralized "which document is active" logic ──
+
+
+class TestActiveDocumentFor:
+    def test_no_candidates_returns_none(self, app):
+        from documents.routes import (  # pyright: ignore[reportMissingImports]
+            active_document_for,
+        )
+
+        _uid, tid = _create_user_and_tenant(app, "adf1@x.com")
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            assert active_document_for(ac_id, "insurance_certificate") is None
+
+    def test_single_undated_doc_is_active(self, app):
+        import datetime
+
+        from documents.routes import (  # pyright: ignore[reportMissingImports]
+            active_document_for,
+        )
+        from models import DocType  # pyright: ignore[reportMissingImports]
+
+        _uid, tid = _create_user_and_tenant(app, "adf2@x.com")
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            doc = Document(
+                aircraft_id=ac_id,
+                filename="a.pdf",
+                original_filename="a.pdf",
+                doc_type=DocType.INSURANCE_CERT,
+                valid_until=datetime.date(2027, 1, 1),
+            )
+            db.session.add(doc)
+            db.session.commit()
+            active = active_document_for(ac_id, DocType.INSURANCE_CERT)
+            assert active is not None
+            assert active.id == doc.id
+
+    def test_future_valid_from_does_not_displace_current(self, app):
+        import datetime
+
+        from documents.routes import (  # pyright: ignore[reportMissingImports]
+            active_document_for,
+        )
+        from models import DocType  # pyright: ignore[reportMissingImports]
+
+        _uid, tid = _create_user_and_tenant(app, "adf3@x.com")
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            today = datetime.date.today()
+            current = Document(
+                aircraft_id=ac_id,
+                filename="c.pdf",
+                original_filename="c.pdf",
+                doc_type=DocType.ARC,
+                valid_until=today + datetime.timedelta(days=10),
+            )
+            future = Document(
+                aircraft_id=ac_id,
+                filename="f.pdf",
+                original_filename="f.pdf",
+                doc_type=DocType.ARC,
+                valid_from=today + datetime.timedelta(days=10),
+                valid_until=today + datetime.timedelta(days=100),
+            )
+            db.session.add_all([current, future])
+            db.session.commit()
+            active = active_document_for(ac_id, DocType.ARC)
+            assert active is not None
+            assert active.id == current.id
+
+    def test_as_of_after_future_valid_from_picks_new_one(self, app):
+        import datetime
+
+        from documents.routes import (  # pyright: ignore[reportMissingImports]
+            active_document_for,
+        )
+        from models import DocType  # pyright: ignore[reportMissingImports]
+
+        _uid, tid = _create_user_and_tenant(app, "adf4@x.com")
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            today = datetime.date.today()
+            current = Document(
+                aircraft_id=ac_id,
+                filename="c.pdf",
+                original_filename="c.pdf",
+                doc_type=DocType.ARC,
+                valid_until=today + datetime.timedelta(days=10),
+            )
+            future = Document(
+                aircraft_id=ac_id,
+                filename="f.pdf",
+                original_filename="f.pdf",
+                doc_type=DocType.ARC,
+                valid_from=today + datetime.timedelta(days=10),
+                valid_until=today + datetime.timedelta(days=100),
+            )
+            db.session.add_all([current, future])
+            db.session.commit()
+            active = active_document_for(
+                ac_id, DocType.ARC, as_of=today + datetime.timedelta(days=15)
+            )
+            assert active is not None
+            assert active.id == future.id
+
+    def test_two_undated_docs_most_recently_uploaded_wins(self, app):
+        from datetime import UTC, datetime, timedelta
+
+        from documents.routes import (  # pyright: ignore[reportMissingImports]
+            active_document_for,
+        )
+        from models import DocType  # pyright: ignore[reportMissingImports]
+
+        _uid, tid = _create_user_and_tenant(app, "adf5@x.com")
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            older = Document(
+                aircraft_id=ac_id,
+                filename="o.pdf",
+                original_filename="o.pdf",
+                doc_type=DocType.INSURANCE_CERT,
+                uploaded_at=datetime.now(UTC) - timedelta(days=1),
+            )
+            newer = Document(
+                aircraft_id=ac_id,
+                filename="n.pdf",
+                original_filename="n.pdf",
+                doc_type=DocType.INSURANCE_CERT,
+                uploaded_at=datetime.now(UTC),
+            )
+            db.session.add_all([older, newer])
+            db.session.commit()
+            active = active_document_for(ac_id, DocType.INSURANCE_CERT)
+            assert active is not None
+            assert active.id == newer.id
+
+    def test_component_scoping_excludes_component_docs(self, app):
+        from documents.routes import (  # pyright: ignore[reportMissingImports]
+            active_document_for,
+        )
+        from models import DocType  # pyright: ignore[reportMissingImports]
+
+        _uid, tid = _create_user_and_tenant(app, "adf6@x.com")
+        ac_id = _add_aircraft(app, tid)
+        comp_id = _add_component(app, ac_id)
+        with app.app_context():
+            comp_doc = Document(
+                aircraft_id=ac_id,
+                component_id=comp_id,
+                filename="c.pdf",
+                original_filename="c.pdf",
+                doc_type=DocType.INSURANCE_CERT,
+            )
+            db.session.add(comp_doc)
+            db.session.commit()
+            assert (
+                active_document_for(ac_id, DocType.INSURANCE_CERT, component_id=None)
+                is None
+            )
+
+
+# ── valid_from: upload/edit validation and "not yet active" behaviour ─────────
+
+
+class TestValidFrom:
+    def test_upload_future_valid_from_does_not_activate_yet(
+        self, app, client, tmp_path
+    ):
+        import datetime
+
+        from models import (  # pyright: ignore[reportMissingImports]
+            Aircraft,
+            DocCategory,
+            DocType,
+        )
+
+        _uid, tid = _create_user_and_tenant(app, "vf1@x.com")
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client, "vf1@x.com")
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        with app.app_context():
+            current = Document(
+                aircraft_id=ac_id,
+                filename="q3.pdf",
+                original_filename="q3.pdf",
+                doc_type=DocType.INSURANCE_CERT,
+                valid_until=datetime.date(2026, 9, 30),
+            )
+            db.session.add(current)
+            db.session.get(Aircraft, ac_id).insurance_expiry = datetime.date(
+                2026, 9, 30
+            )
+            db.session.commit()
+
+        client.post(
+            f"/aircraft/{ac_id}/documents/upload",
+            data={
+                "file": _fake_file("q4.pdf", b"%PDF", "application/pdf"),
+                "category": DocCategory.INSURANCE,
+                "valid_from": "2026-09-30",
+                "valid_until": "2026-12-31",
+            },
+            content_type="multipart/form-data",
+        )
+        with app.app_context():
+            ac = db.session.get(Aircraft, ac_id)
+            # Unchanged -- the new document hasn't started yet, so the
+            # still-current Q3 one remains active.
+            assert ac.insurance_expiry == datetime.date(2026, 9, 30)
+
+    def test_upload_rejects_valid_from_after_valid_until(self, app, client, tmp_path):
+        from models import DocCategory  # pyright: ignore[reportMissingImports]
+
+        _uid, tid = _create_user_and_tenant(app, "vf2@x.com")
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client, "vf2@x.com")
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        rv = client.post(
+            f"/aircraft/{ac_id}/documents/upload",
+            data={
+                "file": _fake_file("bad.pdf", b"%PDF", "application/pdf"),
+                "category": DocCategory.INSURANCE,
+                "valid_from": "2026-12-31",
+                "valid_until": "2026-01-01",
+            },
+            content_type="multipart/form-data",
+        )
+        assert rv.status_code == 200
+        assert b"must not be after" in rv.data
+        with app.app_context():
+            assert Document.query.filter_by(aircraft_id=ac_id).count() == 0
+
+    def test_edit_rejects_valid_from_after_valid_until(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, "vf3@x.com")
+        ac_id = _add_aircraft(app, tid)
+        doc_id = _add_document(app, ac_id, title="Doc")
+        _login(app, client, "vf3@x.com")
+
+        rv = client.post(
+            f"/aircraft/{ac_id}/documents/{doc_id}/edit",
+            data={
+                "title": "Doc",
+                "valid_from": "2026-12-31",
+                "valid_until": "2026-01-01",
+            },
+        )
+        assert rv.status_code == 200
+        assert b"must not be after" in rv.data
+        with app.app_context():
+            assert db.session.get(Document, doc_id).valid_from is None
+
+    def test_quick_upload_widget_rejects_valid_from_after_valid_until(
+        self, app, client, tmp_path
+    ):
+        _uid, tid = _create_user_and_tenant(app, "vf4@x.com")
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client, "vf4@x.com")
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        rv = client.post(
+            f"/aircraft/{ac_id}/insurance-cert/upload",
+            data={
+                "file": _fake_file("bad.pdf", b"%PDF", "application/pdf"),
+                "valid_from": "2026-12-31",
+                "valid_until": "2026-01-01",
+            },
+            content_type="multipart/form-data",
+            follow_redirects=True,
+        )
+        assert rv.status_code == 200
+        assert b"must not be after" in rv.data
+        with app.app_context():
+            assert Document.query.filter_by(aircraft_id=ac_id).count() == 0
+
+    def test_quick_upload_widget_sets_valid_from(self, app, client, tmp_path):
+        import datetime
+
+        from models import DocType  # pyright: ignore[reportMissingImports]
+
+        _uid, tid = _create_user_and_tenant(app, "vf5@x.com")
+        ac_id = _add_aircraft(app, tid)
+        _login(app, client, "vf5@x.com")
+        app.config["UPLOAD_FOLDER"] = str(tmp_path)
+
+        client.post(
+            f"/aircraft/{ac_id}/insurance-cert/upload",
+            data={
+                "file": _fake_file("q4.pdf", b"%PDF", "application/pdf"),
+                "valid_from": "2026-09-30",
+                "valid_until": "2026-12-31",
+            },
+            content_type="multipart/form-data",
+        )
+        with app.app_context():
+            doc = Document.query.filter_by(
+                aircraft_id=ac_id, doc_type=DocType.INSURANCE_CERT
+            ).first()
+            assert doc is not None
+            assert doc.valid_from == datetime.date(2026, 9, 30)
 
 
 # ── Reconcile routes ──────────────────────────────────────────────────────────

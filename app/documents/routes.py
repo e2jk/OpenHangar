@@ -129,26 +129,69 @@ def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
     return ac
 
 
+def active_document_for(
+    aircraft_id: int,
+    doc_type: str,
+    component_id: int | None = None,
+    as_of: _date | None = None,
+) -> Document | None:
+    """The document of this (aircraft, doc_type[, component]) that is in
+    force as of `as_of` (default today): valid_from is None (meaning "in
+    force as soon as uploaded") or has already arrived. Among those, the
+    one with the latest valid_from wins; ties -- including the common
+    valid_from=None case -- break on uploaded_at, so behaviour for
+    documents that never set valid_from is unchanged from before this
+    concept existed. Deliberately ignores superseded_by_id: that's a
+    structural "replaced by" pointer set at upload time, not a statement
+    about which document is in force today."""
+    as_of = as_of or _date.today()
+    # Ordering (not a Python-side max()) so the comparison stays in SQL --
+    # a freshly-flushed-but-uncommitted Document's tz-aware uploaded_at can
+    # otherwise be compared against an already-committed sibling's
+    # SQLite-naive one and raise. NULL valid_from sorts last (lowest
+    # priority, same as treating it as `date.min`).
+    result: Document | None = (
+        Document.query.filter(
+            Document.aircraft_id == aircraft_id,
+            Document.doc_type == doc_type,
+            Document.component_id == component_id,
+            db.or_(Document.valid_from.is_(None), Document.valid_from <= as_of),
+        )
+        .order_by(Document.valid_from.desc().nullslast(), Document.uploaded_at.desc())
+        .first()
+    )
+    return result
+
+
 def _recompute_expiry_field(ac: Aircraft, doc_type: str | None) -> None:
     """Keep Aircraft.insurance_expiry/arc_expiry in step with whichever
-    Document of that doc_type is currently active (non-superseded) for this
-    aircraft. Called after any create/edit/delete that could change which
-    document is active — safe to call for any doc_type, a no-op for ones
-    that don't drive an Aircraft field."""
+    Document of that doc_type is currently active (see
+    active_document_for). Called after any create/edit/delete that could
+    change which document is active, and once daily (see
+    services.notification_service._recompute_all_expiry_fields) so a
+    future-dated document activates on its valid_from even without a new
+    edit that day — safe to call for any doc_type, a no-op for ones that
+    don't drive an Aircraft field."""
     field = _EXPIRY_DRIVING_DOC_TYPES.get(doc_type or "")
     if not field:
         return
-    active = (
-        Document.query.filter_by(
-            aircraft_id=ac.id,
-            doc_type=doc_type,
-            superseded_by_id=None,
-            component_id=None,
-        )
-        .order_by(Document.uploaded_at.desc())
-        .first()
-    )
+    assert doc_type is not None  # implied by `field` being truthy above
+    active = active_document_for(ac.id, doc_type, component_id=None)
     setattr(ac, field, active.valid_until if active else None)
+
+
+def _parse_date_field(raw: str) -> _date | None:
+    """Parse an optional YYYY-MM-DD form field; invalid/blank input is
+    treated as "not set" rather than rejected outright, matching how
+    valid_until has always been handled here."""
+    raw = raw.strip()
+    if not raw:
+        return None
+    try:
+        return _date.fromisoformat(raw)
+    except ValueError as exc:
+        log.debug("Invalid date field: %s", exc)
+        return None
 
 
 def _get_aircraft_document_or_404(aircraft: Aircraft, document_id: int) -> Document:
@@ -371,9 +414,15 @@ def title_suggestions() -> ResponseReturnValue:
 def list_documents(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     show_sensitive = request.args.get("sensitive") == "1"
+    doc_type_labels = dict(_AIRCRAFT_DOC_TYPES)
+    filter_doc_type = request.args.get("doc_type") or None
+    if filter_doc_type not in doc_type_labels:
+        filter_doc_type = None
     query = Document.query.filter_by(aircraft_id=ac.id)
     if not show_sensitive:
         query = query.filter_by(is_sensitive=False)
+    if filter_doc_type:
+        query = query.filter_by(doc_type=filter_doc_type)
     docs = query.order_by(Document.uploaded_at.desc()).all()
     sensitive_count = Document.query.filter_by(
         aircraft_id=ac.id, is_sensitive=True
@@ -381,6 +430,18 @@ def list_documents(aircraft_id: int) -> ResponseReturnValue:
     role = _current_role()
     is_owner = role in _OWNER_ROLES
     broken_ids = {doc.id for doc in docs if _doc_broken(doc)}
+    # One active document per doc_type actually present in this list --
+    # cheap even unfiltered, since an aircraft only ever has the two
+    # expiry-driving types (ARC/insurance) to look up.
+    doc_types_shown = {
+        d.doc_type for d in docs if d.doc_type in _EXPIRY_DRIVING_DOC_TYPES
+    }
+    active_doc_ids = {
+        active.id
+        for dt in doc_types_shown
+        for active in [active_document_for(ac.id, dt, component_id=None)]
+        if active is not None
+    }
     return render_template(
         "documents/list.html",
         aircraft=ac,
@@ -390,6 +451,10 @@ def list_documents(aircraft_id: int) -> ResponseReturnValue:
         is_owner=is_owner,
         broken_ids=broken_ids,
         category_labels=_CATEGORY_LABELS,
+        filter_doc_type=filter_doc_type,
+        filter_doc_type_label=doc_type_labels.get(filter_doc_type or ""),
+        active_doc_ids=active_doc_ids,
+        expiry_driving_doc_types=_EXPIRY_DRIVING_DOC_TYPES,
     )
 
 
@@ -413,13 +478,8 @@ def upload_document(aircraft_id: int) -> ResponseReturnValue:
         category = request.form.get("category") or None
         if category and category not in DocCategory.ALL:
             category = None
-        valid_until_str = request.form.get("valid_until", "").strip()
-        valid_until = None
-        if valid_until_str:
-            try:
-                valid_until = _date.fromisoformat(valid_until_str)
-            except ValueError as exc:
-                log.debug("Invalid valid_until date: %s", exc)
+        valid_from = _parse_date_field(request.form.get("valid_from", ""))
+        valid_until = _parse_date_field(request.form.get("valid_until", ""))
 
         def _re_render(msg: str | None = None) -> str:
             if msg:
@@ -442,6 +502,9 @@ def upload_document(aircraft_id: int) -> ResponseReturnValue:
                 _("File type '%(ext)s' is not allowed.", ext=ext or "unknown")
             )
 
+        if valid_from and valid_until and valid_from > valid_until:
+            return _re_render(_("'Valid from' must not be after 'Valid until'."))
+
         # Use canonical path when a category is set and this is an aircraft doc
         if category and not component:
             tenant = _get_tenant()
@@ -462,6 +525,7 @@ def upload_document(aircraft_id: int) -> ResponseReturnValue:
             title=title,
             doc_type=doc_type,
             category=category,
+            valid_from=valid_from,
             valid_until=valid_until,
             is_sensitive=is_sensitive,
         )
@@ -553,13 +617,19 @@ def edit_document(aircraft_id: int, document_id: int) -> ResponseReturnValue:
                     except OSError as exc:
                         log.warning("Could not move document file: %s", exc)
 
-        valid_until_str = request.form.get("valid_until", "").strip()
-        doc.valid_until = None
-        if valid_until_str:
-            try:
-                doc.valid_until = _date.fromisoformat(valid_until_str)
-            except ValueError as exc:
-                log.debug("Invalid valid_until date: %s", exc)
+        new_valid_from = _parse_date_field(request.form.get("valid_from", ""))
+        new_valid_until = _parse_date_field(request.form.get("valid_until", ""))
+        if new_valid_from and new_valid_until and new_valid_from > new_valid_until:
+            flash(_("'Valid from' must not be after 'Valid until'."), "danger")
+            return render_template(
+                "documents/edit_form.html",
+                aircraft=ac,
+                doc=doc,
+                doc_types=_AIRCRAFT_DOC_TYPES,
+                categories=list(_CATEGORY_LABELS.items()),
+            )
+        doc.valid_from = new_valid_from
+        doc.valid_until = new_valid_until
 
         # Recompute whichever Aircraft field(s) this document could affect —
         # both its old and new doc_type, in case the type itself changed.
@@ -676,13 +746,11 @@ def _upload_expiry_cert(
         flash(_("File type '%(ext)s' is not allowed.", ext=ext or "unknown"), "danger")
         return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
 
-    valid_until_str = request.form.get("valid_until", "").strip()
-    valid_until = None
-    if valid_until_str:
-        try:
-            valid_until = _date.fromisoformat(valid_until_str)
-        except ValueError as exc:
-            log.debug("Invalid valid_until date: %s", exc)
+    valid_from = _parse_date_field(request.form.get("valid_from", ""))
+    valid_until = _parse_date_field(request.form.get("valid_until", ""))
+    if valid_from and valid_until and valid_from > valid_until:
+        flash(_("'Valid from' must not be after 'Valid until'."), "danger")
+        return redirect(url_for("aircraft.detail", aircraft_id=ac.id))
 
     tenant = _get_tenant()
     stored, mime, size = _save_upload_canonical(file, tenant, ac, category, title)
@@ -703,6 +771,7 @@ def _upload_expiry_cert(
         title=title,
         doc_type=doc_type,
         category=category,
+        valid_from=valid_from,
         valid_until=valid_until,
         is_sensitive=True,
     )
