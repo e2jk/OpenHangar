@@ -1318,6 +1318,115 @@ class TestRunDailyChecks:
             assert not m1.called
             assert not m2.called
 
+    def test_calls_recompute_all_expiry_fields_before_checks(self, app):
+        with patch("services.notification_service._recompute_all_expiry_fields") as m:
+            from services.notification_service import (
+                run_daily_checks,  # pyright: ignore[reportMissingImports]
+            )
+
+            run_daily_checks(app)
+            assert m.called
+
+
+class TestRecomputeAllExpiryFields:
+    def test_rolls_cache_over_once_new_document_has_started(self, app):
+        """A document uploaded ahead of its valid_from doesn't count until
+        the daily recompute (or another edit) runs after that date arrives
+        -- simulated here with a valid_from already in the past, since this
+        test suite has no date-mocking convention (see notes elsewhere in
+        this file)."""
+        import datetime
+
+        from models import (  # pyright: ignore[reportMissingImports]
+            Aircraft,
+            DocType,
+            Document,
+            Tenant,
+        )
+
+        with app.app_context():
+            tenant = Tenant(name="Recompute Co", is_active=True)
+            db.session.add(tenant)
+            db.session.flush()
+            ac = Aircraft(
+                tenant_id=tenant.id, registration="OO-RCP", make="X", model="Y"
+            )
+            db.session.add(ac)
+            db.session.flush()
+
+            old = Document(
+                aircraft_id=ac.id,
+                filename="old.pdf",
+                original_filename="old.pdf",
+                doc_type=DocType.ARC,
+                valid_until=datetime.date.today() - datetime.timedelta(days=1),
+            )
+            new = Document(
+                aircraft_id=ac.id,
+                filename="new.pdf",
+                original_filename="new.pdf",
+                doc_type=DocType.ARC,
+                valid_from=datetime.date.today() - datetime.timedelta(days=1),
+                valid_until=datetime.date.today() + datetime.timedelta(days=300),
+            )
+            db.session.add_all([old, new])
+            db.session.flush()
+            ac.arc_expiry = old.valid_until  # stale cache, as if old was active
+            db.session.commit()
+            ac_id = ac.id
+            new_valid_until = new.valid_until
+
+            from services.notification_service import (
+                _recompute_all_expiry_fields,  # pyright: ignore[reportMissingImports]
+            )
+
+            _recompute_all_expiry_fields()
+
+            refreshed = db.session.get(Aircraft, ac_id)
+            assert refreshed.arc_expiry == new_valid_until
+
+    def test_skips_archived_aircraft(self, app):
+        from datetime import UTC, datetime
+
+        from models import (  # pyright: ignore[reportMissingImports]
+            Aircraft,
+            DocType,
+            Document,
+            Tenant,
+        )
+
+        with app.app_context():
+            tenant = Tenant(name="Archived Co", is_active=True)
+            db.session.add(tenant)
+            db.session.flush()
+            ac = Aircraft(
+                tenant_id=tenant.id,
+                registration="OO-ARCH",
+                make="X",
+                model="Y",
+                archived_at=datetime.now(UTC),
+            )
+            db.session.add(ac)
+            db.session.flush()
+            doc = Document(
+                aircraft_id=ac.id,
+                filename="d.pdf",
+                original_filename="d.pdf",
+                doc_type=DocType.ARC,
+                valid_until=None,
+            )
+            db.session.add(doc)
+            db.session.commit()
+            ac_id = ac.id
+
+            from services.notification_service import (
+                _recompute_all_expiry_fields,  # pyright: ignore[reportMissingImports]
+            )
+
+            _recompute_all_expiry_fields()  # must not raise / touch archived aircraft
+
+            assert db.session.get(Aircraft, ac_id).arc_expiry is None
+
 
 # ── daily checks — skip paths (None values) ───────────────────────────────────
 

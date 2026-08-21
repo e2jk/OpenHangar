@@ -50,6 +50,16 @@
   </div>
   {% endif %}
 
+  {% if filter_doc_type %}
+  <div class="mb-3">
+    <span class="badge bg-secondary-subtle text-secondary-emphasis oh-fs-085">
+      {{ _('Showing: %(type)s', type=filter_doc_type_label) }}
+      <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id, sensitive=1 if show_sensitive else none) }}"
+         class="text-decoration-none ms-1" title="{{ _('Clear filter') }}">&times;</a>
+    </span>
+  </div>
+  {% endif %}
+
   {% if docs %}
   <div class="ac-form-card p-0">
     <table class="table table-hover mb-0 oh-fs-09">
@@ -58,6 +68,7 @@
           <th class="ps-3 oh-w-2rem"></th>
           <th>{{ _('Document') }}</th>
           <th>{{ _('Category') }}</th>
+          <th>{{ _('Validity') }}</th>
           <th>{{ _('Scope') }}</th>
           <th>{{ _('Size') }}</th>
           <th>{{ _('Uploaded') }}</th>
@@ -102,6 +113,23 @@
           <td class="align-middle text-muted oh-fs-085">
             {% if doc.category %}
               {{ _(category_labels.get(doc.category, doc.category)) }}
+            {% endif %}
+          </td>
+          <td class="align-middle oh-fs-085 text-nowrap">
+            {% if doc.doc_type in expiry_driving_doc_types %}
+              {% if doc.is_upcoming %}
+              <span class="badge bg-info-subtle text-info-emphasis">{{ _('Document upcoming') }}</span>
+              {% elif doc.id in active_doc_ids %}
+              <span class="badge bg-success-subtle text-success-emphasis">{{ _('Document currently active') }}</span>
+              {% else %}
+              <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ _('Document superseded') }}</span>
+              {% endif %}
+              {% if doc.valid_from %}
+                <span class="text-muted">{{ doc.valid_from.strftime('%Y-%m-%d') }}–</span>
+              {% endif %}
+              {% if doc.valid_until %}
+                <span class="text-muted">{{ doc.valid_until.strftime('%Y-%m-%d') }}</span>
+              {% endif %}
             {% endif %}
           </td>
           <td class="align-middle text-muted">
