@@ -1,0 +1,108 @@
+name: Auto-rebase stale bot PRs
+
+# Race condition: with the ruleset's strict required-status-checks policy
+# (branches must be up to date before merging), whenever one open PR merges
+# to main, every other open PR instantly falls behind and can no longer
+# merge even though its own checks already passed — it needs a rebase and a
+# fresh check run. Dependabot/Renovate don't reliably self-heal this on
+# their own schedule, so this used to mean manually commenting
+# "@dependabot rebase" or checking Renovate's rebase checkbox. This
+# workflow does that automatically for bot-authored PRs only — never for a
+# human's own PR, which might be failing for reasons that have nothing to
+# do with staleness and shouldn't be endlessly re-triggered on someone
+# else's behalf.
+#
+# Per-bot trigger mechanism (each bot's own documented API-friendly path,
+# there is no unified command):
+#   - Dependabot: a "@dependabot rebase" PR comment.
+#   - Renovate: adding the `rebase` label (rebaseLabel default) to the PR —
+#     Renovate has no comment command; the label is the only way to trigger
+#     a rebase without clicking the PR-body checkbox by hand.
+#
+# Runs on every push to main, not just the cron, specifically for the
+# cascade case: if 3 bot PRs are open together and PR1 merges, PR2 and PR3
+# both go stale at once — this workflow nudges both, but if PR2 then
+# merges before PR3's re-run lands, PR3 goes stale *again*. Reacting to
+# `push: main` catches that immediately instead of waiting for the next
+# cron tick (up to 6h away) each time a merge in the cascade lands. The
+# cron is a safety net for the case a trigger doesn't take (e.g. a bot
+# missed/ignored it) rather than the primary mechanism.
+#
+# Capped at 3 attempts per PR (tracked by counting this workflow's own
+# marker comments already on the PR) so a PR that's stale for a real
+# reason — an actual conflicting change, not just a race — doesn't get
+# retried forever instead of surfacing for a human to look at.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch: {}
+
+permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, the job below opts into exactly the write scopes it needs
+
+concurrency:
+  group: auto-rebase-stale-bot-prs
+  cancel-in-progress: false
+
+jobs:
+  rebase:
+    name: Trigger rebase on stale Dependabot/Renovate PRs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pull-requests: write  # gh pr comment / gh pr edit --add-label
+      issues: write         # gh label create (labels are an Issues-API resource)
+    steps:
+      - name: Ensure the `rebase` label exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh label create rebase \
+            --color ededed \
+            --description "Ask Renovate to rebase this PR" \
+            2>/dev/null || true
+
+      - name: Rebase stale Dependabot/Renovate PRs (bounded retries)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          MAX_ATTEMPTS: "3"
+          MARKER: "<!-- openhangar-auto-rebase -->"
+        run: |
+          set -uo pipefail
+
+          gh pr list --state open --base main --limit 100 \
+            --json number,author,mergeStateStatus \
+            --jq '.[] | select(.author.login == "dependabot[bot]" or .author.login == "renovate[bot]") | select(.mergeStateStatus == "BEHIND" or .mergeStateStatus == "DIRTY") | [.number, .author.login] | @tsv' \
+          | while IFS=$'\t' read -r pr_number author_login; do
+              attempts=$(gh pr view "$pr_number" --json comments \
+                --jq "[.comments[] | select(.body | contains(\"$MARKER\"))] | length")
+
+              if [ "$attempts" -ge "$MAX_ATTEMPTS" ]; then
+                echo "PR #$pr_number ($author_login): already retried $attempts/$MAX_ATTEMPTS times — leaving for a human, not retrying again."
+                continue
+              fi
+
+              next_attempt=$((attempts + 1))
+              echo "PR #$pr_number ($author_login): triggering rebase, attempt $next_attempt/$MAX_ATTEMPTS"
+              note="Auto-rebase attempt $next_attempt/$MAX_ATTEMPTS -- this PR fell behind main (or hit a conflict) after another PR merged."
+
+              if [ "$author_login" = "dependabot[bot]" ]; then
+                body=$(printf '@dependabot rebase\n\n%s\n%s\n' "$note" "$MARKER")
+                if ! gh pr comment "$pr_number" --body "$body"; then
+                  echo "::warning::Failed to comment on PR #$pr_number"
+                fi
+              else
+                if ! gh pr edit "$pr_number" --add-label rebase; then
+                  echo "::warning::Failed to label PR #$pr_number"
+                  continue
+                fi
+                body=$(printf 'Added the rebase label to ask Renovate to rebase this PR.\n\n%s\n%s\n' "$note" "$MARKER")
+                if ! gh pr comment "$pr_number" --body "$body"; then
+                  echo "::warning::Failed to comment on PR #$pr_number"
+                fi
+              fi
+            done
