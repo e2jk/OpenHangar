@@ -40,6 +40,11 @@ destructive git commands, or deploy. Propose commit messages; let the human comm
 # two commands; combining them into one `pip install -r a -r b` breaks
 # --require-hashes:
 python3 -m venv .venv
+# Bootstrap pip itself to the hash-pinned, security-patched version (the
+# venv's own bundled pip can lag behind and carry known CVEs — see
+# requirements/pip-bootstrap.txt, the same pin used by docker/Dockerfile
+# and CI):
+.venv/bin/pip install --require-hashes -r requirements/pip-bootstrap.txt
 .venv/bin/pip install -r requirements/runtime.txt
 .venv/bin/pip install -r requirements/dev.txt
 
