@@ -175,9 +175,9 @@ boolean-py==5.0 \
 cachecontrol==0.14.4 \
     --hash=sha256:b7ac014ff72ee199b5f8af1de29d60239954f223e948196fa3d84adaffc71d2b \
     --hash=sha256:e6220afafa4c22a47dd0badb319f84475d79108100d04e26e8542ef7d3ab05a1
-cachelib==0.15.0 \
-    --hash=sha256:14a226c9856a48f1666cdb107fc4573171c1c820cb3fd2528a57f81fde8170e5 \
-    --hash=sha256:40a387c42d12e90c8a1a2cb87dedcc34fd9143a5b2c7f2daed3d4c56ebf7bdfc
+cachelib==0.15.2 \
+    --hash=sha256:41adb53d11594b1a9874789dc0fdbc83e63d3d7c0d9de54faea026008aa75d32 \
+    --hash=sha256:618d8df297cf63b36529129f70c84bfc0ce522dc2cfb24a152b1ac73fa54f9b6
 certifi==2026.7.22 \
     --hash=sha256:62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775 \
     --hash=sha256:741e2c3b351ddf169a738da9f2c048608ff7f2c5cc02f1ebc6b118bb090d5d55
