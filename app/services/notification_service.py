@@ -407,6 +407,30 @@ def dispatch(
 # ── Daily expiry checks ────────────────────────────────────────────────────────
 
 
+def _recompute_all_expiry_fields() -> None:
+    """Roll Aircraft.insurance_expiry/arc_expiry over to a future-dated
+    document once its valid_from arrives, even on days nobody touches that
+    aircraft's documents -- upload/edit/delete (documents/routes.py) are
+    the only other trigger for _recompute_expiry_field. Runs before the
+    checks below so a same-day rollover is reflected in that day's
+    notification emails too, not just the next one."""
+    from documents.routes import (  # pyright: ignore[reportMissingImports]
+        _recompute_expiry_field,
+    )
+    from models import (  # pyright: ignore[reportMissingImports]
+        Aircraft,
+        DocType,
+        Tenant,
+        db,
+    )
+
+    for tenant in Tenant.query.filter_by(is_active=True).all():
+        for ac in Aircraft.query.filter_by(tenant_id=tenant.id, archived_at=None).all():
+            _recompute_expiry_field(ac, DocType.INSURANCE_CERT)
+            _recompute_expiry_field(ac, DocType.ARC)
+    db.session.commit()
+
+
 def run_daily_checks(app: Any) -> None:
     """Check all expiry-based notification types across all tenants. Runs in background thread.
 
@@ -435,6 +459,7 @@ def run_daily_checks(app: Any) -> None:
                     materialize_recurring_expenses,
                 )
 
+                _recompute_all_expiry_fields()
                 materialize_recurring_expenses()
                 run_co_owner_billing_pass_all()
                 _check_maintenance(app)
@@ -678,8 +703,11 @@ def _check_medical_and_sep(app: Any) -> None:
             (
                 NT.SEP_RATING_EXPIRING,
                 profile.sep_expiry,
-                _l("SEP rating"),
-                _l("SEP rating"),
+                # Same msgid as the dashboard's SEP section label
+                # (app/templates/dashboard.html) -- same concept, not a
+                # coincidental duplicate.
+                _l("SEP endorsement"),
+                _l("SEP endorsement"),
             ),
         ]:
             if expiry is None:
@@ -906,7 +934,14 @@ def _check_renter_authorizations(app: Any) -> None:
         # immediately in whatever locale is active at check-time, not the
         # eventual recipient's, so the translated value is built with _l()
         # instead and stays lazy until Jinja renders it per-recipient.
-        _label_text = {"authorization": _l("authorization"), "medical": _l("medical")}
+        # "medical certificate" here is deliberately the same msgid as the
+        # pilot's-own-medical label in _check_medical_and_sep (label_lower)
+        # -- same real-world concept (medical certificate validity), same
+        # translation, not a coincidence to be flagged.
+        _label_text = {
+            "authorization": _l("authorization"),
+            "medical": _l("medical certificate"),
+        }
         details = []
         for auth, label, expiry in rows:
             renter_name = (

@@ -289,20 +289,32 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         .all()
     )
     document_count = Document.query.filter_by(aircraft_id=ac.id).count()
-    active_insurance_cert = (
-        Document.query.filter_by(
-            aircraft_id=ac.id,
-            doc_type=DocType.INSURANCE_CERT,
+    from datetime import date as _cert_date
+
+    from documents.routes import (  # pyright: ignore[reportMissingImports]
+        active_document_for,
+    )
+
+    active_insurance_cert = active_document_for(ac.id, DocType.INSURANCE_CERT)
+    active_arc_cert = active_document_for(ac.id, DocType.ARC)
+    upcoming_insurance_cert = (
+        Document.query.filter(
+            Document.aircraft_id == ac.id,
+            Document.doc_type == DocType.INSURANCE_CERT,
+            Document.component_id.is_(None),
+            Document.valid_from > _cert_date.today(),
         )
-        .filter(Document.superseded_by_id.is_(None))
+        .order_by(Document.valid_from.asc())
         .first()
     )
-    active_arc_cert = (
-        Document.query.filter_by(
-            aircraft_id=ac.id,
-            doc_type=DocType.ARC,
+    upcoming_arc_cert = (
+        Document.query.filter(
+            Document.aircraft_id == ac.id,
+            Document.doc_type == DocType.ARC,
+            Document.component_id.is_(None),
+            Document.valid_from > _cert_date.today(),
         )
-        .filter(Document.superseded_by_id.is_(None))
+        .order_by(Document.valid_from.asc())
         .first()
     )
     open_snags = (
@@ -398,6 +410,8 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         document_count=document_count,
         active_insurance_cert=active_insurance_cert,
         active_arc_cert=active_arc_cert,
+        upcoming_insurance_cert=upcoming_insurance_cert,
+        upcoming_arc_cert=upcoming_arc_cert,
         open_snags=open_snags,
         wb_config=wb_cfg,
         last_wb_entry=last_wb_entry,

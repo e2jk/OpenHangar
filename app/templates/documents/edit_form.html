@@ -69,6 +69,13 @@
           {% endif %}
 
           <div class="mb-3">
+            <label for="valid_from" class="form-label">{{ _('Valid from') }}</label>
+            <input type="date" class="form-control" id="valid_from" name="valid_from"
+                   value="{{ doc.valid_from.isoformat() if doc.valid_from else '' }}">
+            <div class="form-text">{{ _("Only needed if this document shouldn't count as active yet — e.g. next quarter's insurance uploaded ahead of time.") }}</div>
+          </div>
+
+          <div class="mb-3">
             <label for="valid_until" class="form-label">{{ _('Valid until') }}</label>
             <input type="date" class="form-control" id="valid_until" name="valid_until"
                    value="{{ doc.valid_until.isoformat() if doc.valid_until else '' }}">

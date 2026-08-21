@@ -740,7 +740,10 @@
             action="{{ url_for('documents.upload_insurance_cert', aircraft_id=aircraft.id) }}"
             enctype="multipart/form-data"
             hx-swap="innerHTML show:none" data-scroll-anchor="insurance-section"
-            class="d-flex gap-2 align-items-center">
+            class="d-flex gap-2 flex-wrap align-items-center">
+        <input type="date" name="valid_from" class="form-control form-control-sm w-auto"
+               aria-label="{{ _('Valid from (optional)') }}"
+               title="{{ _('Only needed for a document that should not become active yet, e.g. next quarter\'s cert uploaded ahead of time.') }}">
         <input type="date" name="valid_until" class="form-control form-control-sm w-auto" required
                aria-label="{{ _('New expiry date') }}">
         <label class="btn btn-ac-primary btn-sm mb-0 oh-cursor-pointer">
@@ -775,6 +778,18 @@
          class="btn btn-ac-secondary btn-sm" target="_blank">
         <i class="bi bi-file-earmark-text me-1"></i>{{ _('View certificate') }}
       </a>
+      <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id, doc_type='insurance_certificate', sensitive=1) }}"
+         class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-clock-history me-1"></i>{{ _('History') }}
+      </a>
+    </div>
+    {% endif %}
+    {% if upcoming_insurance_cert %}
+    <div class="mt-2 oh-fs-085 text-muted">
+      <i class="bi bi-hourglass-split me-1"></i>
+      {{ _('Renewal on file, valid from %(date)s', date=upcoming_insurance_cert.valid_from.strftime('%Y-%m-%d')) }}
+      <a href="{{ url_for('flights.serve_upload', filename=upcoming_insurance_cert.filename) }}"
+         target="_blank">{{ _('View') }}</a>
     </div>
     {% endif %}
   </div>
@@ -793,7 +808,10 @@
             action="{{ url_for('documents.upload_arc_cert', aircraft_id=aircraft.id) }}"
             enctype="multipart/form-data"
             hx-swap="innerHTML show:none" data-scroll-anchor="arc-section"
-            class="d-flex gap-2 align-items-center">
+            class="d-flex gap-2 flex-wrap align-items-center">
+        <input type="date" name="valid_from" class="form-control form-control-sm w-auto"
+               aria-label="{{ _('Valid from (optional)') }}"
+               title="{{ _('Only needed for a document that should not become active yet, e.g. next quarter\'s cert uploaded ahead of time.') }}">
         <input type="date" name="valid_until" class="form-control form-control-sm w-auto" required
                aria-label="{{ _('New expiry date') }}">
         <label class="btn btn-ac-primary btn-sm mb-0 oh-cursor-pointer">
@@ -828,6 +846,18 @@
          class="btn btn-ac-secondary btn-sm" target="_blank">
         <i class="bi bi-file-earmark-text me-1"></i>{{ _('View certificate') }}
       </a>
+      <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id, doc_type='arc_certificate', sensitive=1) }}"
+         class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-clock-history me-1"></i>{{ _('History') }}
+      </a>
+    </div>
+    {% endif %}
+    {% if upcoming_arc_cert %}
+    <div class="mt-2 oh-fs-085 text-muted">
+      <i class="bi bi-hourglass-split me-1"></i>
+      {{ _('Renewal on file, valid from %(date)s', date=upcoming_arc_cert.valid_from.strftime('%Y-%m-%d')) }}
+      <a href="{{ url_for('flights.serve_upload', filename=upcoming_arc_cert.filename) }}"
+         target="_blank">{{ _('View') }}</a>
     </div>
     {% endif %}
   </div>
