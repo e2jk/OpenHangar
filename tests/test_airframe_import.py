@@ -158,6 +158,18 @@ class TestHelpers:
         )
         assert hints == {}
 
+    def test_type_hints_use_hm_parser_when_duration_format_selected(self):
+        # 1.75 parses fine as decimal hours, but 75 isn't a valid minute
+        # count under the hours.minutes convention.
+        csv_text = "Date,Pilot,From,Hobbs end\n2020-05-01,Jean,EBOS,1.75\n"
+        parsed = parse_file(csv_text.encode(), "x.csv")
+        mapping = {"date": "date", "hobbs end": "engine_counter_end"}
+        assert airframe_type_hints(parsed, mapping) == {}
+        hints = airframe_type_hints(
+            parsed, mapping, duration_format={"engine_counter_end": "hm"}
+        )
+        assert "hobbs end" in hints
+
 
 class TestImportFlow:
     def test_upload_shows_mapping_page(self, app, client):
@@ -1561,3 +1573,258 @@ class TestAirframeImportReviewRoute:
                 .first()
             )
             assert new_entry.pic_name == "Some Pilot"
+
+
+class TestHistoricalFlag:
+    """Per-batch is_historical: set via checkbox at import time, toggleable
+    after the fact, and consumed by flights/form_parsing.py's
+    flight_is_lenient() to suppress the crew-name-required and
+    duration-mismatch checks when editing a flight from a flagged batch."""
+
+    def test_default_import_not_historical(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="hist1@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-HIS1")
+        _login(app, client, email="hist1@example.com")
+        _upload(client, acid)
+        _execute(client, acid)
+        with app.app_context():
+            batch = AirframeImportBatch.query.filter_by(aircraft_id=acid).one()
+            assert batch.is_historical is False
+
+    def test_is_historical_checkbox_sets_batch_flag(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="hist2@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-HIS2")
+        _login(app, client, email="hist2@example.com")
+        _upload(client, acid)
+        _execute(client, acid, extra={"is_historical": "1"})
+        with app.app_context():
+            batch = AirframeImportBatch.query.filter_by(aircraft_id=acid).one()
+            assert batch.is_historical is True
+
+    def test_toggle_historical_route_flips_flag_both_directions(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="hist3@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-HIS3")
+        _login(app, client, email="hist3@example.com")
+        _upload(client, acid)
+        _execute(client, acid)
+        with app.app_context():
+            batch_id = AirframeImportBatch.query.filter_by(aircraft_id=acid).one().id
+
+        resp = client.post(
+            f"/aircraft/{acid}/flights/import/{batch_id}/toggle-historical",
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        assert b"marked as historical" in resp.data
+        with app.app_context():
+            assert db.session.get(AirframeImportBatch, batch_id).is_historical is True
+
+        resp2 = client.post(
+            f"/aircraft/{acid}/flights/import/{batch_id}/toggle-historical",
+            follow_redirects=True,
+        )
+        assert resp2.status_code == 200
+        assert b"no longer marked as historical" in resp2.data
+        with app.app_context():
+            assert db.session.get(AirframeImportBatch, batch_id).is_historical is False
+
+    def test_toggle_historical_of_foreign_batch_404(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="hist4@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-HIS4")
+        other = _add_aircraft(app, tid, registration="OO-HIS4B")
+        _login(app, client, email="hist4@example.com")
+        _upload(client, other)
+        _execute(client, other)
+        with app.app_context():
+            batch_id = AirframeImportBatch.query.filter_by(aircraft_id=other).one().id
+        resp = client.post(
+            f"/aircraft/{acid}/flights/import/{batch_id}/toggle-historical"
+        )
+        assert resp.status_code == 404
+
+    def test_toggle_historical_forbidden_for_pilot_role(self, app, client):
+        _uid, tid = _create_user_and_tenant(
+            app, email="hist5@example.com", role=Role.PILOT
+        )
+        acid = _add_aircraft(app, tid, registration="OO-HIS5")
+        _login(app, client, email="hist5@example.com")
+        resp = client.post(f"/aircraft/{acid}/flights/import/1/toggle-historical")
+        assert resp.status_code == 403
+
+    def test_upload_page_shows_historical_badge_and_toggle_button(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="hist6@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-HIS6")
+        _login(app, client, email="hist6@example.com")
+        _upload(client, acid)
+        _execute(client, acid, extra={"is_historical": "1"})
+        resp = client.get(f"/aircraft/{acid}/flights/import")
+        assert b"Historical" in resp.data
+        assert b"Unmark as historical" in resp.data
+
+    def _edit_form_data(self, **overrides):
+        data = {
+            "date": "2020-05-01",
+            "departure_icao": "EBOS",
+            "arrival_icao": "EBBR",
+            "flight_time_counter_start": "100.0",
+            "flight_time_counter_end": "101.6",
+            "takeoff_time": "08:00",
+            "landing_time": "10:00",  # 2h clock vs 1.6h counters — mismatch
+            "crew_name_0": "",  # also missing — normally blocked
+            "notes": "Fixed a typo",
+        }
+        data.update(overrides)
+        return data
+
+    def test_historical_batch_edit_survives_duration_mismatch_and_no_crew(
+        self, app, client
+    ):
+        _uid, tid = _create_user_and_tenant(app, email="hist7@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-HIS7")
+        _login(app, client, email="hist7@example.com")
+        _upload(client, acid)
+        _execute(client, acid, extra={"is_historical": "1"})
+        with app.app_context():
+            flight_id = (
+                Flight.query.filter_by(aircraft_id=acid).order_by(Flight.date).first()
+            ).id
+
+        resp = client.post(
+            f"/flights/{flight_id}/edit",
+            data=self._edit_form_data(),
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            updated = db.session.get(Flight, flight_id)
+            assert updated.notes == "Fixed a typo"
+
+    def test_non_historical_batch_edit_still_blocked_on_duration_mismatch(
+        self, app, client
+    ):
+        _uid, tid = _create_user_and_tenant(app, email="hist8@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-HIS8")
+        _login(app, client, email="hist8@example.com")
+        _upload(client, acid)
+        _execute(client, acid)  # not historical
+        with app.app_context():
+            flight_id = (
+                Flight.query.filter_by(aircraft_id=acid).order_by(Flight.date).first()
+            ).id
+
+        resp = client.post(
+            f"/flights/{flight_id}/edit",
+            data=self._edit_form_data(crew_name_0="Jean Dupont"),
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            updated = db.session.get(Flight, flight_id)
+            assert updated.notes != "Fixed a typo"  # rejected, not saved
+
+    def test_toggling_off_historical_reinstates_strict_validation(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="hist9@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-HIS9")
+        _login(app, client, email="hist9@example.com")
+        _upload(client, acid)
+        _execute(client, acid, extra={"is_historical": "1"})
+        with app.app_context():
+            batch_id = AirframeImportBatch.query.filter_by(aircraft_id=acid).one().id
+            flight_id = (
+                Flight.query.filter_by(aircraft_id=acid).order_by(Flight.date).first()
+            ).id
+
+        client.post(f"/aircraft/{acid}/flights/import/{batch_id}/toggle-historical")
+
+        resp = client.post(
+            f"/flights/{flight_id}/edit",
+            data=self._edit_form_data(crew_name_0="Jean Dupont"),
+            follow_redirects=True,
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            updated = db.session.get(Flight, flight_id)
+            assert updated.notes != "Fixed a typo"  # historical flag cleared, blocked
+
+
+class TestDurationFormat:
+    """Per-column decimal-hours-vs-hours.minutes selector on the mapping
+    screen, threaded through to _build_airframe_fields via
+    _parser_for()."""
+
+    def test_hm_format_parses_hours_minutes_notation(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="fmt1@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-FMT1")
+        _login(app, client, email="fmt1@example.com")
+        csv_text = "Date,Pilot,From,Flight time\n2020-05-01,Jean,EBOS,1.30\n"
+        _upload(client, acid, csv_text=csv_text)
+        client.post(
+            f"/aircraft/{acid}/flights/import/execute",
+            data={
+                "mapping_date": "date",
+                "mapping_pilot": "crew_name",
+                "mapping_flight time": "flight_time",
+                "format_flight time": "hm",
+            },
+        )
+        with app.app_context():
+            entry = Flight.query.filter_by(aircraft_id=acid).one()
+            assert float(entry.flight_time) == 1.5
+
+    def test_default_decimal_format_unchanged(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="fmt2@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-FMT2")
+        _login(app, client, email="fmt2@example.com")
+        csv_text = "Date,Pilot,From,Flight time\n2020-05-01,Jean,EBOS,1.30\n"
+        _upload(client, acid, csv_text=csv_text)
+        client.post(
+            f"/aircraft/{acid}/flights/import/execute",
+            data={
+                "mapping_date": "date",
+                "mapping_pilot": "crew_name",
+                "mapping_flight time": "flight_time",
+            },
+        )
+        with app.app_context():
+            entry = Flight.query.filter_by(aircraft_id=acid).one()
+            assert float(entry.flight_time) == 1.3
+
+    def test_hm_format_applies_to_conflict_review_path_too(self, app, client):
+        """duration_format must be honoured by find_conflicting_airframe_rows
+        (and the review/resolve flow) exactly like execute_airframe_import,
+        since both build fields from the same source file."""
+        _uid, tid = _create_user_and_tenant(app, email="fmt3@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-FMT3")
+        _login(app, client, email="fmt3@example.com")
+        with app.app_context():
+            existing = Flight(
+                aircraft_id=acid,
+                date=date(2020, 5, 1),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                flight_time=1.5,
+                landing_count=2,
+            )
+            db.session.add(existing)
+            db.session.commit()
+
+        csv_text = "Date,Pilot,From,To,Flight time,Landings\n2020-05-01,Jean,EBOS,EBBR,1.30,2\n"
+        _upload(client, acid, csv_text=csv_text)
+        resp = client.post(
+            f"/aircraft/{acid}/flights/import/execute",
+            data={
+                "mapping_date": "date",
+                "mapping_pilot": "crew_name",
+                "mapping_from": "departure_icao",
+                "mapping_to": "arrival_icao",
+                "mapping_flight time": "flight_time",
+                "mapping_landings": "landing_count",
+                "format_flight time": "hm",
+            },
+            follow_redirects=True,
+        )
+        # 1.30 parsed as hours.minutes -> 1.5h, matching the existing entry
+        # exactly -> treated as a duplicate, not routed to conflict review.
+        assert b"already in this aircraft" in resp.data or b"nothing new" in resp.data
+        with app.app_context():
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 1

@@ -62,6 +62,7 @@
           <th>{{ _('Imported') }}</th>
           <th class="text-end">{{ _('Flights') }}</th>
           <th class="text-end">{{ _('Warnings') }}</th>
+          <th class="text-center">{{ _('Historical') }}</th>
           <th class="pe-3 text-end"></th>
         </tr>
       </thead>
@@ -72,8 +73,23 @@
           <td class="align-middle text-muted text-nowrap">{{ b.imported_at.strftime('%Y-%m-%d %H:%M') }}</td>
           <td class="align-middle text-end">{{ b.row_count }}</td>
           <td class="align-middle text-end">{{ b.warning_count or 0 }}</td>
-          <td class="pe-3 text-end align-middle">
-            <form method="post"
+          <td class="align-middle text-center">
+            {% if b.is_historical %}
+            <span class="badge oh-bg-dark-navy text-white">{{ _('Historical') }}</span>
+            {% endif %}
+          </td>
+          <td class="pe-3 text-end align-middle text-nowrap">
+            <form method="post" class="d-inline"
+                  action="{{ url_for('flights.airframe_import_toggle_historical', aircraft_id=aircraft.id, batch_id=b.id) }}">
+              <button type="submit" class="btn btn-ac-ghost btn-xs">
+                {% if b.is_historical %}
+                  {{ _('Unmark as historical') }}
+                {% else %}
+                  {{ _('Mark as historical') }}
+                {% endif %}
+              </button>
+            </form>
+            <form method="post" class="d-inline"
                   action="{{ url_for('flights.airframe_import_rollback', aircraft_id=aircraft.id, batch_id=b.id) }}"
                   data-confirm="{{ _('Delete this import and all %(n)s flight entries it created?', n=b.row_count) }}">
               <button type="submit" class="btn btn-ac-danger btn-xs">
