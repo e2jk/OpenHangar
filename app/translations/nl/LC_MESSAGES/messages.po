@@ -381,8 +381,8 @@ msgstr "Document toegevoegd."
 msgid "Only manually added documents can be deleted."
 msgstr "Alleen handmatig toegevoegde documenten kunnen worden verwijderd."
 
-#: app/airworthiness/routes.py:353 app/documents/routes.py:676
-#: app/documents/routes.py:889
+#: app/airworthiness/routes.py:353 app/documents/routes.py:678
+#: app/documents/routes.py:891
 msgid "Document deleted."
 msgstr "Document verwijderd."
 
@@ -700,7 +700,7 @@ msgstr "Bewijs"
 msgid "Medical certificate"
 msgstr "Medisch certificaat"
 
-#: app/documents/routes.py:77 app/documents/routes.py:798
+#: app/documents/routes.py:77 app/documents/routes.py:800
 msgid "Insurance Certificate"
 msgstr "Verzekeringscertificaat"
 
@@ -708,88 +708,88 @@ msgstr "Verzekeringscertificaat"
 msgid "Airworthiness Review Certificate (ARC)"
 msgstr "Certificaat van beoordeling van luchtwaardigheid (ARC)"
 
-#: app/documents/routes.py:494 app/documents/routes.py:738
-#: app/documents/routes.py:837 app/flights/routes.py:1517
+#: app/documents/routes.py:496 app/documents/routes.py:740
+#: app/documents/routes.py:839 app/flights/routes.py:1517
 #: app/pilots/routes.py:1212
 msgid "Please select a file to upload."
 msgstr "Selecteer een bestand om te uploaden."
 
-#: app/documents/routes.py:500 app/documents/routes.py:744
-#: app/documents/routes.py:846
+#: app/documents/routes.py:502 app/documents/routes.py:746
+#: app/documents/routes.py:848
 #, python-format
 msgid "File type '%(ext)s' is not allowed."
 msgstr "Bestandstype '%(ext)s' is niet toegestaan."
 
-#: app/documents/routes.py:504 app/documents/routes.py:621
-#: app/documents/routes.py:750
+#: app/documents/routes.py:506 app/documents/routes.py:623
+#: app/documents/routes.py:752
 msgid "'Valid from' must not be after 'Valid until'."
 msgstr "'Geldig vanaf' mag niet later zijn dan 'Geldig tot'."
 
-#: app/documents/routes.py:561 app/documents/routes.py:868
+#: app/documents/routes.py:563 app/documents/routes.py:870
 #: app/pwa/routes.py:345
 msgid "Document uploaded."
 msgstr "Document geüpload."
 
-#: app/documents/routes.py:638
+#: app/documents/routes.py:640
 msgid "Document updated."
 msgstr "Document bijgewerkt."
 
-#: app/documents/routes.py:784
+#: app/documents/routes.py:786
 msgid "Certificate uploaded."
 msgstr "Certificaat geüpload."
 
-#: app/documents/routes.py:812
+#: app/documents/routes.py:814
 msgid "Airworthiness Review Certificate"
 msgstr "Certificaat van beoordeling van luchtwaardigheid"
 
-#: app/documents/routes.py:951
+#: app/documents/routes.py:953
 msgid "Set a Hangar ID in Settings before scanning for files."
 msgstr "Stel een hangar-ID in via Instellingen voor het scannen van bestanden."
 
-#: app/documents/routes.py:958
+#: app/documents/routes.py:960
 #, python-format
 msgid "No files found in '%(slug)s/'. Mount your Syncthing folder and try again."
 msgstr "Geen bestanden gevonden in '%(slug)s/'. Koppel uw Syncthing-map en probeer opnieuw."
 
-#: app/documents/routes.py:1038
+#: app/documents/routes.py:1040
 #, python-format
 msgid "one new file queued for review"
 msgid_plural "%(n)s new files queued for review"
 msgstr[0] "één nieuw bestand in wachtrij voor beoordeling"
 msgstr[1] "%(n)s nieuwe bestanden in wachtrij voor beoordeling"
 
-#: app/documents/routes.py:1047
+#: app/documents/routes.py:1049
 #, python-format
 msgid "one missing file removed from queue"
 msgid_plural "%(n)s missing files removed from queue"
 msgstr[0] "één ontbrekend bestand uit de wachtrij verwijderd"
 msgstr[1] "%(n)s ontbrekende bestanden uit de wachtrij verwijderd"
 
-#: app/documents/routes.py:1055
+#: app/documents/routes.py:1057
 #, python-format
 msgid "Scan complete — %(details)s."
 msgstr "Scan voltooid — %(details)s."
 
-#: app/documents/routes.py:1058
+#: app/documents/routes.py:1060
 msgid "Scan complete — no new files found."
 msgstr "Scan voltooid — geen nieuwe bestanden gevonden."
 
-#: app/documents/routes.py:1079
+#: app/documents/routes.py:1081
 msgid "Invalid category."
 msgstr "Ongeldige categorie."
 
-#: app/documents/routes.py:1180
+#: app/documents/routes.py:1182
 #, python-format
 msgid "Folder renamed to '%(cat)s' — one file processed."
 msgid_plural "Folder renamed to '%(cat)s' — %(n)s files processed."
 msgstr[0] "Map hernoemd naar '%(cat)s' — één bestand verwerkt."
 msgstr[1] "Map hernoemd naar '%(cat)s' — %(n)s bestanden verwerkt."
 
-#: app/documents/routes.py:1243
+#: app/documents/routes.py:1245
 msgid "Document imported."
 msgstr "Document geïmporteerd."
 
-#: app/documents/routes.py:1257
+#: app/documents/routes.py:1259
 msgid "File ignored."
 msgstr "Bestand genegeerd."
 
@@ -1756,8 +1756,8 @@ msgstr "tot"
 #: app/services/notification_service.py:555
 #: app/services/notification_service.py:610
 #: app/services/notification_service.py:663
-#: app/services/notification_service.py:810
-#: app/services/notification_service.py:877 app/snags/routes.py:267
+#: app/services/notification_service.py:813
+#: app/services/notification_service.py:880 app/snags/routes.py:267
 #: app/snags/routes.py:317 app/templates/aircraft/wb_list.html:30
 #: app/templates/auth/setup.html:363 app/templates/base.html:190
 #: app/templates/base.html:301 app/templates/config/renter_form.html:33
@@ -2219,7 +2219,7 @@ msgid "Reserve fund contribution (%(pct)s%%) — %(month)s"
 msgstr "Reservefondsbijdrage (%(pct)s%%) — %(month)s"
 
 #: app/services/notification_service.py:348
-#: app/services/notification_service.py:1165
+#: app/services/notification_service.py:1175
 #: app/templates/email/notif/welcome.html:1
 #, python-format
 msgid "Hello %(name)s,"
@@ -2284,8 +2284,8 @@ msgstr[1] "De verzekering voor %(reg)s verloopt op %(date)s (%(days)s dagen rest
 
 #: app/services/notification_service.py:611
 #: app/services/notification_service.py:664
-#: app/services/notification_service.py:739
-#: app/services/notification_service.py:812
+#: app/services/notification_service.py:742
+#: app/services/notification_service.py:815
 #: app/templates/config/renters_list.html:31 app/templates/dashboard.html:236
 #: app/templates/dashboard.html:256 app/templates/dashboard.html:275
 #: app/templates/dashboard.html:293 app/templates/users/list.html:156
@@ -2294,7 +2294,7 @@ msgstr "Verloopt"
 
 #: app/services/notification_service.py:612
 #: app/services/notification_service.py:665
-#: app/services/notification_service.py:740
+#: app/services/notification_service.py:743
 msgid "Days left"
 msgstr "Dagen resterend"
 
@@ -2318,167 +2318,164 @@ msgstr[0] "De ARC voor %(reg)s verloopt op %(date)s (één dag resterend)."
 msgstr[1] "De ARC voor %(reg)s verloopt op %(date)s (%(days)s dagen resterend)."
 
 #: app/services/notification_service.py:701
+#: app/services/notification_service.py:943
 msgid "medical certificate"
 msgstr "medische keuring"
 
-#: app/services/notification_service.py:706
-#: app/services/notification_service.py:707
-msgid "SEP rating"
+#: app/services/notification_service.py:709
+#: app/services/notification_service.py:710 app/templates/dashboard.html:290
+msgid "SEP endorsement"
 msgstr "SEP-bevoegdverklaring"
 
-#: app/services/notification_service.py:720
+#: app/services/notification_service.py:723
 #, python-format
 msgid "%(label)s expiring in one day"
 msgid_plural "%(label)s expiring in %(days)s days"
 msgstr[0] "%(label)s verloopt over één dag"
 msgstr[1] "%(label)s verloopt over %(days)s dagen"
 
-#: app/services/notification_service.py:727
+#: app/services/notification_service.py:730
 #, python-format
 msgid "%(label)s expiring soon"
 msgstr "%(label)s verloopt binnenkort"
 
-#: app/services/notification_service.py:730
+#: app/services/notification_service.py:733
 #, python-format
 msgid "Your %(label_lower)s expires on %(date)s (one day remaining)."
 msgid_plural "Your %(label_lower)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "Uw %(label_lower)s verloopt op %(date)s (één dag resterend)."
 msgstr[1] "Uw %(label_lower)s verloopt op %(date)s (%(days)s dagen resterend)."
 
-#: app/services/notification_service.py:788
+#: app/services/notification_service.py:791
 #, python-format
 msgid "Document expiring in one day: %(title)s"
 msgid_plural "Document expiring in %(days)s days: %(title)s"
 msgstr[0] "Document verloopt over één dag: %(title)s"
 msgstr[1] "Document verloopt over %(days)s dagen: %(title)s"
 
-#: app/services/notification_service.py:796
+#: app/services/notification_service.py:799
 #, python-format
 msgid "Document expiring soon: %(title)s"
 msgstr "Document verloopt binnenkort: %(title)s"
 
-#: app/services/notification_service.py:800
+#: app/services/notification_service.py:803
 #, python-format
 msgid "'%(title)s' on %(reg)s expires on %(date)s (one day remaining)."
 msgid_plural "'%(title)s' on %(reg)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "'%(title)s' op %(reg)s verloopt op %(date)s (één dag resterend)."
 msgstr[1] "'%(title)s' op %(reg)s verloopt op %(date)s (%(days)s dagen resterend)."
 
-#: app/services/notification_service.py:811
-#: app/services/notification_service.py:878
+#: app/services/notification_service.py:814
+#: app/services/notification_service.py:881
 #: app/templates/documents/list.html:69
 msgid "Document"
 msgstr "Document"
 
-#: app/services/notification_service.py:848
-#: app/services/notification_service.py:938
+#: app/services/notification_service.py:851
+#: app/services/notification_service.py:948
 msgid "unknown"
 msgstr "onbekend"
 
-#: app/services/notification_service.py:854
+#: app/services/notification_service.py:857
 #, python-format
 msgid "Airworthiness review due in one day: %(ref)s on %(reg)s"
 msgid_plural "Airworthiness review due in %(days)s days: %(ref)s on %(reg)s"
 msgstr[0] "Luchtwaardigheidscontrole over één dag: %(ref)s op %(reg)s"
 msgstr[1] "Luchtwaardigheidscontrole over %(days)s dagen: %(ref)s op %(reg)s"
 
-#: app/services/notification_service.py:863
+#: app/services/notification_service.py:866
 #, python-format
 msgid "Airworthiness review due: %(ref)s"
 msgstr "Luchtwaardigheidscontrole vereist: %(ref)s"
 
-#: app/services/notification_service.py:867
+#: app/services/notification_service.py:870
 #, python-format
 msgid "Document %(ref)s on %(reg)s requires review by %(date)s (one day)."
 msgid_plural "Document %(ref)s on %(reg)s requires review by %(date)s (%(days)s days)."
 msgstr[0] "Document %(ref)s op %(reg)s moet worden beoordeeld voor %(date)s (één dag)."
 msgstr[1] "Document %(ref)s op %(reg)s moet worden beoordeeld voor %(date)s (%(days)s dagen)."
 
-#: app/services/notification_service.py:879
+#: app/services/notification_service.py:882
 #: app/templates/maintenance/fleet.html:168
 #: app/templates/maintenance/list.html:52
 msgid "Due"
 msgstr "Vervaldag"
 
-#: app/services/notification_service.py:934
+#: app/services/notification_service.py:942
 msgid "authorization"
 msgstr "machtiging"
 
-#: app/services/notification_service.py:934
-msgid "medical"
-msgstr "medische keuring"
-
-#: app/services/notification_service.py:944
+#: app/services/notification_service.py:954
 #, python-format
 msgid "%(label)s expires %(date)s"
 msgstr "%(label)s verloopt op %(date)s"
 
-#: app/services/notification_service.py:956
+#: app/services/notification_service.py:966
 #, python-format
 msgid "One renter authorization"
 msgid_plural "%(n)s renter authorizations"
 msgstr[0] "Eén huurautorisatie"
 msgstr[1] "%(n)s huurautorisaties"
 
-#: app/services/notification_service.py:962
+#: app/services/notification_service.py:972
 #, python-format
 msgid "one day"
 msgid_plural "%(threshold)s days"
 msgstr[0] "één dag"
 msgstr[1] "%(threshold)s dagen"
 
-#: app/services/notification_service.py:972
+#: app/services/notification_service.py:982
 #, python-format
 msgid "One renter authorization expiring soon"
 msgid_plural "%(n)s renter authorizations expiring soon"
 msgstr[0] "Eén huurautorisatie verloopt binnenkort"
 msgstr[1] "%(n)s huurautorisaties verlopen binnenkort"
 
-#: app/services/notification_service.py:978
+#: app/services/notification_service.py:988
 msgid "Renter authorizations expiring soon"
 msgstr "Huurautorisaties verlopen binnenkort"
 
-#: app/services/notification_service.py:981
+#: app/services/notification_service.py:991
 #, python-format
 msgid "%(items)s or medical validity dates expire within %(days)s."
 msgstr "%(items)s of geldigheidsdata van medische keuring verlopen binnen %(days)s."
 
-#: app/services/notification_service.py:1038
+#: app/services/notification_service.py:1048
 #: app/templates/pilots/logbook.html:57
 #, python-format
 msgid "no matching flight on record yet (comfort zone: %(threshold)s days)."
 msgstr "nog geen overeenkomstige vlucht geregistreerd (comfortzone: %(threshold)s dagen)."
 
-#: app/services/notification_service.py:1043
+#: app/services/notification_service.py:1053
 #: app/templates/pilots/logbook.html:59
 #, python-format
 msgid "%(days)s days since your last matching flight (comfort zone: %(threshold)s days)."
 msgstr "%(days)s dagen sinds uw laatste overeenkomstige vlucht (comfortzone: %(threshold)s dagen)."
 
-#: app/services/notification_service.py:1054
+#: app/services/notification_service.py:1064
 #, python-format
 msgid "Personal minimums: one recency threshold exceeded"
 msgid_plural "Personal minimums: %(n)s recency thresholds exceeded"
 msgstr[0] "Persoonlijke minima: één recency-drempel overschreden"
 msgstr[1] "Persoonlijke minima: %(n)s recency-drempels overschreden"
 
-#: app/services/notification_service.py:1060
+#: app/services/notification_service.py:1070
 #: app/templates/config/notifications.html:47
 msgid "Personal minimums recency reminder"
 msgstr "Herinnering recency — persoonlijke minima"
 
-#: app/services/notification_service.py:1063
+#: app/services/notification_service.py:1073
 #, python-format
 msgid "You have exceeded one recency threshold in your personal minimums."
 msgid_plural "You have exceeded %(n)s recency thresholds in your personal minimums."
 msgstr[0] "U heeft één recency-drempel in uw persoonlijke minima overschreden."
 msgstr[1] "U heeft %(n)s recency-drempels in uw persoonlijke minima overschreden."
 
-#: app/services/notification_service.py:1164
+#: app/services/notification_service.py:1174
 msgid "Welcome to your OpenHangar instance"
 msgstr "Welkom bij uw OpenHangar-instantie"
 
-#: app/services/notification_service.py:1167
+#: app/services/notification_service.py:1177
 msgid ""
 "Welcome to OpenHangar! Your instance is set up and email delivery is working.\n"
 "\n"
@@ -2589,8 +2586,8 @@ msgid "Snag"
 msgstr "Defect"
 
 #: app/snags/routes.py:319
-msgid "Affected reservation date(s)"
-msgstr "Betrokken reserveringsdatum(s)"
+msgid "Affected reservation dates"
+msgstr "Betrokken reserveringsdatums"
 
 #: app/snags/routes.py:329
 #, python-format
@@ -2990,10 +2987,6 @@ msgstr "Verlopen"
 #: app/templates/dashboard.html:301
 msgid "Not set"
 msgstr "Niet ingesteld"
-
-#: app/templates/dashboard.html:290
-msgid "SEP endorsement"
-msgstr "SEP-bevoegdverklaring"
 
 #: app/templates/dashboard.html:321
 msgid "By type:"

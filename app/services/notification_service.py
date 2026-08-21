@@ -703,8 +703,11 @@ def _check_medical_and_sep(app: Any) -> None:
             (
                 NT.SEP_RATING_EXPIRING,
                 profile.sep_expiry,
-                _l("SEP rating"),
-                _l("SEP rating"),
+                # Same msgid as the dashboard's SEP section label
+                # (app/templates/dashboard.html) -- same concept, not a
+                # coincidental duplicate.
+                _l("SEP endorsement"),
+                _l("SEP endorsement"),
             ),
         ]:
             if expiry is None:
@@ -931,7 +934,14 @@ def _check_renter_authorizations(app: Any) -> None:
         # immediately in whatever locale is active at check-time, not the
         # eventual recipient's, so the translated value is built with _l()
         # instead and stays lazy until Jinja renders it per-recipient.
-        _label_text = {"authorization": _l("authorization"), "medical": _l("medical")}
+        # "medical certificate" here is deliberately the same msgid as the
+        # pilot's-own-medical label in _check_medical_and_sep (label_lower)
+        # -- same real-world concept (medical certificate validity), same
+        # translation, not a coincidence to be flagged.
+        _label_text = {
+            "authorization": _l("authorization"),
+            "medical": _l("medical certificate"),
+        }
         details = []
         for auth, label, expiry in rows:
             renter_name = (
