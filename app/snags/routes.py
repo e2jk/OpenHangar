@@ -316,7 +316,7 @@ def _save_snag(ac: Aircraft, s: Snag | None) -> ResponseReturnValue:
                             "details": [
                                 (_l("Aircraft"), ac.registration),
                                 (_l("Snag"), title),
-                                (_l("Affected reservation date(s)"), dates),
+                                (_l("Affected reservation dates"), dates),
                             ],
                         },
                         target_user_ids=pilot_ids,
