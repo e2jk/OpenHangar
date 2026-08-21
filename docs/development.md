@@ -143,6 +143,10 @@ Flask's built-in test client and does not require the database or Docker to be r
 ```bash
 python3.11 -m venv .venv      # Python 3.12+ is faster for coverage runs
 source .venv/bin/activate
+# Bootstrap pip itself to the hash-pinned, security-patched version — the
+# venv's own bundled pip can lag behind and carry known CVEs (see
+# requirements/pip-bootstrap.txt, the same pin docker/Dockerfile and CI use).
+pip install --require-hashes -r requirements/pip-bootstrap.txt
 pip install -r requirements/runtime.txt
 pip install -r requirements/dev.txt
 ```
