@@ -923,6 +923,9 @@ class Flight(db.Model):
         db.ForeignKey("airframe_import_batches.id", ondelete="SET NULL"),
         nullable=True,
     )
+    airframe_import_batch = db.relationship(
+        "AirframeImportBatch", foreign_keys=[airframe_import_batch_id]
+    )
     # Pilot logbook import (CSV/Excel) — independent of airframe_import_batch_id
     # above; a row can carry both once it's been touched from both sides.
     import_batch_id = db.Column(
@@ -1245,6 +1248,12 @@ class AirframeImportBatch(db.Model):
     skipped_count = db.Column(db.Integer, nullable=False, default=0)
     warning_count = db.Column(db.Integer, nullable=False, default=0)
     has_opening_counters = db.Column(db.Boolean, nullable=False, default=False)
+    # One-time digitization of pre-existing paper records: rows may contain
+    # imprecision (OCR misreads, decimal/hours.minutes ambiguity) that must
+    # still be imported as-is, and must not later block edits to that
+    # imported flight. Regular/incremental catch-up imports leave this False
+    # so they stay subject to the normal strict validation on edit.
+    is_historical = db.Column(db.Boolean, nullable=False, default=False)
 
     aircraft = db.relationship("Aircraft")
 
