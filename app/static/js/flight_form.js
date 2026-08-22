@@ -67,13 +67,24 @@
       document.querySelectorAll('input[name="pilot_role"]').forEach(function (r) { r.addEventListener('change', applyRoleHint); });
     }
 
+    // Counter fields accept either a plain decimal ("972.2") or unambiguous
+    // "H:MM" colon notation ("972:12") — mirrors parse_duration_value() in
+    // pilots/logbook_import.py, which the server uses for the same fields.
+    function parseCounterValue(value) {
+      if (!value) return NaN;
+      var m = /^(\d+):(\d{2})$/.exec(value.trim());
+      if (m) return parseInt(m[1], 10) + parseInt(m[2], 10) / 60;
+      var v = parseFloat(value);
+      return isNaN(v) ? NaN : v;
+    }
+
     var fuelHint = document.getElementById('fuel-consumption-hint');
     var fuelFlow = fuelHint ? parseFloat(fuelHint.dataset.fuelFlow) : NaN;
 
     function updateFuelHint() {
       if (!fuelHint || isNaN(fuelFlow)) return;
-      var eStart = parseFloat((document.getElementById('engine_time_counter_start') || {}).value);
-      var eEnd = parseFloat((document.getElementById('engine_time_counter_end') || {}).value);
+      var eStart = parseCounterValue((document.getElementById('engine_time_counter_start') || {}).value);
+      var eEnd = parseCounterValue((document.getElementById('engine_time_counter_end') || {}).value);
       if (!isNaN(eStart) && !isNaN(eEnd) && eEnd > eStart) {
         fuelHint.textContent = fuelHint.dataset.template.replace('__EST__', ((eEnd - eStart) * fuelFlow).toFixed(1));
       } else {
@@ -123,7 +134,10 @@
         el.addEventListener('input', function () {
           var differs = ['flight_time_counter_start', 'engine_time_counter_start'].some(function (i) {
             var inp = document.getElementById(i);
-            return inp && inp.dataset.expected && inp.value !== '' && inp.value !== inp.dataset.expected;
+            if (!inp || !inp.dataset.expected || inp.value === '') return false;
+            var v = parseCounterValue(inp.value);
+            var expected = parseFloat(inp.dataset.expected);
+            return !isNaN(v) && !isNaN(expected) && Math.abs(v - expected) > 0.05;
           });
           counterWarn.classList.toggle('d-none', !differs);
         });
@@ -175,8 +189,8 @@
       function recalc() {
         var counterDur = NaN;
         if (counterStartEl && counterEndEl) {
-          var cs = parseFloat(counterStartEl.value);
-          var ce = parseFloat(counterEndEl.value);
+          var cs = parseCounterValue(counterStartEl.value);
+          var ce = parseCounterValue(counterEndEl.value);
           if (!isNaN(cs) && !isNaN(ce) && ce >= cs) counterDur = ce - cs;
         }
         var clockDur = (clockStartEl && clockEndEl)

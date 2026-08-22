@@ -29,6 +29,9 @@ from models import (  # pyright: ignore[reportMissingImports]
     Flight,
     db,
 )
+from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
+    parse_duration_value,
+)
 
 # engine_time/flight_time are never taken as free-text user input — always
 # recomputed from counters (preferred) or clock times (departure/arrival for
@@ -66,8 +69,19 @@ def _hours_between(start: _time, end: _time) -> float:
     return (end_dt - start_dt).total_seconds() / 3600.0
 
 
+def flight_is_lenient(fe: Flight | None) -> bool:
+    """True when *fe* came from a bulk airframe import batch that's been
+    flagged as historical (digitizing pre-existing paper records) — such a
+    batch's rows may carry OCR/paper-log imprecision that was never wrong,
+    just imprecise, and must not block later edits. ``fe`` is ``None`` when
+    creating a new flight, which is always strict."""
+    return bool(
+        fe and fe.airframe_import_batch and fe.airframe_import_batch.is_historical
+    )
+
+
 def parse_flight_fields(
-    f: Mapping[str, str], ac: Aircraft | None
+    f: Mapping[str, str], ac: Aircraft | None, strict: bool = True
 ) -> tuple[dict[str, Any], list[str]]:
     """Parse + validate the editable FlightEntry fields from raw strings.
 
@@ -75,6 +89,13 @@ def parse_flight_fields(
     derivation from counters, crew-1 required) exactly like the ``if ac:``
     branches in the online form — pass ``None`` for flights with no
     fleet aircraft (the "other aircraft" case), matching today's behaviour.
+
+    ``strict=False`` (see ``flight_is_lenient``) suppresses only the two
+    checks that can block saving an edit to data that was never freshly
+    typed — pilot-name-required and counter/clock duration mismatches.
+    Everything else (date required, parse failures, counter-end-before-
+    start) still applies regardless: those are new mistakes made today, not
+    pre-existing historical imprecision.
     """
     errors: list[str] = []
 
@@ -99,7 +120,7 @@ def parse_flight_fields(
     crew_role_0_raw = (f.get("crew_role_0") or CrewRole.PIC).strip()
     crew_name_1 = (f.get("crew_name_1") or "").strip()
     crew_role_1_raw = (f.get("crew_role_1") or CrewRole.COPILOT).strip()
-    if ac and not crew_name_0:
+    if ac and not crew_name_0 and strict:
         errors.append(_("Pilot (crew 1) name is required."))
 
     departure_time_raw = (f.get("departure_time") or "").strip()
@@ -144,20 +165,26 @@ def parse_flight_fields(
             ((f.get("engine_time_counter_end") or "").strip(), "ec_end"),
         ]:
             if raw:
-                try:
-                    val = float(raw)
-                    if not math.isfinite(val) or val < 0:
-                        raise ValueError
-                    if dest == "fc_start":
-                        flight_time_counter_start = val
-                    elif dest == "fc_end":
-                        flight_time_counter_end = val
-                    elif dest == "ec_start":
-                        engine_time_counter_start = val
-                    else:
-                        engine_time_counter_end = val
-                except (ValueError, TypeError):
-                    errors.append(_("Counter value must be a positive number."))
+                # Accepts either a plain decimal ("972.2") or unambiguous
+                # "H:MM" colon notation ("972:12") — same parser the CSV
+                # airframe/pilot log importers already use for counters, so
+                # a value typed either way behaves identically everywhere.
+                val = parse_duration_value(raw)
+                if val is None:
+                    errors.append(
+                        _(
+                            "Counter value must be a positive number "
+                            "(decimal hours or H:MM)."
+                        )
+                    )
+                elif dest == "fc_start":
+                    flight_time_counter_start = val
+                elif dest == "fc_end":
+                    flight_time_counter_end = val
+                elif dest == "ec_start":
+                    engine_time_counter_start = val
+                else:
+                    engine_time_counter_end = val
 
         if (
             flight_time_counter_start is not None
@@ -189,7 +216,8 @@ def parse_flight_fields(
         engine_time_from_clock = round(_hours_between(departure_time, arrival_time), 1)
 
     if (
-        engine_time_from_counters is not None
+        strict
+        and engine_time_from_counters is not None
         and engine_time_from_clock is not None
         and abs(engine_time_from_counters - engine_time_from_clock)
         > _DURATION_MISMATCH_TOLERANCE_HOURS
@@ -240,7 +268,8 @@ def parse_flight_fields(
         flight_time_from_clock = round(_hours_between(takeoff_time, landing_time), 1)
 
     if (
-        flight_time_from_counters is not None
+        strict
+        and flight_time_from_counters is not None
         and flight_time_from_clock is not None
         and abs(flight_time_from_counters - flight_time_from_clock)
         > _DURATION_MISMATCH_TOLERANCE_HOURS

@@ -69,6 +69,7 @@ from werkzeug.utils import secure_filename
 
 from flights.form_parsing import (  # pyright: ignore[reportMissingImports]
     apply_flight_fields,
+    flight_is_lenient,
     parse_flight_fields,
 )
 
@@ -1113,7 +1114,9 @@ def _handle_log_flight_post(
     field_map["landing_count"] = (
         str(landing_count_for_fe) if landing_count_for_fe is not None else ""
     )
-    values, field_errors = parse_flight_fields(field_map, ac)
+    values, field_errors = parse_flight_fields(
+        field_map, ac, strict=not flight_is_lenient(fe)
+    )
     errors.extend(field_errors)
 
     flight_date = values["date"]
@@ -1455,7 +1458,12 @@ def _airframe_cleanup_tmp() -> None:
 
 
 def _render_airframe_map(
-    ac: Aircraft, parsed: Any, mapping: dict[str, str], match_type: str, filename: str
+    ac: Aircraft,
+    parsed: Any,
+    mapping: dict[str, str],
+    match_type: str,
+    filename: str,
+    is_historical: bool = False,
 ) -> str:
     from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
         _norm,
@@ -1476,6 +1484,7 @@ def _render_airframe_map(
         mapping=mapping,
         match_type=match_type,
         target_fields=AIRFRAME_TARGET_FIELDS,
+        is_historical=is_historical,
         preview=preview_rows(parsed, mapping, n=5),
         filename=filename,
         type_hints=airframe_type_hints(parsed, mapping),
@@ -1604,6 +1613,8 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
         val = request.form.get(f"mapping_{col}", "ignore").strip()
         mapping[col] = val if val in AIRFRAME_TARGET_FIELDS else "ignore"
 
+    is_historical = bool(request.form.get("is_historical"))
+
     with open(tmp_path, "rb") as fh:
         data = fh.read()
     try:
@@ -1616,7 +1627,12 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
     if "date" not in mapping.values():
         flash(_("You must map at least one column to 'Date'."), "danger")
         return _render_airframe_map(
-            ac, parsed, mapping, "alias", original_filename
+            ac,
+            parsed,
+            mapping,
+            "alias",
+            original_filename,
+            is_historical,
         ), 422
 
     opening_counters = {
@@ -1654,6 +1670,7 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
         mapping_id=mapping_record.id,
         source_filename=original_filename,
         imported_at=_datetime.now(UTC),
+        is_historical=is_historical,
     )
     db.session.add(batch)
     db.session.flush()
@@ -2089,4 +2106,42 @@ def airframe_import_rollback(aircraft_id: int, batch_id: int) -> ResponseReturnV
         ),
         "success",
     )
+    return redirect(url_for("flights.airframe_import_upload", aircraft_id=ac.id))
+
+
+@flights_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/flights/import/<int:batch_id>/toggle-historical",
+    methods=["POST"],
+)
+@login_required
+@require_role(Role.ADMIN, Role.OWNER)
+def airframe_import_toggle_historical(
+    aircraft_id: int, batch_id: int
+) -> ResponseReturnValue:
+    from models import AirframeImportBatch  # pyright: ignore[reportMissingImports]
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    batch = db.session.get(AirframeImportBatch, batch_id)
+    if not batch or batch.aircraft_id != ac.id:
+        abort(404)
+
+    batch.is_historical = not batch.is_historical
+    db.session.commit()
+
+    if batch.is_historical:
+        flash(
+            _(
+                "Import marked as historical: edits to its flights will no "
+                "longer be blocked by validation on old, imprecise values."
+            ),
+            "success",
+        )
+    else:
+        flash(
+            _(
+                "Import no longer marked as historical: edits to its "
+                "flights are now subject to the normal validation rules."
+            ),
+            "success",
+        )
     return redirect(url_for("flights.airframe_import_upload", aircraft_id=ac.id))

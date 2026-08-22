@@ -20,6 +20,7 @@ from flask_wtf.csrf import (  # pyright: ignore[reportMissingImports]
 )
 from flights.form_parsing import (  # pyright: ignore[reportMissingImports]
     apply_flight_fields,
+    flight_is_lenient,
     parse_flight_fields,
 )
 from flights.routes import (  # pyright: ignore[reportMissingImports]
@@ -288,7 +289,9 @@ def sync_flight(flight_id: int) -> ResponseReturnValue:
             409,
         )
 
-    values, errors = parse_flight_fields(effective, ac)
+    values, errors = parse_flight_fields(
+        effective, ac, strict=not flight_is_lenient(fe)
+    )
     if errors:
         return jsonify({"status": "invalid", "errors": errors}), 400
 
