@@ -13,6 +13,7 @@ from io import BytesIO
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from flights.airframe_import import (  # pyright: ignore[reportMissingImports]
     _clean_icao,
+    _is_blank_cell,
     _score_airframe_candidate,
     airframe_type_hints,
     find_conflicting_airframe_rows,
@@ -114,6 +115,17 @@ class TestHelpers:
         assert _clean_icao(None) == "ZZZZ"
         assert _clean_icao("  ") == "ZZZZ"
 
+    def test_is_blank_cell(self):
+        assert _is_blank_cell(None) is True
+        assert _is_blank_cell("") is True
+        assert _is_blank_cell("   ") is True
+        assert _is_blank_cell("[empty]") is True
+        assert _is_blank_cell("[EMPTY]") is True
+        assert _is_blank_cell("  [Empty]  ") is True
+        assert _is_blank_cell("1.5") is False
+        assert _is_blank_cell("EBOS") is False
+        assert _is_blank_cell(0) is False
+
     def test_alias_proposal(self):
         parsed = parse_file(_CSV.encode(), "airframe.csv")
         mapping, match_type = propose_airframe_mapping(parsed, [])
@@ -152,6 +164,16 @@ class TestHelpers:
 
     def test_type_hints_skip_empty_columns(self):
         csv_text = "Date,Pilot,From,Hobbs end\n2020-05-01,Jean,EBOS,\n"
+        parsed = parse_file(csv_text.encode(), "x.csv")
+        hints = airframe_type_hints(
+            parsed, {"date": "date", "hobbs end": "engine_counter_end"}
+        )
+        assert hints == {}
+
+    def test_type_hints_skip_empty_marker_cells(self):
+        # "[empty]" is the transcriber's explicit "left blank on paper"
+        # marker — must not be sampled as if it were bad data.
+        csv_text = "Date,Pilot,From,Hobbs end\n2020-05-01,Jean,EBOS,[empty]\n"
         parsed = parse_file(csv_text.encode(), "x.csv")
         hints = airframe_type_hints(
             parsed, {"date": "date", "hobbs end": "engine_counter_end"}
@@ -274,6 +296,70 @@ class TestImportFlow:
             assert baseline.notes == "Opening counters (imported)"
             batch = AirframeImportBatch.query.filter_by(aircraft_id=acid).one()
             assert batch.has_opening_counters is True
+
+    def test_empty_marker_counter_leaves_field_none(self, app, client):
+        """ "[empty]" marks a counter deliberately left blank on paper (e.g.
+        the shared engine run of a there-and-back leg pair) — must import
+        as None like a genuinely blank cell, not as an unparseable value."""
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        csv_text = (
+            "Date,Pilot,From,To,Hobbs start,Hobbs end\n"
+            "2020-05-01,Jean,EBOS,EBBR,100.0,[empty]\n"
+            "2020-05-01,Jean,EBBR,EBOS,[EMPTY],101.6\n"
+        )
+        _upload(client, acid, csv_text=csv_text)
+        client.post(
+            f"/aircraft/{acid}/flights/import/execute",
+            data={
+                "mapping_date": "date",
+                "mapping_pilot": "crew_name",
+                "mapping_from": "departure_icao",
+                "mapping_to": "arrival_icao",
+                "mapping_hobbs start": "engine_counter_start",
+                "mapping_hobbs end": "engine_counter_end",
+            },
+            follow_redirects=True,
+        )
+        with app.app_context():
+            batch = AirframeImportBatch.query.filter_by(aircraft_id=acid).one()
+            assert batch.row_count == 2
+            entries = {
+                fe.departure_icao: fe
+                for fe in Flight.query.filter_by(aircraft_id=acid).all()
+            }
+            assert float(entries["EBOS"].engine_time_counter_start) == 100.0
+            assert entries["EBOS"].engine_time_counter_end is None
+            assert entries["EBBR"].engine_time_counter_start is None
+            assert float(entries["EBBR"].engine_time_counter_end) == 101.6
+
+    def test_empty_marker_non_numeric_fields_become_none_not_literal_text(
+        self, app, client
+    ):
+        """Without blank-marker handling, a "[empty]" cell in a non-numeric
+        column would be stored as the literal text "[empty]" (crew_name) or
+        truncated into a bogus ICAO code ("[EMP") — both must degrade to
+        the same default a genuinely blank cell would produce."""
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        csv_text = "Date,Pilot,From,To\n2020-05-01,[empty],[empty],EBBR\n"
+        _upload(client, acid, csv_text=csv_text)
+        client.post(
+            f"/aircraft/{acid}/flights/import/execute",
+            data={
+                "mapping_date": "date",
+                "mapping_pilot": "crew_name",
+                "mapping_from": "departure_icao",
+                "mapping_to": "arrival_icao",
+            },
+        )
+        with app.app_context():
+            entry = Flight.query.filter_by(aircraft_id=acid).one()
+            assert entry.pic_name is None
+            assert entry.departure_icao == "ZZZZ"
+            assert entry.arrival_icao == "EBBR"
 
     def test_subtotal_rows_skipped_and_parse_warning_counted(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
