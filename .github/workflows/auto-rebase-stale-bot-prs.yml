@@ -74,9 +74,15 @@ jobs:
         run: |
           set -uo pipefail
 
+          # Match both known bot-login spellings: classic "dependabot[bot]"
+          # (REST-style) and "app/dependabot" (the GraphQL App-slug style
+          # gh >=2.98 started returning as of 2026-08-20 — without both,
+          # this filter silently matches nothing on runners with the newer
+          # CLI, which is exactly what happened: every run since found zero
+          # stale PRs even though some genuinely were behind).
           gh pr list --state open --base main --limit 100 \
             --json number,author,mergeStateStatus \
-            --jq '.[] | select(.author.login == "dependabot[bot]" or .author.login == "renovate[bot]") | select(.mergeStateStatus == "BEHIND" or .mergeStateStatus == "DIRTY") | [.number, .author.login] | @tsv' \
+            --jq '.[] | select(.author.login == "dependabot[bot]" or .author.login == "app/dependabot" or .author.login == "renovate[bot]" or .author.login == "app/renovate") | select(.mergeStateStatus == "BEHIND" or .mergeStateStatus == "DIRTY") | [.number, .author.login] | @tsv' \
           | while IFS=$'\t' read -r pr_number author_login; do
               attempts=$(gh pr view "$pr_number" --json comments \
                 --jq "[.comments[] | select(.body | contains(\"$MARKER\"))] | length")
@@ -90,7 +96,7 @@ jobs:
               echo "PR #$pr_number ($author_login): triggering rebase, attempt $next_attempt/$MAX_ATTEMPTS"
               note="Auto-rebase attempt $next_attempt/$MAX_ATTEMPTS -- this PR fell behind main (or hit a conflict) after another PR merged."
 
-              if [ "$author_login" = "dependabot[bot]" ]; then
+              if [ "$author_login" = "dependabot[bot]" ] || [ "$author_login" = "app/dependabot" ]; then
                 body=$(printf '@dependabot rebase\n\n%s\n%s\n' "$note" "$MARKER")
                 if ! gh pr comment "$pr_number" --body "$body"; then
                   echo "::warning::Failed to comment on PR #$pr_number"
