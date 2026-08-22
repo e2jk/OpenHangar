@@ -1463,7 +1463,6 @@ def _render_airframe_map(
     mapping: dict[str, str],
     match_type: str,
     filename: str,
-    duration_format: dict[str, str] | None = None,
     is_historical: bool = False,
 ) -> str:
     from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
@@ -1485,11 +1484,10 @@ def _render_airframe_map(
         mapping=mapping,
         match_type=match_type,
         target_fields=AIRFRAME_TARGET_FIELDS,
-        duration_format=duration_format or {},
         is_historical=is_historical,
         preview=preview_rows(parsed, mapping, n=5),
         filename=filename,
-        type_hints=airframe_type_hints(parsed, mapping, duration_format),
+        type_hints=airframe_type_hints(parsed, mapping),
     )
 
 
@@ -1590,7 +1588,6 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
 
     from flights.airframe_import import (  # pyright: ignore[reportMissingImports]
         AIRFRAME_TARGET_FIELDS,
-        HM_ELIGIBLE_TARGETS,
         execute_airframe_import,
         find_conflicting_airframe_rows,
     )
@@ -1616,13 +1613,6 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
         val = request.form.get(f"mapping_{col}", "ignore").strip()
         mapping[col] = val if val in AIRFRAME_TARGET_FIELDS else "ignore"
 
-    # Per-column decimal-hours-vs-hours.minutes selector, keyed by the
-    # column's *target* field (what _build_airframe_fields looks up by).
-    duration_format: dict[str, str] = {}
-    for col, target in mapping.items():
-        if target in HM_ELIGIBLE_TARGETS and request.form.get(f"format_{col}") == "hm":
-            duration_format[target] = "hm"
-
     is_historical = bool(request.form.get("is_historical"))
 
     with open(tmp_path, "rb") as fh:
@@ -1642,7 +1632,6 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
             mapping,
             "alias",
             original_filename,
-            duration_format,
             is_historical,
         ), 422
 
@@ -1697,9 +1686,7 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
     # guess — carve them out of this pass and route them through the
     # interactive review step below instead of silently importing or
     # skipping them.
-    conflicts = find_conflicting_airframe_rows(
-        parsed, mapping, ac.id, duration_format=duration_format
-    )
+    conflicts = find_conflicting_airframe_rows(parsed, mapping, ac.id)
 
     result = execute_airframe_import(
         parsed=parsed,
@@ -1708,7 +1695,6 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
         batch_id=batch.id,
         opening_counters=resolved_opening_counters,
         skip_row_nums={c.row_num for c in conflicts},
-        duration_format=duration_format,
     )
     batch.row_count = result.imported
     batch.subtotal_count = result.subtotals
@@ -1726,7 +1712,6 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
             "tmp_path": tmp_path,
             "original_filename": original_filename,
             "mapping": mapping,
-            "duration_format": duration_format,
             "batch_id": batch.id,
             "resolved": {},
         }
@@ -1910,7 +1895,6 @@ def airframe_import_review(aircraft_id: int) -> ResponseReturnValue:
         return redirect(url_for("flights.airframe_import_upload", aircraft_id=ac.id))
 
     mapping: dict[str, str] = state["mapping"]
-    duration_format: dict[str, str] | None = state.get("duration_format")
     resolved: dict[str, str] = state.get("resolved", {})
 
     with open(tmp_path, "rb") as fh:
@@ -1923,11 +1907,7 @@ def airframe_import_review(aircraft_id: int) -> ResponseReturnValue:
 
     exclude_row_nums = {int(k) for k in resolved}
     conflicts = find_conflicting_airframe_rows(
-        parsed,
-        mapping,
-        ac.id,
-        exclude_row_nums=exclude_row_nums,
-        duration_format=duration_format,
+        parsed, mapping, ac.id, exclude_row_nums=exclude_row_nums
     )
 
     if not conflicts:
@@ -1987,7 +1967,6 @@ def airframe_import_review_resolve(aircraft_id: int) -> ResponseReturnValue:
 
     tmp_path: str = state["tmp_path"]
     mapping: dict[str, str] = state["mapping"]
-    duration_format: dict[str, str] | None = state.get("duration_format")
     resolved: dict[str, str] = state.get("resolved", {})
 
     try:
@@ -2015,11 +1994,7 @@ def airframe_import_review_resolve(aircraft_id: int) -> ResponseReturnValue:
 
     exclude_row_nums = {int(k) for k in resolved}
     conflicts = find_conflicting_airframe_rows(
-        parsed,
-        mapping,
-        ac.id,
-        exclude_row_nums=exclude_row_nums,
-        duration_format=duration_format,
+        parsed, mapping, ac.id, exclude_row_nums=exclude_row_nums
     )
     conflict: AirframeConflictRow | None = next(
         (c for c in conflicts if c.row_num == row_num), None
@@ -2091,11 +2066,7 @@ def airframe_import_review_resolve(aircraft_id: int) -> ResponseReturnValue:
     session.modified = True
 
     remaining = find_conflicting_airframe_rows(
-        parsed,
-        mapping,
-        ac.id,
-        exclude_row_nums={int(k) for k in resolved},
-        duration_format=duration_format,
+        parsed, mapping, ac.id, exclude_row_nums={int(k) for k in resolved}
     )
     if not remaining:
         return _finalize_airframe_import_review(ac, state)

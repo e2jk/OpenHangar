@@ -10,6 +10,7 @@ rejection error.
 
 from types import SimpleNamespace
 
+import pytest  # pyright: ignore[reportMissingImports]
 from flights.form_parsing import (  # pyright: ignore[reportMissingImports]
     flight_is_lenient,
     parse_flight_fields,
@@ -192,6 +193,50 @@ class TestCounterDerivedFlightTimeNeverNegative:
         )
         assert values["flight_time"] == 1.5
         assert not any("counter" in e.lower() for e in errors)
+
+
+class TestColonNotationCounters:
+    """Counter fields accept either a plain decimal ("972.2") or
+    unambiguous "H:MM" colon notation ("972:12") — same parser the CSV
+    airframe/pilot-log importers already use for counters, reused here so
+    manual entry behaves identically. No per-aircraft/per-field setting:
+    each value is read on its own."""
+
+    def test_colon_counters_parsed_and_derive_correct_duration(self):
+        ac = SimpleNamespace(has_flight_counter=True, flight_counter_offset=0.3)
+        values, errors = parse_flight_fields(
+            {
+                "flight_time_counter_start": "972:12",
+                "flight_time_counter_end": "972:37",
+            },
+            ac,
+        )
+        # parse_duration_value rounds to 1 decimal, same precision as the
+        # DB columns — 972:37 = 972.6167h rounds to 972.6.
+        assert values["flight_time_counter_start"] == pytest.approx(972.2)
+        assert values["flight_time_counter_end"] == pytest.approx(972.6)
+        # 972.6 - 972.2 = 0.4h (~25 minutes, within the 0.1h rounding).
+        assert values["flight_time"] == pytest.approx(0.4)
+        assert not any("Counter value" in e for e in errors)
+
+    def test_decimal_and_colon_can_mix_across_fields(self):
+        ac = SimpleNamespace(has_flight_counter=True, flight_counter_offset=0.3)
+        values, errors = parse_flight_fields(
+            {
+                "engine_time_counter_start": "500.0",
+                "engine_time_counter_end": "501:30",
+            },
+            ac,
+        )
+        assert values["engine_time_counter_start"] == 500.0
+        assert values["engine_time_counter_end"] == pytest.approx(501.5)
+        assert not any("Counter value" in e for e in errors)
+
+    def test_malformed_colon_notation_rejected(self):
+        ac = SimpleNamespace(has_flight_counter=True, flight_counter_offset=0.3)
+        values, errors = parse_flight_fields({"flight_time_counter_start": "972:1"}, ac)
+        assert values["flight_time_counter_start"] is None
+        assert any("Counter value" in e for e in errors)
 
 
 class TestStrictParameter:

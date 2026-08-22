@@ -693,40 +693,6 @@ def parse_duration_value(val: Any) -> float | None:
     return None
 
 
-def parse_hours_minutes_value(val: Any) -> float | None:
-    """Parse an "H.MM" hours-and-minutes value into decimal hours (e.g.
-    "1.30" -> 1.5, "1.05" -> ~1.083). Some old handwritten counter values
-    use this notation instead of decimal hours, and the two look identical
-    without knowing which convention a given column uses. Rejects a
-    fractional part that isn't a valid 0-59 minute count.
-
-    time/timedelta/datetime inputs already encode real minutes (not the
-    decimal-vs-hm ambiguity this exists for), so they're delegated to
-    parse_duration_value unchanged.
-    """
-    if isinstance(val, (time, timedelta, datetime)):
-        return parse_duration_value(val)
-    if isinstance(val, str):
-        s = val.strip()
-        if not s:
-            return None
-        try:
-            num = float(s)
-        except ValueError:
-            return None
-    elif isinstance(val, (int, float)):
-        num = float(val)
-    else:
-        return None
-    if not math.isfinite(num) or num < 0:
-        return None
-    whole = int(num)
-    minutes = round((num - whole) * 100)
-    if not (0 <= minutes <= 59):
-        return None
-    return round(whole + minutes / 60, 3)
-
-
 def parse_int_value(val: Any) -> int | None:
     if isinstance(val, int):
         return val if val >= 0 else None

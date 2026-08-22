@@ -158,17 +158,15 @@ class TestHelpers:
         )
         assert hints == {}
 
-    def test_type_hints_use_hm_parser_when_duration_format_selected(self):
-        # 1.75 parses fine as decimal hours, but 75 isn't a valid minute
-        # count under the hours.minutes convention.
-        csv_text = "Date,Pilot,From,Hobbs end\n2020-05-01,Jean,EBOS,1.75\n"
+    def test_type_hints_accept_colon_notation_counters(self):
+        # "H:MM" colon notation and plain decimal are both valid — no
+        # per-column format needed, each cell is self-describing.
+        csv_text = "Date,Pilot,From,Hobbs end\n2020-05-01,Jean,EBOS,972:12\n"
         parsed = parse_file(csv_text.encode(), "x.csv")
-        mapping = {"date": "date", "hobbs end": "engine_counter_end"}
-        assert airframe_type_hints(parsed, mapping) == {}
         hints = airframe_type_hints(
-            parsed, mapping, duration_format={"engine_counter_end": "hm"}
+            parsed, {"date": "date", "hobbs end": "engine_counter_end"}
         )
-        assert "hobbs end" in hints
+        assert hints == {}
 
 
 class TestImportFlow:
@@ -1747,35 +1745,21 @@ class TestHistoricalFlag:
             assert updated.notes != "Fixed a typo"  # historical flag cleared, blocked
 
 
-class TestDurationFormat:
-    """Per-column decimal-hours-vs-hours.minutes selector on the mapping
-    screen, threaded through to _build_airframe_fields via
-    _parser_for()."""
+class TestColonNotationCounters:
+    """ "H:MM" colon notation is unambiguous (unlike a bare decimal point)
+    and already supported by parse_duration_value — so unlike a
+    per-column format toggle, a source file can freely mix colon and
+    decimal cells in the very same column; each cell is read on its own."""
 
-    def test_hm_format_parses_hours_minutes_notation(self, app, client):
-        _uid, tid = _create_user_and_tenant(app, email="fmt1@example.com")
-        acid = _add_aircraft(app, tid, registration="OO-FMT1")
-        _login(app, client, email="fmt1@example.com")
-        csv_text = "Date,Pilot,From,Flight time\n2020-05-01,Jean,EBOS,1.30\n"
-        _upload(client, acid, csv_text=csv_text)
-        client.post(
-            f"/aircraft/{acid}/flights/import/execute",
-            data={
-                "mapping_date": "date",
-                "mapping_pilot": "crew_name",
-                "mapping_flight time": "flight_time",
-                "format_flight time": "hm",
-            },
+    def test_mixed_colon_and_decimal_in_same_column(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="colon1@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-COL1")
+        _login(app, client, email="colon1@example.com")
+        csv_text = (
+            "Date,Pilot,From,Flight time\n"
+            "2020-05-01,Jean,EBOS,1:30\n"  # colon -> 1.5h
+            "2020-05-02,Jean,EBOS,1.30\n"  # decimal -> 1.3h
         )
-        with app.app_context():
-            entry = Flight.query.filter_by(aircraft_id=acid).one()
-            assert float(entry.flight_time) == 1.5
-
-    def test_default_decimal_format_unchanged(self, app, client):
-        _uid, tid = _create_user_and_tenant(app, email="fmt2@example.com")
-        acid = _add_aircraft(app, tid, registration="OO-FMT2")
-        _login(app, client, email="fmt2@example.com")
-        csv_text = "Date,Pilot,From,Flight time\n2020-05-01,Jean,EBOS,1.30\n"
         _upload(client, acid, csv_text=csv_text)
         client.post(
             f"/aircraft/{acid}/flights/import/execute",
@@ -1786,45 +1770,29 @@ class TestDurationFormat:
             },
         )
         with app.app_context():
-            entry = Flight.query.filter_by(aircraft_id=acid).one()
-            assert float(entry.flight_time) == 1.3
+            entries = {
+                fe.date: float(fe.flight_time)
+                for fe in Flight.query.filter_by(aircraft_id=acid).all()
+            }
+            assert entries[date(2020, 5, 1)] == 1.5
+            assert entries[date(2020, 5, 2)] == 1.3
 
-    def test_hm_format_applies_to_conflict_review_path_too(self, app, client):
-        """duration_format must be honoured by find_conflicting_airframe_rows
-        (and the review/resolve flow) exactly like execute_airframe_import,
-        since both build fields from the same source file."""
-        _uid, tid = _create_user_and_tenant(app, email="fmt3@example.com")
-        acid = _add_aircraft(app, tid, registration="OO-FMT3")
-        _login(app, client, email="fmt3@example.com")
-        with app.app_context():
-            existing = Flight(
-                aircraft_id=acid,
-                date=date(2020, 5, 1),
-                departure_icao="EBOS",
-                arrival_icao="EBBR",
-                flight_time=1.5,
-                landing_count=2,
-            )
-            db.session.add(existing)
-            db.session.commit()
-
-        csv_text = "Date,Pilot,From,To,Flight time,Landings\n2020-05-01,Jean,EBOS,EBBR,1.30,2\n"
+    def test_colon_notation_counters_import_correctly(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="colon2@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-COL2")
+        _login(app, client, email="colon2@example.com")
+        csv_text = "Date,Pilot,Hobbs start,Hobbs end\n2020-05-01,Jean,972:12,972:37\n"
         _upload(client, acid, csv_text=csv_text)
-        resp = client.post(
+        client.post(
             f"/aircraft/{acid}/flights/import/execute",
             data={
                 "mapping_date": "date",
                 "mapping_pilot": "crew_name",
-                "mapping_from": "departure_icao",
-                "mapping_to": "arrival_icao",
-                "mapping_flight time": "flight_time",
-                "mapping_landings": "landing_count",
-                "format_flight time": "hm",
+                "mapping_hobbs start": "engine_counter_start",
+                "mapping_hobbs end": "engine_counter_end",
             },
-            follow_redirects=True,
         )
-        # 1.30 parsed as hours.minutes -> 1.5h, matching the existing entry
-        # exactly -> treated as a duplicate, not routed to conflict review.
-        assert b"already in this aircraft" in resp.data or b"nothing new" in resp.data
         with app.app_context():
-            assert Flight.query.filter_by(aircraft_id=acid).count() == 1
+            entry = Flight.query.filter_by(aircraft_id=acid).one()
+            assert float(entry.engine_time_counter_start) == 972.2
+            assert float(entry.engine_time_counter_end) == 972.6

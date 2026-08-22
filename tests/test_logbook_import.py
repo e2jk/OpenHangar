@@ -40,7 +40,6 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     parse_date_value,
     parse_duration_value,
     parse_file,
-    parse_hours_minutes_value,
     parse_time_value,
     preview_rows,
     propose_mapping,
@@ -164,53 +163,6 @@ class TestParsers:
     def test_parse_duration_none_on_empty(self):
         assert parse_duration_value("") is None
         assert parse_duration_value(None) is None
-
-
-class TestParseHoursMinutesValue:
-    """ "H.MM" hours.minutes notation for old handwritten counter values —
-    the sibling of parse_duration_value used when a source column's
-    convention is minutes (00-59), not decimal fractions of an hour."""
-
-    def test_string_thirty_minutes(self):
-        assert parse_hours_minutes_value("1.30") == 1.5
-
-    def test_string_five_minutes(self):
-        assert parse_hours_minutes_value("1.05") == pytest.approx(1.083, abs=1e-3)
-
-    def test_invalid_minute_count_rejected(self):
-        assert parse_hours_minutes_value("1.75") is None
-
-    def test_non_numeric_rejected(self):
-        assert parse_hours_minutes_value("not a number") is None
-
-    def test_empty_string_rejected(self):
-        assert parse_hours_minutes_value("") is None
-
-    def test_float_input(self):
-        assert parse_hours_minutes_value(1.30) == 1.5
-
-    def test_whole_hours_no_fraction(self):
-        assert parse_hours_minutes_value("2") == 2.0
-
-    def test_negative_rejected(self):
-        assert parse_hours_minutes_value("-1.30") is None
-
-    def test_non_finite_rejected(self):
-        assert parse_hours_minutes_value("inf") is None
-
-    def test_non_string_non_numeric_type_rejected(self):
-        assert parse_hours_minutes_value(["not", "a", "value"]) is None
-
-    def test_time_object_delegates_to_duration_value(self):
-        assert parse_hours_minutes_value(time(1, 30)) == 1.5
-
-    def test_timedelta_delegates_to_duration_value(self):
-        assert parse_hours_minutes_value(timedelta(hours=1, minutes=30)) == 1.5
-
-    def test_datetime_delegates_to_duration_value(self):
-        from datetime import datetime
-
-        assert parse_hours_minutes_value(datetime(2020, 1, 1, 1, 30)) == 1.5
 
 
 # ── Service: header detection & file parsing ──────────────────────────────────

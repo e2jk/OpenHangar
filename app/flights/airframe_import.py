@@ -20,7 +20,6 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     ParsedFile,
     parse_date_value,
     parse_duration_value,
-    parse_hours_minutes_value,
     parse_int_value,
     parse_time_value,
 )
@@ -118,32 +117,6 @@ _AIRFRAME_PARSERS: dict[str, Any] = {
 # counter before a continuity warning is raised.
 _COUNTER_TOLERANCE = 0.05
 
-# Targets for which the source column's decimal-hours-vs-hours.minutes
-# convention is ambiguous and user-selectable at import time (old
-# handwritten counter values can use either notation) — see duration_format
-# below. The other targets (times, ICAOs, counts, free text) have no such
-# ambiguity.
-HM_ELIGIBLE_TARGETS: frozenset[str] = frozenset(
-    {
-        "flight_time",
-        "flight_counter_start",
-        "flight_counter_end",
-        "engine_counter_start",
-        "engine_counter_end",
-    }
-)
-
-
-def _parser_for(target: str, duration_format: dict[str, str] | None) -> Any:
-    """Parser for *target*, honouring a per-target hours.minutes override."""
-    if (
-        duration_format
-        and target in HM_ELIGIBLE_TARGETS
-        and duration_format.get(target) == "hm"
-    ):
-        return parse_hours_minutes_value
-    return _AIRFRAME_PARSERS.get(target)
-
 
 @dataclass
 class AirframeImportResult:
@@ -229,16 +202,12 @@ _TYPE_NAMES: dict[str, str] = {
 }
 
 
-def airframe_type_hints(
-    parsed: ParsedFile,
-    mapping: dict[str, str],
-    duration_format: dict[str, str] | None = None,
-) -> dict[str, str]:
+def airframe_type_hints(parsed: ParsedFile, mapping: dict[str, str]) -> dict[str, str]:
     """{col: hint} where sample data fails to parse as the proposed type."""
     col_index = {col: i for i, col in enumerate(parsed.norm_cols)}
     hints: dict[str, str] = {}
     for col, target in mapping.items():
-        parser = _parser_for(target, duration_format)
+        parser = _AIRFRAME_PARSERS.get(target)
         idx = col_index.get(col)
         if parser is None or idx is None:
             continue
@@ -294,7 +263,6 @@ def _build_airframe_fields(
     mapping: dict[str, str],
     col_index: dict[str, int],
     date_val: date,
-    duration_format: dict[str, str] | None = None,
 ) -> tuple[dict[str, Any], str | None, list[tuple[str, str, str]]]:
     """Build Flight field values (+ crew name) for one data row.
 
@@ -318,7 +286,7 @@ def _build_airframe_fields(
         if target in ("departure_icao", "arrival_icao"):
             fields[target] = _clean_icao(raw)
             continue
-        parser = _parser_for(target, duration_format)
+        parser = _AIRFRAME_PARSERS.get(target)
         if parser is not None:
             parsed_val = parser(raw)
             if parsed_val is None and raw is not None and str(raw).strip():
@@ -365,7 +333,6 @@ def execute_airframe_import(
     batch_id: int,
     opening_counters: dict[str, float | None] | None = None,
     skip_row_nums: set[int] | None = None,
-    duration_format: dict[str, str] | None = None,
 ) -> AirframeImportResult:
     """Create Flight rows from *parsed* using *mapping*.
 
@@ -405,7 +372,7 @@ def execute_airframe_import(
             continue
 
         fields, crew_name, parse_warnings = _build_airframe_fields(
-            row, mapping, col_index, date_val, duration_format
+            row, mapping, col_index, date_val
         )
         for col, target, raw_repr in parse_warnings:
             result.parse_warnings.append((row_num, col, target, raw_repr))
@@ -601,7 +568,6 @@ def find_conflicting_airframe_rows(
     mapping: dict[str, str],
     aircraft_id: int,
     exclude_row_nums: set[int] | None = None,
-    duration_format: dict[str, str] | None = None,
 ) -> list[AirframeConflictRow]:
     """Find rows that aren't an exact duplicate but plausibly match an
     existing Flight row closely enough (score >= _CANDIDATE_MIN_SCORE) to
@@ -636,7 +602,7 @@ def find_conflicting_airframe_rows(
             continue
 
         fields, crew_name, _parse_warnings = _build_airframe_fields(
-            row, mapping, col_index, date_val, duration_format
+            row, mapping, col_index, date_val
         )
         if _dup_key(fields) in existing_keys:
             continue  # exact duplicate — execute_airframe_import's own dedup handles this
