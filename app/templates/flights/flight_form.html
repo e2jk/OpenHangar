@@ -423,7 +423,10 @@
             <h6 class="text-muted mb-2"><i class="bi bi-journal me-1"></i>{{ _('Aircraft logbook') }}</h6>
 
             {# Counters #}
-            <h6 class="text-muted mb-3 mt-3"><i class="bi bi-speedometer2 me-1"></i>{{ _('Counters') }}</h6>
+            <h6 class="text-muted mb-1 mt-3"><i class="bi bi-speedometer2 me-1"></i>{{ _('Counters') }}</h6>
+            <p class="text-muted oh-fs-085 mb-2">
+              {{ _('Decimal hours (1.5) or H:MM colon notation (1:30) both work.') }}
+            </p>
 
             {% if counter_hint and (counter_hint.flight is not none or counter_hint.engine is not none) %}
             <div id="counter-warn" class="alert alert-warning py-2 mb-3 d-none oh-fs-088">
@@ -437,20 +440,20 @@
                 <label for="engine_time_counter_start" class="form-label">
                   {{ _('Engine counter start') }} <span class="text-muted small">(h, {{ _('optional') }})</span>
                 </label>
-                <input type="number" class="form-control" id="engine_time_counter_start"
+                <input type="text" inputmode="decimal" class="form-control" id="engine_time_counter_start"
                        name="engine_time_counter_start"
                        value="{{ '%.1f'|format(flight.engine_time_counter_start|float) if flight and flight.engine_time_counter_start is not none else (request.form.get('engine_time_counter_start', '') or (counter_hint.engine|string if counter_hint and counter_hint.engine is not none else '')) }}"
                        data-expected="{{ counter_hint.engine if counter_hint and counter_hint.engine is not none else '' }}"
-                       step="0.1" min="0">
+                       placeholder="0.0" pattern="^\d+([.:]\d+)?$">
               </div>
               <div class="col-6">
                 <label for="engine_time_counter_end" class="form-label">
                   {{ _('Engine counter end') }} <span class="text-muted small">(h, {{ _('optional') }})</span>
                 </label>
-                <input type="number" class="form-control" id="engine_time_counter_end"
+                <input type="text" inputmode="decimal" class="form-control" id="engine_time_counter_end"
                        name="engine_time_counter_end"
                        value="{{ '%.1f'|format(flight.engine_time_counter_end|float) if flight and flight.engine_time_counter_end is not none else request.form.get('engine_time_counter_end', '') }}"
-                       step="0.1" min="0">
+                       placeholder="0.0" pattern="^\d+([.:]\d+)?$">
               </div>
               <div class="col-6">
                 <label for="engine_time" class="form-label">
@@ -469,20 +472,20 @@
                 <label for="flight_time_counter_start" class="form-label">
                   {{ _('Flight counter start') }} <span class="text-muted small">(h)</span>
                 </label>
-                <input type="number" class="form-control" id="flight_time_counter_start"
+                <input type="text" inputmode="decimal" class="form-control" id="flight_time_counter_start"
                        name="flight_time_counter_start"
                        value="{{ '%.1f'|format(flight.flight_time_counter_start|float) if flight and flight.flight_time_counter_start is not none else (request.form.get('flight_time_counter_start', '') or (counter_hint.flight|string if counter_hint and counter_hint.flight is not none else '')) }}"
                        data-expected="{{ counter_hint.flight if counter_hint and counter_hint.flight is not none else '' }}"
-                       step="0.1" min="0">
+                       placeholder="0.0" pattern="^\d+([.:]\d+)?$">
               </div>
               <div class="col-6">
                 <label for="flight_time_counter_end" class="form-label">
                   {{ _('Flight counter end') }} <span class="text-muted small">(h)</span>
                 </label>
-                <input type="number" class="form-control" id="flight_time_counter_end"
+                <input type="text" inputmode="decimal" class="form-control" id="flight_time_counter_end"
                        name="flight_time_counter_end"
                        value="{{ '%.1f'|format(flight.flight_time_counter_end|float) if flight and flight.flight_time_counter_end is not none else request.form.get('flight_time_counter_end', '') }}"
-                       step="0.1" min="0">
+                       placeholder="0.0" pattern="^\d+([.:]\d+)?$">
               </div>
               <div class="col-6">
                 <label for="flight_time" class="form-label">

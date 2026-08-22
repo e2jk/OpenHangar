@@ -29,6 +29,9 @@ from models import (  # pyright: ignore[reportMissingImports]
     Flight,
     db,
 )
+from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
+    parse_duration_value,
+)
 
 # engine_time/flight_time are never taken as free-text user input — always
 # recomputed from counters (preferred) or clock times (departure/arrival for
@@ -162,20 +165,26 @@ def parse_flight_fields(
             ((f.get("engine_time_counter_end") or "").strip(), "ec_end"),
         ]:
             if raw:
-                try:
-                    val = float(raw)
-                    if not math.isfinite(val) or val < 0:
-                        raise ValueError
-                    if dest == "fc_start":
-                        flight_time_counter_start = val
-                    elif dest == "fc_end":
-                        flight_time_counter_end = val
-                    elif dest == "ec_start":
-                        engine_time_counter_start = val
-                    else:
-                        engine_time_counter_end = val
-                except (ValueError, TypeError):
-                    errors.append(_("Counter value must be a positive number."))
+                # Accepts either a plain decimal ("972.2") or unambiguous
+                # "H:MM" colon notation ("972:12") — same parser the CSV
+                # airframe/pilot log importers already use for counters, so
+                # a value typed either way behaves identically everywhere.
+                val = parse_duration_value(raw)
+                if val is None:
+                    errors.append(
+                        _(
+                            "Counter value must be a positive number "
+                            "(decimal hours or H:MM)."
+                        )
+                    )
+                elif dest == "fc_start":
+                    flight_time_counter_start = val
+                elif dest == "fc_end":
+                    flight_time_counter_end = val
+                elif dest == "ec_start":
+                    engine_time_counter_start = val
+                else:
+                    engine_time_counter_end = val
 
         if (
             flight_time_counter_start is not None
