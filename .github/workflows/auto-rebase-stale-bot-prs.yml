@@ -52,9 +52,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
+      contents: read        # actions/checkout, to fetch the script file
       pull-requests: write  # gh pr comment / gh pr edit --add-label
       issues: write         # gh label create (labels are an Issues-API resource)
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
       - name: Ensure the `rebase` label exists
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
