@@ -714,6 +714,11 @@ class Component(db.Model):
         cascade="all, delete-orphan",
         foreign_keys="AirworthinessDocument.component_id",
     )
+    # Phase 40: no cascade — deleting a component unscopes (SET NULL) rather
+    # than deletes its maintenance triggers, per MaintenanceTrigger.component_id.
+    maintenance_triggers = db.relationship(
+        "MaintenanceTrigger", back_populates="component"
+    )
 
 
 # ── Phase 3: Flight Logging ───────────────────────────────────────────────────
@@ -1332,12 +1337,56 @@ class HoursBasis:
     LABELS: ClassVar[dict[str, str]] = {ENGINE: "Engine hours", FLIGHT: "Flight hours"}
 
 
+class AmpCategory:
+    """The 9 additional-maintenance-requirement categories from EASA Form
+    AMP block 4 / Appendix B (AMC2 ML.A.302), used verbatim as
+    ``MaintenanceTrigger.category`` values so that block 4's Yes/No table
+    and Appendix B can be computed from the trigger set at export time
+    rather than stored separately (Phase 40). ``ALL`` preserves the
+    official form's own row order for rendering."""
+
+    EQUIPMENT_AND_MODIFICATIONS = (
+        "Maintenance due to specific equipment and modifications"
+    )
+    REPAIRS = "Maintenance due to repairs"
+    LIFE_LIMITED_COMPONENTS = "Maintenance due to life-limited components"
+    MANDATORY_CONTINUING_AIRWORTHINESS = (
+        "Maintenance due to mandatory continuing airworthiness information "
+        "(ALIs, CMRs, TCDS)"
+    )
+    TBO_RECOMMENDATIONS = "Maintenance recommendations (TBO via SB/SL, non-mandatory)"
+    REPETITIVE_ADS = "Maintenance due to repetitive ADs"
+    OPERATIONAL_AIRSPACE_DIRECTIVES = (
+        "Maintenance due to specific operational/airspace directives/requirements"
+    )
+    TYPE_OF_OPERATION = "Maintenance due to type of operation or operational approvals"
+    OTHER = "Other"
+
+    ALL: ClassVar[list[str]] = [
+        EQUIPMENT_AND_MODIFICATIONS,
+        REPAIRS,
+        LIFE_LIMITED_COMPONENTS,
+        MANDATORY_CONTINUING_AIRWORTHINESS,
+        TBO_RECOMMENDATIONS,
+        REPETITIVE_ADS,
+        OPERATIONAL_AIRSPACE_DIRECTIVES,
+        TYPE_OF_OPERATION,
+        OTHER,
+    ]
+
+
 class MaintenanceTrigger(db.Model):
     __tablename__ = "maintenance_triggers"
 
     id = db.Column(db.Integer, primary_key=True)
     aircraft_id = db.Column(
         db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    # Phase 40: optional component scoping (engine, propeller, …). NULL means
+    # airframe-general. SET NULL on component deletion — removing a component
+    # shouldn't delete its maintenance history, just unscope the trigger.
+    component_id = db.Column(
+        db.Integer, db.ForeignKey("components.id", ondelete="SET NULL"), nullable=True
     )
     name = db.Column(db.String(128), nullable=False)
     trigger_type = db.Column(db.String(16), nullable=False)  # TriggerType constant
@@ -1376,6 +1425,25 @@ class MaintenanceTrigger(db.Model):
     warn_landings = db.Column(db.Integer, nullable=True)
 
     notes = db.Column(db.Text, nullable=True)
+
+    # Phase 40: AMP import/export provenance and classification fields — all
+    # nullable free text/flags, orthogonal to the calendar/hours/landings due
+    # fields above. See docs/maintenance_import.md once written.
+    category = db.Column(db.String(128), nullable=True)  # AmpCategory value, or NULL
+    is_alternative_to_ica = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
+    )
+    alternative_task_notes = db.Column(db.Text, nullable=True)
+    reference = db.Column(db.String(255), nullable=True)  # AD/SB/manual doc reference
+    action = db.Column(db.String(32), nullable=True)  # e.g. INSPECTION/REPLACE/TBO/SLL
+    part_number = db.Column(db.String(64), nullable=True)
+    serial_number = db.Column(db.String(64), nullable=True)
+    # Set on import for rows with an unresolved/unparseable interval, so they
+    # read as "not yet scheduled" rather than silently evaluating as 'ok'.
+    needs_review = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
+    )
+
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
@@ -1383,6 +1451,7 @@ class MaintenanceTrigger(db.Model):
     )
 
     aircraft = db.relationship("Aircraft", back_populates="maintenance_triggers")
+    component = db.relationship("Component", back_populates="maintenance_triggers")
     records = db.relationship(
         "MaintenanceRecord",
         back_populates="trigger",
@@ -1390,7 +1459,10 @@ class MaintenanceTrigger(db.Model):
         order_by="MaintenanceRecord.performed_at.desc()",
     )
 
-    __table_args__ = (db.Index("ix_maintenance_triggers_aircraft_id", aircraft_id),)
+    __table_args__ = (
+        db.Index("ix_maintenance_triggers_aircraft_id", aircraft_id),
+        db.Index("ix_maintenance_triggers_component_id", component_id),
+    )
 
     def status(
         self,
