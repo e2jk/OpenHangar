@@ -16,6 +16,10 @@ from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImp
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 from models import (
     Aircraft,
+    AmpBasis,
+    AmpCertifyingPartyKind,
+    AmpDeclaration,
+    AmpDeclarationType,
     Component,
     HoursBasis,
     MaintenanceRecord,
@@ -499,3 +503,99 @@ def service_trigger(aircraft_id: int, trigger_id: int) -> ResponseReturnValue:
         current_flight_hours=ac.total_flight_hours,
         today=_date.today().isoformat(),
     )
+
+
+# ── AMP declaration profile ─────────────────────────────────────────────────
+
+
+@maintenance_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/amp/edit", methods=["GET", "POST"]
+)
+@login_required
+@require_role(*_MAINT_ROLES)
+def edit_amp_declaration(aircraft_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    decl: AmpDeclaration | None = ac.amp_declaration  # type: ignore[assignment]
+    if request.method == "POST":
+        return _save_amp_declaration(ac, decl)
+    return render_template(
+        "maintenance/amp_declaration_form.html",
+        aircraft=ac,
+        decl=decl,
+        amp_basis=AmpBasis,
+        declaration_types=AmpDeclarationType,
+        certifying_party_kinds=AmpCertifyingPartyKind,
+    )
+
+
+def _save_amp_declaration(
+    ac: Aircraft, decl: AmpDeclaration | None
+) -> ResponseReturnValue:
+    def _text(key: str) -> str | None:
+        v = (request.form.get(key) or "").strip()
+        return v or None
+
+    basis = request.form.get("basis", "").strip() or AmpBasis.DAH_ICA
+    declaration_type = (
+        request.form.get("declaration_type", "").strip() or AmpDeclarationType.OWNER
+    )
+    certifying_party_kind = (
+        request.form.get("certifying_party_kind", "").strip()
+        or AmpCertifyingPartyKind.OWNER_LESSEE_OPERATOR
+    )
+
+    errors = []
+    if basis not in AmpBasis.ALL:
+        errors.append(_("Invalid programme basis selected."))
+    if declaration_type not in AmpDeclarationType.ALL:
+        errors.append(_("Invalid declaration type selected."))
+    if certifying_party_kind not in AmpCertifyingPartyKind.ALL:
+        errors.append(_("Invalid certifying party selected."))
+
+    revision_date_raw = (request.form.get("revision_date") or "").strip()
+    revision_date = None
+    if revision_date_raw:
+        try:
+            revision_date = _date.fromisoformat(revision_date_raw)
+        except ValueError:
+            errors.append(_("Revision date must be a valid date (YYYY-MM-DD)."))
+
+    if errors:
+        for msg in errors:
+            flash(msg, "danger")
+        return render_template(
+            "maintenance/amp_declaration_form.html",
+            aircraft=ac,
+            decl=decl,
+            amp_basis=AmpBasis,
+            declaration_types=AmpDeclarationType,
+            certifying_party_kinds=AmpCertifyingPartyKind,
+        )
+
+    if decl is None:
+        decl = AmpDeclaration(aircraft_id=ac.id)
+        db.session.add(decl)
+
+    decl.basis = basis
+    decl.mip_details = _text("mip_details")
+    decl.dah_ica_airframe_ref = _text("dah_ica_airframe_ref")
+    decl.dah_ica_engine_ref = _text("dah_ica_engine_ref")
+    decl.dah_ica_propeller_ref = _text("dah_ica_propeller_ref")
+    decl.pilot_owner_maintenance = request.form.get("pilot_owner_maintenance") == "on"
+    decl.pilot_owner_name = _text("pilot_owner_name")
+    decl.pilot_owner_licence_number = _text("pilot_owner_licence_number")
+    decl.declaration_type = declaration_type
+    decl.camo_cao_approval_reference = _text("camo_cao_approval_reference")
+    decl.certifying_party_kind = certifying_party_kind
+    decl.certifying_party_name = _text("certifying_party_name")
+    decl.certifying_party_address = _text("certifying_party_address")
+    decl.certifying_party_phone = _text("certifying_party_phone")
+    decl.certifying_party_email = _text("certifying_party_email")
+    decl.appendix_d_notes = _text("appendix_d_notes")
+    decl.revision_number = _text("revision_number")
+    decl.revision_content = _text("revision_content")
+    decl.revision_date = revision_date
+
+    db.session.commit()
+    flash(_("AMP declaration saved."), "success")
+    return redirect(url_for("maintenance.list_triggers", aircraft_id=ac.id))

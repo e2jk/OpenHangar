@@ -463,6 +463,12 @@ class Aircraft(db.Model):
         cascade="all, delete-orphan",
         uselist=False,
     )
+    amp_declaration = db.relationship(
+        "AmpDeclaration",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
     photos = db.relationship(
         "AircraftPhoto",
         back_populates="aircraft",
@@ -1616,6 +1622,108 @@ class MaintenanceRecord(db.Model):
     )
 
     trigger = db.relationship("MaintenanceTrigger", back_populates="records")
+
+
+# ── Phase 40: AMP Declaration Profile ────────────────────────────────────────
+
+
+class AmpBasis:
+    """EASA Form AMP block 2 — what the programme is based on."""
+
+    DAH_ICA = "dah_ica"
+    MIP = "mip"
+    ALL: ClassVar[set[str]] = {DAH_ICA, MIP}
+
+
+class AmpDeclarationType:
+    """EASA Form AMP block 7 — declaration by the owner, or approval by a
+    contracted CAMO/CAO."""
+
+    OWNER = "owner"
+    CAMO_CAO = "camo_cao"
+    ALL: ClassVar[set[str]] = {OWNER, CAMO_CAO}
+
+
+class AmpCertifyingPartyKind:
+    """EASA Form AMP block 8 — who signs the certification statement."""
+
+    OWNER_LESSEE_OPERATOR = "owner_lessee_operator"
+    CAMO_CAO = "camo_cao"
+    ALL: ClassVar[set[str]] = {OWNER_LESSEE_OPERATOR, CAMO_CAO}
+
+
+class AmpDeclaration(db.Model):
+    """One-to-one with Aircraft: the EASA Form AMP (AMC2 ML.A.302) fields
+    that aren't derivable from Aircraft/Component/MaintenanceTrigger. Block
+    4/5's Yes/No tables and Appendix B/C are computed from MaintenanceTrigger
+    at export time, not stored here — see docs/maintenance_import.md."""
+
+    __tablename__ = "amp_declarations"
+
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), primary_key=True
+    )
+
+    # Block 2 — basis for the maintenance programme
+    basis = db.Column(
+        db.String(16),
+        nullable=False,
+        default=AmpBasis.DAH_ICA,
+        server_default=AmpBasis.DAH_ICA,
+    )
+    mip_details = db.Column(db.Text, nullable=True)  # Appendix A content, if basis=MIP
+
+    # Block 3a-3c — DAH ICA reference per equipment (manufacturer/type/model
+    # is already on Aircraft/Component; only the reference is stored here).
+    # Balloon fields 3d-3g are out of scope — no balloon support elsewhere.
+    dah_ica_airframe_ref = db.Column(db.String(255), nullable=True)
+    dah_ica_engine_ref = db.Column(db.String(255), nullable=True)
+    dah_ica_propeller_ref = db.Column(db.String(255), nullable=True)
+
+    # Block 6 — pilot-owner maintenance (ML.A.803)
+    pilot_owner_maintenance = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
+    )
+    pilot_owner_name = db.Column(db.String(128), nullable=True)
+    pilot_owner_licence_number = db.Column(db.String(64), nullable=True)
+
+    # Block 7 — declaration/approval of the maintenance programme
+    declaration_type = db.Column(
+        db.String(16),
+        nullable=False,
+        default=AmpDeclarationType.OWNER,
+        server_default=AmpDeclarationType.OWNER,
+    )
+    camo_cao_approval_reference = db.Column(db.String(128), nullable=True)
+
+    # Block 8 — certification statement
+    certifying_party_kind = db.Column(
+        db.String(24),
+        nullable=False,
+        default=AmpCertifyingPartyKind.OWNER_LESSEE_OPERATOR,
+        server_default=AmpCertifyingPartyKind.OWNER_LESSEE_OPERATOR,
+    )
+    certifying_party_name = db.Column(db.String(128), nullable=True)
+    certifying_party_address = db.Column(db.Text, nullable=True)
+    certifying_party_phone = db.Column(db.String(32), nullable=True)
+    certifying_party_email = db.Column(db.String(128), nullable=True)
+
+    # Appendix D (optional free text) + a lightweight revision record — the
+    # official form has no numbered block for revision history, so it's
+    # rendered as a note within Appendix D on export.
+    appendix_d_notes = db.Column(db.Text, nullable=True)
+    revision_number = db.Column(db.String(16), nullable=True)
+    revision_content = db.Column(db.String(255), nullable=True)
+    revision_date = db.Column(db.Date, nullable=True)
+
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+    aircraft = db.relationship("Aircraft", back_populates="amp_declaration")
 
 
 # ── Phase 8: Cost Tracking ────────────────────────────────────────────────────
