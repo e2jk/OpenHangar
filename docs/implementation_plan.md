@@ -1999,27 +1999,27 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
   export accordingly — there is no separate "export data" to keep in sync
 
 **Tests:**
-- [ ] Combined-interval `status()`: calendar-only, hours-only, both-set (worse of the
+- [x] Combined-interval `status()`: calendar-only, hours-only, both-set (worse of the
   two wins across all combinations of overdue/due_soon/ok), landings unaffected
-- [ ] Component-scoped trigger: `hours_basis` defaults from the linked component's
+- [x] Component-scoped trigger: `hours_basis` defaults from the linked component's
   `type`; trigger survives component deletion as unscoped (`component_id` → NULL)
-- [ ] Dashboard grouping: triggers appear under the correct component section;
+- [x] Dashboard grouping: triggers appear under the correct component section;
   unscoped triggers appear in "Airframe / general"
-- [ ] Interval parser: `"100FH"`, `"12MO"`, `"100FH / 12MO"`, `"PENDING"`, empty, and
+- [x] Interval parser: `"100FH"`, `"12MO"`, `"100FH / 12MO"`, `"PENDING"`, empty, and
   an unparseable string each produce the expected fields / `needs_review` flag
-- [ ] Import end-to-end: upload a fixture workbook shaped like the documented
+- [x] Import end-to-end: upload a fixture workbook shaped like the documented
   template → preview → commit → correct trigger count, correct needs-review count,
   rollback removes them all
-- [ ] Header row detection tolerant of leading non-matching rows and column reordering
-- [ ] Export block 4/5 Yes/No rows: correct per `AmpCategory` and for the alternative-
+- [x] Header row detection tolerant of leading non-matching rows and column reordering
+- [x] Export block 4/5 Yes/No rows: correct per `AmpCategory` and for the alternative-
   tasks flag, across an aircraft with no categorised triggers, one, and several
-- [ ] Export Appendix B: correct grouping/ordering by category; combined-interval
+- [x] Export Appendix B: correct grouping/ordering by category; combined-interval
   trigger round-trips to the same `"NNNFH / NNMO"`-shaped text the importer accepts
-- [ ] Export Appendix C: omitted entirely when no `is_alternative_to_ica` trigger
+- [x] Export Appendix C: omitted entirely when no `is_alternative_to_ica` trigger
   exists; present with correct rows otherwise
-- [ ] Export gated on `AmpDeclaration` existing; missing profile redirects to the
+- [x] Export gated on `AmpDeclaration` existing; missing profile redirects to the
   edit form instead of rendering a broken/partial document
-- [ ] Round-trip: import a fixture workbook → export → key values (registration,
+- [x] Round-trip: import a fixture workbook → export → key values (registration,
   categorised task counts per `AmpCategory`) match the source data
 
 ---

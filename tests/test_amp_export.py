@@ -292,3 +292,78 @@ class TestExportContent:
         _login(app, client)
         r = client.get(f"/aircraft/{other_acid}/maintenance/amp/export")
         assert r.status_code == 404
+
+
+class TestImportExportRoundTrip:
+    """End-to-end: a spreadsheet imported through the real upload/commit
+    routes exports back out with the same registration and categorised task
+    counts — the round-trip property the whole import/export split is
+    designed around (see docs/maintenance_import.md)."""
+
+    def test_imported_rows_appear_correctly_categorised_on_export(self, app, client):
+        import io
+
+        import openpyxl
+
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid, registration="OO-LKN")
+        _add_declaration(app, acid, certifying_party_name="Zorg Piloot")
+        _login(app, client)
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(["Category", "Task description", "Reference", "Action", "Interval"])
+        ws.append(
+            [
+                "Maintenance due to repetitive ADs",
+                "AD compliance check",
+                "AD 2023-0048",
+                "INSPECTION",
+                "100FH / 12MO",
+            ]
+        )
+        ws.append(
+            [
+                "Maintenance recommendations (TBO via SB/SL, non-mandatory)",
+                "Engine TBO recommendation",
+                "SL TMG 000-1004",
+                "TBO",
+                "2000FH",
+            ]
+        )
+        buf = io.BytesIO()
+        wb.save(buf)
+        buf.seek(0)
+
+        client.post(
+            f"/aircraft/{acid}/maintenance/import",
+            data={"amp_file": (buf, "sched.xlsx")},
+            content_type="multipart/form-data",
+        )
+        r = client.post(f"/aircraft/{acid}/maintenance/import/commit", data={})
+        assert r.status_code == 302
+
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert r.status_code == 200
+        html = r.data.decode()
+
+        assert "OO-LKN" in html
+        assert "Zorg Piloot" in html
+        assert "AD compliance check" in html
+        assert "AD 2023-0048" in html
+        assert "100FH / 12MO" in html
+        assert "Engine TBO recommendation" in html
+        assert "2000FH" in html
+
+        # Both categories are grouped under their own Appendix B section.
+        idx_ads = html.index(AmpCategory.REPETITIVE_ADS)
+        row_ads = html[idx_ads : html.index("</tr>", idx_ads)]
+        assert (
+            re.search(r'class="amp-export-yesno">([^<]*)</td>', row_ads).group(1) == "☑"
+        )
+
+        idx_tbo = html.index(AmpCategory.TBO_RECOMMENDATIONS)
+        row_tbo = html[idx_tbo : html.index("</tr>", idx_tbo)]
+        assert (
+            re.search(r'class="amp-export-yesno">([^<]*)</td>', row_tbo).group(1) == "☑"
+        )
