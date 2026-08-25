@@ -18,6 +18,7 @@ from pathlib import Path
 from types import ModuleType
 
 import atheris
+import coverage
 
 # Disable Atheris's own coverage instrumentation for this replay — it exists
 # to guide *mutation* during a live fuzzing run, and its bytecode rewriting
@@ -28,8 +29,6 @@ import atheris
 # "Fuzzing" section) — this stub must accept and ignore that too.
 atheris.instrument_imports = lambda *args, **kwargs: contextlib.nullcontext()
 atheris.instrument_func = lambda func: func
-
-import coverage
 
 _ROOT = Path(__file__).resolve().parent.parent
 _FUZZ_DIR = _ROOT / "fuzz"
