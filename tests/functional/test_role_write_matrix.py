@@ -124,6 +124,7 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
     "maintenance.edit_trigger": _MAINT_ROLES,
     "maintenance.delete_trigger": _MAINT_ROLES,
     "maintenance.service_trigger": _MAINT_ROLES,
+    "maintenance.edit_amp_declaration": _MAINT_ROLES,
     # snags_bp
     "snags.new_snag": _CREW_ROLES,
     "snags.edit_snag": _CREW_ROLES,

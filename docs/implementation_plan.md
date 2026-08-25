@@ -1879,7 +1879,7 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
 - [x] `needs_review` — boolean, default false; set on triggers imported with an
   unresolved/unparseable interval (see import section) so they read as "not yet
   scheduled" rather than silently evaluating as permanently `ok`
-- [ ] `AmpDeclaration` model, one-to-one with `Aircraft` (nullable — only aircraft
+- [x] `AmpDeclaration` model, one-to-one with `Aircraft` (nullable — only aircraft
   using the export feature need one): the EASA Form AMP fields that aren't
   derivable from `Aircraft`/`Component`/`MaintenanceTrigger` — programme basis
   (DAH ICA vs. MIP, block 2), DAH ICA references for airframe/engine/propeller
@@ -1890,11 +1890,11 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
   revision number/content/date (not a numbered block in the official form itself,
   but standard practice — rendered as a document footer/Appendix D note, not a
   fabricated "block 10")
-- [ ] Edit form for `AmpDeclaration` (`/aircraft/<id>/amp/edit`) — a normal
+- [x] Edit form for `AmpDeclaration` (`/aircraft/<id>/amp/edit`) — a normal
   OpenHangar form, not spreadsheet import: this is ~15 rarely-changed fields, unlike
   the 100+-row task list, so a form is simpler than building a second, narrower
   spreadsheet parser for it
-- [ ] Migration in `app/migrations/versions/`; `scripts/check_migrations.py` green
+- [x] Migration in `app/migrations/versions/`; `scripts/check_migrations.py` green
 
 **Maintenance dashboard — component grouping:**
 - [x] `/aircraft/<id>/maintenance` (`maintenance/list.html`) groups triggers by
