@@ -192,6 +192,17 @@ class TestParseTriggerFields:
         assert values["interval_landings"] is None
         assert any("Interval (landings)" in e for e in errors)
 
+    def test_non_numeric_component_id_is_error(self):
+        _values, errors = parse_trigger_fields(
+            {
+                "name": "x",
+                "trigger_type": TriggerType.CALENDAR,
+                "due_date": "2026-01-01",
+                "component_id": "not-a-number",
+            }
+        )
+        assert any("Component selection is invalid" in e for e in errors)
+
     def test_zero_interval_landings_is_error(self):
         _values, errors = parse_trigger_fields(
             {
@@ -235,7 +246,8 @@ class TestNonFiniteValuesRejected:
     def test_infinite_hobbs_at_service_is_error_and_none(self):
         values, errors = parse_service_fields(
             {"performed_at": "2026-01-01", "hobbs_at_service": "inf"},
-            TriggerType.HOURS,
+            True,
+            False,
         )
         assert values["hobbs_at_service"] is None
         assert any("Hobbs at service" in e for e in errors)
@@ -243,7 +255,8 @@ class TestNonFiniteValuesRejected:
     def test_nan_optional_hobbs_ignored(self):
         values, errors = parse_service_fields(
             {"performed_at": "2026-01-01", "hobbs_at_service": "nan"},
-            TriggerType.CALENDAR,
+            False,
+            False,
         )
         assert values["hobbs_at_service"] is None
         assert errors == []
@@ -252,32 +265,33 @@ class TestNonFiniteValuesRejected:
 class TestParseServiceFields:
     def test_valid_calendar_service(self):
         values, errors = parse_service_fields(
-            {"performed_at": "2026-01-01"}, TriggerType.CALENDAR
+            {"performed_at": "2026-01-01"}, False, False
         )
         assert errors == []
         assert values["performed_at"] == date(2026, 1, 1)
         assert values["hobbs_at_service"] is None
 
     def test_missing_performed_at_is_error(self):
-        _values, errors = parse_service_fields({}, TriggerType.CALENDAR)
+        _values, errors = parse_service_fields({}, False, False)
         assert any("Service date is required" in e for e in errors)
 
     def test_invalid_performed_at_is_error(self):
         _values, errors = parse_service_fields(
-            {"performed_at": "garbage"}, TriggerType.CALENDAR
+            {"performed_at": "garbage"}, False, False
         )
         assert any("Service date must be" in e for e in errors)
 
     def test_hours_trigger_requires_hobbs(self):
         _values, errors = parse_service_fields(
-            {"performed_at": "2026-01-01"}, TriggerType.HOURS
+            {"performed_at": "2026-01-01"}, True, False
         )
         assert any("Hobbs at service is required" in e for e in errors)
 
     def test_hours_trigger_negative_hobbs_is_error(self):
         values, errors = parse_service_fields(
             {"performed_at": "2026-01-01", "hobbs_at_service": "-1"},
-            TriggerType.HOURS,
+            True,
+            False,
         )
         assert values["hobbs_at_service"] is None
         assert any("Hobbs at service must be" in e for e in errors)
@@ -285,7 +299,8 @@ class TestParseServiceFields:
     def test_hours_trigger_valid_hobbs(self):
         values, errors = parse_service_fields(
             {"performed_at": "2026-01-01", "hobbs_at_service": "123.4"},
-            TriggerType.HOURS,
+            True,
+            False,
         )
         assert errors == []
         assert values["hobbs_at_service"] == 123.4
@@ -293,7 +308,8 @@ class TestParseServiceFields:
     def test_calendar_trigger_optional_hobbs_ignored_if_invalid(self):
         values, errors = parse_service_fields(
             {"performed_at": "2026-01-01", "hobbs_at_service": "garbage"},
-            TriggerType.CALENDAR,
+            False,
+            False,
         )
         assert values["hobbs_at_service"] is None
         assert errors == []
@@ -301,21 +317,23 @@ class TestParseServiceFields:
     def test_calendar_trigger_optional_hobbs_used_if_present(self):
         values, errors = parse_service_fields(
             {"performed_at": "2026-01-01", "hobbs_at_service": "42"},
-            TriggerType.CALENDAR,
+            False,
+            False,
         )
         assert values["hobbs_at_service"] == 42.0
         assert errors == []
 
     def test_landings_trigger_requires_landings(self):
         _values, errors = parse_service_fields(
-            {"performed_at": "2026-01-01"}, TriggerType.LANDINGS
+            {"performed_at": "2026-01-01"}, False, True
         )
         assert any("Landings at service is required" in e for e in errors)
 
     def test_landings_trigger_negative_landings_is_error(self):
         values, errors = parse_service_fields(
             {"performed_at": "2026-01-01", "landings_at_service": "-1"},
-            TriggerType.LANDINGS,
+            False,
+            True,
         )
         assert values["landings_at_service"] is None
         assert any("Landings at service must be" in e for e in errors)
@@ -323,7 +341,8 @@ class TestParseServiceFields:
     def test_landings_trigger_valid_landings(self):
         values, errors = parse_service_fields(
             {"performed_at": "2026-01-01", "landings_at_service": "42"},
-            TriggerType.LANDINGS,
+            False,
+            True,
         )
         assert errors == []
         assert values["landings_at_service"] == 42
@@ -331,7 +350,8 @@ class TestParseServiceFields:
     def test_calendar_trigger_optional_landings_ignored_if_invalid(self):
         values, errors = parse_service_fields(
             {"performed_at": "2026-01-01", "landings_at_service": "garbage"},
-            TriggerType.CALENDAR,
+            False,
+            False,
         )
         assert values["landings_at_service"] is None
         assert errors == []
@@ -339,7 +359,18 @@ class TestParseServiceFields:
     def test_calendar_trigger_optional_landings_used_if_present(self):
         values, errors = parse_service_fields(
             {"performed_at": "2026-01-01", "landings_at_service": "42"},
-            TriggerType.CALENDAR,
+            False,
+            False,
         )
         assert values["landings_at_service"] == 42
         assert errors == []
+
+    def test_combined_trigger_requires_both_hobbs_and_landings(self):
+        """A trigger with both due_engine_hours and due_landings populated
+        (Phase 40 combined intervals aren't limited to hours+calendar) needs
+        both readings, independent of each other."""
+        _values, errors = parse_service_fields(
+            {"performed_at": "2026-01-01"}, True, True
+        )
+        assert any("Hobbs at service is required" in e for e in errors)
+        assert any("Landings at service is required" in e for e in errors)

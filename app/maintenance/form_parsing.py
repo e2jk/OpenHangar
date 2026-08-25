@@ -74,6 +74,7 @@ def parse_trigger_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str
 
     name = (f.get("name") or "").strip()
     trigger_type = (f.get("trigger_type") or "").strip()
+    component_id_raw = (f.get("component_id") or "").strip()
     due_date_raw = (f.get("due_date") or "").strip()
     interval_days_raw = (f.get("interval_days") or "").strip()
     warn_days_raw = (f.get("warn_days") or "").strip()
@@ -90,6 +91,15 @@ def parse_trigger_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str
         errors.append(_("Name is required."))
     if trigger_type not in TriggerType.ALL:
         errors.append(_("Trigger type must be 'calendar', 'hours', or 'landings'."))
+
+    # Ownership (does this ID actually belong to the aircraft?) is checked by
+    # the caller, which has the aircraft in scope — this parser only knows
+    # whether the value looks like an ID at all.
+    component_id: int | None = None
+    if component_id_raw:
+        component_id = _parse_positive_int(component_id_raw)
+        if component_id is None:
+            errors.append(_("Component selection is invalid."))
 
     due_date = interval_days = warn_days = due_engine_hours = interval_hours = None
     warn_hours = due_landings = interval_landings = warn_landings = None
@@ -150,6 +160,7 @@ def parse_trigger_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str
     values: dict[str, Any] = {
         "name": name,
         "trigger_type": trigger_type,
+        "component_id": component_id,
         "due_date": due_date,
         "interval_days": interval_days,
         "warn_days": warn_days,
@@ -166,11 +177,17 @@ def parse_trigger_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str
 
 
 def parse_service_fields(
-    f: Mapping[str, str], trigger_type: str
+    f: Mapping[str, str], requires_hobbs: bool, requires_landings: bool
 ) -> tuple[dict[str, Any], list[str]]:
     """Parse + validate the editable MaintenanceRecord (service) fields.
 
-    Mirrors ``service_trigger``'s pre-existing logic exactly.
+    ``requires_hobbs``/``requires_landings`` reflect which due-field groups
+    are actually populated on the trigger being serviced (``due_engine_hours
+    is not None`` / ``due_landings is not None``) rather than its
+    ``trigger_type`` — a combined-interval trigger (Phase 40) can have more
+    than one group populated at once, and each populated group's reading is
+    required; an unpopulated group's reading stays optional (parsed
+    opportunistically if provided, ignored otherwise).
     """
     errors: list[str] = []
 
@@ -188,7 +205,7 @@ def parse_service_fields(
             errors.append(_("Service date must be a valid date (YYYY-MM-DD)."))
 
     hobbs_at_service: float | None = None
-    if trigger_type == TriggerType.HOURS:
+    if requires_hobbs:
         if not hobbs_raw:
             errors.append(_("Hobbs at service is required for hours-based triggers."))
         else:
@@ -199,7 +216,7 @@ def parse_service_fields(
         hobbs_at_service = _parse_optional_float(hobbs_raw)
 
     landings_at_service: int | None = None
-    if trigger_type == TriggerType.LANDINGS:
+    if requires_landings:
         if not landings_raw:
             errors.append(
                 _("Landings at service is required for landings-based triggers.")

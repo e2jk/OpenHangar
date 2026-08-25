@@ -10517,3 +10517,19 @@ msgstr "Eigenaren en beheerders hebben altijd volledige toegang tot de vloot —
 msgid "Permissions updated."
 msgstr "Machtigingen bijgewerkt."
 
+
+#: app/templates/maintenance/trigger_form.html:69
+msgid "Airframe"
+msgstr "Airframe"
+
+#: app/templates/maintenance/trigger_form.html:75
+msgid "— Airframe / general —"
+msgstr "— Airframe / algemeen —"
+
+#: app/templates/maintenance/trigger_form.html:86
+msgid "Scope this item to a specific engine, propeller, etc. instead of the whole airframe."
+msgstr "Beperk dit item tot een specifieke motor, propeller, enz. in plaats van het hele airframe."
+
+#: app/maintenance/form_parsing.py:102 app/maintenance/routes.py:320
+msgid "Component selection is invalid."
+msgstr "De componentselectie is ongeldig."
