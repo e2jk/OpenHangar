@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Import history') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-clock-history me-2"></i>{{ _('Import history') }}
+      </h1>
+      <p class="page-sub"><span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ _('Past AMP imports — you can roll back any import to remove all its maintenance items.') }}</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('maintenance.import_amp_upload', aircraft_id=aircraft.id) }}" class="btn btn-ac-primary">
+        <i class="bi bi-cloud-upload me-1"></i>{{ _('New import') }}
+      </a>
+      <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">
+        <i class="bi bi-tools me-1"></i>{{ _('Maintenance') }}
+      </a>
+    </div>
+  </div>
+
+  {% if batches %}
+  <div class="ac-form-card p-0">
+    <table class="table table-hover mb-0 oh-fs-09">
+      <thead>
+        <tr class="oh-bg-navy-solid">
+          <th class="ps-3 text-white">{{ _('Date') }}</th>
+          <th class="text-white">{{ _('File') }}</th>
+          <th class="text-center text-white">{{ _('Imported') }}</th>
+          <th class="text-center text-white">{{ _('Needs review') }}</th>
+          <th class="pe-3 text-end text-white">{{ _('Actions') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for batch in batches %}
+        <tr>
+          <td class="ps-3 text-nowrap align-middle">
+            {{ batch.imported_at.strftime('%Y-%m-%d %H:%M') if batch.imported_at else '—' }}
+          </td>
+          <td class="align-middle text-truncate oh-mw-260">
+            <i class="bi bi-file-earmark-spreadsheet me-1 text-muted"></i>
+            {{ batch.source_filename }}
+          </td>
+          <td class="text-center align-middle">
+            <span class="badge bg-success">{{ batch.row_count }}</span>
+          </td>
+          <td class="text-center align-middle">
+            {% if batch.needs_review_count > 0 %}
+            <span class="badge bg-warning text-dark">{{ batch.needs_review_count }}</span>
+            {% else %}
+            <span class="text-muted">0</span>
+            {% endif %}
+          </td>
+          <td class="pe-3 text-end align-middle">
+            <form method="POST"
+                  action="{{ url_for('maintenance.import_amp_rollback', aircraft_id=aircraft.id, batch_id=batch.id) }}"
+                  class="d-inline"
+                  data-confirm="{{ ngettext('Delete this import and remove one maintenance item?', 'Delete this import and remove all %(n)d maintenance items?', batch.row_count, n=batch.row_count) }}">
+              <button type="submit" class="btn btn-ac-danger btn-xs">
+                <i class="bi bi-trash me-1"></i>{{ _('Delete') }}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-inbox oh-fs-25"></i>
+    <p class="mt-2">{{ _('No imports yet.') }}</p>
+    <a href="{{ url_for('maintenance.import_amp_upload', aircraft_id=aircraft.id) }}" class="btn btn-ac-primary btn-sm mt-1">
+      <i class="bi bi-cloud-upload me-1"></i>{{ _('Import your first AMP task list') }}
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

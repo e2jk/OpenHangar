@@ -24,6 +24,10 @@
     </div>
     <div class="d-flex gap-2 flex-wrap">
       {% if is_maint %}
+      <a href="{{ url_for('maintenance.import_amp_upload', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost">
+        <i class="bi bi-cloud-upload me-1"></i>{{ _('Import from spreadsheet') }}
+      </a>
       <a href="{{ url_for('maintenance.edit_amp_declaration', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost">
         <i class="bi bi-file-earmark-text me-1"></i>{{ _('AMP declaration') }}
