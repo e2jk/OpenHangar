@@ -1,10 +1,15 @@
+import io
+import os
+import uuid
 from datetime import date as _date
 from datetime import timedelta
 from typing import Any
 
+import openpyxl  # pyright: ignore[reportMissingImports]
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
     abort,
+    current_app,
     flash,
     redirect,
     render_template,
@@ -22,6 +27,7 @@ from models import (
     AmpDeclarationType,
     Component,
     HoursBasis,
+    MaintenanceImportBatch,
     MaintenanceRecord,
     MaintenanceTrigger,
     Role,
@@ -42,7 +48,13 @@ from utils import (
     require_role,
     user_can_access_aircraft,
 )  # pyright: ignore[reportMissingImports]
+from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
 
+from maintenance.amp_import import (  # pyright: ignore[reportMissingImports]
+    compute_due_fields,
+    hours_basis_for_component,
+    parse_amp_rows,
+)
 from maintenance.form_parsing import (  # pyright: ignore[reportMissingImports]
     parse_service_fields,
     parse_trigger_fields,
@@ -599,3 +611,272 @@ def _save_amp_declaration(
     db.session.commit()
     flash(_("AMP declaration saved."), "success")
     return redirect(url_for("maintenance.list_triggers", aircraft_id=ac.id))
+
+
+# ── AMP spreadsheet import ──────────────────────────────────────────────────
+
+_AMP_IMPORT_SESSION_KEY = "amp_import"
+_ALLOWED_AMP_IMPORT_EXTS = {".xlsx"}
+_MAX_AMP_IMPORT_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
+def _amp_import_tmp_dir() -> str:
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    d = os.path.join(folder, "amp_import_tmp")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def _cleanup_amp_import_tmp(uid: int) -> None:
+    meta = session.get(_AMP_IMPORT_SESSION_KEY)
+    if meta and meta.get("uid") == uid:
+        tmp = meta.get("tmp_path")
+        if tmp and os.path.isfile(tmp):
+            try:
+                os.remove(tmp)
+            except OSError as exc:
+                current_app.logger.debug("cleanup tmp AMP import file: %s", exc)
+    session.pop(_AMP_IMPORT_SESSION_KEY, None)
+
+
+def _amp_preview_rows(
+    ac: Aircraft, rows: list[Any], components: list[Component]
+) -> list[dict[str, Any]]:
+    current_hobbs = ac.total_engine_hours
+    current_flight_hours = ac.total_flight_hours
+    components_by_id = {c.id: c for c in components}
+
+    preview = []
+    for r in rows:
+        suggested = (
+            components_by_id.get(r.suggested_component_id)
+            if (r.suggested_component_id is not None)
+            else None
+        )
+        basis = hours_basis_for_component(suggested)
+        due_h, due_d = compute_due_fields(
+            r.interval_hours,
+            r.interval_days,
+            basis,
+            current_hobbs,
+            current_flight_hours,
+        )
+        preview.append(
+            {
+                "parsed": r,
+                "suggested_component": suggested,
+                "due_engine_hours": due_h,
+                "due_date": due_d,
+            }
+        )
+    return preview
+
+
+@maintenance_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/maintenance/import", methods=["GET", "POST"]
+)
+@login_required
+@require_role(*_MAINT_ROLES)
+def import_amp_upload(aircraft_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    uid = session["user_id"]
+
+    if request.method == "GET":
+        return render_template("maintenance/amp_import_upload.html", aircraft=ac)
+
+    uploaded = request.files.get("amp_file")
+    if not uploaded or not uploaded.filename:
+        flash(_("Please select a file to upload."), "danger")
+        return render_template("maintenance/amp_import_upload.html", aircraft=ac), 422
+
+    ext = os.path.splitext(uploaded.filename)[1].lower()
+    if ext not in _ALLOWED_AMP_IMPORT_EXTS:
+        flash(_("Unsupported format. Please upload a .xlsx file."), "danger")
+        return render_template("maintenance/amp_import_upload.html", aircraft=ac), 422
+
+    data = uploaded.read()
+    if len(data) > _MAX_AMP_IMPORT_BYTES:
+        flash(_("File too large (maximum 10 MB)."), "danger")
+        return render_template("maintenance/amp_import_upload.html", aircraft=ac), 422
+
+    try:
+        wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True)
+        components = list(ac.components)
+        rows = parse_amp_rows(wb, components)
+    except ValueError as exc:
+        flash(str(exc), "danger")
+        return render_template("maintenance/amp_import_upload.html", aircraft=ac), 422
+
+    if not rows:
+        flash(_("No task rows found in the uploaded file."), "danger")
+        return render_template("maintenance/amp_import_upload.html", aircraft=ac), 422
+
+    _cleanup_amp_import_tmp(uid)
+    safe_base = secure_filename(uploaded.filename) or "upload"
+    tmp_name = f"amp_import_{uid}_{uuid.uuid4().hex}_{safe_base}"
+    tmp_path = os.path.join(_amp_import_tmp_dir(), tmp_name)
+    with open(tmp_path, "wb") as fh:
+        fh.write(data)
+
+    session[_AMP_IMPORT_SESSION_KEY] = {
+        "uid": uid,
+        "aircraft_id": ac.id,
+        "tmp_path": tmp_path,
+        "original_filename": uploaded.filename,
+    }
+
+    preview_rows = _amp_preview_rows(ac, rows, components)
+    needs_review_count = sum(1 for r in rows if r.needs_review)
+
+    return render_template(
+        "maintenance/amp_import_review.html",
+        aircraft=ac,
+        preview_rows=preview_rows,
+        components=components,
+        row_count=len(rows),
+        needs_review_count=needs_review_count,
+        filename=uploaded.filename,
+    )
+
+
+@maintenance_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/maintenance/import/commit", methods=["POST"]
+)
+@login_required
+@require_role(*_MAINT_ROLES)
+def import_amp_commit(aircraft_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    uid = session["user_id"]
+    meta = session.get(_AMP_IMPORT_SESSION_KEY)
+
+    if not meta or meta.get("uid") != uid or meta.get("aircraft_id") != ac.id:
+        flash(_("Import session expired. Please upload the file again."), "warning")
+        return redirect(url_for("maintenance.import_amp_upload", aircraft_id=ac.id))
+
+    tmp_path: str = meta["tmp_path"]
+    original_filename: str = meta["original_filename"]
+    if not os.path.isfile(tmp_path):
+        flash(_("Temporary file not found. Please upload the file again."), "warning")
+        session.pop(_AMP_IMPORT_SESSION_KEY, None)
+        return redirect(url_for("maintenance.import_amp_upload", aircraft_id=ac.id))
+
+    with open(tmp_path, "rb") as fh:
+        data = fh.read()
+    wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True)
+    components = list(ac.components)
+    components_by_id = {c.id: c for c in components}
+    rows = parse_amp_rows(wb, components)
+
+    current_hobbs = ac.total_engine_hours
+    current_flight_hours = ac.total_flight_hours
+
+    batch = MaintenanceImportBatch(
+        aircraft_id=ac.id,
+        source_filename=original_filename,
+        row_count=len(rows),
+        needs_review_count=sum(1 for r in rows if r.needs_review),
+    )
+    db.session.add(batch)
+    db.session.flush()
+
+    for i, r in enumerate(rows):
+        override_raw = (request.form.get(f"component_id_{i}") or "").strip()
+        component = None
+        if override_raw:
+            try:
+                component = components_by_id.get(int(override_raw))
+            except ValueError:
+                component = None
+        elif r.suggested_component_id is not None:
+            component = components_by_id.get(r.suggested_component_id)
+
+        basis = hours_basis_for_component(component)
+        due_h, due_d = compute_due_fields(
+            r.interval_hours,
+            r.interval_days,
+            basis,
+            current_hobbs,
+            current_flight_hours,
+        )
+
+        db.session.add(
+            MaintenanceTrigger(
+                aircraft_id=ac.id,
+                component_id=component.id if component else None,
+                name=r.name,
+                trigger_type=(
+                    TriggerType.CALENDAR if due_d is not None else TriggerType.HOURS
+                ),
+                due_date=due_d,
+                interval_days=r.interval_days,
+                due_engine_hours=due_h,
+                interval_hours=r.interval_hours,
+                hours_basis=basis,
+                category=r.category,
+                reference=r.reference,
+                action=r.action,
+                part_number=r.part_number,
+                serial_number=r.serial_number,
+                notes=r.notes,
+                needs_review=r.needs_review,
+                import_batch_id=batch.id,
+            )
+        )
+
+    db.session.commit()
+    _cleanup_amp_import_tmp(uid)
+    activity(
+        "maintenance.amp_import",
+        aircraft_id=ac.id,
+        batch_id=batch.id,
+        row_count=batch.row_count,
+    )
+
+    flash(
+        _(
+            "Imported %(count)d maintenance item(s) — %(review)d flagged for review.",
+            count=batch.row_count,
+            review=batch.needs_review_count,
+        ),
+        "success",
+    )
+    return redirect(url_for("maintenance.list_triggers", aircraft_id=ac.id))
+
+
+@maintenance_bp.route("/aircraft/<aircraft_ref:aircraft_id>/maintenance/import/history")
+@login_required
+@require_role(*_MAINT_ROLES)
+def import_amp_history(aircraft_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    batches = (
+        MaintenanceImportBatch.query.filter_by(aircraft_id=ac.id)
+        .order_by(MaintenanceImportBatch.imported_at.desc())
+        .all()
+    )
+    return render_template(
+        "maintenance/amp_import_history.html", aircraft=ac, batches=batches
+    )
+
+
+@maintenance_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/maintenance/import/<int:batch_id>/rollback",
+    methods=["POST"],
+)
+@login_required
+@require_role(*_MAINT_ROLES)
+def import_amp_rollback(aircraft_id: int, batch_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    batch = db.session.get(MaintenanceImportBatch, batch_id)
+    if not batch or batch.aircraft_id != ac.id:
+        abort(404)
+
+    row_count = batch.row_count
+    MaintenanceTrigger.query.filter_by(import_batch_id=batch.id).delete()
+    db.session.delete(batch)
+    db.session.commit()
+
+    flash(
+        _("Import rolled back: %(count)d item(s) removed.", count=row_count),
+        "success",
+    )
+    return redirect(url_for("maintenance.import_amp_history", aircraft_id=ac.id))

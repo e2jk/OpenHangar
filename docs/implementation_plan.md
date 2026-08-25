@@ -1919,7 +1919,7 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
 - [x] `MaintenanceImportBatch` model (mirrors `LogbookImportBatch`, Phase 28) —
   aircraft FK, import timestamp, row count, needs-review count; links to the created
   `MaintenanceTrigger` rows so an import can be reviewed or rolled back as a unit
-- [ ] Upload page (aircraft maintenance page → "Import from spreadsheet"): accepts
+- [x] Upload page (aircraft maintenance page → "Import from spreadsheet"): accepts
   `.xlsx`; locates the header row by matching the known column names (order-tolerant,
   case-insensitive, ignoring leading unrelated rows/sheets) rather than assuming a
   fixed row/sheet index
@@ -1933,7 +1933,7 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
 - [x] Rows with an empty, `"PENDING"`, or otherwise unparseable `Interval` are
   imported as a `MaintenanceTrigger` with `needs_review = true` and no due fields set,
   never silently skipped or treated as an import error
-- [ ] `Part number`/`Serial number` columns import into the new free-text columns;
+- [x] `Part number`/`Serial number` columns import into the new free-text columns;
   `component_id` is not auto-matched from them (a task's target part isn't guaranteed
   to share an identifier scheme with an installed `Component` row) — component
   association is chosen per-row on the review screen, pre-selected by a heuristic on
@@ -1944,14 +1944,14 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
   EASA's own wording almost verbatim); an unmatched or blank category imports as
   `category = NULL` (routine/admin task, excluded from Appendix B on export) rather
   than being rejected — reviewable/correctable per-row on the preview screen
-- [ ] Review/preview screen before commit (mirrors Phase 28's mapping-preview step):
+- [x] Review/preview screen before commit (mirrors Phase 28's mapping-preview step):
   full parsed-row table with computed interval fields, suggested component, and a
   per-row editable component picker; explicit user confirmation required before commit
-- [ ] Commit creates one `MaintenanceTrigger` per row (tagged with the
+- [x] Commit creates one `MaintenanceTrigger` per row (tagged with the
   `MaintenanceImportBatch`, none silently dropped — unparseable rows import as
   `needs_review` per above); completion summary shows rows imported and rows flagged
   for review
-- [ ] Import history page (mirrors Phase 28's): lists past batches per aircraft;
+- [x] Import history page (mirrors Phase 28's): lists past batches per aircraft;
   rollback action removes every `MaintenanceTrigger` in that batch
 
 **AMP document export:**
