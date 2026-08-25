@@ -43,10 +43,21 @@ jobs:
       # late in the day, just before this runs. Checked against actual .po
       # content, not "any commit in the last 2 days" — a run of unrelated
       # dependency-bump commits shouldn't trigger a scan.
+      #
+      # This skip only applies to the nightly schedule. A manual
+      # workflow_dispatch run (e.g. after dismissing/re-triaging findings
+      # directly on Weblate's site) always runs the full scan — the whole
+      # point of triggering it by hand is to check right now, regardless of
+      # whether a .po file happens to have changed recently.
       - name: Check for recent .po file changes
         id: po-check
+        env:
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          if git log --since="2 days ago" --oneline -- 'app/translations/*/LC_MESSAGES/messages.po' | grep -q .; then
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Manually triggered — running the full scan regardless of recent .po changes."
+          elif git log --since="2 days ago" --oneline -- 'app/translations/*/LC_MESSAGES/messages.po' | grep -q .; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
