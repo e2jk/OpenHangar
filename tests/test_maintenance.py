@@ -7,6 +7,8 @@ from datetime import date, timedelta
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
+    Component,
+    ComponentType,
     HoursBasis,
     MaintenanceRecord,
     MaintenanceTrigger,
@@ -112,6 +114,14 @@ def _add_hours_trigger(
         db.session.add(t)
         db.session.commit()
         return t.id
+
+
+def _add_component(app, aircraft_id, comp_type=ComponentType.ENGINE, make="Lycoming"):
+    with app.app_context():
+        c = Component(aircraft_id=aircraft_id, type=comp_type, make=make, model="O-360")
+        db.session.add(c)
+        db.session.commit()
+        return c.id
 
 
 def _add_landings_trigger(
@@ -316,6 +326,93 @@ class TestTriggerStatus:
             assert t.status() == "due_soon"
 
 
+class TestTriggerStatusCombined:
+    """Phase 40: a trigger with more than one due-field group populated at
+    once ("due at whichever comes first", e.g. an AMP task quoted as
+    "100FH / 12MO") evaluates every populated group independently and
+    returns the worst status."""
+
+    def test_both_ok_is_ok(self, app):
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=1,
+                name="x",
+                trigger_type=TriggerType.CALENDAR,
+                due_date=date.today() + timedelta(days=100),
+                due_engine_hours=200.0,
+            )
+            assert t.status(current_engine_hours=100.0) == "ok"
+
+    def test_calendar_overdue_wins_over_hours_ok(self, app):
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=1,
+                name="x",
+                trigger_type=TriggerType.CALENDAR,
+                due_date=date.today() - timedelta(days=1),
+                due_engine_hours=200.0,
+            )
+            assert t.status(current_engine_hours=10.0) == "overdue"
+
+    def test_hours_overdue_wins_over_calendar_ok(self, app):
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=1,
+                name="x",
+                trigger_type=TriggerType.HOURS,
+                due_date=date.today() + timedelta(days=100),
+                due_engine_hours=200.0,
+            )
+            assert t.status(current_engine_hours=201.0) == "overdue"
+
+    def test_calendar_due_soon_wins_over_hours_ok(self, app):
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=1,
+                name="x",
+                trigger_type=TriggerType.CALENDAR,
+                due_date=date.today() + timedelta(days=10),
+                due_engine_hours=200.0,
+            )
+            assert t.status(current_engine_hours=10.0) == "due_soon"
+
+    def test_hours_due_soon_wins_over_calendar_ok(self, app):
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=1,
+                name="x",
+                trigger_type=TriggerType.HOURS,
+                due_date=date.today() + timedelta(days=100),
+                due_engine_hours=200.0,
+                interval_hours=50.0,
+            )
+            assert t.status(current_engine_hours=196.5) == "due_soon"
+
+    def test_landings_and_calendar_combined_overdue(self, app):
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=1,
+                name="x",
+                trigger_type=TriggerType.LANDINGS,
+                due_date=date.today() + timedelta(days=100),
+                due_landings=1000,
+            )
+            assert t.status(current_landings=1001) == "overdue"
+
+    def test_single_group_populated_matches_pre_combined_behaviour(self, app):
+        """A trigger with only one field group populated (the common,
+        non-combined case) behaves exactly as before — a regression guard
+        for the status() rewrite."""
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=1,
+                name="x",
+                trigger_type=TriggerType.HOURS,
+                due_engine_hours=200.0,
+            )
+            assert t.status(current_engine_hours=None) == "ok"
+
+
 # ── Auth guard ────────────────────────────────────────────────────────────────
 
 
@@ -425,6 +522,63 @@ class TestAddTrigger:
             t = MaintenanceTrigger.query.filter_by(aircraft_id=acid).first()
             assert float(t.due_engine_hours) == 250.0
             assert float(t.interval_hours) == 50.0
+
+    def test_post_creates_trigger_scoped_to_component(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        cid = _add_component(app, acid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Engine 100 hr inspection",
+                "trigger_type": "hours",
+                "due_engine_hours": "100",
+                "component_id": str(cid),
+            },
+            follow_redirects=False,
+        )
+        assert r.status_code == 302
+        with app.app_context():
+            t = MaintenanceTrigger.query.filter_by(aircraft_id=acid).first()
+            assert t.component_id == cid
+
+    def test_post_no_component_selected_is_unscoped(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Annual",
+                "trigger_type": "calendar",
+                "due_date": "2027-01-01",
+                "component_id": "",
+            },
+            follow_redirects=False,
+        )
+        assert r.status_code == 302
+        with app.app_context():
+            t = MaintenanceTrigger.query.filter_by(aircraft_id=acid).first()
+            assert t.component_id is None
+
+    def test_post_rejects_component_from_another_aircraft(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        other_acid = _add_aircraft(app, tid, registration="OO-OTH")
+        other_cid = _add_component(app, other_acid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/new",
+            data={
+                "name": "Annual",
+                "trigger_type": "calendar",
+                "due_date": "2027-01-01",
+                "component_id": str(other_cid),
+            },
+        )
+        assert r.status_code == 200
+        assert b"Component selection is invalid" in r.data
 
     def test_post_rejects_missing_name(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
@@ -578,6 +732,27 @@ class TestDeleteTrigger:
         r = client.post(f"/aircraft/{acid2}/maintenance/{trid}/delete")
         assert r.status_code == 404
 
+    def test_deleting_component_unscopes_trigger_instead_of_deleting_it(
+        self, app, client
+    ):
+        """Phase 40: Component.id FK is ondelete=SET NULL — removing a
+        component keeps the trigger's history, just unscopes it."""
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        cid = _add_component(app, acid)
+        trid = _add_calendar_trigger(app, acid)
+        with app.app_context():
+            t = db.session.get(MaintenanceTrigger, trid)
+            t.component_id = cid
+            db.session.commit()
+        _login(app, client)
+        r = client.post(f"/aircraft/{acid}/components/{cid}/delete")
+        assert r.status_code in (302, 303)
+        with app.app_context():
+            t = db.session.get(MaintenanceTrigger, trid)
+            assert t is not None
+            assert t.component_id is None
+
 
 # ── Service trigger ───────────────────────────────────────────────────────────
 
@@ -708,6 +883,66 @@ class TestServiceTrigger:
         )
         assert r.status_code == 200
         assert b"Service date is required" in r.data
+
+    def test_combined_trigger_advances_both_groups_from_one_service(self, app, client):
+        """Phase 40: a combined-interval trigger (both due_date and
+        due_engine_hours populated) advances both from a single service
+        record, using the readings both fields collect."""
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=acid,
+                name="100FH / 12MO inspection",
+                trigger_type=TriggerType.CALENDAR,
+                due_date=date(2026, 1, 1),
+                interval_days=365,
+                due_engine_hours=200.0,
+                interval_hours=100.0,
+            )
+            db.session.add(t)
+            db.session.commit()
+            trid = t.id
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/service",
+            data={
+                "performed_at": "2026-04-01",
+                "hobbs_at_service": "150.0",
+            },
+            follow_redirects=False,
+        )
+        assert r.status_code == 302
+        with app.app_context():
+            t = db.session.get(MaintenanceTrigger, trid)
+            assert t.due_date == date(2027, 4, 1)
+            assert float(t.due_engine_hours) == 250.0
+
+    def test_combined_trigger_service_form_shows_both_fields_required(
+        self, app, client
+    ):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=acid,
+                name="combined",
+                trigger_type=TriggerType.HOURS,
+                due_date=date(2026, 1, 1),
+                due_engine_hours=200.0,
+                due_landings=1000,
+            )
+            db.session.add(t)
+            db.session.commit()
+            trid = t.id
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/service",
+            data={"performed_at": "2026-04-01"},
+        )
+        assert r.status_code == 200
+        assert b"Hobbs at service is required" in r.data
+        assert b"Landings at service is required" in r.data
 
 
 # ── Coverage gap: no TenantUser → 403 ────────────────────────────────────────

@@ -16,6 +16,7 @@ from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImp
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 from models import (
     Aircraft,
+    Component,
     HoursBasis,
     MaintenanceRecord,
     MaintenanceTrigger,
@@ -315,6 +316,13 @@ def edit_trigger(aircraft_id: int, trigger_id: int) -> ResponseReturnValue:
 def _save_trigger(ac: Aircraft, t: MaintenanceTrigger | None) -> ResponseReturnValue:
     values, errors = parse_trigger_fields(request.form)
 
+    component_id = values.get("component_id")
+    if component_id is not None:
+        comp = db.session.get(Component, component_id)
+        if comp is None or comp.aircraft_id != ac.id:
+            errors.append(_("Component selection is invalid."))
+            component_id = None
+
     if errors:
         for msg in errors:
             flash(msg, "danger")
@@ -332,6 +340,7 @@ def _save_trigger(ac: Aircraft, t: MaintenanceTrigger | None) -> ResponseReturnV
 
     t.name = values["name"]
     t.trigger_type = values["trigger_type"]
+    t.component_id = component_id
     t.due_date = values["due_date"]
     t.interval_days = values["interval_days"]
     t.warn_days = values["warn_days"]
@@ -381,8 +390,16 @@ def service_trigger(aircraft_id: int, trigger_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     t = _get_trigger_or_404(ac, trigger_id)
 
+    # Phase 40: which readings are required depends on which due-field
+    # groups are actually populated on this trigger, not on trigger_type — a
+    # combined-interval trigger can have more than one group populated.
+    requires_hobbs = t.due_engine_hours is not None
+    requires_landings = t.due_landings is not None
+
     if request.method == "POST":
-        values, errors = parse_service_fields(request.form, t.trigger_type)
+        values, errors = parse_service_fields(
+            request.form, requires_hobbs, requires_landings
+        )
         performed_at = values["performed_at"]
         hobbs_at_service = values["hobbs_at_service"]
         landings_at_service = values["landings_at_service"]
@@ -409,17 +426,19 @@ def service_trigger(aircraft_id: int, trigger_id: int) -> ResponseReturnValue:
         )
         db.session.add(record)
 
-        # Advance the trigger's due value if an interval is configured
-        if t.trigger_type == TriggerType.CALENDAR and t.interval_days and performed_at:
+        # Advance every populated due-field group independently — a
+        # combined-interval trigger (both calendar and hours set) advances
+        # both together from the same service record.
+        if t.due_date is not None and t.interval_days and performed_at:
             t.due_date = performed_at + timedelta(days=t.interval_days)
-        elif (
-            t.trigger_type == TriggerType.HOURS
+        if (
+            t.due_engine_hours is not None
             and t.interval_hours
             and hobbs_at_service is not None
         ):
             t.due_engine_hours = hobbs_at_service + float(t.interval_hours)
-        elif (
-            t.trigger_type == TriggerType.LANDINGS
+        if (
+            t.due_landings is not None
             and t.interval_landings
             and landings_at_service is not None
         ):

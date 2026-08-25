@@ -36,8 +36,6 @@ _TRIGGER_KEYS = (
     "notes",
 )
 
-_TRIGGER_TYPES = ("calendar", "hours", "landings", "", "garbage")
-
 
 @atheris.instrument_func
 def TestOneInput(data: bytes) -> None:
@@ -60,14 +58,17 @@ def TestOneInput(data: bytes) -> None:
         v = values[key]
         assert v is None or (isinstance(v, int) and v >= 0), f"{key} returned {v!r}"
 
-    trigger_type = _TRIGGER_TYPES[fdp.ConsumeIntInRange(0, len(_TRIGGER_TYPES) - 1)]
+    requires_hobbs = fdp.ConsumeBool()
+    requires_landings = fdp.ConsumeBool()
     service_form = {
         "performed_at": fdp.ConsumeUnicodeNoSurrogates(24),
         "hobbs_at_service": fdp.ConsumeUnicodeNoSurrogates(24),
         "landings_at_service": fdp.ConsumeUnicodeNoSurrogates(24),
         "notes": fdp.ConsumeUnicodeNoSurrogates(24),
     }
-    service_values, service_errors = parse_service_fields(service_form, trigger_type)
+    service_values, service_errors = parse_service_fields(
+        service_form, requires_hobbs, requires_landings
+    )
     assert isinstance(service_values, dict)
     assert isinstance(service_errors, list)
     assert service_values["performed_at"] is None or isinstance(
@@ -75,7 +76,7 @@ def TestOneInput(data: bytes) -> None:
     )
     hobbs = service_values["hobbs_at_service"]
     assert hobbs is None or (isinstance(hobbs, float) and math.isfinite(hobbs))
-    if trigger_type == "hours":
+    if requires_hobbs:
         assert hobbs is None or hobbs >= 0, f"hobbs_at_service returned {hobbs!r}"
     landings = service_values["landings_at_service"]
     assert landings is None or (isinstance(landings, int) and landings >= 0), (

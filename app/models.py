@@ -1472,59 +1472,73 @@ class MaintenanceTrigger(db.Model):
     ) -> str:
         """Return 'overdue', 'due_soon', or 'ok'.
 
-        For HOURS triggers, ``hours_basis`` picks which of
-        ``current_engine_hours``/``current_flight_hours`` is compared
-        against ``due_engine_hours``."""
+        Evaluates every populated field group (calendar ``due_date``, hours
+        ``due_engine_hours``, landings ``due_landings``) independently and
+        returns the worst result. This is what lets a trigger represent a
+        "due at whichever comes first" combined interval (e.g. an AMP task
+        quoted as "100FH / 12MO") simply by having more than one field group
+        populated at once, with no separate ``trigger_type`` value or
+        duplicate rows needed. A trigger with only one field group populated
+        (the common case) behaves exactly as before this method started
+        evaluating groups independently. For the hours group, ``hours_basis``
+        picks which of ``current_engine_hours``/``current_flight_hours`` is
+        compared against ``due_engine_hours``."""
         from datetime import date as _date
 
-        if self.trigger_type == TriggerType.CALENDAR and self.due_date:
+        statuses: list[str] = []
+
+        if self.due_date is not None:
             delta = (self.due_date - _date.today()).days
             if delta < 0:
-                return "overdue"
-            warn_days = self.warn_days if self.warn_days is not None else 30
-            if delta <= warn_days:
-                return "due_soon"
-        elif (
-            self.trigger_type == TriggerType.HOURS and self.due_engine_hours is not None
-        ):
+                statuses.append("overdue")
+            else:
+                warn_days = self.warn_days if self.warn_days is not None else 30
+                if delta <= warn_days:
+                    statuses.append("due_soon")
+
+        if self.due_engine_hours is not None:
             current_hobbs = (
                 current_flight_hours
                 if self.hours_basis == HoursBasis.FLIGHT
                 else current_engine_hours
             )
-            if current_hobbs is None:
-                return "ok"
-            remaining = float(self.due_engine_hours) - float(current_hobbs)
-            if remaining <= 0:
-                return "overdue"
-            if self.warn_hours is not None:
-                warn = float(self.warn_hours)
-            else:
-                warn = (
-                    max(float(self.interval_hours) * 0.1, 5.0)
-                    if self.interval_hours
-                    else 10.0
-                )
-            if remaining <= warn:
-                return "due_soon"
-        elif (
-            self.trigger_type == TriggerType.LANDINGS and self.due_landings is not None
-        ):
-            if current_landings is None:
-                return "ok"
-            remaining = self.due_landings - current_landings
-            if remaining <= 0:
-                return "overdue"
-            if self.warn_landings is not None:
-                warn = self.warn_landings
-            else:
-                warn = (
-                    max(int(self.interval_landings * 0.1), 5)
-                    if self.interval_landings
-                    else 10
-                )
-            if remaining <= warn:
-                return "due_soon"
+            if current_hobbs is not None:
+                remaining = float(self.due_engine_hours) - float(current_hobbs)
+                if remaining <= 0:
+                    statuses.append("overdue")
+                else:
+                    if self.warn_hours is not None:
+                        warn_h = float(self.warn_hours)
+                    else:
+                        warn_h = (
+                            max(float(self.interval_hours) * 0.1, 5.0)
+                            if self.interval_hours
+                            else 10.0
+                        )
+                    if remaining <= warn_h:
+                        statuses.append("due_soon")
+
+        if self.due_landings is not None:
+            if current_landings is not None:
+                remaining_l = self.due_landings - current_landings
+                if remaining_l <= 0:
+                    statuses.append("overdue")
+                else:
+                    if self.warn_landings is not None:
+                        warn_l = self.warn_landings
+                    else:
+                        warn_l = (
+                            max(int(self.interval_landings * 0.1), 5)
+                            if self.interval_landings
+                            else 10
+                        )
+                    if remaining_l <= warn_l:
+                        statuses.append("due_soon")
+
+        if "overdue" in statuses:
+            return "overdue"
+        if "due_soon" in statuses:
+            return "due_soon"
         return "ok"
 
     @property

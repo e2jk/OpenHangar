@@ -1842,16 +1842,16 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
 - [x] `MaintenanceTrigger.component_id` — nullable FK to `Component` (`ondelete="SET
   NULL"`, so removing a component keeps its maintenance history; the trigger becomes
   unscoped/airframe-general rather than being deleted)
-- [ ] `MaintenanceTrigger.status()` (and the "record service" flow) extended to
+- [x] `MaintenanceTrigger.status()` (and the "record service" flow) extended to
   support a trigger with both calendar fields (`due_date`/`interval_days`) and hours
   fields (`due_engine_hours`/`interval_hours`) populated at once — "due at whichever
   comes first". Mirror the existing per-limit `statuses` list pattern already used in
   `services/component_limits.py` (evaluate each populated field-group independently,
   `overdue` > `due_soon` > `ok` wins) rather than adding a new `trigger_type` value or
   duplicating rows per interval component
-- [ ] "Record service" (`service_trigger`) advances both `due_date` and
+- [x] "Record service" (`service_trigger`) advances both `due_date` and
   `due_engine_hours` together when both are set on a serviced trigger
-- [ ] `new_trigger`/`edit_trigger` form gains an optional "Component" selector, scoped
+- [x] `new_trigger`/`edit_trigger` form gains an optional "Component" selector, scoped
   to the aircraft's currently-installed components; selecting an `engine`/`propeller`
   component defaults `hours_basis` to `HoursBasis.ENGINE` (mirrors the existing TBO
   logic in `component_limits.py`), `airframe`/`avionics`/`other` defaults to
