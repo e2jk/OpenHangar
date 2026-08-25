@@ -1,0 +1,294 @@
+"""Tests for Phase 40: AMP document export route (maintenance.export_amp)."""
+
+import re
+from datetime import date
+
+import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
+from models import (  # pyright: ignore[reportMissingImports]
+    Aircraft,
+    AmpCategory,
+    AmpDeclaration,
+    Component,
+    ComponentType,
+    MaintenanceTrigger,
+    Role,
+    Tenant,
+    TenantUser,
+    TriggerType,
+    User,
+    db,
+)
+
+
+def _create_user_and_tenant(app, email="pilot@example.com", role=Role.ADMIN):
+    with app.app_context():
+        tenant = Tenant(name="Test Hangar")
+        db.session.add(tenant)
+        db.session.flush()
+        user = User(
+            email=email,
+            password_hash=_pw_hash.hash("testpassword123"),
+            is_active=True,
+        )
+        db.session.add(user)
+        db.session.flush()
+        db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=role))
+        db.session.commit()
+        return user.id, tenant.id
+
+
+def _login(app, client, email="pilot@example.com"):
+    with app.app_context():
+        uid = User.query.filter_by(email=email).first().id
+    with client.session_transaction() as sess:
+        sess["user_id"] = uid
+    return uid
+
+
+def _add_aircraft(app, tenant_id, registration="OO-PNH"):
+    with app.app_context():
+        ac = Aircraft(
+            tenant_id=tenant_id, registration=registration, make="Robin", model="DR400"
+        )
+        db.session.add(ac)
+        db.session.commit()
+        return ac.id
+
+
+def _add_declaration(app, aircraft_id, **kwargs):
+    with app.app_context():
+        decl = AmpDeclaration(aircraft_id=aircraft_id, **kwargs)
+        db.session.add(decl)
+        db.session.commit()
+        return aircraft_id
+
+
+def _add_trigger(app, aircraft_id, **kwargs):
+    kwargs.setdefault("trigger_type", TriggerType.CALENDAR)
+    kwargs.setdefault("due_date", date.today())
+    with app.app_context():
+        t = MaintenanceTrigger(aircraft_id=aircraft_id, **kwargs)
+        db.session.add(t)
+        db.session.commit()
+        return t.id
+
+
+class TestAuthAndGating:
+    def test_redirects_when_not_logged_in(self, client):
+        r = client.get("/aircraft/1/maintenance/amp/export")
+        assert r.status_code == 302
+
+    def test_403_for_viewer(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, role=Role.VIEWER)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert r.status_code == 403
+
+    def test_no_declaration_redirects_to_edit_form(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.get(
+            f"/aircraft/{acid}/maintenance/amp/export", follow_redirects=False
+        )
+        assert r.status_code == 302
+        assert r.headers["Location"].endswith("/amp/edit")
+
+    def test_no_declaration_flashes_prompt(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.get(
+            f"/aircraft/{acid}/maintenance/amp/export", follow_redirects=True
+        )
+        assert b"Fill in the AMP declaration profile" in r.data
+
+
+class TestExportContent:
+    def test_renders_blocks_1_to_3(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid, registration="OO-LKN")
+        _add_declaration(
+            app,
+            acid,
+            dah_ica_airframe_ref="DOC 1001586 GB",
+            certifying_party_name="Zorg Piloot",
+        )
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert r.status_code == 200
+        assert b"OO-LKN" in r.data
+        assert b"DOC 1001586 GB" in r.data
+        assert b"Zorg Piloot" in r.data
+
+    def test_block_4_yes_for_category_with_triggers(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _add_trigger(
+            app,
+            acid,
+            name="AD check",
+            category=AmpCategory.REPETITIVE_ADS,
+        )
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        html = r.data.decode()
+        idx = html.index(AmpCategory.REPETITIVE_ADS)
+        row = html[idx : html.index("</tr>", idx)]
+        yes_cell = re.search(r'class="amp-export-yesno">([^<]*)</td>', row).group(1)
+        assert yes_cell == "☑"
+
+    def test_block_4_no_for_category_without_triggers(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        html = r.data.decode()
+        idx = html.index(AmpCategory.REPETITIVE_ADS)
+        row = html[idx : html.index("</tr>", idx)]
+        yes_cell = re.search(r'class="amp-export-yesno">([^<]*)</td>', row).group(1)
+        assert yes_cell == ""
+
+    def test_block_5_yes_when_alternative_task_exists(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _add_trigger(app, acid, name="Deviation", is_alternative_to_ica=True)
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert b"see Appendix C" in r.data
+
+    def test_appendix_b_groups_by_category(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _add_trigger(
+            app,
+            acid,
+            name="AD compliance check",
+            category=AmpCategory.REPETITIVE_ADS,
+            reference="AD 2023-0048",
+            interval_hours=100.0,
+            interval_days=360,
+        )
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert r.status_code == 200
+        assert b"Appendix B" in r.data
+        assert b"AD compliance check" in r.data
+        assert b"AD 2023-0048" in r.data
+        assert b"100FH / 12MO" in r.data
+
+    def test_appendix_b_absent_when_no_categorised_triggers(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _add_trigger(app, acid, name="Routine inspection")  # no category
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert "Appendix B —" not in r.data.decode()
+
+    def test_appendix_c_present_with_alternative_task(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _add_trigger(
+            app,
+            acid,
+            name="Extended TBO",
+            is_alternative_to_ica=True,
+            alternative_task_notes="Recommended 2000h, extended to 2200h",
+        )
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert b"Appendix C" in r.data
+        assert b"Extended TBO" in r.data
+        assert b"Recommended 2000h, extended to 2200h" in r.data
+
+    def test_appendix_c_absent_without_alternative_tasks(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _add_trigger(app, acid, name="Routine inspection")
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert "Appendix C —" not in r.data.decode()
+
+    def test_appendix_d_present_with_notes(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid, appendix_d_notes="See source workbook for detail")
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert b"Appendix D" in r.data
+        assert b"See source workbook for detail" in r.data
+
+    def test_appendix_d_present_with_revision_only(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(
+            app,
+            acid,
+            revision_number="0",
+            revision_content="Initial release",
+            revision_date=date(2026, 8, 25),
+        )
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert b"Appendix D" in r.data
+        assert b"Initial release" in r.data
+        assert b"2026-08-25" in r.data
+
+    def test_appendix_d_absent_without_notes_or_revision(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert "Appendix D —" not in r.data.decode()
+
+    def test_engine_and_propeller_references_rendered(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            db.session.add(
+                Component(
+                    aircraft_id=acid,
+                    type=ComponentType.ENGINE,
+                    make="Continental",
+                    model="CD-155",
+                )
+            )
+            db.session.add(
+                Component(
+                    aircraft_id=acid,
+                    type=ComponentType.PROPELLER,
+                    make="MT-Propeller",
+                    model="MTV-6-A",
+                )
+            )
+            db.session.commit()
+        _add_declaration(
+            app,
+            acid,
+            dah_ica_engine_ref="OM-02-02",
+            dah_ica_propeller_ref="E-124",
+        )
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert b"Continental" in r.data
+        assert b"CD-155" in r.data
+        assert b"OM-02-02" in r.data
+        assert b"MT-Propeller" in r.data
+        assert b"E-124" in r.data
+
+    def test_404_for_other_tenant(self, app, client):
+        _create_user_and_tenant(app)
+        _, other_tid = _create_user_and_tenant(app, email="other@example.com")
+        other_acid = _add_aircraft(app, other_tid, registration="OO-OTH")
+        _login(app, client)
+        r = client.get(f"/aircraft/{other_acid}/maintenance/amp/export")
+        assert r.status_code == 404
