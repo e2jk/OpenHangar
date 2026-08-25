@@ -1897,16 +1897,16 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
 - [ ] Migration in `app/migrations/versions/`; `scripts/check_migrations.py` green
 
 **Maintenance dashboard — component grouping:**
-- [ ] `/aircraft/<id>/maintenance` (`maintenance/list.html`) groups triggers by
+- [x] `/aircraft/<id>/maintenance` (`maintenance/list.html`) groups triggers by
   component, mirroring the `components_by_type` grouping already used on
   `aircraft/detail.html`: one section per installed component plus an "Airframe /
   general" section for triggers with no `component_id`
-- [ ] Trigger rows show `category`/`action`/`reference` as optional metadata/badges
+- [x] Trigger rows show `category`/`action`/`reference` as optional metadata/badges
   when present, without disrupting the existing layout for hand-entered triggers that
   don't have them
-- [ ] Combined-interval triggers display both due points (date and hours) and the
+- [x] Combined-interval triggers display both due points (date and hours) and the
   worse-case status badge; `needs_review` triggers are visually distinct from `ok`
-- [ ] Fleet overview (`maintenance/fleet.html`, Phase 13) reuses the same
+- [x] Fleet overview (`maintenance/fleet.html`, Phase 13) reuses the same
   combined-interval evaluation and `needs_review` handling — no separate code path
 
 **AMP spreadsheet import:**

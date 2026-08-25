@@ -16,7 +16,8 @@
 
   {% set all_clear = (grounding_snag_rows | length == 0 and open_snag_rows | length == 0
                       and component_limit_rows | length == 0
-                      and trigger_rows | selectattr('1', 'ne', 'ok') | list | length == 0) %}
+                      and trigger_rows | selectattr('1', 'ne', 'ok') | list | length == 0
+                      and not any_needs_review) %}
 
   {% if all_clear %}
   <div class="ac-empty">
@@ -189,9 +190,13 @@
               {% endif %}
             </td>
             <td class="align-middle">
-              {% if trigger.trigger_type == 'calendar' and trigger.due_date %}
+              {% if trigger.due_date %}
+              <div>
                 {{ trigger.due_date.strftime('%Y-%m-%d') }}
-              {% elif trigger.trigger_type == 'hours' and trigger.due_engine_hours is not none %}
+              </div>
+              {% endif %}
+              {% if trigger.due_engine_hours is not none %}
+              <div>
                 {{ "%.1f"|format(trigger.due_engine_hours|float) }} h
                 <span class="text-muted small">({{ _('flight') if trigger.hours_basis == 'flight' else _('engine') }})</span>
                 {% set hobbs = flight_hours_by_id.get(ac.id) if trigger.hours_basis == 'flight' else hobbs_by_id.get(ac.id) %}
@@ -200,7 +205,10 @@
                   ({{ "%.1f"|format((trigger.due_engine_hours|float) - hobbs) }} {{ _('remaining') }})
                 </span>
                 {% endif %}
-              {% elif trigger.trigger_type == 'landings' and trigger.due_landings is not none %}
+              </div>
+              {% endif %}
+              {% if trigger.due_landings is not none %}
+              <div>
                 {{ trigger.due_landings }}
                 {% set landings = landings_by_id.get(ac.id) %}
                 {% if landings is not none %}
@@ -208,7 +216,9 @@
                   ({{ trigger.due_landings - landings }} {{ _('remaining') }})
                 </span>
                 {% endif %}
-              {% else %}
+              </div>
+              {% endif %}
+              {% if trigger.due_date is none and trigger.due_engine_hours is none and trigger.due_landings is none %}
                 <span class="text-muted">—</span>
               {% endif %}
             </td>
@@ -218,7 +228,9 @@
               {% else %}—{% endif %}
             </td>
             <td class="text-center align-middle">
-              {% if status == 'overdue' %}
+              {% if trigger.needs_review %}
+                <span class="ac-status-badge ac-status-warn">{{ _('Needs review') }}</span>
+              {% elif status == 'overdue' %}
                 <span class="ac-status-badge ac-status-overdue">{{ _('Overdue') }}</span>
               {% elif status == 'due_soon' %}
                 <span class="ac-status-badge ac-status-warn">{{ _('Due soon') }}</span>
@@ -340,14 +352,15 @@
             <td class="align-middle fw-semibold oh-text-navy">{{ obj.title if kind != 'maintenance' else obj.name }}</td>
             <td class="align-middle text-muted text-nowrap">
               {% if kind == 'maintenance' %}
-                {% if obj.trigger_type == 'calendar' and obj.due_date %}
-                  {{ obj.due_date.strftime('%Y-%m-%d') }}
-                {% elif obj.trigger_type == 'hours' and obj.due_engine_hours is not none %}
+                {% if obj.due_date %}<div>{{ obj.due_date.strftime('%Y-%m-%d') }}</div>{% endif %}
+                {% if obj.due_engine_hours is not none %}
+                <div>
                   {{ "%.1f"|format(obj.due_engine_hours|float) }} h
                   <span class="text-muted small">({{ _('flight') if obj.hours_basis == 'flight' else _('engine') }})</span>
-                {% elif obj.trigger_type == 'landings' and obj.due_landings is not none %}
-                  {{ obj.due_landings }}
-                {% else %}—{% endif %}
+                </div>
+                {% endif %}
+                {% if obj.due_landings is not none %}<div>{{ obj.due_landings }}</div>{% endif %}
+                {% if obj.due_date is none and obj.due_engine_hours is none and obj.due_landings is none %}—{% endif %}
               {% else %}
                 {{ obj.reported_at.strftime('%Y-%m-%d') }}
               {% endif %}
@@ -357,6 +370,8 @@
                 <span class="ac-status-badge ac-status-overdue"><i class="bi bi-cone-striped me-1"></i>Grounded</span>
               {% elif kind == 'snag' %}
                 <span class="ac-status-badge ac-status-warn">Open snag</span>
+              {% elif obj.needs_review %}
+                <span class="ac-status-badge ac-status-warn">{{ _('Needs review') }}</span>
               {% else %}
                 {% set status = item[4] %}
                 {% if status == 'overdue' %}

@@ -186,11 +186,11 @@ def fleet_overview() -> ResponseReturnValue:
         )
         chron_items.append(("snag", dt, s, ac, None))
     for t, status, ac in trigger_rows:
-        if status in ("overdue", "due_soon"):
-            if t.trigger_type == TriggerType.CALENDAR and t.due_date:
+        if status in ("overdue", "due_soon") or t.needs_review:
+            if t.due_date:
                 dt = _datetime(t.due_date.year, t.due_date.month, t.due_date.day)
             else:
-                dt = _far_dt  # hours-based: push to end
+                dt = _far_dt  # no calendar due date: push to end
             chron_items.append(("maintenance", dt, t, ac, status))
 
     _kind_order = {"grounding": 0, "snag": 1, "maintenance": 2}
@@ -210,6 +210,8 @@ def fleet_overview() -> ResponseReturnValue:
                 component_limit_rows.append((info, ac))
     component_limit_rows.sort(key=lambda row: 0 if row[0]["status"] == "overdue" else 1)
 
+    any_needs_review = any(t.needs_review for t, _status, _ac in trigger_rows)
+
     return render_template(
         "maintenance/fleet.html",
         aircraft=aircraft,
@@ -222,11 +224,42 @@ def fleet_overview() -> ResponseReturnValue:
         hobbs_by_id=hobbs_by_id,
         landings_by_id=landings_by_id,
         flight_hours_by_id=flight_hours_by_id,
+        any_needs_review=any_needs_review,
         view=view,
     )
 
 
 # ── Trigger list ──────────────────────────────────────────────────────────────
+
+
+def _group_trigger_rows_by_component(
+    trigger_rows: list[tuple[MaintenanceTrigger, str]],
+) -> list[tuple[Component | None, list[tuple[MaintenanceTrigger, str]]]]:
+    """Group (trigger, status) rows by trigger.component — unscoped
+    ("Airframe / general") rows first, then installed components in the
+    same (type, position) order used for the components list on
+    aircraft/detail.html. A component only gets a section if it actually
+    has at least one trigger."""
+    general: list[tuple[MaintenanceTrigger, str]] = []
+    by_component: dict[int, tuple[Component, list[tuple[MaintenanceTrigger, str]]]] = {}
+    for t, status in trigger_rows:
+        if t.component is None:
+            general.append((t, status))
+        else:
+            entry = by_component.setdefault(
+                t.component.id,
+                (t.component, []),  # type: ignore[arg-type]
+            )
+            entry[1].append((t, status))
+
+    groups: list[tuple[Component | None, list[tuple[MaintenanceTrigger, str]]]] = []
+    if general:
+        groups.append((None, general))
+    for comp, rows in sorted(
+        by_component.values(), key=lambda cr: (cr[0].type, cr[0].position or "")
+    ):
+        groups.append((comp, rows))
+    return groups
 
 
 @maintenance_bp.route("/aircraft/<aircraft_ref:aircraft_id>/maintenance")
@@ -258,10 +291,12 @@ def list_triggers(aircraft_id: int) -> ResponseReturnValue:
     else:
         triggers = all_triggers
     trigger_rows = [(t, _status(t)) for t in triggers]
+    component_groups = _group_trigger_rows_by_component(trigger_rows)
     return render_template(
         "maintenance/list.html",
         aircraft=ac,
         trigger_rows=trigger_rows,
+        component_groups=component_groups,
         current_hobbs=current_hobbs,
         current_landings=current_landings,
         current_flight_hours=current_flight_hours,
