@@ -43,7 +43,19 @@
   {% endif %}
 
   {% if trigger_rows %}
-  <div class="ac-form-card p-0">
+  {% set _comp_type_icons = {'airframe': 'bi-airplane', 'engine': 'bi-gear-wide-connected', 'propeller': 'bi-fan', 'avionics': 'bi-display', 'other': 'bi-puzzle'} %}
+  {% set _comp_type_labels = {'airframe': _('Airframe'), 'engine': _('Engine'), 'propeller': _('Propeller'), 'avionics': _('Avionics'), 'other': _('Other')} %}
+  {% for comp, rows in component_groups %}
+  <div class="d-flex align-items-center gap-2 mb-2 {% if not loop.first %}mt-4{% endif %}">
+    {% if comp %}
+    <i class="bi {{ _comp_type_icons.get(comp.type, 'bi-puzzle') }}"></i>
+    <h2 class="section-title mb-0">{{ _comp_type_labels.get(comp.type, comp.type) }} — {{ comp.make }} {{ comp.model }}{% if comp.position %} ({{ comp.position }}){% endif %}</h2>
+    {% else %}
+    <i class="bi bi-airplane"></i>
+    <h2 class="section-title mb-0">{{ _('Airframe / general') }}</h2>
+    {% endif %}
+  </div>
+  <div class="ac-form-card p-0 mb-3">
     <table class="table table-hover mb-0 oh-fs-09">
       <thead class="oh-bg-light">
         <tr>
@@ -57,9 +69,18 @@
         </tr>
       </thead>
       <tbody>
-        {% for trigger, status in trigger_rows %}
+        {% for trigger, status in rows %}
         <tr>
-          <td class="ps-3 fw-semibold oh-text-navy">{{ trigger.name }}</td>
+          <td class="ps-3">
+            <div class="fw-semibold oh-text-navy">{{ trigger.name }}</div>
+            {% if trigger.category or trigger.action or trigger.reference %}
+            <div class="oh-fs-08 text-muted">
+              {% if trigger.action %}<span class="badge bg-body-secondary text-body border me-1">{{ trigger.action }}</span>{% endif %}
+              {% if trigger.reference %}<span class="me-1">{{ trigger.reference }}</span>{% endif %}
+              {% if trigger.category %}<span class="d-inline-block text-truncate align-bottom oh-mw-260" title="{{ trigger.category }}"><i class="bi bi-tag me-1"></i>{{ trigger.category }}</span>{% endif %}
+            </div>
+            {% endif %}
+          </td>
           <td class="text-muted">
             {% if trigger.trigger_type == 'calendar' %}
               <i class="bi bi-calendar3 me-1"></i>{{ _('Calendar') }}
@@ -70,28 +91,27 @@
             {% endif %}
           </td>
           <td>
-            {% if trigger.trigger_type == 'calendar' and trigger.due_date %}
-              {{ trigger.due_date.strftime('%Y-%m-%d') }}
-            {% elif trigger.trigger_type == 'hours' and trigger.due_engine_hours is not none %}
-              {{ "%.1f"|format(trigger.due_engine_hours|float) }} h
-              <span class="text-muted small">({{ _('flight') if trigger.hours_basis == 'flight' else _('engine') }})</span>
-            {% elif trigger.trigger_type == 'landings' and trigger.due_landings is not none %}
-              {{ trigger.due_landings }}
-            {% else %}
+            {% if trigger.due_date %}
+              <div>{{ trigger.due_date.strftime('%Y-%m-%d') }}</div>
+            {% endif %}
+            {% if trigger.due_engine_hours is not none %}
+              <div>{{ "%.1f"|format(trigger.due_engine_hours|float) }} h
+              <span class="text-muted small">({{ _('flight') if trigger.hours_basis == 'flight' else _('engine') }})</span></div>
+            {% endif %}
+            {% if trigger.due_landings is not none %}
+              <div>{{ trigger.due_landings }} {{ _('landings') }}</div>
+            {% endif %}
+            {% if trigger.due_date is none and trigger.due_engine_hours is none and trigger.due_landings is none %}
               <span class="text-muted">—</span>
             {% endif %}
           </td>
           {% if maint_view != 'limited' %}
           <td class="text-muted">
-            {% if trigger.interval_days %}
-              {{ trigger.interval_days }} {{ _('days') }}
-            {% elif trigger.interval_hours %}
-              {{ "%.0f"|format(trigger.interval_hours|float) }} h
-            {% elif trigger.interval_landings %}
-              {{ trigger.interval_landings }}
-            {% else %}
-              —
-            {% endif %}
+            {% set _parts = [] %}
+            {% if trigger.interval_days %}{% set _discard = _parts.append(trigger.interval_days ~ ' ' ~ _('days')) %}{% endif %}
+            {% if trigger.interval_hours %}{% set _discard = _parts.append(("%.0f"|format(trigger.interval_hours|float)) ~ ' h') %}{% endif %}
+            {% if trigger.interval_landings %}{% set _discard = _parts.append(trigger.interval_landings ~ ' ' ~ _('landings')) %}{% endif %}
+            {{ _parts | join(' / ') if _parts else '—' }}
           </td>
           <td class="text-muted">
             {% if trigger.last_record %}
@@ -102,7 +122,9 @@
           </td>
           {% endif %}
           <td class="text-center">
-            {% if status == 'overdue' %}
+            {% if trigger.needs_review %}
+              <span class="ac-status-badge ac-status-warn">{{ _('Needs review') }}</span>
+            {% elif status == 'overdue' %}
               <span class="ac-status-badge ac-status-overdue">{{ _('Overdue') }}</span>
             {% elif status == 'due_soon' %}
               <span class="ac-status-badge ac-status-warn">{{ _('Due soon') }}</span>
@@ -135,6 +157,7 @@
       </tbody>
     </table>
   </div>
+  {% endfor %}
 
   {% else %}
   <div class="ac-empty">

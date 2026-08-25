@@ -468,6 +468,70 @@ class TestTriggerList:
         r = client.get(f"/aircraft/{other_acid}/maintenance")
         assert r.status_code == 404
 
+    def test_list_groups_by_component(self, app, client):
+        """Phase 40: a component-scoped trigger appears under its own
+        component section; an unscoped trigger appears under 'Airframe /
+        general'."""
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        cid = _add_component(app, acid, comp_type=ComponentType.ENGINE)
+        with app.app_context():
+            db.session.add(
+                MaintenanceTrigger(
+                    aircraft_id=acid,
+                    component_id=cid,
+                    name="Engine 100 hr inspection",
+                    trigger_type=TriggerType.HOURS,
+                    due_engine_hours=100.0,
+                )
+            )
+            db.session.commit()
+        _add_calendar_trigger(app, acid, name="Airframe annual")
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance")
+        assert r.status_code == 200
+        assert "Airframe / general".encode() in r.data
+        assert b"Engine 100 hr inspection" in r.data
+        assert b"Airframe annual" in r.data
+
+    def test_list_shows_needs_review_badge(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            db.session.add(
+                MaintenanceTrigger(
+                    aircraft_id=acid,
+                    name="PENDING shop input",
+                    trigger_type=TriggerType.CALENDAR,
+                    needs_review=True,
+                )
+            )
+            db.session.commit()
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance")
+        assert "Needs review".encode() in r.data
+
+    def test_list_shows_category_action_reference_metadata(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            db.session.add(
+                MaintenanceTrigger(
+                    aircraft_id=acid,
+                    name="AD compliance",
+                    trigger_type=TriggerType.CALENDAR,
+                    due_date=date.today() + timedelta(days=200),
+                    category="Maintenance due to repetitive ADs",
+                    action="INSPECTION",
+                    reference="AD 2023-0048",
+                )
+            )
+            db.session.commit()
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance")
+        assert b"INSPECTION" in r.data
+        assert b"AD 2023-0048" in r.data
+
 
 # ── Add trigger ───────────────────────────────────────────────────────────────
 

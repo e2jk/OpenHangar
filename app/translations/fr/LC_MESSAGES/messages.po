@@ -10533,3 +10533,13 @@ msgstr "Limitez cet élément à un moteur, une hélice, etc. spécifique, plut�
 #: app/maintenance/form_parsing.py:102 app/maintenance/routes.py:320
 msgid "Component selection is invalid."
 msgstr "La sélection du composant n'est pas valide."
+
+#: app/templates/maintenance/list.html:55
+msgid "Airframe / general"
+msgstr "Cellule / général"
+
+#: app/templates/maintenance/list.html:126
+#: app/templates/maintenance/fleet.html:232
+#: app/templates/maintenance/fleet.html:374
+msgid "Needs review"
+msgstr "À vérifier"

@@ -10533,3 +10533,13 @@ msgstr "Beperk dit item tot een specifieke motor, propeller, enz. in plaats van 
 #: app/maintenance/form_parsing.py:102 app/maintenance/routes.py:320
 msgid "Component selection is invalid."
 msgstr "De componentselectie is ongeldig."
+
+#: app/templates/maintenance/list.html:55
+msgid "Airframe / general"
+msgstr "Airframe / algemeen"
+
+#: app/templates/maintenance/list.html:126
+#: app/templates/maintenance/fleet.html:232
+#: app/templates/maintenance/fleet.html:374
+msgid "Needs review"
+msgstr "Controle nodig"
