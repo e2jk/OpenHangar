@@ -1814,7 +1814,7 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 
 ---
 
-## Phase 40 — Maintenance Programme Import/Export & Component-Scoped Triggers
+## Phase 40 — Maintenance Programme Import/Export & Component-Scoped Triggers ✅
 
 Goal: let an owner import a structured Aircraft Maintenance Programme (AMP) task list —
 built externally (e.g. by comparing it against a sister aircraft's programme and the
@@ -1910,7 +1910,7 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
   combined-interval evaluation and `needs_review` handling — no separate code path
 
 **AMP spreadsheet import:**
-- [ ] Document a fixed, reusable OpenHangar "AMP task list" import template: one row
+- [x] Document a fixed, reusable OpenHangar "AMP task list" import template: one row
   per maintenance requirement, columns `Category`, `Task description`, `Reference`,
   `Action`, `Interval`, `Part number`, `Serial number`, `Notes`. Documented as a new
   `docs/maintenance_import.md` guide (linked from `docs/user-guide.md`), including the
@@ -1993,7 +1993,7 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
   present; the revision number/content/date from `AmpDeclaration` are appended here
   as a small "Revision history" note, since the official form has no dedicated block
   for it
-- [ ] Round-trip note in `docs/maintenance_import.md`: explicitly document that export
+- [x] Round-trip note in `docs/maintenance_import.md`: explicitly document that export
   reads the same `category`/`is_alternative_to_ica`/`AmpDeclaration` fields the
   importer writes, so editing triggers in OpenHangar after import changes the next
   export accordingly — there is no separate "export data" to keep in sync

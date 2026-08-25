@@ -172,10 +172,22 @@ Minimums are never edited on the day of a flight — the "Log a flight" form sho
 ### Monitoring maintenance
 
 - The dashboard shows a colour status badge (green / yellow / red) per aircraft.
-- The Maintenance list view sorts items by urgency: overdue → due soon → scheduled.
+- The Maintenance list view sorts items by urgency: overdue → due soon → scheduled, grouped by which engine/propeller/component each item is scoped to (or "Airframe / general" for items that aren't).
 - Overdue items also appear as alerts on the dashboard.
 
 ![Maintenance overview](screenshots/maintenance.png)
+
+### Importing an Aircraft Maintenance Programme (AMP)
+
+If you've built a structured maintenance task list for your aircraft — e.g.
+by comparing it against a sister aircraft's programme and your shop's
+tracking export — OpenHangar can import it as the aircraft's tracked
+maintenance schedule, and later export it back out as a document matching
+the official EASA Form AMP layout (AMC2 ML.A.302). **Import from
+spreadsheet**, **AMP declaration**, and **Export AMP** are all on the
+aircraft's Maintenance page. See
+[the AMP import/export guide](maintenance_import.md) for the spreadsheet
+template, the interval syntax, and the full import/export flow.
 
 ### Tracking airworthiness
 
