@@ -32,6 +32,10 @@
          class="btn btn-ac-ghost">
         <i class="bi bi-file-earmark-text me-1"></i>{{ _('AMP declaration') }}
       </a>
+      <a href="{{ url_for('maintenance.export_amp', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost">
+        <i class="bi bi-file-earmark-pdf me-1"></i>{{ _('Export AMP') }}
+      </a>
       <a href="{{ url_for('maintenance.new_trigger', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary">
         <i class="bi bi-plus-circle me-1"></i>{{ _('Add item') }}

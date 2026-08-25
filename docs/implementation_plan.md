@@ -1955,9 +1955,9 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
   rollback action removes every `MaintenanceTrigger` in that batch
 
 **AMP document export:**
-- [ ] "Export AMP" action on the aircraft maintenance page, gated on `AmpDeclaration`
+- [x] "Export AMP" action on the aircraft maintenance page, gated on `AmpDeclaration`
   existing for that aircraft (prompts to fill in the profile form first otherwise)
-- [ ] Output format: print-ready HTML (a dedicated template styled to match the
+- [x] Output format: print-ready HTML (a dedicated template styled to match the
   official form's block/table layout, with `@media print` rules for clean pagination),
   not PDF — OpenHangar has no PDF generation pipeline anywhere in the codebase today;
   every other phase that wanted a PDF (Phase 39's co-owner statements, Phase 38's
@@ -1966,30 +1966,30 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
   as a real PDF export once Phase 46 (Advanced Reporting & Exports) delivers a PDF
   pipeline for the logbook/cost-report exports it already plans — this phase shouldn't
   be the one to introduce that dependency
-- [ ] Blocks 1–3 rendered from `Aircraft`/`Component`/`AmpDeclaration`: registration,
+- [x] Blocks 1–3 rendered from `Aircraft`/`Component`/`AmpDeclaration`: registration,
   type, serial number, owner identity (block 1); programme basis (block 2); DAH ICA
   equipment/reference rows for airframe/engine/propeller (block 3a–3c, one row per
   matching `Component`)
-- [ ] Block 4 (additional maintenance requirements Yes/No table): one row per
+- [x] Block 4 (additional maintenance requirements Yes/No table): one row per
   `AmpCategory` value, "Yes" when at least one `MaintenanceTrigger` on the aircraft
   has that `category`, "No" otherwise — computed at render time, not stored
-- [ ] Block 5 (alternative tasks Yes/No): "Yes" when at least one trigger has
+- [x] Block 5 (alternative tasks Yes/No): "Yes" when at least one trigger has
   `is_alternative_to_ica = true`, computed the same way as block 4
-- [ ] Blocks 6–9 rendered from `AmpDeclaration`: pilot-owner maintenance declaration,
+- [x] Blocks 6–9 rendered from `AmpDeclaration`: pilot-owner maintenance declaration,
   declaration/approval type with signature block (rendered blank for the owner to
   sign after export — OpenHangar doesn't perform the legal act of signing),
   certification statement with certifying-party details, and the appendices-attached
   checklist (block 9) computed from whether Appendix B/C/D each have content
-- [ ] Appendix B: one section per `AmpCategory` with at least one matching trigger,
+- [x] Appendix B: one section per `AmpCategory` with at least one matching trigger,
   in the form's own category order; columns Task description / Reference / Interval
   (combined-interval triggers rendered back as `"100FH / 12MO"`-style text from
   `interval_hours`/`interval_days`, the inverse of the import parser); the official
   form's "interval differs from the referenced document" tick-box is out of scope for
   this phase (left unticked) — the source data doesn't reliably distinguish that from
   ordinary transcription, revisit only if real usage shows it's needed
-- [ ] Appendix C: rendered only when at least one `is_alternative_to_ica` trigger
+- [x] Appendix C: rendered only when at least one `is_alternative_to_ica` trigger
   exists; columns Task description / Reference / `alternative_task_notes`
-- [ ] Appendix D: free-text field on `AmpDeclaration` (optional), rendered verbatim if
+- [x] Appendix D: free-text field on `AmpDeclaration` (optional), rendered verbatim if
   present; the revision number/content/date from `AmpDeclaration` are appended here
   as a small "Revision history" note, since the official form has no dedicated block
   for it

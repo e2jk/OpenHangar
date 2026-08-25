@@ -22,10 +22,12 @@ from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 from models import (
     Aircraft,
     AmpBasis,
+    AmpCategory,
     AmpCertifyingPartyKind,
     AmpDeclaration,
     AmpDeclarationType,
     Component,
+    ComponentType,
     HoursBasis,
     MaintenanceImportBatch,
     MaintenanceRecord,
@@ -52,6 +54,7 @@ from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImpor
 
 from maintenance.amp_import import (  # pyright: ignore[reportMissingImports]
     compute_due_fields,
+    format_interval,
     hours_basis_for_component,
     parse_amp_rows,
 )
@@ -880,3 +883,65 @@ def import_amp_rollback(aircraft_id: int, batch_id: int) -> ResponseReturnValue:
         "success",
     )
     return redirect(url_for("maintenance.import_amp_history", aircraft_id=ac.id))
+
+
+# ── AMP document export ─────────────────────────────────────────────────────
+
+
+@maintenance_bp.route("/aircraft/<aircraft_ref:aircraft_id>/maintenance/amp/export")
+@login_required
+@require_role(*_MAINT_ROLES)
+def export_amp(aircraft_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    decl: AmpDeclaration | None = ac.amp_declaration  # type: ignore[assignment]
+    if decl is None:
+        flash(
+            _("Fill in the AMP declaration profile before exporting the AMP document."),
+            "warning",
+        )
+        return redirect(url_for("maintenance.edit_amp_declaration", aircraft_id=ac.id))
+
+    components = list(ac.components)
+
+    def _installed(comp_type: str) -> Component | None:
+        return next(
+            (c for c in components if c.type == comp_type and c.removed_at is None),
+            None,
+        )
+
+    triggers = (
+        MaintenanceTrigger.query.filter_by(aircraft_id=ac.id)
+        .order_by(MaintenanceTrigger.name)
+        .all()
+    )
+
+    category_has_items = {
+        cat: any(t.category == cat for t in triggers) for cat in AmpCategory.ALL
+    }
+    has_alternative_tasks = any(t.is_alternative_to_ica for t in triggers)
+    appendix_b_groups = [
+        (cat, [t for t in triggers if t.category == cat])
+        for cat in AmpCategory.ALL
+        if category_has_items[cat]
+    ]
+    appendix_c_rows = [t for t in triggers if t.is_alternative_to_ica]
+    interval_text = {
+        t.id: format_interval(t.interval_hours, t.interval_days) for t in triggers
+    }
+
+    return render_template(
+        "maintenance/amp_export.html",
+        aircraft=ac,
+        decl=decl,
+        airframe_component=_installed(ComponentType.AIRFRAME),
+        engine_component=_installed(ComponentType.ENGINE),
+        propeller_component=_installed(ComponentType.PROPELLER),
+        category_has_items=category_has_items,
+        has_alternative_tasks=has_alternative_tasks,
+        appendix_b_groups=appendix_b_groups,
+        appendix_c_rows=appendix_c_rows,
+        interval_text=interval_text,
+        amp_basis=AmpBasis,
+        declaration_types=AmpDeclarationType,
+        certifying_party_kinds=AmpCertifyingPartyKind,
+    )

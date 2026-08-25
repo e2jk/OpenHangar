@@ -239,6 +239,28 @@ def parse_amp_rows(
     return rows
 
 
+def format_interval(interval_hours: float | None, interval_days: int | None) -> str:
+    """Inverse of parse_interval: reconstruct the "<n>FH / <n>MO"-style
+    display text from stored interval_hours/interval_days, for Appendix B
+    export. Days are expressed in whichever of YR/MO/DY the value divides
+    evenly by (365/30/1 days respectively — the same units parse_interval
+    converts from), preferring the largest, so a value imported as "12MO"
+    round-trips to "12MO" rather than some equivalent-but-different text."""
+    parts = []
+    if interval_hours is not None:
+        h = float(interval_hours)
+        parts.append(f"{h:.0f}FH" if h == int(h) else f"{h}FH")
+    if interval_days is not None:
+        d = int(interval_days)
+        if d % 365 == 0:
+            parts.append(f"{d // 365}YR")
+        elif d % 30 == 0:
+            parts.append(f"{d // 30}MO")
+        else:
+            parts.append(f"{d}DY")
+    return " / ".join(parts)
+
+
 def compute_due_fields(
     interval_hours: float | None,
     interval_days: int | None,

@@ -7,6 +7,7 @@ import pytest
 from maintenance.amp_import import (  # pyright: ignore[reportMissingImports]
     compute_due_fields,
     find_header,
+    format_interval,
     hours_basis_for_component,
     match_category,
     parse_amp_rows,
@@ -405,3 +406,34 @@ class TestComputeDueFields:
         )
         assert due_h is None
         assert due_d is None
+
+
+# ── format_interval (Appendix B export — inverse of parse_interval) ─────────
+
+
+class TestFormatInterval:
+    def test_hours_only(self):
+        assert format_interval(100.0, None) == "100FH"
+
+    def test_months_only(self):
+        assert format_interval(None, 360) == "12MO"
+
+    def test_years(self):
+        assert format_interval(None, 365 * 3) == "3YR"
+
+    def test_days_when_not_evenly_divisible(self):
+        assert format_interval(None, 10) == "10DY"
+
+    def test_combined(self):
+        assert format_interval(100.0, 360) == "100FH / 12MO"
+
+    def test_no_interval_at_all(self):
+        assert format_interval(None, None) == ""
+
+    def test_fractional_hours_preserved(self):
+        assert format_interval(50.5, None) == "50.5FH"
+
+    def test_round_trips_through_parse_interval(self):
+        for raw in ["100FH", "12MO", "100FH / 12MO", "3YR", "500FH / 72MO"]:
+            parsed = parse_interval(raw)
+            assert format_interval(parsed.interval_hours, parsed.interval_days) == raw
