@@ -1839,7 +1839,7 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
 → export) without re-deriving its structure each time.
 
 **Data model — component-scoped triggers & combined intervals:**
-- [ ] `MaintenanceTrigger.component_id` — nullable FK to `Component` (`ondelete="SET
+- [x] `MaintenanceTrigger.component_id` — nullable FK to `Component` (`ondelete="SET
   NULL"`, so removing a component keeps its maintenance history; the trigger becomes
   unscoped/airframe-general rather than being deleted)
 - [ ] `MaintenanceTrigger.status()` (and the "record service" flow) extended to
@@ -1856,7 +1856,7 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
   component defaults `hours_basis` to `HoursBasis.ENGINE` (mirrors the existing TBO
   logic in `component_limits.py`), `airframe`/`avionics`/`other` defaults to
   `HoursBasis.FLIGHT`
-- [ ] `category` — nullable, one of the 9 canonical `AmpCategory` values used
+- [x] `category` — nullable, one of the 9 canonical `AmpCategory` values used
   verbatim by EASA Form AMP block 4 / Appendix B ("Maintenance due to specific
   equipment and modifications", "…due to repairs", "…due to life-limited
   components", "…due to mandatory continuing airworthiness information (ALIs,
@@ -1866,17 +1866,17 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
   "Other"), plus `None` for tasks the form doesn't itemise (routine DAH-manual
   inspections, admin items) — see the export section below for why this needs to
   match the form's own category set exactly rather than being free text
-- [ ] `is_alternative_to_ica` — boolean, default false; marks a trigger as a task
+- [x] `is_alternative_to_ica` — boolean, default false; marks a trigger as a task
   that deviates from the DAH's ICA-recommended interval/method (EASA Form AMP
   block 5 / Appendix C, "include only if necessary"); `alternative_task_notes` —
   nullable free text capturing the ICA's original recommendation and what changed,
   for Appendix C's "Recommended interval" / "Alternative inspection/task" columns
-- [ ] `reference` (AD/SB/manual document reference), `action` (short free-text code,
+- [x] `reference` (AD/SB/manual document reference), `action` (short free-text code,
   e.g. INSPECTION/REPLACE/TBO/SLL — not a fixed enum, source programmes are not
   consistent about these), `part_number`/`serial_number` (free text — describes the
   specific part instance the task targets, not necessarily matched to an installed
   `Component` row) — nullable columns on `MaintenanceTrigger`
-- [ ] `needs_review` — boolean, default false; set on triggers imported with an
+- [x] `needs_review` — boolean, default false; set on triggers imported with an
   unresolved/unparseable interval (see import section) so they read as "not yet
   scheduled" rather than silently evaluating as permanently `ok`
 - [ ] `AmpDeclaration` model, one-to-one with `Aircraft` (nullable — only aircraft
