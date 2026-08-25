@@ -1531,22 +1531,21 @@ class MaintenanceTrigger(db.Model):
                     if remaining <= warn_h:
                         statuses.append("due_soon")
 
-        if self.due_landings is not None:
-            if current_landings is not None:
-                remaining_l = self.due_landings - current_landings
-                if remaining_l <= 0:
-                    statuses.append("overdue")
+        if self.due_landings is not None and current_landings is not None:
+            remaining_l = self.due_landings - current_landings
+            if remaining_l <= 0:
+                statuses.append("overdue")
+            else:
+                if self.warn_landings is not None:
+                    warn_l = self.warn_landings
                 else:
-                    if self.warn_landings is not None:
-                        warn_l = self.warn_landings
-                    else:
-                        warn_l = (
-                            max(int(self.interval_landings * 0.1), 5)
-                            if self.interval_landings
-                            else 10
-                        )
-                    if remaining_l <= warn_l:
-                        statuses.append("due_soon")
+                    warn_l = (
+                        max(int(self.interval_landings * 0.1), 5)
+                        if self.interval_landings
+                        else 10
+                    )
+                if remaining_l <= warn_l:
+                    statuses.append("due_soon")
 
         if "overdue" in statuses:
             return "overdue"

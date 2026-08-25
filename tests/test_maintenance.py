@@ -490,7 +490,7 @@ class TestTriggerList:
         _login(app, client)
         r = client.get(f"/aircraft/{acid}/maintenance")
         assert r.status_code == 200
-        assert "Airframe / general".encode() in r.data
+        assert b"Airframe / general" in r.data
         assert b"Engine 100 hr inspection" in r.data
         assert b"Airframe annual" in r.data
 
@@ -509,7 +509,7 @@ class TestTriggerList:
             db.session.commit()
         _login(app, client)
         r = client.get(f"/aircraft/{acid}/maintenance")
-        assert "Needs review".encode() in r.data
+        assert b"Needs review" in r.data
 
     def test_list_shows_category_action_reference_metadata(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
