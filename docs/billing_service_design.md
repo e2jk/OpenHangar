@@ -33,7 +33,7 @@ cases without subclassing:
 class BillingAccountKind:
     RENTER = "renter"  # Phase 37 — scoped to the tenant (all aircraft)
     CO_OWNER = "co_owner"  # Phase 39 — scoped to one aircraft
-    MEMBER = "member"  # Phase 40 — scoped to the tenant
+    MEMBER = "member"  # Phase 41 — scoped to the tenant
 
 
 class BillingAccount(db.Model):
@@ -214,7 +214,7 @@ Validation rules enforced in `post()`:
   one `CHARGE` per co-owner (`amount × share_pct`, `source_type="expense_share"`);
   flying hours post usage charges. `CoOwnerValuationSnapshot` just records
   `balance(account, as_of)` — immutability comes free from the ledger.
-- **Phase 40**: membership dues post scheduled `CHARGE` entries; flights
+- **Phase 41**: membership dues post scheduled `CHARGE` entries; flights
   post hour charges at the member-type rate.
 
 ## Permissions

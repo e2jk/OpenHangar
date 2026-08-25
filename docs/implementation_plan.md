@@ -1649,7 +1649,7 @@ core shared with Phases 38/39).
 **Rental charges & settlement:**
 - [x] `RentalCharge` model — reservation FK, renter FK, billable hours, rate snapshot, fuel credits, manual adjustments, total; drafted automatically at check-in from the counter delta and rate settings; owner reviews and finalizes
 - [x] Renter account: running balance per renter (finalized charges − payments); payments recorded manually and immutable once saved — corrections via counter-entry (same principle as Phase 39 reconciliation)
-- [x] Renter statement export — CSV per renter per period: opening balance, itemised charges by flight, fuel credits, payments, closing balance; PDF with the same content if a PDF pipeline exists by then (Phase 45) (CSV only — no PDF pipeline exists yet)
+- [x] Renter statement export — CSV per renter per period: opening balance, itemised charges by flight, fuel credits, payments, closing balance; PDF with the same content if a PDF pipeline exists by then (Phase 46) (CSV only — no PDF pipeline exists yet)
 - [x] Renter-facing view: a renter sees their own charges, payments, and balance; owners/admins see all renters
 
 **Availability guards (benefit all operating models, not only rental):**
@@ -1790,7 +1790,7 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 - [x] Manual reconciliation: record a payment against a co-owner's capital account (amount, date, free-text note, recorded-by user); adjusts the account balance immediately
 - [x] Payments are immutable once saved; corrections are made by recording a counter-entry
 
-**Reserve / overhaul fund (stretch goal — may slip to Phase 40):**
+**Reserve / overhaul fund (stretch goal — may slip to Phase 41):**
 - [x] `CoOwnerReserveFund` — per-aircraft fund with a configurable per-hour or per-month contribution rate; each co-owner's share of contributions deducted from their capital account; fund balance visible on the dashboard
 - [x] Intended to cover large scheduled expenses (engine overhaul, propeller) without special assessments
 
@@ -1814,7 +1814,217 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 
 ---
 
-## Phase 40 — Flying Club
+## Phase 40 — Maintenance Programme Import/Export & Component-Scoped Triggers
+
+Goal: let an owner import a structured Aircraft Maintenance Programme (AMP) task list —
+built externally (e.g. by comparing it against a sister aircraft's programme and the
+maintenance shop's tracking export) — as the aircraft's tracked maintenance schedule
+in OpenHangar, instead of re-entering every recurring item by hand; and let the owner
+export their AMP back out as a properly formatted document matching the official
+**EASA Form AMP** layout referenced by AMC2 ML.A.302 (Annex V to ED Decision
+2023/013/R, "AMC & GM to Part-ML" — [EASA download](https://www.easa.europa.eu/en/downloads/138696/en)),
+the standard template used across Part-ML AMPs regardless of maintenance shop.
+
+Also close two gaps this exposes in the existing maintenance model: triggers cannot
+currently be associated with a specific `Component` (engine, propeller, …) the way
+`Component` records already exist, and a trigger cannot represent a "due at whichever
+comes first" combined flight-hours-or-calendar interval, which is a common AMP
+interval shape.
+
+This is a generic, reusable import/export feature — a documented spreadsheet template
+and a document generator usable for any aircraft's AMP, not a one-off script tied to a
+specific airframe. Export is designed as close to the inverse of import as the data
+allows: both read/write the same `MaintenanceTrigger`/`AmpDeclaration` fields rather
+than following separate code paths, so an AMP round-trips (import → edit in OpenHangar
+→ export) without re-deriving its structure each time.
+
+**Data model — component-scoped triggers & combined intervals:**
+- [ ] `MaintenanceTrigger.component_id` — nullable FK to `Component` (`ondelete="SET
+  NULL"`, so removing a component keeps its maintenance history; the trigger becomes
+  unscoped/airframe-general rather than being deleted)
+- [ ] `MaintenanceTrigger.status()` (and the "record service" flow) extended to
+  support a trigger with both calendar fields (`due_date`/`interval_days`) and hours
+  fields (`due_engine_hours`/`interval_hours`) populated at once — "due at whichever
+  comes first". Mirror the existing per-limit `statuses` list pattern already used in
+  `services/component_limits.py` (evaluate each populated field-group independently,
+  `overdue` > `due_soon` > `ok` wins) rather than adding a new `trigger_type` value or
+  duplicating rows per interval component
+- [ ] "Record service" (`service_trigger`) advances both `due_date` and
+  `due_engine_hours` together when both are set on a serviced trigger
+- [ ] `new_trigger`/`edit_trigger` form gains an optional "Component" selector, scoped
+  to the aircraft's currently-installed components; selecting an `engine`/`propeller`
+  component defaults `hours_basis` to `HoursBasis.ENGINE` (mirrors the existing TBO
+  logic in `component_limits.py`), `airframe`/`avionics`/`other` defaults to
+  `HoursBasis.FLIGHT`
+- [ ] `category` — nullable, one of the 9 canonical `AmpCategory` values used
+  verbatim by EASA Form AMP block 4 / Appendix B ("Maintenance due to specific
+  equipment and modifications", "…due to repairs", "…due to life-limited
+  components", "…due to mandatory continuing airworthiness information (ALIs,
+  CMRs, TCDS)", "Maintenance recommendations (TBO via SB/SL, non-mandatory)",
+  "Maintenance due to repetitive ADs", "…due to specific operational/airspace
+  directives/requirements", "…due to type of operation or operational approvals",
+  "Other"), plus `None` for tasks the form doesn't itemise (routine DAH-manual
+  inspections, admin items) — see the export section below for why this needs to
+  match the form's own category set exactly rather than being free text
+- [ ] `is_alternative_to_ica` — boolean, default false; marks a trigger as a task
+  that deviates from the DAH's ICA-recommended interval/method (EASA Form AMP
+  block 5 / Appendix C, "include only if necessary"); `alternative_task_notes` —
+  nullable free text capturing the ICA's original recommendation and what changed,
+  for Appendix C's "Recommended interval" / "Alternative inspection/task" columns
+- [ ] `reference` (AD/SB/manual document reference), `action` (short free-text code,
+  e.g. INSPECTION/REPLACE/TBO/SLL — not a fixed enum, source programmes are not
+  consistent about these), `part_number`/`serial_number` (free text — describes the
+  specific part instance the task targets, not necessarily matched to an installed
+  `Component` row) — nullable columns on `MaintenanceTrigger`
+- [ ] `needs_review` — boolean, default false; set on triggers imported with an
+  unresolved/unparseable interval (see import section) so they read as "not yet
+  scheduled" rather than silently evaluating as permanently `ok`
+- [ ] `AmpDeclaration` model, one-to-one with `Aircraft` (nullable — only aircraft
+  using the export feature need one): the EASA Form AMP fields that aren't
+  derivable from `Aircraft`/`Component`/`MaintenanceTrigger` — programme basis
+  (DAH ICA vs. MIP, block 2), DAH ICA references for airframe/engine/propeller
+  (block 3a–3c; balloon fields 3d–3g out of scope, no balloon support elsewhere in
+  OpenHangar), pilot-owner maintenance declaration (name, licence number, block 6),
+  declaration type (owner declaration vs. contracted CAMO/CAO approval + reference,
+  block 7), certifying party name/address/phone/email (block 8), and a lightweight
+  revision number/content/date (not a numbered block in the official form itself,
+  but standard practice — rendered as a document footer/Appendix D note, not a
+  fabricated "block 10")
+- [ ] Edit form for `AmpDeclaration` (`/aircraft/<id>/amp/edit`) — a normal
+  OpenHangar form, not spreadsheet import: this is ~15 rarely-changed fields, unlike
+  the 100+-row task list, so a form is simpler than building a second, narrower
+  spreadsheet parser for it
+- [ ] Migration in `app/migrations/versions/`; `scripts/check_migrations.py` green
+
+**Maintenance dashboard — component grouping:**
+- [ ] `/aircraft/<id>/maintenance` (`maintenance/list.html`) groups triggers by
+  component, mirroring the `components_by_type` grouping already used on
+  `aircraft/detail.html`: one section per installed component plus an "Airframe /
+  general" section for triggers with no `component_id`
+- [ ] Trigger rows show `category`/`action`/`reference` as optional metadata/badges
+  when present, without disrupting the existing layout for hand-entered triggers that
+  don't have them
+- [ ] Combined-interval triggers display both due points (date and hours) and the
+  worse-case status badge; `needs_review` triggers are visually distinct from `ok`
+- [ ] Fleet overview (`maintenance/fleet.html`, Phase 13) reuses the same
+  combined-interval evaluation and `needs_review` handling — no separate code path
+
+**AMP spreadsheet import:**
+- [ ] Document a fixed, reusable OpenHangar "AMP task list" import template: one row
+  per maintenance requirement, columns `Category`, `Task description`, `Reference`,
+  `Action`, `Interval`, `Part number`, `Serial number`, `Notes`. Documented as a new
+  `docs/maintenance_import.md` guide (linked from `docs/user-guide.md`), including the
+  `Interval` mini-syntax below, so any owner can build a compatible workbook for their
+  own aircraft
+- [ ] `MaintenanceImportBatch` model (mirrors `LogbookImportBatch`, Phase 28) —
+  aircraft FK, import timestamp, row count, needs-review count; links to the created
+  `MaintenanceTrigger` rows so an import can be reviewed or rolled back as a unit
+- [ ] Upload page (aircraft maintenance page → "Import from spreadsheet"): accepts
+  `.xlsx`; locates the header row by matching the known column names (order-tolerant,
+  case-insensitive, ignoring leading unrelated rows/sheets) rather than assuming a
+  fixed row/sheet index
+- [ ] `Interval` parser: free-text values combining a flight-hour figure and/or a
+  calendar figure, e.g. `100FH`, `12MO`, `100FH / 12MO`, `36MO`/`3YR` — split on `/`,
+  parse each side independently (`<n>FH` → `interval_hours`, initial
+  `due_engine_hours` computed from current hobbs/flight hours per the row's
+  `hours_basis`; `<n>DY`/`<n>MO`/`<n>YR` → `interval_days`, initial `due_date`
+  computed from today); both sides populate together when both are present, per the
+  combined-interval support above
+- [ ] Rows with an empty, `"PENDING"`, or otherwise unparseable `Interval` are
+  imported as a `MaintenanceTrigger` with `needs_review = true` and no due fields set,
+  never silently skipped or treated as an import error
+- [ ] `Part number`/`Serial number` columns import into the new free-text columns;
+  `component_id` is not auto-matched from them (a task's target part isn't guaranteed
+  to share an identifier scheme with an installed `Component` row) — component
+  association is chosen per-row on the review screen, pre-selected by a heuristic on
+  `Category`/`Task description` text (e.g. mentions of "engine"/"propeller" suggest
+  that component; no match leaves the row unscoped)
+- [ ] `Category` column matched against the 9 canonical `AmpCategory` values
+  (case/whitespace-tolerant exact match, since source programmes already tend to use
+  EASA's own wording almost verbatim); an unmatched or blank category imports as
+  `category = NULL` (routine/admin task, excluded from Appendix B on export) rather
+  than being rejected — reviewable/correctable per-row on the preview screen
+- [ ] Review/preview screen before commit (mirrors Phase 28's mapping-preview step):
+  full parsed-row table with computed interval fields, suggested component, and a
+  per-row editable component picker; explicit user confirmation required before commit
+- [ ] Commit creates one `MaintenanceTrigger` per row (tagged with the
+  `MaintenanceImportBatch`, none silently dropped — unparseable rows import as
+  `needs_review` per above); completion summary shows rows imported and rows flagged
+  for review
+- [ ] Import history page (mirrors Phase 28's): lists past batches per aircraft;
+  rollback action removes every `MaintenanceTrigger` in that batch
+
+**AMP document export:**
+- [ ] "Export AMP" action on the aircraft maintenance page, gated on `AmpDeclaration`
+  existing for that aircraft (prompts to fill in the profile form first otherwise)
+- [ ] Output format: print-ready HTML (a dedicated template styled to match the
+  official form's block/table layout, with `@media print` rules for clean pagination),
+  not PDF — OpenHangar has no PDF generation pipeline anywhere in the codebase today;
+  every other phase that wanted a PDF (Phase 39's co-owner statements, Phase 38's
+  renter statements) shipped CSV/HTML-only for the same reason. The user prints or
+  "prints to PDF" from the browser, same as any other browser-native document. Revisit
+  as a real PDF export once Phase 46 (Advanced Reporting & Exports) delivers a PDF
+  pipeline for the logbook/cost-report exports it already plans — this phase shouldn't
+  be the one to introduce that dependency
+- [ ] Blocks 1–3 rendered from `Aircraft`/`Component`/`AmpDeclaration`: registration,
+  type, serial number, owner identity (block 1); programme basis (block 2); DAH ICA
+  equipment/reference rows for airframe/engine/propeller (block 3a–3c, one row per
+  matching `Component`)
+- [ ] Block 4 (additional maintenance requirements Yes/No table): one row per
+  `AmpCategory` value, "Yes" when at least one `MaintenanceTrigger` on the aircraft
+  has that `category`, "No" otherwise — computed at render time, not stored
+- [ ] Block 5 (alternative tasks Yes/No): "Yes" when at least one trigger has
+  `is_alternative_to_ica = true`, computed the same way as block 4
+- [ ] Blocks 6–9 rendered from `AmpDeclaration`: pilot-owner maintenance declaration,
+  declaration/approval type with signature block (rendered blank for the owner to
+  sign after export — OpenHangar doesn't perform the legal act of signing),
+  certification statement with certifying-party details, and the appendices-attached
+  checklist (block 9) computed from whether Appendix B/C/D each have content
+- [ ] Appendix B: one section per `AmpCategory` with at least one matching trigger,
+  in the form's own category order; columns Task description / Reference / Interval
+  (combined-interval triggers rendered back as `"100FH / 12MO"`-style text from
+  `interval_hours`/`interval_days`, the inverse of the import parser); the official
+  form's "interval differs from the referenced document" tick-box is out of scope for
+  this phase (left unticked) — the source data doesn't reliably distinguish that from
+  ordinary transcription, revisit only if real usage shows it's needed
+- [ ] Appendix C: rendered only when at least one `is_alternative_to_ica` trigger
+  exists; columns Task description / Reference / `alternative_task_notes`
+- [ ] Appendix D: free-text field on `AmpDeclaration` (optional), rendered verbatim if
+  present; the revision number/content/date from `AmpDeclaration` are appended here
+  as a small "Revision history" note, since the official form has no dedicated block
+  for it
+- [ ] Round-trip note in `docs/maintenance_import.md`: explicitly document that export
+  reads the same `category`/`is_alternative_to_ica`/`AmpDeclaration` fields the
+  importer writes, so editing triggers in OpenHangar after import changes the next
+  export accordingly — there is no separate "export data" to keep in sync
+
+**Tests:**
+- [ ] Combined-interval `status()`: calendar-only, hours-only, both-set (worse of the
+  two wins across all combinations of overdue/due_soon/ok), landings unaffected
+- [ ] Component-scoped trigger: `hours_basis` defaults from the linked component's
+  `type`; trigger survives component deletion as unscoped (`component_id` → NULL)
+- [ ] Dashboard grouping: triggers appear under the correct component section;
+  unscoped triggers appear in "Airframe / general"
+- [ ] Interval parser: `"100FH"`, `"12MO"`, `"100FH / 12MO"`, `"PENDING"`, empty, and
+  an unparseable string each produce the expected fields / `needs_review` flag
+- [ ] Import end-to-end: upload a fixture workbook shaped like the documented
+  template → preview → commit → correct trigger count, correct needs-review count,
+  rollback removes them all
+- [ ] Header row detection tolerant of leading non-matching rows and column reordering
+- [ ] Export block 4/5 Yes/No rows: correct per `AmpCategory` and for the alternative-
+  tasks flag, across an aircraft with no categorised triggers, one, and several
+- [ ] Export Appendix B: correct grouping/ordering by category; combined-interval
+  trigger round-trips to the same `"NNNFH / NNMO"`-shaped text the importer accepts
+- [ ] Export Appendix C: omitted entirely when no `is_alternative_to_ica` trigger
+  exists; present with correct rows otherwise
+- [ ] Export gated on `AmpDeclaration` existing; missing profile redirects to the
+  edit form instead of rendering a broken/partial document
+- [ ] Round-trip: import a fixture workbook → export → key values (registration,
+  categorised task counts per `AmpCategory`) match the source data
+
+---
+
+## Phase 41 — Flying Club
 
 Goal: support the flying-club operating model, where the club is the sole aircraft owner and members share access under a common membership structure.
 
@@ -1836,7 +2046,7 @@ Goal: support the flying-club operating model, where the club is the sole aircra
 
 ---
 
-## Phase 41 — Flying School
+## Phase 42 — Flying School
 
 Goal: support the flight-school operating model, where instructors deliver dual-instruction flights to students, with per-student progress tracking and instructor-specific permissions. The same model covers independent instructors operating on a single aircraft with a small number of private students — no formal school structure required.
 
@@ -1866,7 +2076,7 @@ Goal: support the flight-school operating model, where instructors deliver dual-
 
 ---
 
-## Phase 42 — Pilot Logbook Auto-population
+## Phase 43 — Pilot Logbook Auto-population
 
 Goal: auto-populate the pilot logbook from aircraft logbook entries so that
 logging a flight on the aircraft form fills both logbooks in one step.
@@ -1899,7 +2109,7 @@ logging a flight on the aircraft form fills both logbooks in one step.
 
 ---
 
-## Phase 43 — Photo EXIF & Arrival Time Auto-fill
+## Phase 44 — Photo EXIF & Arrival Time Auto-fill
 
 Goal: extract the arrival time automatically from counter photos so pilots
 don't need to type it in after every flight.
@@ -1916,7 +2126,7 @@ don't need to type it in after every flight.
 
 ---
 
-## Phase 44 — External Integrations
+## Phase 45 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -1930,7 +2140,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 45 — Advanced Reporting & Exports
+## Phase 46 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -1952,7 +2162,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 46 — Hosted SaaS & Advanced RBAC
+## Phase 47 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 
