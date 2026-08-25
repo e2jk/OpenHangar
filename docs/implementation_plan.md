@@ -1916,21 +1916,21 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
   `docs/maintenance_import.md` guide (linked from `docs/user-guide.md`), including the
   `Interval` mini-syntax below, so any owner can build a compatible workbook for their
   own aircraft
-- [ ] `MaintenanceImportBatch` model (mirrors `LogbookImportBatch`, Phase 28) —
+- [x] `MaintenanceImportBatch` model (mirrors `LogbookImportBatch`, Phase 28) —
   aircraft FK, import timestamp, row count, needs-review count; links to the created
   `MaintenanceTrigger` rows so an import can be reviewed or rolled back as a unit
 - [ ] Upload page (aircraft maintenance page → "Import from spreadsheet"): accepts
   `.xlsx`; locates the header row by matching the known column names (order-tolerant,
   case-insensitive, ignoring leading unrelated rows/sheets) rather than assuming a
   fixed row/sheet index
-- [ ] `Interval` parser: free-text values combining a flight-hour figure and/or a
+- [x] `Interval` parser: free-text values combining a flight-hour figure and/or a
   calendar figure, e.g. `100FH`, `12MO`, `100FH / 12MO`, `36MO`/`3YR` — split on `/`,
   parse each side independently (`<n>FH` → `interval_hours`, initial
   `due_engine_hours` computed from current hobbs/flight hours per the row's
   `hours_basis`; `<n>DY`/`<n>MO`/`<n>YR` → `interval_days`, initial `due_date`
   computed from today); both sides populate together when both are present, per the
   combined-interval support above
-- [ ] Rows with an empty, `"PENDING"`, or otherwise unparseable `Interval` are
+- [x] Rows with an empty, `"PENDING"`, or otherwise unparseable `Interval` are
   imported as a `MaintenanceTrigger` with `needs_review = true` and no due fields set,
   never silently skipped or treated as an import error
 - [ ] `Part number`/`Serial number` columns import into the new free-text columns;
@@ -1939,7 +1939,7 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
   association is chosen per-row on the review screen, pre-selected by a heuristic on
   `Category`/`Task description` text (e.g. mentions of "engine"/"propeller" suggest
   that component; no match leaves the row unscoped)
-- [ ] `Category` column matched against the 9 canonical `AmpCategory` values
+- [x] `Category` column matched against the 9 canonical `AmpCategory` values
   (case/whitespace-tolerant exact match, since source programmes already tend to use
   EASA's own wording almost verbatim); an unmatched or blank category imports as
   `category = NULL` (routine/admin task, excluded from Appendix B on export) rather

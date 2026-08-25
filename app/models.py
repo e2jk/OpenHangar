@@ -1449,6 +1449,11 @@ class MaintenanceTrigger(db.Model):
     needs_review = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.false()
     )
+    import_batch_id = db.Column(
+        db.Integer,
+        db.ForeignKey("maintenance_import_batches.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     created_at = db.Column(
         db.DateTime(timezone=True),
@@ -1458,6 +1463,7 @@ class MaintenanceTrigger(db.Model):
 
     aircraft = db.relationship("Aircraft", back_populates="maintenance_triggers")
     component = db.relationship("Component", back_populates="maintenance_triggers")
+    import_batch = db.relationship("MaintenanceImportBatch", back_populates="triggers")
     records = db.relationship(
         "MaintenanceRecord",
         back_populates="trigger",
@@ -1468,6 +1474,7 @@ class MaintenanceTrigger(db.Model):
     __table_args__ = (
         db.Index("ix_maintenance_triggers_aircraft_id", aircraft_id),
         db.Index("ix_maintenance_triggers_component_id", component_id),
+        db.Index("ix_maintenance_triggers_import_batch_id", import_batch_id),
     )
 
     def status(
@@ -1724,6 +1731,39 @@ class AmpDeclaration(db.Model):
     )
 
     aircraft = db.relationship("Aircraft", back_populates="amp_declaration")
+
+
+class MaintenanceImportBatch(db.Model):
+    """One AMP task-list spreadsheet import — mirrors LogbookImportBatch
+    (Phase 28): links every MaintenanceTrigger it created so the whole
+    import can be reviewed or rolled back as a unit."""
+
+    __tablename__ = "maintenance_import_batches"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    source_filename = db.Column(db.String(256), nullable=False)
+    imported_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+    row_count = db.Column(db.Integer, nullable=False, default=0)
+    needs_review_count = db.Column(db.Integer, nullable=False, default=0)
+
+    aircraft = db.relationship("Aircraft")
+    triggers = db.relationship(
+        "MaintenanceTrigger",
+        back_populates="import_batch",
+        foreign_keys="MaintenanceTrigger.import_batch_id",
+        lazy="dynamic",
+    )
+
+    __table_args__ = (
+        db.Index("ix_maintenance_import_batches_aircraft_id", aircraft_id),
+    )
 
 
 # ── Phase 8: Cost Tracking ────────────────────────────────────────────────────
