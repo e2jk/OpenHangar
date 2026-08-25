@@ -435,6 +435,28 @@ to raise `OSError`, keeping GPS/map-tile and OpenAIP overlay tests fast. Tests t
 real network mocking already override this fixture explicitly — don't "fix" a test that
 looks like it's skipping a real tile fetch; that's this fixture working as intended.
 
+### Never reuse `_` as a Jinja throwaway variable name
+`{% set _ = some_list.append(x) %}` is a common Jinja trick to call a
+mutating list method (whose return value can't otherwise be used as an
+expression), but assigning to `_` shadows the `_` gettext function for the
+rest of that template's scope — every `_('...')` call after that point
+silently returns `None` (not callable), which surfaces as a confusing
+"'NoneType' object is not callable" error at the next `{{ _('...') }}` call,
+possibly lines away from the actual cause. Use any other name (`_discard`,
+`_ignored`) for this pattern.
+
+### `sw.js` route-classification test is fragile to slashes in description text
+`tests/functional/test_pwa.py::TestSWRRouteCoverage` parses the
+`NOT_CACHED_PATTERNS`/`SWR_PATTERNS` blocks in `app/static/js/sw.js` with a
+regex that extracts anything matching `/.../ ` from the *entire* block text —
+including inside the plain-English description strings, not just the actual
+JS regex literals. A description containing a slash-delimited path (e.g.
+"same reasoning as /pilot/minimums/print") gets misparsed as an additional
+bogus pattern, which can then spuriously match unrelated real routes and
+fail the test in a confusing way ("routes matched both cached and
+excluded"). When adding an entry to either array, describe other pages in
+prose ("the personal-minimums print page"), never as a literal path.
+
 ### TOTP login form auto-submits on the 6th digit
 `app/static/js/totp_autosubmit.js` calls `form.requestSubmit()` as soon as
 all 6 digits are entered — the submit button is never clicked in practice.
