@@ -28,16 +28,23 @@
         {% if trigger.interval_days or trigger.interval_hours or trigger.interval_landings %}
         <div class="alert alert-info mb-4 oh-fs-088">
           <i class="bi bi-info-circle me-1"></i>
-          {% if trigger.trigger_type == 'calendar' and trigger.interval_days %}
-            {{ _('After saving, the next due date will be set to') }}
-            <strong>{{ ngettext('service date + one day', 'service date + %(n)s days', trigger.interval_days, n=trigger.interval_days) }}</strong>.
-          {% elif trigger.trigger_type == 'hours' and trigger.interval_hours %}
-            {{ _('After saving, the next due hours reading will be set to') }}
-            <strong>{{ _('reading at service + %(h)s h', h="%.0f"|format(trigger.interval_hours|float)) }}</strong>.
-          {% elif trigger.trigger_type == 'landings' and trigger.interval_landings %}
-            {{ _('After saving, the next due landing count will be set to') }}
-            <strong>{{ _('landings at service + %(n)s', n=trigger.interval_landings) }}</strong>.
+          {# Phase 40: a combined-interval trigger can advance more than one
+             due-field group at once — list every applicable hint rather
+             than a single exclusive message. #}
+          <ul class="mb-0 ps-3">
+          {% if trigger.due_date is not none and trigger.interval_days %}
+            <li>{{ _('After saving, the next due date will be set to') }}
+            <strong>{{ ngettext('service date + one day', 'service date + %(n)s days', trigger.interval_days, n=trigger.interval_days) }}</strong>.</li>
           {% endif %}
+          {% if trigger.due_engine_hours is not none and trigger.interval_hours %}
+            <li>{{ _('After saving, the next due hours reading will be set to') }}
+            <strong>{{ _('reading at service + %(h)s h', h="%.0f"|format(trigger.interval_hours|float)) }}</strong>.</li>
+          {% endif %}
+          {% if trigger.due_landings is not none and trigger.interval_landings %}
+            <li>{{ _('After saving, the next due landing count will be set to') }}
+            <strong>{{ _('landings at service + %(n)s', n=trigger.interval_landings) }}</strong>.</li>
+          {% endif %}
+          </ul>
         </div>
         {% endif %}
 
@@ -51,8 +58,8 @@
                    value="{{ today }}" required>
           </div>
 
-          {% if trigger.trigger_type == 'hours' %}
           {% set _current_reading = current_flight_hours if trigger.hours_basis == 'flight' else current_hobbs %}
+          {% if trigger.due_engine_hours is not none %}
           <div class="mb-3">
             <label for="hobbs_at_service" class="form-label">
               {{ _('Flight hours at service') if trigger.hours_basis == 'flight' else _('Engine hours at service') }}
@@ -71,11 +78,11 @@
             </label>
             <input type="number" class="form-control" id="hobbs_at_service"
                    name="hobbs_at_service" step="0.1" min="0"
-                   value="{{ '%.1f'|format(current_hobbs) if current_hobbs is not none else '' }}">
+                   value="{{ '%.1f'|format(_current_reading) if _current_reading is not none else '' }}">
           </div>
           {% endif %}
 
-          {% if trigger.trigger_type == 'landings' %}
+          {% if trigger.due_landings is not none %}
           <div class="mb-3">
             <label for="landings_at_service" class="form-label">
               {{ _('Landing count at service') }}

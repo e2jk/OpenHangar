@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Review Import') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-card-checklist me-2"></i>{{ _('Review Import') }}
+      </h1>
+      <p class="page-sub">
+        <span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ filename }} —
+        {{ ngettext('%(n)s row', '%(n)s rows', row_count, n=row_count) }}
+        {% if needs_review_count %}
+        · <span class="text-warning">{{ ngettext('%(n)s flagged for review', '%(n)s flagged for review', needs_review_count, n=needs_review_count) }}</span>
+        {% endif %}
+      </p>
+    </div>
+    <a href="{{ url_for('maintenance.import_amp_upload', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">
+      <i class="bi bi-arrow-left me-1"></i>{{ _('Upload a different file') }}
+    </a>
+  </div>
+
+  <div class="alert alert-info oh-fs-09">
+    <i class="bi bi-info-circle me-1"></i>
+    {{ _('Nothing has been saved yet. Adjust the component for any row below, then confirm to import.') }}
+  </div>
+
+  <form method="POST" action="{{ url_for('maintenance.import_amp_commit', aircraft_id=aircraft.id) }}">
+
+    <div class="ac-form-card p-0 mb-3">
+      <table class="table table-hover mb-0 oh-fs-0875">
+        <thead class="oh-bg-light">
+          <tr>
+            <th class="ps-3">{{ _('Task description') }}</th>
+            <th>{{ _('Category') }}</th>
+            <th>{{ _('Interval') }}</th>
+            <th>{{ _('Computed due') }}</th>
+            <th>{{ _('Component') }}</th>
+            <th class="pe-3">{{ _('Status') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in preview_rows %}
+          {% set r = entry.parsed %}
+          <tr>
+            <td class="ps-3">
+              <div class="fw-semibold oh-text-navy">{{ r.name }}</div>
+              {% if r.action or r.reference %}
+              <div class="text-muted oh-fs-08">
+                {% if r.action %}<span class="badge bg-body-secondary text-body border me-1">{{ r.action }}</span>{% endif %}
+                {{ r.reference or '' }}
+              </div>
+              {% endif %}
+            </td>
+            <td class="text-muted">
+              {% if r.category %}
+                {{ r.category }}
+              {% elif r.category_raw %}
+                <span class="text-warning" title="{{ _('Not one of the 9 recognised AMP categories — imported without a category') }}">{{ r.category_raw }}</span>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td class="text-muted">{{ r.interval_raw or '—' }}</td>
+            <td class="text-muted">
+              {% if entry.due_date %}<div>{{ entry.due_date.strftime('%Y-%m-%d') }}</div>{% endif %}
+              {% if entry.due_engine_hours is not none %}<div>{{ "%.1f"|format(entry.due_engine_hours) }} h</div>{% endif %}
+              {% if entry.due_date is none and entry.due_engine_hours is none %}—{% endif %}
+            </td>
+            <td>
+              <select class="form-select form-select-sm" name="component_id_{{ loop.index0 }}">
+                <option value="">{{ _('— Airframe / general —') }}</option>
+                {% for comp in components %}
+                {% if not comp.removed_at %}
+                <option value="{{ comp.id }}" {% if entry.suggested_component and entry.suggested_component.id == comp.id %}selected{% endif %}>
+                  {{ comp.make }} {{ comp.model }}{% if comp.position %} ({{ comp.position }}){% endif %}
+                </option>
+                {% endif %}
+                {% endfor %}
+              </select>
+            </td>
+            <td class="pe-3">
+              {% if r.needs_review %}
+              <span class="ac-status-badge ac-status-warn">{{ _('Needs review') }}</span>
+              {% else %}
+              <span class="ac-status-badge ac-status-ok">{{ _('OK') }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-ac-primary">
+        <i class="bi bi-check-lg me-1"></i>{{ _('Confirm import') }}
+      </button>
+      <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
+    </div>
+  </form>
+
+</div>
+{% endblock %}

@@ -418,3 +418,59 @@ class TestChronologicalView:
         _login(app, client)
         resp = client.get("/maintenance?view=chronological")
         assert b"Landing gear check overdue" in resp.data
+
+
+# ── Phase 40: needs_review triggers (no due fields, status() == 'ok') ─────────
+
+
+class TestNeedsReviewSurfacing:
+    def test_needs_review_trigger_breaks_all_clear(self, app, client):
+        _, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=ac_id,
+                name="PENDING shop input",
+                trigger_type=TriggerType.CALENDAR,
+                needs_review=True,
+            )
+            db.session.add(t)
+            db.session.commit()
+        _login(app, client)
+        resp = client.get("/maintenance?view=by-type")
+        assert resp.status_code == 200
+        assert b"All clear" not in resp.data
+
+    def test_needs_review_trigger_shown_in_by_type_view(self, app, client):
+        _, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=ac_id,
+                name="Undecided task",
+                trigger_type=TriggerType.CALENDAR,
+                needs_review=True,
+            )
+            db.session.add(t)
+            db.session.commit()
+        _login(app, client)
+        resp = client.get("/maintenance?view=by-type")
+        assert b"Undecided task" in resp.data
+        assert b"Needs review" in resp.data
+
+    def test_needs_review_trigger_shown_in_chronological_view(self, app, client):
+        _, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=ac_id,
+                name="Undecided chron task",
+                trigger_type=TriggerType.CALENDAR,
+                needs_review=True,
+            )
+            db.session.add(t)
+            db.session.commit()
+        _login(app, client)
+        resp = client.get("/maintenance?view=chronological")
+        assert b"Undecided chron task" in resp.data
+        assert b"Needs review" in resp.data

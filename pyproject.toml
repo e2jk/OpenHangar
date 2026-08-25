@@ -26,6 +26,8 @@ ignore = [
 # conftest files set os.environ before importing app code — E402 is intentional
 "tests/conftest.py" = ["E402"]
 "tests/e2e/conftest.py" = ["E402"]
+# sys.path.insert() must run before the local-package import it enables
+"scripts/extract_seed_tracks.py" = ["E402"]
 
 [tool.bandit]
 exclude_dirs = ["app/tests"]

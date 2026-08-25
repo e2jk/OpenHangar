@@ -313,6 +313,26 @@ window.toggleType = function () {
   if (lnd) lnd.style.display = type === 'landings' ? '' : 'none';
 };
 
+/* Maintenance trigger form: picking an engine/propeller component
+   defaults "Measured against" to engine hours (mirrors the TBO logic in
+   services/component_limits.py); airframe/avionics/other/no selection
+   defaults to flight hours. A convenience default only — the radios stay
+   editable afterwards. */
+window.onTriggerComponentChange = function () {
+  var sel = document.getElementById('component_id');
+  if (!sel) return;
+  var opt = sel.options[sel.selectedIndex];
+  var type = opt ? opt.dataset.type : '';
+  var basisEngine = document.getElementById('hours_basis_engine');
+  var basisFlight = document.getElementById('hours_basis_flight');
+  if (!basisEngine || !basisFlight) return;
+  if (type === 'engine' || type === 'propeller') {
+    basisEngine.checked = true;
+  } else {
+    basisFlight.checked = true;
+  }
+};
+
 window.toggleLogbookEntryType = function () {
   var isFstd = !!(document.getElementById('entry_type_fstd') && document.getElementById('entry_type_fstd').checked);
   document.querySelectorAll('.pe-flight-only').forEach(function (el) {

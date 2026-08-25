@@ -66,6 +66,27 @@
             </div>
           </div>
 
+          {% set _comp_type_labels = {'airframe': _('Airframe'), 'engine': _('Engine'), 'propeller': _('Propeller'), 'avionics': _('Avionics'), 'other': _('Other')} %}
+          <div class="mb-4">
+            <label for="component_id" class="form-label">
+              {{ _('Component') }} <span class="text-muted small">({{ _('optional') }})</span>
+            </label>
+            <select class="form-select" id="component_id" name="component_id" data-onchange="onTriggerComponentChange">
+              <option value="">{{ _('— Airframe / general —') }}</option>
+              {% for comp in aircraft.components %}
+              {% if not comp.removed_at %}
+              <option value="{{ comp.id }}" data-type="{{ comp.type }}"
+                      {% if trigger and trigger.component_id == comp.id %}selected{% endif %}>
+                {{ _comp_type_labels.get(comp.type, comp.type) }} — {{ comp.make }} {{ comp.model }}{% if comp.position %} ({{ comp.position }}){% endif %}
+              </option>
+              {% endif %}
+              {% endfor %}
+            </select>
+            <div class="form-text">
+              {{ _('Scope this item to a specific engine, propeller, etc. instead of the whole airframe.') }}
+            </div>
+          </div>
+
           <!-- Calendar fields -->
           <div id="calendar-fields">
             <div class="row">

@@ -463,6 +463,12 @@ class Aircraft(db.Model):
         cascade="all, delete-orphan",
         uselist=False,
     )
+    amp_declaration = db.relationship(
+        "AmpDeclaration",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
     photos = db.relationship(
         "AircraftPhoto",
         back_populates="aircraft",
@@ -713,6 +719,11 @@ class Component(db.Model):
         back_populates="component",
         cascade="all, delete-orphan",
         foreign_keys="AirworthinessDocument.component_id",
+    )
+    # Phase 40: no cascade — deleting a component unscopes (SET NULL) rather
+    # than deletes its maintenance triggers, per MaintenanceTrigger.component_id.
+    maintenance_triggers = db.relationship(
+        "MaintenanceTrigger", back_populates="component"
     )
 
 
@@ -1332,12 +1343,56 @@ class HoursBasis:
     LABELS: ClassVar[dict[str, str]] = {ENGINE: "Engine hours", FLIGHT: "Flight hours"}
 
 
+class AmpCategory:
+    """The 9 additional-maintenance-requirement categories from EASA Form
+    AMP block 4 / Appendix B (AMC2 ML.A.302), used verbatim as
+    ``MaintenanceTrigger.category`` values so that block 4's Yes/No table
+    and Appendix B can be computed from the trigger set at export time
+    rather than stored separately (Phase 40). ``ALL`` preserves the
+    official form's own row order for rendering."""
+
+    EQUIPMENT_AND_MODIFICATIONS = (
+        "Maintenance due to specific equipment and modifications"
+    )
+    REPAIRS = "Maintenance due to repairs"
+    LIFE_LIMITED_COMPONENTS = "Maintenance due to life-limited components"
+    MANDATORY_CONTINUING_AIRWORTHINESS = (
+        "Maintenance due to mandatory continuing airworthiness information "
+        "(ALIs, CMRs, TCDS)"
+    )
+    TBO_RECOMMENDATIONS = "Maintenance recommendations (TBO via SB/SL, non-mandatory)"
+    REPETITIVE_ADS = "Maintenance due to repetitive ADs"
+    OPERATIONAL_AIRSPACE_DIRECTIVES = (
+        "Maintenance due to specific operational/airspace directives/requirements"
+    )
+    TYPE_OF_OPERATION = "Maintenance due to type of operation or operational approvals"
+    OTHER = "Other"
+
+    ALL: ClassVar[list[str]] = [
+        EQUIPMENT_AND_MODIFICATIONS,
+        REPAIRS,
+        LIFE_LIMITED_COMPONENTS,
+        MANDATORY_CONTINUING_AIRWORTHINESS,
+        TBO_RECOMMENDATIONS,
+        REPETITIVE_ADS,
+        OPERATIONAL_AIRSPACE_DIRECTIVES,
+        TYPE_OF_OPERATION,
+        OTHER,
+    ]
+
+
 class MaintenanceTrigger(db.Model):
     __tablename__ = "maintenance_triggers"
 
     id = db.Column(db.Integer, primary_key=True)
     aircraft_id = db.Column(
         db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    # Phase 40: optional component scoping (engine, propeller, …). NULL means
+    # airframe-general. SET NULL on component deletion — removing a component
+    # shouldn't delete its maintenance history, just unscope the trigger.
+    component_id = db.Column(
+        db.Integer, db.ForeignKey("components.id", ondelete="SET NULL"), nullable=True
     )
     name = db.Column(db.String(128), nullable=False)
     trigger_type = db.Column(db.String(16), nullable=False)  # TriggerType constant
@@ -1376,6 +1431,30 @@ class MaintenanceTrigger(db.Model):
     warn_landings = db.Column(db.Integer, nullable=True)
 
     notes = db.Column(db.Text, nullable=True)
+
+    # Phase 40: AMP import/export provenance and classification fields — all
+    # nullable free text/flags, orthogonal to the calendar/hours/landings due
+    # fields above. See docs/maintenance_import.md once written.
+    category = db.Column(db.String(128), nullable=True)  # AmpCategory value, or NULL
+    is_alternative_to_ica = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
+    )
+    alternative_task_notes = db.Column(db.Text, nullable=True)
+    reference = db.Column(db.String(255), nullable=True)  # AD/SB/manual doc reference
+    action = db.Column(db.String(32), nullable=True)  # e.g. INSPECTION/REPLACE/TBO/SLL
+    part_number = db.Column(db.String(64), nullable=True)
+    serial_number = db.Column(db.String(64), nullable=True)
+    # Set on import for rows with an unresolved/unparseable interval, so they
+    # read as "not yet scheduled" rather than silently evaluating as 'ok'.
+    needs_review = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
+    )
+    import_batch_id = db.Column(
+        db.Integer,
+        db.ForeignKey("maintenance_import_batches.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
@@ -1383,6 +1462,8 @@ class MaintenanceTrigger(db.Model):
     )
 
     aircraft = db.relationship("Aircraft", back_populates="maintenance_triggers")
+    component = db.relationship("Component", back_populates="maintenance_triggers")
+    import_batch = db.relationship("MaintenanceImportBatch", back_populates="triggers")
     records = db.relationship(
         "MaintenanceRecord",
         back_populates="trigger",
@@ -1390,7 +1471,11 @@ class MaintenanceTrigger(db.Model):
         order_by="MaintenanceRecord.performed_at.desc()",
     )
 
-    __table_args__ = (db.Index("ix_maintenance_triggers_aircraft_id", aircraft_id),)
+    __table_args__ = (
+        db.Index("ix_maintenance_triggers_aircraft_id", aircraft_id),
+        db.Index("ix_maintenance_triggers_component_id", component_id),
+        db.Index("ix_maintenance_triggers_import_batch_id", import_batch_id),
+    )
 
     def status(
         self,
@@ -1400,59 +1485,72 @@ class MaintenanceTrigger(db.Model):
     ) -> str:
         """Return 'overdue', 'due_soon', or 'ok'.
 
-        For HOURS triggers, ``hours_basis`` picks which of
-        ``current_engine_hours``/``current_flight_hours`` is compared
-        against ``due_engine_hours``."""
+        Evaluates every populated field group (calendar ``due_date``, hours
+        ``due_engine_hours``, landings ``due_landings``) independently and
+        returns the worst result. This is what lets a trigger represent a
+        "due at whichever comes first" combined interval (e.g. an AMP task
+        quoted as "100FH / 12MO") simply by having more than one field group
+        populated at once, with no separate ``trigger_type`` value or
+        duplicate rows needed. A trigger with only one field group populated
+        (the common case) behaves exactly as before this method started
+        evaluating groups independently. For the hours group, ``hours_basis``
+        picks which of ``current_engine_hours``/``current_flight_hours`` is
+        compared against ``due_engine_hours``."""
         from datetime import date as _date
 
-        if self.trigger_type == TriggerType.CALENDAR and self.due_date:
+        statuses: list[str] = []
+
+        if self.due_date is not None:
             delta = (self.due_date - _date.today()).days
             if delta < 0:
-                return "overdue"
-            warn_days = self.warn_days if self.warn_days is not None else 30
-            if delta <= warn_days:
-                return "due_soon"
-        elif (
-            self.trigger_type == TriggerType.HOURS and self.due_engine_hours is not None
-        ):
+                statuses.append("overdue")
+            else:
+                warn_days = self.warn_days if self.warn_days is not None else 30
+                if delta <= warn_days:
+                    statuses.append("due_soon")
+
+        if self.due_engine_hours is not None:
             current_hobbs = (
                 current_flight_hours
                 if self.hours_basis == HoursBasis.FLIGHT
                 else current_engine_hours
             )
-            if current_hobbs is None:
-                return "ok"
-            remaining = float(self.due_engine_hours) - float(current_hobbs)
-            if remaining <= 0:
-                return "overdue"
-            if self.warn_hours is not None:
-                warn = float(self.warn_hours)
+            if current_hobbs is not None:
+                remaining = float(self.due_engine_hours) - float(current_hobbs)
+                if remaining <= 0:
+                    statuses.append("overdue")
+                else:
+                    if self.warn_hours is not None:
+                        warn_h = float(self.warn_hours)
+                    else:
+                        warn_h = (
+                            max(float(self.interval_hours) * 0.1, 5.0)
+                            if self.interval_hours
+                            else 10.0
+                        )
+                    if remaining <= warn_h:
+                        statuses.append("due_soon")
+
+        if self.due_landings is not None and current_landings is not None:
+            remaining_l = self.due_landings - current_landings
+            if remaining_l <= 0:
+                statuses.append("overdue")
             else:
-                warn = (
-                    max(float(self.interval_hours) * 0.1, 5.0)
-                    if self.interval_hours
-                    else 10.0
-                )
-            if remaining <= warn:
-                return "due_soon"
-        elif (
-            self.trigger_type == TriggerType.LANDINGS and self.due_landings is not None
-        ):
-            if current_landings is None:
-                return "ok"
-            remaining = self.due_landings - current_landings
-            if remaining <= 0:
-                return "overdue"
-            if self.warn_landings is not None:
-                warn = self.warn_landings
-            else:
-                warn = (
-                    max(int(self.interval_landings * 0.1), 5)
-                    if self.interval_landings
-                    else 10
-                )
-            if remaining <= warn:
-                return "due_soon"
+                if self.warn_landings is not None:
+                    warn_l = self.warn_landings
+                else:
+                    warn_l = (
+                        max(int(self.interval_landings * 0.1), 5)
+                        if self.interval_landings
+                        else 10
+                    )
+                if remaining_l <= warn_l:
+                    statuses.append("due_soon")
+
+        if "overdue" in statuses:
+            return "overdue"
+        if "due_soon" in statuses:
+            return "due_soon"
         return "ok"
 
     @property
@@ -1530,6 +1628,141 @@ class MaintenanceRecord(db.Model):
     )
 
     trigger = db.relationship("MaintenanceTrigger", back_populates="records")
+
+
+# ── Phase 40: AMP Declaration Profile ────────────────────────────────────────
+
+
+class AmpBasis:
+    """EASA Form AMP block 2 — what the programme is based on."""
+
+    DAH_ICA = "dah_ica"
+    MIP = "mip"
+    ALL: ClassVar[set[str]] = {DAH_ICA, MIP}
+
+
+class AmpDeclarationType:
+    """EASA Form AMP block 7 — declaration by the owner, or approval by a
+    contracted CAMO/CAO."""
+
+    OWNER = "owner"
+    CAMO_CAO = "camo_cao"
+    ALL: ClassVar[set[str]] = {OWNER, CAMO_CAO}
+
+
+class AmpCertifyingPartyKind:
+    """EASA Form AMP block 8 — who signs the certification statement."""
+
+    OWNER_LESSEE_OPERATOR = "owner_lessee_operator"
+    CAMO_CAO = "camo_cao"
+    ALL: ClassVar[set[str]] = {OWNER_LESSEE_OPERATOR, CAMO_CAO}
+
+
+class AmpDeclaration(db.Model):
+    """One-to-one with Aircraft: the EASA Form AMP (AMC2 ML.A.302) fields
+    that aren't derivable from Aircraft/Component/MaintenanceTrigger. Block
+    4/5's Yes/No tables and Appendix B/C are computed from MaintenanceTrigger
+    at export time, not stored here — see docs/maintenance_import.md."""
+
+    __tablename__ = "amp_declarations"
+
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), primary_key=True
+    )
+
+    # Block 2 — basis for the maintenance programme
+    basis = db.Column(
+        db.String(16),
+        nullable=False,
+        default=AmpBasis.DAH_ICA,
+        server_default=AmpBasis.DAH_ICA,
+    )
+    mip_details = db.Column(db.Text, nullable=True)  # Appendix A content, if basis=MIP
+
+    # Block 3a-3c — DAH ICA reference per equipment (manufacturer/type/model
+    # is already on Aircraft/Component; only the reference is stored here).
+    # Balloon fields 3d-3g are out of scope — no balloon support elsewhere.
+    dah_ica_airframe_ref = db.Column(db.String(255), nullable=True)
+    dah_ica_engine_ref = db.Column(db.String(255), nullable=True)
+    dah_ica_propeller_ref = db.Column(db.String(255), nullable=True)
+
+    # Block 6 — pilot-owner maintenance (ML.A.803)
+    pilot_owner_maintenance = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
+    )
+    pilot_owner_name = db.Column(db.String(128), nullable=True)
+    pilot_owner_licence_number = db.Column(db.String(64), nullable=True)
+
+    # Block 7 — declaration/approval of the maintenance programme
+    declaration_type = db.Column(
+        db.String(16),
+        nullable=False,
+        default=AmpDeclarationType.OWNER,
+        server_default=AmpDeclarationType.OWNER,
+    )
+    camo_cao_approval_reference = db.Column(db.String(128), nullable=True)
+
+    # Block 8 — certification statement
+    certifying_party_kind = db.Column(
+        db.String(24),
+        nullable=False,
+        default=AmpCertifyingPartyKind.OWNER_LESSEE_OPERATOR,
+        server_default=AmpCertifyingPartyKind.OWNER_LESSEE_OPERATOR,
+    )
+    certifying_party_name = db.Column(db.String(128), nullable=True)
+    certifying_party_address = db.Column(db.Text, nullable=True)
+    certifying_party_phone = db.Column(db.String(32), nullable=True)
+    certifying_party_email = db.Column(db.String(128), nullable=True)
+
+    # Appendix D (optional free text) + a lightweight revision record — the
+    # official form has no numbered block for revision history, so it's
+    # rendered as a note within Appendix D on export.
+    appendix_d_notes = db.Column(db.Text, nullable=True)
+    revision_number = db.Column(db.String(16), nullable=True)
+    revision_content = db.Column(db.String(255), nullable=True)
+    revision_date = db.Column(db.Date, nullable=True)
+
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+    aircraft = db.relationship("Aircraft", back_populates="amp_declaration")
+
+
+class MaintenanceImportBatch(db.Model):
+    """One AMP task-list spreadsheet import — mirrors LogbookImportBatch
+    (Phase 28): links every MaintenanceTrigger it created so the whole
+    import can be reviewed or rolled back as a unit."""
+
+    __tablename__ = "maintenance_import_batches"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    source_filename = db.Column(db.String(256), nullable=False)
+    imported_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+    row_count = db.Column(db.Integer, nullable=False, default=0)
+    needs_review_count = db.Column(db.Integer, nullable=False, default=0)
+
+    aircraft = db.relationship("Aircraft")
+    triggers = db.relationship(
+        "MaintenanceTrigger",
+        back_populates="import_batch",
+        foreign_keys="MaintenanceTrigger.import_batch_id",
+        lazy="dynamic",
+    )
+
+    __table_args__ = (
+        db.Index("ix_maintenance_import_batches_aircraft_id", aircraft_id),
+    )
 
 
 # ── Phase 8: Cost Tracking ────────────────────────────────────────────────────
@@ -2833,11 +3066,11 @@ class NotificationSnooze(db.Model):
 
 
 class BillingAccountKind:
-    """Shared billing core (Phases 37/39/40) — see docs/billing_service_design.md."""
+    """Shared billing core (Phases 37/39/41) — see docs/billing_service_design.md."""
 
     RENTER = "renter"  # Phase 37 — scoped to the tenant (all aircraft)
     CO_OWNER = "co_owner"  # Phase 39 — scoped to one aircraft
-    MEMBER = "member"  # Phase 40 — scoped to the tenant
+    MEMBER = "member"  # Phase 41 — scoped to the tenant
 
     ALL: ClassVar[set[str]] = {RENTER, CO_OWNER, MEMBER}
 

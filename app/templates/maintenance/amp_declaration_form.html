@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('AMP Declaration') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-file-earmark-text me-2"></i>{{ _('AMP Declaration') }}
+      </h1>
+      <p class="page-sub"><span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ aircraft.make }} {{ aircraft.model }}</p>
+      <p class="text-muted oh-fs-09 mb-0">
+        {{ _('These fields fill in the EASA Form AMP (AMC2 ML.A.302) blocks that cannot be derived from the aircraft, its components, or its maintenance items. Block 4/5 and Appendices B/C are generated automatically from the maintenance items themselves.') }}
+      </p>
+    </div>
+    <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
+       class="btn btn-ac-ghost">
+      <i class="bi bi-arrow-left me-1"></i>{{ _('Maintenance') }}
+    </a>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="ac-form-card">
+        <form method="post">
+
+          <h2 class="section-title">{{ _('Basis for the maintenance programme') }}</h2>
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="basis" id="basis_dah_ica"
+                     value="{{ amp_basis.DAH_ICA }}"
+                     {% if not decl or decl.basis == amp_basis.DAH_ICA %}checked{% endif %}>
+              <label class="form-check-label" for="basis_dah_ica">
+                {{ _("Design approval holder (DAH) instructions for continued airworthiness (ICA)") }}
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="basis" id="basis_mip"
+                     value="{{ amp_basis.MIP }}"
+                     {% if decl and decl.basis == amp_basis.MIP %}checked{% endif %}>
+              <label class="form-check-label" for="basis_mip">
+                {{ _('Minimum inspection programme (MIP)') }}
+              </label>
+            </div>
+          </div>
+          <div class="mb-4">
+            <label for="mip_details" class="form-label">{{ _('MIP details (Appendix A)') }} <span class="text-muted small">({{ _('optional') }})</span></label>
+            <textarea class="form-control" id="mip_details" name="mip_details" rows="2"
+                      placeholder="{{ _('Only needed if a MIP other than the latest AMC1 ML.A.302(d) revision is used') }}">{{ decl.mip_details if decl and decl.mip_details else '' }}</textarea>
+          </div>
+
+          <h2 class="section-title">{{ _('DAH ICA references') }}</h2>
+          <div class="mb-3">
+            <label for="dah_ica_airframe_ref" class="form-label">{{ _('Aircraft (airframe)') }}</label>
+            <input type="text" class="form-control" id="dah_ica_airframe_ref" name="dah_ica_airframe_ref"
+                   value="{{ decl.dah_ica_airframe_ref if decl and decl.dah_ica_airframe_ref else '' }}"
+                   placeholder="{{ _('e.g. Maintenance manual doc reference') }}">
+          </div>
+          <div class="mb-3">
+            <label for="dah_ica_engine_ref" class="form-label">{{ _('Engine') }} <span class="text-muted small">({{ _('if applicable') }})</span></label>
+            <input type="text" class="form-control" id="dah_ica_engine_ref" name="dah_ica_engine_ref"
+                   value="{{ decl.dah_ica_engine_ref if decl and decl.dah_ica_engine_ref else '' }}">
+          </div>
+          <div class="mb-4">
+            <label for="dah_ica_propeller_ref" class="form-label">{{ _('Propeller') }} <span class="text-muted small">({{ _('if applicable') }})</span></label>
+            <input type="text" class="form-control" id="dah_ica_propeller_ref" name="dah_ica_propeller_ref"
+                   value="{{ decl.dah_ica_propeller_ref if decl and decl.dah_ica_propeller_ref else '' }}">
+          </div>
+
+          <h2 class="section-title">{{ _('Pilot-owner maintenance (ML.A.803)') }}</h2>
+          <div class="mb-3 form-check">
+            <input class="form-check-input" type="checkbox" id="pilot_owner_maintenance" name="pilot_owner_maintenance"
+                   {% if decl and decl.pilot_owner_maintenance %}checked{% endif %}>
+            <label class="form-check-label" for="pilot_owner_maintenance">
+              {{ _('Pilot-owner maintenance is performed on this aircraft') }}
+            </label>
+          </div>
+          <div class="row mb-4">
+            <div class="col-6">
+              <label for="pilot_owner_name" class="form-label">{{ _('Pilot-owner name') }}</label>
+              <input type="text" class="form-control" id="pilot_owner_name" name="pilot_owner_name"
+                     value="{{ decl.pilot_owner_name if decl and decl.pilot_owner_name else '' }}">
+            </div>
+            <div class="col-6">
+              <label for="pilot_owner_licence_number" class="form-label">{{ _('Licence number') }}</label>
+              <input type="text" class="form-control" id="pilot_owner_licence_number" name="pilot_owner_licence_number"
+                     value="{{ decl.pilot_owner_licence_number if decl and decl.pilot_owner_licence_number else '' }}">
+            </div>
+          </div>
+
+          <h2 class="section-title">{{ _('Declaration / approval of the maintenance programme') }}</h2>
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="declaration_type" id="decl_owner"
+                     value="{{ declaration_types.OWNER }}"
+                     {% if not decl or decl.declaration_type == declaration_types.OWNER %}checked{% endif %}>
+              <label class="form-check-label" for="decl_owner">{{ _('Declaration by the owner') }}</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="declaration_type" id="decl_camo"
+                     value="{{ declaration_types.CAMO_CAO }}"
+                     {% if decl and decl.declaration_type == declaration_types.CAMO_CAO %}checked{% endif %}>
+              <label class="form-check-label" for="decl_camo">{{ _('Approval by a contracted CAMO/CAO') }}</label>
+            </div>
+          </div>
+          <div class="mb-4">
+            <label for="camo_cao_approval_reference" class="form-label">{{ _('CAMO/CAO approval reference') }} <span class="text-muted small">({{ _('optional') }})</span></label>
+            <input type="text" class="form-control" id="camo_cao_approval_reference" name="camo_cao_approval_reference"
+                   value="{{ decl.camo_cao_approval_reference if decl and decl.camo_cao_approval_reference else '' }}">
+          </div>
+
+          <h2 class="section-title">{{ _('Certification statement') }}</h2>
+          <div class="mb-3">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="certifying_party_kind" id="cert_owner"
+                     value="{{ certifying_party_kinds.OWNER_LESSEE_OPERATOR }}"
+                     {% if not decl or decl.certifying_party_kind == certifying_party_kinds.OWNER_LESSEE_OPERATOR %}checked{% endif %}>
+              <label class="form-check-label" for="cert_owner">{{ _('Owner / lessee / operator') }}</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="certifying_party_kind" id="cert_camo"
+                     value="{{ certifying_party_kinds.CAMO_CAO }}"
+                     {% if decl and decl.certifying_party_kind == certifying_party_kinds.CAMO_CAO %}checked{% endif %}>
+              <label class="form-check-label" for="cert_camo">{{ _('CAMO/CAO') }}</label>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="certifying_party_name" class="form-label">{{ _('Name') }}</label>
+            <input type="text" class="form-control" id="certifying_party_name" name="certifying_party_name"
+                   value="{{ decl.certifying_party_name if decl and decl.certifying_party_name else '' }}">
+          </div>
+          <div class="mb-3">
+            <label for="certifying_party_address" class="form-label">{{ _('Address') }}</label>
+            <textarea class="form-control" id="certifying_party_address" name="certifying_party_address" rows="2">{{ decl.certifying_party_address if decl and decl.certifying_party_address else '' }}</textarea>
+          </div>
+          <div class="row mb-4">
+            <div class="col-6">
+              <label for="certifying_party_phone" class="form-label">{{ _('Telephone') }}</label>
+              <input type="text" class="form-control" id="certifying_party_phone" name="certifying_party_phone"
+                     value="{{ decl.certifying_party_phone if decl and decl.certifying_party_phone else '' }}">
+            </div>
+            <div class="col-6">
+              <label for="certifying_party_email" class="form-label">{{ _('Email') }}</label>
+              <input type="email" class="form-control" id="certifying_party_email" name="certifying_party_email"
+                     value="{{ decl.certifying_party_email if decl and decl.certifying_party_email else '' }}">
+            </div>
+          </div>
+
+          <h2 class="section-title">{{ _('Appendix D & revision') }}</h2>
+          <div class="mb-3">
+            <label for="appendix_d_notes" class="form-label">{{ _('Additional information (Appendix D)') }} <span class="text-muted small">({{ _('optional') }})</span></label>
+            <textarea class="form-control" id="appendix_d_notes" name="appendix_d_notes" rows="3">{{ decl.appendix_d_notes if decl and decl.appendix_d_notes else '' }}</textarea>
+          </div>
+          <div class="row mb-4">
+            <div class="col-4">
+              <label for="revision_number" class="form-label">{{ _('Revision number') }}</label>
+              <input type="text" class="form-control" id="revision_number" name="revision_number"
+                     value="{{ decl.revision_number if decl and decl.revision_number else '' }}" placeholder="0">
+            </div>
+            <div class="col-4">
+              <label for="revision_content" class="form-label">{{ _('Revision content') }}</label>
+              <input type="text" class="form-control" id="revision_content" name="revision_content"
+                     value="{{ decl.revision_content if decl and decl.revision_content else '' }}" placeholder="{{ _('Initial release') }}">
+            </div>
+            <div class="col-4">
+              <label for="revision_date" class="form-label">{{ _('Revision date') }}</label>
+              <input type="date" class="form-control" id="revision_date" name="revision_date"
+                     value="{{ decl.revision_date.isoformat() if decl and decl.revision_date else '' }}">
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-ac-primary">
+              <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}
+            </button>
+            <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
+               class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

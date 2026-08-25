@@ -221,6 +221,25 @@ tr.clickable-row { cursor: pointer; }
 .minimums-print-section dd { margin: 0 0 .15rem 0; }
 
 @media print {
-  .navbar, .oh-bottom-nav, footer, .minimums-print-actions { display: none !important; }
+  .navbar, .oh-bottom-nav, footer, .minimums-print-actions, .amp-export-actions { display: none !important; }
   .minimums-print-columns { column-count: 2; }
+  .amp-export-table { break-inside: avoid; }
 }
+
+/* ── AMP export — print-ready EASA Form AMP document (Phase 40) ─────────── */
+.amp-export { max-width: 900px; margin: 0 auto; }
+.amp-export-title { font-size: 1.4rem; text-align: center; margin-bottom: .1rem; }
+.amp-export-subtitle { text-align: center; color: #666; margin-bottom: 1.5rem; }
+.amp-export-table { width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; font-size: .85rem; }
+.amp-export-table th, .amp-export-table td {
+  border: 1px solid #999; padding: .35rem .5rem; text-align: left; vertical-align: top;
+}
+.amp-export-section-row th { background: #e9ecef; font-weight: 700; }
+.amp-export-label { font-weight: 600; width: 30%; }
+.amp-export-yesno { text-align: center; width: 3rem; }
+.amp-export-quote { font-style: italic; }
+.amp-export-signature { height: 2.5rem; }
+.amp-export-appendix-title { font-size: 1.1rem; margin: 1.5rem 0 .5rem; border-bottom: 2px solid #333; padding-bottom: .2rem; }
+.amp-export-revision { font-size: .85rem; color: #555; }
+[data-bs-theme=dark] .amp-export-section-row th { background: #2a2d31; }
+[data-bs-theme=dark] .amp-export-table th, [data-bs-theme=dark] .amp-export-table td { border-color: #4a4d51; }
