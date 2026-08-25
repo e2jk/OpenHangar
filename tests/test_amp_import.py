@@ -14,11 +14,15 @@ from maintenance.amp_import import (  # pyright: ignore[reportMissingImports]
     parse_interval,
     suggest_component_id,
 )
-from models import AmpCategory, ComponentType, HoursBasis  # pyright: ignore[reportMissingImports]
+from models import (  # pyright: ignore[reportMissingImports]
+    AmpCategory,
+    ComponentType,
+    HoursBasis,
+)
 
 
 class _FakeComponent:
-    def __init__(self, id, type, removed_at=None):  # noqa: A002
+    def __init__(self, id, type, removed_at=None):
         self.id = id
         self.type = type
         self.removed_at = removed_at

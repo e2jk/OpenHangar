@@ -456,7 +456,7 @@ class TestNeedsReviewSurfacing:
         _login(app, client)
         resp = client.get("/maintenance?view=by-type")
         assert b"Undecided task" in resp.data
-        assert "Needs review".encode() in resp.data
+        assert b"Needs review" in resp.data
 
     def test_needs_review_trigger_shown_in_chronological_view(self, app, client):
         _, tid = _create_user_and_tenant(app)
@@ -473,4 +473,4 @@ class TestNeedsReviewSurfacing:
         _login(app, client)
         resp = client.get("/maintenance?view=chronological")
         assert b"Undecided chron task" in resp.data
-        assert "Needs review".encode() in resp.data
+        assert b"Needs review" in resp.data

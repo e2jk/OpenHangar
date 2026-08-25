@@ -50,7 +50,7 @@ class HeaderLocation:
     col_index: dict[str, int]  # canonical key -> column index
 
 
-def find_header(wb: "openpyxl.Workbook") -> HeaderLocation:
+def find_header(wb: openpyxl.Workbook) -> HeaderLocation:
     """Scan every sheet's first _MAX_HEADER_SCAN_ROWS rows for one whose
     cells include at least 'Task description' and 'Interval' (matched
     case/whitespace-insensitively); returns the first match found, sheets
@@ -194,9 +194,7 @@ def _text_or_none(v: Any) -> str | None:
     return s or None
 
 
-def parse_amp_rows(
-    wb: "openpyxl.Workbook", components: list[Any]
-) -> list[ParsedAmpRow]:
+def parse_amp_rows(wb: openpyxl.Workbook, components: list[Any]) -> list[ParsedAmpRow]:
     """Parse every data row of the located header's sheet. A row with no
     task description is a blank/trailing row and is silently skipped (not
     counted, not an error) — everything else always produces a row, even
@@ -267,8 +265,8 @@ def compute_due_fields(
     hours_basis: str,
     current_engine_hours: float | None,
     current_flight_hours: float | None,
-    today: "_date | None" = None,
-) -> tuple[float | None, "_date | None"]:
+    today: _date | None = None,
+) -> tuple[float | None, _date | None]:
     """Initial due_engine_hours/due_date for a freshly-imported trigger:
     the current reading plus the interval (hours side needs a current
     reading to anchor to; with none available yet, that side is simply
