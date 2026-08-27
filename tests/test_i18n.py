@@ -332,6 +332,47 @@ class TestTranslationCompleteness:
         )
 
 
+# ── Hand-rolled plural shortcuts ──────────────────────────────────────────────
+
+# Source strings that legitimately contain a literal "(s)" and are NOT a
+# missed ngettext(): verbatim field labels copied from an official regulatory
+# form (EASA Part-ML AMP declaration, AMC2 ML.A.302), not text driven by a
+# runtime count.
+_ALLOWED_PAREN_S_MSGIDS = frozenset(
+    {
+        "Registration(s)",
+        "Serial no(s)",
+    }
+)
+
+
+class TestNoHandRolledPlurals:
+    def test_no_unapproved_parenthetical_s_in_source_strings(self):
+        # A "(s)" suffix (e.g. "item(s)") bakes a single fixed string that
+        # can't be correctly pluralized in languages where the accompanying
+        # word must actually change with count (French "signalé"/"signalés",
+        # etc.) — it silently renders wrong instead of failing loudly. Use
+        # ngettext() with distinct singular/plural forms instead. Any msgid
+        # here is checked once since English source text is identical across
+        # every locale's .po file.
+        _lang, po_path = _po_files()[0]
+        po = polib.pofile(po_path)
+        offenders = [
+            e.msgid
+            for e in po
+            if ("(s)" in e.msgid or ("(s)" in (e.msgid_plural or "")))
+            and e.msgid not in _ALLOWED_PAREN_S_MSGIDS
+        ]
+        assert offenders == [], (
+            f'{len(offenders)} source string(s) use a hand-rolled "(s)" plural '
+            "shortcut instead of ngettext() — use flask_babel.ngettext with "
+            "distinct singular/plural forms, or add a documented exception to "
+            "_ALLOWED_PAREN_S_MSGIDS in tests/test_i18n.py if it's genuinely "
+            "fixed text (e.g. a verbatim regulatory form label):\n"
+            + "\n".join(f"  {m!r}" for m in offenders[:10])
+        )
+
+
 # ── Theme switcher ────────────────────────────────────────────────────────────
 
 

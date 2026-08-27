@@ -21,7 +21,7 @@
 
       <div class="row g-3 mb-3">
         <div class="col-md-4">
-          <label class="form-label" for="license_number">{{ _('Licence Number') }}</label>
+          <label class="form-label" for="license_number">{{ _('Licence number') }}</label>
           <input type="text" class="form-control" id="license_number" name="license_number"
                  value="{{ profile.license_number or '' }}" placeholder="e.g. BE.PPL.A.12345">
         </div>
@@ -142,7 +142,7 @@
       </table>
     </div>
     <p class="form-text mt-1">
-      {{ _('EASA FCL.060: 3 landings (day or night) in the last 90 days to carry passengers; 1 night landing in the last 90 days to carry passengers at night. Both per ICAO aircraft type.') }}
+      {{ _('%(ref)s: 3 landings (day or night) in the last 90 days to carry passengers; 1 night landing in the last 90 days to carry passengers at night. Both per ICAO aircraft type.', ref='EASA FCL.060') }}
     </p>
   </div>
   {% endif %}
