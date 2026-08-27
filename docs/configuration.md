@@ -57,7 +57,6 @@ documented inline in [`docker/.env.example`](../docker/.env.example).
 | [`OPENHANGAR_AIRWORTHINESS_EASA_SYNC_HOUR`](#openhangar_airworthiness_easa_sync_hour) | No | *(random 1–5)* | [Airworthiness](#airworthiness) |
 | [`OPENHANGAR_GATUS_ENDPOINT_URL`](#openhangar_gatus_endpoint_url) | No | — | [Monitoring](#monitoring) |
 | [`OPENHANGAR_GATUS_AUTH_HEADER`](#openhangar_gatus_auth_header) | No | — | [Monitoring](#monitoring) |
-| [`OPENHANGAR_DEMO_SITE_URL`](#openhangar_demo_site_url) | No | — | [Demo mode](#demo-mode) |
 | [`OPENHANGAR_DEMO_NEXT_WIPE_UTC`](#openhangar_demo_next_wipe_utc) | No | — | [Demo mode](#demo-mode) |
 | [`OPENHANGAR_DEMO_SLOT_COUNT`](#openhangar_demo_slot_count) | No | `20` | [Demo mode](#demo-mode) |
 | [`OPENHANGAR_DEMO_BUSY_WINDOW_MINUTES`](#openhangar_demo_busy_window_minutes) | No | `60` | [Demo mode](#demo-mode) |
@@ -622,13 +621,6 @@ OPENHANGAR_GATUS_ENDPOINT_URL=https://uptime.example.com/endpoints/openhangar_op
 ## Demo mode
 
 These variables are only meaningful when `OPENHANGAR_ENV=demo`.
-
-### `OPENHANGAR_DEMO_SITE_URL`
-
-Public URL of the demo instance. Used by the static GitHub Pages landing page
-to render a "Try the demo" button.
-
-- Example: `https://openhangar-demo.example.com/`
 
 ### `OPENHANGAR_DEMO_NEXT_WIPE_UTC`
 
