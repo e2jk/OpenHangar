@@ -20,6 +20,16 @@
 # Requires GH_TOKEN and GH_REPO in the environment, same as any other gh
 # CLI invocation — safe to run locally with a personal token to debug.
 #
+# A PR labelled `no-auto-rebase` is skipped entirely, regardless of
+# mergeStateStatus or attempt count. Use this for a bot PR that's stale for
+# a known, non-staleness reason -- e.g. a dependency bump that conflicts
+# with another package's pin until *that* package releases a compatible
+# version. Rebasing such a PR every 6h just burns its 3 attempts without
+# ever fixing the actual problem, and then it goes silent (see
+# MAX_ATTEMPTS below) instead of surfacing that it's blocked on something
+# external. Add the label by hand once the reason is understood; remove it
+# once the blocking condition is resolved so normal auto-rebase resumes.
+#
 # Env vars (all optional, defaults match the workflow):
 #   MAX_ATTEMPTS  max rebase nudges per PR before leaving it for a human (default 3)
 #   MARKER        HTML comment used to count this script's own past comments
@@ -40,7 +50,7 @@ is_renovate() {
 }
 
 echo "Listing open PRs against main..."
-prs_json=$(gh pr list --state open --base main --limit 100 --json number,author,mergeStateStatus)
+prs_json=$(gh pr list --state open --base main --limit 100 --json number,author,mergeStateStatus,labels)
 pr_count=$(echo "$prs_json" | jq 'length')
 echo "Found $pr_count open PR(s) targeting main."
 echo
@@ -49,6 +59,7 @@ echo "$prs_json" | jq -c '.[]' | while read -r pr; do
   number=$(echo "$pr" | jq -r '.number')
   login=$(echo "$pr" | jq -r '.author.login')
   status=$(echo "$pr" | jq -r '.mergeStateStatus')
+  has_skip_label=$(echo "$pr" | jq -r '[.labels[].name] | any(. == "no-auto-rebase")')
 
   if is_dependabot "$login"; then
     bot="dependabot"
@@ -56,6 +67,11 @@ echo "$prs_json" | jq -c '.[]' | while read -r pr; do
     bot="renovate"
   else
     echo "PR #$number: author '$login' does not match a known bot login — skipping."
+    continue
+  fi
+
+  if [ "$has_skip_label" = "true" ]; then
+    echo "PR #$number ($bot): labelled 'no-auto-rebase' — skipping."
     continue
   fi
 
