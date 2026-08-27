@@ -1228,6 +1228,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
           # Compute the previous tag ourselves rather than letting
           # generate-notes auto-detect it: its undocumented heuristic picked
@@ -1261,6 +1264,22 @@ jobs:
             --method POST \
             "${NOTES_ARGS[@]}" \
             --jq '.body' > /tmp/auto-notes.md
+
+          # generate-notes only reports already-merged PRs, and the PR that
+          # triggered this very run is still open at this exact moment —
+          # publish happens before merge, by design (see the version job's
+          # skip condition) — so it's never included on its own, on any
+          # release. Add its own line manually, in the same style as the
+          # rest of the list, right before the "Full Changelog" footer.
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            SELF_LINE="* ${PR_TITLE} by @${PR_AUTHOR} in ${PR_URL}"
+            awk -v line="$SELF_LINE" '
+              /^\*\*Full Changelog\*\*/ && !inserted { print line; inserted=1 }
+              { print }
+              END { if (!inserted) print line }
+            ' /tmp/auto-notes.md > /tmp/auto-notes-with-self.md
+            mv /tmp/auto-notes-with-self.md /tmp/auto-notes.md
+          fi
           {
             # shellcheck disable=SC2016  # backticks are literal markdown code-fences, not command substitution
             printf '## Docker Image\n\n```\ndocker pull ghcr.io/e2jk/openhangar:%s\n```\n\n' "${VERSION}"
