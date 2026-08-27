@@ -32,6 +32,11 @@ name: Auto-rebase stale bot PRs
 # marker comments already on the PR) so a PR that's stale for a real
 # reason — an actual conflicting change, not just a race — doesn't get
 # retried forever instead of surfacing for a human to look at.
+#
+# Add the `no-auto-rebase` label to a PR to skip it entirely (e.g. a
+# version bump that's known to conflict with another package's pin until
+# that package itself releases a compatible version — see the script for
+# details). Remove the label once the blocking condition is resolved.
 
 on:
   push:
@@ -60,7 +65,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Ensure the `rebase` label exists
+      - name: Ensure the `rebase` and `no-auto-rebase` labels exist
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
@@ -68,6 +73,10 @@ jobs:
           gh label create rebase \
             --color ededed \
             --description "Ask Renovate to rebase this PR" \
+            2>/dev/null || true
+          gh label create no-auto-rebase \
+            --color d93f0b \
+            --description "Blocked on something external (e.g. an upstream release) -- don't auto-rebase" \
             2>/dev/null || true
 
       - name: Rebase stale Dependabot/Renovate PRs (bounded retries)
