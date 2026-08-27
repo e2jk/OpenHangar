@@ -338,25 +338,6 @@ class TestDemoContextProcessor:
         _, context = demo_captured_templates[0]
         assert context["demo_next_wipe_utc"] is None
 
-    def test_demo_site_url_from_env(self, app, client, captured_templates):
-        old = os.environ.get("OPENHANGAR_DEMO_SITE_URL")
-        os.environ["OPENHANGAR_DEMO_SITE_URL"] = "https://demo.openhangar.aero"
-        try:
-            client.get("/")
-            _, context = captured_templates[0]
-            assert context["demo_site_url"] == "https://demo.openhangar.aero"
-        finally:
-            if old is None:
-                os.environ.pop("OPENHANGAR_DEMO_SITE_URL", None)
-            else:
-                os.environ["OPENHANGAR_DEMO_SITE_URL"] = old
-
-    def test_demo_site_url_none_when_not_set(self, app, client, captured_templates):
-        os.environ.pop("OPENHANGAR_DEMO_SITE_URL", None)
-        client.get("/")
-        _, context = captured_templates[0]
-        assert context["demo_site_url"] is None
-
     def test_nav_update_available_suppressed_in_demo(
         self, demo_app, demo_client, demo_captured_templates
     ):
@@ -402,29 +383,16 @@ class TestDemoNextWipe:
         assert response.status_code == 404
 
 
-# ── Landing page OPENHANGAR_DEMO_SITE_URL button logic ───────────────────────────────────
+# ── Landing page CTA (non-demo instance) ──────────────────────────────────────
 
 
-class TestLandingDemoSiteUrl:
-    def test_get_started_shown_without_demo_site_url(self, client):
-        os.environ.pop("OPENHANGAR_DEMO_SITE_URL", None)
+class TestLandingGetStarted:
+    def test_get_started_shown_on_non_demo_landing_page(self, client):
+        # A non-demo instance never shows the "Try the demo" role picker —
+        # that only exists on the demo site itself (is_demo), not as an
+        # external link out to someone else's demo from a self-hosted
+        # instance's own landing page.
         assert b"Get Started" in client.get("/").data
-
-    def test_try_demo_link_shown_with_demo_site_url(self, app, client):
-        old = os.environ.get("OPENHANGAR_DEMO_SITE_URL")
-        os.environ["OPENHANGAR_DEMO_SITE_URL"] = "https://demo.openhangar.aero"
-        try:
-            data = client.get("/").data
-            assert b'value="owner"' in data
-            assert b'value="pilot"' in data
-            assert b'value="sole_pilot"' in data
-            assert b'value="sole_operator"' in data
-            assert b'value="shared_ownership"' in data
-        finally:
-            if old is None:
-                os.environ.pop("OPENHANGAR_DEMO_SITE_URL", None)
-            else:
-                os.environ["OPENHANGAR_DEMO_SITE_URL"] = old
 
 
 # ── Auth: setup blocked in demo mode ─────────────────────────────────────────

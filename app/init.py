@@ -793,7 +793,6 @@ def create_app() -> Flask:
         demo_next_wipe_utc = (
             os.environ.get("OPENHANGAR_DEMO_NEXT_WIPE_UTC") if is_demo else None
         )
-        demo_site_url = os.environ.get("OPENHANGAR_DEMO_SITE_URL")
         repo_url = os.environ.get(
             "OPENHANGAR_REPO_URL", "https://github.com/e2jk/OpenHangar"
         )
@@ -926,7 +925,6 @@ def create_app() -> Flask:
             "is_demo": is_demo,
             "demo_next_wipe_utc": demo_next_wipe_utc,
             "demo_display_id": demo_display_id,
-            "demo_site_url": demo_site_url,
             "repo_url": repo_url,
             "current_locale": str(_babel_get_locale()),
             "supported_locales": SUPPORTED_LOCALES,
