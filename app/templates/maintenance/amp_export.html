@@ -18,7 +18,9 @@
   <div class="amp-export">
 
     <h1 class="amp-export-title">{{ _('Part-ML Aircraft Maintenance Programme (AMP)') }}</h1>
-    <p class="amp-export-subtitle">{{ _('EASA Form AMP — AMC2 ML.A.302') }}</p>
+    {# Regulatory form citation — not user-facing prose, deliberately not
+       translatable so a translator can't alter the form/reference IDs. #}
+    <p class="amp-export-subtitle">EASA Form AMP — AMC2 ML.A.302</p>
 
     {# ── Block 1: Aircraft identification ──────────────────────────────── #}
     <table class="amp-export-table">
@@ -108,7 +110,7 @@
 
     {# ── Block 6: Pilot-owner maintenance ───────────────────────────────── #}
     <table class="amp-export-table">
-      <tr class="amp-export-section-row"><th colspan="2">{{ _('6. Pilot-owner maintenance (ML.A.803)') }}</th></tr>
+      <tr class="amp-export-section-row"><th colspan="2">{{ _('6. Pilot-owner maintenance (%(ref)s)', ref='ML.A.803') }}</th></tr>
       <tr>
         <td>{{ '☑' if decl.pilot_owner_maintenance else '☐' }} {{ _('Yes') }}</td>
         <td>{{ '☑' if not decl.pilot_owner_maintenance else '☐' }} {{ _('No') }}</td>

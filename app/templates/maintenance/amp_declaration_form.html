@@ -13,7 +13,7 @@
       </h1>
       <p class="page-sub"><span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ aircraft.make }} {{ aircraft.model }}</p>
       <p class="text-muted oh-fs-09 mb-0">
-        {{ _('These fields fill in the EASA Form AMP (AMC2 ML.A.302) blocks that cannot be derived from the aircraft, its components, or its maintenance items. Block 4/5 and Appendices B/C are generated automatically from the maintenance items themselves.') }}
+        {{ _('These fields fill in the %(form)s blocks that cannot be derived from the aircraft, its components, or its maintenance items. Block 4/5 and Appendices B/C are generated automatically from the maintenance items themselves.', form='EASA Form AMP (AMC2 ML.A.302)') }}
       </p>
     </div>
     <a href="{{ url_for('maintenance.list_triggers', aircraft_id=aircraft.id) }}"
@@ -49,7 +49,7 @@
           <div class="mb-4">
             <label for="mip_details" class="form-label">{{ _('MIP details (Appendix A)') }} <span class="text-muted small">({{ _('optional') }})</span></label>
             <textarea class="form-control" id="mip_details" name="mip_details" rows="2"
-                      placeholder="{{ _('Only needed if a MIP other than the latest AMC1 ML.A.302(d) revision is used') }}">{{ decl.mip_details if decl and decl.mip_details else '' }}</textarea>
+                      placeholder="{{ _('Only needed if a MIP other than the latest %(ref)s revision is used', ref='AMC1 ML.A.302(d)') }}">{{ decl.mip_details if decl and decl.mip_details else '' }}</textarea>
           </div>
 
           <h2 class="section-title">{{ _('DAH ICA references') }}</h2>
@@ -70,7 +70,7 @@
                    value="{{ decl.dah_ica_propeller_ref if decl and decl.dah_ica_propeller_ref else '' }}">
           </div>
 
-          <h2 class="section-title">{{ _('Pilot-owner maintenance (ML.A.803)') }}</h2>
+          <h2 class="section-title">{{ _('Pilot-owner maintenance (%(ref)s)', ref='ML.A.803') }}</h2>
           <div class="mb-3 form-check">
             <input class="form-check-input" type="checkbox" id="pilot_owner_maintenance" name="pilot_owner_maintenance"
                    {% if decl and decl.pilot_owner_maintenance %}checked{% endif %}>

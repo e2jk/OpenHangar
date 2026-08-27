@@ -19,6 +19,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
 )
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+from flask_babel import ngettext  # pyright: ignore[reportMissingImports]
 from models import (
     Aircraft,
     AmpBasis,
@@ -835,11 +836,19 @@ def import_amp_commit(aircraft_id: int) -> ResponseReturnValue:
         row_count=batch.row_count,
     )
 
+    review_phrase = ngettext(
+        "%(n)s flagged for review",
+        "%(n)s flagged for review",
+        batch.needs_review_count,
+        n=batch.needs_review_count,
+    )
     flash(
-        _(
-            "Imported %(count)d maintenance item(s) — %(review)d flagged for review.",
+        ngettext(
+            "Imported %(count)d maintenance item — %(review_phrase)s.",
+            "Imported %(count)d maintenance items — %(review_phrase)s.",
+            batch.row_count,
             count=batch.row_count,
-            review=batch.needs_review_count,
+            review_phrase=review_phrase,
         ),
         "success",
     )
@@ -879,7 +888,12 @@ def import_amp_rollback(aircraft_id: int, batch_id: int) -> ResponseReturnValue:
     db.session.commit()
 
     flash(
-        _("Import rolled back: %(count)d item(s) removed.", count=row_count),
+        ngettext(
+            "Import rolled back: %(count)d item removed.",
+            "Import rolled back: %(count)d items removed.",
+            row_count,
+            count=row_count,
+        ),
         "success",
     )
     return redirect(url_for("maintenance.import_amp_history", aircraft_id=ac.id))
