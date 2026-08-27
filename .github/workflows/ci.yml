@@ -225,21 +225,6 @@ jobs:
           curl -sf "https://img.shields.io/badge/fuzz%20harnesses-${harness_count}-blue" \
             -o htmlcov-fuzz/badge.svg
 
-      - name: Set up Node.js (for vendor assets)
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '24'
-          cache: 'npm'
-          cache-dependency-path: requirements/package-lock.json
-
-      - name: Install vendor assets for Pages
-        # --host-npm: use the actions/setup-node install above (cached by
-        # cache-dependency-path) instead of install_vendor_assets.py's
-        # Docker-by-default path — pulling node:*-alpine here would both
-        # bypass that cache and duplicate the setup-node step above for no
-        # benefit, since npm is already set up on the runner.
-        run: python3 scripts/install_vendor_assets.py --host-npm
-
       - name: Assemble Pages site
         run: |
           mkdir -p _site/coverage
@@ -252,43 +237,21 @@ jobs:
             mkdir -p _site/fuzz-coverage
             cp -r htmlcov-fuzz/. _site/fuzz-coverage/
           fi
-          cp -r app/static _site/static
-          # Extract repo URL (first GitHub URL in README) and demo site URL
-          OPENHANGAR_REPO_URL=$(grep -oP 'https://github\.com/[^/]+/[^/)]+' README.md | head -1)
-          OPENHANGAR_DEMO_SITE_URL=$(grep 'Try the demo' README.md | grep -oP 'https://[^)]+' | tail -1)
-          if [ -z "$OPENHANGAR_DEMO_SITE_URL" ]; then
-            echo "WARNING: No demo site URL found in README.md — demo button will not appear on GitHub Pages."
+          # The site root used to be a static snapshot of the app's own
+          # landing page (rendered via a throwaway Flask app, with a "try
+          # the demo" button pointing at the live demo site). Now that the
+          # demo site itself is the real landing page — linked from
+          # README's own "Try the demo" badge — the snapshot is redundant;
+          # the root just redirects there instead (template in
+          # .github/pages/index.html). /coverage/ and /fuzz-coverage/ above
+          # are untouched and still served normally.
+          DEMO_URL=$(grep 'Try the demo' README.md | grep -oP 'https://[^)]+' | tail -1)
+          if [ -z "$DEMO_URL" ]; then
+            DEMO_URL=$(grep -oP 'https://github\.com/[^/]+/[^/)]+' README.md | head -1)
+            echo "WARNING: No demo site URL found in README.md — redirecting to the repo instead."
           fi
-          OPENHANGAR_DATABASE_URL=sqlite:///:memory: OPENHANGAR_SECRET_KEY=ci-pages-not-for-production-use-only OPENHANGAR_REPO_URL="$OPENHANGAR_REPO_URL" OPENHANGAR_DEMO_SITE_URL="$OPENHANGAR_DEMO_SITE_URL" \
-            .venv/bin/python - <<'PYEOF'
-          import sys
-          sys.path.insert(0, 'app')
-          from init import create_app
-          app = create_app()
-          app.config['TESTING'] = True
-          with app.app_context():
-              from models import db
-              db.create_all()
-          import re
-          with app.test_client() as c:
-              html = c.get('/').data.decode('utf-8')
-          # Rewrite Flask absolute static paths to relative for GitHub Pages
-          html = html.replace('href="/static/', 'href="static/')
-          html = html.replace('src="/static/', 'src="static/')
-          # The static page is not a PWA — SW registration would fail on GitHub Pages
-          # (served from a subdirectory, so /sw.js resolves to the wrong origin).
-          # Strip pwa.js so the browser never attempts SW registration.
-          html = re.sub(r'<script[^>]+/pwa\.js"[^>]*></script>', '', html)
-          # Remove hx-boost from <body> so demo form POSTs go directly to the demo
-          # site as a normal cross-origin form submission instead of being
-          # intercepted by HTMX (which rejects cross-origin targets with invalidPath).
-          html = html.replace(' hx-boost="true"', '')
-          # manifest.json is served dynamically by Flask; there is no manifest at
-          # the GitHub Pages static path, so strip that <link> to avoid 404s.
-          html = re.sub(r'<link rel="manifest"[^>]+>', '', html)
-          with open('_site/index.html', 'w') as f:
-              f.write(html)
-          PYEOF
+          sed "s|__DEMO_URL__|${DEMO_URL}|g" \
+            .github/pages/index.html > _site/index.html
 
       - name: Upload site content artifact
         # Mirrors publish_now's own condition in the version job below
@@ -355,7 +318,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: write  # push the version-reservation tag (publish_now only)
+      contents: write      # push the version-reservation tag (publish_now only)
+      pull-requests: read  # gh pr view, to confirm auto-merge is armed before publishing
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     outputs:
@@ -371,6 +335,9 @@ jobs:
         id: compute
         env:
           HEAD_REF: ${{ github.head_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           PUBLISH_NOW=false
           case "${GITHUB_EVENT_NAME}" in
@@ -381,7 +348,29 @@ jobs:
               ;;
             pull_request)
               case "${HEAD_REF}" in
-                ship|dependabot/*|renovate/*) PUBLISH_NOW=true ;;
+                ship|dependabot/*|renovate/*)
+                  # Branch name alone isn't a guarantee this PR ever reaches
+                  # main: ship's auto-merge depends on a PAT that can expire,
+                  # and a bot PR's auto-merge can be off for any reason (a
+                  # human toggled it, a policy excludes this update, ...).
+                  # There is no rebuild on main to catch a mistake here (see
+                  # this job's own skip condition above) -- this run is the
+                  # only build+test+publish that ever happens for this
+                  # content, so only publish when GitHub's native auto-merge
+                  # is actually armed on this specific PR. A false negative
+                  # here (auto-merge armed a few seconds after this check,
+                  # e.g. racing dependabot-automerge.yml) just means this
+                  # change merges without a release -- self-corrects on the
+                  # next one. A false positive -- publishing content that
+                  # never merges -- is the failure mode this exists to rule
+                  # out, and is far worse.
+                  AUTO_MERGE_ARMED=$(gh pr view "${PR_NUMBER}" --json autoMergeRequest --jq '.autoMergeRequest != null')
+                  if [ "${AUTO_MERGE_ARMED}" = "true" ]; then
+                    PUBLISH_NOW=true
+                  else
+                    echo "Auto-merge is not armed on this PR — not publishing."
+                  fi
+                  ;;
               esac
               ;;
           esac
