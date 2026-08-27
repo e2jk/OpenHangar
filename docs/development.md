@@ -711,6 +711,25 @@ a change:
   `ship` is deleted from the remote automatically after each merge (repo-wide
   `delete_branch_on_merge`) and simply recreated on the next push.
 
+### Bot dependency-update PRs (Dependabot/Renovate)
+
+The same ruleset problem also hits Dependabot/Renovate PRs: as soon as any
+PR merges to `main`, every other open PR falls behind and needs a rebase
+before it can merge, even if its own checks already passed.
+[`auto-rebase-stale-bot-prs.yml`](../.github/workflows/auto-rebase-stale-bot-prs.yml)
+nudges each stale bot PR to rebase automatically (via its own
+API-friendly path — a `@dependabot rebase` comment, or the `rebase` label
+for Renovate, which has no comment command), capped at 3 attempts per PR
+so a PR that's stale for a real reason — an actual conflict, not just the
+ruleset cascade — surfaces for a human instead of being retried forever.
+
+If a bot PR can't be fixed by rebasing at all — e.g. a version bump that
+conflicts with another package's pin until *that* package releases a
+compatible version — add the `no-auto-rebase` label. The workflow skips
+labelled PRs entirely, so it doesn't burn its 3 attempts on something
+rebasing can never fix. Remove the label once the blocking condition is
+resolved.
+
 ---
 
 ## Publishing a specific version (e.g. v1.0.0)
