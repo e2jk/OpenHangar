@@ -318,7 +318,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: write  # push the version-reservation tag (publish_now only)
+      contents: write      # push the version-reservation tag (publish_now only)
+      pull-requests: read  # gh pr view, to confirm auto-merge is armed before publishing
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     outputs:
@@ -334,6 +335,9 @@ jobs:
         id: compute
         env:
           HEAD_REF: ${{ github.head_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           PUBLISH_NOW=false
           case "${GITHUB_EVENT_NAME}" in
@@ -344,7 +348,29 @@ jobs:
               ;;
             pull_request)
               case "${HEAD_REF}" in
-                ship|dependabot/*|renovate/*) PUBLISH_NOW=true ;;
+                ship|dependabot/*|renovate/*)
+                  # Branch name alone isn't a guarantee this PR ever reaches
+                  # main: ship's auto-merge depends on a PAT that can expire,
+                  # and a bot PR's auto-merge can be off for any reason (a
+                  # human toggled it, a policy excludes this update, ...).
+                  # There is no rebuild on main to catch a mistake here (see
+                  # this job's own skip condition above) -- this run is the
+                  # only build+test+publish that ever happens for this
+                  # content, so only publish when GitHub's native auto-merge
+                  # is actually armed on this specific PR. A false negative
+                  # here (auto-merge armed a few seconds after this check,
+                  # e.g. racing dependabot-automerge.yml) just means this
+                  # change merges without a release -- self-corrects on the
+                  # next one. A false positive -- publishing content that
+                  # never merges -- is the failure mode this exists to rule
+                  # out, and is far worse.
+                  AUTO_MERGE_ARMED=$(gh pr view "${PR_NUMBER}" --json autoMergeRequest --jq '.autoMergeRequest != null')
+                  if [ "${AUTO_MERGE_ARMED}" = "true" ]; then
+                    PUBLISH_NOW=true
+                  else
+                    echo "Auto-merge is not armed on this PR — not publishing."
+                  fi
+                  ;;
               esac
               ;;
           esac

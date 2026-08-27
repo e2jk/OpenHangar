@@ -7,9 +7,6 @@
   "platformAutomerge": true,
   "automergeStrategy": "rebase",
   "rebaseWhen": "conflicted",
-  "major": {
-    "automerge": false
-  },
   "dependencyDashboard": false,
   "pip_requirements": {
     "fileMatch": ["(^|/)requirements/.+\\.txt$"]
