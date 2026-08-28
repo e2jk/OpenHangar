@@ -73,6 +73,13 @@ jobs:
           cache: 'pip'
           cache-dependency-path: requirements/ci.txt
 
+      # weasyprint (AMP PDF export) dlopen's pango via cffi at runtime — no
+      # compiler/dev headers needed, just the shared library. fonts-dejavu-core
+      # matches the font Alpine's production image installs (docker/Dockerfile),
+      # so rendered-text-width assertions behave the same in CI as in prod.
+      - name: Install pango (weasyprint runtime dependency)
+        run: sudo apt-get update -q && sudo apt-get install -y --no-install-recommends libpango-1.0-0 fonts-dejavu-core
+
       - name: Set up venv
         run: |
           python -m venv .venv

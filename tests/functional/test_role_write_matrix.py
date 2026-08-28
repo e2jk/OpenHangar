@@ -125,6 +125,8 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
     "maintenance.delete_trigger": _MAINT_ROLES,
     "maintenance.service_trigger": _MAINT_ROLES,
     "maintenance.edit_amp_declaration": _MAINT_ROLES,
+    "maintenance.add_amp_revision": _MAINT_ROLES,
+    "maintenance.delete_amp_revision": _MAINT_ROLES,
     "maintenance.import_amp_upload": _MAINT_ROLES,
     "maintenance.import_amp_commit": _MAINT_ROLES,
     "maintenance.import_amp_rollback": _MAINT_ROLES,

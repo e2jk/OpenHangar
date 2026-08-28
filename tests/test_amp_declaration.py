@@ -1,5 +1,6 @@
 """Tests for Phase 40: AmpDeclaration model and its edit form."""
 
+import os
 from datetime import date
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
@@ -9,6 +10,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     AmpCertifyingPartyKind,
     AmpDeclaration,
     AmpDeclarationType,
+    AmpRevision,
     Role,
     Tenant,
     TenantUser,
@@ -107,6 +109,8 @@ class TestEditForm:
         r = client.post(
             f"/aircraft/{acid}/amp/edit",
             data={
+                "owner_name": "Planes4U",
+                "owner_address": "Rue Test 1\n5020 Namur",
                 "basis": AmpBasis.DAH_ICA,
                 "dah_ica_airframe_ref": "DOC 1001586 GB",
                 "dah_ica_engine_ref": "OM-02-02",
@@ -119,9 +123,6 @@ class TestEditForm:
                 "certifying_party_name": "Zorg Piloot",
                 "certifying_party_email": "test@example.com",
                 "appendix_d_notes": "See workbook",
-                "revision_number": "0",
-                "revision_content": "Initial release",
-                "revision_date": "2026-08-25",
             },
             follow_redirects=False,
         )
@@ -129,10 +130,11 @@ class TestEditForm:
         with app.app_context():
             decl = db.session.get(AmpDeclaration, acid)
             assert decl is not None
+            assert decl.owner_name == "Planes4U"
+            assert decl.owner_address == "Rue Test 1\n5020 Namur"
             assert decl.dah_ica_airframe_ref == "DOC 1001586 GB"
             assert decl.pilot_owner_maintenance is True
             assert decl.pilot_owner_name == "Emilien"
-            assert decl.revision_date == date(2026, 8, 25)
 
     def test_post_updates_existing_declaration(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
@@ -227,22 +229,6 @@ class TestEditForm:
         assert r.status_code == 200
         assert b"Invalid certifying party" in r.data
 
-    def test_post_rejects_invalid_revision_date(self, app, client):
-        _uid, tid = _create_user_and_tenant(app)
-        acid = _add_aircraft(app, tid)
-        _login(app, client)
-        r = client.post(
-            f"/aircraft/{acid}/amp/edit",
-            data={
-                "basis": AmpBasis.DAH_ICA,
-                "declaration_type": AmpDeclarationType.OWNER,
-                "certifying_party_kind": AmpCertifyingPartyKind.OWNER_LESSEE_OPERATOR,
-                "revision_date": "not-a-date",
-            },
-        )
-        assert r.status_code == 200
-        assert b"Revision date must be" in r.data
-
     def test_post_blank_defaults_to_owner_basis_and_kind(self, app, client):
         """A blank/omitted radio value falls back to the model's own
         default, matching the AircraftBookingSettings precedent."""
@@ -269,3 +255,236 @@ class TestEditForm:
             db.session.delete(ac)
             db.session.commit()
             assert db.session.get(AmpDeclaration, acid) is None
+
+
+class TestRevisionHistory:
+    """Block 10 (AmpRevision) — a one-to-many list, managed via its own
+    add/delete routes rather than as fields on the declaration form."""
+
+    def test_get_shows_no_revisions_message(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/amp/edit")
+        assert b"No revisions recorded yet" in r.data
+
+    def test_add_revision(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/amp/revisions/add",
+            data={
+                "revision_number": "R00",
+                "revision_content": "Initial release",
+                "revision_date": "2026-08-25",
+            },
+            follow_redirects=False,
+        )
+        assert r.status_code == 302
+        with app.app_context():
+            revs = AmpRevision.query.filter_by(aircraft_id=acid).all()
+            assert len(revs) == 1
+            assert revs[0].revision_number == "R00"
+            assert revs[0].revision_content == "Initial release"
+            assert revs[0].revision_date == date(2026, 8, 25)
+
+    def test_add_revision_fingerprints_current_data_when_declaration_exists(
+        self, app, client
+    ):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            db.session.add(AmpDeclaration(aircraft_id=acid))
+            db.session.commit()
+        _login(app, client)
+        client.post(
+            f"/aircraft/{acid}/amp/revisions/add", data={"revision_number": "R00"}
+        )
+        with app.app_context():
+            rev = AmpRevision.query.filter_by(aircraft_id=acid).first()
+            assert rev.content_hash is not None
+
+    def test_add_revision_eagerly_generates_pdf(self, app, client):
+        # The canonical PDF is generated when the revision is declared, not
+        # deferred to the first download — closes the gap where a revision
+        # superseded before ever downloaded has nothing saved, and makes
+        # that first download instant instead of rendering on demand.
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            db.session.add(AmpDeclaration(aircraft_id=acid))
+            db.session.commit()
+        _login(app, client)
+        client.post(
+            f"/aircraft/{acid}/amp/revisions/add", data={"revision_number": "R00"}
+        )
+        with app.app_context():
+            rev = AmpRevision.query.filter_by(aircraft_id=acid).first()
+            assert rev.pdf_path is not None
+            folder = app.config["UPLOAD_FOLDER"]
+            path = os.path.join(folder, rev.pdf_path)
+            assert os.path.exists(path)
+            with open(path, "rb") as f:
+                assert f.read()[:5] == b"%PDF-"
+
+    def test_add_revision_survives_pdf_generation_failure(
+        self, app, client, monkeypatch
+    ):
+        """Covers the defensive except branch around the eager PDF render —
+        a render failure must not block recording the revision itself."""
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            db.session.add(AmpDeclaration(aircraft_id=acid))
+            db.session.commit()
+        _login(app, client)
+
+        import maintenance.routes as maintenance_routes  # pyright: ignore[reportMissingImports]
+
+        def _boom(*_a, **_k):
+            raise RuntimeError("weasyprint boom")
+
+        monkeypatch.setattr(maintenance_routes, "HTML", _boom)
+
+        r = client.post(
+            f"/aircraft/{acid}/amp/revisions/add",
+            data={"revision_number": "R00"},
+            follow_redirects=False,
+        )
+        assert r.status_code == 302
+        with app.app_context():
+            rev = AmpRevision.query.filter_by(aircraft_id=acid).first()
+            assert rev is not None
+            assert rev.content_hash is not None
+            assert rev.pdf_path is None
+
+    def test_add_revision_without_declaration_yet(self, app, client):
+        # AmpRevision is keyed on aircraft_id, not the declaration — adding
+        # a revision before the declaration profile exists must still work.
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/amp/revisions/add",
+            data={"revision_number": "R00"},
+        )
+        assert r.status_code == 302
+        with app.app_context():
+            assert AmpRevision.query.filter_by(aircraft_id=acid).count() == 1
+
+    def test_add_revision_requires_number(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/amp/revisions/add",
+            data={"revision_content": "Missing a number"},
+            follow_redirects=True,
+        )
+        assert b"Revision number is required" in r.data
+        with app.app_context():
+            assert AmpRevision.query.filter_by(aircraft_id=acid).count() == 0
+
+    def test_add_revision_rejects_invalid_date(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/amp/revisions/add",
+            data={"revision_number": "R00", "revision_date": "not-a-date"},
+            follow_redirects=True,
+        )
+        assert b"Revision date must be" in r.data
+
+    def test_add_revision_403_for_viewer(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, role=Role.VIEWER)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/amp/revisions/add", data={"revision_number": "R00"}
+        )
+        assert r.status_code == 403
+
+    def test_add_revision_404_for_other_tenant(self, app, client):
+        _create_user_and_tenant(app)
+        _, other_tid = _create_user_and_tenant(app, email="other@example.com")
+        other_acid = _add_aircraft(app, other_tid, registration="OO-OTH")
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{other_acid}/amp/revisions/add",
+            data={"revision_number": "R00"},
+        )
+        assert r.status_code == 404
+
+    def test_delete_revision(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            rev = AmpRevision(aircraft_id=acid, revision_number="R00")
+            db.session.add(rev)
+            db.session.commit()
+            rev_id = rev.id
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/amp/revisions/{rev_id}/delete", follow_redirects=False
+        )
+        assert r.status_code == 302
+        with app.app_context():
+            assert db.session.get(AmpRevision, rev_id) is None
+
+    def test_delete_revision_tolerates_already_missing_file(self, app, client):
+        # pdf_path pointing at a file that's already gone (e.g. removed by
+        # hand, or a previous delete that didn't fully clean up) must not
+        # crash the request — best-effort cleanup, not a hard requirement.
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            rev = AmpRevision(
+                aircraft_id=acid, revision_number="R00", pdf_path="does_not_exist.pdf"
+            )
+            db.session.add(rev)
+            db.session.commit()
+            rev_id = rev.id
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/amp/revisions/{rev_id}/delete", follow_redirects=False
+        )
+        assert r.status_code == 302
+        with app.app_context():
+            assert db.session.get(AmpRevision, rev_id) is None
+
+    def test_delete_revision_404_for_wrong_aircraft(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        other_acid = _add_aircraft(app, tid, registration="OO-OTH")
+        with app.app_context():
+            rev = AmpRevision(aircraft_id=acid, revision_number="R00")
+            db.session.add(rev)
+            db.session.commit()
+            rev_id = rev.id
+        _login(app, client)
+        r = client.post(f"/aircraft/{other_acid}/amp/revisions/{rev_id}/delete")
+        assert r.status_code == 404
+        with app.app_context():
+            assert db.session.get(AmpRevision, rev_id) is not None
+
+    def test_delete_revision_404_for_missing_revision(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.post(f"/aircraft/{acid}/amp/revisions/999999/delete")
+        assert r.status_code == 404
+
+    def test_deleting_aircraft_cascades_revisions(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            rev = AmpRevision(aircraft_id=acid, revision_number="R00")
+            db.session.add(rev)
+            db.session.commit()
+            rev_id = rev.id
+            ac = db.session.get(Aircraft, acid)
+            db.session.delete(ac)
+            db.session.commit()
+            assert db.session.get(AmpRevision, rev_id) is None

@@ -1881,15 +1881,22 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
   scheduled" rather than silently evaluating as permanently `ok`
 - [x] `AmpDeclaration` model, one-to-one with `Aircraft` (nullable — only aircraft
   using the export feature need one): the EASA Form AMP fields that aren't
-  derivable from `Aircraft`/`Component`/`MaintenanceTrigger` — programme basis
-  (DAH ICA vs. MIP, block 2), DAH ICA references for airframe/engine/propeller
-  (block 3a–3c; balloon fields 3d–3g out of scope, no balloon support elsewhere in
-  OpenHangar), pilot-owner maintenance declaration (name, licence number, block 6),
-  declaration type (owner declaration vs. contracted CAMO/CAO approval + reference,
-  block 7), certifying party name/address/phone/email (block 8), and a lightweight
-  revision number/content/date (not a numbered block in the official form itself,
-  but standard practice — rendered as a document footer/Appendix D note, not a
-  fabricated "block 10")
+  derivable from `Aircraft`/`Component`/`MaintenanceTrigger` — aircraft owner
+  name/address (block 1, optional — falls back to the certifying party below when
+  unset), programme basis (DAH ICA vs. MIP, block 2), DAH ICA references for
+  airframe/engine/propeller (block 3a–3c; balloon fields 3d–3g out of scope, no
+  balloon support elsewhere in OpenHangar), pilot-owner maintenance declaration
+  (name, licence number, block 6), declaration type (owner declaration vs.
+  contracted CAMO/CAO approval + reference, block 7), certifying party
+  name/address/phone/email (block 8), and Appendix D free-text notes
+- [x] `AmpRevision` model, one-to-many with `Aircraft`: block 10 ("Revision
+  control & periodic reviews") — a conventional block real shop-produced AMPs
+  include even though it isn't in the raw AMC/GM regulatory text itself. A real
+  repeating history (rev number/content/date per row), not a single field —
+  confirmed necessary by comparing generated exports against real shop AMPs
+  (OO-CPE's actual document has 3 revision rows). Managed via its own add/delete
+  routes on the AMP declaration edit page, not as fields on that form; export
+  renders rows oldest-first
 - [x] Edit form for `AmpDeclaration` (`/aircraft/<id>/amp/edit`) — a normal
   OpenHangar form, not spreadsheet import: this is ~15 rarely-changed fields, unlike
   the 100+-row task list, so a form is simpler than building a second, narrower
@@ -1957,19 +1964,29 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
 **AMP document export:**
 - [x] "Export AMP" action on the aircraft maintenance page, gated on `AmpDeclaration`
   existing for that aircraft (prompts to fill in the profile form first otherwise)
-- [x] Output format: print-ready HTML (a dedicated template styled to match the
-  official form's block/table layout, with `@media print` rules for clean pagination),
-  not PDF — OpenHangar has no PDF generation pipeline anywhere in the codebase today;
-  every other phase that wanted a PDF (Phase 39's co-owner statements, Phase 38's
-  renter statements) shipped CSV/HTML-only for the same reason. The user prints or
-  "prints to PDF" from the browser, same as any other browser-native document. Revisit
-  as a real PDF export once Phase 46 (Advanced Reporting & Exports) delivers a PDF
-  pipeline for the logbook/cost-report exports it already plans — this phase shouldn't
-  be the one to introduce that dependency
+- [x] Output format: a real, server-rendered PDF via WeasyPrint (Jinja2 HTML+CSS →
+  PDF, `weasyprint.HTML(string=...).write_pdf()`) — not a browser print-to-PDF.
+  WeasyPrint dlopen's pango/cairo via cffi at runtime (no compiler/build-time headers
+  needed), added to `docker/Dockerfile`'s runtime stage (`apk add pango font-dejavu`)
+  and to the CI test job (`libpango-1.0-0`/`fonts-dejavu-core`) so the render is
+  exercised for real, not mocked. Styled after two real shop-produced Part-ML AMPs
+  (black header bars, a merged block-number gutter column, single-answer Yes/No
+  cells) rather than the plain regulatory illustrative table or the official blank
+  EASA/national-CAA template (confirmed via that template's own styling that this
+  visual convention is the maintenance shop's house style, not an EASA requirement —
+  content still follows the AMC2 ML.A.302 block structure). An on-screen HTML preview
+  (`amp_export.html`) and the PDF (`amp_export_pdf.html`, standalone — no app
+  chrome/Bootstrap dependency) render the same shared template partials
+  (`_amp_export_body.html`/`_amp_export_style.html`), so there's one source of truth
+  for the document content, matching the round-trip design principle above. This
+  supersedes the originally-planned "defer to Phase 46" browser-print-only approach —
+  built directly into this phase instead once a working WeasyPrint pipeline was
+  validated end-to-end.
 - [x] Blocks 1–3 rendered from `Aircraft`/`Component`/`AmpDeclaration`: registration,
-  type, serial number, owner identity (block 1); programme basis (block 2); DAH ICA
-  equipment/reference rows for airframe/engine/propeller (block 3a–3c, one row per
-  matching `Component`)
+  type, serial number, owner identity (block 1 — `owner_name`/`owner_address` when
+  set, else falls back to block 8's certifying party); programme basis (block 2);
+  DAH ICA equipment/reference rows for airframe/engine/propeller (block 3a–3c, one
+  row per matching `Component`)
 - [x] Block 4 (additional maintenance requirements Yes/No table): one row per
   `AmpCategory` value, "Yes" when at least one `MaintenanceTrigger` on the aircraft
   has that `category`, "No" otherwise — computed at render time, not stored
@@ -1989,10 +2006,26 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
   ordinary transcription, revisit only if real usage shows it's needed
 - [x] Appendix C: rendered only when at least one `is_alternative_to_ica` trigger
   exists; columns Task description / Reference / `alternative_task_notes`
-- [x] Appendix D: free-text field on `AmpDeclaration` (optional), rendered verbatim if
-  present; the revision number/content/date from `AmpDeclaration` are appended here
-  as a small "Revision history" note, since the official form has no dedicated block
-  for it
+- [x] Appendix D: free-text field on `AmpDeclaration` (optional), rendered verbatim
+  if present
+- [x] Block 10: `AmpRevision` rows for the aircraft, oldest-first, one table row
+  each; empty state (no revisions yet) renders a single em-dash row rather than an
+  empty table
+- [x] Draft detection: `AmpRevision.content_hash` (SHA-256 of the underlying AMP
+  data, computed when the revision is added) is compared against a fresh hash of
+  the current data on every PDF download — a mismatch (or no revision at all) means
+  the live AMP has changed since the latest declared revision, so the download
+  renders as a draft (filename/running-header say "draft", plus a diagonal "DRAFT"
+  watermark on every page) instead of silently claiming to be a now-stale revision.
+  Hashing the underlying data rather than the rendered HTML/PDF deliberately avoids
+  false "drafted" results from a future template tweak or a locale switch
+- [x] Canonical PDF caching: the first non-draft download of a revision is saved to
+  `AmpRevision.pdf_path` under `UPLOAD_FOLDER` (mirrors `Document`'s own file
+  storage) and served byte-for-byte on later downloads instead of re-rendering.
+  Each revision row in the edit page's history list links to its own saved PDF, so
+  an old revision stays re-downloadable after the live AMP has since moved on — a
+  revision that was superseded before ever being downloaded while current has no
+  saved file to fall back to, since there's no field-level history to rebuild one
 - [x] Round-trip note in `docs/maintenance_import.md`: explicitly document that export
   reads the same `category`/`is_alternative_to_ica`/`AmpDeclaration` fields the
   importer writes, so editing triggers in OpenHangar after import changes the next
