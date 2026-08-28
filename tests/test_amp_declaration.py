@@ -1,5 +1,6 @@
 """Tests for Phase 40: AmpDeclaration model and its edit form."""
 
+import os
 from datetime import date
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
@@ -303,6 +304,60 @@ class TestRevisionHistory:
         with app.app_context():
             rev = AmpRevision.query.filter_by(aircraft_id=acid).first()
             assert rev.content_hash is not None
+
+    def test_add_revision_eagerly_generates_pdf(self, app, client):
+        # The canonical PDF is generated when the revision is declared, not
+        # deferred to the first download — closes the gap where a revision
+        # superseded before ever downloaded has nothing saved, and makes
+        # that first download instant instead of rendering on demand.
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            db.session.add(AmpDeclaration(aircraft_id=acid))
+            db.session.commit()
+        _login(app, client)
+        client.post(
+            f"/aircraft/{acid}/amp/revisions/add", data={"revision_number": "R00"}
+        )
+        with app.app_context():
+            rev = AmpRevision.query.filter_by(aircraft_id=acid).first()
+            assert rev.pdf_path is not None
+            folder = app.config["UPLOAD_FOLDER"]
+            path = os.path.join(folder, rev.pdf_path)
+            assert os.path.exists(path)
+            with open(path, "rb") as f:
+                assert f.read()[:5] == b"%PDF-"
+
+    def test_add_revision_survives_pdf_generation_failure(
+        self, app, client, monkeypatch
+    ):
+        """Covers the defensive except branch around the eager PDF render —
+        a render failure must not block recording the revision itself."""
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            db.session.add(AmpDeclaration(aircraft_id=acid))
+            db.session.commit()
+        _login(app, client)
+
+        import maintenance.routes as maintenance_routes  # pyright: ignore[reportMissingImports]
+
+        def _boom(*_a, **_k):
+            raise RuntimeError("weasyprint boom")
+
+        monkeypatch.setattr(maintenance_routes, "HTML", _boom)
+
+        r = client.post(
+            f"/aircraft/{acid}/amp/revisions/add",
+            data={"revision_number": "R00"},
+            follow_redirects=False,
+        )
+        assert r.status_code == 302
+        with app.app_context():
+            rev = AmpRevision.query.filter_by(aircraft_id=acid).first()
+            assert rev is not None
+            assert rev.content_hash is not None
+            assert rev.pdf_path is None
 
     def test_add_revision_without_declaration_yet(self, app, client):
         # AmpRevision is keyed on aircraft_id, not the declaration — adding
