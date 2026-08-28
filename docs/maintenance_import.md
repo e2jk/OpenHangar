@@ -151,14 +151,22 @@ fields rather than a per-item task list.
 ## 6. Exporting
 
 Once the AMP declaration profile is filled in, **Export AMP** on the
-Maintenance page produces a print-ready HTML document matching the official
-form's block/appendix structure — blocks 1–9, plus Appendix B (grouped by
+Maintenance page shows an on-screen preview matching the AMC2 ML.A.302
+block/appendix structure — blocks 1–10, plus Appendix B (grouped by
 category), Appendix C (any items flagged as alternative to the DAH's ICA),
-and Appendix D (free-text notes plus the revision record). Use the page's
-**Print / download as PDF** button to save or print it; OpenHangar doesn't
-generate PDF files directly, so this is the same "print to PDF" your browser
-offers for any other page. Signature lines are left blank — OpenHangar
-doesn't perform the legal act of signing the declaration.
+and Appendix D (free-text notes). The **Download PDF** button on that page
+renders the same content into an actual PDF file (via WeasyPrint, server-side
+— not a browser print-to-PDF), styled after real shop-produced Part-ML AMPs:
+black header bars, a merged block-number gutter column, and a single
+Yes/No answer column, rather than the plain regulatory illustrative table.
+Signature lines are left blank — OpenHangar doesn't perform the legal act
+of signing the declaration.
+
+Block 10 (revision control) currently holds a single revision entry (the
+`revision_number`/`revision_content`/`revision_date` fields on the AMP
+declaration profile) — matching the shop layout's table shape, but not yet
+a repeating multi-row history. Track revisions elsewhere until that's
+extended.
 
 Because export reads the same fields import writes, editing a maintenance
 item's category, reference, or interval in OpenHangar — whether it came

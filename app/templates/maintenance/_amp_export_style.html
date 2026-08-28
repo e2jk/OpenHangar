@@ -1,0 +1,63 @@
+{# Self-contained styling for the AMP export document — shared by the
+   on-screen preview (amp_export.html) and the standalone PDF template
+   (amp_export_pdf.html, which does not extend base.html and so has no
+   Bootstrap/icon-font CSS available). Styled after real shop-produced
+   Part-ML AMPs (black header bars, a merged block-number gutter column,
+   single-answer Yes/No cells) rather than the plain regulatory
+   illustrative table — content still follows the AMC2 ML.A.302 block
+   structure, see docs/maintenance_import.md.
+
+   The @page rules only take effect for paged media (WeasyPrint's PDF
+   render, and a browser's own print-to-PDF of the preview page) — harmless
+   on screen. The running header uses CSS GCPM (position: running() /
+   element() / counter()), which WeasyPrint supports natively. #}
+<style>
+  @page {
+    size: A4;
+    margin: 2cm 1.5cm 2cm 1.5cm;
+    @top-right { content: element(amp-running-header); }
+    @bottom-center {
+      content: "{{ _('Page') }} " counter(page) " / " counter(pages);
+      font-size: 8pt; color: #555;
+    }
+  }
+  #amp-running-header { position: running(amp-running-header); text-align: right; font-size: 8pt; font-weight: 700; }
+  /* Scoped to .amp-export, not `body` — this partial is included both
+     standalone (amp_export_pdf.html, where it IS the whole page) and
+     inside the app shell (amp_export.html, where a `body` rule here would
+     leak onto the real page body/navbar/theme). Each caller handles its
+     own page-level background; this always renders "paper" regardless. */
+  .amp-export {
+    max-width: 900px; margin: 0 auto; padding: 1.5rem;
+    font-family: 'DejaVu Sans', Arial, sans-serif; color: #000; background: #fff;
+  }
+  .amp-export-title { font-size: 1.4rem; text-align: center; margin-bottom: .1rem; font-weight: 700; }
+  .amp-export-subtitle { text-align: center; color: #555; margin-bottom: 1.5rem; }
+  .amp-export-block { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: .82rem; table-layout: fixed; }
+  .amp-export-block th, .amp-export-block td {
+    border: 1px solid #000; padding: .3rem .5rem; text-align: left; vertical-align: top; word-wrap: break-word;
+  }
+  .amp-export-gutter {
+    width: 1.8rem; text-align: center; vertical-align: middle; font-weight: 700; font-size: 1rem;
+  }
+  .amp-export-bar {
+    background: #000; color: #fff; font-weight: 700; text-align: center; padding: .35rem .5rem;
+  }
+  .amp-export-subhead { text-align: center; font-weight: 600; }
+  .amp-export-value { text-align: center; font-weight: 700; }
+  .amp-export-label { font-weight: 600; width: 28%; }
+  .amp-export-answer { text-align: right; font-weight: 700; width: 4rem; white-space: nowrap; }
+  .amp-export-quote { font-style: italic; }
+  .amp-export-signature { height: 2.2rem; }
+  .amp-export-appendix-title { font-size: 1.05rem; margin: 1.5rem 0 .5rem; border-bottom: 2px solid #000; padding-bottom: .2rem; font-weight: 700; }
+  .amp-export-pending-banner {
+    margin-bottom: 1.5rem; padding: .6rem .9rem; border: 1px solid #b45309;
+    background: #fef3e2; color: #7c3a00; font-weight: 600;
+  }
+  /* Bold, not just colour — colour alone can wash out on a B&W print/PDF. */
+  .amp-export-pending-marker { font-weight: 700; color: #b45309; }
+
+  @media print {
+    .amp-export-block { break-inside: avoid; }
+  }
+</style>

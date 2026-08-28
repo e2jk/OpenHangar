@@ -137,8 +137,8 @@ class TestExportContent:
         html = r.data.decode()
         idx = html.index(AmpCategory.REPETITIVE_ADS)
         row = html[idx : html.index("</tr>", idx)]
-        yes_cell = re.search(r'class="amp-export-yesno">([^<]*)</td>', row).group(1)
-        assert yes_cell == "☑"
+        answer_cell = re.search(r'class="amp-export-answer">([^<]*)</td>', row).group(1)
+        assert answer_cell == "YES"
 
     def test_block_4_no_for_category_without_triggers(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
@@ -149,8 +149,8 @@ class TestExportContent:
         html = r.data.decode()
         idx = html.index(AmpCategory.REPETITIVE_ADS)
         row = html[idx : html.index("</tr>", idx)]
-        yes_cell = re.search(r'class="amp-export-yesno">([^<]*)</td>', row).group(1)
-        assert yes_cell == ""
+        answer_cell = re.search(r'class="amp-export-answer">([^<]*)</td>', row).group(1)
+        assert answer_cell == "NO"
 
     def test_block_5_yes_when_alternative_task_exists(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
@@ -159,7 +159,7 @@ class TestExportContent:
         _add_trigger(app, acid, name="Deviation", is_alternative_to_ica=True)
         _login(app, client)
         r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
-        assert b"see Appendix C" in r.data
+        assert b"Appendix C" in r.data
 
     def test_appendix_b_groups_by_category(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
@@ -226,7 +226,7 @@ class TestExportContent:
         assert b"Appendix D" in r.data
         assert b"See source workbook for detail" in r.data
 
-    def test_appendix_d_present_with_revision_only(self, app, client):
+    def test_block_10_shows_revision_history(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
         _add_declaration(
@@ -238,9 +238,10 @@ class TestExportContent:
         )
         _login(app, client)
         r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
-        assert b"Appendix D" in r.data
-        assert b"Initial release" in r.data
-        assert b"2026-08-25" in r.data
+        html = r.data.decode()
+        assert "Revision control & periodic reviews" in html
+        assert "Initial release" in html
+        assert "25/08/2026" in html
 
     def test_appendix_d_absent_without_notes_or_revision(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
@@ -483,11 +484,99 @@ class TestImportExportRoundTrip:
         idx_ads = html.index(AmpCategory.REPETITIVE_ADS)
         row_ads = html[idx_ads : html.index("</tr>", idx_ads)]
         assert (
-            re.search(r'class="amp-export-yesno">([^<]*)</td>', row_ads).group(1) == "☑"
+            re.search(r'class="amp-export-answer">([^<]*)</td>', row_ads).group(1)
+            == "YES"
         )
 
         idx_tbo = html.index(AmpCategory.TBO_RECOMMENDATIONS)
         row_tbo = html[idx_tbo : html.index("</tr>", idx_tbo)]
         assert (
-            re.search(r'class="amp-export-yesno">([^<]*)</td>', row_tbo).group(1) == "☑"
+            re.search(r'class="amp-export-answer">([^<]*)</td>', row_tbo).group(1)
+            == "YES"
         )
+
+
+class TestPdfExport:
+    """maintenance.export_amp_pdf — same context-building helper as the HTML
+    preview (export_amp), rendered through WeasyPrint into a real PDF
+    response instead of an HTML page. Content correctness is already
+    covered via the HTML route above (both render the same data through
+    the same shared template partials); these tests cover what's actually
+    different about this route: auth/gating, and that it really produces a
+    downloadable PDF."""
+
+    def test_redirects_when_not_logged_in(self, client):
+        r = client.get("/aircraft/1/maintenance/amp/export/pdf")
+        assert r.status_code == 302
+
+    def test_403_for_viewer(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, role=Role.VIEWER)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export/pdf")
+        assert r.status_code == 403
+
+    def test_no_declaration_redirects_to_edit_form(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.get(
+            f"/aircraft/{acid}/maintenance/amp/export/pdf", follow_redirects=False
+        )
+        assert r.status_code == 302
+        assert r.headers["Location"].endswith("/amp/edit")
+
+    def test_no_declaration_flashes_prompt(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        r = client.get(
+            f"/aircraft/{acid}/maintenance/amp/export/pdf", follow_redirects=True
+        )
+        assert b"Fill in the AMP declaration profile" in r.data
+
+    def test_404_for_other_tenant(self, app, client):
+        _create_user_and_tenant(app)
+        _, other_tid = _create_user_and_tenant(app, email="other@example.com")
+        other_acid = _add_aircraft(app, other_tid, registration="OO-OTH")
+        _login(app, client)
+        r = client.get(f"/aircraft/{other_acid}/maintenance/amp/export/pdf")
+        assert r.status_code == 404
+
+    def test_returns_valid_pdf(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid, registration="OO-LKN")
+        _add_declaration(
+            app,
+            acid,
+            certifying_party_name="Zorg Piloot",
+            certifying_party_address="Rue Test 1\n1000 Brussels",
+        )
+        _add_trigger(
+            app,
+            acid,
+            name="AD compliance check",
+            category=AmpCategory.REPETITIVE_ADS,
+            reference="AD 2023-0048",
+            interval_hours=100.0,
+        )
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export/pdf")
+        assert r.status_code == 200
+        assert r.headers["Content-Type"] == "application/pdf"
+        assert (
+            r.headers["Content-Disposition"] == 'attachment; filename="AMP-OO-LKN.pdf"'
+        )
+        assert r.data[:5] == b"%PDF-"
+
+    def test_filename_sanitised_for_unusual_registration(self, app, client):
+        # secure_filename strips characters a filesystem/HTTP header can't
+        # safely carry — registrations are normally clean, but the filename
+        # must never trust that blindly.
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid, registration="OO/LKN")
+        _add_declaration(app, acid, certifying_party_name="Zorg Piloot")
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export/pdf")
+        assert r.status_code == 200
+        assert "/" not in r.headers["Content-Disposition"].split("filename=")[1]
