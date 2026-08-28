@@ -1,9 +1,10 @@
 {# AMP export document body — shared by the on-screen preview
    (amp_export.html) and the standalone PDF template (amp_export_pdf.html).
    No Bootstrap/icon-font dependency: the PDF render has neither available. #}
+{% set latest_revision = revisions[-1] if revisions else None %}
 <div id="amp-running-header">
-  AMP/{{ aircraft.registration }}/{{ decl.revision_number or 'R00' }}<br>
-  {% if decl.revision_date %}{{ decl.revision_date.strftime('%d/%m/%Y') }}{% endif %}
+  AMP/{{ aircraft.registration }}/{{ latest_revision.revision_number if latest_revision else 'R00' }}<br>
+  {% if latest_revision and latest_revision.revision_date %}{{ latest_revision.revision_date.strftime('%d/%m/%Y') }}{% endif %}
 </div>
 
 <div class="amp-export">
@@ -37,7 +38,9 @@
       <td class="amp-export-value">{{ airframe_component.serial_number if airframe_component and airframe_component.serial_number else '—' }}</td>
     </tr>
     <tr>
-      <td colspan="3">{{ _('Owner') }}: <strong>{{ decl.certifying_party_name or '—' }}</strong>{% if decl.certifying_party_address %}<br>{% for line in decl.certifying_party_address.split('\n') %}{{ line }}{% if not loop.last %}<br>{% endif %}{% endfor %}{% endif %}</td>
+      {% set owner_name = decl.owner_name or decl.certifying_party_name %}
+      {% set owner_address = decl.owner_address or decl.certifying_party_address %}
+      <td colspan="3">{{ _('Owner') }}: <strong>{{ owner_name or '—' }}</strong>{% if owner_address %}<br>{% for line in owner_address.split('\n') %}{{ line }}{% if not loop.last %}<br>{% endif %}{% endfor %}{% endif %}</td>
     </tr>
   </table>
 
@@ -198,17 +201,25 @@
 
   {# ── Block 10: Revision control & periodic reviews ─────────────────── #}
   <table class="amp-export-block">
-    <tr><td rowspan="3" class="amp-export-gutter">10</td><th colspan="3" class="amp-export-bar">{{ _('Revision control & periodic reviews of the Aircraft Maintenance Programme') }}</th></tr>
+    <tr><td rowspan="{{ 2 + (revisions | length or 1) }}" class="amp-export-gutter">10</td><th colspan="3" class="amp-export-bar">{{ _('Revision control & periodic reviews of the Aircraft Maintenance Programme') }}</th></tr>
     <tr>
       <th class="amp-export-subhead">{{ _('Rev number') }}</th>
       <th class="amp-export-subhead">{{ _('Contents of revision') }}</th>
       <th class="amp-export-subhead">{{ _('Date and signature') }}</th>
     </tr>
+    {% for rev in revisions %}
     <tr>
-      <td>{{ decl.revision_number or '—' }}</td>
-      <td>{{ decl.revision_content or '—' }}</td>
-      <td>{{ decl.revision_date.strftime('%d/%m/%Y') if decl.revision_date else '—' }}</td>
+      <td>{{ rev.revision_number }}</td>
+      <td>{% for line in (rev.revision_content or '—').split('\n') %}{{ line }}{% if not loop.last %}<br>{% endif %}{% endfor %}</td>
+      <td>{{ rev.revision_date.strftime('%d/%m/%Y') if rev.revision_date else '—' }}</td>
     </tr>
+    {% else %}
+    <tr>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+    </tr>
+    {% endfor %}
   </table>
 
   {# ── Appendix A ──────────────────────────────────────────────────────── #}

@@ -28,6 +28,7 @@ from models import (
     AmpCertifyingPartyKind,
     AmpDeclaration,
     AmpDeclarationType,
+    AmpRevision,
     Component,
     ComponentType,
     HoursBasis,
@@ -540,6 +541,7 @@ def edit_amp_declaration(aircraft_id: int) -> ResponseReturnValue:
         "maintenance/amp_declaration_form.html",
         aircraft=ac,
         decl=decl,
+        revisions=ac.amp_revisions,
         amp_basis=AmpBasis,
         declaration_types=AmpDeclarationType,
         certifying_party_kinds=AmpCertifyingPartyKind,
@@ -570,14 +572,6 @@ def _save_amp_declaration(
     if certifying_party_kind not in AmpCertifyingPartyKind.ALL:
         errors.append(_("Invalid certifying party selected."))
 
-    revision_date_raw = (request.form.get("revision_date") or "").strip()
-    revision_date = None
-    if revision_date_raw:
-        try:
-            revision_date = _date.fromisoformat(revision_date_raw)
-        except ValueError:
-            errors.append(_("Revision date must be a valid date (YYYY-MM-DD)."))
-
     if errors:
         for msg in errors:
             flash(msg, "danger")
@@ -585,6 +579,7 @@ def _save_amp_declaration(
             "maintenance/amp_declaration_form.html",
             aircraft=ac,
             decl=decl,
+            revisions=ac.amp_revisions,
             amp_basis=AmpBasis,
             declaration_types=AmpDeclarationType,
             certifying_party_kinds=AmpCertifyingPartyKind,
@@ -594,6 +589,8 @@ def _save_amp_declaration(
         decl = AmpDeclaration(aircraft_id=ac.id)
         db.session.add(decl)
 
+    decl.owner_name = _text("owner_name")
+    decl.owner_address = _text("owner_address")
     decl.basis = basis
     decl.mip_details = _text("mip_details")
     decl.dah_ica_airframe_ref = _text("dah_ica_airframe_ref")
@@ -610,13 +607,71 @@ def _save_amp_declaration(
     decl.certifying_party_phone = _text("certifying_party_phone")
     decl.certifying_party_email = _text("certifying_party_email")
     decl.appendix_d_notes = _text("appendix_d_notes")
-    decl.revision_number = _text("revision_number")
-    decl.revision_content = _text("revision_content")
-    decl.revision_date = revision_date
 
     db.session.commit()
     flash(_("AMP declaration saved."), "success")
     return redirect(url_for("maintenance.list_triggers", aircraft_id=ac.id))
+
+
+# ── AMP revision history (block 10) ─────────────────────────────────────────
+
+
+@maintenance_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/amp/revisions/add", methods=["POST"]
+)
+@login_required
+@require_role(*_MAINT_ROLES)
+def add_amp_revision(aircraft_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+
+    revision_number = (request.form.get("revision_number") or "").strip()
+    revision_content = (request.form.get("revision_content") or "").strip() or None
+    revision_date_raw = (request.form.get("revision_date") or "").strip()
+
+    errors = []
+    if not revision_number:
+        errors.append(_("Revision number is required."))
+    revision_date = None
+    if revision_date_raw:
+        try:
+            revision_date = _date.fromisoformat(revision_date_raw)
+        except ValueError:
+            errors.append(_("Revision date must be a valid date (YYYY-MM-DD)."))
+
+    if errors:
+        for msg in errors:
+            flash(msg, "danger")
+        return redirect(url_for("maintenance.edit_amp_declaration", aircraft_id=ac.id))
+
+    db.session.add(
+        AmpRevision(
+            aircraft_id=ac.id,
+            revision_number=revision_number,
+            revision_content=revision_content,
+            revision_date=revision_date,
+        )
+    )
+    db.session.commit()
+    flash(_("Revision added."), "success")
+    return redirect(url_for("maintenance.edit_amp_declaration", aircraft_id=ac.id))
+
+
+@maintenance_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/amp/revisions/<int:revision_id>/delete",
+    methods=["POST"],
+)
+@login_required
+@require_role(*_MAINT_ROLES)
+def delete_amp_revision(aircraft_id: int, revision_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    rev = db.session.get(AmpRevision, revision_id)
+    if not rev or rev.aircraft_id != ac.id:
+        abort(404)
+    number = rev.revision_number
+    db.session.delete(rev)
+    db.session.commit()
+    flash(_("Revision '%(number)s' deleted.", number=number), "success")
+    return redirect(url_for("maintenance.edit_amp_declaration", aircraft_id=ac.id))
 
 
 # ── AMP spreadsheet import ──────────────────────────────────────────────────
@@ -959,6 +1014,7 @@ def _amp_export_context(ac: Aircraft) -> dict[str, Any] | None:
         "appendix_c_rows": appendix_c_rows,
         "interval_text": interval_text,
         "pending_review_rows": pending_review_rows,
+        "revisions": ac.amp_revisions,
         "amp_basis": AmpBasis,
         "declaration_types": AmpDeclarationType,
         "certifying_party_kinds": AmpCertifyingPartyKind,
