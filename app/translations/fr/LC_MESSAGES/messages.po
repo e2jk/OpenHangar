@@ -1256,9 +1256,9 @@ msgstr "Aucune ligne de tâche trouvée dans le fichier importé."
 #: app/maintenance/routes.py:840
 #: app/templates/maintenance/amp_import_review.html:18
 #, python-format
-msgid "%(n)s flagged for review"
+msgid "one flagged for review"
 msgid_plural "%(n)s flagged for review"
-msgstr[0] "%(n)s signalé pour vérification"
+msgstr[0] "un signalé pour vérification"
 msgstr[1] "%(n)s signalés pour vérification"
 
 #: app/maintenance/routes.py:847

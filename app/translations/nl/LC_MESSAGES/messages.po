@@ -1256,9 +1256,9 @@ msgstr "Geen taakregels gevonden in het geüploade bestand."
 #: app/maintenance/routes.py:840
 #: app/templates/maintenance/amp_import_review.html:18
 #, python-format
-msgid "%(n)s flagged for review"
+msgid "one flagged for review"
 msgid_plural "%(n)s flagged for review"
-msgstr[0] "%(n)s gemarkeerd voor controle"
+msgstr[0] "één gemarkeerd voor controle"
 msgstr[1] "%(n)s gemarkeerd voor controle"
 
 #: app/maintenance/routes.py:847
