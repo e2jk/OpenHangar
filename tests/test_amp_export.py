@@ -619,10 +619,27 @@ class TestPdfExport:
         r = client.get(f"/aircraft/{acid}/maintenance/amp/export/pdf")
         assert r.status_code == 200
         assert r.headers["Content-Type"] == "application/pdf"
+        # No revision recorded yet — falls back to today's date and "R00".
+        today = date.today().isoformat()
         assert (
-            r.headers["Content-Disposition"] == 'attachment; filename="AMP-OO-LKN.pdf"'
+            r.headers["Content-Disposition"]
+            == f'attachment; filename="{today}-AMP-OO-LKN-R00.pdf"'
         )
         assert r.data[:5] == b"%PDF-"
+
+    def test_filename_uses_latest_revision_date_and_number(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid, registration="OO-CPE")
+        _add_declaration(app, acid)
+        _add_revision(app, acid, revision_number="0", revision_date=date(2022, 7, 5))
+        _add_revision(app, acid, revision_number="2", revision_date=date(2023, 4, 3))
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export/pdf")
+        assert r.status_code == 200
+        assert (
+            r.headers["Content-Disposition"]
+            == 'attachment; filename="2023-04-03-AMP-OO-CPE-2.pdf"'
+        )
 
     def test_filename_sanitised_for_unusual_registration(self, app, client):
         # secure_filename strips characters a filesystem/HTTP header can't

@@ -1053,7 +1053,15 @@ def export_amp_pdf(aircraft_id: int) -> ResponseReturnValue:
     html = render_template("maintenance/amp_export_pdf.html", **context)
     pdf_bytes = HTML(string=html, base_url=request.url_root).write_pdf()
 
-    filename = secure_filename(f"AMP-{ac.registration}.pdf")
+    revisions = context["revisions"]
+    latest_revision = revisions[-1] if revisions else None
+    date_str = (
+        latest_revision.revision_date.isoformat()
+        if latest_revision and latest_revision.revision_date
+        else _date.today().isoformat()
+    )
+    revision_str = latest_revision.revision_number if latest_revision else "R00"
+    filename = secure_filename(f"{date_str}-AMP-{ac.registration}-{revision_str}.pdf")
     return Response(
         pdf_bytes,
         mimetype="application/pdf",
