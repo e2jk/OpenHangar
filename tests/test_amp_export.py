@@ -294,6 +294,130 @@ class TestExportContent:
         assert r.status_code == 404
 
 
+class TestPendingReviewSection:
+    """A needs_review trigger has no interval yet and may have no category
+    either — appendix_b_groups would silently drop an uncategorised one, so
+    the dedicated pending section (and the top banner) must cover it
+    regardless of category."""
+
+    def test_no_banner_or_section_without_pending_triggers(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _add_trigger(app, acid, name="Routine inspection")
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert b"pending shop input" not in r.data
+        assert "Pending — needs shop input".encode() not in r.data
+
+    def test_banner_shows_singular_count(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _add_trigger(app, acid, name="Undecided item", due_date=None, needs_review=True)
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert b"one item is still pending shop input" in r.data
+
+    def test_banner_shows_plural_count(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _add_trigger(app, acid, name="Item 1", due_date=None, needs_review=True)
+        _add_trigger(app, acid, name="Item 2", due_date=None, needs_review=True)
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert b"2 items are still pending shop input" in r.data
+
+    def test_uncategorised_pending_trigger_absent_from_appendix_b(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _add_trigger(
+            app,
+            acid,
+            name="Uncategorised pending item",
+            due_date=None,
+            needs_review=True,
+        )
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        html = r.data.decode()
+        assert "Appendix B —" not in html
+
+    def test_uncategorised_pending_trigger_appears_in_pending_section(
+        self, app, client
+    ):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _add_trigger(
+            app,
+            acid,
+            name="Uncategorised pending item",
+            due_date=None,
+            needs_review=True,
+            notes="Waiting on SB TM TAE 125-0001 R24 clarification",
+        )
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert b"Pending" in r.data
+        assert b"Uncategorised pending item" in r.data
+        assert b"Waiting on SB TM TAE 125-0001 R24 clarification" in r.data
+
+    def test_categorised_pending_trigger_shows_marker_not_blank_in_appendix_b(
+        self, app, client
+    ):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _add_trigger(
+            app,
+            acid,
+            name="Categorised pending item",
+            due_date=None,
+            needs_review=True,
+            category=AmpCategory.REPETITIVE_ADS,
+        )
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        html = r.data.decode()
+        idx = html.index("Categorised pending item")
+        row = html[idx : html.index("</tr>", idx)]
+        assert "Pending shop input" in row
+        # also listed in the dedicated pending section, not just Appendix B
+        assert html.count("Categorised pending item") == 2
+
+    def test_non_pending_trigger_not_in_pending_section(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _add_trigger(
+            app,
+            acid,
+            name="Undecided item",
+            due_date=None,
+            needs_review=True,
+        )
+        _add_trigger(
+            app,
+            acid,
+            name="Resolved item",
+            category=AmpCategory.REPETITIVE_ADS,
+        )
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        html = r.data.decode()
+        # present in the document at all (Appendix B), just not repeated here
+        assert "Resolved item" in html
+        # The banner text above also quotes the section title, so anchor on
+        # the actual <h2> heading, not the first (banner) occurrence.
+        pending_idx = html.index(">Pending — needs shop input</h2>")
+        pending_section = html[pending_idx:]
+        assert "Undecided item" in pending_section
+        assert "Resolved item" not in pending_section
+
+
 class TestImportExportRoundTrip:
     """End-to-end: a spreadsheet imported through the real upload/commit
     routes exports back out with the same registration and categorised task

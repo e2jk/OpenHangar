@@ -942,6 +942,12 @@ def export_amp(aircraft_id: int) -> ResponseReturnValue:
     interval_text = {
         t.id: format_interval(t.interval_hours, t.interval_days) for t in triggers
     }
+    # A needs_review trigger has no interval yet and may not have a category
+    # either — appendix_b_groups above would silently drop it if uncategorised.
+    # Listed here regardless of category so nothing pending goes unmentioned in
+    # the exported document, with its notes (the actual open question, if the
+    # import captured one) alongside it.
+    pending_review_rows = [t for t in triggers if t.needs_review]
 
     return render_template(
         "maintenance/amp_export.html",
@@ -955,6 +961,7 @@ def export_amp(aircraft_id: int) -> ResponseReturnValue:
         appendix_b_groups=appendix_b_groups,
         appendix_c_rows=appendix_c_rows,
         interval_text=interval_text,
+        pending_review_rows=pending_review_rows,
         amp_basis=AmpBasis,
         declaration_types=AmpDeclarationType,
         certifying_party_kinds=AmpCertifyingPartyKind,

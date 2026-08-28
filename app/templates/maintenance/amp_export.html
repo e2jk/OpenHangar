@@ -22,6 +22,16 @@
        translatable so a translator can't alter the form/reference IDs. #}
     <p class="amp-export-subtitle">EASA Form AMP — AMC2 ML.A.302</p>
 
+    {% if pending_review_rows %}
+    <div class="alert alert-warning amp-export-pending-banner">
+      <i class="bi bi-exclamation-triangle me-1"></i>
+      {{ ngettext(
+        'one item is still pending shop input — see "Pending — needs shop input" below.',
+        '%(n)s items are still pending shop input — see "Pending — needs shop input" below.',
+        pending_review_rows | length, n=pending_review_rows | length) }}
+    </div>
+    {% endif %}
+
     {# ── Block 1: Aircraft identification ──────────────────────────────── #}
     <table class="amp-export-table">
       <tr class="amp-export-section-row"><th colspan="2">{{ _('1. Aircraft identification') }}</th></tr>
@@ -232,11 +242,41 @@
       <tr>
         <td>{{ t.name }}</td>
         <td>{{ t.reference or '—' }}</td>
-        <td>{{ interval_text.get(t.id) or '—' }}</td>
+        <td>
+          {% if t.needs_review %}
+          <span class="amp-export-pending-marker">⚠ {{ _('Pending shop input') }}</span>
+          {% else %}
+          {{ interval_text.get(t.id) or '—' }}
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </table>
     {% endfor %}
+    {% endif %}
+
+    {# ── Pending / needs review — not an official form block or appendix,
+         an OpenHangar addition so nothing left undecided goes unmentioned
+         in an exported document, even a trigger with no category yet
+         (which appendix_b_groups above would otherwise drop silently). #}
+    {% if pending_review_rows %}
+    <h2 class="amp-export-appendix-title">{{ _('Pending — needs shop input') }}</h2>
+    <table class="amp-export-table">
+      <tr>
+        <th>{{ _('Task description') }}</th>
+        <th>{{ _('Category') }}</th>
+        <th>{{ _('Reference') }}</th>
+        <th>{{ _('Notes') }}</th>
+      </tr>
+      {% for t in pending_review_rows %}
+      <tr>
+        <td>{{ t.name }}</td>
+        <td>{{ t.category or '—' }}</td>
+        <td>{{ t.reference or '—' }}</td>
+        <td>{{ t.notes or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </table>
     {% endif %}
 
     {# ── Appendix C ──────────────────────────────────────────────────────── #}
