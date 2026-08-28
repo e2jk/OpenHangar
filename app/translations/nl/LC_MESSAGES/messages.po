@@ -758,7 +758,7 @@ msgstr "Certificaat van beoordeling van luchtwaardigheid (ARC)"
 
 #: app/documents/routes.py:496 app/documents/routes.py:740
 #: app/documents/routes.py:839 app/flights/routes.py:1526
-#: app/maintenance/routes.py:750 app/pilots/routes.py:1212
+#: app/maintenance/routes.py:771 app/pilots/routes.py:1212
 msgid "Please select a file to upload."
 msgstr "Selecteer een bestand om te uploaden."
 
@@ -1102,20 +1102,20 @@ msgstr "Vlucht %(label)s verwijderd."
 msgid "Unsupported format. Please upload a .csv or .xlsx file."
 msgstr "Ongeldig formaat. Upload een .csv- of .xlsx-bestand."
 
-#: app/flights/routes.py:1540 app/maintenance/routes.py:760
+#: app/flights/routes.py:1540 app/maintenance/routes.py:781
 #: app/pilots/routes.py:1225
 msgid "File too large (maximum 10 MB)."
 msgstr "Bestand te groot (maximaal 10 MB)."
 
 #: app/flights/routes.py:1598 app/flights/routes.py:1888
-#: app/flights/routes.py:1965 app/maintenance/routes.py:814
+#: app/flights/routes.py:1965 app/maintenance/routes.py:835
 #: app/pilots/routes.py:1280 app/pilots/routes.py:1647
 #: app/pilots/routes.py:1709
 msgid "Import session expired. Please upload the file again."
 msgstr "Importsessie verlopen. Upload het bestand opnieuw."
 
 #: app/flights/routes.py:1607 app/flights/routes.py:1893
-#: app/flights/routes.py:1983 app/maintenance/routes.py:820
+#: app/flights/routes.py:1983 app/maintenance/routes.py:841
 #: app/pilots/routes.py:1289 app/pilots/routes.py:1652
 #: app/pilots/routes.py:1727
 msgid "Temporary file not found. Please upload the file again."
@@ -1253,7 +1253,7 @@ msgstr "Naam is verplicht."
 msgid "Trigger type must be 'calendar', 'hours', or 'landings'."
 msgstr "Onderhoudsitemtype moet 'calendar', 'hours' of 'landings' zijn."
 
-#: app/maintenance/form_parsing.py:102 app/maintenance/routes.py:381
+#: app/maintenance/form_parsing.py:102 app/maintenance/routes.py:383
 msgid "Component selection is invalid."
 msgstr "De componentselectie is ongeldig."
 
@@ -1331,63 +1331,63 @@ msgstr ""
 msgid "Landings at service must be a positive number."
 msgstr "Landingen bij onderhoud moeten een positief getal zijn."
 
-#: app/maintenance/routes.py:415
+#: app/maintenance/routes.py:417
 #, python-format
 msgid "Maintenance item '%(name)s' saved."
 msgstr "Onderhoudsitem '%(name)s' opgeslagen."
 
-#: app/maintenance/routes.py:434
+#: app/maintenance/routes.py:436
 #, python-format
 msgid "'%(name)s' deleted."
 msgstr "'%(name)s' verwijderd."
 
-#: app/maintenance/routes.py:513
+#: app/maintenance/routes.py:515
 #, python-format
 msgid "'%(name)s' marked as serviced."
 msgstr "'%(name)s' gemarkeerd als onderhouden."
 
-#: app/maintenance/routes.py:569
+#: app/maintenance/routes.py:571
 msgid "Invalid programme basis selected."
 msgstr "Ongeldige programmabasis geselecteerd."
 
-#: app/maintenance/routes.py:571
+#: app/maintenance/routes.py:573
 msgid "Invalid declaration type selected."
 msgstr "Ongeldig verklaringstype geselecteerd."
 
-#: app/maintenance/routes.py:573
+#: app/maintenance/routes.py:575
 msgid "Invalid certifying party selected."
 msgstr "Ongeldige certificerende partij geselecteerd."
 
-#: app/maintenance/routes.py:612
+#: app/maintenance/routes.py:614
 msgid "AMP declaration saved."
 msgstr "AMP-verklaring opgeslagen."
 
-#: app/maintenance/routes.py:633
+#: app/maintenance/routes.py:635
 msgid "Revision number is required."
 msgstr "Revisienummer is verplicht."
 
-#: app/maintenance/routes.py:639
+#: app/maintenance/routes.py:641
 msgid "Revision date must be a valid date (YYYY-MM-DD)."
 msgstr "Revisiedatum moet een geldige datum zijn (JJJJ-MM-DD)."
 
-#: app/maintenance/routes.py:655
+#: app/maintenance/routes.py:668
 msgid "Revision added."
 msgstr "Revisie toegevoegd."
 
-#: app/maintenance/routes.py:673
+#: app/maintenance/routes.py:694
 #, python-format
 msgid "Revision '%(number)s' deleted."
 msgstr "Revisie '%(number)s' verwijderd."
 
-#: app/maintenance/routes.py:755
+#: app/maintenance/routes.py:776
 msgid "Unsupported format. Please upload a .xlsx file."
 msgstr "Ongeldig formaat. Upload een .xlsx-bestand."
 
-#: app/maintenance/routes.py:772
+#: app/maintenance/routes.py:793
 msgid "No task rows found in the uploaded file."
 msgstr "Geen taakregels gevonden in het geüploade bestand."
 
-#: app/maintenance/routes.py:897
+#: app/maintenance/routes.py:918
 #: app/templates/maintenance/amp_import_review.html:18
 #, python-format
 msgid "one flagged for review"
@@ -1395,24 +1395,38 @@ msgid_plural "%(n)s flagged for review"
 msgstr[0] "één gemarkeerd voor controle"
 msgstr[1] "%(n)s gemarkeerd voor controle"
 
-#: app/maintenance/routes.py:904
+#: app/maintenance/routes.py:925
 #, python-format
 msgid "Imported %(count)d maintenance item — %(review_phrase)s."
 msgid_plural "Imported %(count)d maintenance items — %(review_phrase)s."
 msgstr[0] "%(count)d onderhoudsitem geïmporteerd — %(review_phrase)s."
 msgstr[1] "%(count)d onderhoudsitems geïmporteerd — %(review_phrase)s."
 
-#: app/maintenance/routes.py:949
+#: app/maintenance/routes.py:970
 #, python-format
 msgid "Import rolled back: %(count)d item removed."
 msgid_plural "Import rolled back: %(count)d items removed."
 msgstr[0] "Import teruggedraaid: %(count)d item verwijderd."
 msgstr[1] "Import teruggedraaid: %(count)d items verwijderd."
 
-#: app/maintenance/routes.py:1032 app/maintenance/routes.py:1048
+#: app/maintenance/routes.py:1151 app/maintenance/routes.py:1168
 msgid "Fill in the AMP declaration profile before exporting the AMP document."
 msgstr ""
 "Vul het AMP-verklaringsprofiel in voordat u het AMP-document exporteert."
+
+#: app/maintenance/routes.py:1233
+#, python-format
+msgid ""
+"No saved PDF for revision '%(number)s' — it was never downloaded while "
+"current."
+msgstr ""
+"Geen opgeslagen PDF voor revisie '%(number)s' — deze is nooit gedownload "
+"terwijl ze actueel was."
+
+#: app/maintenance/routes.py:1246
+#, python-format
+msgid "The saved PDF for revision '%(number)s' is missing on disk."
+msgstr "De opgeslagen PDF voor revisie '%(number)s' ontbreekt op de schijf."
 
 #: app/offline/routes.py:253 app/offline/routes.py:260
 #: app/offline/routes.py:380 app/offline/routes.py:386
@@ -1980,7 +1994,7 @@ msgstr "%(label)s kan niet in de toekomst liggen."
 #: app/templates/flights/list.html:91
 #: app/templates/flights/logbook_component.html:95
 #: app/templates/maintenance/amp_declaration_form.html:193
-#: app/templates/maintenance/amp_declaration_form.html:231
+#: app/templates/maintenance/amp_declaration_form.html:238
 #: app/templates/maintenance/amp_import_history.html:31
 #: app/templates/offline/pilot_workbench.html:34
 #: app/templates/offline/workbench.html:34
@@ -2035,7 +2049,7 @@ msgstr "tot"
 #: app/templates/flights/fleet.html:25
 #: app/templates/flights/flight_form.html:224
 #: app/templates/flights/flight_form.html:227
-#: app/templates/maintenance/_amp_export_body.html:70
+#: app/templates/maintenance/_amp_export_body.html:85
 #: app/templates/maintenance/fleet.html:59
 #: app/templates/maintenance/fleet.html:115
 #: app/templates/maintenance/fleet.html:166
@@ -3553,7 +3567,7 @@ msgstr "Openstaande reserveringen"
 #: app/templates/config/renter_form.html:83 app/templates/dashboard.html:741
 #: app/templates/flights/airframe_import_review.html:35
 #: app/templates/flights/flight_form.html:743
-#: app/templates/maintenance/_amp_export_body.html:270
+#: app/templates/maintenance/_amp_export_body.html:285
 #: app/templates/maintenance/service_form.html:109
 #: app/templates/maintenance/trigger_form.html:210
 #: app/templates/offline/workbench.html:156
@@ -3646,7 +3660,7 @@ msgstr "Probeer de demo — kies een rol om te verkennen:"
 #: app/templates/aircraft/owners_billing.html:175
 #: app/templates/auth/setup.html:304 app/templates/landing.html:27
 #: app/templates/landing.html:235
-#: app/templates/maintenance/_amp_export_body.html:43
+#: app/templates/maintenance/_amp_export_body.html:58
 msgid "Owner"
 msgstr "Eigenaar"
 
@@ -3962,7 +3976,7 @@ msgstr "Annuleren"
 
 #: app/templates/aircraft/aircraft_form.html:27
 #: app/templates/flights/flight_form.html:252
-#: app/templates/maintenance/_amp_export_body.html:31
+#: app/templates/maintenance/_amp_export_body.html:46
 #: app/templates/offline/pilot_workbench.html:63
 #: app/templates/pilots/entry_form.html:137
 #: app/templates/pilots/import_review.html:24
@@ -4270,7 +4284,7 @@ msgstr "Onderdeel toevoegen"
 #: app/templates/config/renter_account.html:68
 #: app/templates/expenses/expense_form.html:52
 #: app/templates/expenses/list.html:55 app/templates/expenses/list.html:82
-#: app/templates/maintenance/_amp_export_body.html:32
+#: app/templates/maintenance/_amp_export_body.html:47
 #: app/templates/maintenance/fleet.html:168
 #: app/templates/maintenance/fleet.html:325
 #: app/templates/maintenance/list.html:75
@@ -4289,7 +4303,7 @@ msgid "— select —"
 msgstr "— selecteer —"
 
 #: app/templates/aircraft/component_form.html:32
-#: app/templates/maintenance/_amp_export_body.html:75
+#: app/templates/maintenance/_amp_export_body.html:90
 #: app/templates/maintenance/amp_declaration_form.html:77
 #: app/templates/maintenance/list.html:59
 #: app/templates/maintenance/trigger_form.html:69
@@ -4299,7 +4313,7 @@ msgid "Engine"
 msgstr "Motor"
 
 #: app/templates/aircraft/component_form.html:36
-#: app/templates/maintenance/_amp_export_body.html:80
+#: app/templates/maintenance/_amp_export_body.html:95
 #: app/templates/maintenance/amp_declaration_form.html:82
 #: app/templates/maintenance/list.html:59
 #: app/templates/maintenance/trigger_form.html:69
@@ -4323,7 +4337,7 @@ msgid "e.g. left / right"
 msgstr "bijv. links / rechts"
 
 #: app/templates/aircraft/component_form.html:70
-#: app/templates/maintenance/_amp_export_body.html:33
+#: app/templates/maintenance/_amp_export_body.html:48
 msgid "Serial number"
 msgstr "Serienummer"
 
@@ -4864,7 +4878,7 @@ msgstr "Foto's"
 #: app/templates/aircraft/detail.html:959
 #: app/templates/airworthiness/document_form.html:62
 #: app/templates/airworthiness/stc_form.html:48
-#: app/templates/maintenance/amp_declaration_form.html:236
+#: app/templates/maintenance/amp_declaration_form.html:243
 msgid "Add"
 msgstr "Toevoegen"
 
@@ -6075,9 +6089,9 @@ msgstr "Alle"
 
 #: app/templates/airworthiness/dashboard.html:87
 #: app/templates/airworthiness/document_form.html:40
-#: app/templates/maintenance/_amp_export_body.html:239
-#: app/templates/maintenance/_amp_export_body.html:269
-#: app/templates/maintenance/_amp_export_body.html:289
+#: app/templates/maintenance/_amp_export_body.html:254
+#: app/templates/maintenance/_amp_export_body.html:284
+#: app/templates/maintenance/_amp_export_body.html:304
 msgid "Reference"
 msgstr "Referentie"
 
@@ -6322,7 +6336,7 @@ msgstr "Wachtwoord wijzigen en tweestapsverificatie beheren"
 
 #: app/templates/auth/profile.html:25 app/templates/auth/setup.html:297
 #: app/templates/auth/setup.html:339 app/templates/config/settings.html:332
-#: app/templates/maintenance/_amp_export_body.html:178
+#: app/templates/maintenance/_amp_export_body.html:193
 #: app/templates/maintenance/amp_declaration_form.html:160
 #: app/templates/users/invite_accept.html:23 app/templates/users/list.html:30
 #: app/templates/users/list.html:154 app/templates/users/list.html:212
@@ -7795,7 +7809,7 @@ msgstr "optioneel — wordt getoond in plaats van bestandsnaam"
 #: app/templates/documents/list.html:70
 #: app/templates/documents/reconcile.html:62
 #: app/templates/documents/upload_form.html:59
-#: app/templates/maintenance/_amp_export_body.html:268
+#: app/templates/maintenance/_amp_export_body.html:283
 #: app/templates/maintenance/amp_import_review.html:39
 #: app/templates/pwa/share_target.html:90
 msgid "Category"
@@ -9140,11 +9154,30 @@ msgstr "Ond. uren"
 msgid "No flights recorded for this component yet."
 msgstr "Nog geen vluchten geregistreerd voor dit onderdeel."
 
-#: app/templates/maintenance/_amp_export_body.html:12
+#: app/templates/maintenance/_amp_export_body.html:20
+#, python-format
+msgid ""
+"DRAFT — this reflects changes made after revision %(number)s (%(date)s) was "
+"declared. Add a new revision in block 10 once these changes are ready to be "
+"published."
+msgstr ""
+"CONCEPT — dit weerspiegelt wijzigingen die zijn aangebracht nadat revisie "
+"%(number)s (%(date)s) werd vastgelegd. Voeg een nieuwe revisie toe in blok "
+"10 zodra deze wijzigingen klaar zijn om gepubliceerd te worden."
+
+#: app/templates/maintenance/_amp_export_body.html:22
+msgid ""
+"DRAFT — no revision has been declared yet (block 10). Add one once this AMP "
+"is ready to be published."
+msgstr ""
+"CONCEPT — er is nog geen revisie vastgelegd (blok 10). Voeg er een toe zodra"
+" dit AMP klaar is om gepubliceerd te worden."
+
+#: app/templates/maintenance/_amp_export_body.html:27
 msgid "Part-ML Aircraft Maintenance Programme (AMP)"
 msgstr "Part-ML Onderhoudsprogramma (AMP)"
 
-#: app/templates/maintenance/_amp_export_body.html:20
+#: app/templates/maintenance/_amp_export_body.html:35
 #, python-format
 msgid ""
 "one item is still pending shop input — see \"Pending — needs shop input\" "
@@ -9159,42 +9192,42 @@ msgstr[1] ""
 "%(n)s items zijn nog in afwachting van informatie van de werkplaats — zie "
 "'In afwachting — informatie van de werkplaats nodig' hieronder."
 
-#: app/templates/maintenance/_amp_export_body.html:29
+#: app/templates/maintenance/_amp_export_body.html:44
 msgid "Aircraft identification"
 msgstr "Identificatie van het luchtvaartuig"
 
-#: app/templates/maintenance/_amp_export_body.html:50
+#: app/templates/maintenance/_amp_export_body.html:65
 #: app/templates/maintenance/amp_declaration_form.html:44
 msgid "Basis for the maintenance programme"
 msgstr "Basis van het onderhoudsprogramma"
 
-#: app/templates/maintenance/_amp_export_body.html:52
-#: app/templates/maintenance/_amp_export_body.html:64
+#: app/templates/maintenance/_amp_export_body.html:67
+#: app/templates/maintenance/_amp_export_body.html:79
 msgid "Instructions for continuing airworthiness (ICA)"
 msgstr "Instructies voor voortdurende luchtwaardigheid (ICA)"
 
-#: app/templates/maintenance/_amp_export_body.html:53
+#: app/templates/maintenance/_amp_export_body.html:68
 msgid "Minimum inspection programme (MIP) — list the tasks in Appendix A"
 msgstr "Minimum inspectieprogramma (MIP) — vermeld de taken in bijlage A"
 
-#: app/templates/maintenance/_amp_export_body.html:57
+#: app/templates/maintenance/_amp_export_body.html:72
 #: app/templates/maintenance/amp_declaration_form.html:64
 msgid "MIP details (Appendix A)"
 msgstr "MIP-details (bijlage A)"
 
-#: app/templates/maintenance/_amp_export_body.html:66
+#: app/templates/maintenance/_amp_export_body.html:81
 msgid "Equipment manufacturer and type"
 msgstr "Fabrikant en type van de uitrusting"
 
-#: app/templates/maintenance/_amp_export_body.html:67
+#: app/templates/maintenance/_amp_export_body.html:82
 msgid "Applicable ICA reference"
 msgstr "Toepasselijke ICA-referentie"
 
-#: app/templates/maintenance/_amp_export_body.html:88
+#: app/templates/maintenance/_amp_export_body.html:103
 msgid "Additional maintenance requirements to the ICA or to the MIP"
 msgstr "Aanvullende onderhoudsvereisten bij de ICA of het MIP"
 
-#: app/templates/maintenance/_amp_export_body.html:90
+#: app/templates/maintenance/_amp_export_body.html:105
 msgid ""
 "Indicate whether any of the following types of repetitive maintenance are "
 "included in the AMP (when replying \"YES\", list the specific requirements "
@@ -9204,36 +9237,36 @@ msgstr ""
 "opgenomen (bij antwoord \"JA\", vermeld de specifieke vereisten in bijlage "
 "B)"
 
-#: app/templates/maintenance/_amp_export_body.html:91
+#: app/templates/maintenance/_amp_export_body.html:106
 msgid "Yes/No"
 msgstr "Ja/Nee"
 
-#: app/templates/maintenance/_amp_export_body.html:96
-#: app/templates/maintenance/_amp_export_body.html:106
-#: app/templates/maintenance/_amp_export_body.html:116
-#: app/templates/maintenance/_amp_export_body.html:142
-#: app/templates/maintenance/_amp_export_body.html:143
-#: app/templates/maintenance/_amp_export_body.html:197
+#: app/templates/maintenance/_amp_export_body.html:111
+#: app/templates/maintenance/_amp_export_body.html:121
+#: app/templates/maintenance/_amp_export_body.html:131
+#: app/templates/maintenance/_amp_export_body.html:157
+#: app/templates/maintenance/_amp_export_body.html:158
+#: app/templates/maintenance/_amp_export_body.html:212
 msgid "YES"
 msgstr "JA"
 
-#: app/templates/maintenance/_amp_export_body.html:96
-#: app/templates/maintenance/_amp_export_body.html:106
-#: app/templates/maintenance/_amp_export_body.html:116
-#: app/templates/maintenance/_amp_export_body.html:142
-#: app/templates/maintenance/_amp_export_body.html:143
-#: app/templates/maintenance/_amp_export_body.html:197
+#: app/templates/maintenance/_amp_export_body.html:111
+#: app/templates/maintenance/_amp_export_body.html:121
+#: app/templates/maintenance/_amp_export_body.html:131
+#: app/templates/maintenance/_amp_export_body.html:157
+#: app/templates/maintenance/_amp_export_body.html:158
+#: app/templates/maintenance/_amp_export_body.html:212
 msgid "NO"
 msgstr "NEE"
 
-#: app/templates/maintenance/_amp_export_body.html:103
+#: app/templates/maintenance/_amp_export_body.html:118
 msgid ""
 "Maintenance tasks alternative to the ICA (not less restrictive than the MIP)"
 msgstr ""
 "Onderhoudstaken als alternatief voor de ICA (niet minder restrictief dan het"
 " MIP)"
 
-#: app/templates/maintenance/_amp_export_body.html:105
+#: app/templates/maintenance/_amp_export_body.html:120
 msgid ""
 "Indicate whether there are any maintenance tasks alternative to the ICA "
 "(when replying \"Yes\", list the specific alternative maintenance tasks in "
@@ -9243,33 +9276,33 @@ msgstr ""
 "(bij antwoord \"Ja\", vermeld de specifieke alternatieve onderhoudstaken in "
 "bijlage C)"
 
-#: app/templates/maintenance/_amp_export_body.html:113
+#: app/templates/maintenance/_amp_export_body.html:128
 #: app/templates/maintenance/amp_declaration_form.html:87
 #, python-format
 msgid "Pilot-owner maintenance (%(ref)s)"
 msgstr "Onderhoud door de piloot-eigenaar (%(ref)s)"
 
-#: app/templates/maintenance/_amp_export_body.html:115
+#: app/templates/maintenance/_amp_export_body.html:130
 msgid "Does the pilot-owner perform pilot-owner maintenance?"
 msgstr "Voert de eigenaar-piloot eigenaar-piloot-onderhoud uit?"
 
-#: app/templates/maintenance/_amp_export_body.html:120
+#: app/templates/maintenance/_amp_export_body.html:135
 #: app/templates/maintenance/amp_declaration_form.html:97
 msgid "Pilot-owner name"
 msgstr "Naam van de piloot-eigenaar"
 
-#: app/templates/maintenance/_amp_export_body.html:124
+#: app/templates/maintenance/_amp_export_body.html:139
 #: app/templates/maintenance/amp_declaration_form.html:102
 #: app/templates/pilots/profile.html:24
 msgid "Licence number"
 msgstr "Vergunningnummer"
 
-#: app/templates/maintenance/_amp_export_body.html:128
-#: app/templates/maintenance/_amp_export_body.html:182
+#: app/templates/maintenance/_amp_export_body.html:143
+#: app/templates/maintenance/_amp_export_body.html:197
 msgid "Signature / date"
 msgstr "Handtekening / datum"
 
-#: app/templates/maintenance/_amp_export_body.html:136
+#: app/templates/maintenance/_amp_export_body.html:151
 msgid ""
 "Approval/declaration of the maintenance programme (select the appropriate "
 "option)"
@@ -9277,15 +9310,15 @@ msgstr ""
 "Goedkeuring/verklaring van het onderhoudsprogramma (selecteer de juiste "
 "optie)"
 
-#: app/templates/maintenance/_amp_export_body.html:138
+#: app/templates/maintenance/_amp_export_body.html:153
 msgid "Declaration by owner"
 msgstr "Verklaring door de eigenaar"
 
-#: app/templates/maintenance/_amp_export_body.html:139
+#: app/templates/maintenance/_amp_export_body.html:154
 msgid "Approval by contacted CAMO/CAO"
 msgstr "Goedkeuring door de gecontacteerde CAMO/CAO"
 
-#: app/templates/maintenance/_amp_export_body.html:147
+#: app/templates/maintenance/_amp_export_body.html:162
 msgid ""
 "I hereby declare that this is the maintenance programme applicable to the "
 "aircraft referred to in block 1 and I am fully responsible for its content "
@@ -9298,25 +9331,25 @@ msgstr ""
 "ten opzichte van de gegevens verstrekt door de DAH of de verklarende partij "
 "van een ontwerpconformiteitsverklaring."
 
-#: app/templates/maintenance/_amp_export_body.html:148
-#: app/templates/maintenance/_amp_export_body.html:150
+#: app/templates/maintenance/_amp_export_body.html:163
+#: app/templates/maintenance/_amp_export_body.html:165
 msgid "n/a"
 msgstr "n.v.t."
 
-#: app/templates/maintenance/_amp_export_body.html:151
+#: app/templates/maintenance/_amp_export_body.html:166
 msgid "Approval reference of the CAMO"
 msgstr "Goedkeuringsreferentie van de CAMO"
 
-#: app/templates/maintenance/_amp_export_body.html:151
+#: app/templates/maintenance/_amp_export_body.html:166
 msgid "Signature/date"
 msgstr "Handtekening/datum"
 
-#: app/templates/maintenance/_amp_export_body.html:158
+#: app/templates/maintenance/_amp_export_body.html:173
 #: app/templates/maintenance/amp_declaration_form.html:129
 msgid "Certification statement"
 msgstr "Certificeringsverklaring"
 
-#: app/templates/maintenance/_amp_export_body.html:160
+#: app/templates/maintenance/_amp_export_body.html:175
 msgid ""
 "I will ensure that the aircraft is maintained in accordance with this "
 "maintenance programme and that the maintenance programme will be reviewed "
@@ -9326,7 +9359,7 @@ msgstr ""
 "overeenstemming met dit onderhoudsprogramma en dat het onderhoudsprogramma "
 "indien nodig wordt herzien en bijgewerkt."
 
-#: app/templates/maintenance/_amp_export_body.html:163
+#: app/templates/maintenance/_amp_export_body.html:178
 msgid ""
 "Signed by the person/organisation responsible for the continuing "
 "airworthiness of the aircraft according to ML.A.201"
@@ -9334,108 +9367,108 @@ msgstr ""
 "Ondertekend door de persoon/organisatie verantwoordelijk voor de "
 "voortdurende luchtwaardigheid van het luchtvaartuig conform ML.A.201"
 
-#: app/templates/maintenance/_amp_export_body.html:166
+#: app/templates/maintenance/_amp_export_body.html:181
 msgid "Name of owner/lessee/operator"
 msgstr "Naam van eigenaar/huurder/exploitant"
 
-#: app/templates/maintenance/_amp_export_body.html:167
+#: app/templates/maintenance/_amp_export_body.html:182
 #: app/templates/maintenance/amp_declaration_form.html:141
 msgid "CAMO/CAO"
 msgstr "CAMO/CAO"
 
-#: app/templates/maintenance/_amp_export_body.html:167
+#: app/templates/maintenance/_amp_export_body.html:182
 #: app/templates/maintenance/amp_declaration_form.html:135
 msgid "Owner / lessee / operator"
 msgstr "Eigenaar / huurder / exploitant"
 
-#: app/templates/maintenance/_amp_export_body.html:170
+#: app/templates/maintenance/_amp_export_body.html:185
 #: app/templates/maintenance/amp_declaration_form.html:150
 msgid "Address"
 msgstr "Adres"
 
-#: app/templates/maintenance/_amp_export_body.html:174
+#: app/templates/maintenance/_amp_export_body.html:189
 #: app/templates/maintenance/amp_declaration_form.html:155
 msgid "Telephone"
 msgstr "Telefoon"
 
-#: app/templates/maintenance/_amp_export_body.html:193
+#: app/templates/maintenance/_amp_export_body.html:208
 msgid "Appendices attached"
 msgstr "Bijgevoegde bijlagen"
 
-#: app/templates/maintenance/_amp_export_body.html:196
+#: app/templates/maintenance/_amp_export_body.html:211
 #, python-format
 msgid "Appendix %(letter)s"
 msgstr "Bijlage %(letter)s"
 
-#: app/templates/maintenance/_amp_export_body.html:204
+#: app/templates/maintenance/_amp_export_body.html:219
 msgid ""
 "Revision control & periodic reviews of the Aircraft Maintenance Programme"
 msgstr ""
 "Revisiebeheer & periodieke evaluaties van het onderhoudsprogramma van het "
 "luchtvaartuig"
 
-#: app/templates/maintenance/_amp_export_body.html:206
+#: app/templates/maintenance/_amp_export_body.html:221
 #: app/templates/maintenance/amp_declaration_form.html:191
-#: app/templates/maintenance/amp_declaration_form.html:223
+#: app/templates/maintenance/amp_declaration_form.html:230
 msgid "Rev number"
 msgstr "Revisienr."
 
-#: app/templates/maintenance/_amp_export_body.html:207
+#: app/templates/maintenance/_amp_export_body.html:222
 #: app/templates/maintenance/amp_declaration_form.html:192
-#: app/templates/maintenance/amp_declaration_form.html:227
+#: app/templates/maintenance/amp_declaration_form.html:234
 msgid "Contents of revision"
 msgstr "Inhoud van de revisie"
 
-#: app/templates/maintenance/_amp_export_body.html:208
+#: app/templates/maintenance/_amp_export_body.html:223
 msgid "Date and signature"
 msgstr "Datum en handtekening"
 
-#: app/templates/maintenance/_amp_export_body.html:227
+#: app/templates/maintenance/_amp_export_body.html:242
 msgid "Appendix A — Minimum inspection programme (MIP)"
 msgstr "Bijlage A — Minimum inspectieprogramma (MIP)"
 
-#: app/templates/maintenance/_amp_export_body.html:233
+#: app/templates/maintenance/_amp_export_body.html:248
 msgid "Appendix B — Additional maintenance requirements"
 msgstr "Bijlage B — Aanvullende onderhoudseisen"
 
-#: app/templates/maintenance/_amp_export_body.html:238
-#: app/templates/maintenance/_amp_export_body.html:267
-#: app/templates/maintenance/_amp_export_body.html:288
+#: app/templates/maintenance/_amp_export_body.html:253
+#: app/templates/maintenance/_amp_export_body.html:282
+#: app/templates/maintenance/_amp_export_body.html:303
 #: app/templates/maintenance/amp_import_review.html:38
 msgid "Task description"
 msgstr "Taakomschrijving"
 
-#: app/templates/maintenance/_amp_export_body.html:240
+#: app/templates/maintenance/_amp_export_body.html:255
 #: app/templates/maintenance/amp_import_review.html:40
 #: app/templates/maintenance/list.html:77
 msgid "Interval"
 msgstr "Interval"
 
-#: app/templates/maintenance/_amp_export_body.html:248
+#: app/templates/maintenance/_amp_export_body.html:263
 msgid "Pending shop input"
 msgstr "In afwachting van informatie van de werkplaats"
 
-#: app/templates/maintenance/_amp_export_body.html:264
+#: app/templates/maintenance/_amp_export_body.html:279
 msgid "Pending — needs shop input"
 msgstr "In afwachting — informatie van de werkplaats nodig"
 
-#: app/templates/maintenance/_amp_export_body.html:285
+#: app/templates/maintenance/_amp_export_body.html:300
 msgid "Appendix C — Maintenance tasks alternative to the ICA"
 msgstr "Bijlage C — Onderhoudstaken als alternatief voor de ICA"
 
-#: app/templates/maintenance/_amp_export_body.html:290
+#: app/templates/maintenance/_amp_export_body.html:305
 msgid "Alternative task / interval"
 msgstr "Alternatieve taak / interval"
 
-#: app/templates/maintenance/_amp_export_body.html:304
+#: app/templates/maintenance/_amp_export_body.html:319
 msgid "Appendix D — Additional information"
 msgstr "Bijlage D — Aanvullende informatie"
 
-#: app/templates/maintenance/_amp_export_body.html:309
+#: app/templates/maintenance/_amp_export_body.html:324
 msgid "Copy received by owner / operator"
 msgstr "Kopie ontvangen door eigenaar / exploitant"
 
-#: app/templates/maintenance/_amp_export_body.html:310
+#: app/templates/maintenance/_amp_export_body.html:325
 msgid "Date and signature owner/operator"
 msgstr "Datum en handtekening eigenaar/exploitant"
 
@@ -9553,15 +9586,19 @@ msgid "Revision history (block 10)"
 msgstr "Revisiegeschiedenis (blok 10)"
 
 #: app/templates/maintenance/amp_declaration_form.html:207
+msgid "Download the saved PDF for this revision"
+msgstr "De opgeslagen PDF voor deze revisie downloaden"
+
+#: app/templates/maintenance/amp_declaration_form.html:214
 #, python-format
 msgid "Delete revision '%(number)s'?"
 msgstr "Revisie '%(number)s' verwijderen?"
 
-#: app/templates/maintenance/amp_declaration_form.html:218
+#: app/templates/maintenance/amp_declaration_form.html:225
 msgid "No revisions recorded yet."
 msgstr "Nog geen revisies geregistreerd."
 
-#: app/templates/maintenance/amp_declaration_form.html:228
+#: app/templates/maintenance/amp_declaration_form.html:235
 msgid "Initial release"
 msgstr "Eerste uitgave"
 

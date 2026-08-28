@@ -2011,6 +2011,21 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
 - [x] Block 10: `AmpRevision` rows for the aircraft, oldest-first, one table row
   each; empty state (no revisions yet) renders a single em-dash row rather than an
   empty table
+- [x] Draft detection: `AmpRevision.content_hash` (SHA-256 of the underlying AMP
+  data, computed when the revision is added) is compared against a fresh hash of
+  the current data on every PDF download — a mismatch (or no revision at all) means
+  the live AMP has changed since the latest declared revision, so the download
+  renders as a draft (filename/running-header say "draft", plus a diagonal "DRAFT"
+  watermark on every page) instead of silently claiming to be a now-stale revision.
+  Hashing the underlying data rather than the rendered HTML/PDF deliberately avoids
+  false "drafted" results from a future template tweak or a locale switch
+- [x] Canonical PDF caching: the first non-draft download of a revision is saved to
+  `AmpRevision.pdf_path` under `UPLOAD_FOLDER` (mirrors `Document`'s own file
+  storage) and served byte-for-byte on later downloads instead of re-rendering.
+  Each revision row in the edit page's history list links to its own saved PDF, so
+  an old revision stays re-downloadable after the live AMP has since moved on — a
+  revision that was superseded before ever being downloaded while current has no
+  saved file to fall back to, since there's no field-level history to rebuild one
 - [x] Round-trip note in `docs/maintenance_import.md`: explicitly document that export
   reads the same `category`/`is_alternative_to_ica`/`AmpDeclaration` fields the
   importer writes, so editing triggers in OpenHangar after import changes the next

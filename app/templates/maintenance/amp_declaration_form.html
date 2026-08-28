@@ -201,6 +201,13 @@
               <td>{{ rev.revision_content or '—' }}</td>
               <td>{{ rev.revision_date.isoformat() if rev.revision_date else '—' }}</td>
               <td class="text-end">
+                {% if rev.pdf_path %}
+                <a href="{{ url_for('maintenance.download_amp_revision_pdf', aircraft_id=aircraft.id, revision_id=rev.id) }}"
+                   hx-boost="false" class="btn btn-ac-secondary btn-xs me-1"
+                   title="{{ _('Download the saved PDF for this revision') }}">
+                  <i class="bi bi-file-earmark-pdf"></i>
+                </a>
+                {% endif %}
                 <form method="post"
                       action="{{ url_for('maintenance.delete_amp_revision', aircraft_id=aircraft.id, revision_id=rev.id) }}"
                       class="d-inline"

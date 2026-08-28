@@ -2,12 +2,27 @@
    (amp_export.html) and the standalone PDF template (amp_export_pdf.html).
    No Bootstrap/icon-font dependency: the PDF render has neither available. #}
 {% set latest_revision = revisions[-1] if revisions else None %}
+{% set is_draft = is_draft | default(false) %}
+{% if is_draft %}
+<div class="amp-export-watermark">DRAFT</div>
+{% endif %}
 <div id="amp-running-header">
-  AMP/{{ aircraft.registration }}/{{ latest_revision.revision_number if latest_revision else 'draft' }}<br>
-  {% if latest_revision and latest_revision.revision_date %}{{ latest_revision.revision_date.strftime('%d/%m/%Y') }}{% endif %}
+  AMP/{{ aircraft.registration }}/{{ 'draft' if is_draft or not latest_revision else latest_revision.revision_number }}<br>
+  {% if not is_draft and latest_revision and latest_revision.revision_date %}{{ latest_revision.revision_date.strftime('%d/%m/%Y') }}{% endif %}
 </div>
 
 <div class="amp-export">
+
+  {% if is_draft %}
+  <div class="amp-export-draft-banner">
+    ⚠
+    {% if latest_revision %}
+    {{ _('DRAFT — this reflects changes made after revision %(number)s (%(date)s) was declared. Add a new revision in block 10 once these changes are ready to be published.', number=latest_revision.revision_number, date=latest_revision.revision_date.strftime('%d/%m/%Y') if latest_revision.revision_date else '—') }}
+    {% else %}
+    {{ _('DRAFT — no revision has been declared yet (block 10). Add one once this AMP is ready to be published.') }}
+    {% endif %}
+  </div>
+  {% endif %}
 
   <h1 class="amp-export-title">{{ _('Part-ML Aircraft Maintenance Programme (AMP)') }}</h1>
   {# Regulatory form citation — not user-facing prose, deliberately not
