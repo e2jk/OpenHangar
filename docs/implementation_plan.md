@@ -1887,9 +1887,10 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
   OpenHangar), pilot-owner maintenance declaration (name, licence number, block 6),
   declaration type (owner declaration vs. contracted CAMO/CAO approval + reference,
   block 7), certifying party name/address/phone/email (block 8), and a lightweight
-  revision number/content/date (not a numbered block in the official form itself,
-  but standard practice — rendered as a document footer/Appendix D note, not a
-  fabricated "block 10")
+  revision number/content/date, rendered as block 10 ("Revision control & periodic
+  reviews") — a conventional block real shop-produced AMPs include even though it
+  isn't in the raw AMC/GM regulatory text itself; single revision entry only, not
+  yet a repeating history
 - [x] Edit form for `AmpDeclaration` (`/aircraft/<id>/amp/edit`) — a normal
   OpenHangar form, not spreadsheet import: this is ~15 rarely-changed fields, unlike
   the 100+-row task list, so a form is simpler than building a second, narrower
@@ -1957,15 +1958,24 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
 **AMP document export:**
 - [x] "Export AMP" action on the aircraft maintenance page, gated on `AmpDeclaration`
   existing for that aircraft (prompts to fill in the profile form first otherwise)
-- [x] Output format: print-ready HTML (a dedicated template styled to match the
-  official form's block/table layout, with `@media print` rules for clean pagination),
-  not PDF — OpenHangar has no PDF generation pipeline anywhere in the codebase today;
-  every other phase that wanted a PDF (Phase 39's co-owner statements, Phase 38's
-  renter statements) shipped CSV/HTML-only for the same reason. The user prints or
-  "prints to PDF" from the browser, same as any other browser-native document. Revisit
-  as a real PDF export once Phase 46 (Advanced Reporting & Exports) delivers a PDF
-  pipeline for the logbook/cost-report exports it already plans — this phase shouldn't
-  be the one to introduce that dependency
+- [x] Output format: a real, server-rendered PDF via WeasyPrint (Jinja2 HTML+CSS →
+  PDF, `weasyprint.HTML(string=...).write_pdf()`) — not a browser print-to-PDF.
+  WeasyPrint dlopen's pango/cairo via cffi at runtime (no compiler/build-time headers
+  needed), added to `docker/Dockerfile`'s runtime stage (`apk add pango font-dejavu`)
+  and to the CI test job (`libpango-1.0-0`/`fonts-dejavu-core`) so the render is
+  exercised for real, not mocked. Styled after two real shop-produced Part-ML AMPs
+  (black header bars, a merged block-number gutter column, single-answer Yes/No
+  cells) rather than the plain regulatory illustrative table or the official blank
+  EASA/national-CAA template (confirmed via that template's own styling that this
+  visual convention is the maintenance shop's house style, not an EASA requirement —
+  content still follows the AMC2 ML.A.302 block structure). An on-screen HTML preview
+  (`amp_export.html`) and the PDF (`amp_export_pdf.html`, standalone — no app
+  chrome/Bootstrap dependency) render the same shared template partials
+  (`_amp_export_body.html`/`_amp_export_style.html`), so there's one source of truth
+  for the document content, matching the round-trip design principle above. This
+  supersedes the originally-planned "defer to Phase 46" browser-print-only approach —
+  built directly into this phase instead once a working WeasyPrint pipeline was
+  validated end-to-end.
 - [x] Blocks 1–3 rendered from `Aircraft`/`Component`/`AmpDeclaration`: registration,
   type, serial number, owner identity (block 1); programme basis (block 2); DAH ICA
   equipment/reference rows for airframe/engine/propeller (block 3a–3c, one row per

@@ -8,6 +8,7 @@ from typing import Any
 import openpyxl  # pyright: ignore[reportMissingImports]
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
+    Response,
     abort,
     current_app,
     flash,
@@ -51,6 +52,7 @@ from utils import (
     require_role,
     user_can_access_aircraft,
 )  # pyright: ignore[reportMissingImports]
+from weasyprint import HTML  # pyright: ignore[reportMissingImports]
 from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
 
 from maintenance.amp_import import (  # pyright: ignore[reportMissingImports]
@@ -902,18 +904,14 @@ def import_amp_rollback(aircraft_id: int, batch_id: int) -> ResponseReturnValue:
 # ── AMP document export ─────────────────────────────────────────────────────
 
 
-@maintenance_bp.route("/aircraft/<aircraft_ref:aircraft_id>/maintenance/amp/export")
-@login_required
-@require_role(*_MAINT_ROLES)
-def export_amp(aircraft_id: int) -> ResponseReturnValue:
-    ac = _get_aircraft_or_404(aircraft_id)
+def _amp_export_context(ac: Aircraft) -> dict[str, Any] | None:
+    """Build the template context for the AMP export (HTML preview and PDF
+    download render the same template from the same data — see
+    docs/maintenance_import.md's round-trip design note). Returns None if
+    the aircraft has no AMP declaration profile yet."""
     decl: AmpDeclaration | None = ac.amp_declaration  # type: ignore[assignment]
     if decl is None:
-        flash(
-            _("Fill in the AMP declaration profile before exporting the AMP document."),
-            "warning",
-        )
-        return redirect(url_for("maintenance.edit_amp_declaration", aircraft_id=ac.id))
+        return None
 
     components = list(ac.components)
 
@@ -949,20 +947,59 @@ def export_amp(aircraft_id: int) -> ResponseReturnValue:
     # import captured one) alongside it.
     pending_review_rows = [t for t in triggers if t.needs_review]
 
-    return render_template(
-        "maintenance/amp_export.html",
-        aircraft=ac,
-        decl=decl,
-        airframe_component=_installed(ComponentType.AIRFRAME),
-        engine_component=_installed(ComponentType.ENGINE),
-        propeller_component=_installed(ComponentType.PROPELLER),
-        category_has_items=category_has_items,
-        has_alternative_tasks=has_alternative_tasks,
-        appendix_b_groups=appendix_b_groups,
-        appendix_c_rows=appendix_c_rows,
-        interval_text=interval_text,
-        pending_review_rows=pending_review_rows,
-        amp_basis=AmpBasis,
-        declaration_types=AmpDeclarationType,
-        certifying_party_kinds=AmpCertifyingPartyKind,
+    return {
+        "aircraft": ac,
+        "decl": decl,
+        "airframe_component": _installed(ComponentType.AIRFRAME),
+        "engine_component": _installed(ComponentType.ENGINE),
+        "propeller_component": _installed(ComponentType.PROPELLER),
+        "category_has_items": category_has_items,
+        "has_alternative_tasks": has_alternative_tasks,
+        "appendix_b_groups": appendix_b_groups,
+        "appendix_c_rows": appendix_c_rows,
+        "interval_text": interval_text,
+        "pending_review_rows": pending_review_rows,
+        "amp_basis": AmpBasis,
+        "declaration_types": AmpDeclarationType,
+        "certifying_party_kinds": AmpCertifyingPartyKind,
+    }
+
+
+@maintenance_bp.route("/aircraft/<aircraft_ref:aircraft_id>/maintenance/amp/export")
+@login_required
+@require_role(*_MAINT_ROLES)
+def export_amp(aircraft_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    context = _amp_export_context(ac)
+    if context is None:
+        flash(
+            _("Fill in the AMP declaration profile before exporting the AMP document."),
+            "warning",
+        )
+        return redirect(url_for("maintenance.edit_amp_declaration", aircraft_id=ac.id))
+
+    return render_template("maintenance/amp_export.html", **context)
+
+
+@maintenance_bp.route("/aircraft/<aircraft_ref:aircraft_id>/maintenance/amp/export/pdf")
+@login_required
+@require_role(*_MAINT_ROLES)
+def export_amp_pdf(aircraft_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    context = _amp_export_context(ac)
+    if context is None:
+        flash(
+            _("Fill in the AMP declaration profile before exporting the AMP document."),
+            "warning",
+        )
+        return redirect(url_for("maintenance.edit_amp_declaration", aircraft_id=ac.id))
+
+    html = render_template("maintenance/amp_export_pdf.html", **context)
+    pdf_bytes = HTML(string=html, base_url=request.url_root).write_pdf()
+
+    filename = secure_filename(f"AMP-{ac.registration}.pdf")
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
