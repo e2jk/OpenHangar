@@ -122,11 +122,17 @@ RUN rm -rf /usr/local/lib/python*/site-packages/pip \
 #   also use #!/usr/bin/env bash, but both run on the Docker *host*, not in
 #   this container, so only entrypoint's shebang matters here) — adding the
 #   ~5 MB package is far lower-risk than rewriting it POSIX-sh-clean.
+# pango: native rendering library the weasyprint pip package (AMP PDF export)
+#   dlopen's via cffi at runtime — no compiler or dev headers needed, so this
+#   doesn't change the builder-stage invariant above. Alpine's pango package
+#   pulls in cairo, harfbuzz, fontconfig, and freetype as transitive deps.
+# font-dejavu: Alpine ships no fonts at all by default — without one,
+#   WeasyPrint would render all text as blank boxes.
 # apk upgrade first: pulls in security patches not yet in the pinned base
 #   image digest, same purpose as the old image's `apt-get upgrade -y`.
 # hadolint ignore=DL3018
 RUN apk upgrade --no-cache && \
-    apk add --no-cache postgresql18-client libpq tzdata bash
+    apk add --no-cache postgresql18-client libpq tzdata bash pango font-dejavu
 
 WORKDIR /app
 
