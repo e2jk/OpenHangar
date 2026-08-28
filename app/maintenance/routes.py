@@ -837,7 +837,7 @@ def import_amp_commit(aircraft_id: int) -> ResponseReturnValue:
     )
 
     review_phrase = ngettext(
-        "%(n)s flagged for review",
+        "one flagged for review",
         "%(n)s flagged for review",
         batch.needs_review_count,
         n=batch.needs_review_count,
