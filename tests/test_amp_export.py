@@ -145,13 +145,16 @@ class TestExportContent:
         assert "AMP/OO-ICE/R01" in html
         assert "AMP/OO-ICE/RR01" not in html
 
-    def test_running_header_falls_back_to_r00_without_revision(self, app, client):
+    def test_running_header_falls_back_to_draft_without_revision(self, app, client):
+        # "R00" is a real, meaningful revision (the first published one) —
+        # using it as a no-revision-yet placeholder would misrepresent an
+        # undocumented AMP as already being on a published revision.
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid, registration="OO-NEW")
         _add_declaration(app, acid)
         _login(app, client)
         r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
-        assert "AMP/OO-NEW/R00" in r.data.decode()
+        assert "AMP/OO-NEW/draft" in r.data.decode()
 
     def test_block_4_yes_for_category_with_triggers(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
@@ -619,11 +622,12 @@ class TestPdfExport:
         r = client.get(f"/aircraft/{acid}/maintenance/amp/export/pdf")
         assert r.status_code == 200
         assert r.headers["Content-Type"] == "application/pdf"
-        # No revision recorded yet — falls back to today's date and "R00".
+        # No revision recorded yet — falls back to today's date and "draft"
+        # (not "R00": that's a real, meaningful first-published revision).
         today = date.today().isoformat()
         assert (
             r.headers["Content-Disposition"]
-            == f'attachment; filename="{today}-AMP-OO-LKN-R00.pdf"'
+            == f'attachment; filename="{today}-AMP-OO-LKN-draft.pdf"'
         )
         assert r.data[:5] == b"%PDF-"
 

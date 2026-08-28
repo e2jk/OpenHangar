@@ -1060,7 +1060,7 @@ def export_amp_pdf(aircraft_id: int) -> ResponseReturnValue:
         if latest_revision and latest_revision.revision_date
         else _date.today().isoformat()
     )
-    revision_str = latest_revision.revision_number if latest_revision else "R00"
+    revision_str = latest_revision.revision_number if latest_revision else "draft"
     filename = secure_filename(f"{date_str}-AMP-{ac.registration}-{revision_str}.pdf")
     return Response(
         pdf_bytes,
