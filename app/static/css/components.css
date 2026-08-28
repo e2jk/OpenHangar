@@ -241,5 +241,9 @@ tr.clickable-row { cursor: pointer; }
 .amp-export-signature { height: 2.5rem; }
 .amp-export-appendix-title { font-size: 1.1rem; margin: 1.5rem 0 .5rem; border-bottom: 2px solid #333; padding-bottom: .2rem; }
 .amp-export-revision { font-size: .85rem; color: #555; }
+.amp-export-pending-banner { margin-bottom: 1.5rem; }
+/* Bold, not just colour — colour alone can wash out on a B&W print/PDF. */
+.amp-export-pending-marker { font-weight: 700; color: #b45309; }
 [data-bs-theme=dark] .amp-export-section-row th { background: #2a2d31; }
 [data-bs-theme=dark] .amp-export-table th, [data-bs-theme=dark] .amp-export-table td { border-color: #4a4d51; }
+[data-bs-theme=dark] .amp-export-pending-marker { color: #fbbf24; }
