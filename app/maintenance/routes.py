@@ -663,6 +663,19 @@ def add_amp_revision(aircraft_id: int) -> ResponseReturnValue:
     context = _amp_export_context(ac)
     if context is not None:
         rev.content_hash = _amp_content_signature(context)
+        # Generate the canonical PDF now rather than waiting for a first
+        # download — closes the gap where a revision superseded before
+        # anyone ever downloaded it has no saved file, and makes the
+        # eventual download instant instead of rendering on demand.
+        # Best-effort: a render failure shouldn't block recording the
+        # revision itself — export_amp_pdf's own cache-fill fallback
+        # covers it if this doesn't happen for whatever reason.
+        try:
+            _render_and_cache_amp_pdf(context, rev)
+        except Exception:
+            current_app.logger.exception(
+                "Failed to pre-generate PDF for AMP revision %s", rev.id
+            )
 
     db.session.commit()
     flash(_("Revision added."), "success")
@@ -1140,6 +1153,21 @@ def _amp_pdf_storage_path(revision_id: int) -> tuple[str, str]:
     return folder, f"amp_revision_{revision_id}.pdf"
 
 
+def _render_and_cache_amp_pdf(context: dict[str, Any], revision: AmpRevision) -> bytes:
+    """Render the (non-draft) PDF for *revision* and save it as its
+    canonical file, setting pdf_path. Caller commits. Does not check
+    is_draft — only call this when the caller has already established the
+    current data matches this revision."""
+    html = render_template("maintenance/amp_export_pdf.html", is_draft=False, **context)
+    pdf_bytes: bytes = HTML(string=html, base_url=request.url_root).write_pdf()
+    folder, stored_name = _amp_pdf_storage_path(revision.id)
+    os.makedirs(folder, exist_ok=True)
+    with open(os.path.join(folder, stored_name), "wb") as f:
+        f.write(pdf_bytes)
+    revision.pdf_path = stored_name
+    return pdf_bytes
+
+
 @maintenance_bp.route("/aircraft/<aircraft_ref:aircraft_id>/maintenance/amp/export")
 @login_required
 @require_role(*_MAINT_ROLES)
@@ -1187,21 +1215,17 @@ def export_amp_pdf(aircraft_id: int) -> ResponseReturnValue:
                 headers={"Content-Disposition": f'attachment; filename="{filename}"'},
             )
 
-    html = render_template(
-        "maintenance/amp_export_pdf.html", is_draft=is_draft, **context
-    )
-    pdf_bytes = HTML(string=html, base_url=request.url_root).write_pdf()
-
-    # Not a draft and not cached yet: this download becomes the canonical
-    # file for the latest revision, from here on served instead of
-    # re-rendered.
     if not is_draft and latest_revision:
-        folder, stored_name = _amp_pdf_storage_path(latest_revision.id)
-        os.makedirs(folder, exist_ok=True)
-        with open(os.path.join(folder, stored_name), "wb") as f:
-            f.write(pdf_bytes)
-        latest_revision.pdf_path = stored_name
+        # Not a draft and not cached yet — normally already generated when
+        # the revision was added; this is the fallback for a revision
+        # created outside that flow (a script, a failed eager render).
+        pdf_bytes = _render_and_cache_amp_pdf(context, latest_revision)
         db.session.commit()
+    else:
+        html = render_template(
+            "maintenance/amp_export_pdf.html", is_draft=is_draft, **context
+        )
+        pdf_bytes = HTML(string=html, base_url=request.url_root).write_pdf()
 
     return Response(
         pdf_bytes,
