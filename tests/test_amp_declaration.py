@@ -288,6 +288,22 @@ class TestRevisionHistory:
             assert revs[0].revision_content == "Initial release"
             assert revs[0].revision_date == date(2026, 8, 25)
 
+    def test_add_revision_fingerprints_current_data_when_declaration_exists(
+        self, app, client
+    ):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            db.session.add(AmpDeclaration(aircraft_id=acid))
+            db.session.commit()
+        _login(app, client)
+        client.post(
+            f"/aircraft/{acid}/amp/revisions/add", data={"revision_number": "R00"}
+        )
+        with app.app_context():
+            rev = AmpRevision.query.filter_by(aircraft_id=acid).first()
+            assert rev.content_hash is not None
+
     def test_add_revision_without_declaration_yet(self, app, client):
         # AmpRevision is keyed on aircraft_id, not the declaration — adding
         # a revision before the declaration profile exists must still work.
@@ -351,6 +367,27 @@ class TestRevisionHistory:
         acid = _add_aircraft(app, tid)
         with app.app_context():
             rev = AmpRevision(aircraft_id=acid, revision_number="R00")
+            db.session.add(rev)
+            db.session.commit()
+            rev_id = rev.id
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/amp/revisions/{rev_id}/delete", follow_redirects=False
+        )
+        assert r.status_code == 302
+        with app.app_context():
+            assert db.session.get(AmpRevision, rev_id) is None
+
+    def test_delete_revision_tolerates_already_missing_file(self, app, client):
+        # pdf_path pointing at a file that's already gone (e.g. removed by
+        # hand, or a previous delete that didn't fully clean up) must not
+        # crash the request — best-effort cleanup, not a hard requirement.
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            rev = AmpRevision(
+                aircraft_id=acid, revision_number="R00", pdf_path="does_not_exist.pdf"
+            )
             db.session.add(rev)
             db.session.commit()
             rev_id = rev.id

@@ -1760,6 +1760,19 @@ class AmpRevision(db.Model):
     revision_number = db.Column(db.String(16), nullable=False)
     revision_content = db.Column(db.Text, nullable=True)
     revision_date = db.Column(db.Date, nullable=True)
+    # SHA-256 of the export HTML rendered at the moment this revision was
+    # added — the "what did the AMP look like when this revision was
+    # declared" snapshot. A later export whose freshly-rendered HTML hashes
+    # to something else means the AMP's data has drifted since this
+    # revision, so a download at that point is a draft, not this revision.
+    content_hash = db.Column(db.String(64), nullable=True)
+    # Path (relative to UPLOAD_FOLDER, mirrors Document.filename) of the
+    # canonical PDF for this revision — set the first time a download
+    # happens while content_hash still matches the live data, so this
+    # revision's exact bytes stay re-downloadable even after later edits.
+    # Never set at all if this revision was superseded before anyone ever
+    # downloaded it while current — there is no way to reconstruct that.
+    pdf_path = db.Column(db.String(512), nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

@@ -1,5 +1,6 @@
 """Tests for Phase 40: AMP document export route (maintenance.export_amp)."""
 
+import os
 import re
 from datetime import date
 
@@ -75,9 +76,24 @@ def _add_trigger(app, aircraft_id, **kwargs):
 
 
 def _add_revision(app, aircraft_id, **kwargs):
+    """By default this fingerprints the aircraft's *current* AMP data, so a
+    fresh export right after calling this is NOT a draft — matching what
+    the real add_amp_revision route does. Pass content_hash explicitly to
+    simulate a revision recorded against different (e.g. now-stale) data."""
+    from maintenance.routes import (  # pyright: ignore[reportMissingImports]
+        _amp_content_signature,
+        _amp_export_context,
+    )
+
     with app.app_context():
+        ac = db.session.get(Aircraft, aircraft_id)
         rev = AmpRevision(aircraft_id=aircraft_id, **kwargs)
         db.session.add(rev)
+        db.session.flush()
+        if "content_hash" not in kwargs:
+            context = _amp_export_context(ac)
+            if context is not None:
+                rev.content_hash = _amp_content_signature(context)
         db.session.commit()
         return rev.id
 
@@ -656,3 +672,207 @@ class TestPdfExport:
         r = client.get(f"/aircraft/{acid}/maintenance/amp/export/pdf")
         assert r.status_code == 200
         assert "/" not in r.headers["Content-Disposition"].split("filename=")[1]
+
+
+class TestDraftAndCanonicalPdf:
+    """A download is only ever "revision R" when the live AMP data still
+    matches what was fingerprinted when R was declared — otherwise it's a
+    draft. The first non-draft download of a revision gets cached to disk
+    and reused, so re-downloading that same revision later (even after the
+    live data has since moved on) returns byte-identical bytes."""
+
+    def test_html_preview_shows_draft_banner_without_any_revision(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        html = r.data.decode()
+        assert '<div class="amp-export-draft-banner">' in html
+        assert "no revision has been declared yet" in html
+
+    def test_html_preview_no_draft_banner_when_matching_latest_revision(
+        self, app, client
+    ):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _add_revision(app, acid, revision_number="R00")
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert '<div class="amp-export-draft-banner">' not in r.data.decode()
+
+    def test_html_preview_shows_draft_banner_after_data_changes(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _add_revision(app, acid, revision_number="R00", revision_date=date(2026, 1, 1))
+        # Data changes after the revision was declared, without a new
+        # revision being recorded for it.
+        _add_trigger(app, acid, name="New item added after R00")
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        html = r.data.decode()
+        assert '<div class="amp-export-draft-banner">' in html
+        assert "R00" in html
+        assert "01/01/2026" in html
+
+    def test_pdf_filename_is_draft_after_data_changes(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid, registration="OO-LKN")
+        _add_declaration(app, acid)
+        _add_revision(app, acid, revision_number="R00")
+        _add_trigger(app, acid, name="New item added after R00")
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export/pdf")
+        today = date.today().isoformat()
+        assert (
+            r.headers["Content-Disposition"]
+            == f'attachment; filename="{today}-AMP-OO-LKN-draft.pdf"'
+        )
+
+    def test_pdf_watermarked_when_draft(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export/pdf")
+        # A real PDF's content stream is compressed, so "DRAFT" won't be a
+        # literal grep match — assert the render didn't error instead, and
+        # confirm the same behaviour through the (readable) HTML preview
+        # above. This just checks the draft PDF path doesn't 500.
+        assert r.status_code == 200
+        assert r.data[:5] == b"%PDF-"
+
+    def test_editing_declaration_field_after_revision_causes_draft(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid, certifying_party_name="Original Name")
+        _add_revision(app, acid, revision_number="R00")
+        with app.app_context():
+            decl = AmpDeclaration.query.filter_by(aircraft_id=acid).first()
+            decl.certifying_party_name = "Changed Name"
+            db.session.commit()
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert '<div class="amp-export-draft-banner">' in r.data.decode()
+
+    def test_deleting_trigger_after_revision_causes_draft(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        tid_ = _add_trigger(app, acid, name="Will be deleted")
+        _add_revision(app, acid, revision_number="R00")
+        with app.app_context():
+            t = db.session.get(MaintenanceTrigger, tid_)
+            db.session.delete(t)
+            db.session.commit()
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert '<div class="amp-export-draft-banner">' in r.data.decode()
+
+    def test_first_matching_download_caches_pdf_on_revision(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        rev_id = _add_revision(app, acid, revision_number="R00")
+        with app.app_context():
+            assert db.session.get(AmpRevision, rev_id).pdf_path is None
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export/pdf")
+        assert r.status_code == 200
+        with app.app_context():
+            assert db.session.get(AmpRevision, rev_id).pdf_path is not None
+
+    def test_second_matching_download_serves_cached_bytes(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        rev_id = _add_revision(app, acid, revision_number="R00")
+        _login(app, client)
+        client.get(f"/aircraft/{acid}/maintenance/amp/export/pdf")
+
+        # Overwrite the cached file with a sentinel — a *fresh* render would
+        # never produce this, so getting it back proves the cache was used
+        # instead of regenerating.
+        with app.app_context():
+            rev = db.session.get(AmpRevision, rev_id)
+            folder = app.config["UPLOAD_FOLDER"]
+            path = os.path.join(folder, rev.pdf_path)
+            with open(path, "wb") as f:
+                f.write(b"%PDF-SENTINEL")
+
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export/pdf")
+        assert r.data == b"%PDF-SENTINEL"
+
+    def test_download_specific_revision_pdf(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid, registration="OO-LKN")
+        _add_declaration(app, acid)
+        rev_id = _add_revision(
+            app, acid, revision_number="R00", revision_date=date(2026, 1, 1)
+        )
+        _login(app, client)
+        # First download while current caches the canonical PDF for R00.
+        client.get(f"/aircraft/{acid}/maintenance/amp/export/pdf")
+        # Data drifts — a plain export/pdf would now be a draft — but the
+        # R00-specific route must still return R00's exact saved bytes.
+        _add_trigger(app, acid, name="New item added after R00")
+        r = client.get(f"/aircraft/{acid}/amp/revisions/{rev_id}/pdf")
+        assert r.status_code == 200
+        assert (
+            r.headers["Content-Disposition"]
+            == 'attachment; filename="2026-01-01-AMP-OO-LKN-R00.pdf"'
+        )
+        assert r.data[:5] == b"%PDF-"
+
+    def test_download_specific_revision_pdf_never_downloaded_yet(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        rev_id = _add_revision(app, acid, revision_number="R00")
+        _login(app, client)
+        r = client.get(
+            f"/aircraft/{acid}/amp/revisions/{rev_id}/pdf",
+            follow_redirects=True,
+        )
+        assert b"was never" in r.data
+
+    def test_download_specific_revision_pdf_missing_on_disk(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        rev_id = _add_revision(
+            app, acid, revision_number="R00", pdf_path="does_not_exist.pdf"
+        )
+        _login(app, client)
+        r = client.get(
+            f"/aircraft/{acid}/amp/revisions/{rev_id}/pdf", follow_redirects=True
+        )
+        assert b"missing on disk" in r.data
+
+    def test_download_specific_revision_pdf_404_for_other_tenant(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        rev_id = _add_revision(app, acid, revision_number="R00")
+        _, other_tid = _create_user_and_tenant(app, email="other@example.com")
+        other_acid = _add_aircraft(app, other_tid, registration="OO-OTH")
+        _login(app, client, email="other@example.com")
+        r = client.get(f"/aircraft/{other_acid}/amp/revisions/{rev_id}/pdf")
+        assert r.status_code == 404
+
+    def test_deleting_revision_removes_cached_pdf_from_disk(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        rev_id = _add_revision(app, acid, revision_number="R00")
+        _login(app, client)
+        client.get(f"/aircraft/{acid}/maintenance/amp/export/pdf")
+        with app.app_context():
+            rev = db.session.get(AmpRevision, rev_id)
+            folder = app.config["UPLOAD_FOLDER"]
+            path = os.path.join(folder, rev.pdf_path)
+            assert os.path.exists(path)
+        client.post(f"/aircraft/{acid}/amp/revisions/{rev_id}/delete")
+        assert not os.path.exists(path)

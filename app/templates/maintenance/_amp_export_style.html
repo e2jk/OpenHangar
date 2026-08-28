@@ -56,6 +56,22 @@
   }
   /* Bold, not just colour — colour alone can wash out on a B&W print/PDF. */
   .amp-export-pending-marker { font-weight: 700; color: #b45309; }
+  .amp-export-draft-banner {
+    margin-bottom: 1.5rem; padding: .6rem .9rem; border: 1px solid #b91c1c;
+    background: #fef2f2; color: #991b1b; font-weight: 600;
+  }
+  /* position: fixed repeats this on every page in WeasyPrint's paged-media
+     render (same mechanism print CSS/browsers use for fixed headers), so
+     one element watermarks the whole document, not just page 1. Rotated,
+     low-opacity, and behind the content (negative z-index) so it never
+     obscures anything underneath — legible as "this isn't the real
+     document" without interfering with reading it. */
+  .amp-export-watermark {
+    position: fixed; top: 40%; left: 5%; width: 90%; text-align: center;
+    transform: rotate(-30deg); font-size: 100pt; font-weight: 700;
+    color: rgba(185, 28, 28, 0.15); z-index: -1; pointer-events: none;
+    user-select: none;
+  }
 
   @media print {
     .amp-export-block { break-inside: avoid; }

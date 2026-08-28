@@ -177,6 +177,35 @@ page:
   time. Add/delete entries from the AMP declaration edit page; export
   renders them oldest-first, matching how shop documents lay out block 10.
 
+### Draft detection and canonical PDFs
+
+Each `AmpRevision` stores a fingerprint (`content_hash`, a SHA-256 of the
+aircraft's data — owner/declaration fields, every trigger, and the revision
+list itself) captured at the moment that revision was added. A PDF download
+recomputes that same fingerprint from the AMP's *current* data and compares
+it to the latest declared revision:
+
+- **Matches** — the download really is that revision. The first such
+  download gets saved to disk (`AmpRevision.pdf_path`, under
+  `UPLOAD_FOLDER`, mirroring how `Document` stores files) and reused byte-
+  for-byte on every later download of the same revision, instead of
+  re-rendering. Each row in the revision history list has its own download
+  link, so an old revision's exact file stays available even after the live
+  AMP has since moved on — as long as it was downloaded at least once while
+  still current. There's no field-level history to reconstruct one that
+  wasn't.
+- **Doesn't match** (including: no revision declared at all yet) — the
+  download is a **draft**: the filename and running header say "draft"
+  instead of a revision number/date, and the PDF carries a diagonal "DRAFT"
+  watermark on every page, so it can't be mistaken for an already-declared
+  revision even without checking the filename. Nothing is cached for a
+  draft — every draft download is a fresh render.
+
+The fingerprint is computed over the underlying *data*, not the rendered
+HTML/PDF — hashing the render would make every aircraft's latest revision
+look "drafted" after any future template/CSS tweak, or a locale switch,
+even with byte-identical data.
+
 Because export reads the same fields import writes, editing a maintenance
 item's category, reference, or interval in OpenHangar — whether it came
 from an import or was entered by hand — changes what the next export

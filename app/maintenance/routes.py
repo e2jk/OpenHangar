@@ -1,4 +1,6 @@
+import hashlib
 import io
+import json
 import os
 import uuid
 from datetime import date as _date
@@ -643,14 +645,25 @@ def add_amp_revision(aircraft_id: int) -> ResponseReturnValue:
             flash(msg, "danger")
         return redirect(url_for("maintenance.edit_amp_declaration", aircraft_id=ac.id))
 
-    db.session.add(
-        AmpRevision(
-            aircraft_id=ac.id,
-            revision_number=revision_number,
-            revision_content=revision_content,
-            revision_date=revision_date,
-        )
+    rev = AmpRevision(
+        aircraft_id=ac.id,
+        revision_number=revision_number,
+        revision_content=revision_content,
+        revision_date=revision_date,
     )
+    db.session.add(rev)
+    db.session.flush()
+
+    # Snapshot what the AMP looks like right now as this revision's
+    # fingerprint — a later export whose data no longer matches this is a
+    # draft, not this revision. Only possible once a declaration profile
+    # exists; a revision added before that has no exportable content yet
+    # to fingerprint (content_hash stays unset, matching "nothing to
+    # compare against" rather than a false non-match).
+    context = _amp_export_context(ac)
+    if context is not None:
+        rev.content_hash = _amp_content_signature(context)
+
     db.session.commit()
     flash(_("Revision added."), "success")
     return redirect(url_for("maintenance.edit_amp_declaration", aircraft_id=ac.id))
@@ -668,6 +681,14 @@ def delete_amp_revision(aircraft_id: int, revision_id: int) -> ResponseReturnVal
     if not rev or rev.aircraft_id != ac.id:
         abort(404)
     number = rev.revision_number
+    if rev.pdf_path:
+        folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+        try:
+            os.remove(os.path.join(folder, rev.pdf_path))
+        except OSError:
+            current_app.logger.debug(
+                "AMP revision PDF already absent, skipping: %s", rev.pdf_path
+            )
     db.session.delete(rev)
     db.session.commit()
     flash(_("Revision '%(number)s' deleted.", number=number), "success")
@@ -1005,6 +1026,7 @@ def _amp_export_context(ac: Aircraft) -> dict[str, Any] | None:
     return {
         "aircraft": ac,
         "decl": decl,
+        "triggers": triggers,
         "airframe_component": _installed(ComponentType.AIRFRAME),
         "engine_component": _installed(ComponentType.ENGINE),
         "propeller_component": _installed(ComponentType.PROPELLER),
@@ -1021,6 +1043,103 @@ def _amp_export_context(ac: Aircraft) -> dict[str, Any] | None:
     }
 
 
+def _amp_content_signature(context: dict[str, Any]) -> str:
+    """SHA-256 fingerprint of the exportable AMP content — used to detect
+    whether anything has changed since the last declared AmpRevision.
+
+    Deliberately a hash of the underlying *data*, not of the rendered
+    HTML/PDF: hashing the render would make every export "drift" after any
+    future template/CSS tweak or a locale switch, even with byte-identical
+    underlying data — a false positive on every single aircraft at once.
+    """
+    ac = context["aircraft"]
+    decl = context["decl"]
+
+    def _component(c: Component | None) -> dict[str, Any] | None:
+        return (
+            None
+            if c is None
+            else {"make": c.make, "model": c.model, "serial_number": c.serial_number}
+        )
+
+    payload = {
+        "aircraft": {
+            "registration": ac.registration,
+            "make": ac.make,
+            "model": ac.model,
+        },
+        "airframe": _component(context["airframe_component"]),
+        "engine": _component(context["engine_component"]),
+        "propeller": _component(context["propeller_component"]),
+        "declaration": {
+            col.name: str(getattr(decl, col.name))
+            for col in AmpDeclaration.__table__.columns
+            if col.name not in ("aircraft_id", "updated_at")
+        },
+        "triggers": [
+            {
+                "name": t.name,
+                "category": t.category,
+                "is_alternative_to_ica": t.is_alternative_to_ica,
+                "alternative_task_notes": t.alternative_task_notes,
+                "reference": t.reference,
+                "interval_hours": str(t.interval_hours),
+                "interval_days": t.interval_days,
+                "needs_review": t.needs_review,
+                "notes": t.notes,
+            }
+            for t in sorted(context["triggers"], key=lambda t: t.id)
+        ],
+        "revisions": [
+            {
+                "revision_number": r.revision_number,
+                "revision_content": r.revision_content,
+                "revision_date": str(r.revision_date),
+            }
+            for r in context["revisions"]
+        ],
+    }
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, default=str).encode("utf-8")
+    ).hexdigest()
+
+
+def _amp_draft_status(
+    context: dict[str, Any],
+) -> tuple[bool, AmpRevision | None]:
+    """Return (is_draft, latest_revision). is_draft is True when there's no
+    declared revision yet, or the AMP's current data no longer matches the
+    fingerprint recorded when the latest one was declared."""
+    revisions = context["revisions"]
+    latest_revision = revisions[-1] if revisions else None
+    if latest_revision is None:
+        return True, None
+    current_hash = _amp_content_signature(context)
+    return current_hash != latest_revision.content_hash, latest_revision
+
+
+def _amp_pdf_filename(
+    ac: Aircraft, is_draft: bool, latest_revision: AmpRevision | None
+) -> str:
+    date_str = (
+        latest_revision.revision_date.isoformat()
+        if not is_draft and latest_revision and latest_revision.revision_date
+        else _date.today().isoformat()
+    )
+    revision_str = (
+        "draft"
+        if is_draft or latest_revision is None
+        else latest_revision.revision_number
+    )
+    return secure_filename(f"{date_str}-AMP-{ac.registration}-{revision_str}.pdf")
+
+
+def _amp_pdf_storage_path(revision_id: int) -> tuple[str, str]:
+    """Return (folder, relative_filename) for a revision's cached canonical PDF."""
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    return folder, f"amp_revision_{revision_id}.pdf"
+
+
 @maintenance_bp.route("/aircraft/<aircraft_ref:aircraft_id>/maintenance/amp/export")
 @login_required
 @require_role(*_MAINT_ROLES)
@@ -1034,7 +1153,8 @@ def export_amp(aircraft_id: int) -> ResponseReturnValue:
         )
         return redirect(url_for("maintenance.edit_amp_declaration", aircraft_id=ac.id))
 
-    return render_template("maintenance/amp_export.html", **context)
+    is_draft, _latest_revision = _amp_draft_status(context)
+    return render_template("maintenance/amp_export.html", is_draft=is_draft, **context)
 
 
 @maintenance_bp.route("/aircraft/<aircraft_ref:aircraft_id>/maintenance/amp/export/pdf")
@@ -1050,18 +1170,92 @@ def export_amp_pdf(aircraft_id: int) -> ResponseReturnValue:
         )
         return redirect(url_for("maintenance.edit_amp_declaration", aircraft_id=ac.id))
 
-    html = render_template("maintenance/amp_export_pdf.html", **context)
+    is_draft, latest_revision = _amp_draft_status(context)
+    filename = _amp_pdf_filename(ac, is_draft, latest_revision)
+
+    # Not a draft and already cached: serve the exact bytes generated the
+    # first time this revision was downloaded, rather than a fresh render.
+    if not is_draft and latest_revision and latest_revision.pdf_path:
+        folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+        cached_path = os.path.join(folder, latest_revision.pdf_path)
+        if os.path.exists(cached_path):
+            with open(cached_path, "rb") as f:
+                pdf_bytes = f.read()
+            return Response(
+                pdf_bytes,
+                mimetype="application/pdf",
+                headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+            )
+
+    html = render_template(
+        "maintenance/amp_export_pdf.html", is_draft=is_draft, **context
+    )
     pdf_bytes = HTML(string=html, base_url=request.url_root).write_pdf()
 
-    revisions = context["revisions"]
-    latest_revision = revisions[-1] if revisions else None
-    date_str = (
-        latest_revision.revision_date.isoformat()
-        if latest_revision and latest_revision.revision_date
-        else _date.today().isoformat()
+    # Not a draft and not cached yet: this download becomes the canonical
+    # file for the latest revision, from here on served instead of
+    # re-rendered.
+    if not is_draft and latest_revision:
+        folder, stored_name = _amp_pdf_storage_path(latest_revision.id)
+        os.makedirs(folder, exist_ok=True)
+        with open(os.path.join(folder, stored_name), "wb") as f:
+            f.write(pdf_bytes)
+        latest_revision.pdf_path = stored_name
+        db.session.commit()
+
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
-    revision_str = latest_revision.revision_number if latest_revision else "draft"
-    filename = secure_filename(f"{date_str}-AMP-{ac.registration}-{revision_str}.pdf")
+
+
+@maintenance_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/amp/revisions/<int:revision_id>/pdf"
+)
+@login_required
+@require_role(*_MAINT_ROLES)
+def download_amp_revision_pdf(
+    aircraft_id: int, revision_id: int
+) -> ResponseReturnValue:
+    """Re-download a specific past revision's canonical PDF, byte-for-byte
+    as first generated — even after later edits have moved the live AMP
+    data on. Only available for a revision that was actually downloaded at
+    least once while it was still the current, undrafted state; there is
+    no field-level history to reconstruct one that wasn't."""
+    ac = _get_aircraft_or_404(aircraft_id)
+    rev = db.session.get(AmpRevision, revision_id)
+    if not rev or rev.aircraft_id != ac.id:
+        abort(404)
+    if not rev.pdf_path:
+        flash(
+            _(
+                "No saved PDF for revision '%(number)s' — it was never "
+                "downloaded while current.",
+                number=rev.revision_number,
+            ),
+            "warning",
+        )
+        return redirect(url_for("maintenance.edit_amp_declaration", aircraft_id=ac.id))
+
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    path = os.path.join(folder, rev.pdf_path)
+    if not os.path.exists(path):
+        flash(
+            _(
+                "The saved PDF for revision '%(number)s' is missing on disk.",
+                number=rev.revision_number,
+            ),
+            "danger",
+        )
+        return redirect(url_for("maintenance.edit_amp_declaration", aircraft_id=ac.id))
+
+    with open(path, "rb") as f:
+        pdf_bytes = f.read()
+    date_str = rev.revision_date.isoformat() if rev.revision_date else "undated"
+    filename = secure_filename(
+        f"{date_str}-AMP-{ac.registration}-{rev.revision_number}.pdf"
+    )
     return Response(
         pdf_bytes,
         mimetype="application/pdf",
