@@ -9583,8 +9583,8 @@ msgid "Additional information (Appendix D)"
 msgstr "Informations complémentaires (annexe D)"
 
 #: app/templates/maintenance/amp_declaration_form.html:159
-msgid "Revision number"
-msgstr "Numéro de révision"
+msgid "Revision number (block 10)"
+msgstr "Numéro de révision (bloc 10)"
 
 #: app/templates/maintenance/amp_declaration_form.html:164
 msgid "Revision content"

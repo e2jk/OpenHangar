@@ -122,6 +122,27 @@ class TestExportContent:
         assert b"DOC 1001586 GB" in r.data
         assert b"Zorg Piloot" in r.data
 
+    def test_running_header_does_not_double_up_revision_prefix(self, app, client):
+        # decl.revision_number already carries its own "R" prefix (matching
+        # real shop documents, e.g. "R01") — the running header must use it
+        # as-is, not prepend a second "R" (regression: rendered "RR01").
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid, registration="OO-ICE")
+        _add_declaration(app, acid, revision_number="R01")
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        html = r.data.decode()
+        assert "AMP/OO-ICE/R01" in html
+        assert "AMP/OO-ICE/RR01" not in html
+
+    def test_running_header_falls_back_to_r00_without_revision(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid, registration="OO-NEW")
+        _add_declaration(app, acid)
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert "AMP/OO-NEW/R00" in r.data.decode()
+
     def test_block_4_yes_for_category_with_triggers(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)

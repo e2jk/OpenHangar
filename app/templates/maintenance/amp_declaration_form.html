@@ -156,9 +156,9 @@
           </div>
           <div class="row mb-4">
             <div class="col-4">
-              <label for="revision_number" class="form-label">{{ _('Revision number') }}</label>
+              <label for="revision_number" class="form-label">{{ _('Revision number (block 10)') }}</label>
               <input type="text" class="form-control" id="revision_number" name="revision_number"
-                     value="{{ decl.revision_number if decl and decl.revision_number else '' }}" placeholder="0">
+                     value="{{ decl.revision_number if decl and decl.revision_number else '' }}" placeholder="R00">
             </div>
             <div class="col-4">
               <label for="revision_content" class="form-label">{{ _('Revision content') }}</label>

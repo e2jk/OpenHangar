@@ -2,7 +2,7 @@
    (amp_export.html) and the standalone PDF template (amp_export_pdf.html).
    No Bootstrap/icon-font dependency: the PDF render has neither available. #}
 <div id="amp-running-header">
-  AMP/{{ aircraft.registration }}/R{{ decl.revision_number or '00' }}<br>
+  AMP/{{ aircraft.registration }}/{{ decl.revision_number or 'R00' }}<br>
   {% if decl.revision_date %}{{ decl.revision_date.strftime('%d/%m/%Y') }}{% endif %}
 </div>
 
