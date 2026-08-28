@@ -162,11 +162,20 @@ Yes/No answer column, rather than the plain regulatory illustrative table.
 Signature lines are left blank — OpenHangar doesn't perform the legal act
 of signing the declaration.
 
-Block 10 (revision control) currently holds a single revision entry (the
-`revision_number`/`revision_content`/`revision_date` fields on the AMP
-declaration profile) — matching the shop layout's table shape, but not yet
-a repeating multi-row history. Track revisions elsewhere until that's
-extended.
+Block 1's "Owner" line and block 10 (revision control) are managed
+separately from the rest of the AMP declaration profile, on the same edit
+page:
+
+- **Owner (block 1)** — optional `owner_name`/`owner_address` fields.
+  Real AMPs can have the owner (block 1) and the certifying party (block
+  8) be different — e.g. a contracted CAMO/CAO certifying on behalf of a
+  different aircraft owner. Leave blank when they're the same (the common
+  case); export then falls back to the certifying party's own name/address.
+- **Revision history (block 10)** — a real multi-row list (`AmpRevision`,
+  one per aircraft), not a single field. Real shop-produced AMPs
+  consistently carry several rows here as the programme is revised over
+  time. Add/delete entries from the AMP declaration edit page; export
+  renders them oldest-first, matching how shop documents lay out block 10.
 
 Because export reads the same fields import writes, editing a maintenance
 item's category, reference, or interval in OpenHangar — whether it came

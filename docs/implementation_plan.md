@@ -1881,16 +1881,22 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
   scheduled" rather than silently evaluating as permanently `ok`
 - [x] `AmpDeclaration` model, one-to-one with `Aircraft` (nullable — only aircraft
   using the export feature need one): the EASA Form AMP fields that aren't
-  derivable from `Aircraft`/`Component`/`MaintenanceTrigger` — programme basis
-  (DAH ICA vs. MIP, block 2), DAH ICA references for airframe/engine/propeller
-  (block 3a–3c; balloon fields 3d–3g out of scope, no balloon support elsewhere in
-  OpenHangar), pilot-owner maintenance declaration (name, licence number, block 6),
-  declaration type (owner declaration vs. contracted CAMO/CAO approval + reference,
-  block 7), certifying party name/address/phone/email (block 8), and a lightweight
-  revision number/content/date, rendered as block 10 ("Revision control & periodic
-  reviews") — a conventional block real shop-produced AMPs include even though it
-  isn't in the raw AMC/GM regulatory text itself; single revision entry only, not
-  yet a repeating history
+  derivable from `Aircraft`/`Component`/`MaintenanceTrigger` — aircraft owner
+  name/address (block 1, optional — falls back to the certifying party below when
+  unset), programme basis (DAH ICA vs. MIP, block 2), DAH ICA references for
+  airframe/engine/propeller (block 3a–3c; balloon fields 3d–3g out of scope, no
+  balloon support elsewhere in OpenHangar), pilot-owner maintenance declaration
+  (name, licence number, block 6), declaration type (owner declaration vs.
+  contracted CAMO/CAO approval + reference, block 7), certifying party
+  name/address/phone/email (block 8), and Appendix D free-text notes
+- [x] `AmpRevision` model, one-to-many with `Aircraft`: block 10 ("Revision
+  control & periodic reviews") — a conventional block real shop-produced AMPs
+  include even though it isn't in the raw AMC/GM regulatory text itself. A real
+  repeating history (rev number/content/date per row), not a single field —
+  confirmed necessary by comparing generated exports against real shop AMPs
+  (OO-CPE's actual document has 3 revision rows). Managed via its own add/delete
+  routes on the AMP declaration edit page, not as fields on that form; export
+  renders rows oldest-first
 - [x] Edit form for `AmpDeclaration` (`/aircraft/<id>/amp/edit`) — a normal
   OpenHangar form, not spreadsheet import: this is ~15 rarely-changed fields, unlike
   the 100+-row task list, so a form is simpler than building a second, narrower
@@ -1977,9 +1983,10 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
   built directly into this phase instead once a working WeasyPrint pipeline was
   validated end-to-end.
 - [x] Blocks 1–3 rendered from `Aircraft`/`Component`/`AmpDeclaration`: registration,
-  type, serial number, owner identity (block 1); programme basis (block 2); DAH ICA
-  equipment/reference rows for airframe/engine/propeller (block 3a–3c, one row per
-  matching `Component`)
+  type, serial number, owner identity (block 1 — `owner_name`/`owner_address` when
+  set, else falls back to block 8's certifying party); programme basis (block 2);
+  DAH ICA equipment/reference rows for airframe/engine/propeller (block 3a–3c, one
+  row per matching `Component`)
 - [x] Block 4 (additional maintenance requirements Yes/No table): one row per
   `AmpCategory` value, "Yes" when at least one `MaintenanceTrigger` on the aircraft
   has that `category`, "No" otherwise — computed at render time, not stored
@@ -1999,10 +2006,11 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
   ordinary transcription, revisit only if real usage shows it's needed
 - [x] Appendix C: rendered only when at least one `is_alternative_to_ica` trigger
   exists; columns Task description / Reference / `alternative_task_notes`
-- [x] Appendix D: free-text field on `AmpDeclaration` (optional), rendered verbatim if
-  present; the revision number/content/date from `AmpDeclaration` are appended here
-  as a small "Revision history" note, since the official form has no dedicated block
-  for it
+- [x] Appendix D: free-text field on `AmpDeclaration` (optional), rendered verbatim
+  if present
+- [x] Block 10: `AmpRevision` rows for the aircraft, oldest-first, one table row
+  each; empty state (no revisions yet) renders a single em-dash row rather than an
+  empty table
 - [x] Round-trip note in `docs/maintenance_import.md`: explicitly document that export
   reads the same `category`/`is_alternative_to_ica`/`AmpDeclaration` fields the
   importer writes, so editing triggers in OpenHangar after import changes the next

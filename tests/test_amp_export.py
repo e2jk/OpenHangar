@@ -8,6 +8,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AmpCategory,
     AmpDeclaration,
+    AmpRevision,
     Component,
     ComponentType,
     MaintenanceTrigger,
@@ -73,6 +74,14 @@ def _add_trigger(app, aircraft_id, **kwargs):
         return t.id
 
 
+def _add_revision(app, aircraft_id, **kwargs):
+    with app.app_context():
+        rev = AmpRevision(aircraft_id=aircraft_id, **kwargs)
+        db.session.add(rev)
+        db.session.commit()
+        return rev.id
+
+
 class TestAuthAndGating:
     def test_redirects_when_not_logged_in(self, client):
         r = client.get("/aircraft/1/maintenance/amp/export")
@@ -123,12 +132,13 @@ class TestExportContent:
         assert b"Zorg Piloot" in r.data
 
     def test_running_header_does_not_double_up_revision_prefix(self, app, client):
-        # decl.revision_number already carries its own "R" prefix (matching
-        # real shop documents, e.g. "R01") — the running header must use it
+        # revision_number already carries its own "R" prefix (matching real
+        # shop documents, e.g. "R01") — the running header must use it
         # as-is, not prepend a second "R" (regression: rendered "RR01").
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid, registration="OO-ICE")
-        _add_declaration(app, acid, revision_number="R01")
+        _add_declaration(app, acid)
+        _add_revision(app, acid, revision_number="R01")
         _login(app, client)
         r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
         html = r.data.decode()
@@ -250,7 +260,8 @@ class TestExportContent:
     def test_block_10_shows_revision_history(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)
-        _add_declaration(
+        _add_declaration(app, acid)
+        _add_revision(
             app,
             acid,
             revision_number="0",
@@ -263,6 +274,29 @@ class TestExportContent:
         assert "Revision control & periodic reviews" in html
         assert "Initial release" in html
         assert "25/08/2026" in html
+
+    def test_block_10_shows_multiple_revisions_in_order(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _add_revision(app, acid, revision_number="0", revision_date=date(2026, 1, 1))
+        _add_revision(app, acid, revision_number="1", revision_date=date(2026, 6, 1))
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        html = r.data.decode()
+        block_10 = html[html.index("Revision control & periodic reviews") :]
+        idx0 = block_10.index(">0<")
+        idx1 = block_10.index(">1<")
+        assert idx0 < idx1  # oldest first, matching real shop documents
+
+    def test_block_10_empty_state_when_no_revisions(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_declaration(app, acid)
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance/amp/export")
+        assert r.status_code == 200
+        assert "Revision control & periodic reviews" in r.data.decode()
 
     def test_appendix_d_absent_without_notes_or_revision(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
