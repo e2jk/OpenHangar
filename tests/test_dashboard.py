@@ -453,8 +453,8 @@ class TestStatCardPluralization:
         _add_aircraft(app, tid)
         _login(app, client, "pl_ac1@example.com")
         r = client.get("/")
-        assert "Aéronef".encode() in r.data
-        assert "Aéronefs".encode() not in r.data
+        assert b"Avion" in r.data
+        assert b"Avions" not in r.data
 
     def test_aircraft_plural_french(self, app, client):
         uid, tid = _setup(app, email="pl_ac2@example.com")
@@ -463,7 +463,7 @@ class TestStatCardPluralization:
         _add_aircraft(app, tid, registration="OO-BB")
         _login(app, client, "pl_ac2@example.com")
         r = client.get("/")
-        assert "Aéronefs".encode() in r.data
+        assert b"Avions" in r.data
 
     # ── Hours this month ─────────────────────────────────────────────────
 

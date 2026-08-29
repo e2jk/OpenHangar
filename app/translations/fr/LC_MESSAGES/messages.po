@@ -462,7 +462,7 @@ msgstr "Configuration terminée. Bienvenue dans OpenHangar !"
 
 #: app/auth/routes.py:791 app/templates/dashboard.html:506
 msgid "Add your first aircraft"
-msgstr "Ajouter votre premier aéronef"
+msgstr "Ajouter votre premier avion"
 
 #: app/auth/routes.py:792
 msgid "Register your first flight"
@@ -653,8 +653,8 @@ msgstr[1] "Remplissage terminé : %(updated)d entrées sur %(total)d résolues
 #, python-format
 msgid "Back-fill complete: %(count)d entry linked to a managed aircraft."
 msgid_plural "Back-fill complete: %(count)d entries linked to a managed aircraft."
-msgstr[0] "Remplissage terminé : %(count)d entrée liée à un aéronef géré."
-msgstr[1] "Remplissage terminé : %(count)d entrées liées à un aéronef géré."
+msgstr[0] "Remplissage terminé : %(count)d entrée liée à un avion géré."
+msgstr[1] "Remplissage terminé : %(count)d entrées liées à un avion géré."
 
 #: app/config/routes.py:1300
 msgid "Select a valid renter."
@@ -978,11 +978,11 @@ msgstr "Fichier GPS traité — champs pré-remplis. Vérifiez et enregistrez."
 
 #: app/flights/routes.py:1085 app/pilots/routes.py:2077 app/pwa/routes.py:275
 msgid "Please select an aircraft."
-msgstr "Veuillez sélectionner un aéronef."
+msgstr "Veuillez sélectionner un avion."
 
 #: app/flights/routes.py:1088
 msgid "Pilot role is required for other aircraft flights."
-msgstr "Le rôle du pilote est obligatoire pour les vols sur un autre aéronef."
+msgstr "Le rôle du pilote est obligatoire pour les vols sur un autre avion."
 
 #: app/flights/routes.py:1094
 msgid "Pilot name is required."
@@ -990,11 +990,11 @@ msgstr "Le nom du pilote est obligatoire."
 
 #: app/flights/routes.py:1097
 msgid "Aircraft type (make/model) is required for other aircraft flights."
-msgstr "Le type d'aéronef (marque/modèle) est obligatoire pour les vols sur d'autres aéronefs."
+msgstr "Le type d'avion (marque/modèle) est obligatoire pour les vols sur d'autres avions."
 
 #: app/flights/routes.py:1101
 msgid "Aircraft registration is required for other aircraft flights."
-msgstr "L'immatriculation de l'aéronef est obligatoire pour les vols sur d'autres aéronefs."
+msgstr "L'immatriculation de l'avion est obligatoire pour les vols sur d'autres avions."
 
 #: app/flights/routes.py:1194
 msgid "GPS track linked to the existing flight entry."
@@ -1435,7 +1435,7 @@ msgstr "Listes de vérification avant vol"
 
 #: app/pilots/personal_minimums.py:77
 msgid "PAVE (Pilot, Aircraft, enVironment, External pressures)"
-msgstr "PAVE (Pilote, Aéronef, enVironnement, pressions Extérieures)"
+msgstr "PAVE (Pilote, Avion, enVironnement, pressions Extérieures)"
 
 #: app/pilots/personal_minimums.py:79
 msgid "I'M SAFE (Illness, Medication, Stress, Alcohol, Fatigue, Emotion)"
@@ -1657,8 +1657,8 @@ msgstr "Import terminé : %(imported)d entrées importées, %(subtotals)d lignes
 #, python-format
 msgid "%(n)d aircraft log entry was also created for your managed aircraft."
 msgid_plural "%(n)d aircraft log entries were also created for your managed aircraft."
-msgstr[0] "%(n)d entrée du carnet aéronef a été créée pour votre aéronef géré."
-msgstr[1] "%(n)d entrées du carnet aéronef ont été créées pour votre aéronef géré."
+msgstr[0] "%(n)d entrée du carnet avion a été créée pour votre avion géré."
+msgstr[1] "%(n)d entrées du carnet avion ont été créées pour votre avion géré."
 
 #: app/pilots/routes.py:1547
 #, python-format
@@ -1693,7 +1693,7 @@ msgstr[1] "Importation supprimée : %(count)d entrées retirées."
 
 #: app/pwa/routes.py:91
 msgid "Aircraft document"
-msgstr "Document d'aéronef"
+msgstr "Document d'avion"
 
 #: app/pwa/routes.py:92
 msgid "Expense receipt"
@@ -1882,8 +1882,8 @@ msgstr "à"
 #: app/templates/reservations/fleet.html:30
 msgid "Aircraft"
 msgid_plural "Aircraft"
-msgstr[0] "Aéronef"
-msgstr[1] "Aéronefs"
+msgstr[0] "Avion"
+msgstr[1] "Avions"
 
 #: app/reports/routes.py:115 app/templates/aircraft/owners_billing.html:45
 #: app/templates/expenses/cost_dashboard.html:29
@@ -2848,7 +2848,7 @@ msgstr "Veuillez ouvrir un ticket si vous avez besoin d'aide pour les extraire."
 
 #: app/templates/base.html:326
 msgid "open-source aircraft ops"
-msgstr "gestion d'aéronefs open source"
+msgstr "gestion d'avions open source"
 
 #: app/templates/airworthiness/dashboard.html:89
 #: app/templates/airworthiness/status_form.html:21 app/templates/base.html:330
@@ -2909,7 +2909,7 @@ msgstr "Vous êtes hors ligne — cela ne peut pas être enregistré pour le mom
 
 #: app/templates/dashboard.html:33
 msgid "Aircraft Calendar"
-msgstr "Calendrier de l'aéronef"
+msgstr "Calendrier de l'avion"
 
 #: app/templates/dashboard.html:33
 msgid "Fleet Calendar"
@@ -3195,7 +3195,7 @@ msgstr "Gérer des appareils"
 
 #: app/templates/dashboard.html:504
 msgid "No aircraft added yet."
-msgstr "Aucun aéronef ajouté pour l'instant."
+msgstr "Aucun avion ajouté pour l'instant."
 
 #: app/templates/dashboard.html:518
 msgid "Alerts"
@@ -3203,7 +3203,7 @@ msgstr "Alertes"
 
 #: app/templates/dashboard.html:521
 msgid "View aircraft"
-msgstr "Voir l'aéronef"
+msgstr "Voir l'avion"
 
 #: app/templates/dashboard.html:523 app/templates/dashboard.html:708
 msgid "View all"
@@ -3247,7 +3247,7 @@ msgstr "Voir la maintenance"
 #: app/templates/aircraft/detail.html:140 app/templates/aircraft/list.html:43
 #: app/templates/aircraft/list.html:103 app/templates/dashboard.html:682
 msgid "Add aircraft"
-msgstr "Ajouter un aéronef"
+msgstr "Ajouter un avion"
 
 #: app/templates/dashboard.html:690 app/templates/pilots/logbook.html:3
 #: app/templates/pilots/minimums_start.html:15
@@ -3325,11 +3325,11 @@ msgstr "Aucune réservation en attente."
 
 #: app/templates/dashboard.html:805
 msgid "Aircraft in this instance"
-msgstr "Aéronef dans cette instance"
+msgstr "Avion dans cette instance"
 
 #: app/templates/dashboard.html:806
 msgid "Log in the aircraft logbook + your pilot logbook"
-msgstr "Enregistre dans le carnet aéronef + votre carnet de vol pilote"
+msgstr "Enregistre dans le carnet avion + votre carnet de vol pilote"
 
 #: app/templates/dashboard.html:811
 msgid "Upload a GPS track"
@@ -3341,11 +3341,11 @@ msgstr "Importer les horaires et la route depuis un fichier GPS"
 
 #: app/templates/dashboard.html:818
 msgid "Other aircraft"
-msgstr "Autre aéronef"
+msgstr "Autre avion"
 
 #: app/templates/dashboard.html:819
 msgid "Pilot logbook only — aircraft not managed here"
-msgstr "Carnet de vol pilote uniquement — aéronef non géré ici"
+msgstr "Carnet de vol pilote uniquement — avion non géré ici"
 
 #: app/templates/landing.html:3
 msgid "Aircraft Ops Manager"
@@ -3353,7 +3353,7 @@ msgstr "Gestionnaire d'opérations aériennes"
 
 #: app/templates/landing.html:16
 msgid "Your aircraft, under control."
-msgstr "Vos aéronefs, sous contrôle."
+msgstr "Vos avions, sous contrôle."
 
 #: app/templates/landing.html:18
 msgid "OpenHangar is a self-hosted, open-source ops manager for pilots, owner-operators, and flying clubs — logbooks, maintenance triggers, and dashboards in one place."
@@ -3471,11 +3471,11 @@ msgstr "État de la flotte en un coup d'œil"
 
 #: app/templates/landing.html:163
 msgid "The per-aircraft dashboard shows color-coded status, current hobbs, last 30-day hours, and a list of upcoming and overdue maintenance items — all on one screen."
-msgstr "Le tableau de bord par aéronef affiche le statut codé par couleur, le Hobbs actuel, les heures des 30 derniers jours et la liste des tâches de maintenance à venir et en retard — le tout sur un seul écran."
+msgstr "Le tableau de bord par avion affiche le statut codé par couleur, le Hobbs actuel, les heures des 30 derniers jours et la liste des tâches de maintenance à venir et en retard — le tout sur un seul écran."
 
 #: app/templates/landing.html:166
 msgid "Green / Yellow / Red status per aircraft"
-msgstr "Statut vert / jaune / rouge par aéronef"
+msgstr "Statut vert / jaune / rouge par avion"
 
 #: app/templates/landing.html:167
 msgid "Estimated time-to-next trigger"
@@ -3483,7 +3483,7 @@ msgstr "Temps estimé jusqu'au prochain déclencheur"
 
 #: app/templates/landing.html:168
 msgid "Document vault per aircraft &amp; component"
-msgstr "Coffre-fort de documents par aéronef &amp; composant"
+msgstr "Coffre-fort de documents par avion &amp; composant"
 
 #: app/templates/landing.html:169
 msgid "Cost tracking with L / gal conversion"
@@ -3550,7 +3550,7 @@ msgstr "Bon retour."
 
 #: app/templates/welcome.html:12
 msgid "Your hangar is ready. Log in to check your aircraft status, review maintenance items, and log your next flight."
-msgstr "Votre hangar est prêt. Connectez-vous pour vérifier l'état de vos aéronefs, consulter les tâches de maintenance et saisir votre prochain vol."
+msgstr "Votre hangar est prêt. Connectez-vous pour vérifier l'état de vos avions, consulter les tâches de maintenance et saisir votre prochain vol."
 
 #: app/templates/auth/login.html:79 app/templates/auth/setup.html:69
 #: app/templates/welcome.html:16
@@ -3568,7 +3568,7 @@ msgstr "État de la flotte"
 
 #: app/templates/welcome.html:36
 msgid "Color-coded overview of every aircraft at a glance."
-msgstr "Vue d'ensemble codée par couleur de chaque aéronef en un coup d'œil."
+msgstr "Vue d'ensemble codée par couleur de chaque avion en un coup d'œil."
 
 #: app/templates/welcome.html:45
 msgid "Maintenance Alerts"
@@ -4022,7 +4022,7 @@ msgstr "TBO / limite de vie en heures"
 
 #: app/templates/aircraft/component_form.html:106
 msgid "Hours between overhauls; the aircraft is flagged when the component approaches or exceeds it."
-msgstr "Heures entre révisions générales ; l'aéronef est signalé lorsque le composant s'en approche ou la dépasse."
+msgstr "Heures entre révisions générales ; l'avion est signalé lorsque le composant s'en approche ou la dépasse."
 
 #: app/templates/aircraft/component_form.html:109
 msgid "Calendar life limit"
@@ -4050,7 +4050,7 @@ msgstr "Date de la dernière révision générale"
 
 #: app/templates/aircraft/detail.html:39 app/templates/snags/list.html:37
 msgid "Aircraft grounded."
-msgstr "Aéronef cloué au sol."
+msgstr "Avion cloué au sol."
 
 #: app/templates/aircraft/detail.html:41
 #, python-format
@@ -4774,7 +4774,7 @@ msgstr "Traces de vol"
 
 #: app/templates/aircraft/flight_tracks.html:24
 msgid "No GPS tracks stored for this aircraft yet."
-msgstr "Aucune trace GPS enregistrée pour cet aéronef."
+msgstr "Aucune trace GPS enregistrée pour cet avion."
 
 #: app/templates/aircraft/flight_tracks.html:25
 #: app/templates/aircraft/gps_import_upload.html:3
@@ -4879,12 +4879,12 @@ msgstr "Je n'étais ni CDB ni élève sur ces vols. Ne pas ajouter d'entrées à
 
 #: app/templates/aircraft/gps_import_review.html:75
 msgid "Other aircraft mode: no aircraft logbook entries will be created."
-msgstr "Mode autre aéronef : aucune entrée dans le carnet de bord de l'aéronef ne sera créée."
+msgstr "Mode autre avion : aucune entrée dans le carnet de bord de l'avion ne sera créée."
 
 #: app/templates/aircraft/gps_import_review.html:77
 #, python-format
 msgid "Aircraft: %(info)s"
-msgstr "Aéronef : %(info)s"
+msgstr "Avion : %(info)s"
 
 #: app/templates/aircraft/gps_import_review.html:92
 #: app/templates/pilots/gps_import_review.html:71
@@ -5037,7 +5037,7 @@ msgstr "L'étape suivante affichera les segments de vol détectés. Vous pouvez 
 
 #: app/templates/aircraft/gps_import_upload.html:53
 msgid "The time rounding preference (1/10 h or 1 min) is taken from the aircraft configuration and can be changed there."
-msgstr "La préférence d'arrondi du temps (1/10 h ou 1 min) est prise depuis la configuration de l'aéronef et peut y être modifiée."
+msgstr "La préférence d'arrondi du temps (1/10 h ou 1 min) est prise depuis la configuration de l'avion et peut y être modifiée."
 
 #: app/templates/aircraft/gps_import_upload.html:61
 msgid "View previous imports"
@@ -5045,23 +5045,23 @@ msgstr "Voir les imports précédents"
 
 #: app/templates/aircraft/list.html:30
 msgid "Select an aircraft to log a flight."
-msgstr "Sélectionnez un aéronef pour saisir un vol."
+msgstr "Sélectionnez un avion pour saisir un vol."
 
 #: app/templates/aircraft/list.html:32
 msgid "Select an aircraft to upload a GPS track."
-msgstr "Sélectionnez un aéronef pour téléverser une trace GPS."
+msgstr "Sélectionnez un avion pour téléverser une trace GPS."
 
 #: app/templates/aircraft/list.html:34
 msgid "Select an aircraft to calculate W&B."
-msgstr "Sélectionnez un aéronef pour calculer le centrage."
+msgstr "Sélectionnez un avion pour calculer le centrage."
 
 #: app/templates/aircraft/list.html:36
 msgid "Select an aircraft to make a reservation."
-msgstr "Sélectionnez un aéronef pour faire une réservation."
+msgstr "Sélectionnez un avion pour faire une réservation."
 
 #: app/templates/aircraft/list.html:38
 msgid "All aircraft in your hangar."
-msgstr "Tous les aéronefs de votre hangar."
+msgstr "Tous les avions de votre hangar."
 
 #: app/templates/aircraft/list.html:66
 #, python-format
@@ -5076,7 +5076,7 @@ msgstr "Archivé"
 
 #: app/templates/aircraft/list.html:90
 msgid "No aircraft with W&B configured yet."
-msgstr "Aucun aéronef avec une configuration centrage/masse."
+msgstr "Aucun avion avec une configuration centrage/masse."
 
 #: app/templates/aircraft/list.html:92 app/templates/aircraft/list.html:97
 msgid "Back to fleet"
@@ -5084,16 +5084,16 @@ msgstr "Retour à la flotte"
 
 #: app/templates/aircraft/list.html:95 app/templates/aircraft/list.html:100
 msgid "No aircraft yet. Add your first one to get started."
-msgstr "Aucun aéronef pour l'instant. Ajoutez le premier pour commencer."
+msgstr "Aucun avion pour l'instant. Ajoutez le premier pour commencer."
 
 #: app/templates/aircraft/list.html:115
 msgid "Hide archived aircraft"
-msgstr "Masquer les aéronefs archivés"
+msgstr "Masquer les avions archivés"
 
 #: app/templates/aircraft/list.html:119
 #, python-format
 msgid "Show archived aircraft (%(n)s)"
-msgstr "Afficher les aéronefs archivés (%(n)s)"
+msgstr "Afficher les avions archivés (%(n)s)"
 
 #: app/templates/aircraft/manage_owners.html:24
 #, python-format
@@ -6019,7 +6019,7 @@ msgstr "Cela nous permet d'afficher les bonnes fonctionnalités et d'adapter l'i
 #: app/templates/auth/setup.html:143 app/templates/auth/setup.html:352
 #: app/templates/config/settings.html:101
 msgid "Sole pilot (logbook only, no aircraft)"
-msgstr "Pilote seul (carnet de vol uniquement, sans aéronef)"
+msgstr "Pilote seul (carnet de vol uniquement, sans avion)"
 
 #: app/templates/auth/setup.html:144
 msgid "Just log my own flights — no aircraft management features."
@@ -6247,7 +6247,7 @@ msgstr "Appareil immobilisé au sol (réservation à venir)"
 
 #: app/templates/config/notifications.html:52
 msgid "An aircraft is grounded due to a newly reported snag."
-msgstr "Un aéronef est cloué au sol suite à une anomalie signalée."
+msgstr "Un avion est cloué au sol suite à une anomalie signalée."
 
 #: app/templates/config/notifications.html:53
 msgid "Any new snag is logged (grounding or non-grounding)."
@@ -6275,7 +6275,7 @@ msgstr "Un item de maintenance (calendaire ou horaire) dépasse son échéance."
 
 #: app/templates/config/notifications.html:59
 msgid "Aircraft insurance is expiring within the threshold."
-msgstr "L'assurance de l'aéronef arrive à expiration dans le délai défini."
+msgstr "L'assurance de l'avion arrive à expiration dans le délai défini."
 
 #: app/templates/config/notifications.html:60
 msgid "The Airworthiness Review Certificate (ARC) is expiring within the threshold."
@@ -6291,7 +6291,7 @@ msgstr "Votre qualification SEP arrive à expiration dans le délai défini."
 
 #: app/templates/config/notifications.html:63
 msgid "An aircraft document (with an expiry date) is coming due."
-msgstr "Un document d'aéronef (avec date d'expiration) arrive à échéance."
+msgstr "Un document d'avion (avec date d'expiration) arrive à échéance."
 
 #: app/templates/config/notifications.html:64
 msgid "A user accepted an invitation and joined the hangar."
@@ -6863,7 +6863,7 @@ msgstr "Outils de données"
 
 #: app/templates/config/settings.html:458
 msgid "Back-fill aircraft type ICAO designators"
-msgstr "Remplir les indicatifs OACI de type d'aéronef"
+msgstr "Remplir les indicatifs OACI de type d'avion"
 
 #: app/templates/config/settings.html:459
 msgid "Resolve aircraft_type_icao for all logbook entries that have a type but no ICAO designator yet."
@@ -6880,15 +6880,15 @@ msgstr "Lancer le remplissage"
 
 #: app/templates/config/settings.html:473
 msgid "Back-fill aircraft log from pilot logbook"
-msgstr "Remplissage du carnet aéronef depuis le carnet de vol pilote"
+msgstr "Remplissage du carnet avion depuis le carnet de vol pilote"
 
 #: app/templates/config/settings.html:474
 msgid "Create aircraft log entries for managed aircraft from pilot logbook entries that have no linked aircraft log entry yet."
-msgstr "Créer des entrées dans le carnet aéronef pour les aéronefs gérés à partir des entrées du carnet de vol pilote sans entrée liée dans le carnet aéronef."
+msgstr "Créer des entrées dans le carnet avion pour les avions gérés à partir des entrées du carnet de vol pilote sans entrée liée dans le carnet avion."
 
 #: app/templates/config/settings.html:478
 msgid "Run back-fill now? This will create aircraft log entries for all matching pilot logbook entries."
-msgstr "Lancer le remplissage maintenant ? Cela créera des entrées dans le carnet aéronef pour toutes les entrées correspondantes du carnet de vol pilote."
+msgstr "Lancer le remplissage maintenant ? Cela créera des entrées dans le carnet avion pour toutes les entrées correspondantes du carnet de vol pilote."
 
 #: app/templates/config/settings.html:489
 msgid "System"
@@ -7038,17 +7038,17 @@ msgstr "Ajouter une seconde organisation"
 #: app/templates/config/settings.html:611
 #: app/templates/config/tenant_create.html:59
 msgid "Log your own flights — no aircraft management, no fleet features."
-msgstr "Enregistrez vos propres vols — sans gestion d'aéronef, sans fonctionnalités de flotte."
+msgstr "Enregistrez vos propres vols — sans gestion d'avion, sans fonctionnalités de flotte."
 
 #: app/templates/config/settings.html:612
 #: app/templates/config/tenant_create.html:60
 msgid "Own and manage one or more aircraft. Rental to others is optional."
-msgstr "Possédez et gérez un ou plusieurs aéronefs. La location à des tiers est optionnelle."
+msgstr "Possédez et gérez un ou plusieurs avions. La location à des tiers est optionnelle."
 
 #: app/templates/config/settings.html:613
 #: app/templates/config/tenant_create.html:61
 msgid "Co-own aircraft with others. Co-owners each get their own account with shared access."
-msgstr "Co-posséder des aéronefs avec d'autres. Chaque copropriétaire dispose de son propre compte avec accès partagé."
+msgstr "Co-posséder des avions avec d'autres. Chaque copropriétaire dispose de son propre compte avec accès partagé."
 
 #: app/templates/config/settings.html:614
 #: app/templates/config/tenant_create.html:62
@@ -7415,7 +7415,7 @@ msgstr "Voici une liste de démarrage rapide :"
 
 #: app/templates/email/notif/welcome.html:12
 msgid "Add your aircraft under <strong>Fleet</strong>."
-msgstr "Ajoutez vos aéronefs dans <strong>Flotte</strong>."
+msgstr "Ajoutez vos avions dans <strong>Flotte</strong>."
 
 #: app/templates/email/notif/welcome.html:13
 msgid "Invite pilots and maintenance crew under <strong>Configuration → Users</strong>."
@@ -7882,7 +7882,7 @@ msgstr "Appliquer"
 #: app/templates/flights/airframe_import_upload.html:3
 #: app/templates/flights/airframe_import_upload.html:12
 msgid "Import aircraft logbook"
-msgstr "Importer le carnet de route de l'aéronef"
+msgstr "Importer le carnet de route de l'avion"
 
 #: app/templates/flights/airframe_import_upload.html:14
 msgid "Bring years of paper or spreadsheet aircraft records into the airframe log, including flights flown by previous owners or other pilots."
@@ -8098,15 +8098,15 @@ msgstr "page d'import GPS"
 #: app/templates/pilots/gps_import_review.html:189
 #: app/templates/pilots/gps_import_upload.html:53
 msgid "Select aircraft"
-msgstr "Sélectionner un aéronef"
+msgstr "Sélectionner un avion"
 
 #: app/templates/flights/flight_form.html:237
 msgid "Aircraft not in this OpenHangar instance"
-msgstr "Aéronef non géré dans cette instance OpenHangar"
+msgstr "Avion non géré dans cette instance OpenHangar"
 
 #: app/templates/flights/flight_form.html:242
 msgid "Log in your pilot logbook only. No aircraft logbook entry will be created."
-msgstr "Enregistrement dans votre carnet de vol uniquement. Aucune entrée dans le carnet de bord de l'aéronef ne sera créée."
+msgstr "Enregistrement dans votre carnet de vol uniquement. Aucune entrée dans le carnet de bord de l'avion ne sera créée."
 
 #: app/templates/flights/flight_form.html:262
 msgid "Aircraft make / model"
@@ -8362,7 +8362,7 @@ msgstr "BROUILLON — aucune révision n'a encore été déclarée (bloc 10). Aj
 
 #: app/templates/maintenance/_amp_export_body.html:27
 msgid "Part-ML Aircraft Maintenance Programme (AMP)"
-msgstr "Programme de maintenance aéronef (AMP) Part-ML"
+msgstr "Programme de maintenance avion (AMP) Part-ML"
 
 #: app/templates/maintenance/_amp_export_body.html:35
 #, python-format
@@ -8373,7 +8373,7 @@ msgstr[1] "%(n)s éléments sont encore en attente d'information de l'atelier �
 
 #: app/templates/maintenance/_amp_export_body.html:44
 msgid "Aircraft identification"
-msgstr "Identification de l'aéronef"
+msgstr "Identification de l'avion"
 
 #: app/templates/maintenance/_amp_export_body.html:65
 #: app/templates/maintenance/amp_declaration_form.html:44
@@ -8481,7 +8481,7 @@ msgstr "Approbation par le CAMO/CAO contacté"
 
 #: app/templates/maintenance/_amp_export_body.html:162
 msgid "I hereby declare that this is the maintenance programme applicable to the aircraft referred to in block 1 and I am fully responsible for its content and, in particular, for any alternative tasks to the data issued by the DAH or the declarant of a declaration of design compliance."
-msgstr "Je déclare par la présente qu'il s'agit du programme de maintenance applicable à l'aéronef mentionné au bloc 1 et que j'assume l'entière responsabilité de son contenu et, en particulier, de toute tâche alternative aux données émises par le DAH ou le déclarant d'une déclaration de conformité de conception."
+msgstr "Je déclare par la présente qu'il s'agit du programme de maintenance applicable à l'avion mentionné au bloc 1 et que j'assume l'entière responsabilité de son contenu et, en particulier, de toute tâche alternative aux données émises par le DAH ou le déclarant d'une déclaration de conformité de conception."
 
 #: app/templates/maintenance/_amp_export_body.html:163
 #: app/templates/maintenance/_amp_export_body.html:165
@@ -8503,11 +8503,11 @@ msgstr "Déclaration de certification"
 
 #: app/templates/maintenance/_amp_export_body.html:175
 msgid "I will ensure that the aircraft is maintained in accordance with this maintenance programme and that the maintenance programme will be reviewed and updated as required."
-msgstr "Je veillerai à ce que l'aéronef soit entretenu conformément à ce programme de maintenance et à ce que ce programme soit révisé et mis à jour selon les besoins."
+msgstr "Je veillerai à ce que l'avion soit entretenu conformément à ce programme de maintenance et à ce que ce programme soit révisé et mis à jour selon les besoins."
 
 #: app/templates/maintenance/_amp_export_body.html:178
 msgid "Signed by the person/organisation responsible for the continuing airworthiness of the aircraft according to ML.A.201"
-msgstr "Signé par la personne/l'organisme responsable du maintien de la navigabilité de l'aéronef conformément à ML.A.201"
+msgstr "Signé par la personne/l'organisme responsable du maintien de la navigabilité de l'avion conformément à ML.A.201"
 
 #: app/templates/maintenance/_amp_export_body.html:181
 msgid "Name of owner/lessee/operator"
@@ -8544,7 +8544,7 @@ msgstr "Annexe %(letter)s"
 
 #: app/templates/maintenance/_amp_export_body.html:219
 msgid "Revision control & periodic reviews of the Aircraft Maintenance Programme"
-msgstr "Contrôle des révisions et revues périodiques du programme de maintenance de l'aéronef"
+msgstr "Contrôle des révisions et revues périodiques du programme de maintenance de l'avion"
 
 #: app/templates/maintenance/_amp_export_body.html:221
 #: app/templates/maintenance/amp_declaration_form.html:191
@@ -8623,15 +8623,15 @@ msgstr "Déclaration AMP"
 #: app/templates/maintenance/amp_declaration_form.html:16
 #, python-format
 msgid "These fields fill in the %(form)s blocks that cannot be derived from the aircraft, its components, or its maintenance items. Block 4/5 and Appendices B/C are generated automatically from the maintenance items themselves."
-msgstr "Ces champs renseignent les blocs du %(form)s qui ne peuvent pas être déduits de l'aéronef, de ses composants ou de ses éléments de maintenance. Les blocs 4/5 et les annexes B/C sont générés automatiquement à partir des éléments de maintenance eux-mêmes."
+msgstr "Ces champs renseignent les blocs du %(form)s qui ne peuvent pas être déduits de l'avion, de ses composants ou de ses éléments de maintenance. Les blocs 4/5 et les annexes B/C sont générés automatiquement à partir des éléments de maintenance eux-mêmes."
 
 #: app/templates/maintenance/amp_declaration_form.html:30
 msgid "Aircraft owner (block 1)"
-msgstr "Propriétaire de l'aéronef (bloc 1)"
+msgstr "Propriétaire de l'avion (bloc 1)"
 
 #: app/templates/maintenance/amp_declaration_form.html:32
 msgid "Optional. Leave blank if the aircraft owner and the certifying party below (block 8) are the same — the export falls back to that party's name/address. Fill in separately when a contracted CAMO/CAO (block 8) is certifying on behalf of a different owner."
-msgstr "Facultatif. Laissez vide si le propriétaire de l'aéronef et la partie certifiante ci-dessous (bloc 8) sont identiques — l'export utilise alors le nom/l'adresse de cette partie. Renseignez séparément lorsqu'un CAMO/CAO sous contrat (bloc 8) certifie pour le compte d'un propriétaire différent."
+msgstr "Facultatif. Laissez vide si le propriétaire de l'avion et la partie certifiante ci-dessous (bloc 8) sont identiques — l'export utilise alors le nom/l'adresse de cette partie. Renseignez séparément lorsqu'un CAMO/CAO sous contrat (bloc 8) certifie pour le compte d'un propriétaire différent."
 
 #: app/templates/maintenance/amp_declaration_form.html:35
 msgid "Owner name"
@@ -8660,7 +8660,7 @@ msgstr "Références ICA du DAH"
 
 #: app/templates/maintenance/amp_declaration_form.html:71
 msgid "Aircraft (airframe)"
-msgstr "Aéronef (cellule)"
+msgstr "Avion (cellule)"
 
 #: app/templates/maintenance/amp_declaration_form.html:74
 msgid "e.g. Maintenance manual doc reference"
@@ -8673,7 +8673,7 @@ msgstr "le cas échéant"
 
 #: app/templates/maintenance/amp_declaration_form.html:92
 msgid "Pilot-owner maintenance is performed on this aircraft"
-msgstr "La maintenance par le pilote-propriétaire est pratiquée sur cet aéronef"
+msgstr "La maintenance par le pilote-propriétaire est pratiquée sur cet avion"
 
 #: app/templates/maintenance/amp_declaration_form.html:108
 msgid "Declaration / approval of the maintenance programme"
@@ -9701,11 +9701,11 @@ msgstr "Aucun vol existant trouvé — comment souhaitez-vous créer une entrée
 
 #: app/templates/pilots/gps_import_review.html:183
 msgid "Create a new flight in an aircraft managed here"
-msgstr "Créer un nouveau vol dans un aéronef géré ici"
+msgstr "Créer un nouveau vol dans un avion géré ici"
 
 #: app/templates/pilots/gps_import_review.html:200
 msgid "External / other aircraft — pilot logbook entry only"
-msgstr "Aéronef externe / autre — entrée dans le carnet de vol du pilote uniquement"
+msgstr "Avion externe / autre — entrée dans le carnet de vol du pilote uniquement"
 
 #: app/templates/pilots/gps_import_review.html:208
 msgid "Registration (e.g. OO-ABC)"
@@ -9735,24 +9735,24 @@ msgid "Upload mode"
 msgstr "Mode de téléversement"
 
 #: app/templates/pilots/gps_import_upload.html:32
-msgid "Airplane-agnostic"
-msgstr "Indépendant de l'aéronef"
+msgid "Aircraft-agnostic"
+msgstr "Indépendant de l'avion"
 
 #: app/templates/pilots/gps_import_upload.html:33
 msgid "I flew on multiple aircraft (or I will resolve the aircraft per segment). Best for training logbooks."
-msgstr "J'ai volé sur plusieurs aéronefs (ou je résoudrai l'aéronef par segment). Recommandé pour les carnets d'instruction."
+msgstr "J'ai volé sur plusieurs avions (ou je résoudrai l'avion par segment). Recommandé pour les carnets d'instruction."
 
 #: app/templates/pilots/gps_import_upload.html:40
 msgid "All for one aircraft"
-msgstr "Tout pour un seul aéronef"
+msgstr "Tout pour un seul avion"
 
 #: app/templates/pilots/gps_import_upload.html:41
-msgid "All files are for the same aircraft. Best for uploading a batch from your own plane."
-msgstr "Tous les fichiers concernent le même aéronef. Recommandé pour téléverser un lot depuis votre propre avion."
+msgid "All files are for the same aircraft. Best for uploading a batch from your own aircraft."
+msgstr "Tous les fichiers concernent le même avion. Recommandé pour téléverser un lot depuis votre propre avion."
 
 #: app/templates/pilots/gps_import_upload.html:61
-msgid "No aircraft are registered in this hangar. Use airplane-agnostic mode, or ask an administrator to add an aircraft first."
-msgstr "Aucun aéronef n'est enregistré dans ce hangar. Utilisez le mode indépendant de l'aéronef, ou demandez à un administrateur d'en ajouter un d'abord."
+msgid "No aircraft are registered in this hangar. Use aircraft-agnostic mode, or ask an administrator to add an aircraft first."
+msgstr "Aucun avion n'est enregistré dans ce hangar. Utilisez le mode indépendant de l'avion, ou demandez à un administrateur d'en ajouter un d'abord."
 
 #: app/templates/pilots/gps_import_upload.html:74
 msgid "Supported: GPX, KML, CSV. Multiple files accepted. Maximum 20 MB per file."
@@ -9959,7 +9959,7 @@ msgstr "Inst."
 
 #: app/templates/pilots/logbook.html:245
 msgid "Delete this logbook entry and its aircraft log entry? This cannot be undone."
-msgstr "Supprimer cette entrée du carnet de vol et son entrée du carnet aéronef ? Cette action est irréversible."
+msgstr "Supprimer cette entrée du carnet de vol et son entrée du carnet avion ? Cette action est irréversible."
 
 #: app/templates/pilots/logbook.html:245
 msgid "Delete this logbook entry?"
@@ -10826,7 +10826,7 @@ msgstr "Liste des anomalies"
 
 #: app/templates/snags/list.html:38
 msgid "One or more open grounding snags prevent this aircraft from flying. Resolve all grounding snags before resuming operations."
-msgstr "Une ou plusieurs anomalies clouantes ouvertes empêchent cet aéronef de voler. Résoudre toutes les anomalies clouantes avant de reprendre les opérations."
+msgstr "Une ou plusieurs anomalies clouantes ouvertes empêchent cet avion de voler. Résoudre toutes les anomalies clouantes avant de reprendre les opérations."
 
 #: app/templates/snags/list.html:73
 msgid "No"
@@ -10838,7 +10838,7 @@ msgstr "Supprimer cette anomalie ?"
 
 #: app/templates/snags/list.html:104
 msgid "No open snags — aircraft is clear."
-msgstr "Aucune anomalie ouverte — l'aéronef est en état de vol."
+msgstr "Aucune anomalie ouverte — l'avion est en état de vol."
 
 #: app/templates/snags/list.html:118
 #, python-format
@@ -10903,7 +10903,7 @@ msgstr "Anomalie clouante"
 
 #: app/templates/snags/snag_form.html:63
 msgid "aircraft must not fly until this is resolved"
-msgstr "l'aéronef ne doit pas voler tant que ce n'est pas résolu"
+msgstr "l'avion ne doit pas voler tant que ce n'est pas résolu"
 
 #: app/templates/snags/snag_form.html:86
 msgid "Save snag"
@@ -10949,7 +10949,7 @@ msgstr "Utilisateurs actuels"
 
 #: app/templates/users/list.html:32 app/templates/users/list.html:229
 msgid "Aircraft access"
-msgstr "Accès aux aéronefs"
+msgstr "Accès aux avions"
 
 #: app/templates/users/list.html:33
 msgid "Capability flags"
@@ -10965,11 +10965,11 @@ msgstr "inactif"
 
 #: app/templates/users/list.html:65 app/templates/users/permissions.html:47
 msgid "All aircraft"
-msgstr "Tous les aéronefs"
+msgstr "Tous les avions"
 
 #: app/templates/users/list.html:93
 msgid "No aircraft"
-msgstr "Aucun aéronef"
+msgstr "Aucun avion"
 
 #: app/templates/users/list.html:113
 msgid "View only"
@@ -11026,7 +11026,7 @@ msgstr "Les liens d'invitation sont valables 7 jours. Si un e-mail est fourni et
 
 #: app/templates/users/permissions.html:12
 msgid "Custom permission overrides for individual aircraft. Leave at role defaults unless a specific override is needed."
-msgstr "Remplacements de permissions personnalisés par aéronef. Laissez les valeurs par défaut du rôle sauf si un remplacement spécifique est nécessaire."
+msgstr "Remplacements de permissions personnalisés par avion. Laissez les valeurs par défaut du rôle sauf si un remplacement spécifique est nécessaire."
 
 #: app/templates/users/permissions.html:16
 msgid "Back to users"
@@ -11034,7 +11034,7 @@ msgstr "Retour aux utilisateurs"
 
 #: app/templates/users/permissions.html:24
 msgid "This user has no aircraft access configured. Grant access on the user list first."
-msgstr "Cet utilisateur n'a pas d'accès aux aéronefs configuré. Accordez d'abord l'accès dans la liste des utilisateurs."
+msgstr "Cet utilisateur n'a pas d'accès aux avions configuré. Accordez d'abord l'accès dans la liste des utilisateurs."
 
 #: app/templates/users/permissions.html:38
 msgid "Preset"
@@ -11114,11 +11114,11 @@ msgstr "Les propriétaires et administrateurs ont toujours un accès complet à 
 
 #: app/users/routes.py:422
 msgid "Aircraft access updated."
-msgstr "Accès aux aéronefs mis à jour."
+msgstr "Accès aux avions mis à jour."
 
 #: app/users/routes.py:448
 msgid "All-aircraft access updated."
-msgstr "Accès à tous les aéronefs mis à jour."
+msgstr "Accès à tous les avions mis à jour."
 
 #: app/users/routes.py:462
 msgid "You cannot change your own capability flags."
