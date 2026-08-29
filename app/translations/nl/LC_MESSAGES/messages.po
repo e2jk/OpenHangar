@@ -978,11 +978,11 @@ msgstr "GPS-bestand verwerkt — velden zijn vooraf ingevuld. Controleer en sla 
 
 #: app/flights/routes.py:1085 app/pilots/routes.py:2077 app/pwa/routes.py:275
 msgid "Please select an aircraft."
-msgstr "Selecteer een luchtvaartuig."
+msgstr "Selecteer een vliegtuig."
 
 #: app/flights/routes.py:1088
 msgid "Pilot role is required for other aircraft flights."
-msgstr "Pilotenrol is verplicht voor vluchten op een ander luchtvaartuig."
+msgstr "Pilotenrol is verplicht voor vluchten op een ander vliegtuig."
 
 #: app/flights/routes.py:1094
 msgid "Pilot name is required."
@@ -990,11 +990,11 @@ msgstr "Naam van piloot is verplicht."
 
 #: app/flights/routes.py:1097
 msgid "Aircraft type (make/model) is required for other aircraft flights."
-msgstr "Vliegtuigtype (merk/model) is verplicht voor vluchten op andere luchtvaartuigen."
+msgstr "Vliegtuigtype (merk/model) is verplicht voor vluchten op andere vliegtuigen."
 
 #: app/flights/routes.py:1101
 msgid "Aircraft registration is required for other aircraft flights."
-msgstr "Vliegtuigregistratie is verplicht voor vluchten op andere luchtvaartuigen."
+msgstr "Vliegtuigregistratie is verplicht voor vluchten op andere vliegtuigen."
 
 #: app/flights/routes.py:1194
 msgid "GPS track linked to the existing flight entry."
@@ -1693,7 +1693,7 @@ msgstr[1] "Importatie verwijderd: %(count)d vermeldingen verwijderd."
 
 #: app/pwa/routes.py:91
 msgid "Aircraft document"
-msgstr "Luchtvaartuigdocument"
+msgstr "Vliegtuigdocument"
 
 #: app/pwa/routes.py:92
 msgid "Expense receipt"
@@ -1882,8 +1882,8 @@ msgstr "tot"
 #: app/templates/reservations/fleet.html:30
 msgid "Aircraft"
 msgid_plural "Aircraft"
-msgstr[0] "Luchtvaartuig"
-msgstr[1] "Luchtvaartuigen"
+msgstr[0] "Vliegtuig"
+msgstr[1] "Vliegtuigen"
 
 #: app/reports/routes.py:115 app/templates/aircraft/owners_billing.html:45
 #: app/templates/expenses/cost_dashboard.html:29
@@ -2091,11 +2091,11 @@ msgstr "Reservering geweigerd."
 
 #: app/reservations/routes.py:936
 msgid "Minimum booking duration must be positive."
-msgstr "De minimale boekingsduur moet positief zijn."
+msgstr "De minimale reserveringsduur moet positief zijn."
 
 #: app/reservations/routes.py:938
 msgid "Maximum booking duration must be positive."
-msgstr "De maximale boekingsduur moet positief zijn."
+msgstr "De maximale reserveringsduur moet positief zijn."
 
 #: app/reservations/routes.py:940
 msgid "Minimum duration cannot exceed maximum duration."
@@ -2119,7 +2119,7 @@ msgstr "Ongeldig tarieftype geselecteerd."
 
 #: app/reservations/routes.py:972
 msgid "Booking settings saved."
-msgstr "Boekingsinstellingen opgeslagen."
+msgstr "Reserveringsinstellingen opgeslagen."
 
 #: app/reservations/routes.py:1000
 msgid "You do not have a valid rental authorization for this aircraft. Contact the owner to be authorized before booking."
@@ -2127,7 +2127,7 @@ msgstr "U heeft geen geldige huurautorisatie voor dit toestel. Neem contact op m
 
 #: app/reservations/routes.py:1021
 msgid "You do not have a valid rental authorization for this aircraft yet — your booking request was submitted, but check with the owner before flying."
-msgstr "U heeft nog geen geldige huurautorisatie voor dit toestel — uw boekingsaanvraag is ingediend, maar controleer bij de eigenaar voordat u vliegt."
+msgstr "U heeft nog geen geldige huurautorisatie voor dit toestel — uw reserveringsaanvraag is ingediend, maar controleer bij de eigenaar voordat u vliegt."
 
 #: app/reservations/routes.py:1037
 msgid "This aircraft is currently grounded and this hangar requires bookings to be blocked while grounded. Contact the owner."
@@ -2140,12 +2140,12 @@ msgstr "Dit toestel heeft momenteel een open vliegverbod-defect — uw reserveri
 #: app/reservations/routes.py:1080
 #, python-format
 msgid "Minimum booking duration is %(h)s h."
-msgstr "De minimale boekingsduur is %(h)s u."
+msgstr "De minimale reserveringsduur is %(h)s u."
 
 #: app/reservations/routes.py:1089
 #, python-format
 msgid "Maximum booking duration is %(h)s h."
-msgstr "De maximale boekingsduur is %(h)s u."
+msgstr "De maximale reserveringsduur is %(h)s u."
 
 #: app/reservations/routes.py:1149 app/templates/config/renter_account.html:51
 #: app/templates/refuels/list.html:37 app/templates/refuels/refuel_form.html:50
@@ -2159,17 +2159,17 @@ msgstr "Geen geldige huurmachtiging geregistreerd"
 #: app/reservations/routes.py:1155
 #, python-format
 msgid "New booking request — %(reg)s"
-msgstr "Nieuwe boekingsaanvraag — %(reg)s"
+msgstr "Nieuwe reserveringsaanvraag — %(reg)s"
 
 #: app/reservations/routes.py:1157
 #, python-format
 msgid "New booking request: %(reg)s"
-msgstr "Nieuwe boekingsaanvraag: %(reg)s"
+msgstr "Nieuwe reserveringsaanvraag: %(reg)s"
 
 #: app/reservations/routes.py:1160
 #, python-format
 msgid "A new booking request was submitted for %(reg)s from %(start)s to %(end)s UTC."
-msgstr "Er is een nieuwe boekingsaanvraag ingediend voor %(reg)s van %(start)s tot %(end)s UTC."
+msgstr "Er is een nieuwe reserveringsaanvraag ingediend voor %(reg)s van %(start)s tot %(end)s UTC."
 
 #: app/reservations/routes.py:1182
 msgid "Reservation saved."
@@ -3015,7 +3015,7 @@ msgstr "Reserveringen"
 
 #: app/templates/dashboard.html:222
 msgid "Pilot Currency"
-msgstr "Bevoegdheid piloot"
+msgstr "Pilotenrecency"
 
 #: app/templates/dashboard.html:224
 msgid "Licence & currency"
@@ -3023,7 +3023,7 @@ msgstr "Brevet & recency"
 
 #: app/templates/dashboard.html:232
 msgid "Passenger currency"
-msgstr "Passagiersbevoegdheid"
+msgstr "Passagiersrecency"
 
 #: app/templates/config/renters_list.html:45 app/templates/dashboard.html:234
 #: app/templates/dashboard.html:254 app/templates/dashboard.html:274
@@ -3064,7 +3064,7 @@ msgstr "Geen gegevens"
 
 #: app/templates/dashboard.html:252
 msgid "Night currency"
-msgstr "Nachtbevoegdheid"
+msgstr "Nachtrecency"
 
 #: app/templates/dashboard.html:272 app/templates/pilots/profile.html:185
 msgid "Medical"
@@ -3142,7 +3142,7 @@ msgstr "AAN DE GROND"
 #: app/templates/maintenance/fleet.html:378
 #: app/templates/maintenance/list.html:140
 msgid "Overdue"
-msgstr "Vervallen"
+msgstr "Achterstallig"
 
 #: app/templates/aircraft/list.html:75 app/templates/dashboard.html:388
 #: app/templates/dashboard.html:472 app/templates/dashboard.html:558
@@ -3152,7 +3152,7 @@ msgstr "Vervallen"
 #: app/templates/maintenance/fleet.html:380
 #: app/templates/maintenance/list.html:142
 msgid "Due soon"
-msgstr "Bijna vervallen"
+msgstr "Bijna achterstallig"
 
 #: app/templates/aircraft/detail.html:620 app/templates/aircraft/list.html:77
 #: app/templates/aircraft/wb_entry.html:142
@@ -3325,7 +3325,7 @@ msgstr "Geen openstaande reserveringen."
 
 #: app/templates/dashboard.html:805
 msgid "Aircraft in this instance"
-msgstr "Luchtvaartuig in deze instantie"
+msgstr "Vliegtuig in deze instantie"
 
 #: app/templates/dashboard.html:806
 msgid "Log in the aircraft logbook + your pilot logbook"
@@ -3341,11 +3341,11 @@ msgstr "Tijden en route importeren vanuit een GPS-bestand"
 
 #: app/templates/dashboard.html:818
 msgid "Other aircraft"
-msgstr "Ander luchtvaartuig"
+msgstr "Ander vliegtuig"
 
 #: app/templates/dashboard.html:819
 msgid "Pilot logbook only — aircraft not managed here"
-msgstr "Alleen pilootlogboek — luchtvaartuig niet beheerd hier"
+msgstr "Alleen pilootlogboek — vliegtuig niet beheerd hier"
 
 #: app/templates/landing.html:3
 msgid "Aircraft Ops Manager"
@@ -3471,7 +3471,7 @@ msgstr "Vlootstatus in één oogopslag"
 
 #: app/templates/landing.html:163
 msgid "The per-aircraft dashboard shows color-coded status, current hobbs, last 30-day hours, and a list of upcoming and overdue maintenance items — all on one screen."
-msgstr "Het dashboard per vliegtuig toont een kleurgecodeerde status, huidige hobbs, uren in de afgelopen 30 dagen en een lijst van aankomende en vervallen onderhoudsitems — alles op één scherm."
+msgstr "Het dashboard per vliegtuig toont een kleurgecodeerde status, huidige hobbs, uren in de afgelopen 30 dagen en een lijst van aankomende en achterstallige onderhoudsitems — alles op één scherm."
 
 #: app/templates/landing.html:166
 msgid "Green / Yellow / Red status per aircraft"
@@ -3499,7 +3499,7 @@ msgstr "100 uur inspectie over 2 dagen"
 
 #: app/templates/landing.html:202
 msgid "Annual overdue by 4 days"
-msgstr "Jaarlijkse keuring 4 dagen vervallen"
+msgstr "Jaarlijkse keuring 4 dagen achterstallig"
 
 #: app/templates/landing.html:209
 msgid "All OK"
@@ -3576,7 +3576,7 @@ msgstr "Onderhoudswaarschuwingen"
 
 #: app/templates/welcome.html:46
 msgid "Upcoming and overdue triggers, ranked by urgency."
-msgstr "Aankomende en vervallen onderhoudsitems, gerangschikt op urgentie."
+msgstr "Aankomende en achterstallige onderhoudsitems, gerangschikt op urgentie."
 
 #: app/templates/welcome.html:56
 msgid "All flights, hours, and costs in one place."
@@ -4177,11 +4177,11 @@ msgstr "Item toevoegen"
 
 #: app/templates/aircraft/detail.html:235
 msgid "overdue"
-msgstr "vervallen"
+msgstr "achterstallig"
 
 #: app/templates/aircraft/detail.html:243
 msgid "due soon"
-msgstr "bijna vervallen"
+msgstr "bijna achterstallig"
 
 #: app/templates/aircraft/detail.html:250
 msgid "All maintenance items OK."
@@ -4250,7 +4250,7 @@ msgstr "TBO"
 
 #: app/templates/aircraft/detail.html:359
 msgid "Overhaul overdue"
-msgstr "Revisie over tijd"
+msgstr "Revisie achterstallig"
 
 #: app/templates/aircraft/detail.html:361
 msgid "Approaching TBO"
@@ -4884,7 +4884,7 @@ msgstr "Ander vliegtuig modus: er worden geen vliegtuiglogboekvermeldingen aange
 #: app/templates/aircraft/gps_import_review.html:77
 #, python-format
 msgid "Aircraft: %(info)s"
-msgstr "Luchtvaartuig: %(info)s"
+msgstr "Vliegtuig: %(info)s"
 
 #: app/templates/aircraft/gps_import_review.html:92
 #: app/templates/pilots/gps_import_review.html:71
@@ -6578,7 +6578,7 @@ msgstr "Meer informatie over bedrijfsmodellen"
 
 #: app/templates/config/settings.html:116
 msgid "Planned aircraft count"
-msgstr "Gepland aantal luchtvaartuigen"
+msgstr "Gepland aantal vliegtuigen"
 
 #: app/templates/config/settings.html:125
 msgid "Renting or lending to others"
@@ -6594,11 +6594,11 @@ msgstr "Uit — geen controle"
 
 #: app/templates/config/settings.html:134
 msgid "Warn — allow booking, flag the missing authorization"
-msgstr "Waarschuwen — boeking toestaan, ontbrekende autorisatie markeren"
+msgstr "Waarschuwen — reservering toestaan, ontbrekende autorisatie markeren"
 
 #: app/templates/config/settings.html:135
 msgid "Block — refuse the booking"
-msgstr "Blokkeren — boeking weigeren"
+msgstr "Blokkeren — reservering weigeren"
 
 #: app/templates/config/settings.html:138
 msgid "Applies when a renter books an aircraft without a valid authorization. Owners/admins are always exempt."
@@ -6863,7 +6863,7 @@ msgstr "Gegevenstools"
 
 #: app/templates/config/settings.html:458
 msgid "Back-fill aircraft type ICAO designators"
-msgstr "ICAO-typeaanduidingen voor luchtvaartuigen aanvullen"
+msgstr "ICAO-typeaanduidingen voor vliegtuigen aanvullen"
 
 #: app/templates/config/settings.html:459
 msgid "Resolve aircraft_type_icao for all logbook entries that have a type but no ICAO designator yet."
@@ -8102,7 +8102,7 @@ msgstr "Vliegtuig selecteren"
 
 #: app/templates/flights/flight_form.html:237
 msgid "Aircraft not in this OpenHangar instance"
-msgstr "Luchtvaartuig niet beheerd in deze OpenHangar-instantie"
+msgstr "Vliegtuig niet beheerd in deze OpenHangar-instantie"
 
 #: app/templates/flights/flight_form.html:242
 msgid "Log in your pilot logbook only. No aircraft logbook entry will be created."
@@ -8337,7 +8337,7 @@ msgstr "resterend"
 #: app/templates/flights/logbook_component.html:67
 #, python-format
 msgid "Overdue by %(h)s h"
-msgstr "Vervallen met %(h)s u"
+msgstr "Achterstallig met %(h)s u"
 
 #: app/templates/flights/logbook_component.html:83
 msgid "Currently installed"
@@ -8373,7 +8373,7 @@ msgstr[1] "%(n)s items zijn nog in afwachting van informatie van de werkplaats �
 
 #: app/templates/maintenance/_amp_export_body.html:44
 msgid "Aircraft identification"
-msgstr "Identificatie van het luchtvaartuig"
+msgstr "Identificatie van het vliegtuig"
 
 #: app/templates/maintenance/_amp_export_body.html:65
 #: app/templates/maintenance/amp_declaration_form.html:44
@@ -8481,7 +8481,7 @@ msgstr "Goedkeuring door de gecontacteerde CAMO/CAO"
 
 #: app/templates/maintenance/_amp_export_body.html:162
 msgid "I hereby declare that this is the maintenance programme applicable to the aircraft referred to in block 1 and I am fully responsible for its content and, in particular, for any alternative tasks to the data issued by the DAH or the declarant of a declaration of design compliance."
-msgstr "Hierbij verklaar ik dat dit het onderhoudsprogramma is dat van toepassing is op het luchtvaartuig vermeld in blok 1 en dat ik volledig verantwoordelijk ben voor de inhoud ervan, in het bijzonder voor eventuele afwijkende taken ten opzichte van de gegevens verstrekt door de DAH of de verklarende partij van een ontwerpconformiteitsverklaring."
+msgstr "Hierbij verklaar ik dat dit het onderhoudsprogramma is dat van toepassing is op het vliegtuig vermeld in blok 1 en dat ik volledig verantwoordelijk ben voor de inhoud ervan, in het bijzonder voor eventuele afwijkende taken ten opzichte van de gegevens verstrekt door de DAH of de verklarende partij van een ontwerpconformiteitsverklaring."
 
 #: app/templates/maintenance/_amp_export_body.html:163
 #: app/templates/maintenance/_amp_export_body.html:165
@@ -8503,11 +8503,11 @@ msgstr "Certificeringsverklaring"
 
 #: app/templates/maintenance/_amp_export_body.html:175
 msgid "I will ensure that the aircraft is maintained in accordance with this maintenance programme and that the maintenance programme will be reviewed and updated as required."
-msgstr "Ik zal ervoor zorgen dat het luchtvaartuig wordt onderhouden in overeenstemming met dit onderhoudsprogramma en dat het onderhoudsprogramma indien nodig wordt herzien en bijgewerkt."
+msgstr "Ik zal ervoor zorgen dat het vliegtuig wordt onderhouden in overeenstemming met dit onderhoudsprogramma en dat het onderhoudsprogramma indien nodig wordt herzien en bijgewerkt."
 
 #: app/templates/maintenance/_amp_export_body.html:178
 msgid "Signed by the person/organisation responsible for the continuing airworthiness of the aircraft according to ML.A.201"
-msgstr "Ondertekend door de persoon/organisatie verantwoordelijk voor de voortdurende luchtwaardigheid van het luchtvaartuig conform ML.A.201"
+msgstr "Ondertekend door de persoon/organisatie verantwoordelijk voor de voortdurende luchtwaardigheid van het vliegtuig conform ML.A.201"
 
 #: app/templates/maintenance/_amp_export_body.html:181
 msgid "Name of owner/lessee/operator"
@@ -8544,7 +8544,7 @@ msgstr "Bijlage %(letter)s"
 
 #: app/templates/maintenance/_amp_export_body.html:219
 msgid "Revision control & periodic reviews of the Aircraft Maintenance Programme"
-msgstr "Revisiebeheer & periodieke evaluaties van het onderhoudsprogramma van het luchtvaartuig"
+msgstr "Revisiebeheer & periodieke evaluaties van het onderhoudsprogramma van het vliegtuig"
 
 #: app/templates/maintenance/_amp_export_body.html:221
 #: app/templates/maintenance/amp_declaration_form.html:191
@@ -8623,15 +8623,15 @@ msgstr "AMP-verklaring"
 #: app/templates/maintenance/amp_declaration_form.html:16
 #, python-format
 msgid "These fields fill in the %(form)s blocks that cannot be derived from the aircraft, its components, or its maintenance items. Block 4/5 and Appendices B/C are generated automatically from the maintenance items themselves."
-msgstr "Deze velden vullen de blokken van het %(form)s in die niet kunnen worden afgeleid van het luchtvaartuig, de componenten ervan of de onderhoudsitems. Blok 4/5 en bijlagen B/C worden automatisch gegenereerd op basis van de onderhoudsitems zelf."
+msgstr "Deze velden vullen de blokken van het %(form)s in die niet kunnen worden afgeleid van het vliegtuig, de componenten ervan of de onderhoudsitems. Blok 4/5 en bijlagen B/C worden automatisch gegenereerd op basis van de onderhoudsitems zelf."
 
 #: app/templates/maintenance/amp_declaration_form.html:30
 msgid "Aircraft owner (block 1)"
-msgstr "Eigenaar van het luchtvaartuig (blok 1)"
+msgstr "Eigenaar van het vliegtuig (blok 1)"
 
 #: app/templates/maintenance/amp_declaration_form.html:32
 msgid "Optional. Leave blank if the aircraft owner and the certifying party below (block 8) are the same — the export falls back to that party's name/address. Fill in separately when a contracted CAMO/CAO (block 8) is certifying on behalf of a different owner."
-msgstr "Optioneel. Laat leeg als de eigenaar van het luchtvaartuig en de certificerende partij hieronder (blok 8) dezelfde zijn — de export gebruikt dan de naam/het adres van die partij. Vul apart in wanneer een gecontracteerde CAMO/CAO (blok 8) certificeert namens een andere eigenaar."
+msgstr "Optioneel. Laat leeg als de eigenaar van het vliegtuig en de certificerende partij hieronder (blok 8) dezelfde zijn — de export gebruikt dan de naam/het adres van die partij. Vul apart in wanneer een gecontracteerde CAMO/CAO (blok 8) certificeert namens een andere eigenaar."
 
 #: app/templates/maintenance/amp_declaration_form.html:35
 msgid "Owner name"
@@ -8660,7 +8660,7 @@ msgstr "ICA-referenties van de DAH"
 
 #: app/templates/maintenance/amp_declaration_form.html:71
 msgid "Aircraft (airframe)"
-msgstr "Luchtvaartuig (airframe)"
+msgstr "Vliegtuig (airframe)"
 
 #: app/templates/maintenance/amp_declaration_form.html:74
 msgid "e.g. Maintenance manual doc reference"
@@ -8673,7 +8673,7 @@ msgstr "indien van toepassing"
 
 #: app/templates/maintenance/amp_declaration_form.html:92
 msgid "Pilot-owner maintenance is performed on this aircraft"
-msgstr "Onderhoud door de piloot-eigenaar wordt uitgevoerd op dit luchtvaartuig"
+msgstr "Onderhoud door de piloot-eigenaar wordt uitgevoerd op dit vliegtuig"
 
 #: app/templates/maintenance/amp_declaration_form.html:108
 msgid "Declaration / approval of the maintenance programme"
@@ -9701,11 +9701,11 @@ msgstr "Geen bestaande vlucht gevonden — hoe wilt u een invoer aanmaken?"
 
 #: app/templates/pilots/gps_import_review.html:183
 msgid "Create a new flight in an aircraft managed here"
-msgstr "Maak een nieuwe vlucht aan in een hier beheerd luchtvaartuig"
+msgstr "Maak een nieuwe vlucht aan in een hier beheerd vliegtuig"
 
 #: app/templates/pilots/gps_import_review.html:200
 msgid "External / other aircraft — pilot logbook entry only"
-msgstr "Extern / ander luchtvaartuig — alleen pilot logboek invoer"
+msgstr "Extern / ander vliegtuig — alleen pilot logboek invoer"
 
 #: app/templates/pilots/gps_import_review.html:208
 msgid "Registration (e.g. OO-ABC)"
@@ -9735,24 +9735,24 @@ msgid "Upload mode"
 msgstr "Uploadmodus"
 
 #: app/templates/pilots/gps_import_upload.html:32
-msgid "Airplane-agnostic"
+msgid "Aircraft-agnostic"
 msgstr "Vliegtuig-onafhankelijk"
 
 #: app/templates/pilots/gps_import_upload.html:33
 msgid "I flew on multiple aircraft (or I will resolve the aircraft per segment). Best for training logbooks."
-msgstr "Ik vloog op meerdere luchtvaartuigen (of ik zal het luchtvaartuig per segment oplossen). Aanbevolen voor trainingslogboeken."
+msgstr "Ik vloog op meerdere vliegtuigen (of ik zal het vliegtuig per segment oplossen). Aanbevolen voor trainingslogboeken."
 
 #: app/templates/pilots/gps_import_upload.html:40
 msgid "All for one aircraft"
-msgstr "Alles voor één luchtvaartuig"
+msgstr "Alles voor één vliegtuig"
 
 #: app/templates/pilots/gps_import_upload.html:41
-msgid "All files are for the same aircraft. Best for uploading a batch from your own plane."
-msgstr "Alle bestanden zijn voor hetzelfde luchtvaartuig. Aanbevolen voor het uploaden van een batch van uw eigen vliegtuig."
+msgid "All files are for the same aircraft. Best for uploading a batch from your own aircraft."
+msgstr "Alle bestanden zijn voor hetzelfde vliegtuig. Aanbevolen voor het uploaden van een batch van uw eigen vliegtuig."
 
 #: app/templates/pilots/gps_import_upload.html:61
-msgid "No aircraft are registered in this hangar. Use airplane-agnostic mode, or ask an administrator to add an aircraft first."
-msgstr "Er zijn geen luchtvaartuigen geregistreerd in dit hangaar. Gebruik de vliegtuig-onafhankelijke modus of vraag een beheerder om eerst een luchtvaartuig toe te voegen."
+msgid "No aircraft are registered in this hangar. Use aircraft-agnostic mode, or ask an administrator to add an aircraft first."
+msgstr "Er zijn geen vliegtuigen geregistreerd in dit hangaar. Gebruik de vliegtuig-onafhankelijke modus of vraag een beheerder om eerst een vliegtuig toe te voegen."
 
 #: app/templates/pilots/gps_import_upload.html:74
 msgid "Supported: GPX, KML, CSV. Multiple files accepted. Maximum 20 MB per file."
@@ -10684,17 +10684,17 @@ msgstr "Dit toestel heeft momenteel een open vliegverbod-defect. U kan nog steed
 #: app/templates/reservations/form.html:59
 #, python-format
 msgid "Booking duration: %(min)s h – %(max)s h"
-msgstr "Boekingsduur: %(min)s u – %(max)s u"
+msgstr "Reserveringsduur: %(min)s u – %(max)s u"
 
 #: app/templates/reservations/form.html:61
 #, python-format
 msgid "Minimum booking duration: %(min)s h"
-msgstr "Minimale boekingsduur: %(min)s u"
+msgstr "Minimale reserveringsduur: %(min)s u"
 
 #: app/templates/reservations/form.html:63
 #, python-format
 msgid "Maximum booking duration: %(max)s h"
-msgstr "Maximale boekingsduur: %(max)s u"
+msgstr "Maximale reserveringsduur: %(max)s u"
 
 #: app/templates/reservations/form.html:71
 msgid "Purpose of flight, remarks, etc."
@@ -10717,11 +10717,11 @@ msgstr "Reservering opslaan"
 #: app/templates/reservations/settings.html:3
 #: app/templates/reservations/settings.html:12
 msgid "Booking Settings"
-msgstr "Boekingsinstellingen"
+msgstr "Reserveringsinstellingen"
 
 #: app/templates/reservations/settings.html:22
 msgid "Minimum booking duration (hours)"
-msgstr "Minimale boekingsduur (uren)"
+msgstr "Minimale reserveringsduur (uren)"
 
 #: app/templates/reservations/settings.html:26
 #: app/templates/reservations/settings.html:94
@@ -10730,7 +10730,7 @@ msgstr "Geen minimum"
 
 #: app/templates/reservations/settings.html:30
 msgid "Maximum booking duration (hours)"
-msgstr "Maximale boekingsduur (uren)"
+msgstr "Maximale reserveringsduur (uren)"
 
 #: app/templates/reservations/settings.html:34
 msgid "No maximum"
@@ -10775,7 +10775,7 @@ msgstr "Minimale gefactureerde uren per dag"
 
 #: app/templates/reservations/settings.html:95
 msgid "For multi-day bookings, the minimum number of hours billed per calendar day touched by the booking, even if fewer hours are actually flown."
-msgstr "Voor meerdaagse boekingen, het minimum aantal gefactureerde uren per kalenderdag waarop de boeking betrekking heeft, ook als er minder uren daadwerkelijk gevlogen zijn."
+msgstr "Voor meerdaagse reserveringen, het minimum aantal gefactureerde uren per kalenderdag waarop de reservering betrekking heeft, ook als er minder uren daadwerkelijk gevlogen zijn."
 
 #: app/templates/reservations/settings.html:100
 msgid "Save settings"
@@ -10788,12 +10788,12 @@ msgstr "Alleen-lezenweergave"
 #: app/templates/share/public.html:27
 #, python-format
 msgid "%(n)s overdue"
-msgstr "%(n)s vervallen"
+msgstr "%(n)s achterstallig"
 
 #: app/templates/share/public.html:30
 #, python-format
 msgid "%(n)s due soon"
-msgstr "%(n)s bijna vervallen"
+msgstr "%(n)s bijna achterstallig"
 
 #: app/templates/share/public.html:33
 msgid "All items OK"
@@ -10949,7 +10949,7 @@ msgstr "Huidige gebruikers"
 
 #: app/templates/users/list.html:32 app/templates/users/list.html:229
 msgid "Aircraft access"
-msgstr "Toegang tot luchtvaartuigen"
+msgstr "Toegang tot vliegtuigen"
 
 #: app/templates/users/list.html:33
 msgid "Capability flags"
@@ -10965,11 +10965,11 @@ msgstr "inactief"
 
 #: app/templates/users/list.html:65 app/templates/users/permissions.html:47
 msgid "All aircraft"
-msgstr "Alle luchtvaartuigen"
+msgstr "Alle vliegtuigen"
 
 #: app/templates/users/list.html:93
 msgid "No aircraft"
-msgstr "Geen luchtvaartuigen"
+msgstr "Geen vliegtuigen"
 
 #: app/templates/users/list.html:113
 msgid "View only"
@@ -11026,7 +11026,7 @@ msgstr "Uitnodigingslinks zijn 7 dagen geldig. Als een e-mailadres is opgegeven 
 
 #: app/templates/users/permissions.html:12
 msgid "Custom permission overrides for individual aircraft. Leave at role defaults unless a specific override is needed."
-msgstr "Aangepaste machtigingsoverschrijvingen per luchtvaartuig. Laat op rolstandaard staan tenzij een specifieke overschrijving nodig is."
+msgstr "Aangepaste machtigingsoverschrijvingen per vliegtuig. Laat op rolstandaard staan tenzij een specifieke overschrijving nodig is."
 
 #: app/templates/users/permissions.html:16
 msgid "Back to users"
@@ -11034,7 +11034,7 @@ msgstr "Terug naar gebruikers"
 
 #: app/templates/users/permissions.html:24
 msgid "This user has no aircraft access configured. Grant access on the user list first."
-msgstr "Deze gebruiker heeft geen toegang tot luchtvaartuigen geconfigureerd. Verleen eerst toegang via de gebruikerslijst."
+msgstr "Deze gebruiker heeft geen toegang tot vliegtuigen geconfigureerd. Verleen eerst toegang via de gebruikerslijst."
 
 #: app/templates/users/permissions.html:38
 msgid "Preset"
@@ -11110,15 +11110,15 @@ msgstr "Uitnodiging ingetrokken."
 
 #: app/users/routes.py:391 app/users/routes.py:437
 msgid "Owners and admins always have full fleet access."
-msgstr "Eigenaren en beheerders hebben altijd toegang tot alle luchtvaartuigen."
+msgstr "Eigenaren en beheerders hebben altijd toegang tot alle vliegtuigen."
 
 #: app/users/routes.py:422
 msgid "Aircraft access updated."
-msgstr "Toegang tot luchtvaartuigen bijgewerkt."
+msgstr "Toegang tot vliegtuigen bijgewerkt."
 
 #: app/users/routes.py:448
 msgid "All-aircraft access updated."
-msgstr "Toegang tot alle luchtvaartuigen bijgewerkt."
+msgstr "Toegang tot alle vliegtuigen bijgewerkt."
 
 #: app/users/routes.py:462
 msgid "You cannot change your own capability flags."

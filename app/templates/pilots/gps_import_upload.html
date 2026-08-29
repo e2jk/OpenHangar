@@ -29,7 +29,7 @@
           <input class="form-check-input" type="radio" name="mode" id="mode_agnostic"
                  value="agnostic" checked>
           <label class="form-check-label" for="mode_agnostic">
-            <strong>{{ _('Airplane-agnostic') }}</strong>
+            <strong>{{ _('Aircraft-agnostic') }}</strong>
             — {{ _('I flew on multiple aircraft (or I will resolve the aircraft per segment). Best for training logbooks.') }}
           </label>
         </div>
@@ -38,7 +38,7 @@
                  value="one_aircraft">
           <label class="form-check-label" for="mode_one_aircraft">
             <strong>{{ _('All for one aircraft') }}</strong>
-            — {{ _('All files are for the same aircraft. Best for uploading a batch from your own plane.') }}
+            — {{ _('All files are for the same aircraft. Best for uploading a batch from your own aircraft.') }}
           </label>
         </div>
       </div>
@@ -58,7 +58,7 @@
         {% else %}
         <div class="alert alert-warning py-2 small">
           <i class="bi bi-exclamation-triangle me-1"></i>
-          {{ _('No aircraft are registered in this hangar. Use airplane-agnostic mode, or ask an administrator to add an aircraft first.') }}
+          {{ _('No aircraft are registered in this hangar. Use aircraft-agnostic mode, or ask an administrator to add an aircraft first.') }}
         </div>
         {% endif %}
       </div>
