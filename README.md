@@ -61,4 +61,6 @@ Roadmap decisions are guided by maintainers and community input. Feature request
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). Some runtime dependencies carry their own (copyleft or
+content-specific) licenses — see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)
+for what's used and why it doesn't affect OpenHangar's own license.

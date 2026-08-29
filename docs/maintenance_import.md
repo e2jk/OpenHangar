@@ -151,14 +151,60 @@ fields rather than a per-item task list.
 ## 6. Exporting
 
 Once the AMP declaration profile is filled in, **Export AMP** on the
-Maintenance page produces a print-ready HTML document matching the official
-form's block/appendix structure — blocks 1–9, plus Appendix B (grouped by
+Maintenance page shows an on-screen preview matching the AMC2 ML.A.302
+block/appendix structure — blocks 1–10, plus Appendix B (grouped by
 category), Appendix C (any items flagged as alternative to the DAH's ICA),
-and Appendix D (free-text notes plus the revision record). Use the page's
-**Print / download as PDF** button to save or print it; OpenHangar doesn't
-generate PDF files directly, so this is the same "print to PDF" your browser
-offers for any other page. Signature lines are left blank — OpenHangar
-doesn't perform the legal act of signing the declaration.
+and Appendix D (free-text notes). The **Download PDF** button on that page
+renders the same content into an actual PDF file (via WeasyPrint, server-side
+— not a browser print-to-PDF), styled after real shop-produced Part-ML AMPs:
+black header bars, a merged block-number gutter column, and a single
+Yes/No answer column, rather than the plain regulatory illustrative table.
+Signature lines are left blank — OpenHangar doesn't perform the legal act
+of signing the declaration.
+
+Block 1's "Owner" line and block 10 (revision control) are managed
+separately from the rest of the AMP declaration profile, on the same edit
+page:
+
+- **Owner (block 1)** — optional `owner_name`/`owner_address` fields.
+  Real AMPs can have the owner (block 1) and the certifying party (block
+  8) be different — e.g. a contracted CAMO/CAO certifying on behalf of a
+  different aircraft owner. Leave blank when they're the same (the common
+  case); export then falls back to the certifying party's own name/address.
+- **Revision history (block 10)** — a real multi-row list (`AmpRevision`,
+  one per aircraft), not a single field. Real shop-produced AMPs
+  consistently carry several rows here as the programme is revised over
+  time. Add/delete entries from the AMP declaration edit page; export
+  renders them oldest-first, matching how shop documents lay out block 10.
+
+### Draft detection and canonical PDFs
+
+Each `AmpRevision` stores a fingerprint (`content_hash`, a SHA-256 of the
+aircraft's data — owner/declaration fields, every trigger, and the revision
+list itself) captured at the moment that revision was added. A PDF download
+recomputes that same fingerprint from the AMP's *current* data and compares
+it to the latest declared revision:
+
+- **Matches** — the download really is that revision. The first such
+  download gets saved to disk (`AmpRevision.pdf_path`, under
+  `UPLOAD_FOLDER`, mirroring how `Document` stores files) and reused byte-
+  for-byte on every later download of the same revision, instead of
+  re-rendering. Each row in the revision history list has its own download
+  link, so an old revision's exact file stays available even after the live
+  AMP has since moved on — as long as it was downloaded at least once while
+  still current. There's no field-level history to reconstruct one that
+  wasn't.
+- **Doesn't match** (including: no revision declared at all yet) — the
+  download is a **draft**: the filename and running header say "draft"
+  instead of a revision number/date, and the PDF carries a diagonal "DRAFT"
+  watermark on every page, so it can't be mistaken for an already-declared
+  revision even without checking the filename. Nothing is cached for a
+  draft — every draft download is a fresh render.
+
+The fingerprint is computed over the underlying *data*, not the rendered
+HTML/PDF — hashing the render would make every aircraft's latest revision
+look "drafted" after any future template/CSS tweak, or a locale switch,
+even with byte-identical data.
 
 Because export reads the same fields import writes, editing a maintenance
 item's category, reference, or interval in OpenHangar — whether it came

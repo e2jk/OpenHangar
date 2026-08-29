@@ -77,6 +77,11 @@ _SKIP_GET_ENDPOINTS = {
     "set_theme",  # session-mutating, like set_language above — tests/test_i18n.py
     "aircraft.gps_import_prefill_segment",  # needs in-progress import-wizard session
     # state, not a standalone persisted resource — tests/test_gps_import.py
+    "maintenance.download_amp_revision_pdf",  # binary PDF download that legitimately
+    # 404s unless that specific AmpRevision has a cached canonical PDF (only true once
+    # a matching download has happened while it was current) — the generic "revision_id"
+    # SEED key is shared with PersonalMinimumsRevision's own route and doesn't point at
+    # one. Covered by tests/test_amp_export.py::TestDraftAndCanonicalPdf instead.
 }
 
 _SKIP_GET_RULES = {

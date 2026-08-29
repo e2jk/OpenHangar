@@ -15,7 +15,7 @@
         <span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ filename }} —
         {{ ngettext('%(n)s row', '%(n)s rows', row_count, n=row_count) }}
         {% if needs_review_count %}
-        · <span class="text-warning">{{ ngettext('%(n)s flagged for review', '%(n)s flagged for review', needs_review_count, n=needs_review_count) }}</span>
+        · <span class="text-warning">{{ ngettext('one flagged for review', '%(n)s flagged for review', needs_review_count, n=needs_review_count) }}</span>
         {% endif %}
       </p>
     </div>
