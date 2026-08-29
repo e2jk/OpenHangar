@@ -8362,7 +8362,7 @@ msgstr "BROUILLON — aucune révision n'a encore été déclarée (bloc 10). Aj
 
 #: app/templates/maintenance/_amp_export_body.html:27
 msgid "Part-ML Aircraft Maintenance Programme (AMP)"
-msgstr "Programme de maintenance avion (AMP) Part-ML"
+msgstr "Programme de maintenance aéronef (AMP) Part-ML"
 
 #: app/templates/maintenance/_amp_export_body.html:35
 #, python-format
@@ -8373,7 +8373,7 @@ msgstr[1] "%(n)s éléments sont encore en attente d'information de l'atelier �
 
 #: app/templates/maintenance/_amp_export_body.html:44
 msgid "Aircraft identification"
-msgstr "Identification de l'avion"
+msgstr "Identification de l'aéronef"
 
 #: app/templates/maintenance/_amp_export_body.html:65
 #: app/templates/maintenance/amp_declaration_form.html:44
@@ -8481,7 +8481,7 @@ msgstr "Approbation par le CAMO/CAO contacté"
 
 #: app/templates/maintenance/_amp_export_body.html:162
 msgid "I hereby declare that this is the maintenance programme applicable to the aircraft referred to in block 1 and I am fully responsible for its content and, in particular, for any alternative tasks to the data issued by the DAH or the declarant of a declaration of design compliance."
-msgstr "Je déclare par la présente qu'il s'agit du programme de maintenance applicable à l'avion mentionné au bloc 1 et que j'assume l'entière responsabilité de son contenu et, en particulier, de toute tâche alternative aux données émises par le DAH ou le déclarant d'une déclaration de conformité de conception."
+msgstr "Je déclare par la présente qu'il s'agit du programme de maintenance applicable à l'aéronef mentionné au bloc 1 et que j'assume l'entière responsabilité de son contenu et, en particulier, de toute tâche alternative aux données émises par le DAH ou le déclarant d'une déclaration de conformité de conception."
 
 #: app/templates/maintenance/_amp_export_body.html:163
 #: app/templates/maintenance/_amp_export_body.html:165
@@ -8503,11 +8503,11 @@ msgstr "Déclaration de certification"
 
 #: app/templates/maintenance/_amp_export_body.html:175
 msgid "I will ensure that the aircraft is maintained in accordance with this maintenance programme and that the maintenance programme will be reviewed and updated as required."
-msgstr "Je veillerai à ce que l'avion soit entretenu conformément à ce programme de maintenance et à ce que ce programme soit révisé et mis à jour selon les besoins."
+msgstr "Je veillerai à ce que l'aéronef soit entretenu conformément à ce programme de maintenance et à ce que ce programme soit révisé et mis à jour selon les besoins."
 
 #: app/templates/maintenance/_amp_export_body.html:178
 msgid "Signed by the person/organisation responsible for the continuing airworthiness of the aircraft according to ML.A.201"
-msgstr "Signé par la personne/l'organisme responsable du maintien de la navigabilité de l'avion conformément à ML.A.201"
+msgstr "Signé par la personne/l'organisme responsable du maintien de la navigabilité de l'aéronef conformément à ML.A.201"
 
 #: app/templates/maintenance/_amp_export_body.html:181
 msgid "Name of owner/lessee/operator"
@@ -8544,7 +8544,7 @@ msgstr "Annexe %(letter)s"
 
 #: app/templates/maintenance/_amp_export_body.html:219
 msgid "Revision control & periodic reviews of the Aircraft Maintenance Programme"
-msgstr "Contrôle des révisions et revues périodiques du programme de maintenance de l'avion"
+msgstr "Contrôle des révisions et revues périodiques du programme de maintenance de l'aéronef"
 
 #: app/templates/maintenance/_amp_export_body.html:221
 #: app/templates/maintenance/amp_declaration_form.html:191
@@ -8623,15 +8623,15 @@ msgstr "Déclaration AMP"
 #: app/templates/maintenance/amp_declaration_form.html:16
 #, python-format
 msgid "These fields fill in the %(form)s blocks that cannot be derived from the aircraft, its components, or its maintenance items. Block 4/5 and Appendices B/C are generated automatically from the maintenance items themselves."
-msgstr "Ces champs renseignent les blocs du %(form)s qui ne peuvent pas être déduits de l'avion, de ses composants ou de ses éléments de maintenance. Les blocs 4/5 et les annexes B/C sont générés automatiquement à partir des éléments de maintenance eux-mêmes."
+msgstr "Ces champs renseignent les blocs du %(form)s qui ne peuvent pas être déduits de l'aéronef, de ses composants ou de ses éléments de maintenance. Les blocs 4/5 et les annexes B/C sont générés automatiquement à partir des éléments de maintenance eux-mêmes."
 
 #: app/templates/maintenance/amp_declaration_form.html:30
 msgid "Aircraft owner (block 1)"
-msgstr "Propriétaire de l'avion (bloc 1)"
+msgstr "Propriétaire de l'aéronef (bloc 1)"
 
 #: app/templates/maintenance/amp_declaration_form.html:32
 msgid "Optional. Leave blank if the aircraft owner and the certifying party below (block 8) are the same — the export falls back to that party's name/address. Fill in separately when a contracted CAMO/CAO (block 8) is certifying on behalf of a different owner."
-msgstr "Facultatif. Laissez vide si le propriétaire de l'avion et la partie certifiante ci-dessous (bloc 8) sont identiques — l'export utilise alors le nom/l'adresse de cette partie. Renseignez séparément lorsqu'un CAMO/CAO sous contrat (bloc 8) certifie pour le compte d'un propriétaire différent."
+msgstr "Facultatif. Laissez vide si le propriétaire de l'aéronef et la partie certifiante ci-dessous (bloc 8) sont identiques — l'export utilise alors le nom/l'adresse de cette partie. Renseignez séparément lorsqu'un CAMO/CAO sous contrat (bloc 8) certifie pour le compte d'un propriétaire différent."
 
 #: app/templates/maintenance/amp_declaration_form.html:35
 msgid "Owner name"
@@ -8660,7 +8660,7 @@ msgstr "Références ICA du DAH"
 
 #: app/templates/maintenance/amp_declaration_form.html:71
 msgid "Aircraft (airframe)"
-msgstr "Avion (cellule)"
+msgstr "Aéronef (cellule)"
 
 #: app/templates/maintenance/amp_declaration_form.html:74
 msgid "e.g. Maintenance manual doc reference"
@@ -8673,7 +8673,7 @@ msgstr "le cas échéant"
 
 #: app/templates/maintenance/amp_declaration_form.html:92
 msgid "Pilot-owner maintenance is performed on this aircraft"
-msgstr "La maintenance par le pilote-propriétaire est pratiquée sur cet avion"
+msgstr "La maintenance par le pilote-propriétaire est pratiquée sur cet aéronef"
 
 #: app/templates/maintenance/amp_declaration_form.html:108
 msgid "Declaration / approval of the maintenance programme"
