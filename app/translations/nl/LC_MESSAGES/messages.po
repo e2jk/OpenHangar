@@ -8373,7 +8373,7 @@ msgstr[1] "%(n)s items zijn nog in afwachting van informatie van de werkplaats �
 
 #: app/templates/maintenance/_amp_export_body.html:44
 msgid "Aircraft identification"
-msgstr "Identificatie van het vliegtuig"
+msgstr "Identificatie van het luchtvaartuig"
 
 #: app/templates/maintenance/_amp_export_body.html:65
 #: app/templates/maintenance/amp_declaration_form.html:44
@@ -8481,7 +8481,7 @@ msgstr "Goedkeuring door de gecontacteerde CAMO/CAO"
 
 #: app/templates/maintenance/_amp_export_body.html:162
 msgid "I hereby declare that this is the maintenance programme applicable to the aircraft referred to in block 1 and I am fully responsible for its content and, in particular, for any alternative tasks to the data issued by the DAH or the declarant of a declaration of design compliance."
-msgstr "Hierbij verklaar ik dat dit het onderhoudsprogramma is dat van toepassing is op het vliegtuig vermeld in blok 1 en dat ik volledig verantwoordelijk ben voor de inhoud ervan, in het bijzonder voor eventuele afwijkende taken ten opzichte van de gegevens verstrekt door de DAH of de verklarende partij van een ontwerpconformiteitsverklaring."
+msgstr "Hierbij verklaar ik dat dit het onderhoudsprogramma is dat van toepassing is op het luchtvaartuig vermeld in blok 1 en dat ik volledig verantwoordelijk ben voor de inhoud ervan, in het bijzonder voor eventuele afwijkende taken ten opzichte van de gegevens verstrekt door de DAH of de verklarende partij van een ontwerpconformiteitsverklaring."
 
 #: app/templates/maintenance/_amp_export_body.html:163
 #: app/templates/maintenance/_amp_export_body.html:165
@@ -8503,11 +8503,11 @@ msgstr "Certificeringsverklaring"
 
 #: app/templates/maintenance/_amp_export_body.html:175
 msgid "I will ensure that the aircraft is maintained in accordance with this maintenance programme and that the maintenance programme will be reviewed and updated as required."
-msgstr "Ik zal ervoor zorgen dat het vliegtuig wordt onderhouden in overeenstemming met dit onderhoudsprogramma en dat het onderhoudsprogramma indien nodig wordt herzien en bijgewerkt."
+msgstr "Ik zal ervoor zorgen dat het luchtvaartuig wordt onderhouden in overeenstemming met dit onderhoudsprogramma en dat het onderhoudsprogramma indien nodig wordt herzien en bijgewerkt."
 
 #: app/templates/maintenance/_amp_export_body.html:178
 msgid "Signed by the person/organisation responsible for the continuing airworthiness of the aircraft according to ML.A.201"
-msgstr "Ondertekend door de persoon/organisatie verantwoordelijk voor de voortdurende luchtwaardigheid van het vliegtuig conform ML.A.201"
+msgstr "Ondertekend door de persoon/organisatie verantwoordelijk voor de voortdurende luchtwaardigheid van het luchtvaartuig conform ML.A.201"
 
 #: app/templates/maintenance/_amp_export_body.html:181
 msgid "Name of owner/lessee/operator"
@@ -8544,7 +8544,7 @@ msgstr "Bijlage %(letter)s"
 
 #: app/templates/maintenance/_amp_export_body.html:219
 msgid "Revision control & periodic reviews of the Aircraft Maintenance Programme"
-msgstr "Revisiebeheer & periodieke evaluaties van het onderhoudsprogramma van het vliegtuig"
+msgstr "Revisiebeheer & periodieke evaluaties van het onderhoudsprogramma van het luchtvaartuig"
 
 #: app/templates/maintenance/_amp_export_body.html:221
 #: app/templates/maintenance/amp_declaration_form.html:191
@@ -8623,15 +8623,15 @@ msgstr "AMP-verklaring"
 #: app/templates/maintenance/amp_declaration_form.html:16
 #, python-format
 msgid "These fields fill in the %(form)s blocks that cannot be derived from the aircraft, its components, or its maintenance items. Block 4/5 and Appendices B/C are generated automatically from the maintenance items themselves."
-msgstr "Deze velden vullen de blokken van het %(form)s in die niet kunnen worden afgeleid van het vliegtuig, de componenten ervan of de onderhoudsitems. Blok 4/5 en bijlagen B/C worden automatisch gegenereerd op basis van de onderhoudsitems zelf."
+msgstr "Deze velden vullen de blokken van het %(form)s in die niet kunnen worden afgeleid van het luchtvaartuig, de componenten ervan of de onderhoudsitems. Blok 4/5 en bijlagen B/C worden automatisch gegenereerd op basis van de onderhoudsitems zelf."
 
 #: app/templates/maintenance/amp_declaration_form.html:30
 msgid "Aircraft owner (block 1)"
-msgstr "Eigenaar van het vliegtuig (blok 1)"
+msgstr "Eigenaar van het luchtvaartuig (blok 1)"
 
 #: app/templates/maintenance/amp_declaration_form.html:32
 msgid "Optional. Leave blank if the aircraft owner and the certifying party below (block 8) are the same — the export falls back to that party's name/address. Fill in separately when a contracted CAMO/CAO (block 8) is certifying on behalf of a different owner."
-msgstr "Optioneel. Laat leeg als de eigenaar van het vliegtuig en de certificerende partij hieronder (blok 8) dezelfde zijn — de export gebruikt dan de naam/het adres van die partij. Vul apart in wanneer een gecontracteerde CAMO/CAO (blok 8) certificeert namens een andere eigenaar."
+msgstr "Optioneel. Laat leeg als de eigenaar van het luchtvaartuig en de certificerende partij hieronder (blok 8) dezelfde zijn — de export gebruikt dan de naam/het adres van die partij. Vul apart in wanneer een gecontracteerde CAMO/CAO (blok 8) certificeert namens een andere eigenaar."
 
 #: app/templates/maintenance/amp_declaration_form.html:35
 msgid "Owner name"
@@ -8660,7 +8660,7 @@ msgstr "ICA-referenties van de DAH"
 
 #: app/templates/maintenance/amp_declaration_form.html:71
 msgid "Aircraft (airframe)"
-msgstr "Vliegtuig (airframe)"
+msgstr "Luchtvaartuig (airframe)"
 
 #: app/templates/maintenance/amp_declaration_form.html:74
 msgid "e.g. Maintenance manual doc reference"
@@ -8673,7 +8673,7 @@ msgstr "indien van toepassing"
 
 #: app/templates/maintenance/amp_declaration_form.html:92
 msgid "Pilot-owner maintenance is performed on this aircraft"
-msgstr "Onderhoud door de piloot-eigenaar wordt uitgevoerd op dit vliegtuig"
+msgstr "Onderhoud door de piloot-eigenaar wordt uitgevoerd op dit luchtvaartuig"
 
 #: app/templates/maintenance/amp_declaration_form.html:108
 msgid "Declaration / approval of the maintenance programme"
