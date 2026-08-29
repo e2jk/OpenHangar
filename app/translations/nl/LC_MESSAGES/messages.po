@@ -2204,7 +2204,7 @@ msgstr "Bevestiging van de rondgang is verplicht."
 
 #: app/reservations/routes.py:1328
 msgid "You must acknowledge the open snag list."
-msgstr "U moet de lijst met openstaande gebreken bevestigen."
+msgstr "U moet de lijst met openstaande defecten bevestigen."
 
 #: app/reservations/routes.py:1332
 msgid "This aircraft is grounded — dispatch is blocked. An owner may override with an explicit confirmation."
@@ -2620,32 +2620,32 @@ msgstr "De oplossingsdatum kan niet vóór de datum van melding liggen."
 #: app/snags/routes.py:249
 #, python-format
 msgid "Grounding snag reported: %(title)s — %(reg)s"
-msgstr "Grounding storing gemeld: %(title)s — %(reg)s"
+msgstr "Vliegverbod-defect gemeld: %(title)s — %(reg)s"
 
 #: app/snags/routes.py:250
 #, python-format
 msgid "Grounding snag reported: %(title)s"
-msgstr "Grounding storing gemeld: %(title)s"
+msgstr "Vliegverbod-defect gemeld: %(title)s"
 
 #: app/snags/routes.py:251
 #, python-format
 msgid "A grounding snag was reported on %(reg)s."
-msgstr "Er is een grounding storing gemeld op %(reg)s."
+msgstr "Er is een vliegverbod-defect gemeld op %(reg)s."
 
 #: app/snags/routes.py:253
 #, python-format
 msgid "Snag reported: %(title)s — %(reg)s"
-msgstr "Technische storing gemeld: %(title)s — %(reg)s"
+msgstr "Defect gemeld: %(title)s — %(reg)s"
 
 #: app/snags/routes.py:254
 #, python-format
 msgid "Snag reported: %(title)s"
-msgstr "Technische storing gemeld: %(title)s"
+msgstr "Defect gemeld: %(title)s"
 
 #: app/snags/routes.py:255
 #, python-format
 msgid "A snag was reported on %(reg)s."
-msgstr "Er is een technische storing gemeld op %(reg)s."
+msgstr "Er is een defect gemeld op %(reg)s."
 
 #: app/snags/routes.py:268 app/templates/airworthiness/dashboard.html:253
 #: app/templates/airworthiness/document_form.html:46
@@ -2973,7 +2973,7 @@ msgstr "Vliegverbod"
 
 #: app/templates/dashboard.html:165 app/templates/reservations/checkout.html:30
 msgid "Open snags"
-msgstr "Openstaande gebreken"
+msgstr "Openstaande defecten"
 
 #: app/templates/dashboard.html:176
 #: app/templates/flights/airframe_import_upload.html:63
@@ -3176,7 +3176,7 @@ msgstr "Volgende vervaldatum"
 
 #: app/templates/dashboard.html:433
 msgid "Grounding snags"
-msgstr "Grondende gebreken"
+msgstr "Vliegverbod-defecten"
 
 #: app/templates/dashboard.html:436
 #, python-format
@@ -10505,7 +10505,7 @@ msgstr "Een gebrek vastgesteld tijdens de vlucht of bij terugkeer?"
 
 #: app/templates/reservations/checkin.html:50
 msgid "Report a snag"
-msgstr "Een gebrek melden"
+msgstr "Een defect melden"
 
 #: app/templates/reservations/checkout.html:3
 #: app/templates/reservations/checkout.html:12
@@ -10528,11 +10528,11 @@ msgstr "Rondgang uitgevoerd"
 
 #: app/templates/reservations/checkout.html:76
 msgid "I have reviewed the open snag list above"
-msgstr "Ik heb bovenstaande lijst met openstaande gebreken bekeken"
+msgstr "Ik heb bovenstaande lijst met openstaande defecten bekeken"
 
 #: app/templates/reservations/checkout.html:82
 msgid "Dispatch anyway despite the grounding snag (recorded for audit)"
-msgstr "Toch uitchecken ondanks het aan de grond houdende gebrek (geregistreerd voor audit)"
+msgstr "Toch uitchecken ondanks het vliegverbod-defect (geregistreerd voor audit)"
 
 #: app/templates/reservations/detail.html:3
 #: app/templates/reservations/detail.html:12
@@ -10571,7 +10571,7 @@ msgstr "Brandstof bij uitchecken"
 
 #: app/templates/reservations/detail.html:85
 msgid "Dispatched despite a grounding snag (owner override)."
-msgstr "Uitgecheckt ondanks een aan de grond houdend gebrek (overschrijving door eigenaar)."
+msgstr "Uitgecheckt ondanks een vliegverbod-defect (overschrijving door eigenaar)."
 
 #: app/templates/reservations/detail.html:90
 msgid "Not checked in yet."

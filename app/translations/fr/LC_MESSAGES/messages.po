@@ -2135,7 +2135,7 @@ msgstr "Cet appareil est actuellement immobilisé au sol et ce hangar exige que 
 
 #: app/reservations/routes.py:1059
 msgid "This aircraft currently has an open grounding snag — your booking was submitted, but check its status before flying."
-msgstr "Cet appareil a actuellement un défaut immobilisant ouvert — votre réservation a été soumise, mais vérifiez son statut avant de voler."
+msgstr "Cet appareil a actuellement une anomalie clouante ouverte — votre réservation a été soumise, mais vérifiez son statut avant de voler."
 
 #: app/reservations/routes.py:1080
 #, python-format
@@ -2620,17 +2620,17 @@ msgstr "La date de résolution ne peut pas être antérieure à la date de signa
 #: app/snags/routes.py:249
 #, python-format
 msgid "Grounding snag reported: %(title)s — %(reg)s"
-msgstr "Anomalie bloquante signalée : %(title)s — %(reg)s"
+msgstr "Anomalie clouante signalée : %(title)s — %(reg)s"
 
 #: app/snags/routes.py:250
 #, python-format
 msgid "Grounding snag reported: %(title)s"
-msgstr "Anomalie bloquante signalée : %(title)s"
+msgstr "Anomalie clouante signalée : %(title)s"
 
 #: app/snags/routes.py:251
 #, python-format
 msgid "A grounding snag was reported on %(reg)s."
-msgstr "Une anomalie bloquante a été signalée sur %(reg)s."
+msgstr "Une anomalie clouante a été signalée sur %(reg)s."
 
 #: app/snags/routes.py:253
 #, python-format
@@ -2679,13 +2679,13 @@ msgstr "Appareil immobilisé au sol : %(reg)s"
 #: app/snags/routes.py:308
 #, python-format
 msgid "A grounding snag (%(title)s) was reported on %(reg)s, which you hold a confirmed reservation for."
-msgstr "Un défaut immobilisant (%(title)s) a été signalé sur %(reg)s, pour lequel vous avez une réservation confirmée."
+msgstr "Une anomalie clouante (%(title)s) a été signalée sur %(reg)s, pour lequel vous avez une réservation confirmée."
 
 #: app/snags/routes.py:318 app/templates/maintenance/fleet.html:60
 #: app/templates/maintenance/fleet.html:116
 #: app/templates/snags/resolve_form.html:17
 msgid "Snag"
-msgstr "Panne"
+msgstr "Anomalie"
 
 #: app/snags/routes.py:319
 msgid "Affected reservation dates"
@@ -2694,34 +2694,34 @@ msgstr "Dates de réservation concernées"
 #: app/snags/routes.py:329
 #, python-format
 msgid "Snag '%(title)s' saved."
-msgstr "Panne « %(title)s » enregistrée."
+msgstr "Anomalie « %(title)s » enregistrée."
 
 #: app/snags/routes.py:346
 msgid "Snag is already closed."
-msgstr "La panne est déjà clôturée."
+msgstr "L'anomalie est déjà clôturée."
 
 #: app/snags/routes.py:385
 #, python-format
 msgid "Snag '%(title)s' closed."
-msgstr "Panne « %(title)s » clôturée."
+msgstr "Anomalie « %(title)s » clôturée."
 
 #: app/snags/routes.py:406
 msgid "Snag is already open."
-msgstr "La panne est déjà ouverte."
+msgstr "L'anomalie est déjà ouverte."
 
 #: app/snags/routes.py:422
 #, python-format
 msgid "Snag '%(title)s' reopened."
-msgstr "Panne « %(title)s » rouverte."
+msgstr "Anomalie « %(title)s » rouverte."
 
 #: app/snags/routes.py:438
 msgid "Closed snags are archived and cannot be deleted."
-msgstr "Les défauts fermés sont archivés et ne peuvent pas être supprimés."
+msgstr "Les anomalies fermées sont archivées et ne peuvent pas être supprimées."
 
 #: app/snags/routes.py:443
 #, python-format
 msgid "Snag '%(title)s' deleted."
-msgstr "Panne « %(title)s » supprimée."
+msgstr "Anomalie « %(title)s » supprimée."
 
 #: app/templates/_doc_viewer_modal.html:7
 #: app/templates/aircraft/owner_account.html:22
@@ -3176,7 +3176,7 @@ msgstr "Prochaine échéance"
 
 #: app/templates/dashboard.html:433
 msgid "Grounding snags"
-msgstr "Pannes bloquantes"
+msgstr "Anomalies clouantes"
 
 #: app/templates/dashboard.html:436
 #, python-format
@@ -4066,12 +4066,12 @@ msgstr "L'ARC a expiré le %(date)s."
 #, python-format
 msgid "There is %(n)s unresolved grounding snag."
 msgid_plural "There are %(n)s unresolved grounding snags."
-msgstr[0] "Il y a %(n)s panne clouante non résolue."
-msgstr[1] "Il y a %(n)s pannes clouantes non résolues."
+msgstr[0] "Il y a %(n)s anomalie clouante non résolue."
+msgstr[1] "Il y a %(n)s anomalies clouantes non résolues."
 
 #: app/templates/aircraft/detail.html:49
 msgid "View snag list"
-msgstr "Voir la liste des pannes"
+msgstr "Voir la liste des anomalies"
 
 #: app/templates/aircraft/detail.html:60
 msgid "Add components?"
@@ -4154,7 +4154,7 @@ msgstr "Anomalies connues actives"
 #: app/templates/snags/list.html:108 app/templates/snags/snag_form.html:3
 #: app/templates/snags/snag_form.html:12
 msgid "Log a snag"
-msgstr "Saisir une panne"
+msgstr "Saisir une anomalie"
 
 #: app/templates/aircraft/detail.html:192
 #: app/templates/maintenance/fleet.html:83
@@ -4167,7 +4167,7 @@ msgstr "Résoudre"
 #: app/templates/maintenance/fleet.html:154
 #: app/templates/reservations/checkout.html:42
 msgid "No open snags."
-msgstr "Aucune panne ouverte."
+msgstr "Aucune anomalie ouverte."
 
 #: app/templates/aircraft/detail.html:222
 #: app/templates/maintenance/list.html:41
@@ -6179,11 +6179,11 @@ msgstr "Choisissez quels événements vous envoient un e-mail."
 
 #: app/templates/config/notifications.html:30
 msgid "Grounding snag reported"
-msgstr "Panne clouante signalée"
+msgstr "Anomalie clouante signalée"
 
 #: app/templates/config/notifications.html:31
 msgid "Snag reported"
-msgstr "Défaut signalé"
+msgstr "Anomalie signalée"
 
 #: app/templates/config/notifications.html:32
 msgid "Reservation confirmed"
@@ -6251,7 +6251,7 @@ msgstr "Un aéronef est cloué au sol suite à un défaut signalé."
 
 #: app/templates/config/notifications.html:53
 msgid "Any new snag is logged (grounding or non-grounding)."
-msgstr "Tout nouveau défaut est enregistré (clouant ou non)."
+msgstr "Toute nouvelle anomalie est enregistrée (clouante ou non)."
 
 #: app/templates/config/notifications.html:54
 msgid "Your booking request has been approved."
@@ -6311,7 +6311,7 @@ msgstr "Une autorisation de location ou une date médicale vérifiée approche d
 
 #: app/templates/config/notifications.html:68
 msgid "A grounding snag was opened on an aircraft you hold a confirmed reservation for."
-msgstr "Un défaut immobilisant a été ouvert sur un appareil pour lequel vous avez une réservation confirmée."
+msgstr "Une anomalie clouante a été ouverte sur un appareil pour lequel vous avez une réservation confirmée."
 
 #: app/templates/config/notifications.html:69
 msgid "You have exceeded a comfort-zone recency threshold in your personal minimums (e.g. days since your last flight)."
@@ -8829,7 +8829,7 @@ msgstr "Obligations de maintenance et défauts ouverts de toute la flotte."
 
 #: app/templates/maintenance/fleet.html:25
 msgid "All clear — no open snags and no overdue or upcoming maintenance."
-msgstr "Tout est en ordre — aucun défaut ouvert et aucune maintenance en retard ou à venir."
+msgstr "Tout est en ordre — aucune anomalie ouverte et aucune maintenance en retard ou à venir."
 
 #: app/templates/maintenance/fleet.html:33
 msgid "By type"
@@ -8841,7 +8841,7 @@ msgstr "Chronologique"
 
 #: app/templates/maintenance/fleet.html:48
 msgid "Grounding Snags"
-msgstr "Pannes clouantes"
+msgstr "Anomalies clouantes"
 
 #: app/templates/maintenance/fleet.html:62
 #: app/templates/maintenance/fleet.html:118 app/templates/snags/list.html:53
@@ -8852,15 +8852,15 @@ msgstr "Signalé"
 #: app/templates/maintenance/fleet.html:144
 #: app/templates/maintenance/fleet.html:392
 msgid "All snags"
-msgstr "Toutes les pannes"
+msgstr "Toutes les anomalies"
 
 #: app/templates/maintenance/fleet.html:98
 msgid "No grounding snags."
-msgstr "Aucune panne clouante."
+msgstr "Aucune anomalie clouante."
 
 #: app/templates/maintenance/fleet.html:104 app/templates/snags/list.html:44
 msgid "Open Snags"
-msgstr "Pannes ouvertes"
+msgstr "Anomalies ouvertes"
 
 #: app/templates/maintenance/fleet.html:159
 msgid "Maintenance Timeline"
@@ -10532,7 +10532,7 @@ msgstr "J'ai pris connaissance de la liste des anomalies ouvertes ci-dessus"
 
 #: app/templates/reservations/checkout.html:82
 msgid "Dispatch anyway despite the grounding snag (recorded for audit)"
-msgstr "Départ malgré l'anomalie bloquante (enregistré pour audit)"
+msgstr "Départ malgré l'anomalie clouante (enregistré pour audit)"
 
 #: app/templates/reservations/detail.html:3
 #: app/templates/reservations/detail.html:12
@@ -10571,7 +10571,7 @@ msgstr "Carburant au départ"
 
 #: app/templates/reservations/detail.html:85
 msgid "Dispatched despite a grounding snag (owner override)."
-msgstr "Départ effectué malgré une anomalie bloquante (dérogation du propriétaire)."
+msgstr "Départ effectué malgré une anomalie clouante (dérogation du propriétaire)."
 
 #: app/templates/reservations/detail.html:90
 msgid "Not checked in yet."
@@ -10675,11 +10675,11 @@ msgstr "Vous ne disposez pas d'une autorisation de location valide pour cet appa
 
 #: app/templates/reservations/form.html:28
 msgid "This aircraft is currently grounded (open grounding snag), and this hangar requires bookings to be blocked while grounded. Contact the owner."
-msgstr "Cet appareil est actuellement immobilisé au sol (défaut immobilisant ouvert), et ce hangar exige que les réservations soient bloquées tant qu'il l'est. Contactez le propriétaire."
+msgstr "Cet appareil est actuellement immobilisé au sol (anomalie clouante ouverte), et ce hangar exige que les réservations soient bloquées tant qu'il l'est. Contactez le propriétaire."
 
 #: app/templates/reservations/form.html:33
 msgid "This aircraft currently has an open grounding snag. You can still book, but check its status before flying."
-msgstr "Cet appareil a actuellement un défaut immobilisant ouvert. Vous pouvez toujours réserver, mais vérifiez son statut avant de voler."
+msgstr "Cet appareil a actuellement une anomalie clouante ouverte. Vous pouvez toujours réserver, mais vérifiez son statut avant de voler."
 
 #: app/templates/reservations/form.html:59
 #, python-format
@@ -10818,15 +10818,15 @@ msgstr "Diapositive %(n)s"
 
 #: app/templates/snags/list.html:3
 msgid "Snags"
-msgstr "Pannes"
+msgstr "Anomalies"
 
 #: app/templates/snags/list.html:12
 msgid "Snag List"
-msgstr "Liste des pannes"
+msgstr "Liste des anomalies"
 
 #: app/templates/snags/list.html:38
 msgid "One or more open grounding snags prevent this aircraft from flying. Resolve all grounding snags before resuming operations."
-msgstr "Une ou plusieurs pannes clouantes ouvertes empêchent cet aéronef de voler. Résoudre toutes les pannes clouantes avant de reprendre les opérations."
+msgstr "Une ou plusieurs anomalies clouantes ouvertes empêchent cet aéronef de voler. Résoudre toutes les anomalies clouantes avant de reprendre les opérations."
 
 #: app/templates/snags/list.html:73
 msgid "No"
@@ -10834,18 +10834,18 @@ msgstr "Non"
 
 #: app/templates/snags/list.html:89
 msgid "Delete this snag?"
-msgstr "Supprimer cette panne ?"
+msgstr "Supprimer cette anomalie ?"
 
 #: app/templates/snags/list.html:104
 msgid "No open snags — aircraft is clear."
-msgstr "Aucune panne ouverte — l'aéronef est en état de vol."
+msgstr "Aucune anomalie ouverte — l'aéronef est en état de vol."
 
 #: app/templates/snags/list.html:118
 #, python-format
 msgid "%(n)s closed snag"
 msgid_plural "%(n)s closed snags"
-msgstr[0] "%(n)s panne clôturée"
-msgstr[1] "%(n)s pannes clôturées"
+msgstr[0] "%(n)s anomalie clôturée"
+msgstr[1] "%(n)s anomalies clôturées"
 
 #: app/templates/snags/list.html:126
 msgid "Resolved"
@@ -10858,7 +10858,7 @@ msgstr "Note de résolution"
 
 #: app/templates/snags/list.html:147
 msgid "Reopen this snag?"
-msgstr "Rouvrir cette panne ?"
+msgstr "Rouvrir cette anomalie ?"
 
 #: app/templates/snags/list.html:148
 msgid "Reopen"
@@ -10867,27 +10867,27 @@ msgstr "Rouvrir"
 #: app/templates/snags/resolve_form.html:3
 #: app/templates/snags/resolve_form.html:11
 msgid "Resolve Snag"
-msgstr "Résoudre la panne"
+msgstr "Résoudre l'anomalie"
 
 #: app/templates/snags/resolve_form.html:44
 msgid "Describe what was done to resolve the snag, who did it, and when."
-msgstr "Décrivez ce qui a été fait pour résoudre le défaut, par qui et quand."
+msgstr "Décrivez ce qui a été fait pour résoudre l'anomalie, par qui et quand."
 
 #: app/templates/snags/resolve_form.html:46
 msgid "Required. Closed snags are archived and cannot be deleted."
-msgstr "Obligatoire. Les défauts fermés sont archivés et ne peuvent pas être supprimés."
+msgstr "Obligatoire. Les anomalies fermées sont archivées et ne peuvent pas être supprimées."
 
 #: app/templates/snags/resolve_form.html:51
 msgid "Close snag"
-msgstr "Clôturer la panne"
+msgstr "Clôturer l'anomalie"
 
 #: app/templates/snags/snag_form.html:3 app/templates/snags/snag_form.html:12
 msgid "Edit Snag"
-msgstr "Modifier la panne"
+msgstr "Modifier l'anomalie"
 
 #: app/templates/snags/snag_form.html:21
 msgid "This snag is closed. Changes to a closed snag are logged for auditability."
-msgstr "Cette panne est clôturée. Les modifications apportées à une panne clôturée sont journalisées à des fins de traçabilité."
+msgstr "Cette anomalie est clôturée. Les modifications apportées à une anomalie clôturée sont journalisées à des fins de traçabilité."
 
 #: app/templates/snags/snag_form.html:40
 msgid "Additional details, conditions when observed, etc."
@@ -10899,7 +10899,7 @@ msgstr "Nom du pilote ou du technicien"
 
 #: app/templates/snags/snag_form.html:62
 msgid "Grounding snag"
-msgstr "Panne clouante"
+msgstr "Anomalie clouante"
 
 #: app/templates/snags/snag_form.html:63
 msgid "aircraft must not fly until this is resolved"
@@ -10907,7 +10907,7 @@ msgstr "l'aéronef ne doit pas voler tant que ce n'est pas résolu"
 
 #: app/templates/snags/snag_form.html:86
 msgid "Save snag"
-msgstr "Enregistrer la panne"
+msgstr "Enregistrer l'anomalie"
 
 #: app/templates/users/invite_accept.html:3
 #: app/templates/users/invite_accept.html:14
