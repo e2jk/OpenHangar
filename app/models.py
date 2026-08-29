@@ -469,6 +469,12 @@ class Aircraft(db.Model):
         cascade="all, delete-orphan",
         uselist=False,
     )
+    amp_revisions = db.relationship(
+        "AmpRevision",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
+        order_by="AmpRevision.revision_date.asc().nullslast(), AmpRevision.id.asc()",
+    )
     photos = db.relationship(
         "AircraftPhoto",
         back_populates="aircraft",
@@ -1670,6 +1676,15 @@ class AmpDeclaration(db.Model):
         db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), primary_key=True
     )
 
+    # Block 1 — aircraft owner. Distinct from block 8's certifying party
+    # below: real AMPs can have a contracted CAMO/CAO (block 8) acting on
+    # behalf of a different aircraft owner (block 1) — e.g. a declaration
+    # by the owner themselves has these match, but a CAMO/CAO approval
+    # doesn't. Optional: when unset, export falls back to the certifying
+    # party (the common case where they're the same person/entity).
+    owner_name = db.Column(db.String(128), nullable=True)
+    owner_address = db.Column(db.Text, nullable=True)
+
     # Block 2 — basis for the maintenance programme
     basis = db.Column(
         db.String(16),
@@ -1714,13 +1729,9 @@ class AmpDeclaration(db.Model):
     certifying_party_phone = db.Column(db.String(32), nullable=True)
     certifying_party_email = db.Column(db.String(128), nullable=True)
 
-    # Appendix D (optional free text) + a lightweight revision record — the
-    # official form has no numbered block for revision history, so it's
-    # rendered as a note within Appendix D on export.
+    # Appendix D — optional free text. Block 10 (revision history) is a
+    # separate one-to-many AmpRevision table, not stored here — see below.
     appendix_d_notes = db.Column(db.Text, nullable=True)
-    revision_number = db.Column(db.String(16), nullable=True)
-    revision_content = db.Column(db.String(255), nullable=True)
-    revision_date = db.Column(db.Date, nullable=True)
 
     updated_at = db.Column(
         db.DateTime(timezone=True),
@@ -1730,6 +1741,47 @@ class AmpDeclaration(db.Model):
     )
 
     aircraft = db.relationship("Aircraft", back_populates="amp_declaration")
+
+
+class AmpRevision(db.Model):
+    """Block 10 — Revision control & periodic reviews of the Aircraft
+    Maintenance Programme. One-to-many with Aircraft (not AmpDeclaration)
+    so revision history survives even if the declaration profile is ever
+    deleted and recreated. Real shop-produced AMPs consistently carry
+    multiple rows here (e.g. "R00 initial release", "R01 <what changed>",
+    ...) — mirrors MaintenanceRecord's shape/relationship style."""
+
+    __tablename__ = "amp_revisions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    revision_number = db.Column(db.String(16), nullable=False)
+    revision_content = db.Column(db.Text, nullable=True)
+    revision_date = db.Column(db.Date, nullable=True)
+    # SHA-256 of the export HTML rendered at the moment this revision was
+    # added — the "what did the AMP look like when this revision was
+    # declared" snapshot. A later export whose freshly-rendered HTML hashes
+    # to something else means the AMP's data has drifted since this
+    # revision, so a download at that point is a draft, not this revision.
+    content_hash = db.Column(db.String(64), nullable=True)
+    # Path (relative to UPLOAD_FOLDER, mirrors Document.filename) of the
+    # canonical PDF for this revision — set the first time a download
+    # happens while content_hash still matches the live data, so this
+    # revision's exact bytes stay re-downloadable even after later edits.
+    # Never set at all if this revision was superseded before anyone ever
+    # downloaded it while current — there is no way to reconstruct that.
+    pdf_path = db.Column(db.String(512), nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+
+    aircraft = db.relationship("Aircraft", back_populates="amp_revisions")
+
+    __table_args__ = (db.Index("ix_amp_revisions_aircraft_id", "aircraft_id"),)
 
 
 class MaintenanceImportBatch(db.Model):

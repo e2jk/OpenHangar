@@ -290,7 +290,10 @@ the `{% if is_pilot/is_maint %}` guard in the template.
   label = _("My string")
   html = Markup(f"<strong>{escape(label)}</strong>")
   ```
-- Plurals: `ngettext("one item removed.", "%(n)s items removed.", count, n=count)`
+- Plurals: `ngettext("one item removed.", "%(n)s items removed.", count, n=count)`.
+  Always give the singular its own `"one …"` text — never pass the same string as
+  both singular and plural, even if English reads fine either way (e.g. a word that
+  doesn't inflect, like "flagged"). See "Common pitfalls" below for why.
 
   The `.po` format for plurals requires three entries:
   ```po
@@ -390,6 +393,22 @@ gettext's `%(name)s` syntax is filled in by Jinja/Babel at render time. If a
 placeholder is meant to be filled in later by JavaScript (not Jinja), use a plain
 `{name}` token instead — `%(name)s` will already have been substituted (usually with
 nothing, since no `name=` kwarg was passed) before the string ever reaches the client.
+
+### Never let `ngettext()`'s singular and plural msgids end up identical
+`ngettext("%(n)s flagged for review", "%(n)s flagged for review", count, n=count)`
+is syntactically valid — gettext doesn't require the two strings to differ — but it's
+a real bug whenever the English word doesn't happen to inflect by count. Always give
+the singular form its own text, e.g. `ngettext("one flagged for review", "%(n)s
+flagged for review", count, n=count)`, even when English itself reads fine either way.
+Two reasons: (1) a language that *does* need to inflect (French `signalé`/`signalés`)
+silently gets the same wrong text in both slots if the source msgid never prompts a
+translator to distinguish them, and (2) a language that genuinely doesn't inflect
+either (Dutch `gemarkeerd`) then produces byte-identical `msgstr[0]`/`msgstr[1]`,
+which trips Weblate's "same plurals" quality check as a false positive indistinguishable
+from a real missed translation. Giving English a distinct singular fixes both — this
+is exactly how `scripts/weblate_check_report.py` surfaces this class of issue; see
+also `tests/test_i18n.py::TestNoHandRolledPlurals`, which catches the related but
+different `"item(s)"`-style shortcut instead of `ngettext()` altogether.
 
 ### Sequential Alembic revision IDs break reproducibility
 IDs like `a1b2c3d4e5f6` or `000001` have historically caused merge conflicts and chain

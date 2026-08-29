@@ -27,6 +27,20 @@
       <div class="ac-form-card">
         <form method="post">
 
+          <h2 class="section-title">{{ _('Aircraft owner (block 1)') }}</h2>
+          <p class="text-muted oh-fs-09">
+            {{ _("Optional. Leave blank if the aircraft owner and the certifying party below (block 8) are the same — the export falls back to that party's name/address. Fill in separately when a contracted CAMO/CAO (block 8) is certifying on behalf of a different owner.") }}
+          </p>
+          <div class="mb-3">
+            <label for="owner_name" class="form-label">{{ _('Owner name') }}</label>
+            <input type="text" class="form-control" id="owner_name" name="owner_name"
+                   value="{{ decl.owner_name if decl and decl.owner_name else '' }}">
+          </div>
+          <div class="mb-4">
+            <label for="owner_address" class="form-label">{{ _('Owner address') }}</label>
+            <textarea class="form-control" id="owner_address" name="owner_address" rows="2">{{ decl.owner_address if decl and decl.owner_address else '' }}</textarea>
+          </div>
+
           <h2 class="section-title">{{ _('Basis for the maintenance programme') }}</h2>
           <div class="mb-3">
             <div class="form-check">
@@ -149,27 +163,10 @@
             </div>
           </div>
 
-          <h2 class="section-title">{{ _('Appendix D & revision') }}</h2>
-          <div class="mb-3">
+          <h2 class="section-title">{{ _('Appendix D') }}</h2>
+          <div class="mb-4">
             <label for="appendix_d_notes" class="form-label">{{ _('Additional information (Appendix D)') }} <span class="text-muted small">({{ _('optional') }})</span></label>
             <textarea class="form-control" id="appendix_d_notes" name="appendix_d_notes" rows="3">{{ decl.appendix_d_notes if decl and decl.appendix_d_notes else '' }}</textarea>
-          </div>
-          <div class="row mb-4">
-            <div class="col-4">
-              <label for="revision_number" class="form-label">{{ _('Revision number') }}</label>
-              <input type="text" class="form-control" id="revision_number" name="revision_number"
-                     value="{{ decl.revision_number if decl and decl.revision_number else '' }}" placeholder="0">
-            </div>
-            <div class="col-4">
-              <label for="revision_content" class="form-label">{{ _('Revision content') }}</label>
-              <input type="text" class="form-control" id="revision_content" name="revision_content"
-                     value="{{ decl.revision_content if decl and decl.revision_content else '' }}" placeholder="{{ _('Initial release') }}">
-            </div>
-            <div class="col-4">
-              <label for="revision_date" class="form-label">{{ _('Revision date') }}</label>
-              <input type="date" class="form-control" id="revision_date" name="revision_date"
-                     value="{{ decl.revision_date.isoformat() if decl and decl.revision_date else '' }}">
-            </div>
           </div>
 
           <div class="d-flex gap-2">
@@ -181,6 +178,73 @@
           </div>
 
         </form>
+
+        {# Revision history (block 10) is a separate one-to-many list, not
+           part of the single-object declaration form above — each entry is
+           its own add/delete action, not something to submit as one big form. #}
+        <hr class="my-4">
+        <h2 class="section-title">{{ _('Revision history (block 10)') }}</h2>
+        {% if revisions %}
+        <table class="table table-sm mb-3">
+          <thead>
+            <tr>
+              <th>{{ _('Rev number') }}</th>
+              <th>{{ _('Contents of revision') }}</th>
+              <th>{{ _('Date') }}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rev in revisions %}
+            <tr>
+              <td>{{ rev.revision_number }}</td>
+              <td>{{ rev.revision_content or '—' }}</td>
+              <td>{{ rev.revision_date.isoformat() if rev.revision_date else '—' }}</td>
+              <td class="text-end">
+                {% if rev.pdf_path %}
+                <a href="{{ url_for('maintenance.download_amp_revision_pdf', aircraft_id=aircraft.id, revision_id=rev.id) }}"
+                   hx-boost="false" class="btn btn-ac-secondary btn-xs me-1"
+                   title="{{ _('Download the saved PDF for this revision') }}">
+                  <i class="bi bi-file-earmark-pdf"></i>
+                </a>
+                {% endif %}
+                <form method="post"
+                      action="{{ url_for('maintenance.delete_amp_revision', aircraft_id=aircraft.id, revision_id=rev.id) }}"
+                      class="d-inline"
+                      data-confirm="{{ _("Delete revision '%(number)s'?", number=rev.revision_number) }}">
+                  <button type="submit" class="btn btn-ac-danger btn-xs">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted oh-fs-09">{{ _('No revisions recorded yet.') }}</p>
+        {% endif %}
+        <form method="post" action="{{ url_for('maintenance.add_amp_revision', aircraft_id=aircraft.id) }}"
+              class="row g-2 align-items-end mb-4">
+          <div class="col-3">
+            <label for="new_revision_number" class="form-label">{{ _('Rev number') }}</label>
+            <input type="text" class="form-control" id="new_revision_number" name="revision_number" placeholder="R00">
+          </div>
+          <div class="col-5">
+            <label for="new_revision_content" class="form-label">{{ _('Contents of revision') }}</label>
+            <input type="text" class="form-control" id="new_revision_content" name="revision_content" placeholder="{{ _('Initial release') }}">
+          </div>
+          <div class="col-2">
+            <label for="new_revision_date" class="form-label">{{ _('Date') }}</label>
+            <input type="date" class="form-control" id="new_revision_date" name="revision_date">
+          </div>
+          <div class="col-2">
+            <button type="submit" class="btn btn-ac-secondary w-100">
+              <i class="bi bi-plus-lg me-1"></i>{{ _('Add') }}
+            </button>
+          </div>
+        </form>
+
       </div>
     </div>
   </div>

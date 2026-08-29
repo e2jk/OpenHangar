@@ -1,0 +1,328 @@
+{# AMP export document body — shared by the on-screen preview
+   (amp_export.html) and the standalone PDF template (amp_export_pdf.html).
+   No Bootstrap/icon-font dependency: the PDF render has neither available. #}
+{% set latest_revision = revisions[-1] if revisions else None %}
+{% set is_draft = is_draft | default(false) %}
+{% if is_draft %}
+<div class="amp-export-watermark">DRAFT</div>
+{% endif %}
+<div id="amp-running-header">
+  AMP/{{ aircraft.registration }}/{{ 'draft' if is_draft or not latest_revision else latest_revision.revision_number }}<br>
+  {% if not is_draft and latest_revision and latest_revision.revision_date %}{{ latest_revision.revision_date.strftime('%d/%m/%Y') }}{% endif %}
+</div>
+
+<div class="amp-export">
+
+  {% if is_draft %}
+  <div class="amp-export-draft-banner">
+    ⚠
+    {% if latest_revision %}
+    {{ _('DRAFT — this reflects changes made after revision %(number)s (%(date)s) was declared. Add a new revision in block 10 once these changes are ready to be published.', number=latest_revision.revision_number, date=latest_revision.revision_date.strftime('%d/%m/%Y') if latest_revision.revision_date else '—') }}
+    {% else %}
+    {{ _('DRAFT — no revision has been declared yet (block 10). Add one once this AMP is ready to be published.') }}
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <h1 class="amp-export-title">{{ _('Part-ML Aircraft Maintenance Programme (AMP)') }}</h1>
+  {# Regulatory form citation — not user-facing prose, deliberately not
+     translatable so a translator can't alter the form/reference IDs. #}
+  <p class="amp-export-subtitle">EASA Form AMP — AMC2 ML.A.302</p>
+
+  {% if pending_review_rows %}
+  <div class="amp-export-pending-banner">
+    ⚠
+    {{ ngettext(
+      'one item is still pending shop input — see "Pending — needs shop input" below.',
+      '%(n)s items are still pending shop input — see "Pending — needs shop input" below.',
+      pending_review_rows | length, n=pending_review_rows | length) }}
+  </div>
+  {% endif %}
+
+  {# ── Block 1: Aircraft identification ──────────────────────────────── #}
+  <table class="amp-export-block">
+    <tr><td rowspan="4" class="amp-export-gutter">1</td><th colspan="3" class="amp-export-bar">{{ _('Aircraft identification') }}</th></tr>
+    <tr>
+      <th class="amp-export-subhead">{{ _('Registration') }}</th>
+      <th class="amp-export-subhead">{{ _('Type') }}</th>
+      <th class="amp-export-subhead">{{ _('Serial number') }}</th>
+    </tr>
+    <tr>
+      <td class="amp-export-value">{{ aircraft.registration }}</td>
+      <td class="amp-export-value">{{ aircraft.make }} {{ aircraft.model }}</td>
+      <td class="amp-export-value">{{ airframe_component.serial_number if airframe_component and airframe_component.serial_number else '—' }}</td>
+    </tr>
+    <tr>
+      {% set owner_name = decl.owner_name or decl.certifying_party_name %}
+      {% set owner_address = decl.owner_address or decl.certifying_party_address %}
+      <td colspan="3">{{ _('Owner') }}: <strong>{{ owner_name or '—' }}</strong>{% if owner_address %}<br>{% for line in owner_address.split('\n') %}{{ line }}{% if not loop.last %}<br>{% endif %}{% endfor %}{% endif %}</td>
+    </tr>
+  </table>
+
+  {# ── Block 2: Basis for the maintenance programme ──────────────────── #}
+  {% set block2_rows = 2 + (1 if decl.basis == amp_basis.MIP and decl.mip_details else 0) %}
+  <table class="amp-export-block">
+    <tr><td rowspan="{{ block2_rows }}" class="amp-export-gutter">2</td><th colspan="2" class="amp-export-bar">{{ _('Basis for the maintenance programme') }}</th></tr>
+    <tr>
+      <td>{{ '■' if decl.basis == amp_basis.DAH_ICA else '☐' }} {{ _("Instructions for continuing airworthiness (ICA)") }}</td>
+      <td>{{ '■' if decl.basis == amp_basis.MIP else '☐' }} {{ _('Minimum inspection programme (MIP) — list the tasks in Appendix A') }}</td>
+    </tr>
+    {% if decl.basis == amp_basis.MIP and decl.mip_details %}
+    <tr>
+      <td colspan="2"><strong>{{ _('MIP details (Appendix A)') }}:</strong> {{ decl.mip_details }}</td>
+    </tr>
+    {% endif %}
+  </table>
+
+  {# ── Block 3: DAH ICA references ────────────────────────────────────── #}
+  <table class="amp-export-block">
+    <tr><td rowspan="5" class="amp-export-gutter">3</td><th colspan="3" class="amp-export-bar">{{ _('Instructions for continuing airworthiness (ICA)') }}</th></tr>
+    <tr>
+      <th colspan="2" class="amp-export-subhead">{{ _('Equipment manufacturer and type') }}</th>
+      <th class="amp-export-subhead">{{ _('Applicable ICA reference') }}</th>
+    </tr>
+    <tr>
+      <td class="amp-export-label">3a — {{ _('Aircraft') }}</td>
+      <td>{{ aircraft.make }} {{ aircraft.model }}</td>
+      <td>{{ decl.dah_ica_airframe_ref or '—' }}</td>
+    </tr>
+    <tr>
+      <td class="amp-export-label">3b — {{ _('Engine') }}</td>
+      <td>{{ engine_component.make ~ ' ' ~ engine_component.model if engine_component else '—' }}</td>
+      <td>{{ decl.dah_ica_engine_ref or '—' }}</td>
+    </tr>
+    <tr>
+      <td class="amp-export-label">3c — {{ _('Propeller') }}</td>
+      <td>{{ propeller_component.make ~ ' ' ~ propeller_component.model if propeller_component else '—' }}</td>
+      <td>{{ decl.dah_ica_propeller_ref or '—' }}</td>
+    </tr>
+  </table>
+
+  {# ── Block 4: Additional maintenance requirements ──────────────────── #}
+  <table class="amp-export-block">
+    <tr><td rowspan="{{ 2 + category_has_items | length }}" class="amp-export-gutter">4</td><th colspan="2" class="amp-export-bar">{{ _("Additional maintenance requirements to the ICA or to the MIP") }}</th></tr>
+    <tr>
+      <th class="amp-export-subhead">{{ _('Indicate whether any of the following types of repetitive maintenance are included in the AMP (when replying "YES", list the specific requirements in Appendix B)') }}</th>
+      <th class="amp-export-subhead">{{ _('Yes/No') }}</th>
+    </tr>
+    {% for cat in category_has_items %}
+    <tr>
+      <td>{{ cat }}</td>
+      <td class="amp-export-answer">{{ _('YES') if category_has_items[cat] else _('NO') }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  {# ── Block 5: Alternative tasks ─────────────────────────────────────── #}
+  <table class="amp-export-block">
+    <tr><td rowspan="2" class="amp-export-gutter">5</td><th colspan="2" class="amp-export-bar">{{ _("Maintenance tasks alternative to the ICA (not less restrictive than the MIP)") }}</th></tr>
+    <tr>
+      <td>{{ _('Indicate whether there are any maintenance tasks alternative to the ICA (when replying "Yes", list the specific alternative maintenance tasks in Appendix C)') }}</td>
+      <td class="amp-export-answer">{{ _('YES') if has_alternative_tasks else _('NO') }}</td>
+    </tr>
+  </table>
+
+  {# ── Block 6: Pilot-owner maintenance ───────────────────────────────── #}
+  {% set block6_rows = 2 + (3 if decl.pilot_owner_maintenance else 0) %}
+  <table class="amp-export-block">
+    <tr><td rowspan="{{ block6_rows }}" class="amp-export-gutter">6</td><th colspan="2" class="amp-export-bar">{{ _('Pilot-owner maintenance (%(ref)s)', ref='ML.A.803') }}</th></tr>
+    <tr>
+      <td>{{ _('Does the pilot-owner perform pilot-owner maintenance?') }}</td>
+      <td class="amp-export-answer">{{ _('YES') if decl.pilot_owner_maintenance else _('NO') }}</td>
+    </tr>
+    {% if decl.pilot_owner_maintenance %}
+    <tr>
+      <td class="amp-export-label">{{ _('Pilot-owner name') }}</td>
+      <td>{{ decl.pilot_owner_name or '—' }}</td>
+    </tr>
+    <tr>
+      <td class="amp-export-label">{{ _('Licence number') }}</td>
+      <td>{{ decl.pilot_owner_licence_number or '—' }}</td>
+    </tr>
+    <tr>
+      <td class="amp-export-label">{{ _('Signature / date') }}</td>
+      <td class="amp-export-signature"></td>
+    </tr>
+    {% endif %}
+  </table>
+
+  {# ── Block 7: Declaration / approval ────────────────────────────────── #}
+  <table class="amp-export-block">
+    <tr><td rowspan="4" class="amp-export-gutter">7</td><th colspan="2" class="amp-export-bar">{{ _('Approval/declaration of the maintenance programme (select the appropriate option)') }}</th></tr>
+    <tr>
+      <th class="amp-export-subhead">{{ _('Declaration by owner') }}</th>
+      <th class="amp-export-subhead">{{ _('Approval by contacted CAMO/CAO') }}</th>
+    </tr>
+    <tr>
+      <td class="amp-export-value">{{ _('YES') if decl.declaration_type == declaration_types.OWNER else _('NO') }}</td>
+      <td class="amp-export-value">{{ _('YES') if decl.declaration_type == declaration_types.CAMO_CAO else _('NO') }}</td>
+    </tr>
+    <tr>
+      {% if decl.declaration_type == declaration_types.OWNER %}
+      <td class="amp-export-quote">{{ _("I hereby declare that this is the maintenance programme applicable to the aircraft referred to in block 1 and I am fully responsible for its content and, in particular, for any alternative tasks to the data issued by the DAH or the declarant of a declaration of design compliance.") }}</td>
+      <td>{{ _('n/a') }}</td>
+      {% else %}
+      <td>{{ _('n/a') }}</td>
+      <td>{{ _('Approval reference of the CAMO') }}: {{ decl.camo_cao_approval_reference or '—' }}<br>{{ _('Signature/date') }}<div class="amp-export-signature"></div></td>
+      {% endif %}
+    </tr>
+  </table>
+
+  {# ── Block 8: Certification statement ───────────────────────────────── #}
+  <table class="amp-export-block">
+    <tr><td rowspan="8" class="amp-export-gutter">8</td><th colspan="2" class="amp-export-bar">{{ _('Certification statement') }}</th></tr>
+    <tr>
+      <td colspan="2" class="amp-export-quote">{{ _('I will ensure that the aircraft is maintained in accordance with this maintenance programme and that the maintenance programme will be reviewed and updated as required.') }}</td>
+    </tr>
+    <tr>
+      <td colspan="2">{{ _('Signed by the person/organisation responsible for the continuing airworthiness of the aircraft according to ML.A.201') }}</td>
+    </tr>
+    <tr>
+      <td class="amp-export-label">{{ _('Name of owner/lessee/operator') }}</td>
+      <td>{{ decl.certifying_party_name or '—' }} ({{ _('CAMO/CAO') if decl.certifying_party_kind == certifying_party_kinds.CAMO_CAO else _('Owner / lessee / operator') }})</td>
+    </tr>
+    <tr>
+      <td class="amp-export-label">{{ _('Address') }}</td>
+      <td>{{ decl.certifying_party_address or '—' }}</td>
+    </tr>
+    <tr>
+      <td class="amp-export-label">{{ _('Telephone') }}</td>
+      <td>{{ decl.certifying_party_phone or '—' }}</td>
+    </tr>
+    <tr>
+      <td class="amp-export-label">{{ _('Email') }}</td>
+      <td>{{ decl.certifying_party_email or '—' }}</td>
+    </tr>
+    <tr>
+      <td class="amp-export-label">{{ _('Signature / date') }}</td>
+      <td class="amp-export-signature"></td>
+    </tr>
+  </table>
+
+  {# ── Block 9: Appendices attached ───────────────────────────────────── #}
+  {% set appendix_a = decl.basis == amp_basis.MIP and decl.mip_details %}
+  {% set appendix_b = appendix_b_groups | length > 0 %}
+  {% set appendix_c = appendix_c_rows | length > 0 %}
+  {% set appendix_d = decl.appendix_d_notes %}
+  <table class="amp-export-block">
+    <tr><td rowspan="6" class="amp-export-gutter">9</td><th colspan="2" class="amp-export-bar">{{ _('Appendices attached') }}</th></tr>
+    {% for label, present in [('A', appendix_a), ('B', appendix_b), ('C', appendix_c), ('D', appendix_d)] %}
+    <tr>
+      <td>{{ _('Appendix %(letter)s', letter=label) }}</td>
+      <td class="amp-export-answer">{{ _('YES') if present else _('NO') }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  {# ── Block 10: Revision control & periodic reviews ─────────────────── #}
+  <table class="amp-export-block">
+    <tr><td rowspan="{{ 2 + (revisions | length or 1) }}" class="amp-export-gutter">10</td><th colspan="3" class="amp-export-bar">{{ _('Revision control & periodic reviews of the Aircraft Maintenance Programme') }}</th></tr>
+    <tr>
+      <th class="amp-export-subhead">{{ _('Rev number') }}</th>
+      <th class="amp-export-subhead">{{ _('Contents of revision') }}</th>
+      <th class="amp-export-subhead">{{ _('Date and signature') }}</th>
+    </tr>
+    {% for rev in revisions %}
+    <tr>
+      <td>{{ rev.revision_number }}</td>
+      <td>{% for line in (rev.revision_content or '—').split('\n') %}{{ line }}{% if not loop.last %}<br>{% endif %}{% endfor %}</td>
+      <td>{{ rev.revision_date.strftime('%d/%m/%Y') if rev.revision_date else '—' }}</td>
+    </tr>
+    {% else %}
+    <tr>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  {# ── Appendix A ──────────────────────────────────────────────────────── #}
+  {% if appendix_a %}
+  <h2 class="amp-export-appendix-title">{{ _('Appendix A — Minimum inspection programme (MIP)') }}</h2>
+  <p>{{ decl.mip_details }}</p>
+  {% endif %}
+
+  {# ── Appendix B ──────────────────────────────────────────────────────── #}
+  {% if appendix_b %}
+  <h2 class="amp-export-appendix-title">{{ _('Appendix B — Additional maintenance requirements') }}</h2>
+  {% for cat, cat_triggers in appendix_b_groups %}
+  <table class="amp-export-block">
+    <tr><th colspan="3" class="amp-export-bar">{{ cat }}</th></tr>
+    <tr>
+      <th class="amp-export-subhead">{{ _('Task description') }}</th>
+      <th class="amp-export-subhead">{{ _('Reference') }}</th>
+      <th class="amp-export-subhead">{{ _('Interval') }}</th>
+    </tr>
+    {% for t in cat_triggers %}
+    <tr>
+      <td>{{ t.name }}</td>
+      <td>{{ t.reference or '—' }}</td>
+      <td>
+        {% if t.needs_review %}
+        <span class="amp-export-pending-marker">⚠ {{ _('Pending shop input') }}</span>
+        {% else %}
+        {{ interval_text.get(t.id) or '—' }}
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endfor %}
+  {% endif %}
+
+  {# ── Pending / needs review — not an official form block or appendix,
+       an OpenHangar addition so nothing left undecided goes unmentioned
+       in an exported document, even a trigger with no category yet
+       (which appendix_b_groups above would otherwise drop silently). #}
+  {% if pending_review_rows %}
+  <h2 class="amp-export-appendix-title">{{ _('Pending — needs shop input') }}</h2>
+  <table class="amp-export-block">
+    <tr>
+      <th class="amp-export-subhead">{{ _('Task description') }}</th>
+      <th class="amp-export-subhead">{{ _('Category') }}</th>
+      <th class="amp-export-subhead">{{ _('Reference') }}</th>
+      <th class="amp-export-subhead">{{ _('Notes') }}</th>
+    </tr>
+    {% for t in pending_review_rows %}
+    <tr>
+      <td>{{ t.name }}</td>
+      <td>{{ t.category or '—' }}</td>
+      <td>{{ t.reference or '—' }}</td>
+      <td>{{ t.notes or '—' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  {# ── Appendix C ──────────────────────────────────────────────────────── #}
+  {% if appendix_c %}
+  <h2 class="amp-export-appendix-title">{{ _("Appendix C — Maintenance tasks alternative to the ICA") }}</h2>
+  <table class="amp-export-block">
+    <tr>
+      <th class="amp-export-subhead">{{ _('Task description') }}</th>
+      <th class="amp-export-subhead">{{ _('Reference') }}</th>
+      <th class="amp-export-subhead">{{ _('Alternative task / interval') }}</th>
+    </tr>
+    {% for t in appendix_c_rows %}
+    <tr>
+      <td>{{ t.name }}</td>
+      <td>{{ t.reference or '—' }}</td>
+      <td>{{ t.alternative_task_notes or '—' }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  {# ── Appendix D ──────────────────────────────────────────────────────── #}
+  {% if appendix_d %}
+  <h2 class="amp-export-appendix-title">{{ _('Appendix D — Additional information') }}</h2>
+  <p>{{ decl.appendix_d_notes }}</p>
+  {% endif %}
+
+  <table class="amp-export-block">
+    <tr><th class="amp-export-bar">{{ _('Copy received by owner / operator') }}</th></tr>
+    <tr><td class="amp-export-signature">{{ _('Date and signature owner/operator') }}</td></tr>
+  </table>
+
+</div>
