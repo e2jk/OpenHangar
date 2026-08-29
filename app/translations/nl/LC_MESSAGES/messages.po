@@ -6274,19 +6274,19 @@ msgid "A calendar or hours-based maintenance item is past its due date."
 msgstr "Een kalender- of uren-onderhoudspunt heeft zijn vervaldatum overschreden."
 
 #: app/templates/config/notifications.html:59
-msgid "Aircraft insurance is expiring within the threshold."
+msgid "Aircraft insurance is expiring within the warning period."
 msgstr "De vliegtuigverzekering verloopt binnen de ingestelde termijn."
 
 #: app/templates/config/notifications.html:60
-msgid "The Airworthiness Review Certificate (ARC) is expiring within the threshold."
+msgid "The Airworthiness Review Certificate (ARC) is expiring within the warning period."
 msgstr "Het certificaat van beoordeling van luchtwaardigheid (ARC) verloopt binnen de ingestelde termijn."
 
 #: app/templates/config/notifications.html:61
-msgid "Your medical certificate is expiring within the threshold."
+msgid "Your medical certificate is expiring within the warning period."
 msgstr "Uw medische keuring verloopt binnen de ingestelde termijn."
 
 #: app/templates/config/notifications.html:62
-msgid "Your SEP rating is expiring within the threshold."
+msgid "Your SEP rating is expiring within the warning period."
 msgstr "Uw SEP-bevoegdheid verloopt binnen de ingestelde termijn."
 
 #: app/templates/config/notifications.html:63

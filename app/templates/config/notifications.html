@@ -56,10 +56,10 @@
     {% elif t == 'reservation_request' %}{{ _('A pilot submitted a new booking request requiring approval.') }}
     {% elif t == 'maintenance_due_soon' %}{{ _('A calendar or hours-based maintenance item is approaching its due date.') }}
     {% elif t == 'maintenance_overdue' %}{{ _('A calendar or hours-based maintenance item is past its due date.') }}
-    {% elif t == 'insurance_expiring' %}{{ _('Aircraft insurance is expiring within the threshold.') }}
-    {% elif t == 'arc_expiry' %}{{ _('The Airworthiness Review Certificate (ARC) is expiring within the threshold.') }}
-    {% elif t == 'medical_expiring' %}{{ _('Your medical certificate is expiring within the threshold.') }}
-    {% elif t == 'sep_rating_expiring' %}{{ _('Your SEP rating is expiring within the threshold.') }}
+    {% elif t == 'insurance_expiring' %}{{ _('Aircraft insurance is expiring within the warning period.') }}
+    {% elif t == 'arc_expiry' %}{{ _('The Airworthiness Review Certificate (ARC) is expiring within the warning period.') }}
+    {% elif t == 'medical_expiring' %}{{ _('Your medical certificate is expiring within the warning period.') }}
+    {% elif t == 'sep_rating_expiring' %}{{ _('Your SEP rating is expiring within the warning period.') }}
     {% elif t == 'document_expiring' %}{{ _('An aircraft document (with an expiry date) is coming due.') }}
     {% elif t == 'new_member_joined' %}{{ _('A user accepted an invitation and joined the hangar.') }}
     {% elif t == 'airworthiness_review_due' %}{{ _('An airworthiness document is due for review.') }}
