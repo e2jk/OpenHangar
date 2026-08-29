@@ -2,6 +2,7 @@
 locale-aware date formatting, and translation completeness."""
 
 import os
+import re
 from datetime import date
 
 import polib  # pyright: ignore[reportMissingImports]
@@ -370,6 +371,64 @@ class TestNoHandRolledPlurals:
             "_ALLOWED_PAREN_S_MSGIDS in tests/test_i18n.py if it's genuinely "
             "fixed text (e.g. a verbatim regulatory form label):\n"
             + "\n".join(f"  {m!r}" for m in offenders[:10])
+        )
+
+
+# ── Near-duplicate source strings (article-only difference) ──────────────────
+
+_ARTICLE_RE = re.compile(r"\b(?:a|an|the)\b")
+_WS_RE = re.compile(r"\s+")
+
+
+def _strip_articles(msgid: str) -> str:
+    """Normalize by removing standalone a/an/the (case-sensitive — a Title
+    Case vs. sentence-case pair, e.g. a heading vs. a button label, is a
+    common and legitimate English UI convention, not a duplicate; an
+    accidental "the" is a much narrower, much more reliable signal)."""
+    return _WS_RE.sub(" ", _ARTICLE_RE.sub("", msgid)).strip()
+
+
+# Genuinely different UI contexts (a heading vs. a terse button label) that
+# happen to normalize the same — not the same string duplicated by accident.
+_ALLOWED_ARTICLE_ONLY_DUPLICATE_GROUPS: frozenset[frozenset[str]] = frozenset(
+    {
+        frozenset({"Record a payment", "Record payment"}),
+    }
+)
+
+
+class TestNoArticleOnlyDuplicateStrings:
+    def test_no_unapproved_article_only_duplicates(self):
+        # Two source strings identical except for a stray "a"/"an"/"the" are
+        # almost always the same label duplicated by accident (e.g.
+        # "Declaration by the owner" vs. "Declaration by owner" for the same
+        # block 7 option) rather than two deliberately different strings —
+        # translators then translate both identically, which is exactly what
+        # trips Weblate's "reused translation" check. Caught here before it
+        # ever reaches Weblate. English source text is identical across every
+        # locale's .po file, so this only needs checking once.
+        _lang, po_path = _po_files()[0]
+        po = polib.pofile(po_path)
+        groups: dict[str, set[str]] = {}
+        for e in po:
+            if not e.msgid:
+                continue
+            groups.setdefault(_strip_articles(e.msgid), set()).add(e.msgid)
+
+        offenders = [
+            sorted(msgids)
+            for msgids in groups.values()
+            if len(msgids) > 1
+            and frozenset(msgids) not in _ALLOWED_ARTICLE_ONLY_DUPLICATE_GROUPS
+        ]
+        assert offenders == [], (
+            f"{len(offenders)} group(s) of source strings differ only by a "
+            'stray "a"/"an"/"the" — likely the same label duplicated by '
+            "accident. Use identical wording in both places, or add a "
+            "documented exception to _ALLOWED_ARTICLE_ONLY_DUPLICATE_GROUPS "
+            "in tests/test_i18n.py if these genuinely need to stay distinct "
+            "(e.g. a heading vs. a terse button label):\n"
+            + "\n".join(f"  {msgids!r}" for msgids in offenders[:10])
         )
 
 
