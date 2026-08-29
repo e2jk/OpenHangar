@@ -294,6 +294,13 @@ jobs:
         with:
           fail-on-severity: low
           allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, PSF-2.0, LGPL-3.0-or-later, MPL-2.0, MIT-CMU, 0BSD
+          # pyphen: reported as GPL/LGPL-2.1/MPL-1.1 — it's actually
+          # tri-licensed (GPL-2.0 OR LGPL-2.1 OR MPL-1.1), and we elect the
+          # LGPL-2.1 option. fonttools: flagged for a bundled OFL-1.1 test
+          # font never loaded at runtime. Reviewed and documented in
+          # THIRD_PARTY_LICENSES.md — see that file for the full reasoning,
+          # not a blanket exemption for future GPL/LGPL-2.1/OFL dependencies.
+          allow-dependencies-licenses: "pkg:pip/pyphen, pkg:pip/fonttools"
 
   version:
     name: Compute build version
