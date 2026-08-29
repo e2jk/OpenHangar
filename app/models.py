@@ -1781,6 +1781,8 @@ class AmpRevision(db.Model):
 
     aircraft = db.relationship("Aircraft", back_populates="amp_revisions")
 
+    __table_args__ = (db.Index("ix_amp_revisions_aircraft_id", "aircraft_id"),)
+
 
 class MaintenanceImportBatch(db.Model):
     """One AMP task-list spreadsheet import — mirrors LogbookImportBatch
