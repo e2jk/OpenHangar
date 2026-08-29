@@ -49,7 +49,7 @@
   {% endmacro %}
 
   {% macro notif_description(t) %}
-    {% if t == 'grounding_snag_opened' %}{{ _('An aircraft is grounded due to a newly reported defect.') }}
+    {% if t == 'grounding_snag_opened' %}{{ _('An aircraft is grounded due to a newly reported snag.') }}
     {% elif t == 'snag_reported' %}{{ _('Any new snag is logged (grounding or non-grounding).') }}
     {% elif t == 'reservation_confirmed' %}{{ _('Your booking request has been approved.') }}
     {% elif t == 'reservation_cancelled' %}{{ _('A reservation you made has been cancelled.') }}
