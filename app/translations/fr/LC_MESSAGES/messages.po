@@ -6246,8 +6246,8 @@ msgid "Aircraft grounded (upcoming reservation)"
 msgstr "Appareil immobilisé au sol (réservation à venir)"
 
 #: app/templates/config/notifications.html:52
-msgid "An aircraft is grounded due to a newly reported defect."
-msgstr "Un aéronef est cloué au sol suite à un défaut signalé."
+msgid "An aircraft is grounded due to a newly reported snag."
+msgstr "Un aéronef est cloué au sol suite à une anomalie signalée."
 
 #: app/templates/config/notifications.html:53
 msgid "Any new snag is logged (grounding or non-grounding)."
@@ -8820,12 +8820,12 @@ msgid "View import history"
 msgstr "Voir l'historique des imports"
 
 #: app/templates/maintenance/fleet.html:13
-msgid "Maintenance obligations and open defects."
-msgstr "Obligations de maintenance et défauts ouverts."
+msgid "Maintenance obligations and open snags."
+msgstr "Obligations de maintenance et anomalies ouvertes."
 
 #: app/templates/maintenance/fleet.html:13
-msgid "Fleet-wide maintenance obligations and open defects."
-msgstr "Obligations de maintenance et défauts ouverts de toute la flotte."
+msgid "Fleet-wide maintenance obligations and open snags."
+msgstr "Obligations de maintenance et anomalies ouvertes de toute la flotte."
 
 #: app/templates/maintenance/fleet.html:25
 msgid "All clear — no open snags and no overdue or upcoming maintenance."
@@ -10500,7 +10500,7 @@ msgid "Anything to report?"
 msgstr "Quelque chose à signaler ?"
 
 #: app/templates/reservations/checkin.html:49
-msgid "Found a defect during the flight or on return?"
+msgid "Found a snag during the flight or on return?"
 msgstr "Une anomalie constatée pendant le vol ou au retour ?"
 
 #: app/templates/reservations/checkin.html:50

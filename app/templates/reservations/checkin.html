@@ -46,7 +46,7 @@
         <label for="in_notes" class="form-label fw-semibold">{{ _('Anything to report?') }}</label>
         <textarea class="form-control" id="in_notes" name="in_notes" rows="3"></textarea>
         <div class="form-text">
-          {{ _('Found a defect during the flight or on return?') }}
+          {{ _('Found a snag during the flight or on return?') }}
           <a href="{{ url_for('snags.new_snag', aircraft_id=aircraft.id) }}">{{ _('Report a snag') }}</a>
         </div>
       </div>

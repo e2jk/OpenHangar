@@ -6246,7 +6246,7 @@ msgid "Aircraft grounded (upcoming reservation)"
 msgstr "Toestel heeft vliegverbod (aankomende reservering)"
 
 #: app/templates/config/notifications.html:52
-msgid "An aircraft is grounded due to a newly reported defect."
+msgid "An aircraft is grounded due to a newly reported snag."
 msgstr "Een vliegtuig is aan de grond gezet vanwege een gemeld defect."
 
 #: app/templates/config/notifications.html:53
@@ -8820,11 +8820,11 @@ msgid "View import history"
 msgstr "Importgeschiedenis bekijken"
 
 #: app/templates/maintenance/fleet.html:13
-msgid "Maintenance obligations and open defects."
+msgid "Maintenance obligations and open snags."
 msgstr "Onderhoudsverplichtingen en openstaande defecten."
 
 #: app/templates/maintenance/fleet.html:13
-msgid "Fleet-wide maintenance obligations and open defects."
+msgid "Fleet-wide maintenance obligations and open snags."
 msgstr "Vlootbrede onderhoudsverplichtingen en openstaande defecten."
 
 #: app/templates/maintenance/fleet.html:25
@@ -10500,8 +10500,8 @@ msgid "Anything to report?"
 msgstr "Iets te melden?"
 
 #: app/templates/reservations/checkin.html:49
-msgid "Found a defect during the flight or on return?"
-msgstr "Een gebrek vastgesteld tijdens de vlucht of bij terugkeer?"
+msgid "Found a snag during the flight or on return?"
+msgstr "Een defect vastgesteld tijdens de vlucht of bij terugkeer?"
 
 #: app/templates/reservations/checkin.html:50
 msgid "Report a snag"
