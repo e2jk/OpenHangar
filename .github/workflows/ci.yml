@@ -300,7 +300,7 @@ jobs:
           # font never loaded at runtime. Reviewed and documented in
           # THIRD_PARTY_LICENSES.md — see that file for the full reasoning,
           # not a blanket exemption for future GPL/LGPL-2.1/OFL dependencies.
-          allow-dependencies-licenses: "pkg:pip/pyphen, pkg:pip/fonttools"
+          allow-dependencies-licenses: "pkg:pypi/pyphen, pkg:pypi/fonttools"
 
   version:
     name: Compute build version
