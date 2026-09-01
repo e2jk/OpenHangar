@@ -1,10 +1,23 @@
 name: CI
 
-run-name: ${{ startsWith(github.ref, 'refs/tags/v') && format('Publishing version {0}', github.ref_name) || github.event.pull_request.title || github.event.head_commit.message || github.ref_name }}
+run-name: ${{ startsWith(github.ref, 'refs/tags/v') && format('Publishing version {0}', github.ref_name) || (github.event_name == 'workflow_dispatch' && format('Manual rebuild — {0}', github.event.inputs.reason)) || github.event.pull_request.title || github.event.head_commit.message || github.ref_name }}
 
 on:
   push:
   pull_request:
+  workflow_dispatch:
+    # Rebuild+republish :latest from main's current, unchanged source — no
+    # version bump needed on our side. Exists for cases where a fix landed
+    # in an upstream OS package (apk upgrade picks it up) or a base image
+    # digest, but nothing in this repo's own manifests changed, so no
+    # dependabot/renovate PR would ever fire to trigger a normal publish.
+    # Triggered by hand, or automatically by image-scan.yml on a failed
+    # scheduled scan (see that workflow) — same entry point either way.
+    inputs:
+      reason:
+        description: 'Why this manual rebuild is needed (e.g. a link to the CVE/scan alert being addressed) — shown in the run name/log, no code change required'
+        required: true
+        type: string
 
 permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, every job opts into exactly the write scopes it needs
 
@@ -310,14 +323,19 @@ jobs:
     # (publish_now) rather than a "development" placeholder:
     #   publish_now = true  — a pull_request for ship/a bot branch (the one
     #                         and only place that content gets tested — see
-    #                         this job's own if: below), or a push to a
-    #                         version tag. The exact image this run builds
-    #                         and tests is the one that gets tagged :latest
-    #                         and released — there's no separate rebuild.
+    #                         this job's own if: below), a push to a
+    #                         version tag, or a manual workflow_dispatch
+    #                         targeting main (see the on: block above —
+    #                         rebuilds unchanged source, e.g. to pick up an
+    #                         upstream OS package fix). The exact image this
+    #                         run builds and tests is the one that gets
+    #                         tagged :latest and released — there's no
+    #                         separate rebuild.
     #   publish_now = false — any other pull_request (external contribution,
-    #                         validated but never published) or a push to
+    #                         validated but never published), a push to
     #                         some other branch (e.g. a WIP branch pushed
-    #                         directly for its own CI feedback).
+    #                         directly for its own CI feedback), or a manual
+    #                         workflow_dispatch against anything but main.
     # Skipped outright for a push to ship/a bot branch or to main — see
     # lint-and-test's if: above for the full rationale (same condition,
     # checked the same direct way). With this job skipped, every downstream
@@ -359,6 +377,16 @@ jobs:
               case "${GITHUB_REF}" in
                 refs/tags/v*) PUBLISH_NOW=true ;;
               esac
+              ;;
+            workflow_dispatch)
+              # Only publish when dispatched against main itself — a manual
+              # run against some other branch is just "run CI for this
+              # branch by hand", not a request to release it.
+              if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+                PUBLISH_NOW=true
+              else
+                echo "Manual run not targeting main (${GITHUB_REF}) — not publishing."
+              fi
               ;;
             pull_request)
               case "${HEAD_REF}" in

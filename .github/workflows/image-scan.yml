@@ -27,8 +27,10 @@ jobs:
     timeout-minutes: 15
     permissions:
       security-events: write  # Trivy SARIF upload
+      actions: write          # dispatch ci.yml's workflow_dispatch on failure, see below
     steps:
       - name: Run Trivy vulnerability scanner
+        id: trivy
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ghcr.io/e2jk/openhangar:latest
@@ -44,3 +46,28 @@ jobs:
         with:
           sarif_file: trivy-latest-results.sarif
           category: trivy-latest
+
+      # ignore-unfixed: true above means every finding that fails the Trivy
+      # step already has a fix published upstream (in the OS package repo,
+      # a base image layer, ...) — this repo's own source doesn't need to
+      # change for a plain rebuild to pick it up (apk upgrade / pip install
+      # re-resolve against current upstream state). Close the loop instead
+      # of just emailing the maintainer: dispatch ci.yml's manual-rebuild
+      # entry point (the same one a human would use for this) against main.
+      # GITHUB_TOKEN can dispatch workflow_dispatch/repository_dispatch
+      # events without special-casing — GitHub's "actions triggered by
+      # GITHUB_TOKEN don't trigger further workflow runs" loop-prevention
+      # rule explicitly excludes those two event types.
+      # If the rebuild itself then fails (flaky test, e.g.), this just
+      # degrades to today's behaviour: tomorrow's scheduled scan finds the
+      # same fixable CVE and tries again — no worse than before this step
+      # existed.
+      - name: Trigger a rebuild to pick up the fix
+        if: always() && steps.trivy.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          gh workflow run ci.yml --ref main \
+            -f reason="Automatic: daily image scan (run ${RUN_ID}) found a fixable CVE in ghcr.io/e2jk/openhangar:latest"
