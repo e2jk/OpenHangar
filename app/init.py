@@ -1923,6 +1923,24 @@ def _validate_config(app: Flask) -> None:
             f"got {_webhook_url!r}"
         )
 
+    # OPENHANGAR_EMAIL_SUBJECT_PREFIX: true/false-like, or a short custom prefix
+    _raw_subject_prefix = os.environ.get("OPENHANGAR_EMAIL_SUBJECT_PREFIX", "")
+    if _raw_subject_prefix and not _raw_subject_prefix.strip():
+        errors.append(
+            "OPENHANGAR_EMAIL_SUBJECT_PREFIX is set but contains only whitespace. "
+            "Use true/false, or a custom prefix, or leave the variable unset."
+        )
+    elif (
+        _raw_subject_prefix.strip()
+        and _raw_subject_prefix.strip().lower()
+        not in ("true", "false", "1", "0", "yes", "no")
+        and len(_raw_subject_prefix.strip()) > 16
+    ):
+        errors.append(
+            f"OPENHANGAR_EMAIL_SUBJECT_PREFIX must be true/false (or 1/0, yes/no) or a "
+            f"short custom prefix (max 16 characters), got {_raw_subject_prefix!r}"
+        )
+
     if errors:
         bullet_list = "\n".join(f"  • {e}" for e in errors)
         raise RuntimeError(

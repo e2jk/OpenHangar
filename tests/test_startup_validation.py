@@ -285,6 +285,44 @@ class TestRestoreEncryptionKey:
         _validate_config(_app_with(GOOD))
 
 
+class TestEmailSubjectPrefix:
+    def test_overlong_value_raises(self, monkeypatch):
+        monkeypatch.setenv(
+            "OPENHANGAR_EMAIL_SUBJECT_PREFIX", "this is way too long to be an emoji"
+        )
+        monkeypatch.delenv("OPENHANGAR_BACKUP_ENCRYPTION_KEY", raising=False)
+        with pytest.raises(
+            RuntimeError, match="OPENHANGAR_EMAIL_SUBJECT_PREFIX must be true/false"
+        ):
+            _validate_config(_app_with(GOOD))
+
+    def test_whitespace_only_raises(self, monkeypatch):
+        monkeypatch.setenv("OPENHANGAR_EMAIL_SUBJECT_PREFIX", "   ")
+        monkeypatch.delenv("OPENHANGAR_BACKUP_ENCRYPTION_KEY", raising=False)
+        with pytest.raises(
+            RuntimeError,
+            match="OPENHANGAR_EMAIL_SUBJECT_PREFIX is set but contains only whitespace",
+        ):
+            _validate_config(_app_with(GOOD))
+
+    def test_valid_boolean_values_pass(self, monkeypatch):
+        monkeypatch.delenv("OPENHANGAR_BACKUP_ENCRYPTION_KEY", raising=False)
+        for val in ("true", "false", "1", "0", "yes", "no", "TRUE", "False"):
+            monkeypatch.setenv("OPENHANGAR_EMAIL_SUBJECT_PREFIX", val)
+            _validate_config(_app_with(GOOD))
+
+    def test_short_custom_prefix_passes(self, monkeypatch):
+        monkeypatch.delenv("OPENHANGAR_BACKUP_ENCRYPTION_KEY", raising=False)
+        for val in ("🚁", "🛩️", "[Club]"):
+            monkeypatch.setenv("OPENHANGAR_EMAIL_SUBJECT_PREFIX", val)
+            _validate_config(_app_with(GOOD))
+
+    def test_unset_passes(self, monkeypatch):
+        monkeypatch.delenv("OPENHANGAR_EMAIL_SUBJECT_PREFIX", raising=False)
+        monkeypatch.delenv("OPENHANGAR_BACKUP_ENCRYPTION_KEY", raising=False)
+        _validate_config(_app_with(GOOD))
+
+
 class TestMultipleErrors:
     def test_all_errors_reported_together(self, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_ENV", "production")
