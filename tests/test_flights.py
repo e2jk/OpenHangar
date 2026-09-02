@@ -3942,6 +3942,23 @@ class TestGenerateSingleTrackGif:
             )
         assert result[:3] == b"GIF"
 
+    def test_font_loaded_successfully_when_truetype_available(self, app):
+        """Both truetype() calls succeed when a real font is available — mocked
+        here since the test host may not have the DejaVu font installed."""
+        from unittest.mock import patch
+
+        from PIL import ImageFont as _ImageFont  # pyright: ignore[reportMissingImports]
+        from utils import (
+            generate_single_track_gif,  # pyright: ignore[reportMissingImports]
+        )
+
+        with (
+            patch("PIL.ImageFont.truetype", return_value=_ImageFont.load_default()),
+            app.app_context(),
+        ):
+            result = generate_single_track_gif(_SAMPLE_GEOJSON, date="2024-06-01")
+        assert result[:3] == b"GIF"
+
     def test_high_res_gif(self, app):
         from utils import (
             generate_single_track_gif,  # pyright: ignore[reportMissingImports]
