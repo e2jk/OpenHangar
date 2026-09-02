@@ -594,3 +594,70 @@ class TestSendEmailQuoteInjection:
             mock_smtp.return_value = MagicMock()
             send_email(to="pilot@example.com", subject="S", text_body="B")
         mock_quote.assert_called_once_with("en")
+
+
+# ── send_email subject emoji tests ────────────────────────────────────────────
+
+
+class TestSendEmailSubjectPrefix:
+    _SMTP_ENV: ClassVar[dict[str, str]] = {
+        "OPENHANGAR_SMTP_HOST": "smtp.example.com",
+        "OPENHANGAR_SMTP_PORT": "587",
+        "OPENHANGAR_SMTP_USER": "user",
+        "OPENHANGAR_SMTP_PASSWORD": "pw",
+        "OPENHANGAR_SMTP_FROM_ADDRESS": "noreply@example.com",
+        "OPENHANGAR_SMTP_FROM_NAME": "Test",
+        "OPENHANGAR_SMTP_USE_TLS": "false",
+        "OPENHANGAR_ENV": "test",
+    }
+
+    def _sent_subject(self, env_overrides=None) -> str:
+        """Send an email and return its fully-decoded (non-RFC-2047) Subject text."""
+        from email.header import decode_header
+
+        from services.email_service import (
+            send_email,  # pyright: ignore[reportMissingImports]
+        )
+
+        env = {**self._SMTP_ENV, **(env_overrides or {})}
+        with (
+            patch.dict(os.environ, env, clear=True),
+            patch("smtplib.SMTP") as mock_smtp,
+            patch("services.email_service._record_health"),
+        ):
+            mock_smtp.return_value = MagicMock()
+            send_email(
+                to="pilot@example.com", subject="Insurance expiring soon", text_body="B"
+            )
+            raw_bytes: bytes = mock_smtp.return_value.sendmail.call_args[0][2]
+        msg = _email_lib.message_from_bytes(raw_bytes)
+        decoded = decode_header(str(msg["Subject"]))
+        return "".join(
+            part.decode(enc or "utf-8") if isinstance(part, bytes) else part
+            for part, enc in decoded
+        )
+
+    def test_emoji_prefixed_by_default(self):
+        assert self._sent_subject() == "🛩️ Insurance expiring soon"
+
+    def test_emoji_disabled_via_env_var(self):
+        subject = self._sent_subject({"OPENHANGAR_EMAIL_SUBJECT_PREFIX": "false"})
+        assert subject == "Insurance expiring soon"
+
+    def test_emoji_disabled_with_0_and_no(self):
+        for val in ("0", "no", "NO", "False"):
+            subject = self._sent_subject({"OPENHANGAR_EMAIL_SUBJECT_PREFIX": val})
+            assert subject == "Insurance expiring soon"
+
+    def test_emoji_enabled_with_1_and_yes(self):
+        for val in ("1", "yes", "true", "TRUE"):
+            subject = self._sent_subject({"OPENHANGAR_EMAIL_SUBJECT_PREFIX": val})
+            assert subject == "🛩️ Insurance expiring soon"
+
+    def test_custom_emoji_used_verbatim(self):
+        subject = self._sent_subject({"OPENHANGAR_EMAIL_SUBJECT_PREFIX": "🚁"})
+        assert subject == "🚁 Insurance expiring soon"
+
+    def test_custom_non_emoji_prefix_used_verbatim(self):
+        subject = self._sent_subject({"OPENHANGAR_EMAIL_SUBJECT_PREFIX": "[Club]"})
+        assert subject == "[Club] Insurance expiring soon"

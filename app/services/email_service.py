@@ -13,6 +13,12 @@ Required env vars (if OPENHANGAR_SMTP_HOST is unset, all sends are skipped):
   OPENHANGAR_SMTP_FROM_ADDRESS— e.g. no-reply@example.com
   OPENHANGAR_SMTP_FROM_NAME — display name, e.g. "OpenHangar"
 
+Optional:
+  OPENHANGAR_EMAIL_SUBJECT_PREFIX — "true" (default) prefixes every subject
+    with a small-airplane emoji so OpenHangar's notifications are easy to
+    pick out in an inbox; "false" disables it; any other value (emoji or
+    plain text) is used as a custom prefix instead of the default emoji.
+
 Demo mode (OPENHANGAR_ENV=demo): all sends are silently skipped.
 """
 
@@ -149,6 +155,22 @@ def get_email_health() -> dict[str, Any]:
 
 
 _QUOTE_PLACEHOLDER = "<!-- QUOTE_PLACEHOLDER -->"
+_DEFAULT_SUBJECT_PREFIX = "🛩️"
+
+
+def _subject_prefix() -> str | None:
+    """Return the text to prefix the subject with, or None if disabled.
+
+    OPENHANGAR_EMAIL_SUBJECT_PREFIX is true/false-like ("true"/"1"/"yes",
+    "false"/"0"/"no") to toggle the default emoji, or any other short value
+    (emoji or plain text) to use as a custom prefix instead.
+    """
+    raw = os.environ.get("OPENHANGAR_EMAIL_SUBJECT_PREFIX", "true").strip()
+    if raw.lower() in ("false", "0", "no"):
+        return None
+    if raw == "" or raw.lower() in ("true", "1", "yes"):
+        return _DEFAULT_SUBJECT_PREFIX
+    return raw
 
 
 def send_email(
@@ -193,6 +215,10 @@ def send_email(
         if s["from_name"]
         else s["from_address"]
     )
+
+    prefix = _subject_prefix()
+    if prefix:
+        subject = f"{prefix} {subject}"
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
