@@ -49,6 +49,7 @@ documented inline in [`docker/.env.example`](../docker/.env.example).
 | [`OPENHANGAR_SMTP_FROM_ADDRESS`](#openhangar_smtp_from_address) | No | — | [Email](#email) |
 | [`OPENHANGAR_SMTP_FROM_NAME`](#openhangar_smtp_from_name) | No | `OpenHangar` | [Email](#email) |
 | [`OPENHANGAR_NOTIFICATION_TIME`](#openhangar_notification_time) | No | `07:00` | [Email](#email) |
+| [`OPENHANGAR_EMAIL_SUBJECT_PREFIX`](#openhangar_email_subject_prefix) | No | `true` | [Email](#email) |
 | [`OPENHANGAR_ALERT_NTFY_TOPIC_URL`](#openhangar_alert_ntfy_topic_url) | No | — | [Security alerting](#security-alerting) |
 | [`OPENHANGAR_ALERT_NTFY_TOKEN`](#openhangar_alert_ntfy_token) | No | — | [Security alerting](#security-alerting) |
 | [`OPENHANGAR_ALERT_EMAIL_TO`](#openhangar_alert_email_to) | No | — | [Security alerting](#security-alerting) |
@@ -482,6 +483,27 @@ Time of day (UTC) at which daily maintenance-due notifications are sent.
 
 - **Default**: `07:00`
 - Format: `HH:MM` (24-hour UTC). Example: `07:30`
+
+### `OPENHANGAR_EMAIL_SUBJECT_PREFIX`
+
+Prefix every outgoing email's subject with a small-airplane emoji (`🛩️`), so
+OpenHangar's notifications (expiring airworthiness, insurance, maintenance,
+etc.) are easy to spot in a crowded inbox.
+
+- **Allowed values**:
+  - `true`, `1`, `yes` (default) — use the default `🛩️` emoji.
+  - `false`, `0`, `no` — disable the prefix entirely.
+  - Any other short value (max 16 characters, emoji or plain text) — used
+    verbatim as a custom prefix instead of the default emoji, e.g.
+    `OPENHANGAR_EMAIL_SUBJECT_PREFIX=🚁` or `OPENHANGAR_EMAIL_SUBJECT_PREFIX=[Club]`.
+  - A whitespace-only value, or one longer than 16 characters, fails startup
+    validation.
+- **Default**: `true` (`🛩️`)
+- Applies to every email OpenHangar sends (notifications, the welcome email,
+  and the Configuration page's test email) — it is applied once, in
+  `send_email()`, not per notification type.
+- **Use case**: set to `false` if you'd rather keep a plain, emoji-free
+  subject line, or to a different emoji to match your fleet or club branding.
 
 ### Example `.env` snippet
 
