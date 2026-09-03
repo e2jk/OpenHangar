@@ -109,6 +109,24 @@ def parse_backup_keep_months() -> int:
     return _parse_positive_int("OPENHANGAR_BACKUP_KEEP_MONTHS", DEFAULT_KEEP_MONTHS)
 
 
+def parse_auto_upgrade_enabled() -> bool:
+    """OPENHANGAR_AUTO_UPGRADE (true/false, default false).
+
+    Raises ValueError with a human-readable message if the value is set but
+    not recognized as a boolean.
+    """
+    raw = os.environ.get("OPENHANGAR_AUTO_UPGRADE", "").strip().lower()
+    if not raw:
+        return False
+    if raw in ("1", "true", "yes"):
+        return True
+    if raw in ("0", "false", "no"):
+        return False
+    raise ValueError(
+        f"OPENHANGAR_AUTO_UPGRADE={raw!r} is invalid — expected true/false"
+    )
+
+
 def _gfs_keep_ids(
     ok_records: "list[Any]", today: "date", days: int, weeks: int, months: int
 ) -> "set[int]":
@@ -200,6 +218,56 @@ def prune_old_backups(keep: "int | None" = None, today: "date | None" = None) ->
     return removed
 
 
+def _maybe_trigger_auto_upgrade() -> None:
+    """Trigger a one-click upgrade if OPENHANGAR_AUTO_UPGRADE is enabled and a
+    newer version is available. Only ever called right after a *successful*
+    scheduled backup (see run_scheduled_backup below) — an automatic upgrade
+    must never run without a fresh backup to fall back on.
+    """
+    if not parse_auto_upgrade_enabled():
+        return
+    upgrade_dir = os.environ.get("OPENHANGAR_UPGRADE_DIR", "").strip()
+    if not upgrade_dir:
+        # _validate_config() blocks startup on this combination, so this is
+        # defensive — it should not be reachable in practice.
+        log.warning(
+            "OPENHANGAR_AUTO_UPGRADE is set but OPENHANGAR_UPGRADE_DIR is not — skipping"
+        )
+        return
+
+    from config.routes import (  # pyright: ignore[reportMissingImports]
+        _upgrade_trigger_state,
+        _write_upgrade_trigger,
+    )
+
+    state = _upgrade_trigger_state(upgrade_dir)
+    if state != "idle":
+        log.info("Auto-upgrade: an upgrade is already %s — skipping", state)
+        return
+
+    # Fresh check right here rather than reusing the cached update_available
+    # AppSetting flag — that flag is refreshed by a background thread on its
+    # own schedule (0-6h random delay, then every 24h) and could be stale by
+    # the time the nightly backup runs.
+    from services.version_service import (  # pyright: ignore[reportMissingImports]
+        fetch_latest_version,
+        is_newer_version,
+    )
+
+    current = os.environ.get("OPENHANGAR_VERSION", "development")
+    latest = fetch_latest_version()
+    if not is_newer_version(current, latest):
+        log.info(
+            "Auto-upgrade: no newer version available (current=%s, latest=%s) — nothing to do",
+            current,
+            latest,
+        )
+        return
+
+    _write_upgrade_trigger(upgrade_dir, "system:auto-upgrade")
+    log.info("Auto-upgrade: triggered upgrade from %s to %s", current, latest)
+
+
 def run_scheduled_backup(app: "object") -> None:
     """One scheduled tick: back up, then prune retention on success only."""
     from models import db  # pyright: ignore[reportMissingImports]
@@ -234,6 +302,7 @@ def run_scheduled_backup(app: "object") -> None:
                 removed = prune_old_backups()
                 if removed:
                     log.info("Backup retention: pruned %d old backup(s)", removed)
+                _maybe_trigger_auto_upgrade()
         except Exception:
             log.exception("Error in scheduled backup run")
 

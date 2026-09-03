@@ -61,16 +61,27 @@ def upsert_app_setting(db_session: Any, key: str, value: str) -> None:
         db_session.add(AppSetting(key=key, value=value))
 
 
-def _persist_update_flag(db_session: Any, current: str, latest: str | None) -> None:
-    """Compute update_available and write it to AppSetting. Silently ignores errors."""
+def is_newer_version(current: str, latest: "str | None") -> bool:
+    """True when `latest` is a real, newer release than `current`.
+
+    Shared by the cached update_available flag below (config page banner)
+    and by the auto-upgrade check (services/backup_scheduler.py), so both
+    agree on what counts as "an update is available". Never raises — a
+    malformed version string just means "no update".
+    """
     try:
         from packaging.version import Version  # pyright: ignore[reportMissingImports]
 
-        available = bool(
+        return bool(
             latest and current != "development" and Version(latest) > Version(current)
         )
-    except Exception:  # noqa: BLE001 -- docstring: silently ignores errors, cosmetic UI flag only
-        available = False
+    except Exception:  # noqa: BLE001 -- cosmetic comparison, malformed input means "no update"
+        return False
+
+
+def _persist_update_flag(db_session: Any, current: str, latest: str | None) -> None:
+    """Compute update_available and write it to AppSetting. Silently ignores errors."""
+    available = is_newer_version(current, latest)
     upsert_app_setting(db_session, "update_available", "true" if available else "false")
 
 

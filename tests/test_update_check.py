@@ -212,6 +212,49 @@ class TestUpsertAppSetting:
         assert setting.value == "new"
 
 
+# ── is_newer_version ─────────────────────────────────────────────────────────
+
+
+class TestIsNewerVersion:
+    """Shared by _persist_update_flag (below) and the auto-upgrade check in
+    services/backup_scheduler.py — both must agree on what "newer" means."""
+
+    def test_true_when_latest_is_newer(self):
+        from services.version_service import (
+            is_newer_version,  # pyright: ignore[reportMissingImports]
+        )
+
+        assert is_newer_version("0.15.0", "0.16.0") is True
+
+    def test_false_when_up_to_date(self):
+        from services.version_service import (
+            is_newer_version,  # pyright: ignore[reportMissingImports]
+        )
+
+        assert is_newer_version("0.16.0", "0.16.0") is False
+
+    def test_false_for_development_build(self):
+        from services.version_service import (
+            is_newer_version,  # pyright: ignore[reportMissingImports]
+        )
+
+        assert is_newer_version("development", "0.16.0") is False
+
+    def test_false_when_latest_is_none(self):
+        from services.version_service import (
+            is_newer_version,  # pyright: ignore[reportMissingImports]
+        )
+
+        assert is_newer_version("0.15.0", None) is False
+
+    def test_false_on_malformed_version(self):
+        from services.version_service import (
+            is_newer_version,  # pyright: ignore[reportMissingImports]
+        )
+
+        assert is_newer_version("0.15.0", "not-a-version") is False
+
+
 # ── _persist_update_flag ─────────────────────────────────────────────────────
 
 
