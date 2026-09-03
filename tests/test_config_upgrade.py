@@ -251,7 +251,7 @@ class TestUpgradeStatus:
             with patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}):
                 resp = client.get("/config/upgrade-status")
             assert resp.status_code == 200
-            assert resp.get_json() == {"status": "done"}
+            assert resp.get_json() == {"status": "done", "version": "development"}
             assert not os.path.exists(done_path)
 
     def test_failed_returns_status_message_and_removes_file(self, app, client):
@@ -267,6 +267,7 @@ class TestUpgradeStatus:
             data = resp.get_json()
             assert data["status"] == "failed"
             assert data["message"] == "docker pull failed"
+            assert data["version"] == "development"
             assert not os.path.exists(failed_path)
 
     def test_running_returns_in_progress(self, app, client):
@@ -277,7 +278,7 @@ class TestUpgradeStatus:
             with patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}):
                 resp = client.get("/config/upgrade-status")
         assert resp.status_code == 200
-        assert resp.get_json() == {"status": "in-progress"}
+        assert resp.get_json() == {"status": "in-progress", "version": "development"}
 
     def test_trigger_returns_triggered(self, app, client):
         uid = _setup_admin(app)
@@ -287,7 +288,24 @@ class TestUpgradeStatus:
             with patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}):
                 resp = client.get("/config/upgrade-status")
         assert resp.status_code == 200
-        assert resp.get_json() == {"status": "triggered"}
+        assert resp.get_json() == {"status": "triggered", "version": "development"}
+
+    def test_idle_reports_current_openhangar_version(self, app, client):
+        """The client relies on this field to detect the new container is
+        already answering, independent of which trigger.* file this
+        particular poll happened to observe."""
+        uid = _setup_admin(app)
+        _login(client, uid)
+        with (
+            tempfile.TemporaryDirectory() as tmpdir,
+            patch.dict(
+                "os.environ",
+                {"OPENHANGAR_UPGRADE_DIR": tmpdir, "OPENHANGAR_VERSION": "1.2.3"},
+            ),
+        ):
+            resp = client.get("/config/upgrade-status")
+        assert resp.status_code == 200
+        assert resp.get_json() == {"status": "idle", "version": "1.2.3"}
 
     def test_no_files_returns_idle(self, app, client):
         uid = _setup_admin(app)
@@ -298,7 +316,7 @@ class TestUpgradeStatus:
         ):
             resp = client.get("/config/upgrade-status")
         assert resp.status_code == 200
-        assert resp.get_json() == {"status": "idle"}
+        assert resp.get_json() == {"status": "idle", "version": "development"}
 
     def test_done_oserror_on_remove_still_returns_done(self, app, client):
         uid = _setup_admin(app)
@@ -312,7 +330,7 @@ class TestUpgradeStatus:
             ):
                 resp = client.get("/config/upgrade-status")
         assert resp.status_code == 200
-        assert resp.get_json() == {"status": "done"}
+        assert resp.get_json() == {"status": "done", "version": "development"}
 
     def test_failed_oserror_on_read_returns_empty_message(self, app, client):
         uid = _setup_admin(app)

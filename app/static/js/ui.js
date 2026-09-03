@@ -212,8 +212,14 @@ function _ohInit() {
     var _ohUpgradePollUrl  = _ohUpgradeBridge.dataset.pollUrl;
     var _ohUpgradeMsgFail  = _ohUpgradeBridge.dataset.msgFailed  || 'Upgrade failed';
     var _ohUpgradeMsgWait  = _ohUpgradeBridge.dataset.msgTimeout || 'Upgrade taking longer than expected';
+    var _ohUpgradeStartVer = _ohUpgradeBridge.dataset.currentVersion || '';
     var _ohUpgradeStartMs  = Date.now();
-    var _ohUpgradeActive   = false;
+    // This bridge only renders when the server already found an in-progress
+    // upgrade (trigger/trigger.running present) at page-load time, so start
+    // "active" rather than waiting to observe a non-idle poll first — an
+    // upgrade that completes faster than one poll interval would otherwise
+    // never trip the done/idle reload check below and poll "idle" forever.
+    var _ohUpgradeActive   = true;
     var _ohUpgradeWasDown  = false;
     var _ohUpgradeFailN    = 0;
 
@@ -234,7 +240,14 @@ function _ohInit() {
           _ohUpgradeFailN = 0;
           var prevDown = _ohUpgradeWasDown;
           _ohUpgradeWasDown = false;
-          if (data.status === 'done' ||
+          // A version different from the one running when this page loaded
+          // means the new container is already answering — reload regardless
+          // of which trigger.* file state this particular poll happened to
+          // observe (those files live on a bind-mount shared by the outgoing
+          // and incoming container, so no single status read is guaranteed).
+          var versionChanged = _ohUpgradeStartVer && data.version &&
+            data.version !== _ohUpgradeStartVer;
+          if (versionChanged || data.status === 'done' ||
               (data.status === 'idle' && (_ohUpgradeActive || prevDown))) {
             window.location.reload();
             return;

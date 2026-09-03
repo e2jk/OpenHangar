@@ -34,6 +34,7 @@
   </div>
   <div id="upgrade-poll-bridge"
        data-poll-url="{{ url_for('config.upgrade_status') }}"
+       data-current-version="{{ current_version }}"
        data-msg-failed="{{ _('Upgrade failed — check the host upgrade log.') }}"
        data-msg-timeout="{{ _('Upgrade is taking longer than expected — check the host upgrade log.') }}"></div>
   {% endif %}
