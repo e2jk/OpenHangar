@@ -768,6 +768,13 @@ def upgrade_status() -> ResponseReturnValue:
     upgrade_dir = os.environ.get("OPENHANGAR_UPGRADE_DIR", "")
     if not upgrade_dir:
         return abort(404)
+    # Included in every response below so the client can detect completion by
+    # comparing against the version it saw at page load, independent of the
+    # trigger.* file flags — those live on a bind-mount shared by the outgoing
+    # and incoming container across the handover, so a poll can land on either
+    # one and the one-shot "done" file can be consumed by a request other than
+    # the one deciding whether to reload.
+    version = os.environ.get("OPENHANGAR_VERSION", "development")
     done_path = os.path.join(upgrade_dir, "trigger.done")
     failed_path = os.path.join(upgrade_dir, "trigger.failed")
     running_path = os.path.join(upgrade_dir, "trigger.running")
@@ -775,19 +782,19 @@ def upgrade_status() -> ResponseReturnValue:
     if os.path.exists(done_path):
         with contextlib.suppress(OSError):
             os.remove(done_path)
-        return jsonify({"status": "done"})
+        return jsonify({"status": "done", "version": version})
     if os.path.exists(failed_path):
         msg = ""
         with contextlib.suppress(OSError):
             with open(failed_path) as fh:
                 msg = fh.read().strip()
             os.remove(failed_path)
-        return jsonify({"status": "failed", "message": msg})
+        return jsonify({"status": "failed", "message": msg, "version": version})
     if os.path.exists(running_path):
-        return jsonify({"status": "in-progress"})
+        return jsonify({"status": "in-progress", "version": version})
     if os.path.exists(trigger_path):
-        return jsonify({"status": "triggered"})
-    return jsonify({"status": "idle"})
+        return jsonify({"status": "triggered", "version": version})
+    return jsonify({"status": "idle", "version": version})
 
 
 # ── Phase 29: Tenant management (instance admin only) ─────────────────────────
