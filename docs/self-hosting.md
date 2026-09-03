@@ -321,6 +321,20 @@ so running it every minute has negligible overhead.
 **Upgrade log** is written to `./openhangar/data/upgrade/upgrade.log` (inside
 the host upgrade directory).
 
+**Automatic upgrades:** once one-click upgrades are set up as above
+(`OPENHANGAR_UPGRADE_DIR` configured, volume mounted, cron job installed), set
+[`OPENHANGAR_AUTO_UPGRADE=true`](configuration.md#openhangar_auto_upgrade)
+to have OpenHangar trigger an upgrade itself, right after each successful
+scheduled backup, whenever a newer version is published — no separate
+schedule to configure. It reuses the exact same trigger file and host-side
+cron job as the **Upgrade now** button, so nothing above needs to change.
+This requires both `OPENHANGAR_UPGRADE_DIR` (set above) and
+[`OPENHANGAR_BACKUP_TIME`](configuration.md#openhangar_backup_time) to be
+set — the app refuses to start otherwise. Without `OPENHANGAR_UPGRADE_DIR`
+there is no directory to write the trigger file into and no cron job
+watching for it; without `OPENHANGAR_BACKUP_TIME` an automatic upgrade would
+have no fresh backup to fall back on.
+
 ---
 
 ## Health checks
