@@ -38,6 +38,7 @@ documented inline in [`docker/.env.example`](../docker/.env.example).
 | [`OPENHANGAR_BACKUP_KEEP_DAYS`](#openhangar_backup_keep_days) | No | `7` | [Storage](#storage) |
 | [`OPENHANGAR_BACKUP_KEEP_WEEKS`](#openhangar_backup_keep_weeks) | No | `4` | [Storage](#storage) |
 | [`OPENHANGAR_BACKUP_KEEP_MONTHS`](#openhangar_backup_keep_months) | No | `12` | [Storage](#storage) |
+| [`OPENHANGAR_AUTO_UPGRADE`](#openhangar_auto_upgrade) | No | `false` | [Storage](#storage) |
 | [`OPENHANGAR_RESTORE_ENCRYPTION_KEY`](#openhangar_restore_encryption_key) | No | *(interactive prompt)* | [Storage](#storage) |
 | [`OPENHANGAR_MAX_UPLOAD_BYTES`](#openhangar_max_upload_bytes) | No | `52428800` | [Storage](#storage) |
 | [`OPENHANGAR_SYNC_SCAN_INTERVAL`](#openhangar_sync_scan_interval) | No | `60` | [Storage](#storage) |
@@ -377,6 +378,28 @@ forever.
 
 - **Default**: `12`
 - Must be a positive integer.
+
+### `OPENHANGAR_AUTO_UPGRADE`
+
+Automatically trigger a one-click upgrade right after each successful
+scheduled backup, when a newer version is published.
+
+- **Default**: `false`
+- **Example**: `OPENHANGAR_AUTO_UPGRADE=true`
+- Runs on the exact same schedule as
+  [`OPENHANGAR_BACKUP_TIME`](#openhangar_backup_time) — there is no separate
+  time to configure. After every successful nightly backup, OpenHangar checks
+  the published version list and writes the same upgrade-trigger file the
+  **Upgrade now** button writes, only if a newer version exists and no
+  upgrade is already in progress.
+- **Requires both `OPENHANGAR_BACKUP_TIME` and
+  [`OPENHANGAR_UPGRADE_DIR`](#openhangar_upgrade_dir) to be set.** An
+  automatic upgrade must never run without a fresh backup to fall back on —
+  the app refuses to start if `OPENHANGAR_AUTO_UPGRADE` is enabled without
+  both configured.
+- See [One-click upgrades](self-hosting.md#one-click-upgrades-optional) for
+  the host-side cron setup that actually performs the upgrade once the
+  trigger file is written.
 
 ### `OPENHANGAR_RESTORE_ENCRYPTION_KEY`
 

@@ -9,6 +9,7 @@ Tests for built-in backup scheduling and retention:
 """
 
 import contextlib
+import json
 from datetime import UTC, date, datetime, timedelta
 from unittest.mock import patch
 
@@ -24,6 +25,8 @@ from models import (
 )  # pyright: ignore[reportMissingImports]
 from services.backup_scheduler import (  # pyright: ignore[reportMissingImports]
     _backup_daily_loop,
+    _maybe_trigger_auto_upgrade,
+    parse_auto_upgrade_enabled,
     parse_backup_keep,
     parse_backup_keep_days,
     parse_backup_keep_months,
@@ -111,6 +114,70 @@ class TestParsing:
             create_app()
         assert "OPENHANGAR_BACKUP_TIME" in str(excinfo.value)
         assert "OPENHANGAR_BACKUP_KEEP" in str(excinfo.value)
+
+
+class TestAutoUpgradeParsing:
+    def test_unset_means_disabled(self, monkeypatch):
+        monkeypatch.delenv("OPENHANGAR_AUTO_UPGRADE", raising=False)
+        assert parse_auto_upgrade_enabled() is False
+
+    @pytest.mark.parametrize("raw", ["1", "true", "True", "yes", " YES "])
+    def test_truthy_values_enable(self, monkeypatch, raw):
+        monkeypatch.setenv("OPENHANGAR_AUTO_UPGRADE", raw)
+        assert parse_auto_upgrade_enabled() is True
+
+    @pytest.mark.parametrize("raw", ["0", "false", "False", "no"])
+    def test_falsy_values_disable(self, monkeypatch, raw):
+        monkeypatch.setenv("OPENHANGAR_AUTO_UPGRADE", raw)
+        assert parse_auto_upgrade_enabled() is False
+
+    def test_invalid_value_raises(self, monkeypatch):
+        monkeypatch.setenv("OPENHANGAR_AUTO_UPGRADE", "sure-why-not")
+        with pytest.raises(ValueError, match="OPENHANGAR_AUTO_UPGRADE"):
+            parse_auto_upgrade_enabled()
+
+    def test_startup_validation_rejects_bad_value(self, monkeypatch):
+        from init import create_app  # pyright: ignore[reportMissingImports]
+
+        monkeypatch.setenv("OPENHANGAR_AUTO_UPGRADE", "sure-why-not")
+        with pytest.raises(RuntimeError, match="OPENHANGAR_AUTO_UPGRADE"):
+            create_app()
+
+    def test_startup_validation_requires_backup_time(self, monkeypatch):
+        from init import create_app  # pyright: ignore[reportMissingImports]
+
+        monkeypatch.setenv("OPENHANGAR_AUTO_UPGRADE", "true")
+        monkeypatch.delenv("OPENHANGAR_BACKUP_TIME", raising=False)
+        monkeypatch.setenv("OPENHANGAR_UPGRADE_DIR", "/data/upgrade")
+        with pytest.raises(RuntimeError) as excinfo:
+            create_app()
+        assert "OPENHANGAR_BACKUP_TIME" in str(excinfo.value)
+
+    def test_startup_validation_requires_upgrade_dir(self, monkeypatch):
+        from init import create_app  # pyright: ignore[reportMissingImports]
+
+        monkeypatch.setenv("OPENHANGAR_AUTO_UPGRADE", "true")
+        monkeypatch.setenv("OPENHANGAR_BACKUP_TIME", "02:30")
+        monkeypatch.delenv("OPENHANGAR_UPGRADE_DIR", raising=False)
+        with pytest.raises(RuntimeError) as excinfo:
+            create_app()
+        assert "OPENHANGAR_UPGRADE_DIR" in str(excinfo.value)
+
+    def test_startup_validation_passes_when_fully_configured(self, monkeypatch):
+        from init import create_app  # pyright: ignore[reportMissingImports]
+
+        monkeypatch.setenv("OPENHANGAR_AUTO_UPGRADE", "true")
+        monkeypatch.setenv("OPENHANGAR_BACKUP_TIME", "02:30")
+        monkeypatch.setenv("OPENHANGAR_UPGRADE_DIR", "/data/upgrade")
+        create_app()  # must not raise
+
+    def test_startup_validation_passes_when_disabled(self, monkeypatch):
+        from init import create_app  # pyright: ignore[reportMissingImports]
+
+        monkeypatch.delenv("OPENHANGAR_AUTO_UPGRADE", raising=False)
+        monkeypatch.delenv("OPENHANGAR_BACKUP_TIME", raising=False)
+        monkeypatch.delenv("OPENHANGAR_UPGRADE_DIR", raising=False)
+        create_app()  # must not raise
 
 
 class TestRetentionSchemeParsing:
@@ -311,6 +378,82 @@ class TestScheduledRun:
     def test_unexpected_error_is_caught(self, app):
         with patch("config.routes.run_backup", side_effect=KeyError("unexpected")):
             run_scheduled_backup(app)  # must not raise
+
+    def test_success_checks_auto_upgrade(self, app):
+        """The auto-upgrade check only ever runs after a successful backup +
+        prune — never before, and never on a failed/skipped run (covered by
+        the other tests in this class)."""
+        fake_record = type("R", (), {"filename": "x.zip.enc"})()
+        with (
+            patch("config.routes.run_backup", return_value=fake_record),
+            patch("services.backup_verification.verify_and_alert", return_value=True),
+            patch("services.backup_scheduler.prune_old_backups", return_value=0),
+            patch("services.backup_scheduler._maybe_trigger_auto_upgrade") as mock_auto,
+        ):
+            run_scheduled_backup(app)
+        mock_auto.assert_called_once()
+
+
+class TestMaybeTriggerAutoUpgrade:
+    def test_noop_when_disabled(self, monkeypatch):
+        monkeypatch.delenv("OPENHANGAR_AUTO_UPGRADE", raising=False)
+        with patch("services.version_service.fetch_latest_version") as mock_fetch:
+            _maybe_trigger_auto_upgrade()
+        mock_fetch.assert_not_called()
+
+    def test_noop_when_upgrade_dir_unset(self, monkeypatch):
+        monkeypatch.setenv("OPENHANGAR_AUTO_UPGRADE", "true")
+        monkeypatch.delenv("OPENHANGAR_UPGRADE_DIR", raising=False)
+        with patch("services.version_service.fetch_latest_version") as mock_fetch:
+            _maybe_trigger_auto_upgrade()
+        mock_fetch.assert_not_called()
+
+    def test_noop_when_upgrade_already_running(self, monkeypatch, tmp_path):
+        monkeypatch.setenv("OPENHANGAR_AUTO_UPGRADE", "true")
+        monkeypatch.setenv("OPENHANGAR_UPGRADE_DIR", str(tmp_path))
+        (tmp_path / "trigger.running").write_text("")
+        with patch("services.version_service.fetch_latest_version") as mock_fetch:
+            _maybe_trigger_auto_upgrade()
+        mock_fetch.assert_not_called()
+
+    def test_noop_when_upgrade_already_triggered(self, monkeypatch, tmp_path):
+        monkeypatch.setenv("OPENHANGAR_AUTO_UPGRADE", "true")
+        monkeypatch.setenv("OPENHANGAR_UPGRADE_DIR", str(tmp_path))
+        (tmp_path / "trigger").write_text("")
+        with patch("services.version_service.fetch_latest_version") as mock_fetch:
+            _maybe_trigger_auto_upgrade()
+        mock_fetch.assert_not_called()
+
+    def test_noop_when_no_newer_version(self, monkeypatch, tmp_path):
+        monkeypatch.setenv("OPENHANGAR_AUTO_UPGRADE", "true")
+        monkeypatch.setenv("OPENHANGAR_UPGRADE_DIR", str(tmp_path))
+        monkeypatch.setenv("OPENHANGAR_VERSION", "0.16.0")
+        with patch(
+            "services.version_service.fetch_latest_version", return_value="0.16.0"
+        ):
+            _maybe_trigger_auto_upgrade()
+        assert not (tmp_path / "trigger").exists()
+
+    def test_noop_when_latest_version_unknown(self, monkeypatch, tmp_path):
+        monkeypatch.setenv("OPENHANGAR_AUTO_UPGRADE", "true")
+        monkeypatch.setenv("OPENHANGAR_UPGRADE_DIR", str(tmp_path))
+        monkeypatch.setenv("OPENHANGAR_VERSION", "0.16.0")
+        with patch("services.version_service.fetch_latest_version", return_value=None):
+            _maybe_trigger_auto_upgrade()
+        assert not (tmp_path / "trigger").exists()
+
+    def test_triggers_when_newer_version_available(self, monkeypatch, tmp_path):
+        monkeypatch.setenv("OPENHANGAR_AUTO_UPGRADE", "true")
+        monkeypatch.setenv("OPENHANGAR_UPGRADE_DIR", str(tmp_path))
+        monkeypatch.setenv("OPENHANGAR_VERSION", "0.15.0")
+        with patch(
+            "services.version_service.fetch_latest_version", return_value="0.16.0"
+        ):
+            _maybe_trigger_auto_upgrade()
+        trigger_path = tmp_path / "trigger"
+        assert trigger_path.exists()
+        data = json.loads(trigger_path.read_text())
+        assert data["triggered_by"] == "system:auto-upgrade"
 
 
 class TestSchedulerThread:

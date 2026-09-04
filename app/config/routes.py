@@ -710,19 +710,38 @@ def check_version() -> ResponseReturnValue:
 # ── One-click upgrade ─────────────────────────────────────────────────────────
 
 
+def _upgrade_trigger_state(upgrade_dir: str) -> str:
+    """Returns "running", "triggered" or "idle" — shared by the manual button
+    and the scheduled auto-upgrade check (services/backup_scheduler.py) so
+    both agree on whether it's safe to write a new trigger file."""
+    os.makedirs(upgrade_dir, exist_ok=True)
+    if os.path.exists(os.path.join(upgrade_dir, "trigger.running")):
+        return "running"
+    if os.path.exists(os.path.join(upgrade_dir, "trigger")):
+        return "triggered"
+    return "idle"
+
+
+def _write_upgrade_trigger(upgrade_dir: str, triggered_by: str) -> None:
+    trigger_data = {
+        "triggered_by": triggered_by,
+        "triggered_at": datetime.now(UTC).isoformat(),
+    }
+    with open(os.path.join(upgrade_dir, "trigger"), "w") as fh:
+        json.dump(trigger_data, fh)
+
+
 @config_bp.route("/trigger-upgrade", methods=["POST"])
 @require_instance_admin
 def trigger_upgrade() -> ResponseReturnValue:
     upgrade_dir = os.environ.get("OPENHANGAR_UPGRADE_DIR", "")
     if not upgrade_dir:
         abort(404)
-    os.makedirs(upgrade_dir, exist_ok=True)
-    running_path = os.path.join(upgrade_dir, "trigger.running")
-    trigger_path = os.path.join(upgrade_dir, "trigger")
-    if os.path.exists(running_path):
+    state = _upgrade_trigger_state(upgrade_dir)
+    if state == "running":
         flash(_("An upgrade is already in progress."), "warning")
         return redirect(url_for("config.index"))
-    if os.path.exists(trigger_path):
+    if state == "triggered":
         flash(_("Upgrade already triggered."), "info")
         return redirect(url_for("config.index"))
 
@@ -745,12 +764,7 @@ def trigger_upgrade() -> ResponseReturnValue:
     from models import User  # pyright: ignore[reportMissingImports]
 
     user = db.session.get(User, session["user_id"])
-    trigger_data = {
-        "triggered_by": user.email if user else "unknown",
-        "triggered_at": datetime.now(UTC).isoformat(),
-    }
-    with open(trigger_path, "w") as fh:
-        json.dump(trigger_data, fh)
+    _write_upgrade_trigger(upgrade_dir, user.email if user else "unknown")
     flash(
         _(
             "Backup created (%(filename)s). Upgrade triggered — the service "
@@ -768,6 +782,13 @@ def upgrade_status() -> ResponseReturnValue:
     upgrade_dir = os.environ.get("OPENHANGAR_UPGRADE_DIR", "")
     if not upgrade_dir:
         return abort(404)
+    # Included in every response below so the client can detect completion by
+    # comparing against the version it saw at page load, independent of the
+    # trigger.* file flags — those live on a bind-mount shared by the outgoing
+    # and incoming container across the handover, so a poll can land on either
+    # one and the one-shot "done" file can be consumed by a request other than
+    # the one deciding whether to reload.
+    version = os.environ.get("OPENHANGAR_VERSION", "development")
     done_path = os.path.join(upgrade_dir, "trigger.done")
     failed_path = os.path.join(upgrade_dir, "trigger.failed")
     running_path = os.path.join(upgrade_dir, "trigger.running")
@@ -775,19 +796,19 @@ def upgrade_status() -> ResponseReturnValue:
     if os.path.exists(done_path):
         with contextlib.suppress(OSError):
             os.remove(done_path)
-        return jsonify({"status": "done"})
+        return jsonify({"status": "done", "version": version})
     if os.path.exists(failed_path):
         msg = ""
         with contextlib.suppress(OSError):
             with open(failed_path) as fh:
                 msg = fh.read().strip()
             os.remove(failed_path)
-        return jsonify({"status": "failed", "message": msg})
+        return jsonify({"status": "failed", "message": msg, "version": version})
     if os.path.exists(running_path):
-        return jsonify({"status": "in-progress"})
+        return jsonify({"status": "in-progress", "version": version})
     if os.path.exists(trigger_path):
-        return jsonify({"status": "triggered"})
-    return jsonify({"status": "idle"})
+        return jsonify({"status": "triggered", "version": version})
+    return jsonify({"status": "idle", "version": version})
 
 
 # ── Phase 29: Tenant management (instance admin only) ─────────────────────────

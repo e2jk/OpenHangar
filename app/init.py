@@ -1871,6 +1871,7 @@ def _validate_config(app: Flask) -> None:
 
     # OPENHANGAR_BACKUP_* scheduling/retention vars: optional, validated when set
     from services.backup_scheduler import (  # pyright: ignore[reportMissingImports]
+        parse_auto_upgrade_enabled,
         parse_backup_keep,
         parse_backup_keep_days,
         parse_backup_keep_months,
@@ -1886,11 +1887,32 @@ def _validate_config(app: Flask) -> None:
         parse_backup_keep_days,
         parse_backup_keep_weeks,
         parse_backup_keep_months,
+        parse_auto_upgrade_enabled,
     ):
         try:
             _backup_parser()
         except ValueError as exc:
             errors.append(str(exc))
+
+    # OPENHANGAR_AUTO_UPGRADE: requires scheduled backups AND the upgrade dir
+    # to be configured — an automatic upgrade must never run without a
+    # scheduled backup to fall back on.
+    try:
+        if parse_auto_upgrade_enabled():
+            if not os.environ.get("OPENHANGAR_BACKUP_TIME", "").strip():
+                errors.append(
+                    "OPENHANGAR_AUTO_UPGRADE is enabled but OPENHANGAR_BACKUP_TIME "
+                    "is not set — automatic upgrades run right after the scheduled "
+                    "backup, so a backup schedule must be configured first."
+                )
+            if not os.environ.get("OPENHANGAR_UPGRADE_DIR", "").strip():
+                errors.append(
+                    "OPENHANGAR_AUTO_UPGRADE is enabled but OPENHANGAR_UPGRADE_DIR "
+                    "is not set — automatic upgrades need the upgrade directory "
+                    "configured (see docs/self-hosting.md#one-click-upgrades-optional)."
+                )
+    except ValueError:
+        pass  # already reported by the loop above
 
     # OPENHANGAR_ALERT_NTFY_TOPIC_URL: must be an http(s) URL when set
     _ntfy_url = os.environ.get("OPENHANGAR_ALERT_NTFY_TOPIC_URL", "").strip()
