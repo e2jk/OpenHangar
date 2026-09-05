@@ -15,6 +15,8 @@ from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImp
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 from flask_babel import ngettext
 from models import (  # pyright: ignore[reportMissingImports]
+    AdSbItem,
+    AdSbStatus,
     Aircraft,
     AirworthinessDocStatus,
     AirworthinessDocType,
@@ -82,6 +84,13 @@ def _get_stc_or_404(aircraft: Aircraft, stc_id: int) -> InstalledSTC:
     if not stc or stc.aircraft_id != aircraft.id:
         abort(404)
     return stc
+
+
+def _get_ad_sb_item_or_404(aircraft: Aircraft, item_id: int) -> AdSbItem:
+    item = db.session.get(AdSbItem, item_id)
+    if not item or item.aircraft_id != aircraft.id:
+        abort(404)
+    return item
 
 
 def _status_for(aircraft_id: int, doc_id: int) -> AirworthinessDocumentStatus | None:
@@ -444,3 +453,113 @@ def delete_stc(aircraft_id: int, stc_id: int) -> ResponseReturnValue:
     db.session.commit()
     flash(_("Installed STC removed."), "success")
     return redirect(url_for("airworthiness.dashboard", aircraft_id=aircraft_id))
+
+
+# ── AD/SB compliance board ────────────────────────────────────────────────────
+# Backlog item: an owner's working AD/SB summary — explicitly not the
+# authoritative FAA/EASA record (see the disclaimer on the board itself).
+
+
+@airworthiness_bp.route("/aircraft/<aircraft_ref:aircraft_id>/airworthiness/adsb/")
+@login_required
+@require_role(*_CREW_ROLES)
+def adsb_board(aircraft_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    items = list(ac.ad_sb_items)
+    checklist_items = [i for i in items if i.status in AdSbStatus.OPEN]
+    return render_template(
+        "airworthiness/adsb_board.html",
+        aircraft=ac,
+        items=items,
+        checklist_items=checklist_items,
+        statuses=AdSbStatus,
+    )
+
+
+@airworthiness_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/airworthiness/adsb/new",
+    methods=["GET", "POST"],
+)
+@login_required
+@require_role(*_OWNER_ROLES)
+def add_ad_sb_item(aircraft_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+
+    if request.method == "POST":
+        status = request.form.get("status", "").strip()
+        if status not in AdSbStatus.ALL:
+            abort(400)
+        item = AdSbItem(
+            aircraft_id=aircraft_id,
+            reference=request.form["reference"].strip(),
+            title=request.form.get("title", "").strip() or None,
+            status=status,
+            notes=request.form.get("notes", "").strip() or None,
+        )
+        db.session.add(item)
+        db.session.commit()
+        flash(_("AD/SB item added."), "success")
+        return redirect(url_for("airworthiness.adsb_board", aircraft_id=aircraft_id))
+
+    return render_template(
+        "airworthiness/adsb_form.html", aircraft=ac, item=None, statuses=AdSbStatus
+    )
+
+
+@airworthiness_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/airworthiness/adsb/<int:item_id>/edit",
+    methods=["GET", "POST"],
+)
+@login_required
+@require_role(*_OWNER_ROLES)
+def edit_ad_sb_item(aircraft_id: int, item_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    item = _get_ad_sb_item_or_404(ac, item_id)
+
+    if request.method == "POST":
+        status = request.form.get("status", "").strip()
+        if status not in AdSbStatus.ALL:
+            abort(400)
+        item.reference = request.form["reference"].strip()
+        item.title = request.form.get("title", "").strip() or None
+        item.status = status
+        item.notes = request.form.get("notes", "").strip() or None
+        db.session.commit()
+        flash(_("AD/SB item updated."), "success")
+        return redirect(url_for("airworthiness.adsb_board", aircraft_id=aircraft_id))
+
+    return render_template(
+        "airworthiness/adsb_form.html", aircraft=ac, item=item, statuses=AdSbStatus
+    )
+
+
+@airworthiness_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/airworthiness/adsb/<int:item_id>/delete",
+    methods=["POST"],
+)
+@login_required
+@require_role(*_OWNER_ROLES)
+def delete_ad_sb_item(aircraft_id: int, item_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    item = _get_ad_sb_item_or_404(ac, item_id)
+    db.session.delete(item)
+    db.session.commit()
+    flash(_("AD/SB item removed."), "success")
+    return redirect(url_for("airworthiness.adsb_board", aircraft_id=aircraft_id))
+
+
+@airworthiness_bp.route("/aircraft/<aircraft_ref:aircraft_id>/airworthiness/adsb/print")
+@login_required
+@require_role(*_CREW_ROLES)
+def adsb_print(aircraft_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    items = list(ac.ad_sb_items)
+    checklist_items = [i for i in items if i.status in AdSbStatus.OPEN]
+    return render_template(
+        "airworthiness/adsb_print.html",
+        aircraft=ac,
+        items=items,
+        checklist_items=checklist_items,
+        statuses=AdSbStatus,
+        today=date.today(),
+    )

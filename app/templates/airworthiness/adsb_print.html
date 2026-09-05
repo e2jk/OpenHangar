@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('AD/SB compliance board') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="minimums-print-actions d-flex justify-content-end gap-2 mb-3">
+    <button type="button" id="adsb-print-btn" class="btn btn-ac-primary btn-sm">
+      <i class="bi bi-printer me-1"></i>{{ _('Print / download as PDF') }}
+    </button>
+    <a href="{{ url_for('airworthiness.adsb_board', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost btn-sm">
+      <i class="bi bi-arrow-left me-1"></i>{{ _('Back') }}
+    </a>
+  </div>
+
+  <div class="minimums-print-header">
+    <h1>{{ _('AD/SB compliance — %(reg)s — %(date)s', reg=aircraft.registration, date=today.isoformat()) }}</h1>
+    <p class="text-muted oh-fs-085 mb-0">
+      {{ _('Owner working summary — not the authoritative FAA/EASA record.') }}
+    </p>
+  </div>
+
+  {% set labels = {
+      'recurring':          _('Recurring'),
+      'conditional':        _('Conditional'),
+      'verify_part_number': _('Verify part number'),
+      'closed':             _('Closed'),
+      'not_applicable':     _('N/A'),
+  } %}
+
+  <h2 class="oh-fs-11 mt-4">{{ _('All items') }}</h2>
+  <table class="table table-sm oh-fs-085">
+    <thead>
+      <tr>
+        <th>{{ _('Reference') }}</th>
+        <th>{{ _('Title') }}</th>
+        <th>{{ _('Status') }}</th>
+        <th>{{ _('Notes') }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td class="fw-medium">{{ item.reference }}</td>
+        <td>{{ item.title or '' }}</td>
+        <td>{{ labels.get(item.status, item.status) }}</td>
+        <td>{{ item.notes or '' }}</td>
+      </tr>
+      {% endfor %}
+      {% if not items %}
+      <tr><td colspan="4" class="text-muted">{{ _('No AD/SB items recorded yet.') }}</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <h2 class="oh-fs-11 mt-4">{{ _('Applicability items to confirm with the IA at the annual') }}</h2>
+  {% if checklist_items %}
+  <ul>
+    {% for item in checklist_items %}
+    <li>&#9744; {{ item.reference }}{% if item.title %} — {{ item.title }}{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="text-muted">{{ _('Nothing open to confirm — every item is closed or not applicable.') }}</p>
+  {% endif %}
+
+</div>
+{% endblock %}

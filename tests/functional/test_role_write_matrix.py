@@ -119,6 +119,9 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
     "airworthiness.update_status": _CREW_ROLES,
     "airworthiness.add_stc": _OWNER_ROLES,
     "airworthiness.delete_stc": _OWNER_ROLES,
+    "airworthiness.add_ad_sb_item": _OWNER_ROLES,
+    "airworthiness.edit_ad_sb_item": _OWNER_ROLES,
+    "airworthiness.delete_ad_sb_item": _OWNER_ROLES,
     # maintenance_bp
     "maintenance.new_trigger": _MAINT_ROLES,
     "maintenance.edit_trigger": _MAINT_ROLES,

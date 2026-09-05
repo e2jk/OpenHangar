@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Edit AD/SB item') if item else _('Add AD/SB item') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block content %}
+<div class="container py-4 oh-form-narrow">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-clipboard2-pulse me-2"></i>{{ _('Edit AD/SB item') if item else _('Add AD/SB item') }}</h1>
+      <p class="page-sub"><span class="oh-reg-plate">{{ aircraft.registration }}</span></p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+          <label for="reference" class="form-label fw-medium">{{ _('Reference') }}</label>
+          <input type="text" class="form-control" id="reference" name="reference"
+                 placeholder="{{ _('e.g. AD 2023-0048 or SB 480F') }}"
+                 value="{{ item.reference if item else '' }}" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="title" class="form-label fw-medium">{{ _('Title') }} <span class="text-muted fw-normal">({{ _('optional') }})</span></label>
+          <input type="text" class="form-control" id="title" name="title"
+                 value="{{ item.title if item and item.title else '' }}">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-medium">{{ _('Status') }}</label>
+          {% set labels = {
+              'recurring':          _('Recurring'),
+              'conditional':        _('Conditional'),
+              'verify_part_number': _('Verify part number'),
+              'closed':             _('Closed'),
+              'not_applicable':     _('N/A'),
+          } %}
+          {% for val in statuses.ALL %}
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="status" id="st_{{ val }}" value="{{ val }}"
+              {{ 'checked' if (item and item.status == val) or (not item and val == 'conditional') }}>
+            <label class="form-check-label" for="st_{{ val }}">{{ labels.get(val, val) }}</label>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="mb-3">
+          <label for="notes" class="form-label fw-medium">{{ _('Notes') }} <span class="text-muted fw-normal">({{ _('optional') }})</span></label>
+          <textarea class="form-control" id="notes" name="notes" rows="2">{{ item.notes if item and item.notes else '' }}</textarea>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">{{ _('Save') if item else _('Add') }}</button>
+          <a href="{{ url_for('airworthiness.adsb_board', aircraft_id=aircraft.id) }}"
+             class="btn btn-outline-secondary">{{ _('Cancel') }}</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

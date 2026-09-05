@@ -491,6 +491,12 @@ class Aircraft(db.Model):
         back_populates="aircraft",
         cascade="all, delete-orphan",
     )
+    ad_sb_items = db.relationship(
+        "AdSbItem",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
+        order_by="AdSbItem.reference",
+    )
     owners = db.relationship(
         "AircraftOwner",
         back_populates="aircraft",
@@ -2886,6 +2892,67 @@ class InstalledSTC(db.Model):
     notes = db.Column(db.Text, nullable=True)
 
     aircraft = db.relationship("Aircraft", back_populates="installed_stcs")
+
+
+class AdSbStatus:
+    """Status tags for an AD/SB compliance-board item (backlog: AD/SB
+    compliance board — an owner's working summary, not the authoritative
+    FAA/EASA record)."""
+
+    RECURRING = "recurring"
+    CONDITIONAL = "conditional"
+    VERIFY_PART_NUMBER = "verify_part_number"
+    CLOSED = "closed"
+    NOT_APPLICABLE = "not_applicable"
+    ALL: ClassVar[set[str]] = {
+        RECURRING,
+        CONDITIONAL,
+        VERIFY_PART_NUMBER,
+        CLOSED,
+        NOT_APPLICABLE,
+    }
+    LABELS: ClassVar[dict[str, str]] = {
+        RECURRING: "Recurring",
+        CONDITIONAL: "Conditional",
+        VERIFY_PART_NUMBER: "Verify part number",
+        CLOSED: "Closed",
+        NOT_APPLICABLE: "N/A",
+    }
+    # Statuses that still need attention at the next annual — drives both
+    # the board's "open" filter and the print/checklist item list.
+    OPEN: ClassVar[set[str]] = {RECURRING, CONDITIONAL, VERIFY_PART_NUMBER}
+
+
+class AdSbItem(db.Model):
+    """An owner's working AD/SB (Airworthiness Directive / Service
+    Bulletin) compliance-tracking entry for one aircraft. Explicitly not
+    the authoritative FAA/EASA record — see the disclaimer shown on the
+    board itself."""
+
+    __tablename__ = "ad_sb_items"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    reference = db.Column(db.String(64), nullable=False)  # e.g. "AD 2023-0048"
+    title = db.Column(db.String(256), nullable=True)
+    status = db.Column(
+        db.String(32),
+        nullable=False,
+        default=AdSbStatus.CONDITIONAL,
+        server_default=AdSbStatus.CONDITIONAL,
+    )
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+
+    aircraft = db.relationship("Aircraft", back_populates="ad_sb_items")
+
+    __table_args__ = (db.Index("ix_ad_sb_items_aircraft_id", aircraft_id),)
 
 
 # ── Phase 34: Email Notifications ─────────────────────────────────────────────
