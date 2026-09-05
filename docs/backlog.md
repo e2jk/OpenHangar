@@ -1144,11 +1144,3 @@ prioritised; recorded here as raw inspiration.
   flight logging + GPS import; this is a reporting view on top,
   no new data model needed beyond what `Flight` already has.
 
-- **Avionics/equipment inventory with per-unit status and an upgrade wish
-  list.** A page listing each installed avionics unit with role, status
-  (serviceable/open-squawk/placarded-inoperative), certification history,
-  and STC/AFMS approvals — plus a separate "wish list" of planned upgrades
-  with rough cost and what installing them would require. Could extend
-  OpenHangar's aircraft/document model with an equipment sub-list distinct
-  from generic documents.
-

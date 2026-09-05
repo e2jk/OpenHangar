@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Avionics & equipment') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4" id="equipment-page-header">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-cpu me-2"></i>{{ _('Avionics & equipment') }}
+      </h1>
+      <p class="page-sub"><span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('airworthiness.dashboard', aircraft_id=aircraft.id) }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Airworthiness') }}
+      </a>
+      {% if is_owner %}
+      <a href="{{ url_for('airworthiness.add_avionics_unit', aircraft_id=aircraft.id) }}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i>{{ _('Add unit') }}
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% set status_labels = {
+      'serviceable':            _('Serviceable'),
+      'open_squawk':            _('Open squawk'),
+      'placarded_inoperative':  _('Placarded inoperative'),
+  } %}
+  {% set status_badge = {
+      'serviceable':            'bg-success',
+      'open_squawk':            'bg-warning text-dark',
+      'placarded_inoperative':  'bg-danger',
+  } %}
+
+  <div class="card mb-4" id="equipment-units-card">
+    <div class="card-header">
+      <h2 class="section-title mb-0">{{ _('Installed units') }}</h2>
+    </div>
+    {% if units %}
+    <div class="table-responsive">
+      <table class="table table-sm mb-0 oh-fs-085">
+        <thead class="table-light">
+          <tr>
+            <th>{{ _('Role') }}</th>
+            <th>{{ _('Make / model') }}</th>
+            <th>{{ _('Serial number') }}</th>
+            <th>{{ _('Status') }}</th>
+            <th>{{ _('Certification / STC / AFMS') }}</th>
+            {% if is_owner %}<th></th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for unit in units %}
+          <tr>
+            <td class="fw-medium">{{ unit.role }}</td>
+            <td>{{ [unit.make, unit.model] | select | join(' ') }}</td>
+            <td class="text-muted">{{ unit.serial_number or '' }}</td>
+            <td><span class="badge {{ status_badge.get(unit.status, 'bg-secondary') }}">{{ status_labels.get(unit.status, unit.status) }}</span></td>
+            <td class="text-muted">{{ unit.certification_notes or '' }}</td>
+            {% if is_owner %}
+            <td class="text-end text-nowrap">
+              <a href="{{ url_for('airworthiness.edit_avionics_unit', aircraft_id=aircraft.id, unit_id=unit.id) }}"
+                 class="btn btn-outline-secondary btn-sm py-0">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <form method="post"
+                    action="{{ url_for('airworthiness.delete_avionics_unit', aircraft_id=aircraft.id, unit_id=unit.id) }}"
+                    class="d-inline"
+                    hx-swap="innerHTML show:none" data-scroll-anchor="equipment-units-card"
+                    data-confirm="{{ _('Remove this equipment unit?') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm py-0">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="card-body text-muted">{{ _('No avionics/equipment units recorded yet.') }}</div>
+    {% endif %}
+  </div>
+
+  <div class="card" id="equipment-wishlist-card">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <h2 class="section-title mb-0"><i class="bi bi-stars me-2"></i>{{ _('Upgrade wish list') }}</h2>
+      {% if is_owner %}
+      <a href="{{ url_for('airworthiness.add_wishlist_item', aircraft_id=aircraft.id) }}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i>{{ _('Add wish-list item') }}
+      </a>
+      {% endif %}
+    </div>
+    {% if wishlist_items %}
+    <div class="table-responsive">
+      <table class="table table-sm mb-0 oh-fs-085">
+        <thead class="table-light">
+          <tr>
+            <th>{{ _('Item') }}</th>
+            <th>{{ _('Rough cost') }}</th>
+            <th>{{ _('What it would require') }}</th>
+            {% if is_owner %}<th></th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in wishlist_items %}
+          <tr>
+            <td class="fw-medium">{{ item.title }}{% if item.notes %}<div class="text-muted oh-fs-08">{{ item.notes }}</div>{% endif %}</td>
+            <td class="text-muted">{{ "%.2f"|format(item.rough_cost|float) if item.rough_cost is not none else '' }}</td>
+            <td class="text-muted">{{ item.requirements or '' }}</td>
+            {% if is_owner %}
+            <td class="text-end">
+              <form method="post"
+                    action="{{ url_for('airworthiness.delete_wishlist_item', aircraft_id=aircraft.id, item_id=item.id) }}"
+                    class="d-inline"
+                    hx-swap="innerHTML show:none" data-scroll-anchor="equipment-wishlist-card"
+                    data-confirm="{{ _('Remove this wish-list item?') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm py-0">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="card-body text-muted">{{ _('Nothing on the wish list yet.') }}</div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
