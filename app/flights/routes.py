@@ -448,6 +448,8 @@ def serve_upload(filename: str) -> ResponseReturnValue:
                 Flight.flight_counter_photo == filename,
                 Flight.engine_counter_photo == filename,
                 Flight.fuel_photo == filename,
+                Flight.flight_counter_photo_preflight == filename,
+                Flight.engine_counter_photo_preflight == filename,
             )
         ).first()
         if fe is None:
@@ -1272,6 +1274,16 @@ def _handle_log_flight_post(
             ("flight_counter_photo", "flight", "flight_counter_photo"),
             ("engine_counter_photo", "engine", "engine_counter_photo"),
             ("fuel_photo", "fuel", "fuel_photo"),
+            (
+                "flight_counter_photo_preflight",
+                "flight_preflight",
+                "flight_counter_photo_preflight",
+            ),
+            (
+                "engine_counter_photo_preflight",
+                "engine_preflight",
+                "engine_counter_photo_preflight",
+            ),
         ]:
             photo_file = request.files.get(photo_field)
             if photo_file and photo_file.filename:
@@ -1415,6 +1427,8 @@ def delete_flight(aircraft_id: int, flight_id: int) -> ResponseReturnValue:
     )
     _delete_upload(fe.flight_counter_photo)
     _delete_upload(fe.engine_counter_photo)
+    _delete_upload(fe.flight_counter_photo_preflight)
+    _delete_upload(fe.engine_counter_photo_preflight)
     db.session.delete(fe)
     db.session.commit()
     flash(_("Flight %(label)s deleted.", label=label), "success")

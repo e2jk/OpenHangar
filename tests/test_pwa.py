@@ -778,8 +778,8 @@ class TestFlightFormCameraCapture:
             r"<input[^>]+(?:flight_counter_photo|engine_counter_photo|fuel_photo)[^>]*>",
             content,
         )
-        assert len(photo_inputs) == 3, (
-            f"Expected 3 photo inputs, found {len(photo_inputs)}"
+        assert len(photo_inputs) == 5, (
+            f"Expected 5 photo inputs, found {len(photo_inputs)}"
         )
         for inp in photo_inputs:
             assert 'capture="environment"' in inp, (

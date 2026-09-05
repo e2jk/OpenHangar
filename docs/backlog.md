@@ -1030,22 +1030,6 @@ before shipping this, especially around co-owner billing
 
 ---
 
-## Pre-flight photos, alongside the existing post-flight ones
-
-The flight form's Photos section (flight/engine counter + fuel) is
-implicitly post-flight — encouraging a photo taken right after shutdown,
-as proof/backup for the readings entered above. Some pilots may also want
-to snap a photo *before* the flight (e.g. the counters at block-off, or a
-walk-around/damage photo), which isn't facilitated today. Would need: a
-second set of photo fields (or a single field pair reused with a
-before/after toggle — needs a design decision), updated labels/help text
-distinguishing the two, and a decision on whether pre-flight photos feed
-any validation (e.g. cross-checking the pre-flight counter reading against
-the previous flight's post-flight one, similar to the existing counter
-continuity warning).
-
----
-
 ## Training dashboard: instructors/aircraft variety + user-defined training phases
 
 A dashboard summarizing training progress for a pilot: how many different

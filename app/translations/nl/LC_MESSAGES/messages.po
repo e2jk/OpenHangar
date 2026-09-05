@@ -8197,6 +8197,18 @@ msgid "Nature & Passengers"
 msgstr "Aard &amp; Passagiers"
 
 #: app/templates/flights/flight_form.html:536
+msgid "Pre-flight photos — taken before departure (e.g. at block-off), for cross-checking the counter readings below."
+msgstr "Foto's vóór de vlucht — genomen vóór het vertrek (bijvoorbeeld bij het loslaten van de blokken), om de tellerstanden hieronder te controleren."
+
+#: app/templates/flights/flight_form.html:536
+msgid "Flight counter photo (pre-flight)"
+msgstr "Foto vluchtteller (vóór de vlucht)"
+
+#: app/templates/flights/flight_form.html:536
+msgid "Engine counter photo (pre-flight)"
+msgstr "Foto motorteller (vóór de vlucht)"
+
+#: app/templates/flights/flight_form.html:536
 msgid "Post-flight photos — taken after shutdown, for the counter/fuel readings above."
 msgstr "Foto's na de vlucht — genomen na het uitschakelen van de motor, voor de teller-/brandstofstanden hierboven."
 
