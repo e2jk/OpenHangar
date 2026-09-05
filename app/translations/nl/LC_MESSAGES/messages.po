@@ -1874,8 +1874,8 @@ msgstr "tot"
 #: app/templates/maintenance/fleet.html:59
 #: app/templates/maintenance/fleet.html:115
 #: app/templates/maintenance/fleet.html:166
-#: app/templates/maintenance/fleet.html:272
-#: app/templates/maintenance/fleet.html:331
+#: app/templates/maintenance/fleet.html:270
+#: app/templates/maintenance/fleet.html:329
 #: app/templates/offline/changes.html:53
 #: app/templates/pilots/entry_form.html:126
 #: app/templates/pilots/gps_import_upload.html:49
@@ -2346,7 +2346,7 @@ msgstr "%(name)s op %(reg)s is achterstallig."
 #: app/services/notification_service.py:526
 #: app/services/notification_service.py:556
 #: app/templates/maintenance/fleet.html:167
-#: app/templates/maintenance/fleet.html:332
+#: app/templates/maintenance/fleet.html:330
 #: app/templates/maintenance/list.html:74
 msgid "Item"
 msgstr "Item"
@@ -2859,8 +2859,8 @@ msgstr "open-source vliegtuigbeheer"
 #: app/templates/config/tenant_list.html:32
 #: app/templates/maintenance/amp_import_review.html:43
 #: app/templates/maintenance/fleet.html:171
-#: app/templates/maintenance/fleet.html:276
-#: app/templates/maintenance/fleet.html:334
+#: app/templates/maintenance/fleet.html:274
+#: app/templates/maintenance/fleet.html:332
 #: app/templates/maintenance/list.html:79
 #: app/templates/pilots/minimums_history.html:24
 #: app/templates/reservations/charge.html:34
@@ -3138,20 +3138,20 @@ msgstr "AAN DE GROND"
 #: app/templates/aircraft/owners_billing.html:61
 #: app/templates/dashboard.html:386 app/templates/dashboard.html:470
 #: app/templates/dashboard.html:556 app/templates/landing.html:204
-#: app/templates/landing.html:211 app/templates/maintenance/fleet.html:239
-#: app/templates/maintenance/fleet.html:308
-#: app/templates/maintenance/fleet.html:388
-#: app/templates/maintenance/list.html:146
+#: app/templates/landing.html:211 app/templates/maintenance/fleet.html:237
+#: app/templates/maintenance/fleet.html:306
+#: app/templates/maintenance/fleet.html:386
+#: app/templates/maintenance/list.html:149
 msgid "Overdue"
 msgstr "Achterstallig"
 
 #: app/templates/aircraft/list.html:75 app/templates/dashboard.html:388
 #: app/templates/dashboard.html:472 app/templates/dashboard.html:558
 #: app/templates/landing.html:195 app/templates/landing.html:210
-#: app/templates/maintenance/fleet.html:241
-#: app/templates/maintenance/fleet.html:310
-#: app/templates/maintenance/fleet.html:390
-#: app/templates/maintenance/list.html:148
+#: app/templates/maintenance/fleet.html:239
+#: app/templates/maintenance/fleet.html:308
+#: app/templates/maintenance/fleet.html:388
+#: app/templates/maintenance/list.html:151
 msgid "Due soon"
 msgstr "Bijna achterstallig"
 
@@ -3161,8 +3161,8 @@ msgstr "Bijna achterstallig"
 #: app/templates/config/settings.html:293 app/templates/dashboard.html:390
 #: app/templates/dashboard.html:474 app/templates/landing.html:186
 #: app/templates/maintenance/amp_import_review.html:90
-#: app/templates/maintenance/fleet.html:243
-#: app/templates/maintenance/list.html:150
+#: app/templates/maintenance/fleet.html:241
+#: app/templates/maintenance/list.html:153
 msgid "OK"
 msgstr "In orde"
 
@@ -3300,7 +3300,7 @@ msgstr "Notities"
 #: app/templates/maintenance/fleet.html:63
 #: app/templates/maintenance/fleet.html:119
 #: app/templates/maintenance/fleet.html:172
-#: app/templates/maintenance/fleet.html:335
+#: app/templates/maintenance/fleet.html:333
 #: app/templates/pilots/import_history.html:37
 #: app/templates/pilots/minimums_history.html:27
 #: app/templates/reservations/calendar.html:133
@@ -3935,7 +3935,7 @@ msgstr "Onderdeel toevoegen"
 #: app/templates/expenses/list.html:55 app/templates/expenses/list.html:82
 #: app/templates/maintenance/_amp_export_body.html:47
 #: app/templates/maintenance/fleet.html:168
-#: app/templates/maintenance/fleet.html:330
+#: app/templates/maintenance/fleet.html:328
 #: app/templates/maintenance/list.html:75
 #: app/templates/maintenance/trigger_form.html:37
 #: app/templates/offline/pilot_workbench.html:35
@@ -4160,7 +4160,7 @@ msgstr "Defect registreren"
 #: app/templates/aircraft/detail.html:192
 #: app/templates/maintenance/fleet.html:83
 #: app/templates/maintenance/fleet.html:139
-#: app/templates/maintenance/fleet.html:397 app/templates/snags/list.html:79
+#: app/templates/maintenance/fleet.html:395 app/templates/snags/list.html:79
 msgid "Resolve"
 msgstr "Oplossen"
 
@@ -5628,7 +5628,7 @@ msgstr "Referentie"
 #: app/templates/airworthiness/document_form.html:21
 #: app/templates/airworthiness/node_form.html:25
 #: app/templates/maintenance/amp_import_review.html:42
-#: app/templates/maintenance/fleet.html:273
+#: app/templates/maintenance/fleet.html:271
 #: app/templates/maintenance/trigger_form.html:72
 msgid "Component"
 msgstr "Onderdeel"
@@ -6375,7 +6375,8 @@ msgid "Inactive"
 msgstr "Inactief"
 
 #: app/templates/config/notifications.html:164
-#: app/templates/maintenance/list.html:129
+#: app/templates/maintenance/list.html:132
+#: app/templates/partials/_maintenance_basis.html:9
 msgid "days"
 msgstr "dagen"
 
@@ -8353,7 +8354,7 @@ msgstr "gereviseerd op %(date)s"
 #: app/templates/flights/logbook_component.html:65
 #: app/templates/maintenance/fleet.html:205
 #: app/templates/maintenance/fleet.html:221
-#: app/templates/maintenance/fleet.html:298
+#: app/templates/maintenance/fleet.html:296
 msgid "remaining"
 msgstr "resterend"
 
@@ -8753,9 +8754,9 @@ msgstr "Eerdere AMP-imports — u kunt elke import ongedaan maken om alle bijbeh
 
 #: app/templates/maintenance/amp_import_history.html:34
 #: app/templates/maintenance/amp_import_review.html:88
-#: app/templates/maintenance/fleet.html:237
-#: app/templates/maintenance/fleet.html:384
-#: app/templates/maintenance/list.html:144
+#: app/templates/maintenance/fleet.html:235
+#: app/templates/maintenance/fleet.html:382
+#: app/templates/maintenance/list.html:147
 msgid "Needs review"
 msgstr "Controle nodig"
 
@@ -8873,7 +8874,7 @@ msgstr "Gemeld"
 
 #: app/templates/maintenance/fleet.html:88
 #: app/templates/maintenance/fleet.html:144
-#: app/templates/maintenance/fleet.html:402
+#: app/templates/maintenance/fleet.html:400
 msgid "All snags"
 msgstr "Alle defecten"
 
@@ -8900,74 +8901,74 @@ msgid "Calendar"
 msgstr "Kalender"
 
 #: app/templates/maintenance/fleet.html:201
-#: app/templates/maintenance/fleet.html:364
+#: app/templates/maintenance/fleet.html:362
 #: app/templates/maintenance/list.html:111 app/templates/share/public.html:40
 #: app/templates/share/public.html:64
 msgid "flight"
 msgstr "vlucht"
 
 #: app/templates/maintenance/fleet.html:201
-#: app/templates/maintenance/fleet.html:364
+#: app/templates/maintenance/fleet.html:362
 #: app/templates/maintenance/list.html:111 app/templates/share/public.html:37
 #: app/templates/share/public.html:64
 msgid "engine"
 msgstr "motor"
 
 #: app/templates/maintenance/fleet.html:210
-#: app/templates/maintenance/fleet.html:367
+#: app/templates/maintenance/fleet.html:365
 #: app/templates/maintenance/list.html:114
 msgid "Estimated from this aircraft's recent utilization rate — not a real due date."
 msgstr "Geschat op basis van het recente gebruikspercentage van dit toestel — geen echte vervaldatum."
 
 #: app/templates/maintenance/fleet.html:211
-#: app/templates/maintenance/fleet.html:368
+#: app/templates/maintenance/fleet.html:366
 #: app/templates/maintenance/list.html:115
 msgid "(est.)"
 msgstr "(gesch.)"
 
-#: app/templates/maintenance/fleet.html:248
-#: app/templates/maintenance/fleet.html:406
-#: app/templates/maintenance/list.html:156
+#: app/templates/maintenance/fleet.html:246
+#: app/templates/maintenance/fleet.html:404
+#: app/templates/maintenance/list.html:159
 #: app/templates/maintenance/service_form.html:3
 #: app/templates/maintenance/service_form.html:12
 msgid "Mark as serviced"
 msgstr "Markeren als onderhouden"
 
-#: app/templates/maintenance/fleet.html:253
-#: app/templates/maintenance/fleet.html:411
+#: app/templates/maintenance/fleet.html:251
+#: app/templates/maintenance/fleet.html:409
 msgid "All items"
 msgstr "Alle items"
 
-#: app/templates/maintenance/fleet.html:262
-#: app/templates/maintenance/fleet.html:422
+#: app/templates/maintenance/fleet.html:260
+#: app/templates/maintenance/fleet.html:420
 msgid "No alerts — all items OK."
 msgstr "Geen waarschuwingen — alle items in orde."
 
-#: app/templates/maintenance/fleet.html:267
+#: app/templates/maintenance/fleet.html:265
 msgid "Component life limits"
 msgstr "Levensduurlimieten van onderdelen"
 
-#: app/templates/maintenance/fleet.html:274
+#: app/templates/maintenance/fleet.html:272
 msgid "Hours since overhaul"
 msgstr "Uren sinds revisie"
 
-#: app/templates/maintenance/fleet.html:275
+#: app/templates/maintenance/fleet.html:273
 msgid "Limit"
 msgstr "Limiet"
 
-#: app/templates/maintenance/fleet.html:333
+#: app/templates/maintenance/fleet.html:331
 msgid "Due / Reported"
 msgstr "Vervalt / Gemeld"
 
-#: app/templates/maintenance/fleet.html:428
+#: app/templates/maintenance/fleet.html:426
 msgid "The chronological view shows alerts only."
 msgstr "De chronologische weergave toont alleen waarschuwingen."
 
-#: app/templates/maintenance/fleet.html:429
+#: app/templates/maintenance/fleet.html:427
 msgid "Switch to by-type view"
 msgstr "Overschakelen naar weergave op type"
 
-#: app/templates/maintenance/fleet.html:430
+#: app/templates/maintenance/fleet.html:428
 msgid "to see all maintenance items including those currently OK."
 msgstr "om alle onderhoudsitems te zien, ook degene die momenteel in orde zijn."
 
@@ -8981,7 +8982,10 @@ msgstr "huidige vlieguren"
 
 #: app/templates/maintenance/list.html:21
 #: app/templates/maintenance/list.html:120
-#: app/templates/maintenance/list.html:131 app/templates/share/public.html:66
+#: app/templates/maintenance/list.html:134
+#: app/templates/partials/_maintenance_basis.html:7
+#: app/templates/partials/_maintenance_basis.html:11
+#: app/templates/share/public.html:66
 msgid "landings"
 msgstr "landingen"
 
@@ -9010,16 +9014,16 @@ msgstr "Casco"
 msgid "Airframe / general"
 msgstr "Airframe / algemeen"
 
-#: app/templates/maintenance/list.html:166
+#: app/templates/maintenance/list.html:169
 #, python-format
 msgid "Delete '%(name)s'?"
 msgstr "'%(name)s' verwijderen?"
 
-#: app/templates/maintenance/list.html:183
+#: app/templates/maintenance/list.html:186
 msgid "No maintenance items defined yet."
 msgstr "Nog geen onderhoudsitems gedefinieerd."
 
-#: app/templates/maintenance/list.html:187
+#: app/templates/maintenance/list.html:190
 msgid "Add first item"
 msgstr "Eerste item toevoegen"
 
@@ -9585,6 +9589,11 @@ msgstr "bestaat al."
 #: app/templates/partials/_gps_upload.html:42
 msgid "Review before saving."
 msgstr "Controleer voor het opslaan."
+
+#: app/templates/partials/_maintenance_basis.html:12
+#, python-format
+msgid "every %(interval)s"
+msgstr "elke %(interval)s"
 
 #: app/templates/partials/_theme_lang_switcher.html:3
 msgid "Switch to light mode"

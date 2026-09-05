@@ -8,6 +8,7 @@ import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     Flight,
+    MaintenanceRecord,
     MaintenanceTrigger,
     Role,
     Snag,
@@ -219,6 +220,38 @@ class TestByTypeView:
         _login(app, client)
         resp = client.get("/maintenance?view=by-type")
         assert b"50h oil" in resp.data
+
+    def test_shows_basis_summary_for_last_service_column(self, app, client):
+        """backlog: show the basis for a due date — the fleet overview's
+        Last service column shows last-done reading + interval, not just
+        a bare date."""
+        _, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=ac_id,
+                name="Oil change",
+                trigger_type=TriggerType.HOURS,
+                due_engine_hours=200.0,
+                interval_hours=50.0,
+            )
+            db.session.add(t)
+            db.session.flush()
+            db.session.add(
+                MaintenanceRecord(
+                    trigger_id=t.id,
+                    performed_at=date(2024, 3, 2),
+                    hobbs_at_service=4821.3,
+                )
+            )
+            db.session.commit()
+        # Need an alert to force the table to render
+        _add_trigger(
+            app, ac_id, name="Overdue item", due_date=date.today() - timedelta(days=1)
+        )
+        _login(app, client)
+        resp = client.get("/maintenance?view=by-type")
+        assert "2024-03-02 (4821.3 h) · every 50 h" in resp.data.decode()
 
     def test_shows_landings_remaining_for_landings_trigger(self, app, client):
         _, tid = _create_user_and_tenant(app)

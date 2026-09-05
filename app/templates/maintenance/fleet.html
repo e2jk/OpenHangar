@@ -227,10 +227,8 @@
                 <span class="text-muted">—</span>
               {% endif %}
             </td>
-            <td class="align-middle text-muted">
-              {% if trigger.last_record %}
-                {{ trigger.last_record.performed_at.strftime('%Y-%m-%d') }}
-              {% else %}—{% endif %}
+            <td class="align-middle text-muted oh-fs-08">
+              {% if trigger.service_basis %}{% include 'partials/_maintenance_basis.html' %}{% else %}—{% endif %}
             </td>
             <td class="text-center align-middle">
               {% if trigger.needs_review %}

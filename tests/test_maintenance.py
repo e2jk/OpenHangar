@@ -13,11 +13,13 @@ from models import (  # pyright: ignore[reportMissingImports]
     HoursBasis,
     MaintenanceRecord,
     MaintenanceTrigger,
+    PermissionBit,
     Role,
     Tenant,
     TenantUser,
     TriggerType,
     User,
+    UserAircraftAccess,
     db,
 )
 
@@ -435,6 +437,108 @@ class TestTriggerStatusCombined:
             assert t.status(current_engine_hours=None) == "ok"
 
 
+# ── Model: basis_summary (backlog: show the basis for a due date) ─────────────
+
+
+class TestServiceBasis:
+    def test_none_with_no_service_history(self, app):
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=1,
+                name="x",
+                trigger_type=TriggerType.HOURS,
+                due_engine_hours=200.0,
+                interval_hours=50.0,
+            )
+            assert t.service_basis is None
+
+    def test_date_only_with_no_reading_or_interval(self, app):
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=1, name="x", trigger_type=TriggerType.CALENDAR
+            )
+            t.records.append(MaintenanceRecord(performed_at=date(2024, 3, 2)))
+            sb = t.service_basis
+            assert sb["date"] == date(2024, 3, 2)
+            assert sb["hobbs"] is None
+            assert sb["landings"] is None
+            assert sb["interval_days"] is None
+            assert sb["interval_hours"] is None
+            assert sb["interval_landings"] is None
+
+    def test_includes_hobbs_reading_and_interval(self, app):
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=1,
+                name="x",
+                trigger_type=TriggerType.HOURS,
+                interval_hours=50.0,
+            )
+            t.records.append(
+                MaintenanceRecord(
+                    performed_at=date(2024, 3, 2), hobbs_at_service=4821.3
+                )
+            )
+            sb = t.service_basis
+            assert sb["hobbs"] == 4821.3
+            assert sb["interval_hours"] == 50.0
+
+    def test_includes_landings_reading_and_interval(self, app):
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=1,
+                name="x",
+                trigger_type=TriggerType.LANDINGS,
+                interval_landings=200,
+            )
+            t.records.append(
+                MaintenanceRecord(
+                    performed_at=date(2024, 3, 2), landings_at_service=980
+                )
+            )
+            sb = t.service_basis
+            assert sb["landings"] == 980
+            assert sb["interval_landings"] == 200
+
+    def test_combines_multiple_intervals(self, app):
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=1,
+                name="x",
+                trigger_type=TriggerType.CALENDAR,
+                interval_days=365,
+                interval_hours=100.0,
+            )
+            t.records.append(MaintenanceRecord(performed_at=date(2024, 3, 2)))
+            sb = t.service_basis
+            assert sb["interval_days"] == 365
+            assert sb["interval_hours"] == 100.0
+
+    def test_uses_most_recent_record(self, app):
+        # last_record relies on the records relationship's DB-side
+        # order_by (performed_at desc) — needs real persistence, unlike
+        # the in-memory-append tests above, to actually exercise that.
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=acid, name="x", trigger_type=TriggerType.CALENDAR
+            )
+            db.session.add(t)
+            db.session.flush()
+            db.session.add(
+                MaintenanceRecord(trigger_id=t.id, performed_at=date(2023, 1, 1))
+            )
+            db.session.add(
+                MaintenanceRecord(trigger_id=t.id, performed_at=date(2024, 6, 1))
+            )
+            db.session.commit()
+            tid_ = t.id
+        with app.app_context():
+            t = db.session.get(MaintenanceTrigger, tid_)
+            assert t.service_basis["date"] == date(2024, 6, 1)
+
+
 # ── Auth guard ────────────────────────────────────────────────────────────────
 
 
@@ -553,6 +657,57 @@ class TestTriggerList:
         r = client.get(f"/aircraft/{acid}/maintenance")
         assert b"INSPECTION" in r.data
         assert b"AD 2023-0048" in r.data
+
+    def test_limited_view_shows_basis_summary_inline(self, app, client):
+        """backlog: show the basis for a due date — the limited view has no
+        separate Interval/Last service columns, so the basis needs to show
+        inline under Due or it's invisible entirely."""
+        _admin_uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            # A non-admin/owner role (admin/owner bypass all permission
+            # checks) with an explicit limited-only grant on this aircraft.
+            user = User(
+                email="renter@example.com",
+                password_hash=_pw_hash.hash("testpassword123"),
+                is_active=True,
+            )
+            db.session.add(user)
+            db.session.flush()
+            db.session.add(TenantUser(user_id=user.id, tenant_id=tid, role=Role.PILOT))
+            db.session.add(
+                UserAircraftAccess(
+                    user_id=user.id,
+                    aircraft_id=acid,
+                    permissions_mask=PermissionBit.READ_MAINT_LIMITED,
+                )
+            )
+            t = MaintenanceTrigger(
+                aircraft_id=acid,
+                name="Oil change",
+                trigger_type=TriggerType.HOURS,
+                # No flight history -> hours status can't be evaluated; the
+                # calendar due_date makes this trigger overdue instead, so
+                # it isn't filtered out of the limited view (which shows
+                # only overdue/due_soon items).
+                due_date=date.today() - timedelta(days=1),
+                due_engine_hours=200.0,
+                interval_hours=50.0,
+            )
+            db.session.add(t)
+            db.session.flush()
+            db.session.add(
+                MaintenanceRecord(
+                    trigger_id=t.id,
+                    performed_at=date(2024, 3, 2),
+                    hobbs_at_service=4821.3,
+                )
+            )
+            db.session.commit()
+        _login(app, client, email="renter@example.com")
+        r = client.get(f"/aircraft/{acid}/maintenance")
+        assert r.status_code == 200
+        assert "2024-03-02 (4821.3 h) · every 50 h" in r.data.decode()
 
 
 # ── Projected due date (backlog: due-date projection from utilization trend) ──
