@@ -171,15 +171,22 @@ fi
 # verifying a tag would leave a window (docker pull ... resolve digest ...
 # verify) where the registry could serve a different image between the pull
 # and the check. --certificate-identity-regexp pins verification to this
-# repo's own ci.yml workflow: publishing happens either from a version-tag
-# push (refs/tags/v*) or from the pull_request run that ci.yml's own
-# publish_now logic gates to the ship/dependabot/renovate branches (the
-# OIDC certificate encodes that as refs/pull/<N>/merge — the PR number, not
-# the source branch name, since GitHub doesn't expose the head ref in the
-# SAN). refs/heads/main is never a signing ref: merging to main is a no-op,
-# the image was already published before merge. A signature from anywhere
-# else (a fork, a different workflow, a compromised registry credential
-# pushing under a stolen identity) is refused.
+# repo's own ci.yml workflow, under every ref ci.yml's own publish_now logic
+# can actually publish from:
+#   refs/pull/<N>/merge — the ship/dependabot/renovate PR that builds and
+#     tests the exact image before it's published (the OIDC certificate
+#     encodes the PR number, not the source branch name, since GitHub
+#     doesn't expose the head ref in the SAN).
+#   refs/tags/v* — a version-tag push.
+#   refs/heads/main — a workflow_dispatch run targeting main: a human
+#     manually re-running CI, or image-scan.yml's own auto-triggered
+#     rebuild after finding a fixable CVE in the published image (see
+#     .github/workflows/image-scan.yml) — a genuine publish_now=true
+#     signing run, not "merging to main is a no-op" as this comment used
+#     to assume before that auto-rebuild path existed.
+# A signature from anywhere else (a fork, a different workflow, a
+# compromised registry credential pushing under a stolen identity) is
+# refused.
 _verify_image_signature() {
   local image_ref="$1"
   # cron runs this script with a minimal PATH (typically just /usr/bin:/bin)
@@ -209,7 +216,7 @@ _verify_image_signature() {
   log "Verifying image signature (cosign) for ${digest_ref}..."
   if "${cosign_bin}" verify \
       --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-      --certificate-identity-regexp '^https://github\.com/e2jk/OpenHangar/\.github/workflows/ci\.yml@refs/(pull/[0-9]+/merge|tags/v.*)$' \
+      --certificate-identity-regexp '^https://github\.com/e2jk/OpenHangar/\.github/workflows/ci\.yml@refs/(pull/[0-9]+/merge|tags/v.*|heads/main)$' \
       "${digest_ref}" >/dev/null 2>&1; then
     log "Signature verified."
     return 0
