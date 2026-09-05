@@ -11136,3 +11136,11 @@ msgstr "Les propriétaires et administrateurs ont toujours accès à toute la fl
 msgid "Permissions updated."
 msgstr "Permissions mises à jour."
 
+#: app/templates/config/settings.html:497
+msgid "A newer version is installed automatically right after each successful scheduled backup."
+msgstr "Une nouvelle version est installée automatiquement juste après chaque sauvegarde planifiée réussie."
+
+#: app/templates/config/settings.html:498
+msgid "Auto-upgrade: on"
+msgstr "Mise à jour automatique : activée"
+

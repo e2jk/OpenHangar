@@ -93,6 +93,47 @@ class TestUpgradeActiveFlag:
         assert ctx["upgrade_active"] is True
 
 
+# ── index() auto_upgrade_enabled flag ─────────────────────────────────────────
+
+
+class TestAutoUpgradeIndicator:
+    def test_disabled_by_default(self, app, client, captured_templates):
+        uid = _setup_admin(app)
+        _login(client, uid)
+        with patch.dict("os.environ", {}, clear=False):
+            os.environ.pop("OPENHANGAR_AUTO_UPGRADE", None)
+            resp = client.get("/config/")
+        assert resp.status_code == 200
+        ctx = captured_templates[-1][1]
+        assert ctx["auto_upgrade_enabled"] is False
+        assert b"Auto-upgrade: on" not in resp.data
+
+    def test_enabled_shows_badge(self, app, client, captured_templates):
+        uid = _setup_admin(app)
+        _login(client, uid)
+        with patch.dict("os.environ", {"OPENHANGAR_AUTO_UPGRADE": "true"}):
+            resp = client.get("/config/")
+        assert resp.status_code == 200
+        ctx = captured_templates[-1][1]
+        assert ctx["auto_upgrade_enabled"] is True
+        assert b"Auto-upgrade: on" in resp.data
+
+    def test_invalid_value_falls_back_to_disabled(
+        self, app, client, captured_templates
+    ):
+        """index() must still render (not 500) if OPENHANGAR_AUTO_UPGRADE is
+        set to something invalid after startup validation already passed —
+        e.g. an operator edits the env file without restarting."""
+        uid = _setup_admin(app)
+        _login(client, uid)
+        with patch.dict("os.environ", {"OPENHANGAR_AUTO_UPGRADE": "not-a-bool"}):
+            resp = client.get("/config/")
+        assert resp.status_code == 200
+        ctx = captured_templates[-1][1]
+        assert ctx["auto_upgrade_enabled"] is False
+        assert b"Auto-upgrade: on" not in resp.data
+
+
 # ── trigger_upgrade() ─────────────────────────────────────────────────────────
 
 
