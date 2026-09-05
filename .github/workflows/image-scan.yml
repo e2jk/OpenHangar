@@ -3,11 +3,16 @@ name: Published image vulnerability scan
 # Trivy only runs against the freshly built image on push (ci.yml). A CVE
 # published in an OS package baked into the image during a quiet period
 # would go unnoticed until the next commit. Scan the already-published
-# :latest image on a schedule instead, so a newly disclosed CVE fails a
-# run (and emails the maintainer) even with no code changes. Daily (not
-# weekly) keeps the worst-case detection gap during a quiet period to
-# ~1 day instead of ~6 — the scan itself only takes 30-60s, so the extra
-# runs cost effectively nothing.
+# :latest image on a schedule instead, so a newly disclosed CVE gets
+# caught (and a rebuild auto-triggered to fix it) even with no code
+# changes. Daily (not weekly) keeps the worst-case detection gap during a
+# quiet period to ~1 day instead of ~6 — the scan itself only takes
+# 30-60s, so the extra runs cost effectively nothing.
+#
+# A fixable CVE found here does NOT fail this job (see continue-on-error
+# below) — it's expected, self-healing behaviour (rebuild dispatched,
+# fix lands within minutes), not an incident. Only a failure to dispatch
+# that rebuild fails the run and emails the maintainer.
 
 on:
   schedule:
@@ -31,6 +36,10 @@ jobs:
     steps:
       - name: Run Trivy vulnerability scanner
         id: trivy
+        # Self-healing, not a build gate (see "Trigger a rebuild" below) —
+        # don't let a fixable CVE alone red-X this job; only the "did the
+        # auto-remediation itself work" step further down can fail the run.
+        continue-on-error: true
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ghcr.io/e2jk/openhangar:latest
@@ -45,7 +54,17 @@ jobs:
         uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4
         with:
           sarif_file: trivy-latest-results.sarif
-          category: trivy-latest
+          # Same category as ci.yml's own "docker-validate" Trivy scan (of
+          # openhangar:ci, the about-to-be-published candidate). Both scans
+          # track vulnerabilities in effectively the same image over time —
+          # a distinct category here would keep two parallel, never-merged
+          # alert histories for the same CVEs, doubling every entry in the
+          # Security tab. Sharing one category lets whichever scan (this
+          # daily one, or the next push's docker-validate) ran most
+          # recently keep the alert set in sync, so a CVE fixed by either
+          # path gets marked "fixed" instead of lingering "open" forever
+          # in the other path's own separate history.
+          category: trivy
 
       # ignore-unfixed: true above means every finding that fails the Trivy
       # step already has a fix published upstream (in the OS package repo,
@@ -58,10 +77,10 @@ jobs:
       # events without special-casing — GitHub's "actions triggered by
       # GITHUB_TOKEN don't trigger further workflow runs" loop-prevention
       # rule explicitly excludes those two event types.
-      # If the rebuild itself then fails (flaky test, e.g.), this just
-      # degrades to today's behaviour: tomorrow's scheduled scan finds the
-      # same fixable CVE and tries again — no worse than before this step
-      # existed.
+      # No continue-on-error here (unlike the scan step above): if this
+      # dispatch itself fails (e.g. API error), that's the one case this
+      # job should still surface as a failure — a human is needed, since
+      # neither today's nor tomorrow's run will retry it on their own.
       - name: Trigger a rebuild to pick up the fix
         if: always() && steps.trivy.outcome == 'failure'
         env:
@@ -71,3 +90,4 @@ jobs:
         run: |
           gh workflow run ci.yml --ref main \
             -f reason="Automatic: daily image scan (run ${RUN_ID}) found a fixable CVE in ghcr.io/e2jk/openhangar:latest"
+          echo "::notice::Fixable CVE(s) found in ghcr.io/e2jk/openhangar:latest — rebuild triggered to pick up the fix. See the Security tab for details."
