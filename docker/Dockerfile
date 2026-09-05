@@ -137,8 +137,16 @@ RUN rm -rf /usr/local/lib/python*/site-packages/pip \
 # practice: main's smaller index reliably completes over a flaky/dead-IPv6
 # path where community's larger one gets truncated mid-transfer, failing
 # the whole build for a repo nothing here needs.
+# APK_CACHE_BUST (set by ci.yml, see the version job) forces this layer to
+# actually re-run instead of replaying a stale cache hit forever: with a
+# pinned base image digest and unchanged instruction text, --cache-from
+# would otherwise make "apk upgrade" a no-op on every rebuild, defeating
+# its whole purpose above. Referencing the ARG in the RUN command itself
+# is what makes its value part of this layer's cache key.
+ARG APK_CACHE_BUST=unset
 # hadolint ignore=DL3018
-RUN sed -i '/community/d' /etc/apk/repositories && \
+RUN echo "apk-cache-bust: ${APK_CACHE_BUST}" && \
+    sed -i '/community/d' /etc/apk/repositories && \
     apk upgrade --no-cache && \
     apk add --no-cache postgresql18-client libpq tzdata bash pango font-dejavu
 
