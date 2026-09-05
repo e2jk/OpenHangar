@@ -357,6 +357,7 @@ jobs:
     outputs:
       version: ${{ steps.compute.outputs.version }}
       publish_now: ${{ steps.compute.outputs.publish_now }}
+      apk_cache_bust: ${{ steps.compute.outputs.apk_cache_bust }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -467,6 +468,24 @@ jobs:
           fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
+          # Cache-busts the Dockerfile's "apk upgrade" layer (see its own
+          # comment) so a rebuild actually re-resolves against Alpine's
+          # current package index instead of replaying a stale cached
+          # layer forever. Daily granularity for ordinary builds — same-day
+          # PRs still hit cache, only the first build of a new UTC day pays
+          # for a fresh apk resolve. A workflow_dispatch (a human re-running
+          # CI by hand, or image-scan.yml's auto-triggered fix rebuild) is
+          # always a deliberate "make sure this is fresh" request, so it
+          # gets a run-unique value instead — otherwise two dispatches on
+          # the same day would share the same stale-or-fresh cache entry,
+          # defeating the one case this exists for.
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            APK_CACHE_BUST="dispatch-${GITHUB_RUN_ID}"
+          else
+            APK_CACHE_BUST=$(date -u +%Y-%m-%d)
+          fi
+          echo "apk_cache_bust=${APK_CACHE_BUST}" >> "$GITHUB_OUTPUT"
+
       - name: Save version metadata
         if: steps.compute.outputs.publish_now == 'true'
         env:
@@ -519,6 +538,7 @@ jobs:
       VERSION: ${{ needs.version.outputs.version }}
       GIT_SHA: ${{ github.sha }}
       PUBLISH_NOW: ${{ needs.version.outputs.publish_now }}
+      APK_CACHE_BUST: ${{ needs.version.outputs.apk_cache_bust }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -558,6 +578,7 @@ jobs:
           docker buildx build \
             --platform linux/amd64 \
             --build-arg VERSION="${VERSION}" \
+            --build-arg APK_CACHE_BUST="${APK_CACHE_BUST}" \
             -f docker/Dockerfile \
             -t openhangar:ci \
             -t "ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-amd64" \
@@ -595,6 +616,7 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       VERSION: ${{ needs.version.outputs.version }}
       GIT_SHA: ${{ github.sha }}
+      APK_CACHE_BUST: ${{ needs.version.outputs.apk_cache_bust }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -623,6 +645,7 @@ jobs:
           docker buildx build \
             --platform linux/arm64 \
             --build-arg VERSION="${VERSION}" \
+            --build-arg APK_CACHE_BUST="${APK_CACHE_BUST}" \
             -f docker/Dockerfile \
             -t "ghcr.io/e2jk/openhangar:sha-${GIT_SHA}-arm64" \
             --cache-from "type=registry,ref=ghcr.io/e2jk/openhangar:buildcache-arm64" \
