@@ -211,9 +211,12 @@ any pending database migrations.
 Every image CI publishes to `ghcr.io/e2jk/openhangar` is signed (keyless,
 via [Sigstore](https://www.sigstore.dev/)/cosign) and carries a
 [SLSA](https://slsa.dev/) build-provenance attestation, both tied to this
-repository's own `ci.yml` workflow publishing from a version-tag push or
+repository's own `ci.yml` workflow publishing from a version-tag push,
 from the `ship`/Dependabot/Renovate pull request that builds and tests the
-exact image before it's published — a signature from anywhere else (a
+exact image before it's published, or from a manual/automatic
+`workflow_dispatch` rebuild of `main` (e.g. the daily scan that rebuilds
+the published image to pick up a newly fixed OS package CVE) — a
+signature from anywhere else (a
 fork, a different workflow, a compromised registry credential) will not
 verify.
 
@@ -233,7 +236,7 @@ after pulling:
 docker pull ghcr.io/e2jk/openhangar:latest
 cosign verify \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --certificate-identity-regexp '^https://github\.com/e2jk/OpenHangar/\.github/workflows/ci\.yml@refs/(pull/[0-9]+/merge|tags/v.*)$' \
+  --certificate-identity-regexp '^https://github\.com/e2jk/OpenHangar/\.github/workflows/ci\.yml@refs/(pull/[0-9]+/merge|tags/v.*|heads/main)$' \
   ghcr.io/e2jk/openhangar:latest
 ```
 
