@@ -269,6 +269,7 @@ def index() -> ResponseReturnValue:
 
     from services.backup_scheduler import (  # pyright: ignore[reportMissingImports]
         RETENTION_GFS,
+        parse_auto_upgrade_enabled,
         parse_backup_keep,
         parse_backup_keep_days,
         parse_backup_keep_months,
@@ -281,6 +282,10 @@ def index() -> ResponseReturnValue:
         _schedule = parse_backup_time()
     except ValueError:
         _schedule = None
+    try:
+        auto_upgrade_enabled = parse_auto_upgrade_enabled()
+    except ValueError:
+        auto_upgrade_enabled = False
     backup_schedule_str = (
         f"{_schedule[0]:02d}:{_schedule[1]:02d}" if _schedule else None
     )
@@ -451,6 +456,7 @@ def index() -> ResponseReturnValue:
         latest_version=latest_version,
         update_available=update_available,
         versions_behind=versions_behind,
+        auto_upgrade_enabled=auto_upgrade_enabled,
         db_size=db_size,
         upload_size_bytes=upload_size_bytes,
         backup_total_size_bytes=backup_total_size_bytes,

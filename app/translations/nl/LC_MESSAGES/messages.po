@@ -11136,3 +11136,11 @@ msgstr "Eigenaren en beheerders hebben altijd volledige toegang tot de vloot —
 msgid "Permissions updated."
 msgstr "Machtigingen bijgewerkt."
 
+#: app/templates/config/settings.html:497
+msgid "A newer version is installed automatically right after each successful scheduled backup."
+msgstr "Een nieuwere versie wordt automatisch geïnstalleerd direct na elke geslaagde geplande back-up."
+
+#: app/templates/config/settings.html:498
+msgid "Auto-upgrade: on"
+msgstr "Automatisch bijwerken: aan"
+
