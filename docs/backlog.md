@@ -235,6 +235,13 @@ exposing any personal health data (medical expiry) to other users.
 
 ## Logbook: counter continuity discrepancy detection
 
+**Likely related to** the "data integrity" audit-view idea below (from a
+friend's single-aircraft records site) — that item's "conflicting hour-meter
+readings" case is essentially this same check, generalized into a
+first-class audit page rather than a narrower per-aircraft view. Worth
+designing together rather than building this one first and a separate,
+overlapping page later.
+
 Each flight entry's counter start values are pre-filled from the previous
 flight's end values and are not directly editable in the UI. However, direct
 database manipulation (or a future API call) could introduce a mismatch where
@@ -1088,7 +1095,9 @@ prioritised; recorded here as raw inspiration.
   print/export view for the annual.
 
 - **A "data integrity" page that discloses record-keeping gaps as a first-class
-  feature**, instead of only tracking what's compliant. Their site has a
+  feature** (see also "Logbook: counter continuity discrepancy detection"
+  above — likely the same underlying check, generalized), instead of only
+  tracking what's compliant. Their site has a
   dedicated page listing every place their own paper trail contradicts itself
   (e.g. three different computed "hours since overhaul" figures that don't
   agree), each with severity, consequence, and a suggested resolution — plus
