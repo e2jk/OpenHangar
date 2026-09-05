@@ -17,6 +17,12 @@
       <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left me-1"></i>{{ _('Back') }}
       </a>
+      <a href="{{ url_for('airworthiness.adsb_board', aircraft_id=aircraft.id) }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-clipboard2-pulse me-1"></i>{{ _('AD/SB board') }}
+      </a>
+      <a href="{{ url_for('airworthiness.equipment_board', aircraft_id=aircraft.id) }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-cpu me-1"></i>{{ _('Avionics & equipment') }}
+      </a>
       {% if is_owner %}
       <form method="post" action="{{ url_for('airworthiness.trigger_sync', aircraft_id=aircraft.id) }}" class="d-inline"
             hx-swap="innerHTML show:none" data-scroll-anchor="aw-page-header">

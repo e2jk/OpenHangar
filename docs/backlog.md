@@ -235,6 +235,13 @@ exposing any personal health data (medical expiry) to other users.
 
 ## Logbook: counter continuity discrepancy detection
 
+**Likely related to** the "data integrity" audit-view idea below (from a
+friend's single-aircraft records site) — that item's "conflicting hour-meter
+readings" case is essentially this same check, generalized into a
+first-class audit page rather than a narrower per-aircraft view. Worth
+designing together rather than building this one first and a separate,
+overlapping page later.
+
 Each flight entry's counter start values are pre-filled from the previous
 flight's end values and are not directly editable in the UI. However, direct
 database manipulation (or a future API call) could introduce a mismatch where
@@ -742,28 +749,20 @@ Notes:
 
 ---
 
-## Maintenance: due-date projection from utilization trend
+## Maintenance: use the due-date projection to tune `MAINTENANCE_DUE_SOON`
 
-Hours-based triggers show "due at X h", but an owner plans on a calendar —
-"when do I need to book the shop?" is a date question, not an hours question.
-
-Future enhancement: compute a rolling utilization rate per aircraft (e.g.
-average engine hours per week over the last 90 days) and project the calendar
-date at which each hours-based trigger will reach its due value. Show the
-projected date, clearly marked as an estimate, on the per-aircraft trigger
-list and the fleet maintenance overview (Phase 13), letting hours-based
-triggers sort meaningfully in the chronological view instead of being pushed
-to the end as undated items.
-
-This would also make `MAINTENANCE_DUE_SOON` notifications more actionable:
-today the hours criterion fires at ≥ 90 % of the hours limit, which for a
-low-utilization aircraft can mean months of lead time noise or, for a
-high-utilization one, too little warning; a projected-date threshold ("due in
-~3 weeks at current usage") matches how shop appointments are actually booked.
-
-Why deferred: needs a sensible minimum-data guard (an aircraft flown twice in
-90 days produces a meaningless trend) and careful UI wording so the estimate
-is never mistaken for a real due date.
+The due-date projection itself shipped (`maintenance/due_date_projection.py`:
+rolling utilization rate per aircraft, minimum-data guard, projected date
+shown on the per-aircraft trigger list, the fleet maintenance overview, and
+the chronological view's sort). Still open: using it to make
+`MAINTENANCE_DUE_SOON` notifications more actionable — today the hours
+criterion fires at ≥ 90 % of the hours limit, which for a low-utilization
+aircraft can mean months of lead time noise or, for a high-utilization one,
+too little warning. A projected-date threshold ("due in ~3 weeks at current
+usage") would match how shop appointments are actually booked, but needs its
+own design pass on the notification side (warn_hours vs. a new
+warn_days-from-projection setting) rather than reusing the display-only
+projection as-is.
 
 ---
 
@@ -1023,22 +1022,6 @@ before shipping this, especially around co-owner billing
 
 ---
 
-## Pre-flight photos, alongside the existing post-flight ones
-
-The flight form's Photos section (flight/engine counter + fuel) is
-implicitly post-flight — encouraging a photo taken right after shutdown,
-as proof/backup for the readings entered above. Some pilots may also want
-to snap a photo *before* the flight (e.g. the counters at block-off, or a
-walk-around/damage photo), which isn't facilitated today. Would need: a
-second set of photo fields (or a single field pair reused with a
-before/after toggle — needs a design decision), updated labels/help text
-distinguishing the two, and a decision on whether pre-flight photos feed
-any validation (e.g. cross-checking the pre-flight counter reading against
-the previous flight's post-flight one, similar to the existing counter
-continuity warning).
-
----
-
 ## Training dashboard: instructors/aircraft variety + user-defined training phases
 
 A dashboard summarizing training progress for a pilot: how many different
@@ -1068,27 +1051,33 @@ app, but several of its ideas are worth considering for OpenHangar's own
 airworthiness/maintenance/document features. None of this is scoped or
 prioritised; recorded here as raw inspiration.
 
-- **Show the *basis* for a due date, not just the countdown.** Every status
-  tile on their dashboard pairs the due-date/hours-remaining with a one-line
-  "basis": last-done date + interval + the regulation or house rule it comes
-  from (e.g. "Last change 2026-03-02 at tach 4821.3 · Lycoming SB 480F").
-  OpenHangar's airworthiness tracker and maintenance triggers currently show
-  the computed due value; consider always surfacing *how* it was computed
-  (source entry + interval) inline, not just on drill-down.
+- **Show the *basis* for a due date on the airworthiness tracker too.**
+  Maintenance triggers now show this (`MaintenanceTrigger.service_basis`:
+  last-done date + reading + interval, rendered via
+  `partials/_maintenance_basis.html` in the fleet overview's Last-service
+  column and inline in the per-aircraft limited view — the full per-aircraft
+  view already had separate Interval/Last-service columns). The AD/SB/house-
+  rule "source" half of the original idea was already covered by the
+  existing `reference`/`category`/`action` fields shown above the trigger
+  name. Still open: the equivalent for the airworthiness tracker, which
+  still only shows the computed due value.
 
-- **AD/SB compliance board tied to serial numbers, with an exportable annual
-  checklist.** A per-aircraft board of Airworthiness Directives/Service
-  Bulletins, each tagged recurring/conditional/verify-part-number/closed/N-A,
-  with a disclaimer that it's an owner's working summary, not the
-  authoritative FAA record. Below it, a checklist of "applicability items to
-  confirm with the IA at the annual" (checkboxes persisted client-side, plus
-  a "copy as plain text" button to paste into a work order/email). OpenHangar
-  has no AD/SB tracking today — this could be a genuinely new module under
-  `airworthiness`, distinct from the generic document/trigger model, with a
-  print/export view for the annual.
+- **AD/SB compliance board — tie items to component serial numbers.** The
+  board itself shipped: `AdSbItem`/`AdSbStatus` (new `ad_sb_items` table,
+  `airworthiness.adsb_board`/`add_ad_sb_item`/`edit_ad_sb_item`/
+  `delete_ad_sb_item`/`adsb_print`), each item tagged recurring/conditional/
+  verify_part_number/closed/not_applicable, with the "owner's working
+  summary, not the authoritative record" disclaimer, a client-side-only
+  (localStorage) checklist of open items with a "copy as plain text" button
+  (`static/js/adsb_checklist.js`), and a print view for the annual. Still
+  open: tying an item to a specific installed component's serial number
+  (rather than just the aircraft as a whole) — today an item is aircraft-
+  scoped only, same granularity as `InstalledSTC`.
 
 - **A "data integrity" page that discloses record-keeping gaps as a first-class
-  feature**, instead of only tracking what's compliant. Their site has a
+  feature** (see also "Logbook: counter continuity discrepancy detection"
+  above — likely the same underlying check, generalized), instead of only
+  tracking what's compliant. Their site has a
   dedicated page listing every place their own paper trail contradicts itself
   (e.g. three different computed "hours since overhaul" figures that don't
   agree), each with severity, consequence, and a suggested resolution — plus
@@ -1144,19 +1133,14 @@ prioritised; recorded here as raw inspiration.
   to be wrong/superseded. Distinct from OpenHangar's cost tracking; would
   need an actual parts/inventory model first.
 
-- **Aggregate flight-statistics view**: total nautical miles, airports/states
-  visited, "corners of the map" (farthest N/S/E/W, highest/lowest field),
-  longest single leg and longest multi-leg day, all computed from existing
-  flight-log data. For shared ownership/flight club, a combined-vs-per-pilot
-  stats table that de-duplicates flights logged by multiple crew. OpenHangar
-  already has flight logging + GPS import; this is a reporting view on top,
+- **Aggregate flight-statistics view — shared-ownership/flight-club variant.**
+  The per-pilot version shipped (`/pilot/stats`: total distance, airports/
+  countries/regions visited, "corners of the map", highest/lowest field,
+  longest single leg and longest day, computed in `reports/flight_stats.py`
+  from `app/data/airports.csv` coordinates). Still open: for shared
+  ownership/flight club, a combined-vs-per-pilot stats table that
+  de-duplicates flights logged by multiple crew (the per-pilot view today
+  would double-count a flight both pilots logged). OpenHangar already has
+  flight logging + GPS import; this is a reporting view on top,
   no new data model needed beyond what `Flight` already has.
-
-- **Avionics/equipment inventory with per-unit status and an upgrade wish
-  list.** A page listing each installed avionics unit with role, status
-  (serviceable/open-squawk/placarded-inoperative), certification history,
-  and STC/AFMS approvals — plus a separate "wish list" of planned upgrades
-  with rough cost and what installing them would require. Could extend
-  OpenHangar's aircraft/document model with an equipment sub-list distinct
-  from generic documents.
 

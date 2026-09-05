@@ -493,6 +493,11 @@
       <div class="col-sm-4 fw-semibold text-muted">{{ _('Version') }}</div>
       <div class="col-sm-8 text-muted font-monospace">
         <span id="build-version">{{ current_version }}</span>
+        {% if auto_upgrade_enabled %}
+        <span class="badge bg-info text-dark ms-2 fw-normal" title="{{ _('A newer version is installed automatically right after each successful scheduled backup.') }}">
+          <i class="bi bi-alarm me-1"></i>{{ _('Auto-upgrade: on') }}
+        </span>
+        {% endif %}
         {% if update_available %}
         <span class="badge bg-warning text-dark ms-2 fw-normal">
           <i class="bi bi-arrow-up-circle me-1"></i>{{ _('Update available: %(version)s', version=latest_version) }}{% if versions_behind %} ({{ ngettext('%(n)s version behind', '%(n)s versions behind', versions_behind, n=versions_behind) }}){% endif %}

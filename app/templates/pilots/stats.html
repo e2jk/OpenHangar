@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Flight Statistics') }} — OpenHangar{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-bar-chart-line me-2"></i>{{ _('Flight Statistics') }}
+      </h1>
+      <p class="page-sub">{{ _('Aggregate figures across your whole logbook') }}</p>
+    </div>
+    <a href="{{ url_for('pilots.logbook') }}" class="btn btn-ac-ghost">
+      <i class="bi bi-arrow-left me-1"></i>{{ _('Logbook') }}
+    </a>
+  </div>
+
+  {% if stats.flight_count == 0 %}
+  <div class="ac-form-card p-4 text-center text-muted">
+    <i class="bi bi-journal-x oh-fs-25 mb-2 d-block"></i>
+    {{ _('No logged flights yet — statistics will appear here once you have some.') }}
+  </div>
+  {% else %}
+
+  <div class="dash-panel mb-4">
+    <div class="dash-panel-header"><i class="bi bi-collection me-2"></i>{{ _('Overview') }}</div>
+    <div class="dash-panel-body">
+      <div class="row g-3">
+        <div class="col-6 col-md-3">
+          <div class="text-muted small mb-1">{{ _('Flights logged') }}</div>
+          <div class="oh-fs-16 fw-semibold">{{ stats.flight_count }}</div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="text-muted small mb-1">{{ _('Total flight time') }}</div>
+          <div class="oh-fs-16 fw-semibold">{{ stats.total_hours }} h</div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="text-muted small mb-1">{{ _('Total distance') }}</div>
+          <div class="oh-fs-16 fw-semibold">{{ '{:,.0f}'.format(stats.total_distance_nm) }} nm</div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="text-muted small mb-1">{{ _('Airports visited') }}</div>
+          <div class="oh-fs-16 fw-semibold">{{ stats.airport_count }}</div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="text-muted small mb-1">{{ _('Countries visited') }}</div>
+          <div class="oh-fs-16 fw-semibold">{{ stats.country_count }}</div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="text-muted small mb-1">{{ _('States/regions visited') }}</div>
+          <div class="oh-fs-16 fw-semibold">{{ stats.region_count }}</div>
+        </div>
+      </div>
+      {% if stats.airport_count == 0 %}
+      <div class="form-text mt-2">{{ _('Distance and geography figures need recognized ICAO airport codes — none of your logged flights have both ends resolved yet.') }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if stats.farthest_north or stats.highest_field %}
+  <div class="dash-panel mb-4">
+    <div class="dash-panel-header"><i class="bi bi-compass me-2"></i>{{ _('Corners of the map') }}</div>
+    <div class="dash-panel-body">
+      <div class="row g-3">
+        {% for label, corner, suffix in [
+          (_('Farthest north'), stats.farthest_north, ''),
+          (_('Farthest south'), stats.farthest_south, ''),
+          (_('Farthest east'), stats.farthest_east, ''),
+          (_('Farthest west'), stats.farthest_west, ''),
+          (_('Highest field'), stats.highest_field, ' ft'),
+          (_('Lowest field'), stats.lowest_field, ' ft'),
+        ] %}
+        {% if corner %}
+        <div class="col-6 col-md-4">
+          <div class="text-muted small mb-1">{{ label }}</div>
+          <div class="fw-semibold">{{ corner.icao }}</div>
+          <div class="text-muted oh-fs-08">{{ corner.name }}</div>
+          {% if corner.elevation_ft is defined %}
+          <div class="oh-fs-08">{{ corner.elevation_ft | round | int }}{{ suffix }}</div>
+          {% endif %}
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if stats.longest_leg or stats.longest_day %}
+  <div class="dash-panel mb-4">
+    <div class="dash-panel-header"><i class="bi bi-graph-up me-2"></i>{{ _('Records') }}</div>
+    <div class="dash-panel-body">
+      <div class="row g-3">
+        {% if stats.longest_leg %}
+        <div class="col-md-6">
+          <div class="text-muted small mb-1">{{ _('Longest single leg') }}</div>
+          <div class="fw-semibold">{{ stats.longest_leg.dep }} → {{ stats.longest_leg.arr }}</div>
+          <div class="text-muted oh-fs-08">{{ stats.longest_leg.date.strftime('%Y-%m-%d') }} — {{ '{:,.0f}'.format(stats.longest_leg.distance_nm) }} nm</div>
+        </div>
+        {% endif %}
+        {% if stats.longest_day %}
+        <div class="col-md-6">
+          <div class="text-muted small mb-1">{{ _('Longest day (by distance)') }}</div>
+          <div class="fw-semibold">{{ stats.longest_day.date.strftime('%Y-%m-%d') }}</div>
+          <div class="text-muted oh-fs-08">{{ '{:,.0f}'.format(stats.longest_day.distance_nm) }} nm — {{ ngettext('%(n)s flight', '%(n)s flights', stats.longest_day.flight_count, n=stats.longest_day.flight_count) }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if stats.airports_visited %}
+  <div class="ac-form-card p-3">
+    <h6 class="text-muted mb-2">{{ _('All airports visited') }}</h6>
+    <div class="row g-1 oh-fs-08">
+      {% for a in stats.airports_visited %}
+      <div class="col-6 col-md-3">
+        <span class="fw-semibold">{{ a.icao }}</span>
+        <span class="text-muted">{{ a.name }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% endif %}
+</div>
+{% endblock %}

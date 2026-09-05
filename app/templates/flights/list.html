@@ -73,7 +73,7 @@
         <i class="bi bi-arrow-right mx-1 text-muted oh-fs-08"></i>
         <span title="{{ f.arrival_icao | airport_name }}">{{ f.arrival_icao }}</span>
         {% if f.gps_track_id %}<i class="bi bi-geo-alt text-muted ms-1 oh-fs-08" title="{{ _('GPS track') }}"></i>{% endif %}
-        {% if f.flight_counter_photo or f.engine_counter_photo or f.fuel_photo %}<i class="bi bi-camera text-muted ms-1 oh-fs-08" title="{{ _('Has photo') }}"></i>{% endif %}
+        {% if f.flight_counter_photo or f.engine_counter_photo or f.fuel_photo or f.flight_counter_photo_preflight or f.engine_counter_photo_preflight %}<i class="bi bi-camera text-muted ms-1 oh-fs-08" title="{{ _('Has photo') }}"></i>{% endif %}
         {% if f.source == "logbook_import" and f.flight_time is none %}<i class="bi bi-clock-history text-warning ms-1 oh-fs-08" title="{{ _('Imported from pilot logbook — flight time needs manual review') }}"></i>{% endif %}
       </div>
       <div class="oh-logbook-compact-meta">
@@ -113,7 +113,7 @@
             {% if f.gps_track_id %}
             <i class="bi bi-geo-alt text-muted ms-1 oh-fs-08" title="{{ _('GPS track') }}"></i>
             {% endif %}
-            {% if f.flight_counter_photo or f.engine_counter_photo or f.fuel_photo %}
+            {% if f.flight_counter_photo or f.engine_counter_photo or f.fuel_photo or f.flight_counter_photo_preflight or f.engine_counter_photo_preflight %}
             <i class="bi bi-camera text-muted ms-1 oh-fs-08" title="{{ _('Has photo') }}"></i>
             {% endif %}
             {% if f.source == "logbook_import" and f.flight_time is none %}

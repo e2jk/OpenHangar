@@ -1,7 +1,7 @@
 import enum
 import secrets
 from datetime import UTC, date, datetime
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from flask_sqlalchemy import SQLAlchemy  # pyright: ignore[reportMissingImports]
 from sqlalchemy import text
@@ -491,6 +491,24 @@ class Aircraft(db.Model):
         back_populates="aircraft",
         cascade="all, delete-orphan",
     )
+    ad_sb_items = db.relationship(
+        "AdSbItem",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
+        order_by="AdSbItem.reference",
+    )
+    avionics_units = db.relationship(
+        "AvionicsUnit",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
+        order_by="AvionicsUnit.role",
+    )
+    equipment_wishlist_items = db.relationship(
+        "EquipmentWishlistItem",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
+        order_by="EquipmentWishlistItem.created_at",
+    )
     owners = db.relationship(
         "AircraftOwner",
         back_populates="aircraft",
@@ -868,6 +886,11 @@ class Flight(db.Model):
     engine_time = db.Column(db.Numeric(4, 1), nullable=True)
     flight_counter_photo = db.Column(db.String(255), nullable=True)
     engine_counter_photo = db.Column(db.String(255), nullable=True)
+    # Pre-flight counterparts of the two columns above — taken before
+    # departure (e.g. at block-off) rather than after shutdown. Independent
+    # of the post-flight photos: a flight can have neither, either, or both.
+    flight_counter_photo_preflight = db.Column(db.String(255), nullable=True)
+    engine_counter_photo_preflight = db.Column(db.String(255), nullable=True)
     # Refueling before and after are independent events — a flight can have
     # neither, either, or both (e.g. topped off before departure, then
     # topped off again after landing).
@@ -1562,6 +1585,33 @@ class MaintenanceTrigger(db.Model):
     @property
     def last_record(self):
         return self.records[0] if self.records else None
+
+    @property
+    def service_basis(self) -> "dict[str, Any] | None":
+        """Raw data behind "how was this due value computed": the last
+        service's date (+ reading, if logged) and this trigger's configured
+        interval(s) — so a template can show the basis for a due figure
+        without drilling into service history. Returns plain values (not a
+        pre-formatted string) so the template can apply unit words via
+        gettext — this model layer has no i18n dependency by design.
+        None when there's no service history yet (nothing to summarize: an
+        initial/imported due value isn't derived from a last-done reading +
+        interval)."""
+        lr = self.last_record
+        if lr is None:
+            return None
+        return {
+            "date": lr.performed_at,
+            "hobbs": float(lr.hobbs_at_service)
+            if lr.hobbs_at_service is not None
+            else None,
+            "landings": lr.landings_at_service,
+            "interval_days": self.interval_days,
+            "interval_hours": float(self.interval_hours)
+            if self.interval_hours
+            else None,
+            "interval_landings": self.interval_landings,
+        }
 
 
 # ── Phase 6: Demo Mode ────────────────────────────────────────────────────────
@@ -2854,6 +2904,145 @@ class InstalledSTC(db.Model):
     notes = db.Column(db.Text, nullable=True)
 
     aircraft = db.relationship("Aircraft", back_populates="installed_stcs")
+
+
+class AdSbStatus:
+    """Status tags for an AD/SB compliance-board item (backlog: AD/SB
+    compliance board — an owner's working summary, not the authoritative
+    FAA/EASA record)."""
+
+    RECURRING = "recurring"
+    CONDITIONAL = "conditional"
+    VERIFY_PART_NUMBER = "verify_part_number"
+    CLOSED = "closed"
+    NOT_APPLICABLE = "not_applicable"
+    ALL: ClassVar[set[str]] = {
+        RECURRING,
+        CONDITIONAL,
+        VERIFY_PART_NUMBER,
+        CLOSED,
+        NOT_APPLICABLE,
+    }
+    LABELS: ClassVar[dict[str, str]] = {
+        RECURRING: "Recurring",
+        CONDITIONAL: "Conditional",
+        VERIFY_PART_NUMBER: "Verify part number",
+        CLOSED: "Closed",
+        NOT_APPLICABLE: "N/A",
+    }
+    # Statuses that still need attention at the next annual — drives both
+    # the board's "open" filter and the print/checklist item list.
+    OPEN: ClassVar[set[str]] = {RECURRING, CONDITIONAL, VERIFY_PART_NUMBER}
+
+
+class AdSbItem(db.Model):
+    """An owner's working AD/SB (Airworthiness Directive / Service
+    Bulletin) compliance-tracking entry for one aircraft. Explicitly not
+    the authoritative FAA/EASA record — see the disclaimer shown on the
+    board itself."""
+
+    __tablename__ = "ad_sb_items"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    reference = db.Column(db.String(64), nullable=False)  # e.g. "AD 2023-0048"
+    title = db.Column(db.String(256), nullable=True)
+    status = db.Column(
+        db.String(32),
+        nullable=False,
+        default=AdSbStatus.CONDITIONAL,
+        server_default=AdSbStatus.CONDITIONAL,
+    )
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+
+    aircraft = db.relationship("Aircraft", back_populates="ad_sb_items")
+
+    __table_args__ = (db.Index("ix_ad_sb_items_aircraft_id", aircraft_id),)
+
+
+class EquipmentStatus:
+    """Per-unit status for an avionics/equipment inventory item (backlog:
+    avionics inventory with per-unit status and an upgrade wish list)."""
+
+    SERVICEABLE = "serviceable"
+    OPEN_SQUAWK = "open_squawk"
+    PLACARDED_INOPERATIVE = "placarded_inoperative"
+    ALL: ClassVar[set[str]] = {SERVICEABLE, OPEN_SQUAWK, PLACARDED_INOPERATIVE}
+    LABELS: ClassVar[dict[str, str]] = {
+        SERVICEABLE: "Serviceable",
+        OPEN_SQUAWK: "Open squawk",
+        PLACARDED_INOPERATIVE: "Placarded inoperative",
+    }
+
+
+class AvionicsUnit(db.Model):
+    """An installed avionics/equipment unit tracked separately from the
+    generic Component/maintenance-trigger model — this is a simple
+    inventory entry (role, status, certification notes), not a TBO/life-
+    limit-tracked part."""
+
+    __tablename__ = "avionics_units"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    role = db.Column(db.String(64), nullable=False)  # e.g. "COM1", "Transponder"
+    make = db.Column(db.String(64), nullable=True)
+    model = db.Column(db.String(64), nullable=True)
+    serial_number = db.Column(db.String(64), nullable=True)
+    status = db.Column(
+        db.String(32),
+        nullable=False,
+        default=EquipmentStatus.SERVICEABLE,
+        server_default=EquipmentStatus.SERVICEABLE,
+    )
+    # Certification history and STC/AFMS approvals — free text rather than a
+    # separate sub-model, matching this table's own "simple inventory" scope.
+    certification_notes = db.Column(db.Text, nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+
+    aircraft = db.relationship("Aircraft", back_populates="avionics_units")
+
+    __table_args__ = (db.Index("ix_avionics_units_aircraft_id", aircraft_id),)
+
+
+class EquipmentWishlistItem(db.Model):
+    """A planned equipment upgrade an owner is considering — separate from
+    what's actually installed (AvionicsUnit)."""
+
+    __tablename__ = "equipment_wishlist_items"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    title = db.Column(db.String(256), nullable=False)
+    rough_cost = db.Column(db.Numeric(10, 2), nullable=True)
+    # What installing it would require — downtime, STC, panel space, etc.
+    requirements = db.Column(db.Text, nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+
+    aircraft = db.relationship("Aircraft", back_populates="equipment_wishlist_items")
+
+    __table_args__ = (db.Index("ix_equipment_wishlist_items_aircraft_id", aircraft_id),)
 
 
 # ── Phase 34: Email Notifications ─────────────────────────────────────────────

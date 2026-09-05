@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('AD/SB compliance board') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4" id="adsb-page-header">
+    <div>
+      <h1 class="page-title">
+        <i class="bi bi-clipboard2-pulse me-2"></i>{{ _('AD/SB compliance board') }}
+      </h1>
+      <p class="page-sub"><span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('airworthiness.dashboard', aircraft_id=aircraft.id) }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Airworthiness') }}
+      </a>
+      <a href="{{ url_for('airworthiness.adsb_print', aircraft_id=aircraft.id) }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-printer me-1"></i>{{ _('Print for the annual') }}
+      </a>
+      {% if is_owner %}
+      <a href="{{ url_for('airworthiness.add_ad_sb_item', aircraft_id=aircraft.id) }}" class="btn btn-primary btn-sm">
+        <i class="bi bi-plus-lg me-1"></i>{{ _('Add item') }}
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="alert alert-warning oh-fs-085">
+    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+    {{ _('This is your own working summary of applicable ADs/SBs — not the authoritative FAA/EASA record. Always verify against the official register.') }}
+  </div>
+
+  {% set labels = {
+      'recurring':          _('Recurring'),
+      'conditional':        _('Conditional'),
+      'verify_part_number': _('Verify part number'),
+      'closed':             _('Closed'),
+      'not_applicable':     _('N/A'),
+  } %}
+  {% set badge_cls = {
+      'recurring':          'bg-info text-dark',
+      'conditional':        'bg-warning text-dark',
+      'verify_part_number': 'bg-secondary',
+      'closed':             'bg-success',
+      'not_applicable':     'bg-light text-dark border',
+  } %}
+
+  <div class="card mb-4" id="adsb-items-card">
+    <div class="card-header">
+      <h2 class="section-title mb-0">{{ _('Items') }}</h2>
+    </div>
+    {% if items %}
+    <div class="table-responsive">
+      <table class="table table-sm mb-0 oh-fs-085">
+        <thead class="table-light">
+          <tr>
+            <th>{{ _('Reference') }}</th>
+            <th>{{ _('Title') }}</th>
+            <th>{{ _('Status') }}</th>
+            <th>{{ _('Notes') }}</th>
+            {% if is_owner %}<th></th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr>
+            <td class="fw-medium">{{ item.reference }}</td>
+            <td>{{ item.title or '' }}</td>
+            <td><span class="badge {{ badge_cls.get(item.status, 'bg-secondary') }}">{{ labels.get(item.status, item.status) }}</span></td>
+            <td class="text-muted">{{ item.notes or '' }}</td>
+            {% if is_owner %}
+            <td class="text-end text-nowrap">
+              <a href="{{ url_for('airworthiness.edit_ad_sb_item', aircraft_id=aircraft.id, item_id=item.id) }}"
+                 class="btn btn-outline-secondary btn-sm py-0">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <form method="post"
+                    action="{{ url_for('airworthiness.delete_ad_sb_item', aircraft_id=aircraft.id, item_id=item.id) }}"
+                    class="d-inline"
+                    hx-swap="innerHTML show:none" data-scroll-anchor="adsb-items-card"
+                    data-confirm="{{ _('Remove this AD/SB item?') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline-danger btn-sm py-0">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="card-body text-muted">{{ _('No AD/SB items recorded yet.') }}</div>
+    {% endif %}
+  </div>
+
+  <div class="card" id="adsb-checklist-root" data-aircraft-id="{{ aircraft.id }}">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <h2 class="section-title mb-0">{{ _('Applicability items to confirm with the IA at the annual') }}</h2>
+      <button type="button" id="adsb-copy-checklist-btn" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-clipboard me-1"></i>{{ _('Copy as plain text') }}
+      </button>
+    </div>
+    {% if checklist_items %}
+    <ul class="list-group list-group-flush">
+      {% for item in checklist_items %}
+      <li class="list-group-item d-flex align-items-start gap-2">
+        <input type="checkbox" class="form-check-input mt-1 adsb-checklist-checkbox"
+               id="adsb-check-{{ item.id }}" data-item-id="{{ item.id }}"
+               data-label="{{ item.reference }}{{ ' — ' ~ item.title if item.title else '' }}">
+        <label class="form-check-label" for="adsb-check-{{ item.id }}">
+          <span class="fw-medium">{{ item.reference }}</span>{% if item.title %} — {{ item.title }}{% endif %}
+          <span class="badge {{ badge_cls.get(item.status, 'bg-secondary') }} ms-1 oh-fs-075">{{ labels.get(item.status, item.status) }}</span>
+        </label>
+      </li>
+      {% endfor %}
+    </ul>
+    <div class="card-body text-muted oh-fs-08">
+      {{ _('Checked state is kept only in this browser — it does not sync between devices and is not part of the aircraft record.') }}
+    </div>
+    {% else %}
+    <div class="card-body text-muted">{{ _('Nothing open to confirm — every item is closed or not applicable.') }}</div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

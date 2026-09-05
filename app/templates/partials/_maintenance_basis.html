@@ -1,0 +1,13 @@
+{# Backlog: show the basis for a due date. Expects `trigger` in scope.
+   Renders nothing if there's no service history to summarize. #}
+{% set sb = trigger.service_basis %}
+{% if sb %}
+{% set _reading = [] %}
+{% if sb.hobbs is not none %}{% set _d = _reading.append(("%.1f"|format(sb.hobbs)) ~ ' h') %}{% endif %}
+{% if sb.landings is not none %}{% set _d = _reading.append(sb.landings ~ ' ' ~ _('landings')) %}{% endif %}
+{% set _interval = [] %}
+{% if sb.interval_days %}{% set _d = _interval.append(sb.interval_days ~ ' ' ~ _('days')) %}{% endif %}
+{% if sb.interval_hours %}{% set _d = _interval.append(("%.0f"|format(sb.interval_hours)) ~ ' h') %}{% endif %}
+{% if sb.interval_landings %}{% set _d = _interval.append(sb.interval_landings ~ ' ' ~ _('landings')) %}{% endif %}
+{{ sb.date.strftime('%Y-%m-%d') }}{% if _reading %} ({{ _reading | join(', ') }}){% endif %}{% if _interval %} · {{ _('every %(interval)s', interval=_interval | join(' / ')) }}{% endif %}
+{% endif %}

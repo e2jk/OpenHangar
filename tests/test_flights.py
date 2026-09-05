@@ -998,6 +998,84 @@ class TestPhotoUpload:
                 os.path.join(app.config["UPLOAD_FOLDER"], fe.fuel_photo)
             )
 
+    def test_upload_preflight_flight_counter_photo(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
+                "flight_counter_photo_preflight": (
+                    BytesIO(b"fake preflight image"),
+                    "preflight_flight.jpg",
+                ),
+            },
+            content_type="multipart/form-data",
+        )
+        with app.app_context():
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
+            assert fe.flight_counter_photo_preflight is not None
+            assert fe.flight_counter_photo_preflight.endswith(".jpg")
+            assert os.path.isfile(
+                os.path.join(
+                    app.config["UPLOAD_FOLDER"], fe.flight_counter_photo_preflight
+                )
+            )
+            # Independent of the post-flight field.
+            assert fe.flight_counter_photo is None
+
+    def test_upload_preflight_engine_counter_photo(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
+                "engine_counter_photo_preflight": (
+                    BytesIO(b"fake preflight tach image"),
+                    "preflight_engine.png",
+                ),
+            },
+            content_type="multipart/form-data",
+        )
+        with app.app_context():
+            fe = Flight.query.filter_by(aircraft_id=acid).first()
+            assert fe.engine_counter_photo_preflight is not None
+            assert fe.engine_counter_photo_preflight.endswith(".png")
+
+    def test_delete_flight_removes_preflight_photos(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        fid = _add_flight(app, acid)
+        photo_name = "preflight_todelete.jpg"
+        with app.app_context():
+            fe = db.session.get(Flight, fid)
+            fe.flight_counter_photo_preflight = photo_name
+            db.session.commit()
+            photo_path = os.path.join(app.config["UPLOAD_FOLDER"], photo_name)
+            os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+            with open(photo_path, "wb") as f:
+                f.write(b"photo")
+        _login(app, client)
+        client.post(f"/aircraft/{acid}/flights/{fid}/delete")
+        assert not os.path.isfile(photo_path)
+
     def test_delete_flight_tolerates_missing_photo_file(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
         acid = _add_aircraft(app, tid)

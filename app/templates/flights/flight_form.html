@@ -533,6 +533,36 @@
             <hr class="my-3">
             <h6 class="text-muted mb-2"><i class="bi bi-camera me-1"></i>{{ _('Photos') }}
               <span class="fw-normal small">({{ _('optional') }})</span></h6>
+            <div class="form-text mb-2">{{ _('Pre-flight photos — taken before departure (e.g. at block-off), for cross-checking the counter readings below.') }}</div>
+            <div class="row mb-3">
+              <div class="col-6">
+                <label for="flight_counter_photo_preflight" class="form-label">{{ _('Flight counter') }}</label>
+                {% if flight and flight.flight_counter_photo_preflight %}
+                <div class="mb-1">
+                  <a href="{{ url_for('flights.serve_upload', filename=flight.flight_counter_photo_preflight) }}" target="_blank">
+                    <img src="{{ url_for('flights.serve_upload', filename=flight.flight_counter_photo_preflight) }}"
+                         class="oh-mxh-56 oh-br-4" alt="{{ _('Flight counter photo (pre-flight)') }}">
+                  </a>
+                </div>
+                {% endif %}
+                <input type="file" class="form-control form-control-sm" id="flight_counter_photo_preflight"
+                       name="flight_counter_photo_preflight" accept="image/*" capture="environment">
+              </div>
+              <div class="col-6">
+                <label for="engine_counter_photo_preflight" class="form-label">{{ _('Engine counter') }}</label>
+                {% if flight and flight.engine_counter_photo_preflight %}
+                <div class="mb-1">
+                  <a href="{{ url_for('flights.serve_upload', filename=flight.engine_counter_photo_preflight) }}" target="_blank">
+                    <img src="{{ url_for('flights.serve_upload', filename=flight.engine_counter_photo_preflight) }}"
+                         class="oh-mxh-56 oh-br-4" alt="{{ _('Engine counter photo (pre-flight)') }}">
+                  </a>
+                </div>
+                {% endif %}
+                <input type="file" class="form-control form-control-sm" id="engine_counter_photo_preflight"
+                       name="engine_counter_photo_preflight" accept="image/*" capture="environment">
+              </div>
+            </div>
+
             <div class="form-text mb-3">{{ _('Post-flight photos — taken after shutdown, for the counter/fuel readings above.') }}</div>
 
             <div class="row mb-4">

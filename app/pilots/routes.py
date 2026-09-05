@@ -817,6 +817,20 @@ def pilot_tracks_gif() -> ResponseReturnValue:
     )
 
 
+@pilots_bp.route("/pilot/stats")
+@login_required
+@require_pilot_access
+def pilot_stats() -> ResponseReturnValue:
+    from reports.flight_stats import (  # pyright: ignore[reportMissingImports]
+        compute_flight_stats,
+    )
+
+    uid = _current_user_id()
+    entries = _my_entries_query(uid).all()
+    stats = compute_flight_stats(entries)
+    return render_template("pilots/stats.html", stats=stats)
+
+
 # ── Logbook entry detail (read-only) ─────────────────────────────────────────
 
 
@@ -1096,6 +1110,8 @@ def delete_entry(entry_id: int) -> ResponseReturnValue:
 
     _delete_upload(entry.flight_counter_photo)
     _delete_upload(entry.engine_counter_photo)
+    _delete_upload(entry.flight_counter_photo_preflight)
+    _delete_upload(entry.engine_counter_photo_preflight)
     db.session.delete(entry)
     db.session.commit()
     flash(_("Logbook entry deleted."), "success")

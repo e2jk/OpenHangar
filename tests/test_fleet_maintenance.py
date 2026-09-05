@@ -8,6 +8,7 @@ import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     Flight,
+    MaintenanceRecord,
     MaintenanceTrigger,
     Role,
     Snag,
@@ -220,6 +221,38 @@ class TestByTypeView:
         resp = client.get("/maintenance?view=by-type")
         assert b"50h oil" in resp.data
 
+    def test_shows_basis_summary_for_last_service_column(self, app, client):
+        """backlog: show the basis for a due date — the fleet overview's
+        Last service column shows last-done reading + interval, not just
+        a bare date."""
+        _, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=ac_id,
+                name="Oil change",
+                trigger_type=TriggerType.HOURS,
+                due_engine_hours=200.0,
+                interval_hours=50.0,
+            )
+            db.session.add(t)
+            db.session.flush()
+            db.session.add(
+                MaintenanceRecord(
+                    trigger_id=t.id,
+                    performed_at=date(2024, 3, 2),
+                    hobbs_at_service=4821.3,
+                )
+            )
+            db.session.commit()
+        # Need an alert to force the table to render
+        _add_trigger(
+            app, ac_id, name="Overdue item", due_date=date.today() - timedelta(days=1)
+        )
+        _login(app, client)
+        resp = client.get("/maintenance?view=by-type")
+        assert "2024-03-02 (4821.3 h) · every 50 h" in resp.data.decode()
+
     def test_shows_landings_remaining_for_landings_trigger(self, app, client):
         _, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)
@@ -284,6 +317,118 @@ class TestByTypeView:
         resp = client.get("/maintenance?view=by-type")
         assert b"All snags" in resp.data
         assert b"All items" in resp.data
+
+
+# ── Projected due date (backlog: due-date projection from utilization trend) ──
+
+
+def _add_flight(app, aircraft_id, flight_date, engine_time=2.0, counter_end=None):
+    with app.app_context():
+        f = Flight(
+            aircraft_id=aircraft_id,
+            date=flight_date,
+            departure_icao="EBOS",
+            arrival_icao="EBBR",
+            engine_time=engine_time,
+            engine_time_counter_end=counter_end,
+            engine_time_counter_start=(
+                counter_end - engine_time if counter_end is not None else None
+            ),
+        )
+        db.session.add(f)
+        db.session.commit()
+
+
+class TestFleetOverviewProjectedDueDate:
+    def test_shows_estimate_with_enough_flight_history(self, app, client):
+        _, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        today = date.today()
+        counter = 100.0
+        for days_ago in (30, 20, 10, 0):
+            counter += 2.0
+            _add_flight(
+                app,
+                ac_id,
+                today - timedelta(days=days_ago),
+                engine_time=2.0,
+                counter_end=counter,
+            )
+        # due_engine_hours close to current hobbs (108.0) so the trigger is
+        # itself due_soon — an "all ok" fleet hides the trigger table
+        # entirely (see test_shows_hobbs_remaining_for_hours_trigger above),
+        # so this also doubles as the "force the table to render" alert.
+        _add_trigger(
+            app,
+            ac_id,
+            name="Oil change",
+            trigger_type=TriggerType.HOURS,
+            due_engine_hours=110.0,
+        )
+        _login(app, client)
+        resp = client.get("/maintenance?view=by-type")
+        assert b"(est.)" in resp.data
+
+    def test_no_estimate_without_enough_flight_history(self, app, client):
+        _, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        _add_trigger(
+            app,
+            ac_id,
+            name="Oil change",
+            trigger_type=TriggerType.HOURS,
+            due_engine_hours=10.0,
+        )
+        # No flight history at all -> no current hobbs reading -> no
+        # projection possible. Add an unrelated overdue item, since an "all
+        # ok" fleet hides the trigger table entirely (see
+        # test_shows_hobbs_remaining_for_hours_trigger above).
+        _add_trigger(
+            app, ac_id, name="Overdue item", due_date=date.today() - timedelta(days=1)
+        )
+        _login(app, client)
+        resp = client.get("/maintenance?view=by-type")
+        assert b"(est.)" not in resp.data
+
+    def test_chronological_view_sorts_by_projected_date_without_due_date(
+        self, app, client
+    ):
+        """An hours-only trigger (no calendar due_date) with a due_soon
+        status and a usable projection sorts into the chronological view by
+        its projected date, instead of being pushed to the far-future end
+        reserved for truly undated items."""
+        _, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        today = date.today()
+        counter = 100.0
+        for days_ago in (30, 20, 10, 0):
+            counter += 2.0
+            _add_flight(
+                app,
+                ac_id,
+                today - timedelta(days=days_ago),
+                engine_time=2.0,
+                counter_end=counter,
+            )
+        # Built directly, not via _add_trigger: that helper's
+        # `due_date or (default)` can never actually produce a None
+        # due_date, since None is falsy — this test specifically needs one.
+        with app.app_context():
+            db.session.add(
+                MaintenanceTrigger(
+                    aircraft_id=ac_id,
+                    name="Oil change",
+                    trigger_type=TriggerType.HOURS,
+                    due_date=None,
+                    due_engine_hours=110.0,
+                )
+            )
+            db.session.commit()
+        _login(app, client)
+        resp = client.get("/maintenance?view=chronological")
+        assert resp.status_code == 200
+        assert b"Oil change" in resp.data
+        assert b"(est.)" in resp.data
 
 
 # ── Chronological view ────────────────────────────────────────────────────────
