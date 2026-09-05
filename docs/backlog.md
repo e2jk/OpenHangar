@@ -1051,13 +1051,16 @@ app, but several of its ideas are worth considering for OpenHangar's own
 airworthiness/maintenance/document features. None of this is scoped or
 prioritised; recorded here as raw inspiration.
 
-- **Show the *basis* for a due date, not just the countdown.** Every status
-  tile on their dashboard pairs the due-date/hours-remaining with a one-line
-  "basis": last-done date + interval + the regulation or house rule it comes
-  from (e.g. "Last change 2026-03-02 at tach 4821.3 · Lycoming SB 480F").
-  OpenHangar's airworthiness tracker and maintenance triggers currently show
-  the computed due value; consider always surfacing *how* it was computed
-  (source entry + interval) inline, not just on drill-down.
+- **Show the *basis* for a due date on the airworthiness tracker too.**
+  Maintenance triggers now show this (`MaintenanceTrigger.service_basis`:
+  last-done date + reading + interval, rendered via
+  `partials/_maintenance_basis.html` in the fleet overview's Last-service
+  column and inline in the per-aircraft limited view — the full per-aircraft
+  view already had separate Interval/Last-service columns). The AD/SB/house-
+  rule "source" half of the original idea was already covered by the
+  existing `reference`/`category`/`action` fields shown above the trigger
+  name. Still open: the equivalent for the airworthiness tracker, which
+  still only shows the computed due value.
 
 - **AD/SB compliance board tied to serial numbers, with an exportable annual
   checklist.** A per-aircraft board of Airworthiness Directives/Service

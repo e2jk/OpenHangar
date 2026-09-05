@@ -122,6 +122,9 @@
             {% if trigger.due_date is none and trigger.due_engine_hours is none and trigger.due_landings is none %}
               <span class="text-muted">—</span>
             {% endif %}
+            {% if maint_view == 'limited' and trigger.service_basis %}
+            <div class="text-muted oh-fs-08">{% include 'partials/_maintenance_basis.html' %}</div>
+            {% endif %}
           </td>
           {% if maint_view != 'limited' %}
           <td class="text-muted">

@@ -1,7 +1,7 @@
 import enum
 import secrets
 from datetime import UTC, date, datetime
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from flask_sqlalchemy import SQLAlchemy  # pyright: ignore[reportMissingImports]
 from sqlalchemy import text
@@ -1567,6 +1567,33 @@ class MaintenanceTrigger(db.Model):
     @property
     def last_record(self):
         return self.records[0] if self.records else None
+
+    @property
+    def service_basis(self) -> "dict[str, Any] | None":
+        """Raw data behind "how was this due value computed": the last
+        service's date (+ reading, if logged) and this trigger's configured
+        interval(s) — so a template can show the basis for a due figure
+        without drilling into service history. Returns plain values (not a
+        pre-formatted string) so the template can apply unit words via
+        gettext — this model layer has no i18n dependency by design.
+        None when there's no service history yet (nothing to summarize: an
+        initial/imported due value isn't derived from a last-done reading +
+        interval)."""
+        lr = self.last_record
+        if lr is None:
+            return None
+        return {
+            "date": lr.performed_at,
+            "hobbs": float(lr.hobbs_at_service)
+            if lr.hobbs_at_service is not None
+            else None,
+            "landings": lr.landings_at_service,
+            "interval_days": self.interval_days,
+            "interval_hours": float(self.interval_hours)
+            if self.interval_hours
+            else None,
+            "interval_landings": self.interval_landings,
+        }
 
 
 # ── Phase 6: Demo Mode ────────────────────────────────────────────────────────
