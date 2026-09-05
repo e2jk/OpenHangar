@@ -1062,16 +1062,17 @@ prioritised; recorded here as raw inspiration.
   name. Still open: the equivalent for the airworthiness tracker, which
   still only shows the computed due value.
 
-- **AD/SB compliance board tied to serial numbers, with an exportable annual
-  checklist.** A per-aircraft board of Airworthiness Directives/Service
-  Bulletins, each tagged recurring/conditional/verify-part-number/closed/N-A,
-  with a disclaimer that it's an owner's working summary, not the
-  authoritative FAA record. Below it, a checklist of "applicability items to
-  confirm with the IA at the annual" (checkboxes persisted client-side, plus
-  a "copy as plain text" button to paste into a work order/email). OpenHangar
-  has no AD/SB tracking today — this could be a genuinely new module under
-  `airworthiness`, distinct from the generic document/trigger model, with a
-  print/export view for the annual.
+- **AD/SB compliance board — tie items to component serial numbers.** The
+  board itself shipped: `AdSbItem`/`AdSbStatus` (new `ad_sb_items` table,
+  `airworthiness.adsb_board`/`add_ad_sb_item`/`edit_ad_sb_item`/
+  `delete_ad_sb_item`/`adsb_print`), each item tagged recurring/conditional/
+  verify_part_number/closed/not_applicable, with the "owner's working
+  summary, not the authoritative record" disclaimer, a client-side-only
+  (localStorage) checklist of open items with a "copy as plain text" button
+  (`static/js/adsb_checklist.js`), and a print view for the annual. Still
+  open: tying an item to a specific installed component's serial number
+  (rather than just the aircraft as a whole) — today an item is aircraft-
+  scoped only, same granularity as `InstalledSTC`.
 
 - **A "data integrity" page that discloses record-keeping gaps as a first-class
   feature** (see also "Logbook: counter continuity discrepancy detection"

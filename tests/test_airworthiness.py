@@ -16,6 +16,8 @@ from unittest.mock import MagicMock, patch
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
+    AdSbItem,
+    AdSbStatus,
     Aircraft,
     AirworthinessDocStatus,
     AirworthinessDocType,
@@ -137,6 +139,21 @@ def _add_stc(app, aircraft_id, stc_number="EASA.A.S.01234"):
         db.session.add(stc)
         db.session.commit()
         return stc.id
+
+
+def _add_ad_sb_item(
+    app, aircraft_id, reference="AD 2023-0048", status=AdSbStatus.CONDITIONAL
+):
+    with app.app_context():
+        item = AdSbItem(
+            aircraft_id=aircraft_id,
+            reference=reference,
+            title="Wing spar inspection",
+            status=status,
+        )
+        db.session.add(item)
+        db.session.commit()
+        return item.id
 
 
 # ── Model tests ────────────────────────────────────────────────────────────────
@@ -1811,3 +1828,216 @@ class TestEasaSyncScheduler:
             created_app = create_app()
 
         mock_easa.assert_called_once_with(created_app)
+
+
+# ── AD/SB compliance board (backlog item) ───────────────────────────────────────
+
+
+class TestAdSbBoard:
+    def test_get_renders_board(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _add_ad_sb_item(app, ac_id)
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/adsb/")
+        assert resp.status_code == 200
+        assert b"AD 2023-0048" in resp.data
+
+    def test_get_empty_state(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/adsb/")
+        assert resp.status_code == 200
+        assert b"No AD/SB items recorded yet." in resp.data
+
+    def test_checklist_only_includes_open_items(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _add_ad_sb_item(app, ac_id, reference="AD open", status=AdSbStatus.RECURRING)
+        _add_ad_sb_item(app, ac_id, reference="AD closed", status=AdSbStatus.CLOSED)
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/adsb/")
+        assert resp.status_code == 200
+        assert b'data-label="AD open' in resp.data
+        assert b'data-label="AD closed' not in resp.data
+
+    def test_checklist_empty_state(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _add_ad_sb_item(app, ac_id, status=AdSbStatus.CLOSED)
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/adsb/")
+        assert resp.status_code == 200
+        assert b"Nothing open to confirm" in resp.data
+
+    def test_redirects_when_not_logged_in(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/adsb/")
+        assert resp.status_code == 302
+
+    def test_404_for_other_tenant(self, app, client):
+        _create_user_and_tenant(app)
+        _, other_tid = _create_user_and_tenant(app, email="other@example.com")
+        other_ac_id = _add_aircraft(app, other_tid, "OO-OTH")
+        _login(app, client)
+        resp = client.get(f"/aircraft/{other_ac_id}/airworthiness/adsb/")
+        assert resp.status_code == 404
+
+
+class TestAddAdSbItem:
+    def test_get_renders_form(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/adsb/new")
+        assert resp.status_code == 200
+
+    def test_post_creates_item(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/airworthiness/adsb/new",
+            data={
+                "reference": "SB 480F",
+                "title": "Oil cooler hose",
+                "status": AdSbStatus.RECURRING,
+                "notes": "Every annual",
+            },
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            item = AdSbItem.query.filter_by(
+                aircraft_id=ac_id, reference="SB 480F"
+            ).first()
+            assert item is not None
+            assert item.status == AdSbStatus.RECURRING
+            assert item.notes == "Every annual"
+
+    def test_post_rejects_invalid_status(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/airworthiness/adsb/new",
+            data={"reference": "SB 480F", "status": "not-a-real-status"},
+        )
+        assert resp.status_code == 400
+
+    def test_redirects_when_not_logged_in(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/adsb/new")
+        assert resp.status_code == 302
+
+
+class TestEditAdSbItem:
+    def test_get_renders_form_with_existing_values(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        item_id = _add_ad_sb_item(app, ac_id)
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/adsb/{item_id}/edit")
+        assert resp.status_code == 200
+        assert b"AD 2023-0048" in resp.data
+
+    def test_post_updates_item(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        item_id = _add_ad_sb_item(app, ac_id, status=AdSbStatus.CONDITIONAL)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/airworthiness/adsb/{item_id}/edit",
+            data={
+                "reference": "AD 2023-0048",
+                "title": "Wing spar inspection",
+                "status": AdSbStatus.CLOSED,
+                "notes": "Complied 2024-01-01",
+            },
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            item = db.session.get(AdSbItem, item_id)
+            assert item.status == AdSbStatus.CLOSED
+            assert item.notes == "Complied 2024-01-01"
+
+    def test_post_rejects_invalid_status(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        item_id = _add_ad_sb_item(app, ac_id)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/airworthiness/adsb/{item_id}/edit",
+            data={"reference": "AD 2023-0048", "status": "bogus"},
+        )
+        assert resp.status_code == 400
+
+    def test_404_for_item_of_other_aircraft(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id, "OO-TST")
+        ac_id2 = _add_aircraft(app, tenant_id, "OO-TST2")
+        item_id = _add_ad_sb_item(app, ac_id2)
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/adsb/{item_id}/edit")
+        assert resp.status_code == 404
+
+
+class TestDeleteAdSbItem:
+    def test_post_deletes_item(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        item_id = _add_ad_sb_item(app, ac_id)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/airworthiness/adsb/{item_id}/delete",
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            assert db.session.get(AdSbItem, item_id) is None
+
+    def test_404_for_item_of_other_aircraft(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id, "OO-TST")
+        ac_id2 = _add_aircraft(app, tenant_id, "OO-TST2")
+        item_id = _add_ad_sb_item(app, ac_id2)
+        _login(app, client)
+        resp = client.post(f"/aircraft/{ac_id}/airworthiness/adsb/{item_id}/delete")
+        assert resp.status_code == 404
+
+    def test_redirects_when_not_logged_in(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        item_id = _add_ad_sb_item(app, ac_id)
+        resp = client.post(f"/aircraft/{ac_id}/airworthiness/adsb/{item_id}/delete")
+        assert resp.status_code == 302
+
+
+class TestAdSbPrint:
+    def test_get_renders_print_view(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _add_ad_sb_item(app, ac_id, status=AdSbStatus.RECURRING)
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/adsb/print")
+        assert resp.status_code == 200
+        assert b"AD 2023-0048" in resp.data
+
+    def test_empty_states_render(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/adsb/print")
+        assert resp.status_code == 200
+        assert b"No AD/SB items recorded yet." in resp.data
+        assert b"Nothing open to confirm" in resp.data
+
+    def test_redirects_when_not_logged_in(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/adsb/print")
+        assert resp.status_code == 302

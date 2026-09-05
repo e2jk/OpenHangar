@@ -89,6 +89,7 @@ var SWR_PATTERNS = [
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/reports\/utilization$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/maintenance$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/airworthiness\/$/,
+  /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/airworthiness\/adsb\/$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/reservations\/$/,
   /^\/offline\/changes$/,
   /^\/pilot\/logbook\/offline$/
@@ -120,6 +121,7 @@ var NOT_CACHED_PATTERNS = [
   [/\/logbook\/import(\/.*)?$/, 'one-shot logbook-import wizard flow'],
   [/\/maintenance\/import(\/.*)?$/, 'one-shot AMP-import wizard flow (upload and review) and its history page'],
   [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/maintenance\/amp\/export(\/pdf)?$/, 'printable AMP document snapshot and its PDF download, no repeat-visit value — same reasoning as the personal-minimums print page'],
+  [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/airworthiness\/adsb\/print$/, 'printable AD/SB compliance-board snapshot, no repeat-visit value — same reasoning as the personal-minimums print page'],
   [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/amp\/revisions\/\d+\/pdf$/, 'binary PDF download of one saved AMP revision — same reasoning as the AMP export PDF'],
   [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/flights\/import(\/.*)?$/, 'one-shot airframe-logbook import wizard'],
   [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/flights\/\d+$/, 'individual flight detail — too many distinct instances, low repeat-visit value'],

@@ -347,56 +347,68 @@ msgstr[1] "%(n)s photos téléversées."
 msgid "Photo deleted."
 msgstr "Photo supprimée."
 
-#: app/airworthiness/routes.py:209
+#: app/airworthiness/routes.py:218
 #, python-format
 msgid "Sync completed with errors on one node. Check logs."
 msgid_plural "Sync completed with errors on %(n)s nodes. Check logs."
 msgstr[0] "Synchronisation terminée avec des erreurs sur un nœud. Consultez les journaux."
 msgstr[1] "Synchronisation terminée avec des erreurs sur %(n)s nœuds. Consultez les journaux."
 
-#: app/airworthiness/routes.py:219
+#: app/airworthiness/routes.py:228
 #, python-format
 msgid "One new document discovered."
 msgid_plural "%(n)s new documents discovered."
 msgstr[0] "Un nouveau document découvert."
 msgstr[1] "%(n)s nouveaux documents découverts."
 
-#: app/airworthiness/routes.py:227
+#: app/airworthiness/routes.py:236
 msgid "No new documents found."
 msgstr "Aucun nouveau document trouvé."
 
-#: app/airworthiness/routes.py:261
+#: app/airworthiness/routes.py:270
 msgid "EASA source node added."
 msgstr "Nœud EASA ajouté."
 
-#: app/airworthiness/routes.py:284
+#: app/airworthiness/routes.py:293
 msgid "EASA source node removed."
 msgstr "Nœud EASA supprimé."
 
-#: app/airworthiness/routes.py:328
+#: app/airworthiness/routes.py:337
 msgid "Document added."
 msgstr "Document ajouté."
 
-#: app/airworthiness/routes.py:349
+#: app/airworthiness/routes.py:358
 msgid "Only manually added documents can be deleted."
 msgstr "Seuls les documents ajoutés manuellement peuvent être supprimés."
 
-#: app/airworthiness/routes.py:353 app/documents/routes.py:678
+#: app/airworthiness/routes.py:362 app/documents/routes.py:678
 #: app/documents/routes.py:891
 msgid "Document deleted."
 msgstr "Document supprimé."
 
-#: app/airworthiness/routes.py:392
+#: app/airworthiness/routes.py:401
 msgid "Status updated."
 msgstr "Statut mis à jour."
 
-#: app/airworthiness/routes.py:428
+#: app/airworthiness/routes.py:437
 msgid "Installed STC added."
 msgstr "STC installé ajouté."
 
-#: app/airworthiness/routes.py:445
+#: app/airworthiness/routes.py:454
 msgid "Installed STC removed."
 msgstr "STC installé supprimé."
+
+#: app/airworthiness/routes.py:501
+msgid "AD/SB item added."
+msgstr "Élément AD/SB ajouté."
+
+#: app/airworthiness/routes.py:528
+msgid "AD/SB item updated."
+msgstr "Élément AD/SB mis à jour."
+
+#: app/airworthiness/routes.py:547
+msgid "AD/SB item removed."
+msgstr "Élément AD/SB supprimé."
 
 #: app/auth/routes.py:194
 #, python-format
@@ -1732,6 +1744,7 @@ msgid "POH / Flight Manual"
 msgstr "POH / Manuel de vol"
 
 #: app/pwa/routes.py:103 app/templates/aircraft/detail.html:264
+#: app/templates/airworthiness/adsb_board.html:17
 #: app/templates/airworthiness/dashboard.html:3
 #: app/templates/airworthiness/dashboard.html:12
 msgid "Airworthiness"
@@ -2648,7 +2661,10 @@ msgstr "Anomalie signalée : %(title)s"
 msgid "A snag was reported on %(reg)s."
 msgstr "Une anomalie a été signalée sur %(reg)s."
 
-#: app/snags/routes.py:268 app/templates/airworthiness/dashboard.html:253
+#: app/snags/routes.py:268 app/templates/airworthiness/adsb_board.html:60
+#: app/templates/airworthiness/adsb_form.html:28
+#: app/templates/airworthiness/adsb_print.html:37
+#: app/templates/airworthiness/dashboard.html:256
 #: app/templates/airworthiness/document_form.html:46
 #: app/templates/airworthiness/stc_form.html:27
 #: app/templates/documents/edit_form.html:38
@@ -2767,7 +2783,7 @@ msgid "The demo environment is being reset. Please wait — the page will reload
 msgstr "L'environnement de démonstration est en cours de réinitialisation. Veuillez patienter — la page se rechargera automatiquement dès qu'elle sera prête."
 
 #: app/templates/base.html:162 app/templates/base.html:164
-#: app/templates/base.html:374
+#: app/templates/base.html:375
 msgid "Install app"
 msgstr "Installer l'application"
 
@@ -2779,7 +2795,7 @@ msgstr "Ajoutez OpenHangar à votre écran d'accueil pour un accès rapide."
 msgid "Not now"
 msgstr "Pas maintenant"
 
-#: app/templates/base.html:173 app/templates/base.html:373
+#: app/templates/base.html:173 app/templates/base.html:374
 msgid "Offline"
 msgstr "Hors ligne"
 
@@ -2851,7 +2867,10 @@ msgstr "Veuillez ouvrir un ticket si vous avez besoin d'aide pour les extraire."
 msgid "open-source aircraft ops"
 msgstr "gestion d'avions open source"
 
-#: app/templates/airworthiness/dashboard.html:89
+#: app/templates/airworthiness/adsb_board.html:61
+#: app/templates/airworthiness/adsb_form.html:34
+#: app/templates/airworthiness/adsb_print.html:38
+#: app/templates/airworthiness/dashboard.html:92
 #: app/templates/airworthiness/status_form.html:21 app/templates/base.html:330
 #: app/templates/config/renters_list.html:32
 #: app/templates/config/settings.html:279
@@ -2871,40 +2890,40 @@ msgstr "gestion d'avions open source"
 msgid "Status"
 msgstr "Statut"
 
-#: app/templates/base.html:375
+#: app/templates/base.html:376
 msgid "1 flight queued offline"
 msgstr "1 vol en attente (hors ligne)"
 
-#: app/templates/base.html:376
+#: app/templates/base.html:377
 #, python-brace-format
 msgid "{n} flights queued offline"
 msgstr "{n} vols en attente (hors ligne)"
 
-#: app/templates/base.html:377
+#: app/templates/base.html:378
 msgid "Flight saved offline — will sync when online."
 msgstr "Vol enregistré hors ligne — sera synchronisé en ligne."
 
-#: app/templates/base.html:378
+#: app/templates/base.html:379
 msgid "Offline flight synced."
 msgstr "Vol hors ligne synchronisé."
 
-#: app/templates/base.html:379
+#: app/templates/base.html:380
 msgid "Duplicate flight"
 msgstr "Vol en double"
 
-#: app/templates/base.html:380
+#: app/templates/base.html:381
 msgid "A duplicate flight was found on the server. Discard the offline copy?"
 msgstr "Un vol en double a été trouvé sur le serveur. Supprimer la copie hors ligne ?"
 
-#: app/templates/base.html:381
+#: app/templates/base.html:382
 msgid "Discard offline copy"
 msgstr "Supprimer la copie hors ligne"
 
-#: app/templates/base.html:382
+#: app/templates/base.html:383
 msgid "Keep for later"
 msgstr "Conserver pour plus tard"
 
-#: app/templates/base.html:383
+#: app/templates/base.html:384
 msgid "You're offline — this can't be saved right now. Reconnect and try again."
 msgstr "Vous êtes hors ligne — cela ne peut pas être enregistré pour le moment. Reconnectez-vous et réessayez."
 
@@ -3276,7 +3295,10 @@ msgid "Pending Reservations"
 msgstr "Réservations en attente"
 
 #: app/templates/aircraft/flight_detail.html:102
-#: app/templates/airworthiness/dashboard.html:90
+#: app/templates/airworthiness/adsb_board.html:62
+#: app/templates/airworthiness/adsb_form.html:52
+#: app/templates/airworthiness/adsb_print.html:39
+#: app/templates/airworthiness/dashboard.html:93
 #: app/templates/airworthiness/status_form.html:39
 #: app/templates/airworthiness/stc_form.html:43
 #: app/templates/config/renter_form.html:83 app/templates/dashboard.html:741
@@ -3527,6 +3549,7 @@ msgstr "n'est pas encore disponible — c'est prévu dans la feuille de route."
 #: app/templates/aircraft/flight_tracks.html:18
 #: app/templates/aircraft/gps_import_history.html:23
 #: app/templates/aircraft/gps_import_upload.html:18
+#: app/templates/airworthiness/adsb_print.html:13
 #: app/templates/airworthiness/dashboard.html:18
 #: app/templates/auth/setup.html:115 app/templates/auth/setup.html:196
 #: app/templates/auth/setup.html:234 app/templates/auth/setup.html:269
@@ -3608,6 +3631,7 @@ msgstr "Modifier %(reg)s"
 #: app/templates/aircraft/wb_config.html:216
 #: app/templates/aircraft/wb_entry.html:17
 #: app/templates/aircraft/wb_entry.html:117
+#: app/templates/airworthiness/adsb_form.html:59
 #: app/templates/airworthiness/document_form.html:64
 #: app/templates/airworthiness/node_form.html:76
 #: app/templates/airworthiness/status_form.html:61
@@ -3781,6 +3805,8 @@ msgstr "Réservoirs de carburant"
 #: app/templates/aircraft/wb_config.html:88
 #: app/templates/aircraft/wb_config.html:97
 #: app/templates/aircraft/wb_entry.html:34
+#: app/templates/airworthiness/adsb_form.html:28
+#: app/templates/airworthiness/adsb_form.html:52
 #: app/templates/airworthiness/document_form.html:46
 #: app/templates/airworthiness/document_form.html:51
 #: app/templates/airworthiness/stc_form.html:27
@@ -3899,6 +3925,7 @@ msgstr "Détermine comment les temps de vol importés via GPS sont arrondis dans
 #: app/templates/aircraft/component_form.html:133
 #: app/templates/aircraft/manage_owners.html:127
 #: app/templates/aircraft/wb_entry.html:115
+#: app/templates/airworthiness/adsb_form.html:57
 #: app/templates/airworthiness/status_form.html:59
 #: app/templates/auth/profile.html:37 app/templates/config/renter_form.html:102
 #: app/templates/config/settings.html:167
@@ -3929,7 +3956,7 @@ msgstr "Ajouter un composant"
 
 #: app/templates/aircraft/component_form.html:27
 #: app/templates/aircraft/owner_account.html:47
-#: app/templates/airworthiness/dashboard.html:86
+#: app/templates/airworthiness/dashboard.html:89
 #: app/templates/config/renter_account.html:68
 #: app/templates/expenses/expense_form.html:52
 #: app/templates/expenses/list.html:55 app/templates/expenses/list.html:82
@@ -4171,6 +4198,7 @@ msgid "No open snags."
 msgstr "Aucune anomalie ouverte."
 
 #: app/templates/aircraft/detail.html:222
+#: app/templates/airworthiness/adsb_board.html:24
 #: app/templates/maintenance/list.html:41
 #: app/templates/pilots/minimums_edit.html:96
 msgid "Add item"
@@ -4235,7 +4263,7 @@ msgstr "Déposé"
 
 #: app/templates/aircraft/detail.html:337
 #: app/templates/aircraft/detail.html:348
-#: app/templates/airworthiness/dashboard.html:255
+#: app/templates/airworthiness/dashboard.html:258
 #: app/templates/flights/logbook_component.html:76
 msgid "Installed"
 msgstr "Installé"
@@ -4476,7 +4504,7 @@ msgid "ARC valid until"
 msgstr "ARC valide jusqu'au"
 
 #: app/templates/aircraft/detail.html:878
-#: app/templates/airworthiness/dashboard.html:58
+#: app/templates/airworthiness/dashboard.html:61
 #: app/templates/documents/list.html:3 app/templates/documents/list.html:11
 #: app/templates/pilots/profile.html:154 app/templates/share/public.html:101
 msgid "Documents"
@@ -4504,6 +4532,7 @@ msgid "Photos"
 msgstr "Photos"
 
 #: app/templates/aircraft/detail.html:959
+#: app/templates/airworthiness/adsb_form.html:57
 #: app/templates/airworthiness/document_form.html:62
 #: app/templates/airworthiness/stc_form.html:48
 #: app/templates/maintenance/amp_declaration_form.html:243
@@ -5560,62 +5589,60 @@ msgstr "Aucun calcul centrage/masse enregistré."
 msgid "Create first calculation"
 msgstr "Créer le premier calcul"
 
-#: app/templates/airworthiness/dashboard.html:25
-msgid "Disabled outside production"
-msgstr "Désactivé hors production"
+#: app/templates/airworthiness/adsb_board.html:3
+#: app/templates/airworthiness/adsb_board.html:11
+#: app/templates/airworthiness/adsb_print.html:3
+msgid "AD/SB compliance board"
+msgstr "Tableau de conformité AD/SB"
 
-#: app/templates/airworthiness/dashboard.html:26
-msgid "Sync EASA"
-msgstr "Synchroniser EASA"
+#: app/templates/airworthiness/adsb_board.html:20
+msgid "Print for the annual"
+msgstr "Imprimer pour la visite annuelle"
 
-#: app/templates/airworthiness/dashboard.html:30
-#: app/templates/airworthiness/document_form.html:3
-#: app/templates/airworthiness/document_form.html:10
-msgid "Add document"
-msgstr "Ajouter un document"
+#: app/templates/airworthiness/adsb_board.html:32
+msgid "This is your own working summary of applicable ADs/SBs — not the authoritative FAA/EASA record. Always verify against the official register."
+msgstr "Il s'agit de votre propre résumé de travail des AD/SB applicables — pas du registre officiel FAA/EASA. Vérifiez toujours auprès du registre officiel."
 
-#: app/templates/airworthiness/dashboard.html:39
-#: app/templates/airworthiness/dashboard.html:65
-#: app/templates/airworthiness/status_form.html:23
-msgid "Pending review"
-msgstr "En attente de révision"
+#: app/templates/airworthiness/adsb_board.html:36
+#: app/templates/airworthiness/adsb_form.html:36
+#: app/templates/airworthiness/adsb_print.html:25
+msgid "Recurring"
+msgstr "Récurrent"
 
-#: app/templates/airworthiness/dashboard.html:40
-#: app/templates/airworthiness/dashboard.html:66
-msgid "Question"
-msgstr "Question"
+#: app/templates/airworthiness/adsb_board.html:37
+#: app/templates/airworthiness/adsb_form.html:37
+#: app/templates/airworthiness/adsb_print.html:26
+msgid "Conditional"
+msgstr "Conditionnel"
 
-#: app/templates/airworthiness/dashboard.html:41
-#: app/templates/airworthiness/dashboard.html:67
-#: app/templates/airworthiness/status_form.html:26
-msgid "Deferred"
-msgstr "Différé"
+#: app/templates/airworthiness/adsb_board.html:38
+#: app/templates/airworthiness/adsb_form.html:38
+#: app/templates/airworthiness/adsb_print.html:27
+msgid "Verify part number"
+msgstr "Vérifier la référence pièce"
 
-#: app/templates/airworthiness/dashboard.html:42
-#: app/templates/airworthiness/dashboard.html:68
-#: app/templates/airworthiness/status_form.html:24
-msgid "Complied"
-msgstr "Conforme"
+#: app/templates/airworthiness/adsb_board.html:39
+#: app/templates/airworthiness/adsb_form.html:39
+#: app/templates/airworthiness/adsb_print.html:28
+msgid "Closed"
+msgstr "Clos"
 
-#: app/templates/airworthiness/dashboard.html:43
-#: app/templates/airworthiness/dashboard.html:69
+#: app/templates/airworthiness/adsb_board.html:40
+#: app/templates/airworthiness/adsb_form.html:40
+#: app/templates/airworthiness/adsb_print.html:29
+#: app/templates/airworthiness/dashboard.html:46
+#: app/templates/airworthiness/dashboard.html:72
 msgid "N/A"
 msgstr "N/A"
 
-#: app/templates/airworthiness/dashboard.html:51
-#, python-format
-msgid "one document total"
-msgid_plural "%(n)s documents total"
-msgstr[0] "un document au total"
-msgstr[1] "%(n)s documents au total"
+#: app/templates/airworthiness/adsb_board.html:52
+msgid "Items"
+msgstr "Éléments"
 
-#: app/templates/airworthiness/dashboard.html:62
-#: app/templates/pilots/logbook.html:98 app/templates/pilots/logbook.html:100
-#: app/templates/users/list.html:71
-msgid "All"
-msgstr "Tout"
-
-#: app/templates/airworthiness/dashboard.html:87
+#: app/templates/airworthiness/adsb_board.html:59
+#: app/templates/airworthiness/adsb_form.html:21
+#: app/templates/airworthiness/adsb_print.html:36
+#: app/templates/airworthiness/dashboard.html:90
 #: app/templates/airworthiness/document_form.html:40
 #: app/templates/maintenance/_amp_export_body.html:254
 #: app/templates/maintenance/_amp_export_body.html:284
@@ -5623,8 +5650,123 @@ msgstr "Tout"
 msgid "Reference"
 msgstr "Référence"
 
-#: app/templates/airworthiness/dashboard.html:88
-#: app/templates/airworthiness/dashboard.html:189
+#: app/templates/airworthiness/adsb_board.html:83
+msgid "Remove this AD/SB item?"
+msgstr "Supprimer cet élément AD/SB ?"
+
+#: app/templates/airworthiness/adsb_board.html:97
+#: app/templates/airworthiness/adsb_print.html:52
+msgid "No AD/SB items recorded yet."
+msgstr "Aucun élément AD/SB enregistré pour l'instant."
+
+#: app/templates/airworthiness/adsb_board.html:103
+#: app/templates/airworthiness/adsb_print.html:57
+msgid "Applicability items to confirm with the IA at the annual"
+msgstr "Points d'applicabilité à confirmer avec le mécanicien agréé lors de la visite annuelle"
+
+#: app/templates/airworthiness/adsb_board.html:105
+msgid "Copy as plain text"
+msgstr "Copier en texte brut"
+
+#: app/templates/airworthiness/adsb_board.html:123
+msgid "Checked state is kept only in this browser — it does not sync between devices and is not part of the aircraft record."
+msgstr "L'état coché n'est conservé que dans ce navigateur — il ne se synchronise pas entre appareils et ne fait pas partie du dossier de l'aéronef."
+
+#: app/templates/airworthiness/adsb_board.html:126
+#: app/templates/airworthiness/adsb_print.html:65
+msgid "Nothing open to confirm — every item is closed or not applicable."
+msgstr "Rien à confirmer — tous les éléments sont clos ou non applicables."
+
+#: app/templates/airworthiness/adsb_form.html:3
+#: app/templates/airworthiness/adsb_form.html:10
+msgid "Edit AD/SB item"
+msgstr "Modifier l'élément AD/SB"
+
+#: app/templates/airworthiness/adsb_form.html:3
+#: app/templates/airworthiness/adsb_form.html:10
+msgid "Add AD/SB item"
+msgstr "Ajouter un élément AD/SB"
+
+#: app/templates/airworthiness/adsb_form.html:23
+msgid "e.g. AD 2023-0048 or SB 480F"
+msgstr "p. ex. AD 2023-0048 ou SB 480F"
+
+#: app/templates/airworthiness/adsb_print.html:10
+#: app/templates/pilots/minimums_print.html:11
+msgid "Print / download as PDF"
+msgstr "Imprimer / télécharger en PDF"
+
+#: app/templates/airworthiness/adsb_print.html:18
+#, python-format
+msgid "AD/SB compliance — %(reg)s — %(date)s"
+msgstr "Conformité AD/SB — %(reg)s — %(date)s"
+
+#: app/templates/airworthiness/adsb_print.html:20
+msgid "Owner working summary — not the authoritative FAA/EASA record."
+msgstr "Résumé de travail du propriétaire — pas le registre officiel FAA/EASA."
+
+#: app/templates/airworthiness/adsb_print.html:32
+#: app/templates/maintenance/fleet.html:251
+#: app/templates/maintenance/fleet.html:409
+msgid "All items"
+msgstr "Toutes les tâches"
+
+#: app/templates/airworthiness/dashboard.html:21
+msgid "AD/SB board"
+msgstr "Tableau AD/SB"
+
+#: app/templates/airworthiness/dashboard.html:28
+msgid "Disabled outside production"
+msgstr "Désactivé hors production"
+
+#: app/templates/airworthiness/dashboard.html:29
+msgid "Sync EASA"
+msgstr "Synchroniser EASA"
+
+#: app/templates/airworthiness/dashboard.html:33
+#: app/templates/airworthiness/document_form.html:3
+#: app/templates/airworthiness/document_form.html:10
+msgid "Add document"
+msgstr "Ajouter un document"
+
+#: app/templates/airworthiness/dashboard.html:42
+#: app/templates/airworthiness/dashboard.html:68
+#: app/templates/airworthiness/status_form.html:23
+msgid "Pending review"
+msgstr "En attente de révision"
+
+#: app/templates/airworthiness/dashboard.html:43
+#: app/templates/airworthiness/dashboard.html:69
+msgid "Question"
+msgstr "Question"
+
+#: app/templates/airworthiness/dashboard.html:44
+#: app/templates/airworthiness/dashboard.html:70
+#: app/templates/airworthiness/status_form.html:26
+msgid "Deferred"
+msgstr "Différé"
+
+#: app/templates/airworthiness/dashboard.html:45
+#: app/templates/airworthiness/dashboard.html:71
+#: app/templates/airworthiness/status_form.html:24
+msgid "Complied"
+msgstr "Conforme"
+
+#: app/templates/airworthiness/dashboard.html:54
+#, python-format
+msgid "one document total"
+msgid_plural "%(n)s documents total"
+msgstr[0] "un document au total"
+msgstr[1] "%(n)s documents au total"
+
+#: app/templates/airworthiness/dashboard.html:65
+#: app/templates/pilots/logbook.html:98 app/templates/pilots/logbook.html:100
+#: app/templates/users/list.html:71
+msgid "All"
+msgstr "Tout"
+
+#: app/templates/airworthiness/dashboard.html:91
+#: app/templates/airworthiness/dashboard.html:192
 #: app/templates/airworthiness/document_form.html:21
 #: app/templates/airworthiness/node_form.html:25
 #: app/templates/maintenance/amp_import_review.html:42
@@ -5633,78 +5775,78 @@ msgstr "Référence"
 msgid "Component"
 msgstr "Composant"
 
-#: app/templates/airworthiness/dashboard.html:91
+#: app/templates/airworthiness/dashboard.html:94
 msgid "Expiry / compliance"
 msgstr "Expiration / conformité"
 
-#: app/templates/airworthiness/dashboard.html:145
+#: app/templates/airworthiness/dashboard.html:148
 msgid "Review:"
 msgstr "Révision :"
 
-#: app/templates/airworthiness/dashboard.html:151
+#: app/templates/airworthiness/dashboard.html:154
 msgid "Update"
 msgstr "Mettre à jour"
 
-#: app/templates/airworthiness/dashboard.html:157
+#: app/templates/airworthiness/dashboard.html:160
 msgid "Delete this document?"
 msgstr "Supprimer ce document ?"
 
-#: app/templates/airworthiness/dashboard.html:171
+#: app/templates/airworthiness/dashboard.html:174
 msgid "No documents yet. Add one manually or sync from EASA."
 msgstr "Aucun document pour l'instant. Ajoutez-en un manuellement ou synchronisez depuis l'EASA."
 
-#: app/templates/airworthiness/dashboard.html:179
+#: app/templates/airworthiness/dashboard.html:182
 msgid "EASA Source Nodes"
 msgstr "Nœuds EASA"
 
-#: app/templates/airworthiness/dashboard.html:181
+#: app/templates/airworthiness/dashboard.html:184
 #: app/templates/airworthiness/node_form.html:74
 msgid "Add node"
 msgstr "Ajouter un nœud"
 
-#: app/templates/airworthiness/dashboard.html:190
+#: app/templates/airworthiness/dashboard.html:193
 msgid "TC holder / Type / Model"
 msgstr "Titulaire TC / Type / Modèle"
 
-#: app/templates/airworthiness/dashboard.html:191
+#: app/templates/airworthiness/dashboard.html:194
 msgid "Last synced"
 msgstr "Dernière synchronisation"
 
-#: app/templates/airworthiness/dashboard.html:208
+#: app/templates/airworthiness/dashboard.html:211
 msgid "never"
 msgstr "jamais"
 
-#: app/templates/airworthiness/dashboard.html:216
+#: app/templates/airworthiness/dashboard.html:219
 msgid "Remove this EASA source node? Synced documents will also be deleted."
 msgstr "Supprimer ce nœud EASA ? Les documents synchronisés seront également supprimés."
 
-#: app/templates/airworthiness/dashboard.html:231
+#: app/templates/airworthiness/dashboard.html:234
 msgid "No EASA source nodes configured. Add a node to enable automatic AD sync."
 msgstr "Aucun nœud EASA configuré. Ajoutez un nœud pour activer la synchronisation automatique des AD."
 
-#: app/templates/airworthiness/dashboard.html:240
+#: app/templates/airworthiness/dashboard.html:243
 msgid "Installed STCs"
 msgstr "STC installés"
 
-#: app/templates/airworthiness/dashboard.html:243
+#: app/templates/airworthiness/dashboard.html:246
 msgid "Add STC"
 msgstr "Ajouter un STC"
 
-#: app/templates/airworthiness/dashboard.html:252
+#: app/templates/airworthiness/dashboard.html:255
 #: app/templates/airworthiness/stc_form.html:21
 msgid "STC number"
 msgstr "Numéro STC"
 
-#: app/templates/airworthiness/dashboard.html:254
+#: app/templates/airworthiness/dashboard.html:257
 #: app/templates/airworthiness/stc_form.html:32
 msgid "TC holder"
 msgstr "Titulaire TC"
 
-#: app/templates/airworthiness/dashboard.html:272
+#: app/templates/airworthiness/dashboard.html:275
 msgid "Remove this STC record?"
 msgstr "Supprimer cet enregistrement STC ?"
 
-#: app/templates/airworthiness/dashboard.html:286
+#: app/templates/airworthiness/dashboard.html:289
 msgid "No installed STCs recorded."
 msgstr "Aucun STC installé enregistré."
 
@@ -8934,11 +9076,6 @@ msgstr "(estim.)"
 msgid "Mark as serviced"
 msgstr "Marquer comme effectué"
 
-#: app/templates/maintenance/fleet.html:251
-#: app/templates/maintenance/fleet.html:409
-msgid "All items"
-msgstr "Toutes les tâches"
-
 #: app/templates/maintenance/fleet.html:260
 #: app/templates/maintenance/fleet.html:420
 msgid "No alerts — all items OK."
@@ -10167,10 +10304,6 @@ msgstr "Passées"
 #: app/templates/pilots/minimums_history.html:53
 msgid "No revisions yet."
 msgstr "Aucune révision pour le moment."
-
-#: app/templates/pilots/minimums_print.html:11
-msgid "Print / download as PDF"
-msgstr "Imprimer / télécharger en PDF"
 
 #: app/templates/pilots/minimums_print.html:20
 #, python-format
