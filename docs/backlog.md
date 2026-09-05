@@ -749,28 +749,20 @@ Notes:
 
 ---
 
-## Maintenance: due-date projection from utilization trend
+## Maintenance: use the due-date projection to tune `MAINTENANCE_DUE_SOON`
 
-Hours-based triggers show "due at X h", but an owner plans on a calendar —
-"when do I need to book the shop?" is a date question, not an hours question.
-
-Future enhancement: compute a rolling utilization rate per aircraft (e.g.
-average engine hours per week over the last 90 days) and project the calendar
-date at which each hours-based trigger will reach its due value. Show the
-projected date, clearly marked as an estimate, on the per-aircraft trigger
-list and the fleet maintenance overview (Phase 13), letting hours-based
-triggers sort meaningfully in the chronological view instead of being pushed
-to the end as undated items.
-
-This would also make `MAINTENANCE_DUE_SOON` notifications more actionable:
-today the hours criterion fires at ≥ 90 % of the hours limit, which for a
-low-utilization aircraft can mean months of lead time noise or, for a
-high-utilization one, too little warning; a projected-date threshold ("due in
-~3 weeks at current usage") matches how shop appointments are actually booked.
-
-Why deferred: needs a sensible minimum-data guard (an aircraft flown twice in
-90 days produces a meaningless trend) and careful UI wording so the estimate
-is never mistaken for a real due date.
+The due-date projection itself shipped (`maintenance/due_date_projection.py`:
+rolling utilization rate per aircraft, minimum-data guard, projected date
+shown on the per-aircraft trigger list, the fleet maintenance overview, and
+the chronological view's sort). Still open: using it to make
+`MAINTENANCE_DUE_SOON` notifications more actionable — today the hours
+criterion fires at ≥ 90 % of the hours limit, which for a low-utilization
+aircraft can mean months of lead time noise or, for a high-utilization one,
+too little warning. A projected-date threshold ("due in ~3 weeks at current
+usage") would match how shop appointments are actually booked, but needs its
+own design pass on the notification side (warn_hours vs. a new
+warn_days-from-projection setting) rather than reusing the display-only
+projection as-is.
 
 ---
 

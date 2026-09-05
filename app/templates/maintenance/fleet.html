@@ -173,7 +173,7 @@
           </tr>
         </thead>
         <tbody>
-          {% for trigger, status, ac in trigger_rows %}
+          {% for trigger, status, ac, projected_date in trigger_rows %}
           <tr>
             <td class="ps-3 align-middle fw-semibold oh-text-navy text-nowrap">
               <a href="{{ url_for('aircraft.detail', aircraft_id=ac.id) }}"
@@ -206,6 +206,11 @@
                 </span>
                 {% endif %}
               </div>
+              {% if projected_date %}
+              <div class="text-muted oh-fs-08" title="{{ _('Estimated from this aircraft\'s recent utilization rate — not a real due date.') }}">
+                <i class="bi bi-graph-up-arrow me-1"></i>~{{ projected_date.strftime('%Y-%m-%d') }} {{ _('(est.)') }}
+              </div>
+              {% endif %}
               {% endif %}
               {% if trigger.due_landings is not none %}
               <div>
@@ -358,6 +363,11 @@
                   {{ "%.1f"|format(obj.due_engine_hours|float) }} h
                   <span class="text-muted small">({{ _('flight') if obj.hours_basis == 'flight' else _('engine') }})</span>
                 </div>
+                {% if not obj.due_date and item[5] %}
+                <div class="text-muted oh-fs-08" title="{{ _('Estimated from this aircraft\'s recent utilization rate — not a real due date.') }}">
+                  <i class="bi bi-graph-up-arrow me-1"></i>~{{ item[5].strftime('%Y-%m-%d') }} {{ _('(est.)') }}
+                </div>
+                {% endif %}
                 {% endif %}
                 {% if obj.due_landings is not none %}<div>{{ obj.due_landings }}</div>{% endif %}
                 {% if obj.due_date is none and obj.due_engine_hours is none and obj.due_landings is none %}—{% endif %}

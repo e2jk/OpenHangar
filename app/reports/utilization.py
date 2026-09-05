@@ -23,6 +23,7 @@ __all__ = [
     "PERIOD_OPTIONS",
     "compute_utilization_report",
     "engine_hours_flown",
+    "flight_hours_flown",
     "flights_in_period",
     "fuel_added",
     "resolve_period",
@@ -58,6 +59,28 @@ def engine_hours_flown(
         or (
             f.engine_time_counter_end is not None
             and f.engine_time_counter_start is not None
+        )
+    )
+
+
+def flight_hours_flown(
+    aircraft_id: int, period_start: _date | None, period_end: _date
+) -> float:
+    """Sum of flight hours for flights within [period_start, period_end].
+
+    Mirrors engine_hours_flown()'s "prefer the directly-logged figure over
+    the counter delta" rule, applied to flight_time instead of engine_time.
+    """
+    flights = flights_in_period(aircraft_id, period_start, period_end)
+    return sum(
+        float(f.flight_time)
+        if f.flight_time is not None
+        else float(f.flight_time_counter_end) - float(f.flight_time_counter_start)
+        for f in flights
+        if f.flight_time is not None
+        or (
+            f.flight_time_counter_end is not None
+            and f.flight_time_counter_start is not None
         )
     )
 
@@ -98,22 +121,13 @@ def _period_stats(
     aircraft_id: int, period_start: _date | None, period_end: _date
 ) -> dict[str, Any]:
     flights = flights_in_period(aircraft_id, period_start, period_end)
-    flight_hours = sum(
-        float(f.flight_time)
-        if f.flight_time is not None
-        else float(f.flight_time_counter_end) - float(f.flight_time_counter_start)
-        for f in flights
-        if f.flight_time is not None
-        or (
-            f.flight_time_counter_end is not None
-            and f.flight_time_counter_start is not None
-        )
-    )
     return {
         "period_start": period_start,
         "period_end": period_end,
         "flight_count": len(flights),
-        "flight_hours": round(flight_hours, 1),
+        "flight_hours": round(
+            flight_hours_flown(aircraft_id, period_start, period_end), 1
+        ),
         "engine_hours": round(
             engine_hours_flown(aircraft_id, period_start, period_end), 1
         ),

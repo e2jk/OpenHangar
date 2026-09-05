@@ -710,7 +710,7 @@ msgstr "Certificaat van beoordeling van luchtwaardigheid (ARC)"
 
 #: app/documents/routes.py:496 app/documents/routes.py:740
 #: app/documents/routes.py:839 app/flights/routes.py:1540
-#: app/maintenance/routes.py:784 app/pilots/routes.py:1228
+#: app/maintenance/routes.py:852 app/pilots/routes.py:1228
 msgid "Please select a file to upload."
 msgstr "Selecteer een bestand om te uploaden."
 
@@ -1023,20 +1023,20 @@ msgstr "Vlucht %(label)s verwijderd."
 msgid "Unsupported format. Please upload a .csv or .xlsx file."
 msgstr "Ongeldig formaat. Upload een .csv- of .xlsx-bestand."
 
-#: app/flights/routes.py:1554 app/maintenance/routes.py:794
+#: app/flights/routes.py:1554 app/maintenance/routes.py:862
 #: app/pilots/routes.py:1241
 msgid "File too large (maximum 10 MB)."
 msgstr "Bestand te groot (maximaal 10 MB)."
 
 #: app/flights/routes.py:1612 app/flights/routes.py:1902
-#: app/flights/routes.py:1979 app/maintenance/routes.py:848
+#: app/flights/routes.py:1979 app/maintenance/routes.py:916
 #: app/pilots/routes.py:1296 app/pilots/routes.py:1663
 #: app/pilots/routes.py:1725
 msgid "Import session expired. Please upload the file again."
 msgstr "Importsessie verlopen. Upload het bestand opnieuw."
 
 #: app/flights/routes.py:1621 app/flights/routes.py:1907
-#: app/flights/routes.py:1997 app/maintenance/routes.py:854
+#: app/flights/routes.py:1997 app/maintenance/routes.py:922
 #: app/pilots/routes.py:1305 app/pilots/routes.py:1668
 #: app/pilots/routes.py:1743
 msgid "Temporary file not found. Please upload the file again."
@@ -1134,7 +1134,7 @@ msgstr "Naam is verplicht."
 msgid "Trigger type must be 'calendar', 'hours', or 'landings'."
 msgstr "Onderhoudsitemtype moet 'calendar', 'hours' of 'landings' zijn."
 
-#: app/maintenance/form_parsing.py:102 app/maintenance/routes.py:383
+#: app/maintenance/form_parsing.py:102 app/maintenance/routes.py:451
 msgid "Component selection is invalid."
 msgstr "De componentselectie is ongeldig."
 
@@ -1210,63 +1210,63 @@ msgstr "Landingen bij onderhoud zijn verplicht voor landingen-onderhoudsitems."
 msgid "Landings at service must be a positive number."
 msgstr "Landingen bij onderhoud moeten een positief getal zijn."
 
-#: app/maintenance/routes.py:417
+#: app/maintenance/routes.py:485
 #, python-format
 msgid "Maintenance item '%(name)s' saved."
 msgstr "Onderhoudsitem '%(name)s' opgeslagen."
 
-#: app/maintenance/routes.py:436
+#: app/maintenance/routes.py:504
 #, python-format
 msgid "'%(name)s' deleted."
 msgstr "'%(name)s' verwijderd."
 
-#: app/maintenance/routes.py:515
+#: app/maintenance/routes.py:583
 #, python-format
 msgid "'%(name)s' marked as serviced."
 msgstr "'%(name)s' gemarkeerd als onderhouden."
 
-#: app/maintenance/routes.py:571
+#: app/maintenance/routes.py:639
 msgid "Invalid programme basis selected."
 msgstr "Ongeldige programmabasis geselecteerd."
 
-#: app/maintenance/routes.py:573
+#: app/maintenance/routes.py:641
 msgid "Invalid declaration type selected."
 msgstr "Ongeldig verklaringstype geselecteerd."
 
-#: app/maintenance/routes.py:575
+#: app/maintenance/routes.py:643
 msgid "Invalid certifying party selected."
 msgstr "Ongeldige certificerende partij geselecteerd."
 
-#: app/maintenance/routes.py:614
+#: app/maintenance/routes.py:682
 msgid "AMP declaration saved."
 msgstr "AMP-verklaring opgeslagen."
 
-#: app/maintenance/routes.py:635
+#: app/maintenance/routes.py:703
 msgid "Revision number is required."
 msgstr "Revisienummer is verplicht."
 
-#: app/maintenance/routes.py:641
+#: app/maintenance/routes.py:709
 msgid "Revision date must be a valid date (YYYY-MM-DD)."
 msgstr "Revisiedatum moet een geldige datum zijn (JJJJ-MM-DD)."
 
-#: app/maintenance/routes.py:681
+#: app/maintenance/routes.py:749
 msgid "Revision added."
 msgstr "Revisie toegevoegd."
 
-#: app/maintenance/routes.py:707
+#: app/maintenance/routes.py:775
 #, python-format
 msgid "Revision '%(number)s' deleted."
 msgstr "Revisie '%(number)s' verwijderd."
 
-#: app/maintenance/routes.py:789
+#: app/maintenance/routes.py:857
 msgid "Unsupported format. Please upload a .xlsx file."
 msgstr "Ongeldig formaat. Upload een .xlsx-bestand."
 
-#: app/maintenance/routes.py:806
+#: app/maintenance/routes.py:874
 msgid "No task rows found in the uploaded file."
 msgstr "Geen taakregels gevonden in het geüploade bestand."
 
-#: app/maintenance/routes.py:931
+#: app/maintenance/routes.py:999
 #: app/templates/maintenance/amp_import_review.html:18
 #, python-format
 msgid "one flagged for review"
@@ -1274,30 +1274,30 @@ msgid_plural "%(n)s flagged for review"
 msgstr[0] "één gemarkeerd voor controle"
 msgstr[1] "%(n)s gemarkeerd voor controle"
 
-#: app/maintenance/routes.py:938
+#: app/maintenance/routes.py:1006
 #, python-format
 msgid "Imported %(count)d maintenance item — %(review_phrase)s."
 msgid_plural "Imported %(count)d maintenance items — %(review_phrase)s."
 msgstr[0] "%(count)d onderhoudsitem geïmporteerd — %(review_phrase)s."
 msgstr[1] "%(count)d onderhoudsitems geïmporteerd — %(review_phrase)s."
 
-#: app/maintenance/routes.py:983
+#: app/maintenance/routes.py:1051
 #, python-format
 msgid "Import rolled back: %(count)d item removed."
 msgid_plural "Import rolled back: %(count)d items removed."
 msgstr[0] "Import teruggedraaid: %(count)d item verwijderd."
 msgstr[1] "Import teruggedraaid: %(count)d items verwijderd."
 
-#: app/maintenance/routes.py:1179 app/maintenance/routes.py:1196
+#: app/maintenance/routes.py:1247 app/maintenance/routes.py:1264
 msgid "Fill in the AMP declaration profile before exporting the AMP document."
 msgstr "Vul het AMP-verklaringsprofiel in voordat u het AMP-document exporteert."
 
-#: app/maintenance/routes.py:1257
+#: app/maintenance/routes.py:1325
 #, python-format
 msgid "No saved PDF for revision '%(number)s' — it was never downloaded while current."
 msgstr "Geen opgeslagen PDF voor revisie '%(number)s' — deze is nooit gedownload terwijl ze actueel was."
 
-#: app/maintenance/routes.py:1270
+#: app/maintenance/routes.py:1338
 #, python-format
 msgid "The saved PDF for revision '%(number)s' is missing on disk."
 msgstr "De opgeslagen PDF voor revisie '%(number)s' ontbreekt op de schijf."
@@ -1874,8 +1874,8 @@ msgstr "tot"
 #: app/templates/maintenance/fleet.html:59
 #: app/templates/maintenance/fleet.html:115
 #: app/templates/maintenance/fleet.html:166
-#: app/templates/maintenance/fleet.html:267
-#: app/templates/maintenance/fleet.html:326
+#: app/templates/maintenance/fleet.html:272
+#: app/templates/maintenance/fleet.html:331
 #: app/templates/offline/changes.html:53
 #: app/templates/pilots/entry_form.html:126
 #: app/templates/pilots/gps_import_upload.html:49
@@ -2346,7 +2346,7 @@ msgstr "%(name)s op %(reg)s is achterstallig."
 #: app/services/notification_service.py:526
 #: app/services/notification_service.py:556
 #: app/templates/maintenance/fleet.html:167
-#: app/templates/maintenance/fleet.html:327
+#: app/templates/maintenance/fleet.html:332
 #: app/templates/maintenance/list.html:74
 msgid "Item"
 msgstr "Item"
@@ -2859,8 +2859,8 @@ msgstr "open-source vliegtuigbeheer"
 #: app/templates/config/tenant_list.html:32
 #: app/templates/maintenance/amp_import_review.html:43
 #: app/templates/maintenance/fleet.html:171
-#: app/templates/maintenance/fleet.html:271
-#: app/templates/maintenance/fleet.html:329
+#: app/templates/maintenance/fleet.html:276
+#: app/templates/maintenance/fleet.html:334
 #: app/templates/maintenance/list.html:79
 #: app/templates/pilots/minimums_history.html:24
 #: app/templates/reservations/charge.html:34
@@ -3138,20 +3138,20 @@ msgstr "AAN DE GROND"
 #: app/templates/aircraft/owners_billing.html:61
 #: app/templates/dashboard.html:386 app/templates/dashboard.html:470
 #: app/templates/dashboard.html:556 app/templates/landing.html:204
-#: app/templates/landing.html:211 app/templates/maintenance/fleet.html:234
-#: app/templates/maintenance/fleet.html:303
-#: app/templates/maintenance/fleet.html:378
-#: app/templates/maintenance/list.html:140
+#: app/templates/landing.html:211 app/templates/maintenance/fleet.html:239
+#: app/templates/maintenance/fleet.html:308
+#: app/templates/maintenance/fleet.html:388
+#: app/templates/maintenance/list.html:146
 msgid "Overdue"
 msgstr "Achterstallig"
 
 #: app/templates/aircraft/list.html:75 app/templates/dashboard.html:388
 #: app/templates/dashboard.html:472 app/templates/dashboard.html:558
 #: app/templates/landing.html:195 app/templates/landing.html:210
-#: app/templates/maintenance/fleet.html:236
-#: app/templates/maintenance/fleet.html:305
-#: app/templates/maintenance/fleet.html:380
-#: app/templates/maintenance/list.html:142
+#: app/templates/maintenance/fleet.html:241
+#: app/templates/maintenance/fleet.html:310
+#: app/templates/maintenance/fleet.html:390
+#: app/templates/maintenance/list.html:148
 msgid "Due soon"
 msgstr "Bijna achterstallig"
 
@@ -3161,8 +3161,8 @@ msgstr "Bijna achterstallig"
 #: app/templates/config/settings.html:293 app/templates/dashboard.html:390
 #: app/templates/dashboard.html:474 app/templates/landing.html:186
 #: app/templates/maintenance/amp_import_review.html:90
-#: app/templates/maintenance/fleet.html:238
-#: app/templates/maintenance/list.html:144
+#: app/templates/maintenance/fleet.html:243
+#: app/templates/maintenance/list.html:150
 msgid "OK"
 msgstr "In orde"
 
@@ -3300,7 +3300,7 @@ msgstr "Notities"
 #: app/templates/maintenance/fleet.html:63
 #: app/templates/maintenance/fleet.html:119
 #: app/templates/maintenance/fleet.html:172
-#: app/templates/maintenance/fleet.html:330
+#: app/templates/maintenance/fleet.html:335
 #: app/templates/pilots/import_history.html:37
 #: app/templates/pilots/minimums_history.html:27
 #: app/templates/reservations/calendar.html:133
@@ -3935,7 +3935,7 @@ msgstr "Onderdeel toevoegen"
 #: app/templates/expenses/list.html:55 app/templates/expenses/list.html:82
 #: app/templates/maintenance/_amp_export_body.html:47
 #: app/templates/maintenance/fleet.html:168
-#: app/templates/maintenance/fleet.html:325
+#: app/templates/maintenance/fleet.html:330
 #: app/templates/maintenance/list.html:75
 #: app/templates/maintenance/trigger_form.html:37
 #: app/templates/offline/pilot_workbench.html:35
@@ -4160,7 +4160,7 @@ msgstr "Defect registreren"
 #: app/templates/aircraft/detail.html:192
 #: app/templates/maintenance/fleet.html:83
 #: app/templates/maintenance/fleet.html:139
-#: app/templates/maintenance/fleet.html:387 app/templates/snags/list.html:79
+#: app/templates/maintenance/fleet.html:397 app/templates/snags/list.html:79
 msgid "Resolve"
 msgstr "Oplossen"
 
@@ -5628,7 +5628,7 @@ msgstr "Referentie"
 #: app/templates/airworthiness/document_form.html:21
 #: app/templates/airworthiness/node_form.html:25
 #: app/templates/maintenance/amp_import_review.html:42
-#: app/templates/maintenance/fleet.html:268
+#: app/templates/maintenance/fleet.html:273
 #: app/templates/maintenance/trigger_form.html:72
 msgid "Component"
 msgstr "Onderdeel"
@@ -6375,7 +6375,7 @@ msgid "Inactive"
 msgstr "Inactief"
 
 #: app/templates/config/notifications.html:164
-#: app/templates/maintenance/list.html:123
+#: app/templates/maintenance/list.html:129
 msgid "days"
 msgstr "dagen"
 
@@ -8352,8 +8352,8 @@ msgstr "gereviseerd op %(date)s"
 
 #: app/templates/flights/logbook_component.html:65
 #: app/templates/maintenance/fleet.html:205
-#: app/templates/maintenance/fleet.html:216
-#: app/templates/maintenance/fleet.html:293
+#: app/templates/maintenance/fleet.html:221
+#: app/templates/maintenance/fleet.html:298
 msgid "remaining"
 msgstr "resterend"
 
@@ -8753,9 +8753,9 @@ msgstr "Eerdere AMP-imports — u kunt elke import ongedaan maken om alle bijbeh
 
 #: app/templates/maintenance/amp_import_history.html:34
 #: app/templates/maintenance/amp_import_review.html:88
-#: app/templates/maintenance/fleet.html:232
-#: app/templates/maintenance/fleet.html:374
-#: app/templates/maintenance/list.html:138
+#: app/templates/maintenance/fleet.html:237
+#: app/templates/maintenance/fleet.html:384
+#: app/templates/maintenance/list.html:144
 msgid "Needs review"
 msgstr "Controle nodig"
 
@@ -8873,7 +8873,7 @@ msgstr "Gemeld"
 
 #: app/templates/maintenance/fleet.html:88
 #: app/templates/maintenance/fleet.html:144
-#: app/templates/maintenance/fleet.html:392
+#: app/templates/maintenance/fleet.html:402
 msgid "All snags"
 msgstr "Alle defecten"
 
@@ -8900,62 +8900,74 @@ msgid "Calendar"
 msgstr "Kalender"
 
 #: app/templates/maintenance/fleet.html:201
-#: app/templates/maintenance/fleet.html:359
+#: app/templates/maintenance/fleet.html:364
 #: app/templates/maintenance/list.html:111 app/templates/share/public.html:40
 #: app/templates/share/public.html:64
 msgid "flight"
 msgstr "vlucht"
 
 #: app/templates/maintenance/fleet.html:201
-#: app/templates/maintenance/fleet.html:359
+#: app/templates/maintenance/fleet.html:364
 #: app/templates/maintenance/list.html:111 app/templates/share/public.html:37
 #: app/templates/share/public.html:64
 msgid "engine"
 msgstr "motor"
 
-#: app/templates/maintenance/fleet.html:243
-#: app/templates/maintenance/fleet.html:396
-#: app/templates/maintenance/list.html:150
+#: app/templates/maintenance/fleet.html:210
+#: app/templates/maintenance/fleet.html:367
+#: app/templates/maintenance/list.html:114
+msgid "Estimated from this aircraft's recent utilization rate — not a real due date."
+msgstr "Geschat op basis van het recente gebruikspercentage van dit toestel — geen echte vervaldatum."
+
+#: app/templates/maintenance/fleet.html:211
+#: app/templates/maintenance/fleet.html:368
+#: app/templates/maintenance/list.html:115
+msgid "(est.)"
+msgstr "(gesch.)"
+
+#: app/templates/maintenance/fleet.html:248
+#: app/templates/maintenance/fleet.html:406
+#: app/templates/maintenance/list.html:156
 #: app/templates/maintenance/service_form.html:3
 #: app/templates/maintenance/service_form.html:12
 msgid "Mark as serviced"
 msgstr "Markeren als onderhouden"
 
-#: app/templates/maintenance/fleet.html:248
-#: app/templates/maintenance/fleet.html:401
+#: app/templates/maintenance/fleet.html:253
+#: app/templates/maintenance/fleet.html:411
 msgid "All items"
 msgstr "Alle items"
 
-#: app/templates/maintenance/fleet.html:257
-#: app/templates/maintenance/fleet.html:412
+#: app/templates/maintenance/fleet.html:262
+#: app/templates/maintenance/fleet.html:422
 msgid "No alerts — all items OK."
 msgstr "Geen waarschuwingen — alle items in orde."
 
-#: app/templates/maintenance/fleet.html:262
+#: app/templates/maintenance/fleet.html:267
 msgid "Component life limits"
 msgstr "Levensduurlimieten van onderdelen"
 
-#: app/templates/maintenance/fleet.html:269
+#: app/templates/maintenance/fleet.html:274
 msgid "Hours since overhaul"
 msgstr "Uren sinds revisie"
 
-#: app/templates/maintenance/fleet.html:270
+#: app/templates/maintenance/fleet.html:275
 msgid "Limit"
 msgstr "Limiet"
 
-#: app/templates/maintenance/fleet.html:328
+#: app/templates/maintenance/fleet.html:333
 msgid "Due / Reported"
 msgstr "Vervalt / Gemeld"
 
-#: app/templates/maintenance/fleet.html:418
+#: app/templates/maintenance/fleet.html:428
 msgid "The chronological view shows alerts only."
 msgstr "De chronologische weergave toont alleen waarschuwingen."
 
-#: app/templates/maintenance/fleet.html:419
+#: app/templates/maintenance/fleet.html:429
 msgid "Switch to by-type view"
 msgstr "Overschakelen naar weergave op type"
 
-#: app/templates/maintenance/fleet.html:420
+#: app/templates/maintenance/fleet.html:430
 msgid "to see all maintenance items including those currently OK."
 msgstr "om alle onderhoudsitems te zien, ook degene die momenteel in orde zijn."
 
@@ -8968,8 +8980,8 @@ msgid "current flight hours"
 msgstr "huidige vlieguren"
 
 #: app/templates/maintenance/list.html:21
-#: app/templates/maintenance/list.html:114
-#: app/templates/maintenance/list.html:125 app/templates/share/public.html:66
+#: app/templates/maintenance/list.html:120
+#: app/templates/maintenance/list.html:131 app/templates/share/public.html:66
 msgid "landings"
 msgstr "landingen"
 
@@ -8998,16 +9010,16 @@ msgstr "Casco"
 msgid "Airframe / general"
 msgstr "Airframe / algemeen"
 
-#: app/templates/maintenance/list.html:160
+#: app/templates/maintenance/list.html:166
 #, python-format
 msgid "Delete '%(name)s'?"
 msgstr "'%(name)s' verwijderen?"
 
-#: app/templates/maintenance/list.html:177
+#: app/templates/maintenance/list.html:183
 msgid "No maintenance items defined yet."
 msgstr "Nog geen onderhoudsitems gedefinieerd."
 
-#: app/templates/maintenance/list.html:181
+#: app/templates/maintenance/list.html:187
 msgid "Add first item"
 msgstr "Eerste item toevoegen"
 
