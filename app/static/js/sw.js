@@ -50,6 +50,7 @@ var SWR_ROUTES = [
   '/pilot/logbook',
   '/maintenance',
   '/pilot/tracks',
+  '/pilot/stats',
   '/pilot/profile',
   '/pilot/minimums',
   '/reservations/fleet/',

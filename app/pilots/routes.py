@@ -817,6 +817,20 @@ def pilot_tracks_gif() -> ResponseReturnValue:
     )
 
 
+@pilots_bp.route("/pilot/stats")
+@login_required
+@require_pilot_access
+def pilot_stats() -> ResponseReturnValue:
+    from reports.flight_stats import (  # pyright: ignore[reportMissingImports]
+        compute_flight_stats,
+    )
+
+    uid = _current_user_id()
+    entries = _my_entries_query(uid).all()
+    stats = compute_flight_stats(entries)
+    return render_template("pilots/stats.html", stats=stats)
+
+
 # ── Logbook entry detail (read-only) ─────────────────────────────────────────
 
 

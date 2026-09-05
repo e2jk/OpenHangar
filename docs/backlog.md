@@ -1137,12 +1137,15 @@ prioritised; recorded here as raw inspiration.
   to be wrong/superseded. Distinct from OpenHangar's cost tracking; would
   need an actual parts/inventory model first.
 
-- **Aggregate flight-statistics view**: total nautical miles, airports/states
-  visited, "corners of the map" (farthest N/S/E/W, highest/lowest field),
-  longest single leg and longest multi-leg day, all computed from existing
-  flight-log data. For shared ownership/flight club, a combined-vs-per-pilot
-  stats table that de-duplicates flights logged by multiple crew. OpenHangar
-  already has flight logging + GPS import; this is a reporting view on top,
+- **Aggregate flight-statistics view — shared-ownership/flight-club variant.**
+  The per-pilot version shipped (`/pilot/stats`: total distance, airports/
+  countries/regions visited, "corners of the map", highest/lowest field,
+  longest single leg and longest day, computed in `reports/flight_stats.py`
+  from `app/data/airports.csv` coordinates). Still open: for shared
+  ownership/flight club, a combined-vs-per-pilot stats table that
+  de-duplicates flights logged by multiple crew (the per-pilot view today
+  would double-count a flight both pilots logged). OpenHangar already has
+  flight logging + GPS import; this is a reporting view on top,
   no new data model needed beyond what `Flight` already has.
 
 - **Avionics/equipment inventory with per-unit status and an upgrade wish

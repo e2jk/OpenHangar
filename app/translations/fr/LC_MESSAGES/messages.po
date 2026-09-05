@@ -109,15 +109,15 @@ msgstr "%(reg)s enregistré."
 msgid "Ownership updated."
 msgstr "Propriété mise à jour."
 
-#: app/aircraft/routes.py:870 app/config/routes.py:1519
+#: app/aircraft/routes.py:870 app/config/routes.py:1546
 msgid "Payment amount must be positive."
 msgstr "Le montant du paiement doit être positif."
 
-#: app/aircraft/routes.py:873 app/config/routes.py:1522
+#: app/aircraft/routes.py:873 app/config/routes.py:1549
 msgid "Invalid payment amount."
 msgstr "Montant de paiement invalide."
 
-#: app/aircraft/routes.py:880 app/config/routes.py:1529
+#: app/aircraft/routes.py:880 app/config/routes.py:1556
 msgid "Invalid payment date."
 msgstr "Date de paiement invalide."
 
@@ -130,7 +130,7 @@ msgstr "Paiement — %(note)s"
 msgid "Payment"
 msgstr "Paiement"
 
-#: app/aircraft/routes.py:902 app/config/routes.py:1552
+#: app/aircraft/routes.py:902 app/config/routes.py:1579
 msgid "Payment recorded."
 msgstr "Paiement enregistré."
 
@@ -243,26 +243,26 @@ msgstr "Calcul centrage/masse enregistré."
 msgid "W&B calculation deleted."
 msgstr "Calcul centrage/masse supprimé."
 
-#: app/aircraft/routes.py:1838 app/pilots/routes.py:2002
+#: app/aircraft/routes.py:1838 app/pilots/routes.py:2018
 msgid "Please select at least one GPS log file."
 msgstr "Veuillez sélectionner au moins un fichier journal GPS."
 
-#: app/aircraft/routes.py:1854 app/pilots/routes.py:2021
+#: app/aircraft/routes.py:1854 app/pilots/routes.py:2037
 #, python-format
 msgid "%(fn)s: unsupported file type (use .gpx, .kml, or .csv)."
 msgstr "%(fn)s : type de fichier non pris en charge (utilisez .gpx, .kml ou .csv)."
 
-#: app/aircraft/routes.py:1862 app/pilots/routes.py:2028
+#: app/aircraft/routes.py:1862 app/pilots/routes.py:2044
 #, python-format
 msgid "%(fn)s: file too large (20 MB limit)."
 msgstr "%(fn)s : fichier trop volumineux (limite 20 Mo)."
 
-#: app/aircraft/routes.py:1868 app/pilots/routes.py:2033
+#: app/aircraft/routes.py:1868 app/pilots/routes.py:2049
 #, python-format
 msgid "%(fn)s: %(err)s"
 msgstr "%(fn)s : %(err)s"
 
-#: app/aircraft/routes.py:1902 app/pilots/routes.py:2061
+#: app/aircraft/routes.py:1902 app/pilots/routes.py:2077
 #: app/templates/aircraft/gps_import_review.html:25
 #: app/templates/pilots/gps_import_review.html:24
 #, python-format
@@ -271,55 +271,55 @@ msgid_plural "%(n)s files skipped — no movement detected."
 msgstr[0] "%(n)s fichier ignoré — aucun mouvement détecté."
 msgstr[1] "%(n)s fichiers ignorés — aucun mouvement détecté."
 
-#: app/aircraft/routes.py:1911 app/pilots/routes.py:2069
+#: app/aircraft/routes.py:1911 app/pilots/routes.py:2085
 msgid "No valid GPS files to import."
 msgstr "Aucun fichier GPS valide à importer."
 
 #: app/aircraft/routes.py:1937 app/aircraft/routes.py:2278
-#: app/aircraft/routes.py:2474 app/pilots/routes.py:2110
-#: app/pilots/routes.py:2214
+#: app/aircraft/routes.py:2474 app/pilots/routes.py:2126
+#: app/pilots/routes.py:2230
 msgid "Session expired — please upload your GPS files again."
 msgstr "Session expirée — veuillez retéléverser vos fichiers GPS."
 
-#: app/aircraft/routes.py:1959 app/pilots/routes.py:2138
+#: app/aircraft/routes.py:1959 app/pilots/routes.py:2154
 #, python-format
 msgid "Could not read %(fn)s — please upload again."
 msgstr "Impossible de lire %(fn)s — veuillez retéléverser le fichier."
 
-#: app/aircraft/routes.py:2283 app/pilots/routes.py:2219
+#: app/aircraft/routes.py:2283 app/pilots/routes.py:2235
 msgid "No segments to import."
 msgstr "Aucun segment à importer."
 
 #: app/aircraft/routes.py:2289 app/aircraft/routes.py:2293
-#: app/aircraft/routes.py:2479 app/pilots/routes.py:2225
-#: app/pilots/routes.py:2229
+#: app/aircraft/routes.py:2479 app/pilots/routes.py:2241
+#: app/pilots/routes.py:2245
 msgid "Invalid segment index."
 msgstr "Index de segment invalide."
 
-#: app/aircraft/routes.py:2298 app/pilots/routes.py:2234
+#: app/aircraft/routes.py:2298 app/pilots/routes.py:2250
 msgid "This segment has already been confirmed."
 msgstr "Ce segment a déjà été confirmé."
 
 #: app/aircraft/routes.py:2318 app/aircraft/routes.py:2445
-#: app/pilots/routes.py:2255 app/pilots/routes.py:2473
+#: app/pilots/routes.py:2271 app/pilots/routes.py:2489
 #, python-format
 msgid "%(n)s flight imported successfully."
 msgid_plural "%(n)s flights imported successfully."
 msgstr[0] "%(n)s vol importé avec succès."
 msgstr[1] "%(n)s vols importés avec succès."
 
-#: app/aircraft/routes.py:2327 app/pilots/routes.py:2264
+#: app/aircraft/routes.py:2327 app/pilots/routes.py:2280
 #, python-format
 msgid "%(n)s segment skipped."
 msgid_plural "%(n)s segments skipped."
 msgstr[0] "%(n)s segment ignoré."
 msgstr[1] "%(n)s segments ignorés."
 
-#: app/aircraft/routes.py:2340 app/pilots/routes.py:2274
+#: app/aircraft/routes.py:2340 app/pilots/routes.py:2290
 msgid "Segment skipped."
 msgstr "Segment ignoré."
 
-#: app/aircraft/routes.py:2456 app/pilots/routes.py:2482
+#: app/aircraft/routes.py:2456 app/pilots/routes.py:2498
 msgid "Flight confirmed."
 msgstr "Vol confirmé."
 
@@ -516,179 +516,179 @@ msgstr "Utilisateur introuvable."
 msgid "Password reset successfully. You can now log in."
 msgstr "Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter."
 
-#: app/config/routes.py:429
+#: app/config/routes.py:434
 msgid "Production"
 msgstr "Production"
 
-#: app/config/routes.py:430
+#: app/config/routes.py:435
 msgid "Development"
 msgstr "Développement"
 
-#: app/config/routes.py:431
+#: app/config/routes.py:436
 msgid "Test"
 msgstr "Test"
 
-#: app/config/routes.py:497
+#: app/config/routes.py:503
 msgid "Hangar ID cannot be empty."
 msgstr "L'identifiant du hangar ne peut pas être vide."
 
-#: app/config/routes.py:502
+#: app/config/routes.py:508
 msgid "Hangar ID must contain at least one letter or digit."
 msgstr "L'identifiant du hangar doit contenir au moins une lettre ou un chiffre."
 
-#: app/config/routes.py:507
+#: app/config/routes.py:513
 msgid "That Hangar ID is already in use. Please choose another."
 msgstr "Cet identifiant est déjà utilisé. Veuillez en choisir un autre."
 
-#: app/config/routes.py:550
+#: app/config/routes.py:556
 msgid "Hangar ID saved."
 msgstr "Identifiant du hangar enregistré."
 
-#: app/config/routes.py:566
+#: app/config/routes.py:572
 msgid "OpenAIP API key saved."
 msgstr "Clé API OpenAIP enregistrée."
 
-#: app/config/routes.py:571
+#: app/config/routes.py:577
 msgid "OpenAIP API key removed."
 msgstr "Clé API OpenAIP supprimée."
 
-#: app/config/routes.py:581
+#: app/config/routes.py:587
 #, python-format
 msgid "Backup completed: %(filename)s"
 msgstr "Sauvegarde effectuée : %(filename)s"
 
-#: app/config/routes.py:583
+#: app/config/routes.py:589
 #, python-format
 msgid "Backup failed: %(error)s"
 msgstr "Échec de la sauvegarde : %(error)s"
 
-#: app/config/routes.py:611
+#: app/config/routes.py:617
 msgid "Invalid operating model."
 msgstr "Modèle d'exploitation invalide."
 
-#: app/config/routes.py:642
+#: app/config/routes.py:648
 msgid "Usage profile updated."
 msgstr "Profil d'utilisation mis à jour."
 
-#: app/config/routes.py:669
+#: app/config/routes.py:675
 #, python-format
 msgid "Test email sent to %(email)s."
 msgstr "E-mail de test envoyé à %(email)s."
 
-#: app/config/routes.py:671
+#: app/config/routes.py:677
 #, python-format
 msgid "Email not configured: %(error)s"
 msgstr "E-mail non configuré : %(error)s"
 
-#: app/config/routes.py:673
+#: app/config/routes.py:679
 #, python-format
 msgid "Email send failed: %(error)s"
 msgstr "Échec de l'envoi de l'e-mail : %(error)s"
 
-#: app/config/routes.py:706
+#: app/config/routes.py:712
 msgid "Version check refreshed."
 msgstr "Vérification de version actualisée."
 
-#: app/config/routes.py:723
+#: app/config/routes.py:748
 msgid "An upgrade is already in progress."
 msgstr "Une mise à jour est déjà en cours."
 
-#: app/config/routes.py:726
+#: app/config/routes.py:751
 msgid "Upgrade already triggered."
 msgstr "Mise à jour déjà déclenchée."
 
-#: app/config/routes.py:738
+#: app/config/routes.py:763
 #, python-format
 msgid "Pre-upgrade backup failed, upgrade not triggered: %(error)s"
 msgstr "La sauvegarde préalable à la mise à jour a échoué, mise à jour non déclenchée : %(error)s"
 
-#: app/config/routes.py:756
+#: app/config/routes.py:776
 #, python-format
 msgid "Backup created (%(filename)s). Upgrade triggered — the service will restart shortly."
 msgstr "Sauvegarde créée (%(filename)s). Mise à jour déclenchée — le service va redémarrer prochainement."
 
-#: app/config/routes.py:851
+#: app/config/routes.py:878
 msgid "Tenant name is required."
 msgstr "Le nom du locataire est obligatoire."
 
-#: app/config/routes.py:854
+#: app/config/routes.py:881
 msgid "Admin email is required."
 msgstr "L'e-mail de l'administrateur est obligatoire."
 
-#: app/config/routes.py:885
+#: app/config/routes.py:912
 #, python-format
 msgid "Tenant '%(name)s' created. Share this invite link with the owner: %(url)s"
 msgstr "Espace '%(name)s' créé. Partagez ce lien d'invitation avec le responsable : %(url)s"
 
-#: app/config/routes.py:911
+#: app/config/routes.py:938
 #, python-format
 msgid "Tenant '%(name)s' reactivated."
 msgstr "Locataire « %(name)s » réactivé."
 
-#: app/config/routes.py:913
+#: app/config/routes.py:940
 #, python-format
 msgid "Tenant '%(name)s' deactivated."
 msgstr "Locataire « %(name)s » désactivé."
 
-#: app/config/routes.py:939
+#: app/config/routes.py:966
 msgid "No user selected."
 msgstr "Aucun utilisateur sélectionné."
 
-#: app/config/routes.py:1010
+#: app/config/routes.py:1037
 msgid "Cannot save: no tenant associated."
 msgstr "Impossible d'enregistrer : aucun groupe associé."
 
-#: app/config/routes.py:1048
+#: app/config/routes.py:1075
 msgid "Notification preferences saved."
 msgstr "Préférences de notification enregistrées."
 
-#: app/config/routes.py:1131
+#: app/config/routes.py:1158
 #, python-format
 msgid "Back-fill complete: one of %(total)d entry resolved."
 msgid_plural "Back-fill complete: %(updated)d of %(total)d entries resolved."
 msgstr[0] "Remplissage terminé : une entrée sur %(total)d résolue."
 msgstr[1] "Remplissage terminé : %(updated)d entrées sur %(total)d résolues."
 
-#: app/config/routes.py:1167
+#: app/config/routes.py:1194
 #, python-format
 msgid "Back-fill complete: %(count)d entry linked to a managed aircraft."
 msgid_plural "Back-fill complete: %(count)d entries linked to a managed aircraft."
 msgstr[0] "Remplissage terminé : %(count)d entrée liée à un avion géré."
 msgstr[1] "Remplissage terminé : %(count)d entrées liées à un avion géré."
 
-#: app/config/routes.py:1300
+#: app/config/routes.py:1327
 msgid "Select a valid renter."
 msgstr "Sélectionnez un locataire valide."
 
-#: app/config/routes.py:1307 app/config/routes.py:1312
+#: app/config/routes.py:1334 app/config/routes.py:1339
 msgid "Invalid aircraft selection."
 msgstr "Sélection d'appareil invalide."
 
-#: app/config/routes.py:1315
+#: app/config/routes.py:1342
 msgid "Granted date is required and must be a valid date."
 msgstr "La date d'octroi est obligatoire et doit être une date valide."
 
-#: app/config/routes.py:1317
+#: app/config/routes.py:1344
 msgid "Expiry date cannot be before the granted date."
 msgstr "La date d'expiration ne peut pas être antérieure à la date d'octroi."
 
-#: app/config/routes.py:1331
+#: app/config/routes.py:1358
 msgid "This file type is not allowed for the rental agreement."
 msgstr "Ce type de fichier n'est pas autorisé pour le contrat de location."
 
-#: app/config/routes.py:1375
+#: app/config/routes.py:1402
 msgid "Rental agreement"
 msgstr "Contrat de location"
 
-#: app/config/routes.py:1381
+#: app/config/routes.py:1408
 msgid "Renter authorization saved."
 msgstr "Autorisation de location enregistrée."
 
-#: app/config/routes.py:1430
+#: app/config/routes.py:1457
 msgid "Renter authorization revoked."
 msgstr "Autorisation de location révoquée."
 
-#: app/config/routes.py:1546
+#: app/config/routes.py:1573
 msgid "Payment received"
 msgstr "Paiement reçu"
 
@@ -709,8 +709,8 @@ msgid "Airworthiness Review Certificate (ARC)"
 msgstr "Certificat d'examen de navigabilité (ARC)"
 
 #: app/documents/routes.py:496 app/documents/routes.py:740
-#: app/documents/routes.py:839 app/flights/routes.py:1526
-#: app/maintenance/routes.py:784 app/pilots/routes.py:1212
+#: app/documents/routes.py:839 app/flights/routes.py:1540
+#: app/maintenance/routes.py:784 app/pilots/routes.py:1228
 msgid "Please select a file to upload."
 msgstr "Veuillez sélectionner un fichier à télécharger."
 
@@ -962,167 +962,167 @@ msgstr "L'huile ajoutée après le vol doit être un nombre positif ou nul."
 msgid "🎉 You just crossed %(hours)s flight hours!"
 msgstr "🎉 Vous venez de dépasser %(hours)s heures de vol !"
 
-#: app/flights/routes.py:884 app/flights/routes.py:894
-#: app/flights/routes.py:1020 app/templates/partials/_gps_upload.html:42
+#: app/flights/routes.py:886 app/flights/routes.py:896
+#: app/flights/routes.py:1022 app/templates/partials/_gps_upload.html:42
 msgid "Could not parse GPS file. Fill in the fields manually."
 msgstr "Impossible de lire le fichier GPS. Remplissez les champs manuellement."
 
-#: app/flights/routes.py:903 app/templates/flights/flight_form.html:156
+#: app/flights/routes.py:905 app/templates/flights/flight_form.html:156
 #, python-format
 msgid "GPS file parsed: %(filename)s — fields pre-filled below. Review and save."
 msgstr "Fichier GPS %(filename)s traité — champs pré-remplis ci-dessous. Vérifiez et enregistrez."
 
-#: app/flights/routes.py:1017
+#: app/flights/routes.py:1019
 msgid "GPS file parsed — fields pre-filled. Review and save."
 msgstr "Fichier GPS traité — champs pré-remplis. Vérifiez et enregistrez."
 
-#: app/flights/routes.py:1085 app/pilots/routes.py:2077 app/pwa/routes.py:275
+#: app/flights/routes.py:1087 app/pilots/routes.py:2093 app/pwa/routes.py:275
 msgid "Please select an aircraft."
 msgstr "Veuillez sélectionner un avion."
 
-#: app/flights/routes.py:1088
+#: app/flights/routes.py:1090
 msgid "Pilot role is required for other aircraft flights."
 msgstr "Le rôle du pilote est obligatoire pour les vols sur un autre avion."
 
-#: app/flights/routes.py:1094
+#: app/flights/routes.py:1096
 msgid "Pilot name is required."
 msgstr "Le nom du pilote est obligatoire."
 
-#: app/flights/routes.py:1097
+#: app/flights/routes.py:1099
 msgid "Aircraft type (make/model) is required for other aircraft flights."
 msgstr "Le type d'avion (marque/modèle) est obligatoire pour les vols sur d'autres avions."
 
-#: app/flights/routes.py:1101
+#: app/flights/routes.py:1103
 msgid "Aircraft registration is required for other aircraft flights."
 msgstr "L'immatriculation de l'avion est obligatoire pour les vols sur d'autres avions."
 
-#: app/flights/routes.py:1194
+#: app/flights/routes.py:1196
 msgid "GPS track linked to the existing flight entry."
 msgstr "Trace GPS liée à l'entrée de vol existante."
 
-#: app/flights/routes.py:1196
+#: app/flights/routes.py:1198
 msgid "Could not link GPS track — no matching entry found."
 msgstr "Impossible de lier la trace GPS — aucune entrée correspondante trouvée."
 
-#: app/flights/routes.py:1321
+#: app/flights/routes.py:1333
 #, python-format
 msgid "Flight %(dep)s→%(arr)s on %(date)s saved."
 msgstr "Vol %(dep)s→%(arr)s du %(date)s enregistré."
 
-#: app/flights/routes.py:1348
+#: app/flights/routes.py:1360
 #, python-format
 msgid "Flight %(dep)s→%(arr)s on %(date)s saved to your pilot logbook."
 msgstr "Vol %(dep)s→%(arr)s du %(date)s enregistré dans le carnet de vol."
 
-#: app/flights/routes.py:1420
+#: app/flights/routes.py:1434
 #, python-format
 msgid "Flight %(label)s deleted."
 msgstr "Vol %(label)s supprimé."
 
-#: app/flights/routes.py:1533 app/pilots/routes.py:1218
+#: app/flights/routes.py:1547 app/pilots/routes.py:1234
 msgid "Unsupported format. Please upload a .csv or .xlsx file."
 msgstr "Format non pris en charge. Veuillez envoyer un fichier .csv ou .xlsx."
 
-#: app/flights/routes.py:1540 app/maintenance/routes.py:794
-#: app/pilots/routes.py:1225
+#: app/flights/routes.py:1554 app/maintenance/routes.py:794
+#: app/pilots/routes.py:1241
 msgid "File too large (maximum 10 MB)."
 msgstr "Fichier trop volumineux (maximum 10 Mo)."
 
-#: app/flights/routes.py:1598 app/flights/routes.py:1888
-#: app/flights/routes.py:1965 app/maintenance/routes.py:848
-#: app/pilots/routes.py:1280 app/pilots/routes.py:1647
-#: app/pilots/routes.py:1709
+#: app/flights/routes.py:1612 app/flights/routes.py:1902
+#: app/flights/routes.py:1979 app/maintenance/routes.py:848
+#: app/pilots/routes.py:1296 app/pilots/routes.py:1663
+#: app/pilots/routes.py:1725
 msgid "Import session expired. Please upload the file again."
 msgstr "Session d'import expirée. Veuillez renvoyer le fichier."
 
-#: app/flights/routes.py:1607 app/flights/routes.py:1893
-#: app/flights/routes.py:1983 app/maintenance/routes.py:854
-#: app/pilots/routes.py:1289 app/pilots/routes.py:1652
-#: app/pilots/routes.py:1727
+#: app/flights/routes.py:1621 app/flights/routes.py:1907
+#: app/flights/routes.py:1997 app/maintenance/routes.py:854
+#: app/pilots/routes.py:1305 app/pilots/routes.py:1668
+#: app/pilots/routes.py:1743
 msgid "Temporary file not found. Please upload the file again."
 msgstr "Fichier temporaire introuvable. Veuillez renvoyer le fichier."
 
-#: app/flights/routes.py:1628 app/pilots/routes.py:1301
+#: app/flights/routes.py:1642 app/pilots/routes.py:1317
 msgid "You must map at least one column to 'Date'."
 msgstr "Vous devez associer au moins une colonne à « Date »."
 
-#: app/flights/routes.py:1723
+#: app/flights/routes.py:1737
 #, python-format
 msgid "%(imported)d flights imported so far. %(n)d rows look like they might already be in this aircraft's log with different data — please review them below."
 msgstr "%(imported)d vols importés jusqu'à présent. %(n)d lignes semblent déjà présentes dans le carnet de cet appareil avec des données différentes — veuillez les examiner ci-dessous."
 
-#: app/flights/routes.py:1739 app/flights/routes.py:1802
+#: app/flights/routes.py:1753 app/flights/routes.py:1816
 #, python-format
 msgid "Rows already in this aircraft's log, skipped: %(detail)s"
 msgstr "Lignes déjà présentes dans le carnet de cet appareil, ignorées : %(detail)s"
 
-#: app/flights/routes.py:1748 app/flights/routes.py:1826
-#: app/pilots/routes.py:1449 app/pilots/routes.py:1535
+#: app/flights/routes.py:1762 app/flights/routes.py:1840
+#: app/pilots/routes.py:1465 app/pilots/routes.py:1551
 #, python-format
 msgid "Skipped rows: %(detail)s"
 msgstr "Lignes ignorées : %(detail)s"
 
-#: app/flights/routes.py:1766
+#: app/flights/routes.py:1780
 msgid "All flights in this file were already in this aircraft's log — nothing new was imported."
 msgstr "Tous les vols de ce fichier étaient déjà présents dans le carnet de cet appareil — rien de nouveau n'a été importé."
 
-#: app/flights/routes.py:1774
+#: app/flights/routes.py:1788
 #, python-format
 msgid "Import complete: %(imported)d new flights imported, %(duplicates)d rows were already in this aircraft's log and were skipped, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
 msgstr "Import terminé : %(imported)d nouveaux vols importés, %(duplicates)d lignes étaient déjà présentes dans le carnet de cet appareil et ont été ignorées, %(subtotals)d lignes de sous-totaux ignorées, %(skipped)d lignes n'ont pas pu être lues."
 
-#: app/flights/routes.py:1788
+#: app/flights/routes.py:1802
 #, python-format
 msgid "Import complete: %(imported)d flights imported, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
 msgstr "Import terminé : %(imported)d vols importés, %(subtotals)d lignes de sous-totaux ignorées, %(skipped)d lignes n'ont pas pu être lues."
 
-#: app/flights/routes.py:1810
+#: app/flights/routes.py:1824
 #, python-format
 msgid "row %(row)d: %(kind)s counter starts at %(got).1f but the previous entry ended at %(prev).1f"
 msgstr "ligne %(row)d : le compteur %(kind)s commence à %(got).1f alors que l'entrée précédente se terminait à %(prev).1f"
 
-#: app/flights/routes.py:1820
+#: app/flights/routes.py:1834
 #, python-format
 msgid " … and %(n)d more"
 msgstr " … et %(n)d de plus"
 
-#: app/flights/routes.py:1821
+#: app/flights/routes.py:1835
 #, python-format
 msgid "Counter continuity warnings: %(detail)s"
 msgstr "Avertissements de continuité des compteurs : %(detail)s"
 
-#: app/flights/routes.py:1861
+#: app/flights/routes.py:1875
 #, python-format
 msgid "Review complete: %(overwritten)d flights updated, %(new)d imported as new, %(kept)d left unchanged."
 msgstr "Révision terminée : %(overwritten)d vols mis à jour, %(new)d importés comme nouveaux, %(kept)d laissés inchangés."
 
-#: app/flights/routes.py:1975 app/flights/routes.py:2003
-#: app/pilots/routes.py:1719 app/pilots/routes.py:1747
+#: app/flights/routes.py:1989 app/flights/routes.py:2017
+#: app/pilots/routes.py:1735 app/pilots/routes.py:1763
 msgid "Invalid row number."
 msgstr "Numéro de ligne invalide."
 
-#: app/flights/routes.py:1979 app/pilots/routes.py:1723
+#: app/flights/routes.py:1993 app/pilots/routes.py:1739
 msgid "This row has already been resolved."
 msgstr "Cette ligne a déjà été traitée."
 
-#: app/flights/routes.py:2017 app/pilots/routes.py:1761
+#: app/flights/routes.py:2031 app/pilots/routes.py:1777
 msgid "Invalid selection."
 msgstr "Sélection invalide."
 
-#: app/flights/routes.py:2060 app/pilots/routes.py:1807
+#: app/flights/routes.py:2074 app/pilots/routes.py:1823
 msgid "Invalid decision."
 msgstr "Choix invalide."
 
-#: app/flights/routes.py:2104
+#: app/flights/routes.py:2118
 #, python-format
 msgid "Import deleted: %(n)d flight entries removed."
 msgstr "Import supprimé : %(n)d entrées de vol retirées."
 
-#: app/flights/routes.py:2134
+#: app/flights/routes.py:2148
 msgid "Import marked as historical: edits to its flights will no longer be blocked by validation on old, imprecise values."
 msgstr "Import marqué comme historique : les modifications de ses vols ne seront plus bloquées par la validation de valeurs anciennes et imprécises."
 
-#: app/flights/routes.py:2142
+#: app/flights/routes.py:2156
 msgid "Import no longer marked as historical: edits to its flights are now subject to the normal validation rules."
 msgstr "Import non marqué comme historique : les modifications de ses vols sont désormais soumises aux règles de validation normales."
 
@@ -1302,8 +1302,8 @@ msgstr "Aucun PDF enregistré pour la révision « %(number)s » — elle n'a ja
 msgid "The saved PDF for revision '%(number)s' is missing on disk."
 msgstr "Le PDF enregistré pour la révision « %(number)s » est introuvable sur le disque."
 
-#: app/offline/routes.py:253 app/offline/routes.py:260
-#: app/offline/routes.py:380 app/offline/routes.py:386
+#: app/offline/routes.py:259 app/offline/routes.py:266
+#: app/offline/routes.py:386 app/offline/routes.py:392
 msgid "Malformed request."
 msgstr "Requête invalide."
 
@@ -1409,7 +1409,7 @@ msgstr "Visibilité minimum, nuit"
 #: app/pilots/personal_minimums.py:55 app/templates/aircraft/wb_config.html:163
 #: app/templates/aircraft/wb_config.html:195
 #: app/templates/aircraft/wb_config.html:244
-#: app/templates/flights/flight_form.html:566
+#: app/templates/flights/flight_form.html:596
 msgid "Fuel"
 msgstr "Carburant"
 
@@ -1617,74 +1617,74 @@ msgstr "Brouillon abandonné."
 msgid "No active personal minimums to print yet."
 msgstr "Aucun minimums personnels actifs à imprimer pour le moment."
 
-#: app/pilots/routes.py:1005
+#: app/pilots/routes.py:1019
 msgid "Logbook entry saved."
 msgstr "Entrée de carnet de vol enregistrée."
 
-#: app/pilots/routes.py:1051
+#: app/pilots/routes.py:1065
 msgid "Logbook entry updated."
 msgstr "Entrée de carnet de vol mise à jour."
 
-#: app/pilots/routes.py:1101
+#: app/pilots/routes.py:1117
 msgid "Logbook entry deleted."
 msgstr "Entrée de carnet de vol supprimée."
 
-#: app/pilots/routes.py:1426
+#: app/pilots/routes.py:1442
 #, python-format
 msgid "%(imported)d entries imported so far. %(n)d rows look like they might already be in your logbook with different data — please review them below."
 msgstr "%(imported)d entrées importées jusqu'à présent. %(n)d lignes semblent déjà présentes dans votre carnet de vol avec des données différentes — veuillez les examiner ci-dessous."
 
-#: app/pilots/routes.py:1442 app/pilots/routes.py:1528
+#: app/pilots/routes.py:1458 app/pilots/routes.py:1544
 #, python-format
 msgid "Rows already in your logbook, skipped: %(detail)s"
 msgstr "Lignes déjà présentes dans votre carnet de vol, ignorées : %(detail)s"
 
-#: app/pilots/routes.py:1481
+#: app/pilots/routes.py:1497
 msgid "All entries in this file were already in your logbook — nothing new was imported."
 msgstr "Toutes les entrées de ce fichier étaient déjà présentes dans votre carnet de vol — rien de nouveau n'a été importé."
 
-#: app/pilots/routes.py:1489
+#: app/pilots/routes.py:1505
 #, python-format
 msgid "Import complete: %(imported)d new entries imported, %(duplicates)d rows were already in your logbook and were skipped, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
 msgstr "Import terminé : %(imported)d nouvelles entrées importées, %(duplicates)d lignes étaient déjà présentes dans votre carnet de vol et ont été ignorées, %(subtotals)d lignes de sous-total ignorées, %(skipped)d lignes non analysées."
 
-#: app/pilots/routes.py:1502
+#: app/pilots/routes.py:1518
 #, python-format
 msgid "Import complete: %(imported)d entries imported, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
 msgstr "Import terminé : %(imported)d entrées importées, %(subtotals)d lignes de sous-total ignorées, %(skipped)d lignes non analysées."
 
-#: app/pilots/routes.py:1513 app/pilots/routes.py:1629
+#: app/pilots/routes.py:1529 app/pilots/routes.py:1645
 #, python-format
 msgid "%(n)d aircraft log entry was also created for your managed aircraft."
 msgid_plural "%(n)d aircraft log entries were also created for your managed aircraft."
 msgstr[0] "%(n)d entrée du carnet avion a été créée pour votre avion géré."
 msgstr[1] "%(n)d entrées du carnet avion ont été créées pour votre avion géré."
 
-#: app/pilots/routes.py:1547
+#: app/pilots/routes.py:1563
 #, python-format
 msgid "One cell value could not be parsed and was imported as blank: %(examples)s"
 msgid_plural "%(n)d cell values could not be parsed and were imported as blank: %(examples)s"
 msgstr[0] "Une valeur de cellule n'a pas pu être analysée et a été importée comme vide : %(examples)s"
 msgstr[1] "%(n)d valeurs de cellule n'ont pas pu être analysées et ont été importées comme vides : %(examples)s"
 
-#: app/pilots/routes.py:1560
+#: app/pilots/routes.py:1576
 #, python-format
 msgid "row %(row)d (source %(src).1f h, computed %(comp).1f h)"
 msgstr "ligne %(row)d (source : %(src).1f h, calculé : %(comp).1f h)"
 
-#: app/pilots/routes.py:1571
+#: app/pilots/routes.py:1587
 #, python-format
 msgid "One row has a total flight time that doesn't match the sum of its components — please review: %(examples)s"
 msgid_plural "%(n)d rows have a total flight time that doesn't match the sum of their components — please review: %(examples)s"
 msgstr[0] "Une ligne a un temps de vol total qui ne correspond pas à la somme de ses composantes — veuillez vérifier : %(examples)s"
 msgstr[1] "%(n)d lignes ont un temps de vol total qui ne correspondent pas à la somme de leurs composantes — veuillez vérifier : %(examples)s"
 
-#: app/pilots/routes.py:1618
+#: app/pilots/routes.py:1634
 #, python-format
 msgid "Review complete: %(overwritten)d entries updated, %(new)d imported as new, %(kept)d left unchanged."
 msgstr "Révision terminée : %(overwritten)d entrées mises à jour, %(new)d importées comme nouvelles, %(kept)d laissées inchangées."
 
-#: app/pilots/routes.py:1858
+#: app/pilots/routes.py:1874
 #, python-format
 msgid "Import deleted: one entry removed."
 msgid_plural "Import deleted: all %(count)d entries removed."
@@ -1746,7 +1746,8 @@ msgstr "Navigabilité"
 #: app/templates/pilots/entry_detail.html:38
 #: app/templates/pilots/entry_form.html:31
 #: app/templates/pilots/flight_tracks.html:16
-#: app/templates/pilots/import_history.html:21 app/templates/welcome.html:55
+#: app/templates/pilots/import_history.html:21
+#: app/templates/pilots/stats.html:16 app/templates/welcome.html:55
 msgid "Logbook"
 msgstr "Carnet de vol"
 
@@ -1822,7 +1823,7 @@ msgstr "%(label)s ne peut pas être dans le futur."
 #: app/templates/pilots/entry_detail.html:46
 #: app/templates/pilots/entry_form.html:117
 #: app/templates/pilots/import_history.html:31
-#: app/templates/pilots/logbook.html:168 app/templates/refuels/list.html:35
+#: app/templates/pilots/logbook.html:171 app/templates/refuels/list.html:35
 #: app/templates/refuels/refuel_form.html:22
 msgid "Date"
 msgstr "Date"
@@ -1929,7 +1930,7 @@ msgstr "Nombre de vols"
 #: app/templates/maintenance/list.html:102
 #: app/templates/maintenance/trigger_form.html:63
 #: app/templates/pilots/entry_form.html:202
-#: app/templates/pilots/logbook.html:174
+#: app/templates/pilots/logbook.html:177
 #: app/templates/reports/utilization.html:99
 msgid "Landings"
 msgstr "Atterrissages"
@@ -2543,13 +2544,13 @@ msgid "%(items)s or medical validity dates expire within %(days)s."
 msgstr "%(items)s ou dates de validité médicale expirent dans %(days)s."
 
 #: app/services/notification_service.py:1048
-#: app/templates/pilots/logbook.html:57
+#: app/templates/pilots/logbook.html:60
 #, python-format
 msgid "no matching flight on record yet (comfort zone: %(threshold)s days)."
 msgstr "aucun vol correspondant enregistré pour l'instant (zone de confort : %(threshold)s jours)."
 
 #: app/services/notification_service.py:1053
-#: app/templates/pilots/logbook.html:59
+#: app/templates/pilots/logbook.html:62
 #, python-format
 msgid "%(days)s days since your last matching flight (comfort zone: %(threshold)s days)."
 msgstr "%(days)s jours depuis votre dernier vol correspondant (zone de confort : %(threshold)s jours)."
@@ -2729,7 +2730,7 @@ msgstr "Anomalie « %(title)s » supprimée."
 #: app/templates/base.html:256 app/templates/base.html:265
 #: app/templates/base.html:277 app/templates/dashboard.html:798
 #: app/templates/partials/_flight_tracks_map.html:70
-#: app/templates/pilots/logbook.html:65
+#: app/templates/pilots/logbook.html:68
 msgid "Close"
 msgstr "Fermer"
 
@@ -2783,7 +2784,7 @@ msgid "Offline"
 msgstr "Hors ligne"
 
 #: app/templates/auth/profile.html:16 app/templates/base.html:186
-#: app/templates/base.html:296 app/templates/config/settings.html:48
+#: app/templates/base.html:296 app/templates/config/settings.html:49
 #: app/templates/dashboard.html:3 app/templates/dashboard.html:114
 #: app/templates/errors/403.html:27 app/templates/errors/404.html:27
 #: app/templates/users/list.html:16
@@ -2815,7 +2816,7 @@ msgid "My account"
 msgstr "Mon compte"
 
 #: app/templates/base.html:214 app/templates/config/notifications.html:16
-#: app/templates/config/settings.html:3 app/templates/config/settings.html:43
+#: app/templates/config/settings.html:3 app/templates/config/settings.html:44
 msgid "Configuration"
 msgstr "Configuration"
 
@@ -2853,8 +2854,8 @@ msgstr "gestion d'avions open source"
 #: app/templates/airworthiness/dashboard.html:89
 #: app/templates/airworthiness/status_form.html:21 app/templates/base.html:330
 #: app/templates/config/renters_list.html:32
-#: app/templates/config/settings.html:278
-#: app/templates/config/settings.html:376
+#: app/templates/config/settings.html:279
+#: app/templates/config/settings.html:377
 #: app/templates/config/tenant_list.html:32
 #: app/templates/maintenance/amp_import_review.html:43
 #: app/templates/maintenance/fleet.html:171
@@ -3085,8 +3086,8 @@ msgstr[1] "%(n)s jours"
 msgid "Expired"
 msgstr "Expiré"
 
-#: app/templates/config/settings.html:358
-#: app/templates/config/settings.html:361 app/templates/dashboard.html:283
+#: app/templates/config/settings.html:359
+#: app/templates/config/settings.html:362 app/templates/dashboard.html:283
 #: app/templates/dashboard.html:301
 msgid "Not set"
 msgstr "Non défini"
@@ -3157,7 +3158,7 @@ msgstr "Bientôt dû"
 #: app/templates/aircraft/detail.html:620 app/templates/aircraft/list.html:77
 #: app/templates/aircraft/wb_entry.html:142
 #: app/templates/aircraft/wb_list.html:87
-#: app/templates/config/settings.html:292 app/templates/dashboard.html:390
+#: app/templates/config/settings.html:293 app/templates/dashboard.html:390
 #: app/templates/dashboard.html:474 app/templates/landing.html:186
 #: app/templates/maintenance/amp_import_review.html:90
 #: app/templates/maintenance/fleet.html:238
@@ -3264,7 +3265,7 @@ msgstr "Licence & médical"
 #: app/templates/flights/flight_form.html:148
 #: app/templates/flights/list.html:75 app/templates/flights/list.html:114
 #: app/templates/pilots/entry_form.html:87
-#: app/templates/pilots/logbook.html:153 app/templates/pilots/logbook.html:205
+#: app/templates/pilots/logbook.html:156 app/templates/pilots/logbook.html:208
 msgid "GPS track"
 msgid_plural "GPS tracks"
 msgstr[0] "Trace GPS"
@@ -3280,7 +3281,7 @@ msgstr "Réservations en attente"
 #: app/templates/airworthiness/stc_form.html:43
 #: app/templates/config/renter_form.html:83 app/templates/dashboard.html:741
 #: app/templates/flights/airframe_import_review.html:35
-#: app/templates/flights/flight_form.html:743
+#: app/templates/flights/flight_form.html:773
 #: app/templates/maintenance/_amp_export_body.html:285
 #: app/templates/maintenance/service_form.html:109
 #: app/templates/maintenance/trigger_form.html:210
@@ -3388,14 +3389,14 @@ msgid "Sole pilot"
 msgstr "Pilote unique"
 
 #: app/templates/auth/setup.html:154 app/templates/auth/setup.html:353
-#: app/templates/config/settings.html:102
+#: app/templates/config/settings.html:103
 #: app/templates/config/tenant_create.html:41 app/templates/landing.html:60
 #: app/templates/landing.html:268
 msgid "Sole operator"
 msgstr "Opérateur unique"
 
 #: app/templates/auth/setup.html:165 app/templates/auth/setup.html:354
-#: app/templates/config/settings.html:103
+#: app/templates/config/settings.html:104
 #: app/templates/config/tenant_create.html:42 app/templates/landing.html:66
 #: app/templates/landing.html:274
 msgid "Shared ownership"
@@ -3623,8 +3624,8 @@ msgstr "Modifier %(reg)s"
 #: app/templates/flights/airframe_import_map.html:160
 #: app/templates/flights/flight_form.html:45
 #: app/templates/flights/flight_form.html:49
-#: app/templates/flights/flight_form.html:756
-#: app/templates/flights/flight_form.html:758
+#: app/templates/flights/flight_form.html:786
+#: app/templates/flights/flight_form.html:788
 #: app/templates/maintenance/amp_declaration_form.html:177
 #: app/templates/maintenance/amp_import_review.html:104
 #: app/templates/maintenance/service_form.html:20
@@ -3654,7 +3655,7 @@ msgstr "Annuler"
 #: app/templates/offline/pilot_workbench.html:63
 #: app/templates/pilots/entry_form.html:137
 #: app/templates/pilots/import_review.html:24
-#: app/templates/pilots/logbook.html:170
+#: app/templates/pilots/logbook.html:173
 msgid "Registration"
 msgstr "Immatriculation"
 
@@ -3787,7 +3788,7 @@ msgstr "Réservoirs de carburant"
 #: app/templates/airworthiness/stc_form.html:38
 #: app/templates/airworthiness/stc_form.html:43
 #: app/templates/auth/setup.html:62 app/templates/auth/setup.html:292
-#: app/templates/auth/setup.html:297 app/templates/config/settings.html:434
+#: app/templates/auth/setup.html:297 app/templates/config/settings.html:435
 #: app/templates/expenses/expense_form.html:88
 #: app/templates/expenses/expense_form.html:95
 #: app/templates/expenses/expense_form.html:119
@@ -3801,8 +3802,8 @@ msgstr "Réservoirs de carburant"
 #: app/templates/flights/flight_form.html:508
 #: app/templates/flights/flight_form.html:524
 #: app/templates/flights/flight_form.html:535
-#: app/templates/flights/flight_form.html:583
-#: app/templates/flights/flight_form.html:743
+#: app/templates/flights/flight_form.html:613
+#: app/templates/flights/flight_form.html:773
 #: app/templates/maintenance/amp_declaration_form.html:64
 #: app/templates/maintenance/amp_declaration_form.html:124
 #: app/templates/maintenance/amp_declaration_form.html:168
@@ -3900,12 +3901,12 @@ msgstr "Détermine comment les temps de vol importés via GPS sont arrondis dans
 #: app/templates/aircraft/wb_entry.html:115
 #: app/templates/airworthiness/status_form.html:59
 #: app/templates/auth/profile.html:37 app/templates/config/renter_form.html:102
-#: app/templates/config/settings.html:166
-#: app/templates/config/settings.html:203
-#: app/templates/config/settings.html:446
+#: app/templates/config/settings.html:167
+#: app/templates/config/settings.html:204
+#: app/templates/config/settings.html:447
 #: app/templates/documents/edit_form.html:100
 #: app/templates/expenses/expense_form.html:200
-#: app/templates/flights/flight_form.html:752
+#: app/templates/flights/flight_form.html:782
 #: app/templates/maintenance/amp_declaration_form.html:174
 #: app/templates/maintenance/trigger_form.html:217
 #: app/templates/pwa/share_target.html:116
@@ -4105,7 +4106,7 @@ msgstr "ARCHIVÉ"
 #: app/templates/aircraft/wb_list.html:96
 #: app/templates/config/renters_list.html:60
 #: app/templates/pilots/entry_detail.html:35
-#: app/templates/pilots/logbook.html:238 app/templates/refuels/list.html:56
+#: app/templates/pilots/logbook.html:241 app/templates/refuels/list.html:56
 #: app/templates/reservations/calendar.html:145
 #: app/templates/snags/list.html:141
 msgid "Edit"
@@ -4133,7 +4134,7 @@ msgstr "Supprimer %(reg)s et tous ses composants ?"
 #: app/templates/aircraft/detail.html:988
 #: app/templates/maintenance/amp_import_history.html:64
 #: app/templates/pilots/import_history.html:74
-#: app/templates/pilots/logbook.html:246
+#: app/templates/pilots/logbook.html:249
 msgid "Delete"
 msgstr "Supprimer"
 
@@ -4456,7 +4457,7 @@ msgstr "Renouvellement enregistré, valide à partir du %(date)s"
 #: app/templates/aircraft/detail.html:922 app/templates/documents/list.html:170
 #: app/templates/flights/list.html:145
 #: app/templates/partials/_flight_tracks_map.html:147
-#: app/templates/pilots/logbook.html:234
+#: app/templates/pilots/logbook.html:237
 #: app/templates/pilots/minimums_history.html:47
 #: app/templates/pilots/profile.html:209
 msgid "View"
@@ -4574,7 +4575,7 @@ msgid "Access"
 msgstr "Accès"
 
 #: app/templates/aircraft/detail.html:1133
-#: app/templates/config/settings.html:281
+#: app/templates/config/settings.html:282
 #: app/templates/config/tenant_list.html:29
 msgid "Created"
 msgstr "Créé"
@@ -4655,7 +4656,7 @@ msgstr "Créer le lien"
 #: app/templates/pilots/entry_detail.html:50
 #: app/templates/pilots/entry_form.html:147
 #: app/templates/pilots/import_review.html:26
-#: app/templates/pilots/logbook.html:171
+#: app/templates/pilots/logbook.html:174
 msgid "Departure"
 msgstr "Départ"
 
@@ -4666,7 +4667,7 @@ msgstr "Départ"
 #: app/templates/pilots/entry_detail.html:63
 #: app/templates/pilots/entry_form.html:158
 #: app/templates/pilots/import_review.html:27
-#: app/templates/pilots/logbook.html:172
+#: app/templates/pilots/logbook.html:175
 msgid "Arrival"
 msgstr "Arrivée"
 
@@ -4684,7 +4685,7 @@ msgid "Block on (UTC)"
 msgstr "Bloc arrivée (UTC)"
 
 #: app/templates/aircraft/flight_detail.html:110
-#: app/templates/flights/flight_form.html:693
+#: app/templates/flights/flight_form.html:723
 #: app/templates/offline/workbench.html:165
 #: app/templates/pilots/logbook.html:16
 msgid "Pilot logbook"
@@ -4699,7 +4700,7 @@ msgstr "Carnet de vol pilote"
 #: app/templates/pilots/entry_detail.html:88
 #: app/templates/pilots/entry_form.html:256
 #: app/templates/pilots/gps_import_review.html:44
-#: app/templates/pilots/logbook.html:157 app/templates/pilots/logbook.html:190
+#: app/templates/pilots/logbook.html:160 app/templates/pilots/logbook.html:193
 msgid "PIC"
 msgstr "PIC"
 
@@ -4713,8 +4714,8 @@ msgstr "Deuxième membre d'équipage"
 #: app/templates/pilots/entry_detail.html:124
 #: app/templates/pilots/entry_form.html:210
 #: app/templates/pilots/entry_form.html:241
-#: app/templates/pilots/logbook.html:187 app/templates/pilots/logbook.html:188
-#: app/templates/pilots/logbook.html:189
+#: app/templates/pilots/logbook.html:190 app/templates/pilots/logbook.html:191
+#: app/templates/pilots/logbook.html:192
 msgid "Night"
 msgstr "Nuit"
 
@@ -4725,10 +4726,10 @@ msgid "Instrument"
 msgstr "Instruments"
 
 #: app/templates/aircraft/flight_detail.html:127
-#: app/templates/flights/flight_form.html:729
+#: app/templates/flights/flight_form.html:759
 #: app/templates/pilots/entry_detail.html:105
 #: app/templates/pilots/entry_form.html:230
-#: app/templates/pilots/logbook.html:176
+#: app/templates/pilots/logbook.html:179
 msgid "Multi-pilot"
 msgstr "Multi-pilote"
 
@@ -4737,7 +4738,7 @@ msgid "View full pilot logbook entry"
 msgstr "Voir l'entrée complète du carnet de vol pilote"
 
 #: app/templates/aircraft/flight_detail.html:153
-#: app/templates/flights/flight_form.html:590
+#: app/templates/flights/flight_form.html:620
 #: app/templates/offline/workbench.html:101
 msgid "Fuel added before flight"
 msgstr "Carburant ajouté avant le vol"
@@ -4749,7 +4750,7 @@ msgid "Log as expense"
 msgstr "Enregistrer comme dépense"
 
 #: app/templates/aircraft/flight_detail.html:167
-#: app/templates/flights/flight_form.html:617
+#: app/templates/flights/flight_form.html:647
 #: app/templates/offline/workbench.html:112
 msgid "Fuel added after flight"
 msgstr "Carburant ajouté après le vol"
@@ -5001,7 +5002,7 @@ msgstr "p. ex. Navigation, Entraînement, Vol local"
 #: app/templates/pilots/entry_form.html:279
 #: app/templates/pilots/gps_import_review.html:246
 #: app/templates/pilots/import_review.html:33
-#: app/templates/pilots/logbook.html:181
+#: app/templates/pilots/logbook.html:184
 msgid "Remarks"
 msgstr "Observations"
 
@@ -5609,7 +5610,7 @@ msgstr[0] "un document au total"
 msgstr[1] "%(n)s documents au total"
 
 #: app/templates/airworthiness/dashboard.html:62
-#: app/templates/pilots/logbook.html:95 app/templates/pilots/logbook.html:97
+#: app/templates/pilots/logbook.html:98 app/templates/pilots/logbook.html:100
 #: app/templates/users/list.html:71
 msgid "All"
 msgstr "Tout"
@@ -5847,7 +5848,7 @@ msgid "Change password and manage two-factor authentication"
 msgstr "Modifier le mot de passe et gérer la double authentification"
 
 #: app/templates/auth/profile.html:25 app/templates/auth/setup.html:297
-#: app/templates/auth/setup.html:339 app/templates/config/settings.html:332
+#: app/templates/auth/setup.html:339 app/templates/config/settings.html:333
 #: app/templates/maintenance/_amp_export_body.html:193
 #: app/templates/maintenance/amp_declaration_form.html:160
 #: app/templates/users/invite_accept.html:23 app/templates/users/list.html:30
@@ -6017,7 +6018,7 @@ msgid "This helps us show the right features and adapt the interface."
 msgstr "Cela nous permet d'afficher les bonnes fonctionnalités et d'adapter l'interface."
 
 #: app/templates/auth/setup.html:143 app/templates/auth/setup.html:352
-#: app/templates/config/settings.html:101
+#: app/templates/config/settings.html:102
 msgid "Sole pilot (logbook only, no aircraft)"
 msgstr "Pilote seul (carnet de vol uniquement, sans avion)"
 
@@ -6034,7 +6035,7 @@ msgid "We co-own one or more aircraft together."
 msgstr "Nous co-possédons un ou plusieurs appareils ensemble."
 
 #: app/templates/auth/setup.html:176 app/templates/auth/setup.html:355
-#: app/templates/config/settings.html:104
+#: app/templates/config/settings.html:105
 #: app/templates/config/tenant_create.html:43
 msgid "Flight club"
 msgstr "Aéroclub"
@@ -6044,7 +6045,7 @@ msgid "A member-based flying club."
 msgstr "Un club de vol associatif."
 
 #: app/templates/auth/setup.html:187 app/templates/auth/setup.html:356
-#: app/templates/config/settings.html:105
+#: app/templates/config/settings.html:106
 #: app/templates/config/tenant_create.html:44
 msgid "Flight school"
 msgstr "École de pilotage"
@@ -6169,7 +6170,7 @@ msgstr "Terminer la configuration"
 
 #: app/templates/config/notifications.html:3
 #: app/templates/config/notifications.html:11
-#: app/templates/config/settings.html:415
+#: app/templates/config/settings.html:416
 msgid "Email Notifications"
 msgstr "Notifications par e-mail"
 
@@ -6331,7 +6332,7 @@ msgid "Event"
 msgstr "Événement"
 
 #: app/templates/config/notifications.html:87
-#: app/templates/config/settings.html:535
+#: app/templates/config/settings.html:541
 msgid "Enabled"
 msgstr "Activé"
 
@@ -6530,190 +6531,190 @@ msgstr "Mise à jour en cours"
 msgid "The service will restart shortly. This page will reload automatically when it is back online."
 msgstr "Le service va redémarrer sous peu. Cette page se rechargera automatiquement quand il sera de nouveau disponible."
 
-#: app/templates/config/settings.html:37
+#: app/templates/config/settings.html:38
 msgid "Upgrade failed — check the host upgrade log."
 msgstr "La mise à jour a échoué — consultez le journal de mise à jour de l'hôte."
 
-#: app/templates/config/settings.html:38
+#: app/templates/config/settings.html:39
 msgid "Upgrade is taking longer than expected — check the host upgrade log."
 msgstr "La mise à jour prend plus de temps que prévu — consultez le journal de mise à jour de l'hôte."
 
-#: app/templates/config/settings.html:44
+#: app/templates/config/settings.html:45
 msgid "Backups, email, users and system settings"
 msgstr "Sauvegardes, e-mail, utilisateurs et paramètres système"
 
-#: app/templates/config/settings.html:60
+#: app/templates/config/settings.html:61
 #: app/templates/config/tenant_list.html:30
 msgid "Users"
 msgstr "Utilisateurs"
 
-#: app/templates/config/settings.html:62
+#: app/templates/config/settings.html:63
 msgid "Manage users"
 msgstr "Gérer les utilisateurs"
 
-#: app/templates/config/settings.html:66
+#: app/templates/config/settings.html:67
 msgid "Control who can access this hangar and what they can do."
 msgstr "Contrôlez qui peut accéder à ce hangar et ce qu'il peut faire."
 
-#: app/templates/config/settings.html:79
+#: app/templates/config/settings.html:80
 msgid "No users yet."
 msgstr "Aucun utilisateur pour l'instant."
 
-#: app/templates/config/settings.html:84 app/templates/users/list.html:146
+#: app/templates/config/settings.html:85 app/templates/users/list.html:146
 msgid "Open invitations"
 msgstr "Invitations en attente"
 
-#: app/templates/config/settings.html:93
+#: app/templates/config/settings.html:94
 msgid "Usage profile"
 msgstr "Profil d'utilisation"
 
-#: app/templates/config/settings.html:98
+#: app/templates/config/settings.html:99
 #: app/templates/config/tenant_create.html:37
 msgid "Operating model"
 msgstr "Modèle d'exploitation"
 
-#: app/templates/config/settings.html:110
+#: app/templates/config/settings.html:111
 msgid "Learn more about operating models"
 msgstr "En savoir plus sur les modèles d'exploitation"
 
-#: app/templates/config/settings.html:116
+#: app/templates/config/settings.html:117
 msgid "Planned aircraft count"
 msgstr "Nombre d'appareils prévu"
 
-#: app/templates/config/settings.html:125
+#: app/templates/config/settings.html:126
 msgid "Renting or lending to others"
 msgstr "Location ou prêt à d'autres"
 
-#: app/templates/config/settings.html:130
+#: app/templates/config/settings.html:131
 msgid "Renter authorization policy"
 msgstr "Politique d'autorisation de location"
 
-#: app/templates/config/settings.html:133
+#: app/templates/config/settings.html:134
 msgid "Off — no check"
 msgstr "Désactivée — aucune vérification"
 
-#: app/templates/config/settings.html:134
+#: app/templates/config/settings.html:135
 msgid "Warn — allow booking, flag the missing authorization"
 msgstr "Avertir — autoriser la réservation, signaler l'autorisation manquante"
 
-#: app/templates/config/settings.html:135
+#: app/templates/config/settings.html:136
 msgid "Block — refuse the booking"
 msgstr "Bloquer — refuser la réservation"
 
-#: app/templates/config/settings.html:138
+#: app/templates/config/settings.html:139
 msgid "Applies when a renter books an aircraft without a valid authorization. Owners/admins are always exempt."
 msgstr "S'applique lorsqu'un locataire réserve un appareil sans autorisation valide. Les propriétaires/administrateurs en sont toujours exemptés."
 
-#: app/templates/config/settings.html:139
+#: app/templates/config/settings.html:140
 msgid "Manage renter authorizations"
 msgstr "Gérer les autorisations de location"
 
-#: app/templates/config/settings.html:145
+#: app/templates/config/settings.html:146
 msgid "Co-owner overdue threshold"
 msgstr "Seuil de retard copropriétaire"
 
-#: app/templates/config/settings.html:150
+#: app/templates/config/settings.html:151
 msgid "Days a co-owner capital balance may stay negative before the billing dashboard flags it."
 msgstr "Nombre de jours pendant lesquels le solde du capital d'un copropriétaire peut rester négatif avant que le tableau de bord ne le signale."
 
-#: app/templates/config/settings.html:160
+#: app/templates/config/settings.html:161
 msgid "Require two-factor authentication for all users"
 msgstr "Exiger l'authentification à deux facteurs pour tous les utilisateurs"
 
-#: app/templates/config/settings.html:162
+#: app/templates/config/settings.html:163
 msgid "When enabled, users without 2FA will be prompted to set it up at their next login."
 msgstr "Lorsque cette option est activée, les utilisateurs sans 2FA seront invités à le configurer lors de leur prochaine connexion."
 
-#: app/templates/config/settings.html:177
+#: app/templates/config/settings.html:178
 msgid "Document sync"
 msgstr "Synchronisation des documents"
 
-#: app/templates/config/settings.html:180
+#: app/templates/config/settings.html:181
 msgid "The Hangar ID is the folder name used for the canonical document path layout, compatible with Syncthing and other file-sync tools."
 msgstr "L'identifiant du hangar est le nom du dossier pour la structure canonique des documents, compatible avec Syncthing."
 
-#: app/templates/config/settings.html:187
+#: app/templates/config/settings.html:188
 #: app/templates/documents/reconcile.html:31
 msgid "Hangar ID"
 msgstr "Identifiant du hangar"
 
-#: app/templates/config/settings.html:188
+#: app/templates/config/settings.html:189
 msgid "lowercase letters, numbers, hyphens"
 msgstr "lettres minuscules, chiffres, tirets"
 
-#: app/templates/config/settings.html:196
+#: app/templates/config/settings.html:197
 msgid "Documents will be stored under:"
 msgstr "Les documents seront stockés dans :"
 
-#: app/templates/config/settings.html:207
+#: app/templates/config/settings.html:208
 #: app/templates/documents/reconcile.html:3
 #: app/templates/documents/reconcile.html:12
 msgid "Reconcile documents"
 msgstr "Réconcilier les documents"
 
-#: app/templates/config/settings.html:218
+#: app/templates/config/settings.html:219
 msgid "Backup"
 msgstr "Sauvegarde"
 
-#: app/templates/config/settings.html:221
+#: app/templates/config/settings.html:222
 msgid "Run a backup now?"
 msgstr "Lancer une sauvegarde maintenant ?"
 
-#: app/templates/config/settings.html:223
+#: app/templates/config/settings.html:224
 msgid "Backup now"
 msgstr "Sauvegarder maintenant"
 
-#: app/templates/config/settings.html:228
+#: app/templates/config/settings.html:229
 msgid "Encrypted backups of the database and uploaded documents, stored on the host volume."
 msgstr "Sauvegardes chiffrées de la base de données et des documents téléchargés, stockées sur le volume hôte."
 
-#: app/templates/config/settings.html:229
+#: app/templates/config/settings.html:230
 msgid "Backup &amp; restore documentation"
 msgstr "Documentation sauvegarde &amp; restauration"
 
-#: app/templates/config/settings.html:236
+#: app/templates/config/settings.html:237
 #, python-format
 msgid "%(size)s across %(n)s file"
 msgid_plural "%(size)s across %(n)s files"
 msgstr[0] "%(size)s sur %(n)s fichier"
 msgstr[1] "%(size)s sur %(n)s fichiers"
 
-#: app/templates/config/settings.html:240
+#: app/templates/config/settings.html:241
 msgid "Encryption key set"
 msgstr "Clé de chiffrement configurée"
 
-#: app/templates/config/settings.html:242
+#: app/templates/config/settings.html:243
 msgid "Encryption key not set — backups are unencrypted"
 msgstr "Clé de chiffrement absente — sauvegardes non chiffrées"
 
-#: app/templates/config/settings.html:248
+#: app/templates/config/settings.html:249
 #, python-format
 msgid "Scheduled daily at %(time)s UTC — keeping %(d)s days, then weekly for %(w)s weeks, monthly for %(m)s months, then yearly"
 msgstr "Planifiée chaque jour à %(time)s UTC — conservation de %(d)s jours, puis hebdomadaire pendant %(w)s semaines, mensuelle pendant %(m)s mois, puis annuelle"
 
-#: app/templates/config/settings.html:250
+#: app/templates/config/settings.html:251
 #, python-format
 msgid "Scheduled daily at %(time)s UTC, keeping the last %(n)s"
 msgstr "Planifiée chaque jour à %(time)s UTC, en conservant les %(n)s dernières"
 
-#: app/templates/config/settings.html:255
+#: app/templates/config/settings.html:256
 msgid "Automatic backups not scheduled — set OPENHANGAR_BACKUP_TIME to enable"
 msgstr "Sauvegardes automatiques non planifiées — définissez OPENHANGAR_BACKUP_TIME pour les activer"
 
-#: app/templates/config/settings.html:260
+#: app/templates/config/settings.html:261
 #, python-format
 msgid "Last successful backup: %(when)s"
 msgstr "Dernière sauvegarde réussie : %(when)s"
 
-#: app/templates/config/settings.html:262
+#: app/templates/config/settings.html:263
 msgid "older than 2 days despite daily scheduling — check the container logs"
 msgstr "datant de plus de 2 jours malgré la planification quotidienne — vérifiez les journaux du conteneur"
 
-#: app/templates/config/settings.html:267
+#: app/templates/config/settings.html:268
 msgid "No successful backup yet despite daily scheduling — check the container logs"
 msgstr "Aucune sauvegarde réussie malgré la planification quotidienne — vérifiez les journaux du conteneur"
 
-#: app/templates/config/settings.html:277 app/templates/documents/list.html:92
+#: app/templates/config/settings.html:278 app/templates/documents/list.html:92
 #: app/templates/documents/pilot_upload_form.html:27
 #: app/templates/documents/reconcile.html:60
 #: app/templates/documents/upload_form.html:36
@@ -6723,339 +6724,347 @@ msgstr "Aucune sauvegarde réussie malgré la planification quotidienne — vér
 msgid "File"
 msgstr "Fichier"
 
-#: app/templates/config/settings.html:279 app/templates/documents/list.html:73
+#: app/templates/config/settings.html:280 app/templates/documents/list.html:73
 msgid "Size"
 msgstr "Taille"
 
-#: app/templates/config/settings.html:280
+#: app/templates/config/settings.html:281
 msgid "SHA-256"
 msgstr "SHA-256"
 
-#: app/templates/config/settings.html:294
+#: app/templates/config/settings.html:295
 msgid "Failed"
 msgstr "Échoué"
 
-#: app/templates/config/settings.html:313
+#: app/templates/config/settings.html:314
 #, python-format
 msgid "… and %(n)s more backup not shown."
 msgid_plural "… and %(n)s more backups not shown."
 msgstr[0] "… et %(n)s sauvegarde supplémentaire non affichée."
 msgstr[1] "… et %(n)s sauvegardes supplémentaires non affichées."
 
-#: app/templates/config/settings.html:319
+#: app/templates/config/settings.html:320
 msgid "No backups yet."
 msgstr "Aucune sauvegarde pour l'instant."
 
-#: app/templates/config/settings.html:323
+#: app/templates/config/settings.html:324
 msgid "Run first backup"
 msgstr "Lancer la première sauvegarde"
 
-#: app/templates/config/settings.html:335
+#: app/templates/config/settings.html:336
 msgid "Send a test email to your account address?"
 msgstr "Envoyer un e-mail de test à votre adresse ?"
 
-#: app/templates/config/settings.html:337
+#: app/templates/config/settings.html:338
 msgid "Send test email"
 msgstr "Envoyer un e-mail de test"
 
-#: app/templates/config/settings.html:343
+#: app/templates/config/settings.html:344
 msgid "email configuration documentation"
 msgstr "la documentation de configuration e-mail"
 
-#: app/templates/config/settings.html:345
+#: app/templates/config/settings.html:346
 #, python-format
 msgid "SMTP settings are configured via environment variables in your Docker Compose / %(env_file)s file."
 msgstr "Les paramètres SMTP sont configurés via des variables d'environnement dans votre Docker Compose / %(env_file)s."
 
-#: app/templates/config/settings.html:346
+#: app/templates/config/settings.html:347
 #, python-format
 msgid "See the %(doc_link)s for all available variables."
 msgstr "Voir %(doc_link)s pour toutes les variables disponibles."
 
-#: app/templates/config/settings.html:357
-#: app/templates/config/settings.html:382
+#: app/templates/config/settings.html:358
+#: app/templates/config/settings.html:383
 msgid "Set"
 msgstr "Défini"
 
-#: app/templates/config/settings.html:360
+#: app/templates/config/settings.html:361
 msgid "(default)"
 msgstr "(par défaut)"
 
-#: app/templates/config/settings.html:379
+#: app/templates/config/settings.html:380
 msgid "Configured"
 msgstr "Configuré"
 
-#: app/templates/config/settings.html:381
+#: app/templates/config/settings.html:382
 #: app/templates/expenses/cost_dashboard.html:74
 msgid "Not configured"
 msgstr "Non configuré"
 
-#: app/templates/config/settings.html:382
+#: app/templates/config/settings.html:383
 msgid "and"
 msgstr "et"
 
-#: app/templates/config/settings.html:382
+#: app/templates/config/settings.html:383
 msgid "to enable email."
 msgstr "pour activer l'e-mail."
 
-#: app/templates/config/settings.html:388
-#: app/templates/config/settings.html:400
+#: app/templates/config/settings.html:389
+#: app/templates/config/settings.html:401
 msgid "Delivery health"
 msgstr "État de livraison"
 
-#: app/templates/config/settings.html:391
+#: app/templates/config/settings.html:392
 msgid "Degraded"
 msgstr "Dégradé"
 
-#: app/templates/config/settings.html:394
+#: app/templates/config/settings.html:395
 #, python-format
 msgid "One consecutive send failure since last success."
 msgid_plural "%(n)d consecutive send failures since last success."
 msgstr[0] "Un échec d'envoi consécutif depuis le dernier succès."
 msgstr[1] "%(n)d échecs d'envoi consécutifs depuis le dernier succès."
 
-#: app/templates/config/settings.html:403
+#: app/templates/config/settings.html:404
 msgid "Never succeeded"
 msgstr "N'a jamais réussi"
 
-#: app/templates/config/settings.html:406
+#: app/templates/config/settings.html:407
 #, python-format
 msgid "One failure — check SMTP configuration and server logs."
 msgid_plural "%(n)d failures — check SMTP configuration and server logs."
 msgstr[0] "Un échec — vérifiez la configuration SMTP et les journaux du serveur."
 msgstr[1] "%(n)d échecs — vérifiez la configuration SMTP et les journaux du serveur."
 
-#: app/templates/config/settings.html:417
+#: app/templates/config/settings.html:418
 msgid "Configure which events send emails to you or your team."
 msgstr "Configurez quels événements envoient des e-mails à vous ou votre équipe."
 
-#: app/templates/config/settings.html:422
+#: app/templates/config/settings.html:423
 msgid "Map tiles"
 msgstr "Tuiles de carte"
 
-#: app/templates/config/settings.html:426
+#: app/templates/config/settings.html:427
 msgid "GPS flight tracks are rendered on OpenStreetMap by default (no API key needed). For aviation-specific tiles showing airways and airspaces, register a free API key at"
 msgstr "Les traces de vol GPS utilisent OpenStreetMap par défaut (aucune clé API requise). Pour des tuiles aéronautiques affichant voies aériennes et espaces aériens, enregistrez une clé API gratuite sur"
 
-#: app/templates/config/settings.html:428
+#: app/templates/config/settings.html:429
 msgid "and enter it below."
 msgstr "et saisissez-la ci-dessous."
 
-#: app/templates/config/settings.html:429
+#: app/templates/config/settings.html:430
 msgid "Documentation"
 msgstr "Documentation"
 
-#: app/templates/config/settings.html:433
+#: app/templates/config/settings.html:434
 msgid "OpenAIP API key"
 msgstr "Clé API OpenAIP"
 
-#: app/templates/config/settings.html:439
+#: app/templates/config/settings.html:440
 msgid "Paste your OpenAIP API key here"
 msgstr "Collez votre clé API OpenAIP ici"
 
-#: app/templates/config/settings.html:442
+#: app/templates/config/settings.html:443
 msgid "When set, all flight track maps will use OpenAIP aviation tiles (ICAO-style chart with airspaces, airways, airports). Leave blank to use OpenStreetMap."
 msgstr "Si définie, toutes les cartes de traces de vol utiliseront les tuiles aéronautiques OpenAIP (carte ICAO avec espaces aériens, voies aériennes, aéroports). Laisser vide pour utiliser OpenStreetMap."
 
-#: app/templates/config/settings.html:454
+#: app/templates/config/settings.html:455
 msgid "Data tools"
 msgstr "Outils de données"
 
-#: app/templates/config/settings.html:458
+#: app/templates/config/settings.html:459
 msgid "Back-fill aircraft type ICAO designators"
 msgstr "Remplir les indicatifs OACI de type d'avion"
 
-#: app/templates/config/settings.html:459
+#: app/templates/config/settings.html:460
 msgid "Resolve aircraft_type_icao for all logbook entries that have a type but no ICAO designator yet."
 msgstr "Résoudre aircraft_type_icao pour toutes les entrées du carnet de vol qui ont un type mais pas encore d'indicatif OACI."
 
-#: app/templates/config/settings.html:463
+#: app/templates/config/settings.html:464
 msgid "Run back-fill now? This will update all matching logbook entries."
 msgstr "Lancer le remplissage rétroactif maintenant ? Cela mettra à jour toutes les entrées correspondantes du carnet de vol."
 
-#: app/templates/config/settings.html:465
-#: app/templates/config/settings.html:480
+#: app/templates/config/settings.html:466
+#: app/templates/config/settings.html:481
 msgid "Run back-fill"
 msgstr "Lancer le remplissage"
 
-#: app/templates/config/settings.html:473
+#: app/templates/config/settings.html:474
 msgid "Back-fill aircraft log from pilot logbook"
 msgstr "Remplissage du carnet avion depuis le carnet de vol pilote"
 
-#: app/templates/config/settings.html:474
+#: app/templates/config/settings.html:475
 msgid "Create aircraft log entries for managed aircraft from pilot logbook entries that have no linked aircraft log entry yet."
 msgstr "Créer des entrées dans le carnet avion pour les avions gérés à partir des entrées du carnet de vol pilote sans entrée liée dans le carnet avion."
 
-#: app/templates/config/settings.html:478
+#: app/templates/config/settings.html:479
 msgid "Run back-fill now? This will create aircraft log entries for all matching pilot logbook entries."
 msgstr "Lancer le remplissage maintenant ? Cela créera des entrées dans le carnet avion pour toutes les entrées correspondantes du carnet de vol pilote."
 
-#: app/templates/config/settings.html:489
+#: app/templates/config/settings.html:490
 msgid "System"
 msgstr "Système"
 
-#: app/templates/config/settings.html:492
+#: app/templates/config/settings.html:493
 msgid "Version"
 msgstr "Version"
 
 #: app/templates/config/settings.html:497
+msgid "A newer version is installed automatically right after each successful scheduled backup."
+msgstr "Une nouvelle version est installée automatiquement juste après chaque sauvegarde planifiée réussie."
+
+#: app/templates/config/settings.html:498
+msgid "Auto-upgrade: on"
+msgstr "Mise à jour automatique : activée"
+
+#: app/templates/config/settings.html:503
 #, python-format
 msgid "Update available: %(version)s"
 msgstr "Mise à jour disponible : %(version)s"
 
-#: app/templates/config/settings.html:497
+#: app/templates/config/settings.html:503
 #, python-format
 msgid "%(n)s version behind"
 msgid_plural "%(n)s versions behind"
 msgstr[0] "%(n)s version de retard"
 msgstr[1] "%(n)s versions de retard"
 
-#: app/templates/config/settings.html:499
+#: app/templates/config/settings.html:505
 msgid "How to upgrade"
 msgstr "Comment mettre à jour"
 
-#: app/templates/config/settings.html:503
+#: app/templates/config/settings.html:509
 #, python-format
 msgid "Upgrade to %(version)s? The service will restart shortly."
 msgstr "Mettre à jour vers %(version)s ? Le service va redémarrer sous peu."
 
-#: app/templates/config/settings.html:505
+#: app/templates/config/settings.html:511
 msgid "Upgrade now"
 msgstr "Mettre à jour maintenant"
 
-#: app/templates/config/settings.html:510
+#: app/templates/config/settings.html:516
 msgid "Up to date"
 msgstr "À jour"
 
-#: app/templates/config/settings.html:514
+#: app/templates/config/settings.html:520
 msgid "Refresh version check"
 msgstr "Actualiser la vérification de version"
 
-#: app/templates/config/settings.html:521
+#: app/templates/config/settings.html:527
 msgid "Environment"
 msgstr "Environnement"
 
-#: app/templates/config/settings.html:525
+#: app/templates/config/settings.html:531
 msgid "Debug: on"
 msgstr "Débogage : activé"
 
-#: app/templates/config/settings.html:527
+#: app/templates/config/settings.html:533
 msgid "Debug: off"
 msgstr "Débogage : désactivé"
 
-#: app/templates/config/settings.html:532
+#: app/templates/config/settings.html:538
 msgid "Offline support (Service Worker)"
 msgstr "Assistance hors ligne (Service Worker)"
 
-#: app/templates/config/settings.html:537
+#: app/templates/config/settings.html:543
 msgid "Disabled in dev mode"
 msgstr "Désactivé en mode développement"
 
-#: app/templates/config/settings.html:538
+#: app/templates/config/settings.html:544
 #, python-format
 msgid "Set %(var)s to test offline features locally."
 msgstr "Définissez %(var)s pour tester les fonctionnalités hors ligne en local."
 
-#: app/templates/config/settings.html:540
+#: app/templates/config/settings.html:546
 msgid "Checking…"
 msgstr "Vérification en cours…"
 
-#: app/templates/config/settings.html:541
+#: app/templates/config/settings.html:547
 msgid "Active in this browser"
 msgstr "Actif dans ce navigateur"
 
-#: app/templates/config/settings.html:541
+#: app/templates/config/settings.html:547
 msgid "Not active in this browser"
 msgstr "Non actif dans ce navigateur"
 
-#: app/templates/config/settings.html:546
+#: app/templates/config/settings.html:552
 msgid "Database size"
 msgstr "Taille de la base de données"
 
-#: app/templates/config/settings.html:552
+#: app/templates/config/settings.html:558
 msgid "Upload storage"
 msgstr "Stockage des fichiers téléversés"
 
-#: app/templates/config/settings.html:559
+#: app/templates/config/settings.html:565
 msgid "Uptime"
 msgstr "Disponibilité"
 
-#: app/templates/config/settings.html:561
+#: app/templates/config/settings.html:567
 msgid "Uptime 24h"
 msgstr "Disponibilité 24h"
 
-#: app/templates/config/settings.html:562
+#: app/templates/config/settings.html:568
 msgid "Uptime 30d"
 msgstr "Disponibilité 30j"
 
-#: app/templates/config/settings.html:566
+#: app/templates/config/settings.html:572
 msgid "Response time"
 msgstr "Temps de réponse"
 
-#: app/templates/config/settings.html:568
+#: app/templates/config/settings.html:574
 msgid "Response time 24h"
 msgstr "Temps de réponse 24h"
 
-#: app/templates/config/settings.html:569
+#: app/templates/config/settings.html:575
 msgid "Response time 30d"
 msgstr "Temps de réponse 30j"
 
-#: app/templates/config/settings.html:575
+#: app/templates/config/settings.html:581
 msgid "Monitoring badges could not be loaded. Check OPENHANGAR_GATUS_ENDPOINT_URL and OPENHANGAR_GATUS_AUTH_HEADER."
 msgstr "Les badges de supervision n'ont pas pu être chargés. Vérifiez OPENHANGAR_GATUS_ENDPOINT_URL et OPENHANGAR_GATUS_AUTH_HEADER."
 
-#: app/templates/config/settings.html:585
-#: app/templates/config/settings.html:600
+#: app/templates/config/settings.html:591
+#: app/templates/config/settings.html:606
 #: app/templates/config/tenant_list.html:3
 #: app/templates/config/tenant_list.html:11
 msgid "Tenants"
 msgstr "Organisations"
 
-#: app/templates/config/settings.html:587
+#: app/templates/config/settings.html:593
 msgid "Manage tenants"
 msgstr "Gérer les organisations"
 
-#: app/templates/config/settings.html:591
+#: app/templates/config/settings.html:597
 #, python-format
 msgid "This instance hosts one tenant."
 msgid_plural "This instance hosts %(count)s tenants."
 msgstr[0] "Cette instance héberge une organisation."
 msgstr[1] "Cette instance héberge %(count)s organisations."
 
-#: app/templates/config/settings.html:593
+#: app/templates/config/settings.html:599
 #: app/templates/config/tenant_list.html:19
 msgid "Add tenant"
 msgstr "Ajouter une organisation"
 
-#: app/templates/config/settings.html:603
+#: app/templates/config/settings.html:609
 msgid "This is a single-tenant installation. You can add a second tenant to host multiple independent users or organisations on the same instance."
 msgstr "Il s'agit d'une installation à organisation unique. Vous pouvez ajouter une seconde organisation pour héberger plusieurs utilisateurs ou organisations indépendants sur la même instance."
 
-#: app/templates/config/settings.html:605
+#: app/templates/config/settings.html:611
 msgid "Add a second tenant"
 msgstr "Ajouter une seconde organisation"
 
-#: app/templates/config/settings.html:611
+#: app/templates/config/settings.html:617
 #: app/templates/config/tenant_create.html:59
 msgid "Log your own flights — no aircraft management, no fleet features."
 msgstr "Enregistrez vos propres vols — sans gestion d'avion, sans fonctionnalités de flotte."
 
-#: app/templates/config/settings.html:612
+#: app/templates/config/settings.html:618
 #: app/templates/config/tenant_create.html:60
 msgid "Own and manage one or more aircraft. Rental to others is optional."
 msgstr "Possédez et gérez un ou plusieurs avions. La location à des tiers est optionnelle."
 
-#: app/templates/config/settings.html:613
+#: app/templates/config/settings.html:619
 #: app/templates/config/tenant_create.html:61
 msgid "Co-own aircraft with others. Co-owners each get their own account with shared access."
 msgstr "Co-posséder des avions avec d'autres. Chaque copropriétaire dispose de son propre compte avec accès partagé."
 
-#: app/templates/config/settings.html:614
+#: app/templates/config/settings.html:620
 #: app/templates/config/tenant_create.html:62
 msgid "Member-based flying club with a shared fleet and club name branding."
 msgstr "Club d'aviation basé sur des membres avec une flotte partagée et l'image du club."
 
-#: app/templates/config/settings.html:615
+#: app/templates/config/settings.html:621
 #: app/templates/config/tenant_create.html:63
 msgid "Training organisation with a shared fleet and school name branding."
 msgstr "Organisation de formation avec une flotte partagée et l'image de l'école."
@@ -7306,7 +7315,7 @@ msgstr "Télécharger le premier document"
 
 #: app/templates/documents/pilot_upload_form.html:3
 #: app/templates/documents/pilot_upload_form.html:12
-#: app/templates/pilots/logbook.html:40 app/templates/pilots/profile.html:3
+#: app/templates/pilots/logbook.html:43 app/templates/pilots/profile.html:3
 #: app/templates/pilots/profile.html:11
 msgid "Pilot Profile"
 msgstr "Profil pilote"
@@ -7504,7 +7513,7 @@ msgid "Operating cost breakdown"
 msgstr "Détail des coûts opérationnels"
 
 #: app/templates/expenses/cost_dashboard.html:94
-#: app/templates/flights/flight_form.html:582
+#: app/templates/flights/flight_form.html:612
 msgid "Fuel & oil"
 msgstr "Carburant et huile"
 
@@ -7621,8 +7630,8 @@ msgid "Quantity"
 msgstr "Quantité"
 
 #: app/templates/expenses/expense_form.html:167
-#: app/templates/flights/flight_form.html:596
-#: app/templates/flights/flight_form.html:623
+#: app/templates/flights/flight_form.html:626
+#: app/templates/flights/flight_form.html:653
 #: app/templates/offline/workbench.html:105
 #: app/templates/offline/workbench.html:116
 #: app/templates/refuels/refuel_form.html:36
@@ -7678,7 +7687,7 @@ msgstr "Télécharger le justificatif"
 msgid "Delete this expense?"
 msgstr "Supprimer cette dépense ?"
 
-#: app/templates/expenses/list.html:175 app/templates/pilots/logbook.html:178
+#: app/templates/expenses/list.html:175 app/templates/pilots/logbook.html:181
 #: app/templates/reservations/charge.html:46
 #: app/templates/reservations/detail.html:152
 msgid "Total"
@@ -7971,7 +7980,8 @@ msgid "Route"
 msgstr "Route"
 
 #: app/templates/flights/fleet.html:28
-#: app/templates/flights/flight_form.html:540
+#: app/templates/flights/flight_form.html:539
+#: app/templates/flights/flight_form.html:570
 #: app/templates/offline/workbench.html:38
 #: app/templates/reservations/checkin.html:34
 #: app/templates/reservations/checkout.html:56
@@ -7979,7 +7989,8 @@ msgid "Flight counter"
 msgstr "Compteur de vol"
 
 #: app/templates/flights/fleet.html:29
-#: app/templates/flights/flight_form.html:553
+#: app/templates/flights/flight_form.html:552
+#: app/templates/flights/flight_form.html:583
 #: app/templates/offline/workbench.html:39
 #: app/templates/reservations/checkin.html:30
 #: app/templates/reservations/checkout.html:50
@@ -8155,7 +8166,7 @@ msgstr "Départ/arrivée correspondent au démarrage/arrêt moteur (bloc départ
 #: app/templates/flights/flight_form.html:423
 #: app/templates/flights/list.html:11
 #: app/templates/pilots/entry_detail.html:164
-#: app/templates/pilots/logbook.html:229
+#: app/templates/pilots/logbook.html:232
 msgid "Aircraft logbook"
 msgstr "Carnet de vol cellule"
 
@@ -8200,89 +8211,89 @@ msgstr "Nature & Passagers"
 msgid "Pre-flight photos — taken before departure (e.g. at block-off), for cross-checking the counter readings below."
 msgstr "Photos avant-vol — prises avant le départ (par exemple au largage des cales), pour vérifier les relevés de compteurs ci-dessous."
 
-#: app/templates/flights/flight_form.html:536
+#: app/templates/flights/flight_form.html:544
 msgid "Flight counter photo (pre-flight)"
 msgstr "Photo du compteur horaire (avant-vol)"
 
-#: app/templates/flights/flight_form.html:536
+#: app/templates/flights/flight_form.html:557
 msgid "Engine counter photo (pre-flight)"
 msgstr "Photo du compteur moteur (avant-vol)"
 
-#: app/templates/flights/flight_form.html:536
+#: app/templates/flights/flight_form.html:566
 msgid "Post-flight photos — taken after shutdown, for the counter/fuel readings above."
 msgstr "Photos post-vol — prises après l'arrêt du moteur, pour les relevés de compteurs/carburant ci-dessus."
 
-#: app/templates/flights/flight_form.html:607
+#: app/templates/flights/flight_form.html:637
 #: app/templates/offline/workbench.html:127
 msgid "Oil added before flight"
 msgstr "Huile ajoutée avant le vol"
 
-#: app/templates/flights/flight_form.html:634
+#: app/templates/flights/flight_form.html:664
 #: app/templates/offline/workbench.html:131
 msgid "Oil added after flight"
 msgstr "Huile ajoutée après le vol"
 
-#: app/templates/flights/flight_form.html:645
+#: app/templates/flights/flight_form.html:675
 msgid "Fuel remaining at end of flight"
 msgstr "Carburant restant en fin de vol"
 
-#: app/templates/flights/flight_form.html:649
+#: app/templates/flights/flight_form.html:679
 msgid "estimated"
 msgstr "estimé"
 
-#: app/templates/flights/flight_form.html:654
+#: app/templates/flights/flight_form.html:684
 msgid "Tank"
 msgstr "Réservoir"
 
-#: app/templates/flights/flight_form.html:656
+#: app/templates/flights/flight_form.html:686
 msgid "All tanks"
 msgstr "Tous les réservoirs"
 
-#: app/templates/flights/flight_form.html:668
+#: app/templates/flights/flight_form.html:698
 msgid "Quick-fill from tank fraction"
 msgstr "Remplissage rapide par fraction de réservoir"
 
-#: app/templates/flights/flight_form.html:673
+#: app/templates/flights/flight_form.html:703
 msgid "Estimated liters for the selected fraction of the selected tank, rounded to the nearest 5 L."
 msgstr "Litres estimés pour la fraction sélectionnée du réservoir choisi, arrondis au 5 L le plus proche."
 
-#: app/templates/flights/flight_form.html:676
+#: app/templates/flights/flight_form.html:706
 msgid "Define a fuel tank on the aircraft page to get quick fraction-of-tank buttons here."
 msgstr "Définissez un réservoir de carburant sur la page de l'appareil pour obtenir ici des boutons rapides de fraction de réservoir."
 
-#: app/templates/flights/flight_form.html:677
+#: app/templates/flights/flight_form.html:707
 msgid "Aircraft settings"
 msgstr "Paramètres de l'avion"
 
-#: app/templates/flights/flight_form.html:682
+#: app/templates/flights/flight_form.html:712
 #, python-format
 msgid "Estimated consumption: ~%(est)s L based on engine time"
 msgstr "Consommation estimée : ~%(est)s L basée sur le temps moteur"
 
-#: app/templates/flights/flight_form.html:698
+#: app/templates/flights/flight_form.html:728
 #: app/templates/offline/pilot_workbench.html:109
 #: app/templates/offline/workbench.html:168
 #: app/templates/pilots/import_map.html:146
 msgid "Night time"
 msgstr "Temps de nuit"
 
-#: app/templates/flights/flight_form.html:706
+#: app/templates/flights/flight_form.html:736
 #: app/templates/offline/pilot_workbench.html:113
 #: app/templates/offline/workbench.html:172
 msgid "Instrument time"
 msgstr "Temps aux instruments"
 
-#: app/templates/flights/flight_form.html:716
+#: app/templates/flights/flight_form.html:746
 msgid "Landings day"
 msgstr "Atterrissages de jour"
 
-#: app/templates/flights/flight_form.html:722
+#: app/templates/flights/flight_form.html:752
 #: app/templates/offline/workbench.html:180
 #: app/templates/pilots/entry_detail.html:143
 msgid "Night landings"
 msgstr "Atterrissages nuit"
 
-#: app/templates/flights/flight_form.html:746
+#: app/templates/flights/flight_form.html:776
 msgid "Remarks, weather…"
 msgstr "Remarques, météo…"
 
@@ -8291,7 +8302,7 @@ msgstr "Remarques, météo…"
 msgid "Offline workbench"
 msgstr "Atelier hors ligne"
 
-#: app/templates/flights/list.html:55 app/templates/pilots/logbook.html:102
+#: app/templates/flights/list.html:55 app/templates/pilots/logbook.html:105
 msgid "Compact view"
 msgstr "Vue compacte"
 
@@ -9269,7 +9280,7 @@ msgstr "Avion / dispositif"
 #: app/templates/pilots/entry_detail.html:150
 #: app/templates/pilots/entry_form.html:193
 #: app/templates/pilots/import_review.html:32
-#: app/templates/pilots/logbook.html:173
+#: app/templates/pilots/logbook.html:176
 msgid "PIC name"
 msgstr "Nom CdB"
 
@@ -9290,7 +9301,7 @@ msgid "Flight"
 msgstr "Vol"
 
 #: app/templates/offline/pilot_workbench.html:58
-#: app/templates/pilots/logbook.html:146 app/templates/pilots/logbook.html:199
+#: app/templates/pilots/logbook.html:149 app/templates/pilots/logbook.html:202
 msgid "FSTD"
 msgstr "FSTD"
 
@@ -9587,22 +9598,22 @@ msgstr "Co-pilote"
 
 #: app/templates/pilots/entry_detail.html:90
 #: app/templates/pilots/entry_form.html:266
-#: app/templates/pilots/logbook.html:190
+#: app/templates/pilots/logbook.html:193
 msgid "Dual"
 msgstr "Double commande"
 
 #: app/templates/pilots/entry_detail.html:103
-#: app/templates/pilots/logbook.html:188
+#: app/templates/pilots/logbook.html:191
 msgid "S/E"
 msgstr "S/E"
 
 #: app/templates/pilots/entry_detail.html:104
-#: app/templates/pilots/logbook.html:188
+#: app/templates/pilots/logbook.html:191
 msgid "M/E"
 msgstr "M/E"
 
 #: app/templates/pilots/entry_detail.html:117
-#: app/templates/pilots/logbook.html:177
+#: app/templates/pilots/logbook.html:180
 msgid "Sim"
 msgstr "Sim"
 
@@ -9648,7 +9659,7 @@ msgid "Crew"
 msgstr "Équipage"
 
 #: app/templates/pilots/entry_form.html:205
-#: app/templates/pilots/logbook.html:187
+#: app/templates/pilots/logbook.html:190
 msgid "Day"
 msgstr "Jour"
 
@@ -9839,7 +9850,7 @@ msgid "These rows look similar to entries already in your logbook, with some val
 msgstr "Ces lignes ressemblent à des entrées déjà présentes dans votre carnet de vol, avec certaines valeurs différentes — probablement une correction. Choisissez quoi faire pour chacune."
 
 #: app/templates/pilots/import_review.html:25
-#: app/templates/pilots/logbook.html:169
+#: app/templates/pilots/logbook.html:172
 msgid "Aircraft type"
 msgstr "Type d'appareil"
 
@@ -9900,7 +9911,11 @@ msgstr "Du plus récent"
 msgid "Personal flight record — visible only to you"
 msgstr "Dossier de vol personnel — visible uniquement par vous"
 
-#: app/templates/pilots/logbook.html:43
+#: app/templates/pilots/logbook.html:36
+msgid "Statistics"
+msgstr "Statistiques"
+
+#: app/templates/pilots/logbook.html:46
 #: app/templates/pilots/minimums_print.html:3
 #: app/templates/pilots/minimums_start.html:3
 #: app/templates/pilots/minimums_start.html:11
@@ -9909,86 +9924,86 @@ msgstr "Dossier de vol personnel — visible uniquement par vous"
 msgid "Personal minimums"
 msgstr "Minimums personnels"
 
-#: app/templates/pilots/logbook.html:51
+#: app/templates/pilots/logbook.html:54
 msgid "Personal minimums — recency reminder"
 msgstr "Minimums personnels — rappel de récence"
 
-#: app/templates/pilots/logbook.html:64
+#: app/templates/pilots/logbook.html:67
 msgid "Review your personal minimums"
 msgstr "Consulter vos minimums personnels"
 
-#: app/templates/pilots/logbook.html:75
+#: app/templates/pilots/logbook.html:78
 #, python-format
 msgid "Showing %(start)s–%(end)s of %(total)s entries"
 msgstr "Affichage de %(start)s–%(end)s sur %(total)s entrées"
 
-#: app/templates/pilots/logbook.html:80
+#: app/templates/pilots/logbook.html:83
 #, python-format
 msgid "%(n)s entry (all)"
 msgid_plural "%(n)s entries (all)"
 msgstr[0] "%(n)s entrée (toutes)"
 msgstr[1] "%(n)s entrées (toutes)"
 
-#: app/templates/pilots/logbook.html:85
+#: app/templates/pilots/logbook.html:88
 msgid "Show:"
 msgstr "Afficher :"
 
-#: app/templates/pilots/logbook.html:151
+#: app/templates/pilots/logbook.html:154
 msgid "Night flying"
 msgstr "Vol de nuit"
 
-#: app/templates/pilots/logbook.html:175
+#: app/templates/pilots/logbook.html:178
 msgid "Single Pilot"
 msgstr "Mono-pilote"
 
-#: app/templates/pilots/logbook.html:179
+#: app/templates/pilots/logbook.html:182
 msgid "Conditions"
 msgstr "Conditions"
 
-#: app/templates/pilots/logbook.html:180
+#: app/templates/pilots/logbook.html:183
 msgid "Function"
 msgstr "Fonction"
 
-#: app/templates/pilots/logbook.html:185 app/templates/pilots/logbook.html:186
+#: app/templates/pilots/logbook.html:188 app/templates/pilots/logbook.html:189
 msgid "Place"
 msgstr "Lieu"
 
-#: app/templates/pilots/logbook.html:185 app/templates/pilots/logbook.html:186
+#: app/templates/pilots/logbook.html:188 app/templates/pilots/logbook.html:189
 msgid "UTC"
 msgstr "UTC"
 
-#: app/templates/pilots/logbook.html:189
+#: app/templates/pilots/logbook.html:192
 msgid "Instr."
 msgstr "Instr."
 
-#: app/templates/pilots/logbook.html:190
+#: app/templates/pilots/logbook.html:193
 msgid "Co-P"
 msgstr "Co-P"
 
-#: app/templates/pilots/logbook.html:190
+#: app/templates/pilots/logbook.html:193
 msgid "Inst."
 msgstr "Inst."
 
-#: app/templates/pilots/logbook.html:245
+#: app/templates/pilots/logbook.html:248
 msgid "Delete this logbook entry and its aircraft log entry? This cannot be undone."
 msgstr "Supprimer cette entrée du carnet de vol et son entrée du carnet avion ? Cette action est irréversible."
 
-#: app/templates/pilots/logbook.html:245
+#: app/templates/pilots/logbook.html:248
 msgid "Delete this logbook entry?"
 msgstr "Supprimer cette entrée du carnet de vol ?"
 
-#: app/templates/pilots/logbook.html:256
+#: app/templates/pilots/logbook.html:259
 #, python-format
 msgid "Totals (all %(n)s entry)"
 msgid_plural "Totals (all %(n)s entries)"
 msgstr[0] "Totaux (toutes %(n)s entrée)"
 msgstr[1] "Totaux (toutes %(n)s entrées)"
 
-#: app/templates/pilots/logbook.html:305
+#: app/templates/pilots/logbook.html:308
 msgid "No logbook entries yet."
 msgstr "Aucune entrée dans le carnet de vol."
 
-#: app/templates/pilots/logbook.html:307
+#: app/templates/pilots/logbook.html:310
 msgid "Add First Entry"
 msgstr "Ajouter la première entrée"
 
@@ -10296,6 +10311,101 @@ msgstr "Expire le %(date)s"
 #, python-format
 msgid "Valid until %(date)s"
 msgstr "Valable jusqu'au %(date)s"
+
+#: app/templates/pilots/stats.html:3 app/templates/pilots/stats.html:11
+msgid "Flight Statistics"
+msgstr "Statistiques de vol"
+
+#: app/templates/pilots/stats.html:13
+msgid "Aggregate figures across your whole logbook"
+msgstr "Chiffres cumulés sur l'ensemble de votre carnet de vol"
+
+#: app/templates/pilots/stats.html:23
+msgid "No logged flights yet — statistics will appear here once you have some."
+msgstr "Aucun vol enregistré pour l'instant — les statistiques apparaîtront ici dès que vous en aurez."
+
+#: app/templates/pilots/stats.html:28
+msgid "Overview"
+msgstr "Aperçu"
+
+#: app/templates/pilots/stats.html:32
+msgid "Flights logged"
+msgstr "Vols enregistrés"
+
+#: app/templates/pilots/stats.html:36
+msgid "Total flight time"
+msgstr "Temps de vol total"
+
+#: app/templates/pilots/stats.html:40
+msgid "Total distance"
+msgstr "Distance totale"
+
+#: app/templates/pilots/stats.html:44
+msgid "Airports visited"
+msgstr "Aérodromes visités"
+
+#: app/templates/pilots/stats.html:48
+msgid "Countries visited"
+msgstr "Pays visités"
+
+#: app/templates/pilots/stats.html:52
+msgid "States/regions visited"
+msgstr "Régions/états visités"
+
+#: app/templates/pilots/stats.html:57
+msgid "Distance and geography figures need recognized ICAO airport codes — none of your logged flights have both ends resolved yet."
+msgstr "Les chiffres de distance et de géographie nécessitent des codes OACI d'aérodrome reconnus — aucun de vos vols enregistrés n'a encore ses deux extrémités résolues."
+
+#: app/templates/pilots/stats.html:64
+msgid "Corners of the map"
+msgstr "Coins de la carte"
+
+#: app/templates/pilots/stats.html:68
+msgid "Farthest north"
+msgstr "Point le plus au nord"
+
+#: app/templates/pilots/stats.html:69
+msgid "Farthest south"
+msgstr "Point le plus au sud"
+
+#: app/templates/pilots/stats.html:70
+msgid "Farthest east"
+msgstr "Point le plus à l'est"
+
+#: app/templates/pilots/stats.html:71
+msgid "Farthest west"
+msgstr "Point le plus à l'ouest"
+
+#: app/templates/pilots/stats.html:72
+msgid "Highest field"
+msgstr "Terrain le plus élevé"
+
+#: app/templates/pilots/stats.html:73
+msgid "Lowest field"
+msgstr "Terrain le plus bas"
+
+#: app/templates/pilots/stats.html:93
+msgid "Records"
+msgstr "Records"
+
+#: app/templates/pilots/stats.html:98
+msgid "Longest single leg"
+msgstr "Étape la plus longue"
+
+#: app/templates/pilots/stats.html:105
+msgid "Longest day (by distance)"
+msgstr "Journée la plus longue (en distance)"
+
+#: app/templates/pilots/stats.html:107
+#, python-format
+msgid "%(n)s flight"
+msgid_plural "%(n)s flights"
+msgstr[0] "%(n)s vol"
+msgstr[1] "%(n)s vols"
+
+#: app/templates/pilots/stats.html:117
+msgid "All airports visited"
+msgstr "Tous les aérodromes visités"
 
 #: app/templates/pwa/share_target.html:3 app/templates/pwa/share_target.html:10
 msgid "Shared files"
@@ -11147,12 +11257,4 @@ msgstr "Les propriétaires et administrateurs ont toujours accès à toute la fl
 #: app/users/routes.py:542
 msgid "Permissions updated."
 msgstr "Permissions mises à jour."
-
-#: app/templates/config/settings.html:497
-msgid "A newer version is installed automatically right after each successful scheduled backup."
-msgstr "Une nouvelle version est installée automatiquement juste après chaque sauvegarde planifiée réussie."
-
-#: app/templates/config/settings.html:498
-msgid "Auto-upgrade: on"
-msgstr "Mise à jour automatique : activée"
 
