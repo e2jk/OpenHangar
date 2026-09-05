@@ -126,7 +126,26 @@ def fleet_overview() -> ResponseReturnValue:
     from datetime import date as _date_cls
     from datetime import datetime as _datetime
 
-    # Annotate each trigger with its status
+    # Projected due date for hours-based triggers (see
+    # maintenance/due_date_projection.py) — computed per aircraft, since the
+    # utilization rate is aircraft-specific.
+    projected_by_trigger_id: dict[int, Any] = {}
+    triggers_by_aircraft: dict[int, list[MaintenanceTrigger]] = {}
+    for t in triggers:
+        triggers_by_aircraft.setdefault(t.aircraft_id, []).append(t)
+    for ac_id, ac_triggers in triggers_by_aircraft.items():
+        projected_by_trigger_id.update(
+            _projected_due_dates(
+                ac_id,
+                ac_triggers,
+                hobbs_by_id.get(ac_id),
+                flight_hours_by_id.get(ac_id),
+            )
+        )
+
+    # Annotate each trigger with its status and (for hours-based triggers)
+    # a projected due date, always an estimate — never a substitute for the
+    # real hours-based due figure.
     trigger_rows = [
         (
             t,
@@ -136,22 +155,25 @@ def fleet_overview() -> ResponseReturnValue:
                 current_flight_hours=flight_hours_by_id.get(t.aircraft_id),
             ),
             ac_by_id[t.aircraft_id],
+            projected_by_trigger_id.get(t.id),
         )
         for t in triggers
     ]
 
-    # Sort: overdue → due_soon → ok; within status: calendar triggers by due_date asc,
-    # hours-based triggers (no reliable date) after calendar ones.
+    # Sort: overdue → due_soon → ok; within status: calendar triggers by due_date
+    # asc, then hours-based triggers with a projected date (also asc), then
+    # any remaining undated items last.
     _status_order = {"overdue": 0, "due_soon": 1, "ok": 2}
     _far_future = _date_cls(9999, 12, 31)
 
     def _trigger_sort_key(row: Any) -> Any:
-        t, status, _ac = row
-        due = (
-            t.due_date
-            if t.trigger_type == TriggerType.CALENDAR and t.due_date
-            else _far_future
-        )
+        t, status, _ac, projected_date = row
+        if t.trigger_type == TriggerType.CALENDAR and t.due_date:
+            due = t.due_date
+        elif projected_date:
+            due = projected_date
+        else:
+            due = _far_future
         return (_status_order[status], due)
 
     trigger_rows.sort(key=_trigger_sort_key)
@@ -194,7 +216,7 @@ def fleet_overview() -> ResponseReturnValue:
 
     # Chronological view: single list sorted by due/reported date asc.
     # Hours-based triggers have no reliable date → sorted after all dated items.
-    # Tuple structure: (sort_date, kind_order, label, obj, ac, extra)
+    # Tuple structure: (kind, sort_dt, obj, ac, status, projected_date)
     # kind_order: grounding=0, snag=1, maintenance=2 (tiebreak within same date)
     _far_dt = _datetime(_far_future.year, _far_future.month, _far_future.day)
     chron_items = []
@@ -203,20 +225,24 @@ def fleet_overview() -> ResponseReturnValue:
             s.reported_at.date() if hasattr(s.reported_at, "date") else s.reported_at,
             _datetime.min.time(),
         )
-        chron_items.append(("grounding", dt, s, ac, None))
+        chron_items.append(("grounding", dt, s, ac, None, None))
     for s, ac in open_snag_rows:
         dt = _datetime.combine(
             s.reported_at.date() if hasattr(s.reported_at, "date") else s.reported_at,
             _datetime.min.time(),
         )
-        chron_items.append(("snag", dt, s, ac, None))
-    for t, status, ac in trigger_rows:
+        chron_items.append(("snag", dt, s, ac, None, None))
+    for t, status, ac, projected_date in trigger_rows:
         if status in ("overdue", "due_soon") or t.needs_review:
             if t.due_date:
                 dt = _datetime(t.due_date.year, t.due_date.month, t.due_date.day)
+            elif projected_date:
+                dt = _datetime(
+                    projected_date.year, projected_date.month, projected_date.day
+                )
             else:
-                dt = _far_dt  # no calendar due date: push to end
-            chron_items.append(("maintenance", dt, t, ac, status))
+                dt = _far_dt  # no calendar due date, no projection: push to end
+            chron_items.append(("maintenance", dt, t, ac, status, projected_date))
 
     _kind_order = {"grounding": 0, "snag": 1, "maintenance": 2}
     chron_items.sort(key=lambda x: (x[1], _kind_order[x[0]]))
@@ -235,7 +261,9 @@ def fleet_overview() -> ResponseReturnValue:
                 component_limit_rows.append((info, ac))
     component_limit_rows.sort(key=lambda row: 0 if row[0]["status"] == "overdue" else 1)
 
-    any_needs_review = any(t.needs_review for t, _status, _ac in trigger_rows)
+    any_needs_review = any(
+        t.needs_review for t, _status, _ac, _projected_date in trigger_rows
+    )
 
     return render_template(
         "maintenance/fleet.html",
@@ -255,6 +283,42 @@ def fleet_overview() -> ResponseReturnValue:
 
 
 # ── Trigger list ──────────────────────────────────────────────────────────────
+
+
+def _projected_due_dates(
+    aircraft_id: int,
+    triggers: list[MaintenanceTrigger],
+    current_hobbs: "float | None",
+    current_flight_hours: "float | None",
+) -> dict[int, "Any | None"]:
+    """{trigger.id: projected calendar date} for every hours-based trigger,
+    or None where there's not enough recent utilization history to trust a
+    projection (see maintenance/due_date_projection.py). Computes the
+    utilization rate at most once per hours_basis actually in use, rather
+    than once per trigger."""
+    from maintenance.due_date_projection import (  # pyright: ignore[reportMissingImports]
+        project_due_date,
+        weekly_utilization_rate,
+    )
+
+    rate_by_basis: dict[str, float | None] = {}
+    result: dict[int, Any | None] = {}
+    for t in triggers:
+        if t.due_engine_hours is None:
+            continue
+        if t.hours_basis not in rate_by_basis:
+            rate_by_basis[t.hours_basis] = weekly_utilization_rate(
+                aircraft_id, t.hours_basis
+            )
+        current = (
+            current_flight_hours
+            if t.hours_basis == HoursBasis.FLIGHT
+            else current_hobbs
+        )
+        result[t.id] = project_due_date(
+            current, float(t.due_engine_hours), rate_by_basis[t.hours_basis]
+        )
+    return result
 
 
 def _group_trigger_rows_by_component(
@@ -317,6 +381,9 @@ def list_triggers(aircraft_id: int) -> ResponseReturnValue:
         triggers = all_triggers
     trigger_rows = [(t, _status(t)) for t in triggers]
     component_groups = _group_trigger_rows_by_component(trigger_rows)
+    projected_dates = _projected_due_dates(
+        ac.id, triggers, current_hobbs, current_flight_hours
+    )
     return render_template(
         "maintenance/list.html",
         aircraft=ac,
@@ -325,6 +392,7 @@ def list_triggers(aircraft_id: int) -> ResponseReturnValue:
         current_hobbs=current_hobbs,
         current_landings=current_landings,
         current_flight_hours=current_flight_hours,
+        projected_dates=projected_dates,
         maint_view=maint_view,
     )
 

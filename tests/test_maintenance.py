@@ -9,6 +9,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     Component,
     ComponentType,
+    Flight,
     HoursBasis,
     MaintenanceRecord,
     MaintenanceTrigger,
@@ -114,6 +115,27 @@ def _add_hours_trigger(
         db.session.add(t)
         db.session.commit()
         return t.id
+
+
+def _add_flight(app, aircraft_id, flight_date, engine_time=2.0, counter_end=None):
+    """counter_end also sets engine_time_counter_start/end (counter_end -
+    engine_time) so Aircraft.total_engine_hours (max counter_end across
+    flights) reflects this flight too — it doesn't look at engine_time."""
+    with app.app_context():
+        f = Flight(
+            aircraft_id=aircraft_id,
+            date=flight_date,
+            departure_icao="EBOS",
+            arrival_icao="EBBR",
+            engine_time=engine_time,
+            engine_time_counter_end=counter_end,
+            engine_time_counter_start=(
+                counter_end - engine_time if counter_end is not None else None
+            ),
+        )
+        db.session.add(f)
+        db.session.commit()
+        return f.id
 
 
 def _add_component(app, aircraft_id, comp_type=ComponentType.ENGINE, make="Lycoming"):
@@ -531,6 +553,56 @@ class TestTriggerList:
         r = client.get(f"/aircraft/{acid}/maintenance")
         assert b"INSPECTION" in r.data
         assert b"AD 2023-0048" in r.data
+
+
+# ── Projected due date (backlog: due-date projection from utilization trend) ──
+
+
+class TestTriggerListProjectedDueDate:
+    def test_shows_estimate_with_enough_flight_history(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_hours_trigger(app, acid, due_engine_hours=200.0)
+        today = date.today()
+        # 4 flights spanning 30 days, well within the 90-day window and past
+        # the minimum-flights/minimum-span guard in due_date_projection.py.
+        # Oldest first so counter_end increases forward in time, matching
+        # Aircraft.total_engine_hours (the max counter_end across flights).
+        counter = 100.0
+        for days_ago in (30, 20, 10, 0):
+            counter += 2.0
+            _add_flight(
+                app,
+                acid,
+                today - timedelta(days=days_ago),
+                engine_time=2.0,
+                counter_end=counter,
+            )
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance")
+        assert r.status_code == 200
+        assert b"(est.)" in r.data
+
+    def test_no_estimate_without_enough_flight_history(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_hours_trigger(app, acid, due_engine_hours=200.0)
+        # Only one flight in the window — the "flown twice in 90 days
+        # produces a meaningless trend" guard must suppress the estimate.
+        _add_flight(app, acid, date.today())
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance")
+        assert r.status_code == 200
+        assert b"(est.)" not in r.data
+
+    def test_no_estimate_for_calendar_trigger(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _add_calendar_trigger(app, acid)
+        _login(app, client)
+        r = client.get(f"/aircraft/{acid}/maintenance")
+        assert r.status_code == 200
+        assert b"(est.)" not in r.data
 
 
 # ── Add trigger ───────────────────────────────────────────────────────────────

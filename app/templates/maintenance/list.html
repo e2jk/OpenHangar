@@ -109,6 +109,12 @@
             {% if trigger.due_engine_hours is not none %}
               <div>{{ "%.1f"|format(trigger.due_engine_hours|float) }} h
               <span class="text-muted small">({{ _('flight') if trigger.hours_basis == 'flight' else _('engine') }})</span></div>
+              {% set projected_date = projected_dates.get(trigger.id) %}
+              {% if projected_date %}
+              <div class="text-muted oh-fs-08" title="{{ _('Estimated from this aircraft\'s recent utilization rate — not a real due date.') }}">
+                <i class="bi bi-graph-up-arrow me-1"></i>~{{ projected_date.strftime('%Y-%m-%d') }} {{ _('(est.)') }}
+              </div>
+              {% endif %}
             {% endif %}
             {% if trigger.due_landings is not none %}
               <div>{{ trigger.due_landings }} {{ _('landings') }}</div>
