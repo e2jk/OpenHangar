@@ -56,6 +56,7 @@ _EXCLUDED_CONVERTERS = {
     "node_id": "airworthiness EASA source nodes — same pattern as document_id",
     "doc_id": "airworthiness documents — same pattern as document_id",
     "stc_id": "airworthiness installed STCs — same pattern as document_id",
+    "unit_id": "airworthiness avionics/equipment units — same pattern as document_id",
     "revision_id": "personal minimums revisions — self-scoped to pilot_user_id, not tenant-object shaped",
     "section_id": "personal minimums sections — same as revision_id",
     "item_id": "personal minimums items — same as revision_id",

@@ -23,8 +23,11 @@ from models import (  # pyright: ignore[reportMissingImports]
     AirworthinessDocType,
     AirworthinessDocument,
     AirworthinessDocumentStatus,
+    AvionicsUnit,
     Component,
     EASASourceNode,
+    EquipmentStatus,
+    EquipmentWishlistItem,
     InstalledSTC,
     Role,
     Tenant,
@@ -151,6 +154,30 @@ def _add_ad_sb_item(
             title="Wing spar inspection",
             status=status,
         )
+        db.session.add(item)
+        db.session.commit()
+        return item.id
+
+
+def _add_avionics_unit(
+    app, aircraft_id, role="COM1", status=EquipmentStatus.SERVICEABLE
+):
+    with app.app_context():
+        unit = AvionicsUnit(
+            aircraft_id=aircraft_id,
+            role=role,
+            make="Garmin",
+            model="GNS430",
+            status=status,
+        )
+        db.session.add(unit)
+        db.session.commit()
+        return unit.id
+
+
+def _add_wishlist_item(app, aircraft_id, title="ADS-B Out upgrade"):
+    with app.app_context():
+        item = EquipmentWishlistItem(aircraft_id=aircraft_id, title=title)
         db.session.add(item)
         db.session.commit()
         return item.id
@@ -2040,4 +2067,307 @@ class TestAdSbPrint:
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
         resp = client.get(f"/aircraft/{ac_id}/airworthiness/adsb/print")
+        assert resp.status_code == 302
+
+
+# ── Avionics/equipment inventory (backlog item) ─────────────────────────────────
+
+
+class TestEquipmentBoard:
+    def test_get_renders_board(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _add_avionics_unit(app, ac_id)
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/equipment/")
+        assert resp.status_code == 200
+        assert b"COM1" in resp.data
+        assert b"Garmin" in resp.data
+
+    def test_get_empty_states(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/equipment/")
+        assert resp.status_code == 200
+        assert b"No avionics/equipment units recorded yet." in resp.data
+        assert b"Nothing on the wish list yet." in resp.data
+
+    def test_shows_wishlist_item(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _add_wishlist_item(app, ac_id, title="ADS-B Out upgrade")
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/equipment/")
+        assert resp.status_code == 200
+        assert b"ADS-B Out upgrade" in resp.data
+
+    def test_redirects_when_not_logged_in(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/equipment/")
+        assert resp.status_code == 302
+
+    def test_404_for_other_tenant(self, app, client):
+        _create_user_and_tenant(app)
+        _, other_tid = _create_user_and_tenant(app, email="other@example.com")
+        other_ac_id = _add_aircraft(app, other_tid, "OO-OTH")
+        _login(app, client)
+        resp = client.get(f"/aircraft/{other_ac_id}/airworthiness/equipment/")
+        assert resp.status_code == 404
+
+
+class TestAddAvionicsUnit:
+    def test_get_renders_form(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/equipment/new")
+        assert resp.status_code == 200
+
+    def test_post_creates_unit(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/airworthiness/equipment/new",
+            data={
+                "role": "Transponder",
+                "make": "Garmin",
+                "model": "GTX345",
+                "serial_number": "12345",
+                "status": EquipmentStatus.OPEN_SQUAWK,
+                "certification_notes": "TSO-C112e",
+                "notes": "Intermittent Mode S dropout",
+            },
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            unit = AvionicsUnit.query.filter_by(
+                aircraft_id=ac_id, role="Transponder"
+            ).first()
+            assert unit is not None
+            assert unit.status == EquipmentStatus.OPEN_SQUAWK
+            assert unit.certification_notes == "TSO-C112e"
+
+    def test_post_rejects_invalid_status(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/airworthiness/equipment/new",
+            data={"role": "COM1", "status": "not-a-real-status"},
+        )
+        assert resp.status_code == 400
+
+    def test_redirects_when_not_logged_in(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/equipment/new")
+        assert resp.status_code == 302
+
+
+class TestEditAvionicsUnit:
+    def test_get_renders_form_with_existing_values(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        unit_id = _add_avionics_unit(app, ac_id)
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/equipment/{unit_id}/edit")
+        assert resp.status_code == 200
+        assert b"COM1" in resp.data
+
+    def test_post_updates_unit(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        unit_id = _add_avionics_unit(app, ac_id, status=EquipmentStatus.SERVICEABLE)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/airworthiness/equipment/{unit_id}/edit",
+            data={
+                "role": "COM1",
+                "make": "Garmin",
+                "model": "GNS430",
+                "status": EquipmentStatus.PLACARDED_INOPERATIVE,
+                "notes": "Removed for repair",
+            },
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            unit = db.session.get(AvionicsUnit, unit_id)
+            assert unit.status == EquipmentStatus.PLACARDED_INOPERATIVE
+            assert unit.notes == "Removed for repair"
+
+    def test_post_rejects_invalid_status(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        unit_id = _add_avionics_unit(app, ac_id)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/airworthiness/equipment/{unit_id}/edit",
+            data={"role": "COM1", "status": "bogus"},
+        )
+        assert resp.status_code == 400
+
+    def test_404_for_unit_of_other_aircraft(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id, "OO-TST")
+        ac_id2 = _add_aircraft(app, tenant_id, "OO-TST2")
+        unit_id = _add_avionics_unit(app, ac_id2)
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/equipment/{unit_id}/edit")
+        assert resp.status_code == 404
+
+
+class TestDeleteAvionicsUnit:
+    def test_post_deletes_unit(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        unit_id = _add_avionics_unit(app, ac_id)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/airworthiness/equipment/{unit_id}/delete",
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            assert db.session.get(AvionicsUnit, unit_id) is None
+
+    def test_404_for_unit_of_other_aircraft(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id, "OO-TST")
+        ac_id2 = _add_aircraft(app, tenant_id, "OO-TST2")
+        unit_id = _add_avionics_unit(app, ac_id2)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/airworthiness/equipment/{unit_id}/delete"
+        )
+        assert resp.status_code == 404
+
+    def test_redirects_when_not_logged_in(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        unit_id = _add_avionics_unit(app, ac_id)
+        resp = client.post(
+            f"/aircraft/{ac_id}/airworthiness/equipment/{unit_id}/delete"
+        )
+        assert resp.status_code == 302
+
+
+class TestAddWishlistItem:
+    def test_get_renders_form(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/equipment/wishlist/new")
+        assert resp.status_code == 200
+
+    def test_post_creates_item(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/airworthiness/equipment/wishlist/new",
+            data={
+                "title": "ADS-B Out upgrade",
+                "rough_cost": "3500.00",
+                "requirements": "Downtime, STC",
+                "notes": "Talk to avionics shop first",
+            },
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            item = EquipmentWishlistItem.query.filter_by(
+                aircraft_id=ac_id, title="ADS-B Out upgrade"
+            ).first()
+            assert item is not None
+            assert float(item.rough_cost) == 3500.00
+            assert item.requirements == "Downtime, STC"
+
+    def test_post_without_optional_fields(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/airworthiness/equipment/wishlist/new",
+            data={"title": "New panel", "rough_cost": "", "requirements": ""},
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            item = EquipmentWishlistItem.query.filter_by(
+                aircraft_id=ac_id, title="New panel"
+            ).first()
+            assert item is not None
+            assert item.rough_cost is None
+
+    def test_post_rejects_negative_cost(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/airworthiness/equipment/wishlist/new",
+            data={"title": "New panel", "rough_cost": "-100"},
+        )
+        assert resp.status_code == 200
+        with app.app_context():
+            assert (
+                EquipmentWishlistItem.query.filter_by(
+                    aircraft_id=ac_id, title="New panel"
+                ).first()
+                is None
+            )
+
+    def test_post_rejects_non_numeric_cost(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/airworthiness/equipment/wishlist/new",
+            data={"title": "New panel", "rough_cost": "not-a-number"},
+        )
+        assert resp.status_code == 200
+
+    def test_redirects_when_not_logged_in(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/equipment/wishlist/new")
+        assert resp.status_code == 302
+
+
+class TestDeleteWishlistItem:
+    def test_post_deletes_item(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        item_id = _add_wishlist_item(app, ac_id)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/airworthiness/equipment/wishlist/{item_id}/delete",
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            assert db.session.get(EquipmentWishlistItem, item_id) is None
+
+    def test_404_for_item_of_other_aircraft(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id, "OO-TST")
+        ac_id2 = _add_aircraft(app, tenant_id, "OO-TST2")
+        item_id = _add_wishlist_item(app, ac_id2)
+        _login(app, client)
+        resp = client.post(
+            f"/aircraft/{ac_id}/airworthiness/equipment/wishlist/{item_id}/delete"
+        )
+        assert resp.status_code == 404
+
+    def test_redirects_when_not_logged_in(self, app, client):
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        item_id = _add_wishlist_item(app, ac_id)
+        resp = client.post(
+            f"/aircraft/{ac_id}/airworthiness/equipment/wishlist/{item_id}/delete"
+        )
         assert resp.status_code == 302

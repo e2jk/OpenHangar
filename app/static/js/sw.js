@@ -90,6 +90,7 @@ var SWR_PATTERNS = [
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/maintenance$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/airworthiness\/$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/airworthiness\/adsb\/$/,
+  /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/airworthiness\/equipment\/$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/reservations\/$/,
   /^\/offline\/changes$/,
   /^\/pilot\/logbook\/offline$/

@@ -22,8 +22,11 @@ from models import (  # pyright: ignore[reportMissingImports]
     AirworthinessDocType,
     AirworthinessDocument,
     AirworthinessDocumentStatus,
+    AvionicsUnit,
     Component,
     EASASourceNode,
+    EquipmentStatus,
+    EquipmentWishlistItem,
     InstalledSTC,
     Role,
     TenantUser,
@@ -88,6 +91,22 @@ def _get_stc_or_404(aircraft: Aircraft, stc_id: int) -> InstalledSTC:
 
 def _get_ad_sb_item_or_404(aircraft: Aircraft, item_id: int) -> AdSbItem:
     item = db.session.get(AdSbItem, item_id)
+    if not item or item.aircraft_id != aircraft.id:
+        abort(404)
+    return item
+
+
+def _get_avionics_unit_or_404(aircraft: Aircraft, unit_id: int) -> AvionicsUnit:
+    unit = db.session.get(AvionicsUnit, unit_id)
+    if not unit or unit.aircraft_id != aircraft.id:
+        abort(404)
+    return unit
+
+
+def _get_wishlist_item_or_404(
+    aircraft: Aircraft, item_id: int
+) -> EquipmentWishlistItem:
+    item = db.session.get(EquipmentWishlistItem, item_id)
     if not item or item.aircraft_id != aircraft.id:
         abort(404)
     return item
@@ -563,3 +582,166 @@ def adsb_print(aircraft_id: int) -> ResponseReturnValue:
         statuses=AdSbStatus,
         today=date.today(),
     )
+
+
+# ── Avionics/equipment inventory ─────────────────────────────────────────────
+# Backlog item: per-unit status + a separate upgrade wish list, kept distinct
+# from the generic Component/maintenance-trigger model (no TBO/life-limit
+# tracking here — this is a simple inventory).
+
+
+@airworthiness_bp.route("/aircraft/<aircraft_ref:aircraft_id>/airworthiness/equipment/")
+@login_required
+@require_role(*_CREW_ROLES)
+def equipment_board(aircraft_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    return render_template(
+        "airworthiness/equipment_board.html",
+        aircraft=ac,
+        units=list(ac.avionics_units),
+        wishlist_items=list(ac.equipment_wishlist_items),
+        statuses=EquipmentStatus,
+    )
+
+
+@airworthiness_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/airworthiness/equipment/new",
+    methods=["GET", "POST"],
+)
+@login_required
+@require_role(*_OWNER_ROLES)
+def add_avionics_unit(aircraft_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+
+    if request.method == "POST":
+        status = request.form.get("status", "").strip()
+        if status not in EquipmentStatus.ALL:
+            abort(400)
+        unit = AvionicsUnit(
+            aircraft_id=aircraft_id,
+            role=request.form["role"].strip(),
+            make=request.form.get("make", "").strip() or None,
+            model=request.form.get("model", "").strip() or None,
+            serial_number=request.form.get("serial_number", "").strip() or None,
+            status=status,
+            certification_notes=request.form.get("certification_notes", "").strip()
+            or None,
+            notes=request.form.get("notes", "").strip() or None,
+        )
+        db.session.add(unit)
+        db.session.commit()
+        flash(_("Equipment unit added."), "success")
+        return redirect(
+            url_for("airworthiness.equipment_board", aircraft_id=aircraft_id)
+        )
+
+    return render_template(
+        "airworthiness/avionics_unit_form.html",
+        aircraft=ac,
+        unit=None,
+        statuses=EquipmentStatus,
+    )
+
+
+@airworthiness_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/airworthiness/equipment/<int:unit_id>/edit",
+    methods=["GET", "POST"],
+)
+@login_required
+@require_role(*_OWNER_ROLES)
+def edit_avionics_unit(aircraft_id: int, unit_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    unit = _get_avionics_unit_or_404(ac, unit_id)
+
+    if request.method == "POST":
+        status = request.form.get("status", "").strip()
+        if status not in EquipmentStatus.ALL:
+            abort(400)
+        unit.role = request.form["role"].strip()
+        unit.make = request.form.get("make", "").strip() or None
+        unit.model = request.form.get("model", "").strip() or None
+        unit.serial_number = request.form.get("serial_number", "").strip() or None
+        unit.status = status
+        unit.certification_notes = (
+            request.form.get("certification_notes", "").strip() or None
+        )
+        unit.notes = request.form.get("notes", "").strip() or None
+        db.session.commit()
+        flash(_("Equipment unit updated."), "success")
+        return redirect(
+            url_for("airworthiness.equipment_board", aircraft_id=aircraft_id)
+        )
+
+    return render_template(
+        "airworthiness/avionics_unit_form.html",
+        aircraft=ac,
+        unit=unit,
+        statuses=EquipmentStatus,
+    )
+
+
+@airworthiness_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/airworthiness/equipment/<int:unit_id>/delete",
+    methods=["POST"],
+)
+@login_required
+@require_role(*_OWNER_ROLES)
+def delete_avionics_unit(aircraft_id: int, unit_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    unit = _get_avionics_unit_or_404(ac, unit_id)
+    db.session.delete(unit)
+    db.session.commit()
+    flash(_("Equipment unit removed."), "success")
+    return redirect(url_for("airworthiness.equipment_board", aircraft_id=aircraft_id))
+
+
+@airworthiness_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/airworthiness/equipment/wishlist/new",
+    methods=["GET", "POST"],
+)
+@login_required
+@require_role(*_OWNER_ROLES)
+def add_wishlist_item(aircraft_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+
+    if request.method == "POST":
+        cost_raw = request.form.get("rough_cost", "").strip()
+        rough_cost = None
+        if cost_raw:
+            try:
+                rough_cost = float(cost_raw)
+                if rough_cost < 0:
+                    raise ValueError
+            except ValueError:
+                flash(_("Rough cost must be a non-negative number."), "danger")
+                return render_template("airworthiness/wishlist_form.html", aircraft=ac)
+        item = EquipmentWishlistItem(
+            aircraft_id=aircraft_id,
+            title=request.form["title"].strip(),
+            rough_cost=rough_cost,
+            requirements=request.form.get("requirements", "").strip() or None,
+            notes=request.form.get("notes", "").strip() or None,
+        )
+        db.session.add(item)
+        db.session.commit()
+        flash(_("Wish-list item added."), "success")
+        return redirect(
+            url_for("airworthiness.equipment_board", aircraft_id=aircraft_id)
+        )
+
+    return render_template("airworthiness/wishlist_form.html", aircraft=ac)
+
+
+@airworthiness_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/airworthiness/equipment/wishlist/<int:item_id>/delete",
+    methods=["POST"],
+)
+@login_required
+@require_role(*_OWNER_ROLES)
+def delete_wishlist_item(aircraft_id: int, item_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    item = _get_wishlist_item_or_404(ac, item_id)
+    db.session.delete(item)
+    db.session.commit()
+    flash(_("Wish-list item removed."), "success")
+    return redirect(url_for("airworthiness.equipment_board", aircraft_id=aircraft_id))

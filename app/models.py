@@ -497,6 +497,18 @@ class Aircraft(db.Model):
         cascade="all, delete-orphan",
         order_by="AdSbItem.reference",
     )
+    avionics_units = db.relationship(
+        "AvionicsUnit",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
+        order_by="AvionicsUnit.role",
+    )
+    equipment_wishlist_items = db.relationship(
+        "EquipmentWishlistItem",
+        back_populates="aircraft",
+        cascade="all, delete-orphan",
+        order_by="EquipmentWishlistItem.created_at",
+    )
     owners = db.relationship(
         "AircraftOwner",
         back_populates="aircraft",
@@ -2953,6 +2965,84 @@ class AdSbItem(db.Model):
     aircraft = db.relationship("Aircraft", back_populates="ad_sb_items")
 
     __table_args__ = (db.Index("ix_ad_sb_items_aircraft_id", aircraft_id),)
+
+
+class EquipmentStatus:
+    """Per-unit status for an avionics/equipment inventory item (backlog:
+    avionics inventory with per-unit status and an upgrade wish list)."""
+
+    SERVICEABLE = "serviceable"
+    OPEN_SQUAWK = "open_squawk"
+    PLACARDED_INOPERATIVE = "placarded_inoperative"
+    ALL: ClassVar[set[str]] = {SERVICEABLE, OPEN_SQUAWK, PLACARDED_INOPERATIVE}
+    LABELS: ClassVar[dict[str, str]] = {
+        SERVICEABLE: "Serviceable",
+        OPEN_SQUAWK: "Open squawk",
+        PLACARDED_INOPERATIVE: "Placarded inoperative",
+    }
+
+
+class AvionicsUnit(db.Model):
+    """An installed avionics/equipment unit tracked separately from the
+    generic Component/maintenance-trigger model — this is a simple
+    inventory entry (role, status, certification notes), not a TBO/life-
+    limit-tracked part."""
+
+    __tablename__ = "avionics_units"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    role = db.Column(db.String(64), nullable=False)  # e.g. "COM1", "Transponder"
+    make = db.Column(db.String(64), nullable=True)
+    model = db.Column(db.String(64), nullable=True)
+    serial_number = db.Column(db.String(64), nullable=True)
+    status = db.Column(
+        db.String(32),
+        nullable=False,
+        default=EquipmentStatus.SERVICEABLE,
+        server_default=EquipmentStatus.SERVICEABLE,
+    )
+    # Certification history and STC/AFMS approvals — free text rather than a
+    # separate sub-model, matching this table's own "simple inventory" scope.
+    certification_notes = db.Column(db.Text, nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+
+    aircraft = db.relationship("Aircraft", back_populates="avionics_units")
+
+    __table_args__ = (db.Index("ix_avionics_units_aircraft_id", aircraft_id),)
+
+
+class EquipmentWishlistItem(db.Model):
+    """A planned equipment upgrade an owner is considering — separate from
+    what's actually installed (AvionicsUnit)."""
+
+    __tablename__ = "equipment_wishlist_items"
+
+    id = db.Column(db.Integer, primary_key=True)
+    aircraft_id = db.Column(
+        db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
+    )
+    title = db.Column(db.String(256), nullable=False)
+    rough_cost = db.Column(db.Numeric(10, 2), nullable=True)
+    # What installing it would require — downtime, STC, panel space, etc.
+    requirements = db.Column(db.Text, nullable=True)
+    notes = db.Column(db.Text, nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+
+    aircraft = db.relationship("Aircraft", back_populates="equipment_wishlist_items")
+
+    __table_args__ = (db.Index("ix_equipment_wishlist_items_aircraft_id", aircraft_id),)
 
 
 # ── Phase 34: Email Notifications ─────────────────────────────────────────────
