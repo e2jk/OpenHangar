@@ -143,6 +143,12 @@ def aircraft_logbook_snapshot(aircraft_id: int) -> ResponseReturnValue:
                         "has_flight_counter_photo": bool(fe.flight_counter_photo),
                         "has_engine_counter_photo": bool(fe.engine_counter_photo),
                         "has_fuel_photo": bool(fe.fuel_photo),
+                        "has_flight_counter_photo_preflight": bool(
+                            fe.flight_counter_photo_preflight
+                        ),
+                        "has_engine_counter_photo_preflight": bool(
+                            fe.engine_counter_photo_preflight
+                        ),
                         "has_gps_track": fe.gps_track_id is not None,
                         "source": fe.source,
                         "created_at": fe.created_at.isoformat()

@@ -868,6 +868,11 @@ class Flight(db.Model):
     engine_time = db.Column(db.Numeric(4, 1), nullable=True)
     flight_counter_photo = db.Column(db.String(255), nullable=True)
     engine_counter_photo = db.Column(db.String(255), nullable=True)
+    # Pre-flight counterparts of the two columns above — taken before
+    # departure (e.g. at block-off) rather than after shutdown. Independent
+    # of the post-flight photos: a flight can have neither, either, or both.
+    flight_counter_photo_preflight = db.Column(db.String(255), nullable=True)
+    engine_counter_photo_preflight = db.Column(db.String(255), nullable=True)
     # Refueling before and after are independent events — a flight can have
     # neither, either, or both (e.g. topped off before departure, then
     # topped off again after landing).

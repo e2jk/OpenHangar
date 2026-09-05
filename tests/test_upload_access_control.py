@@ -292,6 +292,22 @@ class TestFlightEntryPhotoAccess:
         _login(client, app, "fp_owner@a.com")
         assert client.get("/uploads/fuel.jpg").status_code == 200
 
+    def test_flight_counter_photo_preflight_owner_can_access(self, app, client):
+        _, tid = _make_tenant_and_user(app, "fcpp_owner@a.com")
+        self._make_flight_with_photo(
+            app, tid, "flight_counter_photo_preflight", "flt_ctr_pre.jpg"
+        )
+        _login(client, app, "fcpp_owner@a.com")
+        assert client.get("/uploads/flt_ctr_pre.jpg").status_code == 200
+
+    def test_engine_counter_photo_preflight_owner_can_access(self, app, client):
+        _, tid = _make_tenant_and_user(app, "ecpp_owner@a.com")
+        self._make_flight_with_photo(
+            app, tid, "engine_counter_photo_preflight", "eng_ctr_pre.jpg"
+        )
+        _login(client, app, "ecpp_owner@a.com")
+        assert client.get("/uploads/eng_ctr_pre.jpg").status_code == 200
+
     def test_flight_photo_other_tenant_gets_404(self, app, client):
         _, tid_a = _make_tenant_and_user(app, "fpa@a.com")
         _make_tenant_and_user(app, "fpb@b.com")

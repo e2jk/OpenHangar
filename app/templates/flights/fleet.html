@@ -48,7 +48,7 @@
           </td>
           <td class="fw-semibold oh-text-navy">
             <span title="{{ f.departure_icao | airport_name }}">{{ f.departure_icao }}</span> → <span title="{{ f.arrival_icao | airport_name }}">{{ f.arrival_icao }}</span>
-            {% if f.flight_counter_photo or f.engine_counter_photo %}
+            {% if f.flight_counter_photo or f.engine_counter_photo or f.flight_counter_photo_preflight or f.engine_counter_photo_preflight %}
             <i class="bi bi-camera text-muted ms-1 oh-fs-08" title="Has photo"></i>
             {% endif %}
           </td>

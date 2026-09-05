@@ -1096,6 +1096,8 @@ def delete_entry(entry_id: int) -> ResponseReturnValue:
 
     _delete_upload(entry.flight_counter_photo)
     _delete_upload(entry.engine_counter_photo)
+    _delete_upload(entry.flight_counter_photo_preflight)
+    _delete_upload(entry.engine_counter_photo_preflight)
     db.session.delete(entry)
     db.session.commit()
     flash(_("Logbook entry deleted."), "success")
