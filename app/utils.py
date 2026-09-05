@@ -1024,6 +1024,57 @@ def _load_airport_names() -> dict[str, str]:
     return result
 
 
+@functools.lru_cache(maxsize=1)
+def _load_airport_geo() -> dict[str, dict[str, Any]]:
+    """Return {ICAO ident: {lat, lon, elevation_ft, country, region, name}}
+    for all airports in airports.csv that have coordinates. Used by the
+    pilot flight-statistics report (distance, farthest points, elevation
+    extremes) — kept separate from _load_airport_names() since most callers
+    only need the name."""
+    path = os.path.join(os.path.dirname(__file__), "data", "airports.csv")
+    result: dict[str, dict[str, Any]] = {}
+    try:
+        with open(path, newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                ident = row.get("ident", "").strip()
+                lat_raw = row.get("latitude_deg", "").strip()
+                lon_raw = row.get("longitude_deg", "").strip()
+                if not ident or not lat_raw or not lon_raw:
+                    continue
+                try:
+                    lat = float(lat_raw)
+                    lon = float(lon_raw)
+                except ValueError:
+                    continue
+                elev_raw = row.get("elevation_ft", "").strip()
+                result[ident] = {
+                    "lat": lat,
+                    "lon": lon,
+                    "elevation_ft": float(elev_raw) if elev_raw else None,
+                    "country": row.get("iso_country", "").strip(),
+                    "region": row.get("iso_region", "").strip(),
+                    "name": row.get("name", "").strip(),
+                }
+    except OSError as exc:
+        _log.warning("airports.csv not found: %s", exc)
+    return result
+
+
+_EARTH_RADIUS_NM = 3440.065
+
+
+def haversine_nm(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Great-circle distance between two points, in nautical miles."""
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = (
+        math.sin(dphi / 2) ** 2
+        + math.cos(p1) * math.cos(p2) * math.sin(dlambda / 2) ** 2
+    )
+    return _EARTH_RADIUS_NM * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
 _alog = logging.getLogger("openhangar.activity")
 
 
