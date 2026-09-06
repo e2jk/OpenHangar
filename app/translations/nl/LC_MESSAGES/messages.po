@@ -423,7 +423,7 @@ msgid "Equipment unit removed."
 msgstr "Uitrustingsonderdeel verwijderd."
 
 #: app/airworthiness/routes.py:716
-msgid "Rough cost must be a non-negative number."
+msgid "Estimated cost must be a non-negative number."
 msgstr "Geschatte kosten moeten een niet-negatief getal zijn."
 
 #: app/airworthiness/routes.py:727
@@ -6007,7 +6007,8 @@ msgstr "Verlanglijst-item toevoegen"
 
 #: app/templates/airworthiness/equipment_board.html:106
 #: app/templates/airworthiness/wishlist_form.html:27
-msgid "Rough cost"
+#: app/templates/reservations/detail.html:44
+msgid "Estimated cost"
 msgstr "Geschatte kosten"
 
 #: app/templates/airworthiness/equipment_board.html:107
@@ -10975,10 +10976,6 @@ msgstr "Reservering"
 #: app/templates/reservations/form.html:100
 msgid "Back to calendar"
 msgstr "Terug naar kalender"
-
-#: app/templates/reservations/detail.html:44
-msgid "Estimated cost"
-msgstr "Geschatte kosten"
 
 #: app/templates/reservations/detail.html:57
 msgid "Dispatch"

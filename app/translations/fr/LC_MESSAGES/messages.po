@@ -423,7 +423,7 @@ msgid "Equipment unit removed."
 msgstr "Élément d'équipement supprimé."
 
 #: app/airworthiness/routes.py:716
-msgid "Rough cost must be a non-negative number."
+msgid "Estimated cost must be a non-negative number."
 msgstr "Le coût estimé doit être un nombre positif ou nul."
 
 #: app/airworthiness/routes.py:727
@@ -6007,7 +6007,8 @@ msgstr "Ajouter un élément à la liste de souhaits"
 
 #: app/templates/airworthiness/equipment_board.html:106
 #: app/templates/airworthiness/wishlist_form.html:27
-msgid "Rough cost"
+#: app/templates/reservations/detail.html:44
+msgid "Estimated cost"
 msgstr "Coût estimé"
 
 #: app/templates/airworthiness/equipment_board.html:107
@@ -10975,10 +10976,6 @@ msgstr "Réservation"
 #: app/templates/reservations/form.html:100
 msgid "Back to calendar"
 msgstr "Retour au calendrier"
-
-#: app/templates/reservations/detail.html:44
-msgid "Estimated cost"
-msgstr "Coût estimé"
 
 #: app/templates/reservations/detail.html:57
 msgid "Dispatch"
