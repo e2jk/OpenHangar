@@ -45,7 +45,7 @@
       {% endif %}
       {% set grounding_snags = open_snags | selectattr('is_grounding') | list %}
       {% if grounding_snags %}
-      {{ ngettext('There is %(n)s unresolved grounding snag.', 'There are %(n)s unresolved grounding snags.', grounding_snags | length, n=grounding_snags | length) }}
+      {{ ngettext('There is one unresolved grounding snag.', 'There are %(n)s unresolved grounding snags.', grounding_snags | length, n=grounding_snags | length) }}
       <a href="{{ url_for('snags.list_snags', aircraft_id=aircraft.id) }}" class="alert-link">{{ _('View snag list') }}</a>.
       {% endif %}
     </div>

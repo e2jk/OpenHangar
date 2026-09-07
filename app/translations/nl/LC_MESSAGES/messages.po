@@ -4130,9 +4130,9 @@ msgstr "De ARC is verlopen op %(date)s."
 
 #: app/templates/aircraft/detail.html:48
 #, python-format
-msgid "There is %(n)s unresolved grounding snag."
+msgid "There is one unresolved grounding snag."
 msgid_plural "There are %(n)s unresolved grounding snags."
-msgstr[0] "Er is %(n)s onopgelost vliegverbod-defect."
+msgstr[0] "Er is één onopgelost vliegverbod-defect."
 msgstr[1] "Er zijn %(n)s onopgeloste vliegverbod-defecten."
 
 #: app/templates/aircraft/detail.html:49
@@ -6966,9 +6966,9 @@ msgstr "Documentatie back-up &amp; herstel"
 
 #: app/templates/config/settings.html:237
 #, python-format
-msgid "%(size)s across %(n)s file"
+msgid "%(size)s across one file"
 msgid_plural "%(size)s across %(n)s files"
-msgstr[0] "%(size)s over %(n)s bestand"
+msgstr[0] "%(size)s over één bestand"
 msgstr[1] "%(size)s over %(n)s bestanden"
 
 #: app/templates/config/settings.html:241
@@ -7030,9 +7030,9 @@ msgstr "Mislukt"
 
 #: app/templates/config/settings.html:314
 #, python-format
-msgid "… and %(n)s more backup not shown."
+msgid "… and one more backup not shown."
 msgid_plural "… and %(n)s more backups not shown."
-msgstr[0] "… en %(n)s extra back-up niet weergegeven."
+msgstr[0] "… en één extra back-up niet weergegeven."
 msgstr[1] "… en %(n)s extra back-ups niet weergegeven."
 
 #: app/templates/config/settings.html:320
@@ -10301,9 +10301,9 @@ msgstr "Deze logboekvermelding verwijderen?"
 
 #: app/templates/pilots/logbook.html:259
 #, python-format
-msgid "Totals (all %(n)s entry)"
+msgid "Totals (one entry)"
 msgid_plural "Totals (all %(n)s entries)"
-msgstr[0] "Totalen (alle %(n)s vermelding)"
+msgstr[0] "Totalen (één vermelding)"
 msgstr[1] "Totalen (alle %(n)s vermeldingen)"
 
 #: app/templates/pilots/logbook.html:308
