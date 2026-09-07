@@ -10708,9 +10708,9 @@ msgstr "Journée la plus longue (en distance)"
 
 #: app/templates/pilots/stats.html:107
 #, python-format
-msgid "%(n)s flight"
+msgid "one flight"
 msgid_plural "%(n)s flights"
-msgstr[0] "%(n)s vol"
+msgstr[0] "un vol"
 msgstr[1] "%(n)s vols"
 
 #: app/templates/pilots/stats.html:117
