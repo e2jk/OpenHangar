@@ -80,7 +80,7 @@
              end=[pagination.page * pagination.per_page, pagination.total] | min,
              total=pagination.total) }}
       {% else %}
-        {{ ngettext('%(n)s entry (all)', '%(n)s entries (all)', total_entries, n=total_entries) }}
+        {{ ngettext('one entry (all)', '%(n)s entries (all)', total_entries, n=total_entries) }}
       {% endif %}
     </span>
     <div class="d-flex align-items-center gap-3 flex-wrap">
@@ -256,7 +256,7 @@
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="8"><strong>{{ ngettext('Totals (all %(n)s entry)', 'Totals (all %(n)s entries)', total_entries, n=total_entries) }}</strong></td>
+          <td colspan="8"><strong>{{ ngettext('Totals (one entry)', 'Totals (all %(n)s entries)', total_entries, n=total_entries) }}</strong></td>
           <td>{{ totals.landings_day or '—' }}</td>
           <td>{{ totals.landings_night or '—' }}</td>
           <td>{{ '%g' % totals.single_pilot_se if totals.single_pilot_se else '—' }}</td>

@@ -63,7 +63,7 @@
           </div>
           <div class="ac-card-type">{{ ac.make }} {{ ac.model }}{% if ac.year %} · {{ ac.year }}{% endif %}</div>
           <div class="ac-card-meta mt-2">
-            <span><i class="bi bi-puzzle me-1"></i>{{ ngettext('%(n)s component', '%(n)s components', ac.components | selectattr('removed_at', 'none') | list | length, n=ac.components | selectattr('removed_at', 'none') | list | length) }}</span>
+            <span><i class="bi bi-puzzle me-1"></i>{{ ngettext('one component', '%(n)s components', ac.components | selectattr('removed_at', 'none') | list | length, n=ac.components | selectattr('removed_at', 'none') | list | length) }}</span>
             {% set s = aircraft_status.get(ac.id, 'ok') %}
             {% if ac.is_archived %}
               <span class="ac-status-badge"><i class="bi bi-archive me-1"></i>{{ _('Archived') }}</span>

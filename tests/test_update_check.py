@@ -596,7 +596,7 @@ class TestConfigVersionDisplay:
         assert b"2 versions behind" in resp.data
 
     def test_no_versions_behind_when_one_behind(self, app, client):
-        # "1 version behind" uses singular form
+        # "one version behind" uses singular form
         uid = _setup_admin(app)
         _login(client, uid)
         with app.app_context():
@@ -610,7 +610,7 @@ class TestConfigVersionDisplay:
             db.session.commit()
         with patch.dict("os.environ", {"OPENHANGAR_VERSION": "0.15.0"}):
             resp = client.get("/config/")
-        assert b"1 version behind" in resp.data
+        assert b"one version behind" in resp.data
 
     def test_no_versions_behind_when_current_not_in_list(self, app, client):
         uid = _setup_admin(app)

@@ -55,7 +55,7 @@
 
 {% if not (_compact_mode is defined and _compact_mode) %}
 <div class="text-muted small mb-3">
-  {{ ngettext('%(n)s flight with GPS track', '%(n)s flights with GPS tracks', _track_rows|length, n=_track_rows|length) }}
+  {{ ngettext('one flight with GPS track', '%(n)s flights with GPS tracks', _track_rows|length, n=_track_rows|length) }}
 </div>
 {% endif %}
 

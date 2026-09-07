@@ -374,6 +374,58 @@ class TestNoHandRolledPlurals:
         )
 
 
+# ── ngettext() singular form must be its own "one X" text ────────────────────
+
+# dashboard.html's stat tiles show the count in a separate `.stat-value`
+# div above the word label — the label itself never embeds "%(n)s" or a
+# number (see e.g. the neighbouring "Maintenance alert"/"Maintenance
+# alerts" tile, which needs no exception since that word happens to
+# inflect in English). "Aircraft" is the one tile where the English word
+# doesn't change with count, so its singular/plural msgids end up
+# identical — correct for this pattern, not the "one X" bug this test
+# looks for. Forcing "one Aircraft" here would read as a redundant
+# "1 / one Aircraft" next to the separately-shown digit.
+_ALLOWED_PLACEHOLDER_SINGULAR_MSGIDS: frozenset[str] = frozenset({"Aircraft"})
+
+
+class TestNgettextSingularForm:
+    def test_singular_form_does_not_reuse_count_placeholder(self):
+        # AGENTS.md: an ngettext() singular form must always be its own
+        # "one X" (or "a X", etc.) text, never a reuse of the "%(n)s" count
+        # placeholder in the singular slot — even when the English word
+        # inflects fine either way (e.g. "flight"/"flights"). Reusing it
+        # renders "1 X" instead of "one X" for the count-1 case, and worse:
+        # a language that needs to inflect the accompanying word (French
+        # signalé/signalés) or genuinely doesn't (Dutch gemarkeerd) either
+        # silently gets the wrong text in both slots or trips Weblate's
+        # "same plurals" check as a false positive indistinguishable from a
+        # real missed translation. The other half of that same pitfall —
+        # singular and plural msgids ending up byte-identical — is caught
+        # here too. Every ngettext() call site shows up as one .po entry
+        # with msgid_plural set (that's how Babel extracts a plural call),
+        # so scanning the catalog covers every call site without re-parsing
+        # source files. English source text is identical across every
+        # locale's .po file, so this only needs checking once.
+        _lang, po_path = _po_files()[0]
+        po = polib.pofile(po_path)
+        offenders = [
+            e.msgid
+            for e in po
+            if e.msgid_plural
+            and (e.msgid == e.msgid_plural or "%(n)s" in e.msgid)
+            and e.msgid not in _ALLOWED_PLACEHOLDER_SINGULAR_MSGIDS
+        ]
+        assert offenders == [], (
+            f"{len(offenders)} ngettext() singular form(s) reuse the %(n)s "
+            "count placeholder (or are identical to the plural form) "
+            'instead of their own "one X" wording — e.g. '
+            "ngettext('one item removed.', '%(n)s items removed.', ...) "
+            "not ngettext('%(n)s item removed.', '%(n)s items removed.', "
+            "...). See AGENTS.md's i18n section:\n"
+            + "\n".join(f"  {m!r}" for m in offenders[:10])
+        )
+
+
 # ── Near-duplicate source strings (article-only difference) ──────────────────
 
 _ARTICLE_RE = re.compile(r"\b(?:a|an|the)\b")
