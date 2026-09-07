@@ -970,9 +970,9 @@ def _check_renter_authorizations(app: Any) -> None:
         )
         day_count_phrase = _ln(
             "one day",
-            "%(threshold)s days",
+            "%(n)s days",
             threshold,
-            threshold=threshold,
+            n=threshold,
         )
         _dispatch_in_context(
             NT.RENTER_AUTHORIZATION_EXPIRY,

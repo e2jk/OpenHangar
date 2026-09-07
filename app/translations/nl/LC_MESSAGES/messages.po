@@ -2564,9 +2564,9 @@ msgstr[1] "%(n)s huurautorisaties"
 #: app/templates/dashboard.html:296 app/templates/pilots/profile.html:130
 #, python-format
 msgid "one day"
-msgid_plural "%(threshold)s days"
+msgid_plural "%(n)s days"
 msgstr[0] "één dag"
-msgstr[1] "%(threshold)s dagen"
+msgstr[1] "%(n)s dagen"
 
 #: app/services/notification_service.py:982
 #, python-format
