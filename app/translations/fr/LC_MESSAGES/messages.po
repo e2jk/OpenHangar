@@ -4130,9 +4130,9 @@ msgstr "L'ARC a expiré le %(date)s."
 
 #: app/templates/aircraft/detail.html:48
 #, python-format
-msgid "There is %(n)s unresolved grounding snag."
+msgid "There is one unresolved grounding snag."
 msgid_plural "There are %(n)s unresolved grounding snags."
-msgstr[0] "Il y a %(n)s anomalie clouante non résolue."
+msgstr[0] "Il y a une anomalie clouante non résolue."
 msgstr[1] "Il y a %(n)s anomalies clouantes non résolues."
 
 #: app/templates/aircraft/detail.html:49
@@ -6966,9 +6966,9 @@ msgstr "Documentation sauvegarde &amp; restauration"
 
 #: app/templates/config/settings.html:237
 #, python-format
-msgid "%(size)s across %(n)s file"
+msgid "%(size)s across one file"
 msgid_plural "%(size)s across %(n)s files"
-msgstr[0] "%(size)s sur %(n)s fichier"
+msgstr[0] "%(size)s sur un fichier"
 msgstr[1] "%(size)s sur %(n)s fichiers"
 
 #: app/templates/config/settings.html:241
@@ -7030,9 +7030,9 @@ msgstr "Échoué"
 
 #: app/templates/config/settings.html:314
 #, python-format
-msgid "… and %(n)s more backup not shown."
+msgid "… and one more backup not shown."
 msgid_plural "… and %(n)s more backups not shown."
-msgstr[0] "… et %(n)s sauvegarde supplémentaire non affichée."
+msgstr[0] "… et une sauvegarde supplémentaire non affichée."
 msgstr[1] "… et %(n)s sauvegardes supplémentaires non affichées."
 
 #: app/templates/config/settings.html:320
@@ -10301,9 +10301,9 @@ msgstr "Supprimer cette entrée du carnet de vol ?"
 
 #: app/templates/pilots/logbook.html:259
 #, python-format
-msgid "Totals (all %(n)s entry)"
+msgid "Totals (one entry)"
 msgid_plural "Totals (all %(n)s entries)"
-msgstr[0] "Totaux (toutes %(n)s entrée)"
+msgstr[0] "Totaux (une entrée)"
 msgstr[1] "Totaux (toutes %(n)s entrées)"
 
 #: app/templates/pilots/logbook.html:308

@@ -256,7 +256,7 @@
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="8"><strong>{{ ngettext('Totals (all %(n)s entry)', 'Totals (all %(n)s entries)', total_entries, n=total_entries) }}</strong></td>
+          <td colspan="8"><strong>{{ ngettext('Totals (one entry)', 'Totals (all %(n)s entries)', total_entries, n=total_entries) }}</strong></td>
           <td>{{ totals.landings_day or '—' }}</td>
           <td>{{ totals.landings_night or '—' }}</td>
           <td>{{ '%g' % totals.single_pilot_se if totals.single_pilot_se else '—' }}</td>

@@ -511,8 +511,9 @@ class TestListBackups:
             fh.write(b"x" * 10)
         resp = client.get("/config/")
         assert resp.status_code == 200
-        assert b"across 1 file" in resp.data
+        assert b"across one file" in resp.data
         assert b"across 1 files" not in resp.data
+        assert b"across one files" not in resp.data
 
     def test_backup_folder_size_exception_is_swallowed(self, app, client):
         _login(app, client)
