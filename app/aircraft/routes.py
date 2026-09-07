@@ -1899,7 +1899,7 @@ def gps_import_upload(aircraft_id: int) -> ResponseReturnValue:
     if skipped_empty:
         flash(
             ngettext(
-                "%(n)s file skipped — no movement detected.",
+                "one file skipped — no movement detected.",
                 "%(n)s files skipped — no movement detected.",
                 skipped_empty,
                 n=skipped_empty,
@@ -2315,7 +2315,7 @@ def gps_import_confirm_one(aircraft_id: int) -> ResponseReturnValue:
             if imported > 0:
                 flash(
                     ngettext(
-                        "%(n)s flight imported successfully.",
+                        "one flight imported successfully.",
                         "%(n)s flights imported successfully.",
                         imported,
                         n=imported,
@@ -2324,7 +2324,7 @@ def gps_import_confirm_one(aircraft_id: int) -> ResponseReturnValue:
                 )
             flash(
                 ngettext(
-                    "%(n)s segment skipped.",
+                    "one segment skipped.",
                     "%(n)s segments skipped.",
                     skipped_count,
                     n=skipped_count,
@@ -2442,7 +2442,7 @@ def gps_import_confirm_one(aircraft_id: int) -> ResponseReturnValue:
         total = len(confirmed)
         flash(
             ngettext(
-                "%(n)s flight imported successfully.",
+                "one flight imported successfully.",
                 "%(n)s flights imported successfully.",
                 total,
                 n=total,
@@ -2814,7 +2814,7 @@ def upload_photo(aircraft_id: int) -> ResponseReturnValue:
         db.session.commit()
         flash(
             ngettext(
-                "%(n)s photo uploaded.", "%(n)s photos uploaded.", uploaded, n=uploaded
+                "one photo uploaded.", "%(n)s photos uploaded.", uploaded, n=uploaded
             ),
             "success",
         )

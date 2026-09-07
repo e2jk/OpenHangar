@@ -76,7 +76,7 @@
       <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
       <div>
         {{ ngettext(
-          '%(n)s logbook entry has no ICAO type code and is excluded from type-specific currency checks.',
+          'one logbook entry has no ICAO type code and is excluded from type-specific currency checks.',
           '%(n)s logbook entries have no ICAO type code and are excluded from type-specific currency checks.',
           currency.per_type.unresolved_count, n=currency.per_type.unresolved_count
         ) }}
@@ -127,7 +127,7 @@
                 {% if d.status == 'warning' %}
                   <span class="text-warning fw-semibold">
                     <i class="bi bi-clock me-1"></i>{{ d.expires_on.strftime('%Y-%m-%d') }}
-                    ({{ ngettext('%(n)s day', '%(n)s days', d.days_left, n=d.days_left) }})
+                    ({{ ngettext('one day', '%(n)s days', d.days_left, n=d.days_left) }})
                   </span>
                 {% else %}
                   {{ d.expires_on.strftime('%Y-%m-%d') }}

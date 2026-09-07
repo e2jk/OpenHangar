@@ -232,12 +232,12 @@
           <div class="text-muted small mb-1">{{ _('Passenger currency') }}</div>
           {% if pc.status == 'ok' %}
             <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>{{ _('Valid') }}</span>
-            <div class="small mt-1">{{ ngettext('%(n)s landing / 90 days', '%(n)s landings / 90 days', pc.count, n=pc.count) }}</div>
+            <div class="small mt-1">{{ ngettext('one landing / 90 days', '%(n)s landings / 90 days', pc.count, n=pc.count) }}</div>
             <div class="text-muted oh-fs-075">{{ _('Expires') }} {{ pc.expires_on.strftime('%d %b %Y') }}</div>
           {% elif pc.status == 'warning' %}
             <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ _('Expiring soon') }}</span>
-            <div class="small mt-1">{{ ngettext('%(n)s landing / 90 days', '%(n)s landings / 90 days', pc.count, n=pc.count) }}</div>
-            <div class="text-warning fw-semibold oh-fs-075">{{ ngettext('%(n)s day left', '%(n)s days left', pc.days_left, n=pc.days_left) }}</div>
+            <div class="small mt-1">{{ ngettext('one landing / 90 days', '%(n)s landings / 90 days', pc.count, n=pc.count) }}</div>
+            <div class="text-warning fw-semibold oh-fs-075">{{ ngettext('one day left', '%(n)s days left', pc.days_left, n=pc.days_left) }}</div>
           {% elif pc.status == 'expired' %}
             <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>{{ _('Not current') }}</span>
             <div class="small mt-1">{{ pc.count }} / {{ pc.required }} landings (need {{ pc.shortfall }} more)</div>
@@ -252,12 +252,12 @@
           <div class="text-muted small mb-1">{{ _('Night currency') }}</div>
           {% if nc.status == 'ok' %}
             <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>{{ _('Valid') }}</span>
-            <div class="small mt-1">{{ ngettext('%(n)s landing / 90 days', '%(n)s landings / 90 days', nc.count, n=nc.count) }}</div>
+            <div class="small mt-1">{{ ngettext('one landing / 90 days', '%(n)s landings / 90 days', nc.count, n=nc.count) }}</div>
             <div class="text-muted oh-fs-075">{{ _('Expires') }} {{ nc.expires_on.strftime('%d %b %Y') }}</div>
           {% elif nc.status == 'warning' %}
             <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ _('Expiring soon') }}</span>
-            <div class="small mt-1">{{ ngettext('%(n)s landing / 90 days', '%(n)s landings / 90 days', nc.count, n=nc.count) }}</div>
-            <div class="text-warning fw-semibold oh-fs-075">{{ ngettext('%(n)s day left', '%(n)s days left', nc.days_left, n=nc.days_left) }}</div>
+            <div class="small mt-1">{{ ngettext('one landing / 90 days', '%(n)s landings / 90 days', nc.count, n=nc.count) }}</div>
+            <div class="text-warning fw-semibold oh-fs-075">{{ ngettext('one day left', '%(n)s days left', nc.days_left, n=nc.days_left) }}</div>
           {% elif nc.status == 'expired' %}
             <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>{{ _('Not current') }}</span>
             <div class="small mt-1">{{ nc.count }} / {{ nc.required }} landings (need {{ nc.shortfall }} more)</div>
@@ -275,7 +275,7 @@
             <div class="text-muted oh-fs-075">{{ _('Expires') }} {{ med.expiry.strftime('%d %b %Y') }}</div>
           {% elif med.status == 'warning' %}
             <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ _('Expiring soon') }}</span>
-            <div class="text-warning fw-semibold oh-fs-075">{{ ngettext('%(n)s day', '%(n)s days', med.days_remaining, n=med.days_remaining) }} — {{ med.expiry.strftime('%d %b %Y') }}</div>
+            <div class="text-warning fw-semibold oh-fs-075">{{ ngettext('one day', '%(n)s days', med.days_remaining, n=med.days_remaining) }} — {{ med.expiry.strftime('%d %b %Y') }}</div>
           {% elif med.status == 'expired' %}
             <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>{{ _('Expired') }}</span>
             <div class="text-danger oh-fs-075">{{ med.expiry.strftime('%d %b %Y') }}</div>
@@ -293,7 +293,7 @@
             <div class="text-muted oh-fs-075">{{ _('Expires') }} {{ sep.expiry.strftime('%d %b %Y') }}</div>
           {% elif sep.status == 'warning' %}
             <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-circle-fill me-1"></i>{{ _('Expiring soon') }}</span>
-            <div class="text-warning fw-semibold oh-fs-075">{{ ngettext('%(n)s day', '%(n)s days', sep.days_remaining, n=sep.days_remaining) }} — {{ sep.expiry.strftime('%d %b %Y') }}</div>
+            <div class="text-warning fw-semibold oh-fs-075">{{ ngettext('one day', '%(n)s days', sep.days_remaining, n=sep.days_remaining) }} — {{ sep.expiry.strftime('%d %b %Y') }}</div>
           {% elif sep.status == 'expired' %}
             <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>{{ _('Expired') }}</span>
             <div class="text-danger oh-fs-075">{{ sep.expiry.strftime('%d %b %Y') }}</div>

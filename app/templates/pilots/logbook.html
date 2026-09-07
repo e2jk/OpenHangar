@@ -80,7 +80,7 @@
              end=[pagination.page * pagination.per_page, pagination.total] | min,
              total=pagination.total) }}
       {% else %}
-        {{ ngettext('%(n)s entry (all)', '%(n)s entries (all)', total_entries, n=total_entries) }}
+        {{ ngettext('one entry (all)', '%(n)s entries (all)', total_entries, n=total_entries) }}
       {% endif %}
     </span>
     <div class="d-flex align-items-center gap-3 flex-wrap">

@@ -1181,7 +1181,7 @@
   {% if revoked_tokens %}
   <details class="mb-3">
     <summary class="text-muted oh-fs-085 oh-cursor-pointer">
-      {{ ngettext('%(n)s revoked link', '%(n)s revoked links', revoked_tokens | length, n=revoked_tokens | length) }}
+      {{ ngettext('one revoked link', '%(n)s revoked links', revoked_tokens | length, n=revoked_tokens | length) }}
     </summary>
     <div class="ac-form-card p-0 mt-2">
       <table class="table table-sm mb-0 oh-fs-085 oh-opacity-06">
