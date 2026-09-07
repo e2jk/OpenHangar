@@ -5973,7 +5973,7 @@ msgstr "Alleen ARC"
 
 #: app/templates/airworthiness/equipment_board.html:21
 msgid "Add unit"
-msgstr "Onderdeel toevoegen"
+msgstr "Uitrusting toevoegen"
 
 #: app/templates/airworthiness/equipment_board.html:40
 msgid "Installed units"
@@ -6283,7 +6283,7 @@ msgstr "Details"
 #: app/templates/offline/pilot_workbench.html:175
 #: app/templates/offline/workbench.html:211
 msgid "Review"
-msgstr "Overzicht"
+msgstr "Controle"
 
 #: app/templates/auth/setup.html:48
 msgid "Everything you enter here can be changed later in settings."
@@ -10708,9 +10708,9 @@ msgstr "Langste dag (op afstand)"
 
 #: app/templates/pilots/stats.html:107
 #, python-format
-msgid "%(n)s flight"
+msgid "one flight"
 msgid_plural "%(n)s flights"
-msgstr[0] "%(n)s vlucht"
+msgstr[0] "één vlucht"
 msgstr[1] "%(n)s vluchten"
 
 #: app/templates/pilots/stats.html:117

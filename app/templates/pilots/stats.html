@@ -104,7 +104,7 @@
         <div class="col-md-6">
           <div class="text-muted small mb-1">{{ _('Longest day (by distance)') }}</div>
           <div class="fw-semibold">{{ stats.longest_day.date.strftime('%Y-%m-%d') }}</div>
-          <div class="text-muted oh-fs-08">{{ '{:,.0f}'.format(stats.longest_day.distance_nm) }} nm — {{ ngettext('%(n)s flight', '%(n)s flights', stats.longest_day.flight_count, n=stats.longest_day.flight_count) }}</div>
+          <div class="text-muted oh-fs-08">{{ '{:,.0f}'.format(stats.longest_day.distance_nm) }} nm — {{ ngettext('one flight', '%(n)s flights', stats.longest_day.flight_count, n=stats.longest_day.flight_count) }}</div>
         </div>
         {% endif %}
       </div>
