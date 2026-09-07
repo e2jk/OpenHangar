@@ -713,7 +713,7 @@ def add_wishlist_item(aircraft_id: int) -> ResponseReturnValue:
                 if rough_cost < 0:
                     raise ValueError
             except ValueError:
-                flash(_("Rough cost must be a non-negative number."), "danger")
+                flash(_("Estimated cost must be a non-negative number."), "danger")
                 return render_template("airworthiness/wishlist_form.html", aircraft=ac)
         item = EquipmentWishlistItem(
             aircraft_id=aircraft_id,

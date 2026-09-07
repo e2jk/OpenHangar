@@ -266,9 +266,9 @@ msgstr "%(fn)s: %(err)s"
 #: app/templates/aircraft/gps_import_review.html:25
 #: app/templates/pilots/gps_import_review.html:24
 #, python-format
-msgid "%(n)s file skipped — no movement detected."
+msgid "one file skipped — no movement detected."
 msgid_plural "%(n)s files skipped — no movement detected."
-msgstr[0] "%(n)s bestand overgeslagen — geen beweging gedetecteerd."
+msgstr[0] "één bestand overgeslagen — geen beweging gedetecteerd."
 msgstr[1] "%(n)s bestanden overgeslagen — geen beweging gedetecteerd."
 
 #: app/aircraft/routes.py:1911 app/pilots/routes.py:2085
@@ -303,16 +303,16 @@ msgstr "Dit segment is al bevestigd."
 #: app/aircraft/routes.py:2318 app/aircraft/routes.py:2445
 #: app/pilots/routes.py:2271 app/pilots/routes.py:2489
 #, python-format
-msgid "%(n)s flight imported successfully."
+msgid "one flight imported successfully."
 msgid_plural "%(n)s flights imported successfully."
-msgstr[0] "%(n)s vlucht succesvol geïmporteerd."
+msgstr[0] "één vlucht succesvol geïmporteerd."
 msgstr[1] "%(n)s vluchten succesvol geïmporteerd."
 
 #: app/aircraft/routes.py:2327 app/pilots/routes.py:2280
 #, python-format
-msgid "%(n)s segment skipped."
+msgid "one segment skipped."
 msgid_plural "%(n)s segments skipped."
-msgstr[0] "%(n)s segment overgeslagen."
+msgstr[0] "één segment overgeslagen."
 msgstr[1] "%(n)s segmenten overgeslagen."
 
 #: app/aircraft/routes.py:2340 app/pilots/routes.py:2290
@@ -338,9 +338,9 @@ msgstr "%(name)s: niet-ondersteund formaat (gebruik JPEG, PNG, WEBP of HEIC)."
 
 #: app/aircraft/routes.py:2817
 #, python-format
-msgid "%(n)s photo uploaded."
+msgid "one photo uploaded."
 msgid_plural "%(n)s photos uploaded."
-msgstr[0] "%(n)s foto geüpload."
+msgstr[0] "één foto geüpload."
 msgstr[1] "%(n)s foto's geüpload."
 
 #: app/aircraft/routes.py:2873
@@ -423,7 +423,7 @@ msgid "Equipment unit removed."
 msgstr "Uitrustingsonderdeel verwijderd."
 
 #: app/airworthiness/routes.py:716
-msgid "Rough cost must be a non-negative number."
+msgid "Estimated cost must be a non-negative number."
 msgstr "Geschatte kosten moeten een niet-negatief getal zijn."
 
 #: app/airworthiness/routes.py:727
@@ -2560,7 +2560,8 @@ msgid_plural "%(n)s renter authorizations"
 msgstr[0] "Eén huurautorisatie"
 msgstr[1] "%(n)s huurautorisaties"
 
-#: app/services/notification_service.py:972
+#: app/services/notification_service.py:972 app/templates/dashboard.html:278
+#: app/templates/dashboard.html:296 app/templates/pilots/profile.html:130
 #, python-format
 msgid "one day"
 msgid_plural "%(threshold)s days"
@@ -3083,9 +3084,9 @@ msgstr "Geldig"
 #: app/templates/dashboard.html:235 app/templates/dashboard.html:239
 #: app/templates/dashboard.html:255 app/templates/dashboard.html:259
 #, python-format
-msgid "%(n)s landing / 90 days"
+msgid "one landing / 90 days"
 msgid_plural "%(n)s landings / 90 days"
-msgstr[0] "%(n)s landing / 90 dagen"
+msgstr[0] "één landing / 90 dagen"
 msgstr[1] "%(n)s landingen / 90 dagen"
 
 #: app/templates/config/renters_list.html:47 app/templates/dashboard.html:238
@@ -3097,9 +3098,9 @@ msgstr "Verloopt binnenkort"
 
 #: app/templates/dashboard.html:240 app/templates/dashboard.html:260
 #, python-format
-msgid "%(n)s day left"
+msgid "one day left"
 msgid_plural "%(n)s days left"
-msgstr[0] "%(n)s dag resterend"
+msgstr[0] "één dag resterend"
 msgstr[1] "%(n)s dagen resterend"
 
 #: app/templates/dashboard.html:242 app/templates/dashboard.html:262
@@ -3118,14 +3119,6 @@ msgstr "Nachtrecency"
 #: app/templates/dashboard.html:272 app/templates/pilots/profile.html:185
 msgid "Medical"
 msgstr "Medische keuring"
-
-#: app/templates/dashboard.html:278 app/templates/dashboard.html:296
-#: app/templates/pilots/profile.html:130
-#, python-format
-msgid "%(n)s day"
-msgid_plural "%(n)s days"
-msgstr[0] "%(n)s dag"
-msgstr[1] "%(n)s dagen"
 
 #: app/templates/config/renters_list.html:49 app/templates/dashboard.html:280
 #: app/templates/dashboard.html:298 app/templates/dashboard.html:404
@@ -4137,9 +4130,9 @@ msgstr "De ARC is verlopen op %(date)s."
 
 #: app/templates/aircraft/detail.html:48
 #, python-format
-msgid "There is %(n)s unresolved grounding snag."
+msgid "There is one unresolved grounding snag."
 msgid_plural "There are %(n)s unresolved grounding snags."
-msgstr[0] "Er is %(n)s onopgelost vliegverbod-defect."
+msgstr[0] "Er is één onopgelost vliegverbod-defect."
 msgstr[1] "Er zijn %(n)s onopgeloste vliegverbod-defecten."
 
 #: app/templates/aircraft/detail.html:49
@@ -4692,9 +4685,9 @@ msgstr "Geen actieve deellinks."
 
 #: app/templates/aircraft/detail.html:1184
 #, python-format
-msgid "%(n)s revoked link"
+msgid "one revoked link"
 msgid_plural "%(n)s revoked links"
-msgstr[0] "%(n)s ingetrokken link"
+msgstr[0] "één ingetrokken link"
 msgstr[1] "%(n)s ingetrokken links"
 
 #: app/templates/aircraft/detail.html:1283
@@ -5017,9 +5010,9 @@ msgstr "Ruw: %(h).2f u — Afgerond: %(r).1f u"
 #: app/templates/aircraft/gps_import_review.html:154
 #: app/templates/pilots/gps_import_review.html:134
 #, python-format
-msgid "%(n)s landing"
+msgid "one landing"
 msgid_plural "%(n)s landings"
-msgstr[0] "%(n)s landing"
+msgstr[0] "één landing"
 msgstr[1] "%(n)s landingen"
 
 #: app/templates/aircraft/gps_import_review.html:169
@@ -5142,9 +5135,9 @@ msgstr "Alle vliegtuigen in uw hangar."
 
 #: app/templates/aircraft/list.html:66
 #, python-format
-msgid "%(n)s component"
+msgid "one component"
 msgid_plural "%(n)s components"
-msgstr[0] "%(n)s onderdeel"
+msgstr[0] "één onderdeel"
 msgstr[1] "%(n)s onderdelen"
 
 #: app/templates/aircraft/list.html:69
@@ -5374,9 +5367,9 @@ msgstr "Terugdraaien"
 
 #: app/templates/aircraft/owners_billing.html:136
 #, python-format
-msgid "%(n)s flight (%(hours)s h) flown by a non-owner is not billed to anyone."
+msgid "one flight (%(hours)s h) flown by a non-owner is not billed to anyone."
 msgid_plural "%(n)s flights (%(hours)s h) flown by a non-owner are not billed to anyone."
-msgstr[0] "%(n)s vlucht (%(hours)s u) gevlogen door een niet-eigenaar wordt aan niemand gefactureerd."
+msgstr[0] "één vlucht (%(hours)s u) gevlogen door een niet-eigenaar wordt aan niemand gefactureerd."
 msgstr[1] "%(n)s vluchten (%(hours)s u) gevlogen door een niet-eigenaar worden aan niemand gefactureerd."
 
 #: app/templates/aircraft/owners_billing.html:141
@@ -5973,7 +5966,7 @@ msgstr "Alleen ARC"
 
 #: app/templates/airworthiness/equipment_board.html:21
 msgid "Add unit"
-msgstr "Onderdeel toevoegen"
+msgstr "Uitrusting toevoegen"
 
 #: app/templates/airworthiness/equipment_board.html:40
 msgid "Installed units"
@@ -6007,7 +6000,8 @@ msgstr "Verlanglijst-item toevoegen"
 
 #: app/templates/airworthiness/equipment_board.html:106
 #: app/templates/airworthiness/wishlist_form.html:27
-msgid "Rough cost"
+#: app/templates/reservations/detail.html:44
+msgid "Estimated cost"
 msgstr "Geschatte kosten"
 
 #: app/templates/airworthiness/equipment_board.html:107
@@ -6282,7 +6276,7 @@ msgstr "Details"
 #: app/templates/offline/pilot_workbench.html:175
 #: app/templates/offline/workbench.html:211
 msgid "Review"
-msgstr "Overzicht"
+msgstr "Controle"
 
 #: app/templates/auth/setup.html:48
 msgid "Everything you enter here can be changed later in settings."
@@ -6972,9 +6966,9 @@ msgstr "Documentatie back-up &amp; herstel"
 
 #: app/templates/config/settings.html:237
 #, python-format
-msgid "%(size)s across %(n)s file"
+msgid "%(size)s across one file"
 msgid_plural "%(size)s across %(n)s files"
-msgstr[0] "%(size)s over %(n)s bestand"
+msgstr[0] "%(size)s over één bestand"
 msgstr[1] "%(size)s over %(n)s bestanden"
 
 #: app/templates/config/settings.html:241
@@ -7036,9 +7030,9 @@ msgstr "Mislukt"
 
 #: app/templates/config/settings.html:314
 #, python-format
-msgid "… and %(n)s more backup not shown."
+msgid "… and one more backup not shown."
 msgid_plural "… and %(n)s more backups not shown."
-msgstr[0] "… en %(n)s extra back-up niet weergegeven."
+msgstr[0] "… en één extra back-up niet weergegeven."
 msgstr[1] "… en %(n)s extra back-ups niet weergegeven."
 
 #: app/templates/config/settings.html:320
@@ -7212,9 +7206,9 @@ msgstr "Update beschikbaar: %(version)s"
 
 #: app/templates/config/settings.html:503
 #, python-format
-msgid "%(n)s version behind"
+msgid "one version behind"
 msgid_plural "%(n)s versions behind"
-msgstr[0] "%(n)s versie achter"
+msgstr[0] "één versie achter"
 msgstr[1] "%(n)s versies achter"
 
 #: app/templates/config/settings.html:505
@@ -8302,9 +8296,9 @@ msgstr "Deze vluchtvermelding verwijderen?"
 #: app/templates/flights/fleet.html:96 app/templates/flights/list.html:176
 #: app/templates/flights/logbook_component.html:134
 #, python-format
-msgid "%(n)s entry"
+msgid "one entry"
 msgid_plural "%(n)s entries"
-msgstr[0] "%(n)s vermelding"
+msgstr[0] "één vermelding"
 msgstr[1] "%(n)s vermeldingen"
 
 #: app/templates/flights/flight_form.html:4
@@ -9080,9 +9074,9 @@ msgstr "Import controleren"
 
 #: app/templates/maintenance/amp_import_review.html:16
 #, python-format
-msgid "%(n)s row"
+msgid "one row"
 msgid_plural "%(n)s rows"
-msgstr[0] "%(n)s rij"
+msgstr[0] "één rij"
 msgstr[1] "%(n)s rijen"
 
 #: app/templates/maintenance/amp_import_review.html:29
@@ -9820,9 +9814,9 @@ msgstr "GIF exporteren…"
 
 #: app/templates/partials/_flight_tracks_map.html:58
 #, python-format
-msgid "%(n)s flight with GPS track"
+msgid "one flight with GPS track"
 msgid_plural "%(n)s flights with GPS tracks"
-msgstr[0] "%(n)s vlucht met GPS-tracé"
+msgstr[0] "één vlucht met GPS-tracé"
 msgstr[1] "%(n)s vluchten met GPS-tracé"
 
 #: app/templates/partials/_flight_tracks_map.html:68
@@ -10252,9 +10246,9 @@ msgstr "%(start)s–%(end)s van %(total)s vermeldingen getoond"
 
 #: app/templates/pilots/logbook.html:83
 #, python-format
-msgid "%(n)s entry (all)"
+msgid "one entry (all)"
 msgid_plural "%(n)s entries (all)"
-msgstr[0] "%(n)s vermelding (alle)"
+msgstr[0] "één vermelding (alle)"
 msgstr[1] "%(n)s vermeldingen (alle)"
 
 #: app/templates/pilots/logbook.html:88
@@ -10307,9 +10301,9 @@ msgstr "Deze logboekvermelding verwijderen?"
 
 #: app/templates/pilots/logbook.html:259
 #, python-format
-msgid "Totals (all %(n)s entry)"
+msgid "Totals (one entry)"
 msgid_plural "Totals (all %(n)s entries)"
-msgstr[0] "Totalen (alle %(n)s vermelding)"
+msgstr[0] "Totalen (één vermelding)"
 msgstr[1] "Totalen (alle %(n)s vermeldingen)"
 
 #: app/templates/pilots/logbook.html:308
@@ -10589,9 +10583,9 @@ msgstr "Landingsrecency"
 
 #: app/templates/pilots/profile.html:78
 #, python-format
-msgid "%(n)s logbook entry has no ICAO type code and is excluded from type-specific currency checks."
+msgid "one logbook entry has no ICAO type code and is excluded from type-specific currency checks."
 msgid_plural "%(n)s logbook entries have no ICAO type code and are excluded from type-specific currency checks."
-msgstr[0] "%(n)s logboekregel heeft geen ICAO-typecode en is uitgesloten van typespecifieke recencycontroles."
+msgstr[0] "één logboekregel heeft geen ICAO-typecode en is uitgesloten van typespecifieke recencycontroles."
 msgstr[1] "%(n)s logboekregels hebben geen ICAO-typecode en zijn uitgesloten van typespecifieke recencycontroles."
 
 #: app/templates/pilots/profile.html:92
@@ -10707,9 +10701,9 @@ msgstr "Langste dag (op afstand)"
 
 #: app/templates/pilots/stats.html:107
 #, python-format
-msgid "%(n)s flight"
+msgid "one flight"
 msgid_plural "%(n)s flights"
-msgstr[0] "%(n)s vlucht"
+msgstr[0] "één vlucht"
 msgstr[1] "%(n)s vluchten"
 
 #: app/templates/pilots/stats.html:117
@@ -10975,10 +10969,6 @@ msgstr "Reservering"
 #: app/templates/reservations/form.html:100
 msgid "Back to calendar"
 msgstr "Terug naar kalender"
-
-#: app/templates/reservations/detail.html:44
-msgid "Estimated cost"
-msgstr "Geschatte kosten"
 
 #: app/templates/reservations/detail.html:57
 msgid "Dispatch"
@@ -11273,9 +11263,9 @@ msgstr "Geen openstaande defecten — vliegtuig is vrij."
 
 #: app/templates/snags/list.html:118
 #, python-format
-msgid "%(n)s closed snag"
+msgid "one closed snag"
 msgid_plural "%(n)s closed snags"
-msgstr[0] "%(n)s gesloten defect"
+msgstr[0] "één gesloten defect"
 msgstr[1] "%(n)s gesloten defecten"
 
 #: app/templates/snags/list.html:126

@@ -115,7 +115,7 @@
   {% if closed_snags %}
   <details>
     <summary class="text-muted oh-fs-085 oh-cursor-pointer">
-      {{ ngettext('%(n)s closed snag', '%(n)s closed snags', closed_snags | length, n=closed_snags | length) }}
+      {{ ngettext('one closed snag', '%(n)s closed snags', closed_snags | length, n=closed_snags | length) }}
     </summary>
     <div class="ac-form-card p-0 mt-2">
       <table class="table table-sm mb-0 oh-fs-085 oh-opacity-065">

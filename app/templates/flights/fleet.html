@@ -93,7 +93,7 @@
       <tfoot class="oh-bg-light">
         <tr>
           <td colspan="6" class="ps-3 text-muted oh-fs-08">
-            {{ ngettext('%(n)s entry', '%(n)s entries', flights | length, n=flights | length) }}
+            {{ ngettext('one entry', '%(n)s entries', flights | length, n=flights | length) }}
           </td>
           <td class="text-end fw-bold oh-text-navy">
             {% set total = namespace(val=0.0) %}

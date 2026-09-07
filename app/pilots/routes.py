@@ -2074,7 +2074,7 @@ def pilot_gps_import_upload() -> ResponseReturnValue:
     if skipped_empty:
         flash(
             ngettext(
-                "%(n)s file skipped — no movement detected.",
+                "one file skipped — no movement detected.",
                 "%(n)s files skipped — no movement detected.",
                 skipped_empty,
                 n=skipped_empty,
@@ -2268,7 +2268,7 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
             if imported > 0:
                 flash(
                     ngettext(
-                        "%(n)s flight imported successfully.",
+                        "one flight imported successfully.",
                         "%(n)s flights imported successfully.",
                         imported,
                         n=imported,
@@ -2277,7 +2277,7 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
                 )
             flash(
                 ngettext(
-                    "%(n)s segment skipped.",
+                    "one segment skipped.",
                     "%(n)s segments skipped.",
                     skipped_count,
                     n=skipped_count,
@@ -2486,7 +2486,7 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
         total = sum(1 for v in confirmed.values() if v != "skip")
         flash(
             ngettext(
-                "%(n)s flight imported successfully.",
+                "one flight imported successfully.",
                 "%(n)s flights imported successfully.",
                 total,
                 n=total,
