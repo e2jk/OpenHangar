@@ -73,25 +73,50 @@ LOCALE_META = {
     "nl": {"flag": "🇳🇱", "abbr": "NL", "native": "Nederlands", "english": "Dutch"},
 }
 
+
+# Marks a string for pybabel extraction without translating it here — the
+# actual lookup happens later via gettext() at render time, once the real
+# locale is known. A no-op at runtime, but its literal-string argument is
+# what lets pybabel discover msgids that are only selected dynamically
+# (e.g. picked out of _AVIATION_DAYS by date, below) instead of passed
+# straight to gettext()/ngettext() as a literal.
+def N_(s: str) -> str:
+    return s
+
+
 # EE-09: aviation history days — (month, day, msgid).  Add new entries here.
 _AVIATION_DAYS: list[tuple[int, int, str]] = [
-    (3, 2, "First flight of Concorde — André Turcat at the controls, Toulouse (1969)"),
+    (
+        3,
+        2,
+        N_("First flight of Concorde — André Turcat at the controls, Toulouse (1969)"),
+    ),
     (
         5,
         21,
-        "Charles Lindbergh lands at Le Bourget — first solo transatlantic flight (1927)",
+        N_(
+            "Charles Lindbergh lands at Le Bourget — first solo transatlantic flight (1927)"
+        ),
     ),
     (
         7,
         25,
-        "Louis Blériot crosses the English Channel — first crossing by airplane (1909)",
+        N_(
+            "Louis Blériot crosses the English Channel — first crossing by airplane (1909)"
+        ),
     ),
     (
         11,
         21,
-        "Pilâtre de Rozier & d'Arlandes — first manned free balloon flight, Paris (1783)",
+        N_(
+            "Pilâtre de Rozier & d'Arlandes — first manned free balloon flight, Paris (1783)"
+        ),
     ),
-    (12, 17, "First flight: 17 Dec 1903 — 12 seconds, 37 metres. (Wright Brothers)"),
+    (
+        12,
+        17,
+        N_("First flight: 17 Dec 1903 — 12 seconds, 37 metres. (Wright Brothers)"),
+    ),
 ]
 
 
@@ -849,12 +874,16 @@ def create_app() -> Flask:
         # EE-09: aviation history day banner
         from datetime import date as _date
 
-        from flask_babel import gettext as _gt
-        from flask_babel import ngettext as _ngt
+        # babel.cfg's extraction keywords list "_"/"ngettext" specifically
+        # (not arbitrary aliases) -- importing these "as _gt"/"as _ngt"
+        # instead meant pybabel silently never extracted any of these
+        # msgids, so they rendered in English regardless of locale.
+        from flask_babel import gettext as _
+        from flask_babel import ngettext
 
         _today = _date.today()
         _avi_msgid = _aviation_day_msgid(_today.month, _today.day)
-        _aviation_banner = _gt(_avi_msgid) if _avi_msgid else None
+        _aviation_banner = _(_avi_msgid) if _avi_msgid else None
 
         # EE-10: personal anniversary banner (first solo / PPL)
         _pilot_anniversary: dict[str, Any] | None = None
@@ -875,27 +904,27 @@ def create_app() -> Flask:
                         _years = _today.year - _ann_date.year
                         if _ann_type == "solo":
                             _msg = (
-                                _ngt(
-                                    "🎉 Today marks %(n)s year since your first solo flight!",
+                                ngettext(
+                                    "🎉 Today marks one year since your first solo flight!",
                                     "🎉 Today marks %(n)s years since your first solo flight!",
                                     _years,
                                     n=_years,
                                 )
                                 if _years > 0
-                                else _gt(
+                                else _(
                                     "🎉 Today is the anniversary of your first solo flight!"
                                 )
                             )
                         else:
                             _msg = (
-                                _ngt(
-                                    "🎉 Today marks %(n)s year since you earned your PPL!",
+                                ngettext(
+                                    "🎉 Today marks one year since you earned your PPL!",
                                     "🎉 Today marks %(n)s years since you earned your PPL!",
                                     _years,
                                     n=_years,
                                 )
                                 if _years > 0
-                                else _gt("🎉 Today is the anniversary of your PPL!")
+                                else _("🎉 Today is the anniversary of your PPL!")
                             )
                         _pilot_anniversary = {
                             "type": _ann_type,
