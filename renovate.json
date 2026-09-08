@@ -14,9 +14,6 @@
   "npm": {
     "fileMatch": ["requirements/package\\.json"]
   },
-  "github-actions": {
-    "enabled": false
-  },
   "packageRules": [
     {
       "matchManagers": ["dockerfile", "docker-compose"],
@@ -27,6 +24,12 @@
       "groupName": "Frontend vendor assets",
       "automerge": true,
       "commitMessageTopic": "vendor asset {{depName}}"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["github/codeql-action/*"],
+      "groupName": "codeql-action",
+      "description": "init/analyze/upload-sarif share on-disk state and must move together -- a version mismatch between them fails the job outright."
     }
   ],
   "vulnerabilityAlerts": {
