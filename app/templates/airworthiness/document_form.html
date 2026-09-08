@@ -31,7 +31,7 @@
           <label for="doc_type" class="form-label fw-medium">{{ _('Document type') }}</label>
           <select class="form-select" id="doc_type" name="doc_type" required>
             {% for val in doc_types.ALL %}
-            <option value="{{ val }}">{{ doc_types.LABELS.get(val, val) }}</option>
+            <option value="{{ val }}">{{ _(doc_types.LABELS.get(val, val)) }}</option>
             {% endfor %}
           </select>
         </div>
