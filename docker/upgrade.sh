@@ -173,7 +173,7 @@ fi
 # and the check. --certificate-identity-regexp pins verification to this
 # repo's own ci.yml workflow, under every ref ci.yml's own publish_now logic
 # can actually publish from:
-#   refs/pull/<N>/merge — the ship/dependabot/renovate PR that builds and
+#   refs/pull/<N>/merge — the ship/renovate PR that builds and
 #     tests the exact image before it's published (the OIDC certificate
 #     encodes the PR number, not the source branch name, since GitHub
 #     doesn't expose the head ref in the SAN).

@@ -56,7 +56,7 @@
       <select name="type" class="form-select form-select-sm" data-auto-submit>
         <option value="" {% if not type_filter %}selected{% endif %}>{{ _('All types') }}</option>
         {% for val, label in expense_type_labels.items() %}
-        <option value="{{ val }}" {% if type_filter == val %}selected{% endif %}>{{ label }}</option>
+        <option value="{{ val }}" {% if type_filter == val %}selected{% endif %}>{{ _(label) }}</option>
         {% endfor %}
       </select>
     </div>
@@ -95,7 +95,7 @@
             {% elif exp.expense_type == 'parts' %}<i class="bi bi-wrench me-1 text-info"></i>
             {% elif exp.expense_type == 'insurance' %}<i class="bi bi-shield-check me-1 text-success"></i>
             {% else %}<i class="bi bi-three-dots me-1 text-muted"></i>{% endif %}
-            {{ expense_type_labels[exp.expense_type] }}
+            {{ _(expense_type_labels[exp.expense_type]) }}
           </td>
           <td class="text-muted">
             {{ exp.description or '—' }}

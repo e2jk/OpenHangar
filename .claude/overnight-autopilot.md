@@ -59,7 +59,7 @@ When explicitly invoked for a specific scope (e.g. "all IMG-xx items",
   sequential) — validate with `scripts/check_migrations.py`.
 - Any new/changed UI-visible string needs translations in every locale
   in `SUPPORTED_LOCALES` — validate with `scripts/check_translations.py`.
-- Workflow YAML changes (`.github/workflows/*.yml`, `.github/dependabot.yml`):
+- Workflow YAML changes (`.github/workflows/*.yml`, `renovate.json`):
   validate with `zizmor -q --persona=pedantic --offline .github/` and
   `actionlint` if available locally (`.githooks/pre-push --update`
   installs/syncs both plus every pip-based dev tool to what this repo

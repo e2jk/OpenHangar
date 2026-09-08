@@ -112,7 +112,7 @@
           } %}
           <tr data-status="{{ st_val }}">
             <td>
-              <span class="badge bg-secondary oh-fs-08">{{ doc_types.LABELS.get(doc.doc_type, doc.doc_type) }}</span>
+              <span class="badge bg-secondary oh-fs-08">{{ _(doc_types.LABELS.get(doc.doc_type, doc.doc_type)) }}</span>
             </td>
             <td>
               {% if doc.doc_url %}

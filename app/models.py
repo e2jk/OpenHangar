@@ -9,6 +9,17 @@ from sqlalchemy import text
 db = SQLAlchemy()
 
 
+def N_(s: str) -> str:
+    """Marks a string for pybabel extraction without translating it here —
+    this model layer has no i18n dependency by design (see
+    MaintenanceTrigger.service_basis), so the actual gettext() lookup
+    happens later, at the template/route layer that renders a *LABELS
+    dict value. A no-op at runtime; its literal-string argument is what
+    lets pybabel discover these msgids despite them only being selected
+    dynamically (by dict key) rather than passed straight to gettext()."""
+    return s
+
+
 def reset_schema(db: SQLAlchemy) -> None:
     """Drop and recreate the demo database's public schema, then rebuild tables.
 
@@ -761,12 +772,13 @@ class CrewRole:
     COPILOT = "COPILOT"
     STUDENT = "STUDENT"
     ALL: ClassVar[list[str]] = [PIC, IP, SP, COPILOT, STUDENT]
+    # N_()-marked: rendered through gettext() at the template layer, not here.
     LABELS: ClassVar[dict[str, str]] = {
-        PIC: "PIC",
-        IP: "Instructor",
-        SP: "Safety Pilot",
-        COPILOT: "Co-Pilot",
-        STUDENT: "Student",
+        PIC: N_("PIC"),
+        IP: N_("Instructor"),
+        SP: N_("Safety Pilot"),
+        COPILOT: N_("Co-Pilot"),
+        STUDENT: N_("Student"),
     }
 
 
@@ -1877,11 +1889,12 @@ class ExpenseType:
     OTHER = "other"
 
     ALL: ClassVar[set[str]] = {FUEL, PARTS, INSURANCE, OTHER}
+    # N_()-marked: rendered through gettext() at the template/route layer, not here.
     LABELS: ClassVar[dict[str, str]] = {
-        FUEL: "Fuel",
-        PARTS: "Parts & Maintenance",
-        INSURANCE: "Insurance",
-        OTHER: "Other",
+        FUEL: N_("Fuel"),
+        PARTS: N_("Parts & Maintenance"),
+        INSURANCE: N_("Insurance"),
+        OTHER: N_("Other"),
     }
 
 
@@ -2784,13 +2797,14 @@ class AirworthinessDocType:
 
     ALL = (AD, MANDATORY_SB, SB, SIB, ARC, MANUAL)
     SYNCED = (AD, SIB)  # types populated by EASA sync
+    # N_()-marked: rendered through gettext() at the template layer, not here.
     LABELS: ClassVar[dict[str, str]] = {
-        AD: "AD",
-        MANDATORY_SB: "Mandatory SB",
-        SB: "SB",
-        SIB: "SIB",
-        ARC: "ARC",
-        MANUAL: "Manual",
+        AD: N_("AD"),
+        MANDATORY_SB: N_("Mandatory SB"),
+        SB: N_("SB"),
+        SIB: N_("SIB"),
+        ARC: N_("ARC"),
+        MANUAL: N_("Manual"),
     }
 
 

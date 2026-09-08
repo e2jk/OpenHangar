@@ -680,7 +680,7 @@
         {% for exp in recent_expenses %}
         <tr>
           <td class="ps-3 text-muted text-nowrap">{{ exp.date.strftime('%Y-%m-%d') }}</td>
-          <td class="oh-text-navy">{{ exp.description or expense_type_labels[exp.expense_type] }}</td>
+          <td class="oh-text-navy">{{ exp.description or _(expense_type_labels[exp.expense_type]) }}</td>
           <td class="text-end pe-3 text-nowrap fw-semibold">
             {{ "%.2f"|format(exp.amount|float) }} {{ exp.currency }}
           </td>

@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
 # .github/scripts/auto-rebase-stale-bot-prs.sh
 #
-# Finds open Dependabot/Renovate PRs against main that have fallen behind
-# (or hit a conflict) and asks each bot to rebase, via its own
-# API-friendly path (see .github/workflows/auto-rebase-stale-bot-prs.yml
-# for the full "why" — the ruleset's strict required-status-checks policy
-# means any PR merge makes every other open PR stale at once).
+# Finds open Renovate PRs against main that have fallen behind (or hit a
+# conflict) and asks Renovate to rebase, via its own API-friendly path
+# (see .github/workflows/auto-rebase-stale-bot-prs.yml for the full "why"
+# — the ruleset's strict required-status-checks policy means any PR merge
+# makes every other open PR stale at once).
 #
 # Every PR this script looks at is logged — number, author login, and
-# mergeStateStatus, plus whether it matched a known bot login and whether
-# it counted as stale — even the ones skipped. A previous version filtered
-# non-matching/non-stale PRs out of a jq pipeline before anything was ever
-# logged, so when gh CLI 2.98 started reporting bot authors as
-# "app/renovate"/"app/dependabot" instead of the classic
-# "renovate[bot]"/"dependabot[bot]", the workflow silently matched nothing
-# on every run — no error, no output, just quiet inaction. This script
-# exists so that failure mode is visible instead of silent.
+# mergeStateStatus, plus whether it matched the Renovate bot login and
+# whether it counted as stale — even the ones skipped. A previous version
+# filtered non-matching/non-stale PRs out of a jq pipeline before anything
+# was ever logged, so when gh CLI 2.98 started reporting the bot author as
+# "app/renovate" instead of the classic "renovate[bot]", the workflow
+# silently matched nothing on every run — no error, no output, just quiet
+# inaction. This script exists so that failure mode is visible instead of
+# silent.
 #
 # Requires GH_TOKEN and GH_REPO in the environment, same as any other gh
 # CLI invocation — safe to run locally with a personal token to debug.
@@ -42,9 +42,6 @@ MARKER="${MARKER:-<!-- openhangar-auto-rebase -->}"
 # Known bot-login spellings. gh CLI >=2.98 reports GitHub App PR authors as
 # "app/<slug>" instead of the classic "<slug>[bot]" — match both so this
 # keeps working regardless of which gh version the runner ships.
-is_dependabot() {
-  [ "$1" = "dependabot[bot]" ] || [ "$1" = "app/dependabot" ]
-}
 is_renovate() {
   [ "$1" = "renovate[bot]" ] || [ "$1" = "app/renovate" ]
 }
@@ -61,9 +58,7 @@ echo "$prs_json" | jq -c '.[]' | while read -r pr; do
   status=$(echo "$pr" | jq -r '.mergeStateStatus')
   has_skip_label=$(echo "$pr" | jq -r '[.labels[].name] | any(. == "no-auto-rebase")')
 
-  if is_dependabot "$login"; then
-    bot="dependabot"
-  elif is_renovate "$login"; then
+  if is_renovate "$login"; then
     bot="renovate"
   else
     echo "PR #$number: author '$login' does not match a known bot login — skipping."
@@ -92,20 +87,13 @@ echo "$prs_json" | jq -c '.[]' | while read -r pr; do
   echo "PR #$number ($bot): mergeStateStatus=$status, triggering rebase, attempt $next_attempt/$MAX_ATTEMPTS"
   note="Auto-rebase attempt $next_attempt/$MAX_ATTEMPTS -- this PR fell behind main (or hit a conflict) after another PR merged."
 
-  if [ "$bot" = "dependabot" ]; then
-    body=$(printf '@dependabot rebase\n\n%s\n%s\n' "$note" "$MARKER")
-    if ! gh pr comment "$number" --body "$body"; then
-      echo "::warning::Failed to comment on PR #$number"
-    fi
-  else
-    if ! gh pr edit "$number" --add-label rebase; then
-      echo "::warning::Failed to label PR #$number"
-      continue
-    fi
-    body=$(printf 'Added the rebase label to ask Renovate to rebase this PR.\n\n%s\n%s\n' "$note" "$MARKER")
-    if ! gh pr comment "$number" --body "$body"; then
-      echo "::warning::Failed to comment on PR #$number"
-    fi
+  if ! gh pr edit "$number" --add-label rebase; then
+    echo "::warning::Failed to label PR #$number"
+    continue
+  fi
+  body=$(printf 'Added the rebase label to ask Renovate to rebase this PR.\n\n%s\n%s\n' "$note" "$MARKER")
+  if ! gh pr comment "$number" --body "$body"; then
+    echo "::warning::Failed to comment on PR #$number"
   fi
 done
 

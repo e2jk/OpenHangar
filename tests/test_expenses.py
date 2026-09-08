@@ -22,7 +22,7 @@ from models import (  # pyright: ignore[reportMissingImports]
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
-def _create_user_and_tenant(app, email="pilot@example.com"):
+def _create_user_and_tenant(app, email="pilot@example.com", language="en"):
     with app.app_context():
         tenant = Tenant(name="Test Hangar")
         db.session.add(tenant)
@@ -31,6 +31,7 @@ def _create_user_and_tenant(app, email="pilot@example.com"):
             email=email,
             password_hash=_pw_hash.hash("pw"),
             is_active=True,
+            language=language,
         )
         db.session.add(user)
         db.session.flush()
@@ -177,6 +178,21 @@ class TestListExpenses:
         _login(app, client)
         resp = client.get(f"/aircraft/{ac_id}/expenses")
         assert b"Test fuel" in resp.data
+
+    def test_list_expense_type_label_respects_locale(self, client, app):
+        """Regression: ExpenseType.LABELS values were rendered raw (no
+        gettext lookup at all), so 'Parts & Maintenance' always showed in
+        English regardless of the pilot's locale."""
+        _uid, tenant_id = _create_user_and_tenant(
+            app, email="fr_pilot@example.com", language="fr"
+        )
+        ac_id = _add_aircraft(app, tenant_id)
+        _add_expense(app, ac_id, expense_type=ExpenseType.PARTS, description=None)
+        _login(app, client, email="fr_pilot@example.com")
+        resp = client.get(f"/aircraft/{ac_id}/expenses")
+        assert "Pièces et entretien".encode() in resp.data
+        assert b"Parts &amp; Maintenance" not in resp.data
+        assert b"Parts & Maintenance" not in resp.data
 
     def test_list_filter_by_type(self, client, app):
         _uid, tenant_id = _create_user_and_tenant(app)

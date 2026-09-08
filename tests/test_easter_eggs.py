@@ -4,16 +4,60 @@ Tests for implemented Easter eggs.
 Each class maps to one EE entry in docs/easter-eggs.md.
 """
 
+from datetime import date
+
 import init as _init
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pyotp  # pyright: ignore[reportMissingImports]
+from flask_babel import force_locale  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
+    PilotProfile,
     Role,
     Tenant,
     TenantUser,
     User,
     db,
 )
+
+
+def _create_pilot_and_login(
+    app,
+    client,
+    email="ee_pilot@example.com",
+    password="testpass123",
+    language="en",
+    first_solo_date=None,
+    ppl_issue_date=None,
+):
+    """Create a user (given language) with a PilotProfile carrying the given
+    anniversary dates, and inject a valid session."""
+    with app.app_context():
+        tenant = Tenant(name="EE Pilot Hangar")
+        db.session.add(tenant)
+        db.session.flush()
+        user = User(
+            email=email,
+            password_hash=_pw_hash.hash(password),
+            totp_secret=pyotp.random_base32(),
+            is_active=True,
+            language=language,
+        )
+        db.session.add(user)
+        db.session.flush()
+        db.session.add(
+            TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.PILOT)
+        )
+        db.session.add(
+            PilotProfile(
+                user_id=user.id,
+                first_solo_date=first_solo_date,
+                ppl_issue_date=ppl_issue_date,
+            )
+        )
+        db.session.commit()
+        uid = user.id
+    with client.session_transaction() as sess:
+        sess["user_id"] = uid
 
 
 def _create_and_login(app, client, email="ee_test@example.com", password="testpass123"):
@@ -177,6 +221,71 @@ class TestAviationDayBanner:
         """EE-09: _AVIATION_DAYS has exactly the expected five entries."""
         dates = {(m, d) for m, d, _ in _init._AVIATION_DAYS}
         assert dates == {(3, 2), (5, 21), (7, 25), (11, 21), (12, 17)}
+
+    def test_banner_text_respects_locale(self, app):
+        """EE-09: the banner is looked up through gettext(), not rendered as
+        the raw English literal regardless of locale (regression: the N_()
+        marker + gettext()/ngettext() call needed for pybabel to ever
+        extract these msgids in the first place)."""
+        from flask_babel import gettext
+
+        msgid = _init._aviation_day_msgid(3, 2)
+        assert msgid is not None
+        with app.app_context(), force_locale("fr"):
+            translated = gettext(msgid)
+        assert translated != msgid
+        assert "Concorde" in translated
+        assert "André Turcat" in translated
+
+
+# ── EE-10 — Personal Anniversary Banner ──────────────────────────────────────
+
+
+class TestPilotAnniversaryBanner:
+    def test_ppl_anniversary_localized_to_french(self, app, client):
+        """EE-10: the PPL-anniversary banner respects the pilot's locale
+        (regression: it used to always render in English, since the
+        gettext()/ngettext() calls building it were aliased to names
+        pybabel's extraction keywords didn't recognize)."""
+        today = date.today()
+        _create_pilot_and_login(
+            app,
+            client,
+            email="ee_ppl_fr@example.com",
+            language="fr",
+            ppl_issue_date=today.replace(year=today.year - 3),
+        )
+        rv = client.get("/")
+        assert "ans" in rv.text
+        assert "obtenu votre PPL" in rv.text
+        assert "years since you earned your PPL" not in rv.text
+
+    def test_first_solo_anniversary_localized_to_dutch(self, app, client):
+        """EE-10: same regression check for the first-solo banner, in nl."""
+        today = date.today()
+        _create_pilot_and_login(
+            app,
+            client,
+            email="ee_solo_nl@example.com",
+            language="nl",
+            first_solo_date=today.replace(year=today.year - 1),
+        )
+        rv = client.get("/")
+        assert "solovlucht" in rv.text
+        assert "years since your first solo flight" not in rv.text
+
+    def test_ppl_anniversary_english_unaffected(self, app, client):
+        """EE-10: the default English rendering keeps working."""
+        today = date.today()
+        _create_pilot_and_login(
+            app,
+            client,
+            email="ee_ppl_en@example.com",
+            language="en",
+            ppl_issue_date=today.replace(year=today.year - 5),
+        )
+        rv = client.get("/")
+        assert "years since you earned your PPL" in rv.text
 
 
 # ── EE-06 — NVG Mode ──────────────────────────────────────────────────────────
