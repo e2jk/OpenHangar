@@ -4,20 +4,16 @@ name: Auto-rebase stale bot PRs
 # (branches must be up to date before merging), whenever one open PR merges
 # to main, every other open PR instantly falls behind and can no longer
 # merge even though its own checks already passed — it needs a rebase and a
-# fresh check run. Dependabot/Renovate don't reliably self-heal this on
-# their own schedule, so this used to mean manually commenting
-# "@dependabot rebase" or checking Renovate's rebase checkbox. This
-# workflow does that automatically for bot-authored PRs only — never for a
-# human's own PR, which might be failing for reasons that have nothing to
-# do with staleness and shouldn't be endlessly re-triggered on someone
-# else's behalf.
+# fresh check run. Renovate doesn't reliably self-heal this on its own
+# schedule, so this used to mean manually checking Renovate's rebase
+# checkbox. This workflow does that automatically for bot-authored PRs
+# only — never for a human's own PR, which might be failing for reasons
+# that have nothing to do with staleness and shouldn't be endlessly
+# re-triggered on someone else's behalf.
 #
-# Per-bot trigger mechanism (each bot's own documented API-friendly path,
-# there is no unified command):
-#   - Dependabot: a "@dependabot rebase" PR comment.
-#   - Renovate: adding the `rebase` label (rebaseLabel default) to the PR —
-#     Renovate has no comment command; the label is the only way to trigger
-#     a rebase without clicking the PR-body checkbox by hand.
+# Trigger mechanism: adding the `rebase` label (rebaseLabel default) to the
+# PR — Renovate has no comment command; the label is the only way to
+# trigger a rebase without clicking the PR-body checkbox by hand.
 #
 # Runs on every push to main, not just the cron, specifically for the
 # cascade case: if 3 bot PRs are open together and PR1 merges, PR2 and PR3
@@ -53,7 +49,7 @@ concurrency:
 
 jobs:
   rebase:
-    name: Trigger rebase on stale Dependabot/Renovate PRs
+    name: Trigger rebase on stale Renovate PRs
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -79,7 +75,7 @@ jobs:
             --description "Blocked on something external (e.g. an upstream release) -- don't auto-rebase" \
             2>/dev/null || true
 
-      - name: Rebase stale Dependabot/Renovate PRs (bounded retries)
+      - name: Rebase stale Renovate PRs (bounded retries)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}

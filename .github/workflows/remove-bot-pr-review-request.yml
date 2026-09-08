@@ -1,13 +1,12 @@
 name: Remove bot PR review request
 
 # CODEOWNERS' catch-all (`* @e2jk`) makes GitHub auto-request a Codeowner
-# review on every PR, including PRs whose merge is already fully automated:
-# Dependabot (dependabot-automerge.yml) and Renovate (native
-# platformAutomerge in renovate.json). That review request is never acted
-# on and never blocks the merge -- it just sits in the review queue as
-# noise. This strips it right after the PR opens, for bot-authored PRs
-# only; human and external-contributor PRs still get the normal CODEOWNERS
-# review request.
+# review on every PR, including Renovate PRs whose merge is already fully
+# automated (native platformAutomerge in renovate.json). That review
+# request is never acted on and never blocks the merge -- it just sits in
+# the review queue as noise. This strips it right after the PR opens, for
+# bot-authored PRs only; human and external-contributor PRs still get the
+# normal CODEOWNERS review request.
 
 on:
   pull_request:
@@ -26,7 +25,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       pull-requests: write  # gh pr edit --remove-reviewer
-    if: github.event.pull_request.user.login == 'dependabot[bot]' || github.event.pull_request.user.login == 'renovate[bot]'
+    if: github.event.pull_request.user.login == 'renovate[bot]'
     steps:
       - name: Remove auto-requested Codeowner review
         env:
