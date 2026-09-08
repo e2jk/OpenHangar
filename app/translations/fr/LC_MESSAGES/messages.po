@@ -60,6 +60,87 @@ msgstr[1] "🎉 Cela fait %(n)s ans que vous avez obtenu votre PPL !"
 msgid "🎉 Today is the anniversary of your PPL!"
 msgstr "🎉 Aujourd'hui, c'est l'anniversaire de l'obtention de votre PPL !"
 
+#: app/models.py:777 app/templates/aircraft/flight_detail.html:114
+#: app/templates/aircraft/gps_import_review.html:46
+#: app/templates/flights/fleet.html:27
+#: app/templates/flights/flight_form.html:296
+#: app/templates/flights/list.html:80 app/templates/flights/list.html:93
+#: app/templates/flights/logbook_component.html:97
+#: app/templates/pilots/entry_detail.html:88
+#: app/templates/pilots/entry_form.html:256
+#: app/templates/pilots/gps_import_review.html:44
+#: app/templates/pilots/logbook.html:160 app/templates/pilots/logbook.html:193
+msgid "PIC"
+msgstr "PIC"
+
+#: app/models.py:778 app/templates/offline/workbench.html:148
+#: app/templates/pilots/entry_detail.html:91
+#: app/templates/pilots/entry_form.html:271
+#: app/templates/pilots/import_map.html:151
+#: app/templates/users/permissions.html:59
+#: app/templates/users/permissions.html:94
+msgid "Instructor"
+msgstr "Instructeur"
+
+#: app/models.py:779 app/templates/offline/workbench.html:149
+msgid "Safety Pilot"
+msgstr "Pilote de sécurité"
+
+#: app/models.py:780 app/templates/offline/workbench.html:150
+msgid "Co-Pilot"
+msgstr "Copilote"
+
+#: app/models.py:781 app/templates/offline/workbench.html:151
+msgid "Student"
+msgstr "Élève"
+
+#: app/models.py:1894 app/pilots/personal_minimums.py:55
+#: app/templates/aircraft/wb_config.html:163
+#: app/templates/aircraft/wb_config.html:195
+#: app/templates/aircraft/wb_config.html:244
+#: app/templates/flights/flight_form.html:596
+msgid "Fuel"
+msgstr "Carburant"
+
+#: app/models.py:1895
+msgid "Parts & Maintenance"
+msgstr "Pièces et entretien"
+
+#: app/models.py:1896 app/pwa/routes.py:101
+#: app/templates/aircraft/detail.html:736 app/templates/dashboard.html:400
+msgid "Insurance"
+msgstr "Assurance"
+
+#: app/models.py:1897 app/pwa/routes.py:106 app/templates/dashboard.html:162
+#: app/templates/maintenance/list.html:59
+#: app/templates/maintenance/trigger_form.html:69
+msgid "Other"
+msgstr "Autre"
+
+#: app/models.py:2802
+msgid "AD"
+msgstr "AD"
+
+#: app/models.py:2803
+msgid "Mandatory SB"
+msgstr "SB obligatoire"
+
+#: app/models.py:2804
+msgid "SB"
+msgstr "SB"
+
+#: app/models.py:2805
+msgid "SIB"
+msgstr "SIB"
+
+#: app/models.py:2806 app/templates/dashboard.html:411
+msgid "ARC"
+msgstr "ARC"
+
+#: app/models.py:2807
+msgid "Manual"
+msgstr "Manuel"
+
 #: app/aircraft/co_owner_form_parsing.py:73
 msgid "Invalid owner selection."
 msgstr "Sélection de propriétaire invalide."
@@ -1484,13 +1565,6 @@ msgstr "Visibilité minimum, jour"
 msgid "Minimum visibility, night"
 msgstr "Visibilité minimum, nuit"
 
-#: app/pilots/personal_minimums.py:55 app/templates/aircraft/wb_config.html:163
-#: app/templates/aircraft/wb_config.html:195
-#: app/templates/aircraft/wb_config.html:244
-#: app/templates/flights/flight_form.html:596
-msgid "Fuel"
-msgstr "Carburant"
-
 #: app/pilots/personal_minimums.py:58
 msgid "Fuel reserve at landing (minutes)"
 msgstr "Réserve carburant à l'atterrissage (minutes)"
@@ -1800,11 +1874,6 @@ msgstr "Photo de vol"
 msgid "Maintenance"
 msgstr "Maintenance"
 
-#: app/pwa/routes.py:101 app/templates/aircraft/detail.html:736
-#: app/templates/dashboard.html:400
-msgid "Insurance"
-msgstr "Assurance"
-
 #: app/pwa/routes.py:102
 msgid "POH / Flight Manual"
 msgstr "POH / Manuel de vol"
@@ -1834,12 +1903,6 @@ msgstr "Carnet de vol"
 #: app/pwa/routes.py:105
 msgid "Invoice"
 msgstr "Facture"
-
-#: app/pwa/routes.py:106 app/templates/dashboard.html:162
-#: app/templates/maintenance/list.html:59
-#: app/templates/maintenance/trigger_form.html:69
-msgid "Other"
-msgstr "Autre"
 
 #: app/pwa/routes.py:107
 msgid "Uncategorised"
@@ -3248,10 +3311,6 @@ msgstr "Bientôt dû"
 #: app/templates/maintenance/list.html:153
 msgid "OK"
 msgstr "OK"
-
-#: app/templates/dashboard.html:411
-msgid "ARC"
-msgstr "ARC"
 
 #: app/templates/dashboard.html:423
 #: app/templates/maintenance/trigger_form.html:95
@@ -4801,19 +4860,6 @@ msgstr "Bloc arrivée (UTC)"
 #: app/templates/pilots/logbook.html:16
 msgid "Pilot logbook"
 msgstr "Carnet de vol pilote"
-
-#: app/templates/aircraft/flight_detail.html:114
-#: app/templates/aircraft/gps_import_review.html:46
-#: app/templates/flights/fleet.html:27
-#: app/templates/flights/flight_form.html:296
-#: app/templates/flights/list.html:80 app/templates/flights/list.html:93
-#: app/templates/flights/logbook_component.html:97
-#: app/templates/pilots/entry_detail.html:88
-#: app/templates/pilots/entry_form.html:256
-#: app/templates/pilots/gps_import_review.html:44
-#: app/templates/pilots/logbook.html:160 app/templates/pilots/logbook.html:193
-msgid "PIC"
-msgstr "PIC"
 
 #: app/templates/aircraft/flight_detail.html:120
 #: app/templates/flights/flight_form.html:329
@@ -9788,27 +9834,6 @@ msgstr "gallons"
 #: app/templates/offline/workbench.html:123
 msgid "Fuel remaining"
 msgstr "Carburant restant"
-
-#: app/templates/offline/workbench.html:148
-#: app/templates/pilots/entry_detail.html:91
-#: app/templates/pilots/entry_form.html:271
-#: app/templates/pilots/import_map.html:151
-#: app/templates/users/permissions.html:59
-#: app/templates/users/permissions.html:94
-msgid "Instructor"
-msgstr "Instructeur"
-
-#: app/templates/offline/workbench.html:149
-msgid "Safety Pilot"
-msgstr "Pilote de sécurité"
-
-#: app/templates/offline/workbench.html:150
-msgid "Co-Pilot"
-msgstr "Copilote"
-
-#: app/templates/offline/workbench.html:151
-msgid "Student"
-msgstr "Élève"
 
 #: app/templates/offline/workbench.html:176
 #: app/templates/pilots/entry_detail.html:137

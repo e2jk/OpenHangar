@@ -39,7 +39,9 @@ from models import (  # pyright: ignore[reportMissingImports]
 # ── Shared helpers ─────────────────────────────────────────────────────────────
 
 
-def _create_user_and_tenant(app, email="owner@example.com", role=Role.ADMIN):
+def _create_user_and_tenant(
+    app, email="owner@example.com", role=Role.ADMIN, language="en"
+):
     with app.app_context():
         tenant = Tenant(name="Test Hangar")
         db.session.add(tenant)
@@ -48,6 +50,7 @@ def _create_user_and_tenant(app, email="owner@example.com", role=Role.ADMIN):
             email=email,
             password_hash=_pw_hash.hash("pw"),
             is_active=True,
+            language=language,
         )
         db.session.add(user)
         db.session.flush()
@@ -106,10 +109,12 @@ def _add_easa_node(app, component_id):
         return node.id
 
 
-def _add_manual_document(app, component_id, reference="ARC-2024-001"):
+def _add_manual_document(
+    app, component_id, reference="ARC-2024-001", doc_type=AirworthinessDocType.ARC
+):
     with app.app_context():
         doc = AirworthinessDocument(
-            doc_type=AirworthinessDocType.ARC,
+            doc_type=doc_type,
             reference=reference,
             component_id=component_id,
         )
@@ -1018,6 +1023,22 @@ class TestAirworthinessDashboard:
         _login(app, client, "owner@example.com")
         resp = client.get(f"/aircraft/{ac_id}/airworthiness/")
         assert resp.status_code == 200
+
+    def test_doc_type_badge_respects_locale(self, app, client):
+        """Regression: AirworthinessDocType.LABELS values were rendered raw
+        (no gettext lookup at all), so 'Manual' always showed in English
+        regardless of the pilot's locale."""
+        _, tenant_id = _create_user_and_tenant(
+            app, email="fr_owner@example.com", language="fr"
+        )
+        ac_id = _add_aircraft(app, tenant_id)
+        comp_id = _add_component(app, ac_id)
+        _add_manual_document(
+            app, comp_id, doc_type=AirworthinessDocType.MANUAL, reference="AFM-1"
+        )
+        _login(app, client, email="fr_owner@example.com")
+        resp = client.get(f"/aircraft/{ac_id}/airworthiness/")
+        assert b"Manuel" in resp.data
 
     def test_404_for_aircraft_of_other_tenant(self, app, client):
         _create_user_and_tenant(app, "a@example.com")

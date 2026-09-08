@@ -56,7 +56,7 @@
                 <option value="{{ val }}"
                   {% if expense and expense.expense_type == val %}selected
                   {% elif not expense and val == 'fuel' %}selected{% endif %}>
-                  {{ label }}
+                  {{ _(label) }}
                 </option>
                 {% endfor %}
               </select>

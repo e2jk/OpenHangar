@@ -20,7 +20,7 @@ from models import (  # pyright: ignore[reportMissingImports]
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
-def _create_user_and_tenant(app, email="pilot@example.com"):
+def _create_user_and_tenant(app, email="pilot@example.com", language="en"):
     with app.app_context():
         tenant = Tenant(name="Test Hangar")
         db.session.add(tenant)
@@ -29,6 +29,7 @@ def _create_user_and_tenant(app, email="pilot@example.com"):
             email=email,
             password_hash=_pw_hash.hash("pw"),
             is_active=True,
+            language=language,
         )
         db.session.add(user)
         db.session.flush()
@@ -523,6 +524,20 @@ class TestNewFields:
         assert b"Ferry flight" in resp.data
         assert b"2" in resp.data
         assert b"3" in resp.data
+
+    def test_crew_role_dropdown_respects_locale(self, app, client):
+        """Regression: CrewRole.LABELS values were rendered raw (no gettext
+        lookup at all), so 'Instructor'/'Co-Pilot'/etc. always showed in
+        English regardless of the pilot's locale."""
+        _uid, tid = _create_user_and_tenant(
+            app, email="fr_pilot@example.com", language="fr"
+        )
+        acid = _add_aircraft(app, tid)
+        fid = _add_flight(app, acid)
+        _login(app, client, email="fr_pilot@example.com")
+        resp = client.get(f"/flights/{fid}/edit")
+        assert b"Instructeur" in resp.data
+        assert b"Instructor" not in resp.data
 
     def test_takeoff_landing_time_saved(self, app, client):
         _uid, tid = _create_user_and_tenant(app)

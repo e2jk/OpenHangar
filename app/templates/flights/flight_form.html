@@ -340,7 +340,7 @@
                   {% for role, label in crew_roles.LABELS.items() %}
                   {% if role != 'PIC' %}
                   <option value="{{ role }}"
-                    {% if flight and flight.second_crew_role == role %}selected{% endif %}>{{ label }}</option>
+                    {% if flight and flight.second_crew_role == role %}selected{% endif %}>{{ _(label) }}</option>
                   {% endif %}
                   {% endfor %}
                 </select>
