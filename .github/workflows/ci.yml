@@ -285,6 +285,26 @@ jobs:
           path: _site
           retention-days: 1
 
+  no-op-push:
+    name: No CI work needed (already tested pre-merge)
+    # Mirror image of lint-and-test's skip condition above: runs only for
+    # the push events every other job in this workflow intentionally skips
+    # (a push to main/ship/a bot branch never needs its own CI run, since
+    # the content was already fully tested via the PR that landed it — see
+    # lint-and-test's own if: for the full rationale). Exists purely so the
+    # workflow's overall conclusion is `success` rather than `skipped`:
+    # when every job in a run is skipped, GitHub sets the run's own
+    # conclusion to `skipped`, and the public status badge (README's CI
+    # badge) has no distinct color for that — it renders `skipped` the same
+    # as `failing` (red). A single always-succeeding job here keeps the
+    # badge honest without touching the real skip logic anywhere else.
+    if: |
+      github.event_name == 'push' && (github.ref == 'refs/heads/ship' || startsWith(github.ref, 'refs/heads/renovate/') || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - run: echo "No CI work needed for this push — already tested via the PR that merged it."
+
   dependency-review:
     name: Dependency review (new/changed dependencies)
     # Complements pip-audit/OSV, which audit the resulting dependency set —
