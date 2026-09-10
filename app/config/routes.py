@@ -418,9 +418,15 @@ def index() -> ResponseReturnValue:
     upgrade_dir_enabled = bool(upgrade_dir)
     upgrade_active = False
     if upgrade_dir:
+        # Catches an unattended auto-upgrade's completion marker even if no
+        # browser was polling /upgrade-status when it finished — see
+        # _record_last_upgrade's docstring.
+        _record_last_upgrade(upgrade_dir)
         upgrade_active = os.path.exists(
             os.path.join(upgrade_dir, "trigger")
         ) or os.path.exists(os.path.join(upgrade_dir, "trigger.running"))
+    last_upgrade_setting = db.session.get(AppSetting, "last_upgrade_at")
+    last_upgrade_at = last_upgrade_setting.value if last_upgrade_setting else None
     app_debug = current_app.debug
     sw_forced_on = os.environ.get("OPENHANGAR_SW_ENABLED", "").lower() in (
         "1",
@@ -457,6 +463,7 @@ def index() -> ResponseReturnValue:
         update_available=update_available,
         versions_behind=versions_behind,
         auto_upgrade_enabled=auto_upgrade_enabled,
+        last_upgrade_at=last_upgrade_at,
         db_size=db_size,
         upload_size_bytes=upload_size_bytes,
         backup_total_size_bytes=backup_total_size_bytes,
@@ -737,6 +744,43 @@ def _write_upgrade_trigger(upgrade_dir: str, triggered_by: str) -> None:
         json.dump(trigger_data, fh)
 
 
+def _record_last_upgrade(upgrade_dir: str) -> bool:
+    """One-shot: if docker/upgrade.sh left a trigger.done marker (written
+    right after a successful pull + container recreate — see its own
+    ``"ok $(date -u +%FT%TZ)" > "${DONE}"`` line), persist that timestamp as
+    "last upgrade" and remove the marker. Returns True if a marker was found
+    (and thus consumed) so callers building the live-poll JSON response
+    don't have to re-check file existence themselves.
+
+    Called from both /config's own page load (catches an unattended
+    auto-upgrade completing overnight, where no browser was ever polling)
+    and /upgrade-status's live poll (catches the normal attended case, which
+    usually wins the race since it polls every couple of seconds right as
+    the upgrade finishes) — whichever sees the marker first "wins" and the
+    other finds it already gone, the same one-shot idiom as EE-10's per-day
+    session flag in init.py.
+    """
+    done_path = os.path.join(upgrade_dir, "trigger.done")
+    if not os.path.exists(done_path):
+        return False
+    content = ""
+    with contextlib.suppress(OSError):
+        with open(done_path) as fh:
+            content = fh.read().strip()
+        os.remove(done_path)
+    # Content is "ok <ISO8601Z>" — fall back to "now" if that ever doesn't
+    # parse (e.g. a stale marker from an older upgrade.sh revision).
+    parts = content.split()
+    ts = parts[1] if len(parts) > 1 else datetime.now(UTC).isoformat()
+    from services.version_service import (  # pyright: ignore[reportMissingImports]
+        upsert_app_setting,
+    )
+
+    upsert_app_setting(db.session, "last_upgrade_at", ts)
+    db.session.commit()
+    return True
+
+
 @config_bp.route("/trigger-upgrade", methods=["POST"])
 @require_instance_admin
 def trigger_upgrade() -> ResponseReturnValue:
@@ -795,13 +839,10 @@ def upgrade_status() -> ResponseReturnValue:
     # one and the one-shot "done" file can be consumed by a request other than
     # the one deciding whether to reload.
     version = os.environ.get("OPENHANGAR_VERSION", "development")
-    done_path = os.path.join(upgrade_dir, "trigger.done")
     failed_path = os.path.join(upgrade_dir, "trigger.failed")
     running_path = os.path.join(upgrade_dir, "trigger.running")
     trigger_path = os.path.join(upgrade_dir, "trigger")
-    if os.path.exists(done_path):
-        with contextlib.suppress(OSError):
-            os.remove(done_path)
+    if _record_last_upgrade(upgrade_dir):
         return jsonify({"status": "done", "version": version})
     if os.path.exists(failed_path):
         msg = ""
