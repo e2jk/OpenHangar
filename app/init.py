@@ -127,6 +127,90 @@ def _aviation_day_msgid(month: int, day: int) -> str | None:
     return None
 
 
+def _compute_banners(uid: int | None) -> dict[str, Any]:
+    """EE-09 aviation-day banner + EE-10 personal anniversary banner.
+
+    Shared by the inject_globals context processor (baked into server-
+    rendered HTML) and the /api/banners endpoint (polled client-side by
+    pwa.js) so a page served stale from the SW's SWR cache, or an open tab
+    that never re-navigates, still learns about today's banner — see
+    pwa.js's banner-poll comment for why a baked-in-HTML-only banner isn't
+    enough. pilot_anniversary_confetti is a genuine once-a-day flag (backed
+    by a session key), not a per-caller one, so whichever of the two call
+    sites hits this first on a given day is the one that gets confetti:True
+    for that request.
+    """
+    from datetime import date as _date
+
+    # babel.cfg's extraction keywords list "_"/"ngettext" specifically (not
+    # arbitrary aliases) -- importing these "as _gt"/"as _ngt" instead meant
+    # pybabel silently never extracted any of these msgids, so they rendered
+    # in English regardless of locale.
+    from flask_babel import gettext as _
+    from flask_babel import ngettext
+
+    _today = _date.today()
+    _avi_msgid = _aviation_day_msgid(_today.month, _today.day)
+    _aviation_banner = _(_avi_msgid) if _avi_msgid else None
+
+    _pilot_anniversary: dict[str, Any] | None = None
+    _pilot_anniversary_confetti = False
+    if uid:
+        from models import PilotProfile as _PP
+
+        _pp = _PP.query.filter_by(user_id=uid).first()
+        if _pp:
+            for _ann_date, _ann_type in (
+                (_pp.first_solo_date, "solo"),
+                (_pp.ppl_issue_date, "ppl"),
+            ):
+                if _ann_date and (_ann_date.month, _ann_date.day) == (
+                    _today.month,
+                    _today.day,
+                ):
+                    _years = _today.year - _ann_date.year
+                    if _ann_type == "solo":
+                        _msg = (
+                            ngettext(
+                                "🎉 Today marks one year since your first solo flight!",
+                                "🎉 Today marks %(n)s years since your first solo flight!",
+                                _years,
+                                n=_years,
+                            )
+                            if _years > 0
+                            else _(
+                                "🎉 Today is the anniversary of your first solo flight!"
+                            )
+                        )
+                    else:
+                        _msg = (
+                            ngettext(
+                                "🎉 Today marks one year since you earned your PPL!",
+                                "🎉 Today marks %(n)s years since you earned your PPL!",
+                                _years,
+                                n=_years,
+                            )
+                            if _years > 0
+                            else _("🎉 Today is the anniversary of your PPL!")
+                        )
+                    _pilot_anniversary = {
+                        "type": _ann_type,
+                        "years": _years,
+                        "message": _msg,
+                    }
+                    _sess_key = f"anniversary_confetti_{_today.isoformat()}"
+                    if not session.get(_sess_key):
+                        session[_sess_key] = True
+                        _pilot_anniversary_confetti = True
+                    break
+
+    return {
+        "aviation_day_banner": _aviation_banner,
+        "pilot_anniversary": _pilot_anniversary,
+        "pilot_anniversary_confetti": _pilot_anniversary_confetti,
+    }
+
+
 @cache
 def _static_folder_mtime_token(static_folder: str) -> str:
     latest = 0
@@ -663,6 +747,16 @@ def create_app() -> Flask:
 
         return _jsonify({"duplicate": False})
 
+    @app.route("/api/banners")
+    def api_banners() -> ResponseReturnValue:
+        """Polled client-side by pwa.js — see _compute_banners' docstring
+        for why a page can't rely on server-rendered HTML alone for this."""
+        from flask import jsonify as _jsonify
+
+        if not session.get("user_id"):
+            return _jsonify({"error": "unauthorized"}), 401
+        return _jsonify(_compute_banners(int(session["user_id"])))
+
     @app.route("/airport-search")
     def airport_search() -> ResponseReturnValue:
         if not session.get("user_id"):
@@ -871,71 +965,9 @@ def create_app() -> Flask:
         # single_aircraft_mode: planned_aircraft_count == 1 → hide fleet-level widgets
         _single_aircraft_mode = _pac == 1
 
-        # EE-09: aviation history day banner
+        # EE-09/EE-10: aviation history day + personal anniversary banners
+        _banners = _compute_banners(uid)
         from datetime import date as _date
-
-        # babel.cfg's extraction keywords list "_"/"ngettext" specifically
-        # (not arbitrary aliases) -- importing these "as _gt"/"as _ngt"
-        # instead meant pybabel silently never extracted any of these
-        # msgids, so they rendered in English regardless of locale.
-        from flask_babel import gettext as _
-        from flask_babel import ngettext
-
-        _today = _date.today()
-        _avi_msgid = _aviation_day_msgid(_today.month, _today.day)
-        _aviation_banner = _(_avi_msgid) if _avi_msgid else None
-
-        # EE-10: personal anniversary banner (first solo / PPL)
-        _pilot_anniversary: dict[str, Any] | None = None
-        _pilot_anniversary_confetti = False
-        if uid:
-            from models import PilotProfile as _PP
-
-            _pp = _PP.query.filter_by(user_id=uid).first()
-            if _pp:
-                for _ann_date, _ann_type in (
-                    (_pp.first_solo_date, "solo"),
-                    (_pp.ppl_issue_date, "ppl"),
-                ):
-                    if _ann_date and (_ann_date.month, _ann_date.day) == (
-                        _today.month,
-                        _today.day,
-                    ):
-                        _years = _today.year - _ann_date.year
-                        if _ann_type == "solo":
-                            _msg = (
-                                ngettext(
-                                    "🎉 Today marks one year since your first solo flight!",
-                                    "🎉 Today marks %(n)s years since your first solo flight!",
-                                    _years,
-                                    n=_years,
-                                )
-                                if _years > 0
-                                else _(
-                                    "🎉 Today is the anniversary of your first solo flight!"
-                                )
-                            )
-                        else:
-                            _msg = (
-                                ngettext(
-                                    "🎉 Today marks one year since you earned your PPL!",
-                                    "🎉 Today marks %(n)s years since you earned your PPL!",
-                                    _years,
-                                    n=_years,
-                                )
-                                if _years > 0
-                                else _("🎉 Today is the anniversary of your PPL!")
-                            )
-                        _pilot_anniversary = {
-                            "type": _ann_type,
-                            "years": _years,
-                            "message": _msg,
-                        }
-                        _sess_key = f"anniversary_confetti_{_today.isoformat()}"
-                        if not session.get(_sess_key):
-                            session[_sess_key] = True
-                            _pilot_anniversary_confetti = True
-                        break
 
         _is_owner = role in (Role.ADMIN, Role.OWNER)
         _nav_update_available = (
@@ -975,9 +1007,9 @@ def create_app() -> Flask:
             "logbook_only": _logbook_only,
             "single_aircraft_mode": _single_aircraft_mode,
             "aircraft_count_goal": _pac,
-            "aviation_day_banner": _aviation_banner,
-            "pilot_anniversary": _pilot_anniversary,
-            "pilot_anniversary_confetti": _pilot_anniversary_confetti,
+            "aviation_day_banner": _banners["aviation_day_banner"],
+            "pilot_anniversary": _banners["pilot_anniversary"],
+            "pilot_anniversary_confetti": _banners["pilot_anniversary_confetti"],
             "today": _date.today(),
             "current_theme": _current_theme(_user_flags, _in_request, session, is_demo),
             "nav_update_available": _nav_update_available,
