@@ -288,6 +288,67 @@ class TestPilotAnniversaryBanner:
         assert "years since you earned your PPL" in rv.text
 
 
+class TestBannersApiEndpoint:
+    """EE-09/EE-10 via /api/banners — polled client-side by pwa.js so a
+    stale-cached or long-idle page still learns about today's banner
+    (see pwa.js's banner-poll comment)."""
+
+    def test_requires_auth(self, app, client):
+        rv = client.get("/api/banners")
+        assert rv.status_code == 401
+
+    def test_matches_server_rendered_banner(self, app, client):
+        """The JSON payload must carry the same message the SSR page bakes
+        into base.html, so the client-side toast and the SSR banner never
+        disagree on wording."""
+        today = date.today()
+        _create_pilot_and_login(
+            app,
+            client,
+            email="ee_api_ppl@example.com",
+            language="en",
+            ppl_issue_date=today.replace(year=today.year - 2),
+        )
+        page = client.get("/")
+        data = client.get("/api/banners").get_json()
+        assert data["pilot_anniversary"]["type"] == "ppl"
+        assert data["pilot_anniversary"]["years"] == 2
+        assert data["pilot_anniversary"]["message"] in page.text
+
+    def test_confetti_flag_fires_once_per_day(self, app, client):
+        """The confetti flag is a once-a-day session flag shared with the
+        context processor — whichever request (SSR page or API poll) hits
+        it first on a given day gets True, every later one that day False."""
+        today = date.today()
+        _create_pilot_and_login(
+            app,
+            client,
+            email="ee_api_confetti@example.com",
+            language="en",
+            first_solo_date=today.replace(year=today.year - 1),
+        )
+        first = client.get("/api/banners").get_json()
+        second = client.get("/api/banners").get_json()
+        assert first["pilot_anniversary_confetti"] is True
+        assert second["pilot_anniversary_confetti"] is False
+        # The message itself is not one-shot — still present on later polls.
+        assert second["pilot_anniversary"] is not None
+
+    def test_no_anniversary_returns_null(self, app, client):
+        """A pilot with no matching anniversary today gets a null, not a
+        missing key — pwa.js relies on the key always being present."""
+        _create_pilot_and_login(
+            app,
+            client,
+            email="ee_api_none@example.com",
+            first_solo_date=date(2000, 1, 1),
+            ppl_issue_date=date(2000, 1, 2),
+        )
+        data = client.get("/api/banners").get_json()
+        assert data["pilot_anniversary"] is None
+        assert data["pilot_anniversary_confetti"] is False
+
+
 # ── EE-06 — NVG Mode ──────────────────────────────────────────────────────────
 
 

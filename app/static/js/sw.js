@@ -334,4 +334,30 @@ self.addEventListener('message', function (e) {
       })
     );
   }
+
+  /* Periodic freshness sweep (pwa.js, at most once per rolling 24h while a
+   * tab is open — see its banner-poll comment): refresh every currently-
+   * cached SWR entry in place (fetch + replace) instead of deleting it like
+   * OH_INVALIDATE_NAV_CACHE above. The page already on screen is untouched
+   * either way, but the *next* navigation to any cached route still gets an
+   * instant cached response — just a fresher one — rather than paying the
+   * network wait a delete-then-refetch would impose. A failed fetch (e.g.
+   * offline at the time) just leaves the existing stale entry in place. */
+  if (e.data && e.data.type === 'OH_REFRESH_NAV_CACHE') {
+    e.waitUntil(
+      caches.open(CACHE).then(function (cache) {
+        return cache.keys().then(function (reqs) {
+          return Promise.all(
+            reqs
+              .filter(function (r) { return _isSWRRoute(new URL(r.url)); })
+              .map(function (r) {
+                return fetch(r).then(function (resp) {
+                  if (resp.ok) return cache.put(r, resp);
+                }).catch(function () {});
+              })
+          );
+        });
+      })
+    );
+  }
 });
