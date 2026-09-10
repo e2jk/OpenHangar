@@ -36,16 +36,17 @@ destructive git commands, or deploy. Propose commit messages; let the human comm
 # The app runs inside Docker. app/ is volume-mounted for live reload
 # (Python/HTML changes take effect immediately, no rebuild needed).
 
-# First-time setup (fresh clone) — install runtime + dev deps SEPARATELY, in
-# two commands; combining them into one `pip install -r a -r b` breaks
-# --require-hashes:
+# First-time setup (fresh clone):
 python3 -m venv .venv
 # Bootstrap pip itself to the hash-pinned, security-patched version (the
 # venv's own bundled pip can lag behind and carry known CVEs — see
 # requirements/pip-bootstrap.txt, the same pin used by docker/Dockerfile
 # and CI):
 .venv/bin/pip install --require-hashes -r requirements/pip-bootstrap.txt
-.venv/bin/pip install -r requirements/runtime.txt
+# dev.txt -> ci.txt -> runtime.txt (each `-r`-includes the next), so this
+# one command installs everything: runtime deps, plus lint/type-check/test
+# tooling. Need runtime deps only, with nothing else? `pip install -r
+# requirements/runtime.txt` on its own still works.
 .venv/bin/pip install -r requirements/dev.txt
 
 # Run all tests (from the repo root, using the project venv):

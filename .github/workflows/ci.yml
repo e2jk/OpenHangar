@@ -84,7 +84,9 @@ jobs:
         with:
           python-version: '3.14'
           cache: 'pip'
-          cache-dependency-path: requirements/ci.txt
+          cache-dependency-path: |
+            requirements/ci.txt
+            requirements/runtime.txt
 
       # weasyprint (AMP PDF export) dlopen's pango via cffi at runtime — no
       # compiler/dev headers needed, just the shared library. fonts-dejavu-core
@@ -927,7 +929,9 @@ jobs:
         with:
           python-version: '3.14'
           cache: 'pip'
-          cache-dependency-path: requirements/ci.txt
+          cache-dependency-path: |
+            requirements/ci.txt
+            requirements/runtime.txt
 
       - name: Set up venv
         run: |
@@ -1067,7 +1071,9 @@ jobs:
         with:
           python-version: '3.14'
           cache: 'pip'
-          cache-dependency-path: requirements/ci.txt
+          cache-dependency-path: |
+            requirements/ci.txt
+            requirements/runtime.txt
 
       - name: Set up venv
         run: |

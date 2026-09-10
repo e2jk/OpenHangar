@@ -1,34 +1,17 @@
 # Development, test, and tooling dependencies.
+# Every package here is already pinned (with hashes) in requirements/ci.txt,
+# which itself layers on requirements/runtime.txt — so this just installs
+# from there instead of duplicating versions that could drift out of sync
+# with what CI actually runs (this file used to pin qrcode[pil]/pillow by
+# hand for exactly that reason — GitHub's dependency graph had flagged an
+# alert here after the unconstrained [pil] extra resolved pillow
+# independently of runtime.txt's own pin; runtime.txt pinning pillow
+# directly, now inherited here too, already prevents that).
+#
 # Install into your local venv:
 #   pip install -r requirements/dev.txt
 #   playwright install chromium   # only needed for scripts/take_screenshots.py
 #
-# Versions are pinned to match CI (requirements/ci.txt) exactly so that
-# linting, formatting, and test results are identical locally and in the pipeline.
-#
 # actionlint is NOT here — it's a standalone Go binary, not a pip package.
 # .githooks/pre-push prints an install one-liner if it's missing from PATH.
-pytest==9.1.1
-pytest-cov==7.1.0
-pytest-xdist==3.8.0
-bcrypt==5.0.0
-cryptography==50.0.1
-qrcode[pil]==8.2
-# Pinned explicitly (not just left to the [pil] extra's own resolution):
-# qrcode[pil] sets no upper bound on Pillow, so GitHub's dependency graph
-# resolves the transitive version independently of runtime.txt/ci.txt (both
-# pin pillow==12.3.0) and had drifted to a vulnerable older release,
-# flagging alerts against this file specifically. Keep in sync with those.
-pillow==12.3.0
-pyotp==2.10.0
-flask-babel==4.0.0
-polib==1.2.0
-ruff==0.16.4
-mypy==2.3.1
-bandit==1.9.4
-pip-audit==2.10.1
-openpyxl==3.1.5
-# Screenshot script (scripts/take_screenshots.py) — run `playwright install chromium` after
-playwright==1.62.0
-PyYAML==6.0.3
-zizmor==1.29.0
+-r ci.txt
