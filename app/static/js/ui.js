@@ -378,6 +378,65 @@ window.applyPreset = function (scope, mask) {
   });
 };
 
+/* ── Translated native form-validation messages ─────────────────────────
+ * No browser localizes its built-in constraint-validation messages (e.g.
+ * "Please fill out this field") from the page's <html lang> — Chrome,
+ * Firefox and Safari all pick that text from the browser's OWN UI
+ * language, so a French page can still show an English bubble if the
+ * browser itself is set to English. setCustomValidity() is the only way
+ * to override it. 'invalid' doesn't bubble, so this listens on document
+ * in the capture phase (which does receive non-bubbling events fired on
+ * descendants) instead of wiring every field individually — covers
+ * HTMX-swapped content too, with no re-wiring needed. Falls through to
+ * the browser's own (unlocalized) message if _oh_validation_i18n isn't
+ * present (e.g. share/public.html, which doesn't load this file at all,
+ * or a page rendered before base.html's own script block runs). */
+function _ohFillTemplate(str, vars) {
+  return str.replace(/\{(\w+)\}/g, function (m, k) {
+    return (k in vars) ? vars[k] : m;
+  });
+}
+
+document.addEventListener('invalid', function (e) {
+  var el = e.target;
+  var v = el.validity;
+  if (!v || v.valid) return;
+  var t = window._oh_validation_i18n;
+  if (!t) return;
+  var msg = '';
+  if (v.valueMissing) {
+    if (el.tagName === 'SELECT') msg = t.valueMissingSelect;
+    else if (el.type === 'checkbox') msg = t.valueMissingCheckbox;
+    else if (el.type === 'radio') msg = t.valueMissingRadio;
+    else msg = t.valueMissing;
+  } else if (v.typeMismatch) {
+    msg = el.type === 'email' ? t.typeMismatchEmail : (el.type === 'url' ? t.typeMismatchUrl : t.generic);
+  } else if (v.patternMismatch) {
+    msg = t.patternMismatch;
+  } else if (v.tooShort) {
+    msg = _ohFillTemplate(t.tooShort, { min: el.minLength, n: el.value.length });
+  } else if (v.tooLong) {
+    msg = _ohFillTemplate(t.tooLong, { max: el.maxLength, n: el.value.length });
+  } else if (v.rangeUnderflow) {
+    msg = _ohFillTemplate(t.rangeUnderflow, { min: el.min });
+  } else if (v.rangeOverflow) {
+    msg = _ohFillTemplate(t.rangeOverflow, { max: el.max });
+  } else {
+    msg = t.generic;
+  }
+  if (msg) el.setCustomValidity(msg);
+}, true);
+
+/* Clear the custom message as soon as the user edits the field — it
+ * otherwise persists (stuck reporting the old reason) even after the
+ * value becomes valid, since setCustomValidity() only clears explicitly. */
+document.addEventListener('input', function (e) {
+  if (typeof e.target.setCustomValidity === 'function') e.target.setCustomValidity('');
+});
+document.addEventListener('change', function (e) {
+  if (typeof e.target.setCustomValidity === 'function') e.target.setCustomValidity('');
+});
+
 /* ── Document-level event delegation (runs once, survives HTMX swaps) ─── */
 document.addEventListener('click', function (e) {
   /* data-href: make any element behave like a link */

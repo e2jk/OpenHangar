@@ -11628,3 +11628,51 @@ msgstr "Les propriétaires et administrateurs ont toujours accès à toute la fl
 msgid "Permissions updated."
 msgstr "Permissions mises à jour."
 
+
+#: app/templates/base.html
+msgid "Please fill out this field."
+msgstr "Veuillez renseigner ce champ."
+
+#: app/templates/base.html
+msgid "Please select an item in the list."
+msgstr "Veuillez sélectionner un élément dans la liste."
+
+#: app/templates/base.html
+msgid "Please check this box if you want to proceed."
+msgstr "Veuillez cocher cette case pour continuer."
+
+#: app/templates/base.html
+msgid "Please select one of these options."
+msgstr "Veuillez sélectionner une de ces options."
+
+#: app/templates/base.html
+msgid "Please enter a valid email address."
+msgstr "Veuillez saisir une adresse e-mail valide."
+
+#: app/templates/base.html
+msgid "Please enter a valid URL."
+msgstr "Veuillez saisir une URL valide."
+
+#: app/templates/base.html
+msgid "Please match the requested format."
+msgstr "Veuillez respecter le format demandé."
+
+#: app/templates/base.html
+msgid "Please use at least {min} characters (currently {n})."
+msgstr "Veuillez utiliser au moins {min} caractères (actuellement {n})."
+
+#: app/templates/base.html
+msgid "Please use no more than {max} characters (currently {n})."
+msgstr "Veuillez utiliser au maximum {max} caractères (actuellement {n})."
+
+#: app/templates/base.html
+msgid "Value must be {min} or more."
+msgstr "La valeur doit être supérieure ou égale à {min}."
+
+#: app/templates/base.html
+msgid "Value must be {max} or less."
+msgstr "La valeur doit être inférieure ou égale à {max}."
+
+#: app/templates/base.html
+msgid "Please enter a valid value."
+msgstr "Veuillez saisir une valeur valide."
