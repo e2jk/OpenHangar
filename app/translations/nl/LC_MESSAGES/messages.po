@@ -11628,3 +11628,51 @@ msgstr "Eigenaren en beheerders hebben altijd volledige toegang tot de vloot —
 msgid "Permissions updated."
 msgstr "Machtigingen bijgewerkt."
 
+
+#: app/templates/base.html
+msgid "Please fill out this field."
+msgstr "Vul dit veld in."
+
+#: app/templates/base.html
+msgid "Please select an item in the list."
+msgstr "Selecteer een item in de lijst."
+
+#: app/templates/base.html
+msgid "Please check this box if you want to proceed."
+msgstr "Vink dit vakje aan om door te gaan."
+
+#: app/templates/base.html
+msgid "Please select one of these options."
+msgstr "Selecteer een van deze opties."
+
+#: app/templates/base.html
+msgid "Please enter a valid email address."
+msgstr "Voer een geldig e-mailadres in."
+
+#: app/templates/base.html
+msgid "Please enter a valid URL."
+msgstr "Voer een geldige URL in."
+
+#: app/templates/base.html
+msgid "Please match the requested format."
+msgstr "Gebruik de gevraagde opmaak."
+
+#: app/templates/base.html
+msgid "Please use at least {min} characters (currently {n})."
+msgstr "Gebruik ten minste {min} tekens (momenteel {n})."
+
+#: app/templates/base.html
+msgid "Please use no more than {max} characters (currently {n})."
+msgstr "Gebruik maximaal {max} tekens (momenteel {n})."
+
+#: app/templates/base.html
+msgid "Value must be {min} or more."
+msgstr "De waarde moet {min} of hoger zijn."
+
+#: app/templates/base.html
+msgid "Value must be {max} or less."
+msgstr "De waarde moet {max} of lager zijn."
+
+#: app/templates/base.html
+msgid "Please enter a valid value."
+msgstr "Voer een geldige waarde in."
