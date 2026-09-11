@@ -26,8 +26,10 @@ permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: work
 # too keeps a `push` and `pull_request` run for the same branch from
 # cancelling each other. Nothing needs main-push special-casing any more —
 # main only ever receives already-tested, already-published content (see
-# the version job below), so its own push run does no real work regardless
-# of how many land close together.
+# the version job below), so its own push run skips the real
+# lint/type-check/test/build/publish pipeline regardless of how many land
+# close together (only the cheap rescan-main-* jobs still run there, purely
+# to keep code-scanning alerts on main accurate — see their own comments).
 #
 # Exception: every ship/renovate pull_request — the only PRs
 # that publish_now (see the version job) — shares one 'bot-pipeline' lane
@@ -53,12 +55,16 @@ concurrency:
 jobs:
   lint-and-test:
     name: Lint, type-check, and test
-    # Skipped only for a push to ship/a bot branch or to main — those pushes
-    # do no CI work at all under the current design: a push to ship/a bot
-    # branch just gets a PR opened (auto-pr-merge.yml / the platform's own
-    # automerge workflow), and the pull_request event that follows is where
-    # this actually runs; a push to main lands content that a PR already
-    # fully tested and published, so it's a pure no-op. Every other trigger
+    # Skipped only for a push to ship/a bot branch or to main — this
+    # specific job (lint/type-check/test) does no further work for those
+    # pushes under the current design: a push to ship/a bot branch just
+    # gets a PR opened (auto-pr-merge.yml / the platform's own automerge
+    # workflow), and the pull_request event that follows is where this
+    # actually runs; a push to main lands content that a PR already fully
+    # tested and published, so re-running the full pipeline here would be
+    # pure repetition (main's push does still run the cheap rescan-main-*
+    # jobs further down, to keep code-scanning alerts accurate — unrelated
+    # to this job). Every other trigger
     # (any pull_request, a tag push, a push to some other branch) runs this
     # for real — there's no more "redundant second run of the same commit"
     # case to skip, since real work now happens on exactly one event per
@@ -306,6 +312,77 @@ jobs:
     timeout-minutes: 1
     steps:
       - run: echo "No CI work needed for this push — already tested via the PR that merged it."
+
+  rescan-main-pip-audit:
+    name: Re-scan main (pip-audit) to refresh code-scanning alerts
+    # A GitHub code-scanning alert only auto-closes when a fresh SARIF is
+    # uploaded for the exact ref it's tracked against — a pull_request run's
+    # SARIF is scoped to the PR, never to main. Since lint-and-test (which
+    # normally uploads the pip-audit SARIF) skips push-to-main entirely (see
+    # its own if: above), nothing ever re-uploads a clean one for
+    # refs/heads/main after a fix merges, so a fixed alert can be stuck
+    # "open" forever — this happened for real: GHSA-jf6q-chmf-3h3v
+    # (weasyprint) needed a manual `gh workflow run ci.yml --ref main` to
+    # close alerts #558-#560 after the fix had already landed on main.
+    # Repeats just the pip-audit step from lint-and-test, standalone and
+    # cheap (seconds, not minutes — no lint/type-check/test/docker/browser
+    # work), on every push to main so the Security tab never needs a manual
+    # nudge again. Same SARIF category ("pip-audit") as lint-and-test's own
+    # upload, so this marks existing alerts fixed instead of starting a
+    # second, never-merged history.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      security-events: write  # pip-audit SARIF upload
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.14'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements/ci.txt
+            requirements/runtime.txt
+
+      - name: Set up venv
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install --quiet --require-hashes -r requirements/ci.txt
+
+      - name: Audit all dependencies (runtime + transitive)
+        id: pip-audit
+        continue-on-error: true
+        run: .venv/bin/pip-audit --local --format json -o pip-audit.json
+
+      - name: Convert pip-audit JSON to SARIF
+        if: always() && hashFiles('pip-audit.json') != ''
+        run: python3 .github/scripts/pip_audit_to_sarif.py pip-audit.json pip-audit.sarif
+
+      - name: Upload pip-audit results to GitHub Security tab
+        if: always() && hashFiles('pip-audit.sarif') != ''
+        uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4
+        with:
+          sarif_file: pip-audit.sarif
+          category: pip-audit
+
+  rescan-main-osv:
+    name: Re-scan main (OSV-Scanner) to refresh code-scanning alerts
+    # Same rationale and same trigger as rescan-main-pip-audit above — see
+    # its comment. osv-scan (the job that normally covers this) needs
+    # version, which is itself skipped on push-to-main, so it never runs
+    # for this event either. No needs: here on purpose: this job doesn't
+    # use a version number or publish anything, so it doesn't need to wait
+    # on (or be skipped by) that job at all.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      actions: read           # required by codeql-action to upload SARIF
+      contents: read          # checkout
+      security-events: write  # upload SARIF results to the Security tab
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@6e4298ebc4db23e847df9b2e2de2939d6f066c67 # v2.5.1
 
   dependency-review:
     name: Dependency review (new/changed dependencies)
