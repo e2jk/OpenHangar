@@ -114,9 +114,9 @@ jobs:
         if: always() && steps.trivy.outcome == 'failure' && hashFiles('trivy-latest-results.json') != ''
         run: |
           grep -ohE '^[A-Za-z0-9._-]+==' requirements/runtime.txt requirements/pip-bootstrap.txt \
-            | sed 's/==$//' | tr 'A-Z' 'a-z' | sort -u > pinned-packages.txt
+            | sed 's/==$//' | tr '[:upper:]' '[:lower:]' | sort -u > pinned-packages.txt
           jq -r '.Results[]? | .Vulnerabilities[]? | .PkgName // empty' trivy-latest-results.json \
-            | tr 'A-Z' 'a-z' | sort -u > vulnerable-packages.txt
+            | tr '[:upper:]' '[:lower:]' | sort -u > vulnerable-packages.txt
           matched=$(comm -12 pinned-packages.txt vulnerable-packages.txt | paste -sd, -)
           if [ -n "$matched" ]; then
             echo "matched=$matched" >> "$GITHUB_OUTPUT"
