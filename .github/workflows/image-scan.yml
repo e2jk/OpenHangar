@@ -65,7 +65,7 @@ jobs:
           # Same Trivy CLI version aquasecurity/trivy-action@v0.36.0 uses
           # internally (its own default) to scan above — keeps the report
           # producer and the converter reading the same JSON schema version.
-          version: v0.70.0
+          version: v0.74.0
 
       # `trivy convert` reformats an already-saved report — it re-reads the
       # JSON above and re-serializes it, it does not touch the image or the
