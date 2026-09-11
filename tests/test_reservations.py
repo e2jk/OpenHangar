@@ -1385,23 +1385,30 @@ class TestFleetReservations:
         assert b"OO-AP2" in r.data
 
     def test_overlapping_confirmed_reservations_flagged(self, app, client):
-        """Lines 154-158 — two overlapping CONFIRMED reservations get Overlap badge."""
+        """Lines 154-158 — two overlapping CONFIRMED reservations get Overlap
+        badge. Must use a date in the future relative to whenever the test
+        runs: the fleet view's Overlap badge is only rendered in the
+        "Upcoming" table section (fleet.html), never in "Past" — a fixed
+        past-tense literal date here would silently stop exercising the
+        overlap badge at all once the calendar rolled past it (as happened
+        with a hardcoded 2026-09-10, caught 2026-09-11)."""
         uid, tid = _make_user(app, "admin@overlap.test")
         ac_id = _make_aircraft(app, tid)
+        tomorrow = (datetime.now(UTC) + timedelta(days=1)).strftime("%Y-%m-%d")
         _make_reservation(
             app,
             ac_id,
             uid,
-            start="2026-09-10T09:00",
-            end="2026-09-10T12:00",
+            start=f"{tomorrow}T09:00",
+            end=f"{tomorrow}T12:00",
             status=ReservationStatus.CONFIRMED,
         )
         _make_reservation(
             app,
             ac_id,
             uid,
-            start="2026-09-10T11:00",
-            end="2026-09-10T14:00",
+            start=f"{tomorrow}T11:00",
+            end=f"{tomorrow}T14:00",
             status=ReservationStatus.CONFIRMED,
         )
         _login(app, client, uid)

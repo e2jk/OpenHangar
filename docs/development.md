@@ -147,7 +147,9 @@ source .venv/bin/activate
 # venv's own bundled pip can lag behind and carry known CVEs (see
 # requirements/pip-bootstrap.txt, the same pin docker/Dockerfile and CI use).
 pip install --require-hashes -r requirements/pip-bootstrap.txt
-pip install -r requirements/runtime.txt
+# dev.txt -> ci.txt -> runtime.txt (each `-r`-includes the next), so this
+# one command installs everything: runtime deps, plus lint/type-check/test
+# tooling.
 pip install -r requirements/dev.txt
 ```
 

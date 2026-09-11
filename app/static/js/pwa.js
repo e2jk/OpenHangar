@@ -360,7 +360,7 @@
   }
 
   /* ── Inline flash banner ── */
-  function _showBanner(msg) {
+  function _showBanner(msg, iconClass, alertClass, id) {
     var container = document.querySelector('.page-content .container.mt-3') ||
                     (function () {
                       var c = document.createElement('div');
@@ -370,12 +370,100 @@
                       return c;
                     })();
     var div = document.createElement('div');
-    div.className = 'alert alert-info alert-dismissible fade show';
+    div.className = 'alert ' + (alertClass || 'alert-info') + ' alert-dismissible fade show';
     div.setAttribute('role', 'alert');
-    div.innerHTML = '<i class="bi bi-cloud-check me-1"></i>' + msg +
+    if (id) div.id = id;
+    div.innerHTML = '<i class="bi ' + (iconClass || 'bi-cloud-check') + ' me-1"></i>' + msg +
       '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
     container.prepend(div);
   }
+
+  /* ── EE-09/EE-10 banner poll + periodic nav-cache refresh ──
+   * base.html bakes the aviation-day/anniversary banners (and fires the
+   * anniversary confetti) into server-rendered HTML, but that only ever
+   * runs on a genuine full-page render. Once hx-boost, sw.js's stale-while-
+   * revalidate SWR cache, or simply a browser tab left open across midnight
+   * are in the picture, a user can go a whole day without a fresh render
+   * and miss a once-a-year message entirely — which is what happened with
+   * the PPL-anniversary banner. /api/banners is a tiny endpoint outside
+   * sw.js's SWR/precache lists (the /api/ prefix is exempted, see
+   * TestSWRRouteCoverage), so this poll always gets a live answer
+   * regardless of how stale the page around it is. It also piggybacks a
+   * periodic OH_REFRESH_NAV_CACHE nudge to the SW on the same wake-up, to
+   * bound staleness for everything else the SW caches — not just banners. */
+  var _BANNER_POLL_MS = 2 * 60 * 60 * 1000; /* 2h while the tab stays open */
+  var _NAV_CACHE_REFRESH_MS = 24 * 60 * 60 * 1000;
+  var _NAV_CACHE_REFRESH_KEY = 'oh-nav-cache-last-refresh';
+
+  function _todayStamp() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function _fireAnniversaryConfetti() {
+    var colors = ['#ffd700', '#ff6b6b', '#4a6fa5', '#48bb78'];
+    function fire() {
+      confetti({ particleCount: 8, angle: 60, spread: 70, origin: { x: 0 }, colors: colors });
+      confetti({ particleCount: 8, angle: 120, spread: 70, origin: { x: 1 }, colors: colors });
+    }
+    setTimeout(fire, 300);
+    setTimeout(fire, 900);
+    setTimeout(fire, 1500);
+  }
+
+  function _maybeRefreshNavCache() {
+    if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) return;
+    var last = parseInt(localStorage.getItem(_NAV_CACHE_REFRESH_KEY) || '0', 10);
+    if (Date.now() - last < _NAV_CACHE_REFRESH_MS) return;
+    localStorage.setItem(_NAV_CACHE_REFRESH_KEY, String(Date.now()));
+    navigator.serviceWorker.controller.postMessage({ type: 'OH_REFRESH_NAV_CACHE' });
+  }
+
+  function _pollBanners() {
+    fetch('/api/banners', { credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data) return;
+
+        if (data.aviation_day_banner) {
+          var aKey = 'oh-banner-shown-aviation-' + _todayStamp();
+          if (!sessionStorage.getItem(aKey)) {
+            sessionStorage.setItem(aKey, '1');
+            /* Skip if base.html's own footer banner already rendered it
+             * (id added there for exactly this check) — avoids a duplicate
+             * on the very first load, where this poll and the SSR banner
+             * both fire for the same page. */
+            if (!document.getElementById('aviation-day-banner')) {
+              _showBanner(data.aviation_day_banner, 'bi-airplane-engines', 'alert-warning', 'aviation-day-banner');
+            }
+          }
+        }
+
+        if (data.pilot_anniversary) {
+          var pKey = 'oh-banner-shown-anniversary-' + _todayStamp();
+          if (!sessionStorage.getItem(pKey)) {
+            sessionStorage.setItem(pKey, '1');
+            if (!document.getElementById('anniversary-banner')) {
+              _showBanner(data.pilot_anniversary.message, 'bi-stars', 'alert-warning', 'anniversary-banner');
+            }
+          }
+        }
+
+        /* pilot_anniversary_confetti is a genuine once-a-day server flag
+         * (see _compute_banners), so no client-side dedup needed here. */
+        if (data.pilot_anniversary_confetti && window.confetti) {
+          _fireAnniversaryConfetti();
+        }
+      })
+      .catch(function () {});
+
+    _maybeRefreshNavCache();
+  }
+
+  _pollBanners();
+  setInterval(_pollBanners, _BANNER_POLL_MS);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') _pollBanners();
+  });
 
   /* Run sync on page load if online and there are queued entries */
   if (navigator.onLine) { _syncQueue(); }

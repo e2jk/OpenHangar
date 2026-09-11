@@ -155,6 +155,16 @@ class TestServiceWorker:
         body = r.data.decode()
         assert "OH_INVALIDATE_NAV_CACHE" in body
 
+    def test_sw_js_handles_nav_cache_refresh_message(self, client):
+        # Regression guard: the periodic freshness sweep (pwa.js) must
+        # refresh cached SWR entries in place (fetch + cache.put), not
+        # delete them — deleting would make the *next* navigation to any
+        # cached route pay a network wait instead of staying instant.
+        r = client.get("/sw.js")
+        body = r.data.decode()
+        assert "OH_REFRESH_NAV_CACHE" in body
+        assert "cache.put(r, resp)" in body
+
 
 class TestPwaJsWriteInvalidation:
     def test_pwa_js_posts_invalidation_on_successful_write(self):
@@ -162,6 +172,30 @@ class TestPwaJsWriteInvalidation:
         assert "htmx:afterRequest" in content
         assert "OH_INVALIDATE_NAV_CACHE" in content
         assert "e.detail.successful" in content
+
+
+class TestBannerPoll:
+    """pwa.js polls /api/banners so a stale-cached or long-idle page still
+    picks up the EE-09/EE-10 banners — see pwa.js's banner-poll comment."""
+
+    def test_pwa_js_polls_banners_endpoint(self):
+        content = (_STATIC_DIR / "js" / "pwa.js").read_text()
+        assert "/api/banners" in content
+        assert "visibilitychange" in content
+        assert "setInterval(_pollBanners" in content
+
+    def test_pwa_js_triggers_periodic_nav_cache_refresh(self):
+        content = (_STATIC_DIR / "js" / "pwa.js").read_text()
+        assert "OH_REFRESH_NAV_CACHE" in content
+        assert "_NAV_CACHE_REFRESH_MS" in content
+
+    def test_pwa_js_dedupes_banner_against_ssr_render(self):
+        # Regression guard: without this check, the very first page load
+        # would show the SSR-rendered banner AND an identical client-side
+        # one injected by the immediate on-load poll.
+        content = (_STATIC_DIR / "js" / "pwa.js").read_text()
+        assert "getElementById('aviation-day-banner')" in content
+        assert "getElementById('anniversary-banner')" in content
 
 
 class TestRootCaching:

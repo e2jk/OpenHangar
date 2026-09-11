@@ -98,7 +98,7 @@ jobs:
 
       - name: Convert ZAP JSON report to SARIF
         if: always() && hashFiles('report_json.json') != ''
-        run: python3 .github/scripts/zap_to_sarif.py report_json.json zap-full-results.sarif .zap/rules.tsv
+        run: python3 .github/scripts/zap_to_sarif.py report_json.json zap-full-results.sarif .zap/rules.tsv "ZAP Full Scan"
 
       - name: Upload ZAP SARIF to GitHub Security tab
         if: always() && hashFiles('zap-full-results.sarif') != ''
