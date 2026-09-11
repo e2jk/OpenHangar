@@ -7287,6 +7287,10 @@ msgstr "Une nouvelle version est installée automatiquement juste après chaque 
 msgid "Auto-upgrade: on"
 msgstr "Mise à jour automatique : activée"
 
+#: app/templates/config/settings.html:528
+msgid "Last upgrade"
+msgstr "Dernière mise à jour"
+
 #: app/templates/config/settings.html:503
 #, python-format
 msgid "Update available: %(version)s"

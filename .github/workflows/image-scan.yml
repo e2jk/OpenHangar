@@ -9,10 +9,13 @@ name: Published image vulnerability scan
 # quiet period to ~1 day instead of ~6 — the scan itself only takes
 # 30-60s, so the extra runs cost effectively nothing.
 #
-# A fixable CVE found here does NOT fail this job (see continue-on-error
-# below) — it's expected, self-healing behaviour (rebuild dispatched,
-# fix lands within minutes), not an incident. Only a failure to dispatch
-# that rebuild fails the run and emails the maintainer.
+# A fixable CVE in an unpinned OS package does NOT fail this job (see
+# continue-on-error below) — it's expected, self-healing behaviour (rebuild
+# dispatched, fix lands within minutes), not an incident. A CVE in a
+# hash-pinned direct Python dependency is different: a rebuild installs the
+# exact same pinned version again, so it can't self-heal — that case (and a
+# failure to dispatch the rebuild in the other case) does fail the run and
+# email the maintainer, since only a human bumping the pin actually fixes it.
 
 on:
   schedule:
@@ -34,6 +37,12 @@ jobs:
       security-events: write  # Trivy SARIF upload
       actions: write          # dispatch ci.yml's workflow_dispatch on failure, see below
     steps:
+      # JSON, not SARIF, is the primary output now — it's the one format that
+      # gives each finding a structured PkgName (SARIF buries it in a
+      # free-text message), and both the SARIF the Security tab needs and
+      # the package-name check below can be derived from it locally with
+      # `trivy convert` (a pure report-format transform, no image re-pull or
+      # re-scan) rather than running Trivy against the image twice.
       - name: Run Trivy vulnerability scanner
         id: trivy
         # Self-healing, not a build gate (see "Trigger a rebuild" below) —
@@ -43,11 +52,29 @@ jobs:
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ghcr.io/e2jk/openhangar:latest
-          format: sarif
-          output: trivy-latest-results.sarif
+          format: json
+          output: trivy-latest-results.json
           severity: HIGH,CRITICAL
           ignore-unfixed: 'true'
           exit-code: '1'
+
+      - name: Install Trivy CLI (to convert the JSON report to SARIF)
+        if: always() && hashFiles('trivy-latest-results.json') != ''
+        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
+        with:
+          # Same Trivy CLI version aquasecurity/trivy-action@v0.36.0 uses
+          # internally (its own default) to scan above — keeps the report
+          # producer and the converter reading the same JSON schema version.
+          version: v0.70.0
+
+      # `trivy convert` reformats an already-saved report — it re-reads the
+      # JSON above and re-serializes it, it does not touch the image or the
+      # network. The severity/ignore-unfixed filters were already applied
+      # when that report was produced, so the SARIF this emits matches
+      # exactly what a direct SARIF-format scan would have produced.
+      - name: Convert the JSON report to SARIF
+        if: always() && hashFiles('trivy-latest-results.json') != ''
+        run: trivy convert --format sarif --output trivy-latest-results.sarif trivy-latest-results.json
 
       - name: Upload Trivy results to GitHub Security tab
         if: always() && hashFiles('trivy-latest-results.sarif') != ''
@@ -66,23 +93,48 @@ jobs:
           # in the other path's own separate history.
           category: trivy
 
-      # ignore-unfixed: true above means every finding that fails the Trivy
-      # step already has a fix published upstream (in the OS package repo,
-      # a base image layer, ...) — this repo's own source doesn't need to
-      # change for a plain rebuild to pick it up (apk upgrade / pip install
-      # re-resolve against current upstream state). Close the loop instead
-      # of just emailing the maintainer: dispatch ci.yml's manual-rebuild
-      # entry point (the same one a human would use for this) against main.
-      # GITHUB_TOKEN can dispatch workflow_dispatch/repository_dispatch
-      # events without special-casing — GitHub's "actions triggered by
-      # GITHUB_TOKEN don't trigger further workflow runs" loop-prevention
-      # rule explicitly excludes those two event types.
-      # No continue-on-error here (unlike the scan step above): if this
+      # "ignore-unfixed: true" above means every finding here has a fix
+      # published upstream *somewhere* — but "somewhere" isn't always this
+      # repo's own build inputs. An unpinned OS package (apk) genuinely
+      # re-resolves to the patched version on a plain rebuild. A Python
+      # package doesn't: every one is hash-pinned in requirements/runtime.txt
+      # (+ pip-bootstrap.txt), so `pip install --require-hashes` installs the
+      # exact same vulnerable version on every rebuild until that pin itself
+      # changes — see the weasyprint/GHSA-jf6q-chmf-3h3v incident this logic
+      # was added for.
+      #
+      # Package-name match only — no version-range/ecosystem-graph logic. A
+      # name Trivy reports that isn't spelled identically (case aside) in our
+      # requirements files falls through as "not pinned here" and gets the
+      # plain-rebuild treatment below; that's the same do-nothing outcome as
+      # before this check existed, for a case this simple check can't
+      # recognize — not a regression.
+      - name: Check whether affected packages are pinned here
+        id: pinned-check
+        if: always() && steps.trivy.outcome == 'failure' && hashFiles('trivy-latest-results.json') != ''
+        run: |
+          grep -ohE '^[A-Za-z0-9._-]+==' requirements/runtime.txt requirements/pip-bootstrap.txt \
+            | sed 's/==$//' | tr '[:upper:]' '[:lower:]' | sort -u > pinned-packages.txt
+          jq -r '.Results[]? | .Vulnerabilities[]? | .PkgName // empty' trivy-latest-results.json \
+            | tr '[:upper:]' '[:lower:]' | sort -u > vulnerable-packages.txt
+          matched=$(comm -12 pinned-packages.txt vulnerable-packages.txt | paste -sd, -)
+          if [ -n "$matched" ]; then
+            echo "matched=$matched" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Close the loop instead of just emailing the maintainer: dispatch
+      # ci.yml's manual-rebuild entry point (the same one a human would use
+      # for this) against main. GITHUB_TOKEN can dispatch
+      # workflow_dispatch/repository_dispatch events without special-casing —
+      # GitHub's "actions triggered by GITHUB_TOKEN don't trigger further
+      # workflow runs" loop-prevention rule explicitly excludes those two
+      # event types.
+      # No continue-on-error here (unlike the scan steps above): if this
       # dispatch itself fails (e.g. API error), that's the one case this
       # job should still surface as a failure — a human is needed, since
       # neither today's nor tomorrow's run will retry it on their own.
       - name: Trigger a rebuild to pick up the fix
-        if: always() && steps.trivy.outcome == 'failure'
+        if: always() && steps.trivy.outcome == 'failure' && steps.pinned-check.outputs.matched == ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
@@ -91,3 +143,16 @@ jobs:
           gh workflow run ci.yml --ref main \
             -f reason="Automatic: daily image scan (run ${RUN_ID}) found a fixable CVE in ghcr.io/e2jk/openhangar:latest"
           echo "::notice::Fixable CVE(s) found in ghcr.io/e2jk/openhangar:latest — rebuild triggered to pick up the fix. See the Security tab for details."
+
+      # A rebuild can't fix these — the version is hash-pinned in our own
+      # requirements files, so it won't move on its own. Fail loudly instead
+      # of silently dispatching a rebuild that will just reproduce the same
+      # finding tomorrow; a human needs to bump the pin (Renovate may also
+      # already be on it — check its PRs — but don't assume that).
+      - name: Fail — pinned dependency needs a manual/Renovate version bump
+        if: always() && steps.trivy.outcome == 'failure' && steps.pinned-check.outputs.matched != ''
+        env:
+          MATCHED: ${{ steps.pinned-check.outputs.matched }}
+        run: |
+          echo "::error::Fixable CVE(s) found in package(s) hash-pinned in requirements/ (${MATCHED}) — a rebuild won't help, the pin(s) need bumping in requirements/runtime.txt (and requirements/ci.txt if present there too). See the Security tab for details."
+          exit 1

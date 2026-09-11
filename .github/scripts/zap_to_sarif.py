@@ -12,9 +12,16 @@ Rules marked IGNORE in .zap/rules.tsv are excluded from the SARIF output so
 they do not clutter the GitHub Security tab.
 
 Usage:
-    python3 zap_to_sarif.py [zap_json] [output_sarif] [rules_tsv]
+    python3 zap_to_sarif.py [zap_json] [output_sarif] [rules_tsv] [tool_name]
 
-Defaults: report_json.json → zap-results.sarif  (rules from .zap/rules.tsv)
+Defaults: report_json.json → zap-results.sarif  (rules from .zap/rules.tsv,
+tool name "ZAP"). ci.yml's per-PR baseline scan and zap-full-scan.yml's
+scheduled active scan both call this script but pass distinct tool names
+("ZAP Baseline" / "ZAP Full Scan") -- they're different scan configurations
+(passive-only on every push vs. an active scan on a weekly schedule) that
+never run for the same ref, so sharing one SARIF tool name made GitHub's
+code scanning treat them as one tool with an incomplete config on every PR
+("1 configuration not found"), not two independently-tracked tools.
 """
 
 import json
@@ -58,7 +65,9 @@ def _load_ignored_rules(rules_tsv: str) -> set[str]:
     return ignored
 
 
-def convert(zap_json_path: str, sarif_path: str, rules_tsv: str) -> None:
+def convert(
+    zap_json_path: str, sarif_path: str, rules_tsv: str, tool_name: str = "ZAP"
+) -> None:
     ignored = _load_ignored_rules(rules_tsv)
 
     with open(zap_json_path) as f:
@@ -130,7 +139,7 @@ def convert(zap_json_path: str, sarif_path: str, rules_tsv: str) -> None:
             {
                 "tool": {
                     "driver": {
-                        "name": "ZAP",
+                        "name": tool_name,
                         "version": "stable",
                         "informationUri": "https://www.zaproxy.org/",
                         "rules": rules,
@@ -154,4 +163,5 @@ if __name__ == "__main__":
     src = sys.argv[1] if len(sys.argv) > 1 else "report_json.json"
     dst = sys.argv[2] if len(sys.argv) > 2 else "zap-results.sarif"
     tsv = sys.argv[3] if len(sys.argv) > 3 else ".zap/rules.tsv"
-    convert(src, dst, tsv)
+    name = sys.argv[4] if len(sys.argv) > 4 else "ZAP"
+    convert(src, dst, tsv, name)

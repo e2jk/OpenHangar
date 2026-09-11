@@ -7287,6 +7287,10 @@ msgstr "Een nieuwere versie wordt automatisch geïnstalleerd direct na elke gesl
 msgid "Auto-upgrade: on"
 msgstr "Automatisch bijwerken: aan"
 
+#: app/templates/config/settings.html:528
+msgid "Last upgrade"
+msgstr "Laatste update"
+
 #: app/templates/config/settings.html:503
 #, python-format
 msgid "Update available: %(version)s"

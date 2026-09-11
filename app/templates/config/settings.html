@@ -523,6 +523,12 @@
         </form>
       </div>
     </div>
+    {% if last_upgrade_at %}
+    <div class="row mb-2">
+      <div class="col-sm-4 fw-semibold text-muted">{{ _('Last upgrade') }}</div>
+      <div class="col-sm-8 text-muted font-monospace">{{ last_upgrade_at }}</div>
+    </div>
+    {% endif %}
     <div class="row mb-2">
       <div class="col-sm-4 fw-semibold text-muted">{{ _('Environment') }}</div>
       <div class="col-sm-8 text-muted">

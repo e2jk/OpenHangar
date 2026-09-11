@@ -12,6 +12,7 @@ from unittest.mock import MagicMock, patch
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
+    AppSetting,
     Role,
     Tenant,
     TenantUser,
@@ -388,3 +389,107 @@ class TestUpgradeStatus:
         data = resp.get_json()
         assert data["status"] == "failed"
         assert data["message"] == ""
+
+
+# ── _record_last_upgrade / last_upgrade_at persistence ─────────────────────────
+
+
+class TestRecordLastUpgrade:
+    def test_returns_false_and_does_nothing_when_no_done_file(self, app):
+        from config.routes import _record_last_upgrade
+
+        with tempfile.TemporaryDirectory() as tmpdir, app.app_context():
+            assert _record_last_upgrade(tmpdir) is False
+            assert db.session.get(AppSetting, "last_upgrade_at") is None
+
+    def test_persists_timestamp_from_done_file_and_removes_it(self, app):
+        from config.routes import _record_last_upgrade
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            done_path = os.path.join(tmpdir, "trigger.done")
+            with open(done_path, "w") as fh:
+                fh.write("ok 2026-09-10T04:37:12Z")
+            with app.app_context():
+                assert _record_last_upgrade(tmpdir) is True
+                setting = db.session.get(AppSetting, "last_upgrade_at")
+                assert setting is not None
+                assert setting.value == "2026-09-10T04:37:12Z"
+            assert not os.path.exists(done_path)
+
+    def test_falls_back_to_now_when_content_unparseable(self, app):
+        """A blank/malformed marker (e.g. a stale one from an older
+        upgrade.sh) still gets recorded rather than left silently unset."""
+        from config.routes import _record_last_upgrade
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            open(os.path.join(tmpdir, "trigger.done"), "w").close()
+            with app.app_context():
+                assert _record_last_upgrade(tmpdir) is True
+                setting = db.session.get(AppSetting, "last_upgrade_at")
+                assert setting is not None
+                assert setting.value  # some ISO timestamp, not empty/None
+
+
+class TestUpgradeStatusRecordsLastUpgrade:
+    def test_done_status_persists_last_upgrade_at(self, app, client):
+        uid = _setup_admin(app)
+        _login(client, uid)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with open(os.path.join(tmpdir, "trigger.done"), "w") as fh:
+                fh.write("ok 2026-09-10T04:37:12Z")
+            with patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}):
+                resp = client.get("/config/upgrade-status")
+            assert resp.status_code == 200
+            assert resp.get_json()["status"] == "done"
+        with app.app_context():
+            setting = db.session.get(AppSetting, "last_upgrade_at")
+            assert setting is not None
+            assert setting.value == "2026-09-10T04:37:12Z"
+
+
+class TestConfigPageRecordsLastUpgrade:
+    """The unattended auto-upgrade case: nobody's browser was polling
+    /upgrade-status when the upgrade finished, so /config's own page load
+    must be the one that eventually picks up the trigger.done marker."""
+
+    def test_visiting_config_consumes_done_marker(self, app, client):
+        uid = _setup_admin(app)
+        _login(client, uid)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            done_path = os.path.join(tmpdir, "trigger.done")
+            with open(done_path, "w") as fh:
+                fh.write("ok 2026-09-10T04:37:12Z")
+            with patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}):
+                resp = client.get("/config/")
+            assert resp.status_code == 200
+            assert not os.path.exists(done_path)
+        with app.app_context():
+            setting = db.session.get(AppSetting, "last_upgrade_at")
+            assert setting is not None
+            assert setting.value == "2026-09-10T04:37:12Z"
+
+    def test_last_upgrade_at_in_context_after_recorded(
+        self, app, client, captured_templates
+    ):
+        with app.app_context():
+            db.session.add(
+                AppSetting(key="last_upgrade_at", value="2026-09-09T00:00:00Z")
+            )
+            db.session.commit()
+        uid = _setup_admin(app)
+        _login(client, uid)
+        resp = client.get("/config/")
+        assert resp.status_code == 200
+        ctx = captured_templates[-1][1]
+        assert ctx["last_upgrade_at"] == "2026-09-09T00:00:00Z"
+        assert b"2026-09-09T00:00:00Z" in resp.data
+
+    def test_last_upgrade_at_none_when_never_recorded(
+        self, app, client, captured_templates
+    ):
+        uid = _setup_admin(app)
+        _login(client, uid)
+        resp = client.get("/config/")
+        assert resp.status_code == 200
+        ctx = captured_templates[-1][1]
+        assert ctx["last_upgrade_at"] is None
