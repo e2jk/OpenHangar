@@ -195,6 +195,15 @@ class TestBannerPoll:
         # one injected by the immediate on-load poll.
         content = (_STATIC_DIR / "js" / "pwa.js").read_text()
         assert "getElementById('aviation-day-banner')" in content
+
+    def test_pwa_js_skips_poll_when_logged_out(self):
+        # Regression guard: the poll used to fire unconditionally, including
+        # on pages with no session (e.g. /login, the setup wizard) — /api/
+        # banners' 401 there is logged as a browser console error regardless
+        # of how the JS handles the response, which broke the e2e setup-flow
+        # tests' "zero console errors" assertion.
+        content = (_STATIC_DIR / "js" / "pwa.js").read_text()
+        assert "getElementById('oh-logout-link')" in content
         assert "getElementById('anniversary-banner')" in content
 
 

@@ -419,6 +419,15 @@
   }
 
   function _pollBanners() {
+    // #oh-logout-link only renders when logged_in is true (base.html) — the
+    // same signal EE-06 already relies on elsewhere in this file. Checked
+    // fresh on every call (not just once at page load) since a page can go
+    // from logged-out to logged-in without a full reload (e.g. the login
+    // form's hx-boosted submit). Skipping the fetch entirely when logged
+    // out avoids a 401 the browser logs to the console regardless of how
+    // the response is handled in JS — the setup wizard's e2e tests assert
+    // zero console errors during that flow.
+    if (!document.getElementById('oh-logout-link')) return;
     fetch('/api/banners', { credentials: 'same-origin' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (data) {
