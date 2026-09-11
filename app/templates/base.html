@@ -383,6 +383,20 @@
     conflictKeep:  {{ _('Keep for later') | tojson }},
     offlineGuardMsg: {{ _("You're offline — this can't be saved right now. Reconnect and try again.") | tojson }},
   };
+  window._oh_validation_i18n = {
+    valueMissing:         {{ _('Please fill out this field.') | tojson }},
+    valueMissingSelect:   {{ _('Please select an item in the list.') | tojson }},
+    valueMissingCheckbox: {{ _('Please check this box if you want to proceed.') | tojson }},
+    valueMissingRadio:    {{ _('Please select one of these options.') | tojson }},
+    typeMismatchEmail:    {{ _('Please enter a valid email address.') | tojson }},
+    typeMismatchUrl:      {{ _('Please enter a valid URL.') | tojson }},
+    patternMismatch:      {{ _('Please match the requested format.') | tojson }},
+    tooShort:             {{ _('Please use at least {min} characters (currently {n}).') | tojson }},
+    tooLong:              {{ _('Please use no more than {max} characters (currently {n}).') | tojson }},
+    rangeUnderflow:       {{ _('Value must be {min} or more.') | tojson }},
+    rangeOverflow:        {{ _('Value must be {max} or less.') | tojson }},
+    generic:              {{ _('Please enter a valid value.') | tojson }},
+  };
   </script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/offline_db.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/offline_form_guard.js') }}"></script>

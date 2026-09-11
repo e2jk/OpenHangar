@@ -549,3 +549,48 @@ class TestThemeSwitcher:
         client.get("/set-theme/dark")
         with client.session_transaction() as sess:
             assert sess.get("theme") == "dark"
+
+
+# ── Native form-validation messages (setCustomValidity translations) ──────────
+# No browser localizes built-in constraint-validation messages (e.g. "Please
+# fill out this field") from the page's <html lang> — they use the browser's
+# own UI language instead. ui.js overrides them via setCustomValidity() using
+# strings from base.html's window._oh_validation_i18n bridge.
+
+
+class TestNativeValidationMessages:
+    def test_ui_js_overrides_native_validation_messages(self):
+        from pathlib import Path
+
+        content = (
+            Path(__file__).parent.parent / "app" / "static" / "js" / "ui.js"
+        ).read_text()
+        assert "addEventListener('invalid', function (e) {" in content
+        assert "}, true);" in content  # capture phase — 'invalid' doesn't bubble
+        assert "setCustomValidity" in content
+        assert "_oh_validation_i18n" in content
+
+    def test_validation_strings_rendered_in_french(self, app, client):
+        _create_user(app, language="fr")
+        _login(app, client)
+        resp = client.get("/")
+        assert resp.status_code == 200
+        assert "Veuillez renseigner ce champ." in resp.text
+        # tojson ASCII-escapes non-ASCII characters (e.g. è), so pick an
+        # accented-free string for a plain substring check.
+        assert "Veuillez cocher cette case pour continuer." in resp.text
+
+    def test_validation_strings_rendered_in_dutch(self, app, client):
+        _create_user(app, email="i18n-nl@example.com", language="nl")
+        _login(app, client, email="i18n-nl@example.com")
+        resp = client.get("/")
+        assert resp.status_code == 200
+        assert "Vul dit veld in." in resp.text
+        assert "De waarde moet {max} of lager zijn." in resp.text
+
+    def test_validation_strings_default_to_english(self, app, client):
+        _create_user(app, email="i18n-en@example.com", language="en")
+        _login(app, client, email="i18n-en@example.com")
+        resp = client.get("/")
+        assert resp.status_code == 200
+        assert "Please fill out this field." in resp.text
