@@ -561,13 +561,20 @@ def _check_maintenance(app: Any) -> None:
 
 
 def _check_insurance(app: Any) -> None:
+    from documents.routes import (  # pyright: ignore[reportMissingImports]
+        effective_coverage_until,
+    )
     from flask_babel import (  # pyright: ignore[reportMissingImports]
         lazy_gettext as _l,
     )
     from flask_babel import (
         lazy_ngettext as _ln,
     )
-    from models import Aircraft, Tenant  # pyright: ignore[reportMissingImports]
+    from models import (  # pyright: ignore[reportMissingImports]
+        Aircraft,
+        DocType,
+        Tenant,
+    )
     from models import NotificationType as NT
 
     today = date.today()
@@ -575,7 +582,21 @@ def _check_insurance(app: Any) -> None:
         for ac in Aircraft.query.filter_by(tenant_id=tenant.id, archived_at=None).all():
             if ac.insurance_expiry is None:
                 continue
-            days_left = (ac.insurance_expiry - today).days
+            # A renewal already on file (e.g. next quarter's cert uploaded a
+            # month ahead) can push real coverage well past this document's
+            # own expiry -- warn about the actual end of unbroken coverage,
+            # not this one document, or a renewal already secured triggers
+            # a false alarm every time (see the docstring on
+            # effective_coverage_until for the gap-detection rules).
+            # Falls back to the cached field itself when there's no backing
+            # Document to walk (e.g. dev/demo seed data, which sets this
+            # field directly) -- same behaviour as before this chain check
+            # existed, for that case.
+            covered_until = (
+                effective_coverage_until(ac.id, DocType.INSURANCE_CERT)
+                or ac.insurance_expiry
+            )
+            days_left = (covered_until - today).days
             # Use system default threshold; recipient-level override applied in dispatch()
             threshold = (
                 NT.SYSTEM_DEFAULTS[NT.INSURANCE_EXPIRING]["threshold_days"] or 30
@@ -602,29 +623,36 @@ def _check_insurance(app: Any) -> None:
                             "The insurance for %(reg)s expires on %(date)s (%(days)s days remaining).",
                             days_left,
                             reg=ac.registration,
-                            date=ac.insurance_expiry.isoformat(),
+                            date=covered_until.isoformat(),
                             days=days_left,
                         ),
                         "notification_message_args": {},
                         "details": [
                             (_l("Aircraft"), ac.registration),
-                            (_l("Expires"), ac.insurance_expiry.isoformat()),
+                            (_l("Expires"), covered_until.isoformat()),
                             (_l("Days left"), str(days_left)),
                         ],
-                        "expiry_value": ac.insurance_expiry.isoformat(),
+                        "expiry_value": covered_until.isoformat(),
                     },
                     subject_ref=f"aircraft:{ac.id}",
                 )
 
 
 def _check_arc(app: Any) -> None:
+    from documents.routes import (  # pyright: ignore[reportMissingImports]
+        effective_coverage_until,
+    )
     from flask_babel import (  # pyright: ignore[reportMissingImports]
         lazy_gettext as _l,
     )
     from flask_babel import (
         lazy_ngettext as _ln,
     )
-    from models import Aircraft, Tenant  # pyright: ignore[reportMissingImports]
+    from models import (  # pyright: ignore[reportMissingImports]
+        Aircraft,
+        DocType,
+        Tenant,
+    )
     from models import NotificationType as NT
 
     today = date.today()
@@ -632,7 +660,14 @@ def _check_arc(app: Any) -> None:
         for ac in Aircraft.query.filter_by(tenant_id=tenant.id, archived_at=None).all():
             if ac.arc_expiry is None:
                 continue
-            days_left = (ac.arc_expiry - today).days
+            # See the matching comment in _check_insurance -- a renewal
+            # already on file can push real coverage well past this
+            # document's own expiry, and the fallback covers the same
+            # no-backing-Document case (e.g. dev/demo seed data).
+            covered_until = (
+                effective_coverage_until(ac.id, DocType.ARC) or ac.arc_expiry
+            )
+            days_left = (covered_until - today).days
             # Use system default threshold; recipient-level override applied in dispatch()
             threshold = NT.SYSTEM_DEFAULTS[NT.ARC_EXPIRY]["threshold_days"] or 60
             if 0 <= days_left <= threshold:
@@ -655,16 +690,16 @@ def _check_arc(app: Any) -> None:
                             "The ARC for %(reg)s expires on %(date)s (%(days)s days remaining).",
                             days_left,
                             reg=ac.registration,
-                            date=ac.arc_expiry.isoformat(),
+                            date=covered_until.isoformat(),
                             days=days_left,
                         ),
                         "notification_message_args": {},
                         "details": [
                             (_l("Aircraft"), ac.registration),
-                            (_l("Expires"), ac.arc_expiry.isoformat()),
+                            (_l("Expires"), covered_until.isoformat()),
                             (_l("Days left"), str(days_left)),
                         ],
-                        "expiry_value": ac.arc_expiry.isoformat(),
+                        "expiry_value": covered_until.isoformat(),
                     },
                     subject_ref=f"aircraft:{ac.id}",
                 )

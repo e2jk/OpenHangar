@@ -810,6 +810,37 @@ def _make_aircraft(app, tenant_id, registration="OO-TST"):
         return ac.id
 
 
+def _add_cert(app, aircraft_id, doc_type, valid_until, valid_from=None):
+    """Insurance/ARC certificate Document -- the real backing row
+    Aircraft.insurance_expiry/arc_expiry is documented as a synced cache
+    of (see models.py), needed now that _check_insurance/_check_arc walk
+    the Document chain via effective_coverage_until rather than trusting
+    the cached field alone. Also updates the cache field itself, exactly
+    as documents/routes.py does on a real upload."""
+    from documents.routes import (  # pyright: ignore[reportMissingImports]
+        _recompute_expiry_field,
+    )
+    from models import Aircraft, Document  # pyright: ignore[reportMissingImports]
+
+    with app.app_context():
+        db.session.add(
+            Document(
+                aircraft_id=aircraft_id,
+                doc_type=doc_type,
+                filename=f"doc_{aircraft_id}_{doc_type}_{valid_until}.txt",
+                original_filename="cert.txt",
+                mime_type="text/plain",
+                size_bytes=1,
+                valid_from=valid_from,
+                valid_until=valid_until,
+            )
+        )
+        db.session.flush()
+        ac = db.session.get(Aircraft, aircraft_id)
+        _recompute_expiry_field(ac, doc_type)
+        db.session.commit()
+
+
 class TestDailyChecks:
     def test_maintenance_overdue_dispatches(self, app):
         _uid, tid = _make_user(app, "owner@maint-check.com", role=Role.OWNER)
@@ -873,6 +904,29 @@ class TestDailyChecks:
         with app.app_context():
             from datetime import date, timedelta
 
+            from models import DocType  # pyright: ignore[reportMissingImports]
+
+            _add_cert(
+                app, ac_id, DocType.INSURANCE_CERT, date.today() + timedelta(days=10)
+            )
+
+            with patch("services.notification_service.dispatch") as mock_dispatch:
+                from services.notification_service import _check_insurance
+
+                _check_insurance(app)
+                types_dispatched = [c.args[0] for c in mock_dispatch.call_args_list]
+                assert NotificationType.INSURANCE_EXPIRING in types_dispatched
+
+    def test_insurance_dispatches_from_cached_field_with_no_backing_document(self, app):
+        """Dev/demo seed data (_seed_helpers.py) sets Aircraft.insurance_expiry
+        directly, with no Document row behind it -- effective_coverage_until
+        can't walk a chain that doesn't exist, so this must still fall back
+        to the cached field itself rather than silently stop warning."""
+        _uid, tid = _make_user(app, "owner@ins-nodoc.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid, "OO-NODOC")
+        with app.app_context():
+            from datetime import date, timedelta
+
             from models import Aircraft  # pyright: ignore[reportMissingImports]
 
             ac = db.session.get(Aircraft, ac_id)
@@ -892,11 +946,11 @@ class TestDailyChecks:
         with app.app_context():
             from datetime import date, timedelta
 
-            from models import Aircraft  # pyright: ignore[reportMissingImports]
+            from models import DocType  # pyright: ignore[reportMissingImports]
 
-            ac = db.session.get(Aircraft, ac_id)
-            ac.insurance_expiry = date.today() + timedelta(days=90)
-            db.session.commit()
+            _add_cert(
+                app, ac_id, DocType.INSURANCE_CERT, date.today() + timedelta(days=90)
+            )
 
             with patch("services.notification_service.dispatch") as mock_dispatch:
                 from services.notification_service import _check_insurance
@@ -904,9 +958,83 @@ class TestDailyChecks:
                 _check_insurance(app)
                 assert not mock_dispatch.called
 
+    def test_insurance_skips_when_renewal_already_on_file(self, app):
+        """Reported in production: a new quarterly cert uploaded ~1 month
+        ahead of the current one's expiry (valid_from the day after it)
+        must suppress the warning -- real coverage extends well past the
+        active document's own expiry."""
+        _uid, tid = _make_user(app, "owner@ins-renewed.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid, "OO-REN")
+        with app.app_context():
+            from datetime import date, timedelta
+
+            from models import DocType  # pyright: ignore[reportMissingImports]
+
+            current_expiry = date.today() + timedelta(days=14)
+            _add_cert(app, ac_id, DocType.INSURANCE_CERT, current_expiry)
+            _add_cert(
+                app,
+                ac_id,
+                DocType.INSURANCE_CERT,
+                current_expiry + timedelta(days=90),
+                valid_from=current_expiry + timedelta(days=1),
+            )
+
+            with patch("services.notification_service.dispatch") as mock_dispatch:
+                from services.notification_service import _check_insurance
+
+                _check_insurance(app)
+                assert not mock_dispatch.called
+
+    def test_insurance_dispatches_when_renewal_leaves_a_gap(self, app):
+        """A renewal on file that starts well after the current cert
+        expires is a real coverage gap -- still warn about it."""
+        _uid, tid = _make_user(app, "owner@ins-gap.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid, "OO-GAP")
+        with app.app_context():
+            from datetime import date, timedelta
+
+            from models import DocType  # pyright: ignore[reportMissingImports]
+
+            current_expiry = date.today() + timedelta(days=10)
+            _add_cert(app, ac_id, DocType.INSURANCE_CERT, current_expiry)
+            _add_cert(
+                app,
+                ac_id,
+                DocType.INSURANCE_CERT,
+                current_expiry + timedelta(days=90),
+                valid_from=current_expiry + timedelta(days=20),
+            )
+
+            with patch("services.notification_service.dispatch") as mock_dispatch:
+                from services.notification_service import _check_insurance
+
+                _check_insurance(app)
+                types_dispatched = [c.args[0] for c in mock_dispatch.call_args_list]
+                assert NotificationType.INSURANCE_EXPIRING in types_dispatched
+
     def test_arc_dispatches_within_threshold(self, app):
         _uid, tid = _make_user(app, "owner@arc.com", role=Role.OWNER)
         ac_id = _make_aircraft(app, tid, "OO-ARC")
+        with app.app_context():
+            from datetime import date, timedelta
+
+            from models import DocType  # pyright: ignore[reportMissingImports]
+
+            _add_cert(app, ac_id, DocType.ARC, date.today() + timedelta(days=10))
+
+            with patch("services.notification_service.dispatch") as mock_dispatch:
+                from services.notification_service import _check_arc
+
+                _check_arc(app)
+                types_dispatched = [c.args[0] for c in mock_dispatch.call_args_list]
+                assert NotificationType.ARC_EXPIRY in types_dispatched
+
+    def test_arc_dispatches_from_cached_field_with_no_backing_document(self, app):
+        """See the matching insurance test -- dev/demo seed data sets
+        Aircraft.arc_expiry directly with no backing Document."""
+        _uid, tid = _make_user(app, "owner@arc-nodoc.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid, "OO-ANODOC")
         with app.app_context():
             from datetime import date, timedelta
 
@@ -929,11 +1057,33 @@ class TestDailyChecks:
         with app.app_context():
             from datetime import date, timedelta
 
-            from models import Aircraft  # pyright: ignore[reportMissingImports]
+            from models import DocType  # pyright: ignore[reportMissingImports]
 
-            ac = db.session.get(Aircraft, ac_id)
-            ac.arc_expiry = date.today() + timedelta(days=90)
-            db.session.commit()
+            _add_cert(app, ac_id, DocType.ARC, date.today() + timedelta(days=90))
+
+            with patch("services.notification_service.dispatch") as mock_dispatch:
+                from services.notification_service import _check_arc
+
+                _check_arc(app)
+                assert not mock_dispatch.called
+
+    def test_arc_skips_when_renewal_already_on_file(self, app):
+        _uid, tid = _make_user(app, "owner@arc-renewed.com", role=Role.OWNER)
+        ac_id = _make_aircraft(app, tid, "OO-AREN")
+        with app.app_context():
+            from datetime import date, timedelta
+
+            from models import DocType  # pyright: ignore[reportMissingImports]
+
+            current_expiry = date.today() + timedelta(days=20)
+            _add_cert(app, ac_id, DocType.ARC, current_expiry)
+            _add_cert(
+                app,
+                ac_id,
+                DocType.ARC,
+                current_expiry + timedelta(days=365),
+                valid_from=current_expiry,
+            )
 
             with patch("services.notification_service.dispatch") as mock_dispatch:
                 from services.notification_service import _check_arc

@@ -1322,6 +1322,251 @@ class TestActiveDocumentFor:
             )
 
 
+# ── effective_coverage_until() — chained, gap-aware coverage end date ─────────
+
+
+class TestEffectiveCoverageUntil:
+    def test_no_active_document_returns_none(self, app):
+        from documents.routes import (  # pyright: ignore[reportMissingImports]
+            effective_coverage_until,
+        )
+        from models import DocType  # pyright: ignore[reportMissingImports]
+
+        _uid, tid = _create_user_and_tenant(app, "ecu1@x.com")
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            assert effective_coverage_until(ac_id, DocType.INSURANCE_CERT) is None
+
+    def test_no_chain_returns_active_documents_own_expiry(self, app):
+        import datetime
+
+        from documents.routes import (  # pyright: ignore[reportMissingImports]
+            effective_coverage_until,
+        )
+        from models import DocType  # pyright: ignore[reportMissingImports]
+
+        _uid, tid = _create_user_and_tenant(app, "ecu2@x.com")
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            expiry = datetime.date.today() + datetime.timedelta(days=14)
+            db.session.add(
+                Document(
+                    aircraft_id=ac_id,
+                    filename="a.pdf",
+                    original_filename="a.pdf",
+                    doc_type=DocType.INSURANCE_CERT,
+                    valid_until=expiry,
+                )
+            )
+            db.session.commit()
+            assert effective_coverage_until(ac_id, DocType.INSURANCE_CERT) == expiry
+
+    def test_gap_free_renewal_extends_coverage(self, app):
+        """The reported production scenario: a new quarterly cert with
+        valid_from the day after the current one's valid_until."""
+        import datetime
+
+        from documents.routes import (  # pyright: ignore[reportMissingImports]
+            effective_coverage_until,
+        )
+        from models import DocType  # pyright: ignore[reportMissingImports]
+
+        _uid, tid = _create_user_and_tenant(app, "ecu3@x.com")
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            today = datetime.date.today()
+            current_expiry = today + datetime.timedelta(days=14)
+            renewal_expiry = current_expiry + datetime.timedelta(days=90)
+            db.session.add_all(
+                [
+                    Document(
+                        aircraft_id=ac_id,
+                        filename="current.pdf",
+                        original_filename="current.pdf",
+                        doc_type=DocType.INSURANCE_CERT,
+                        valid_until=current_expiry,
+                    ),
+                    Document(
+                        aircraft_id=ac_id,
+                        filename="renewal.pdf",
+                        original_filename="renewal.pdf",
+                        doc_type=DocType.INSURANCE_CERT,
+                        valid_from=current_expiry + datetime.timedelta(days=1),
+                        valid_until=renewal_expiry,
+                    ),
+                ]
+            )
+            db.session.commit()
+            assert (
+                effective_coverage_until(ac_id, DocType.INSURANCE_CERT)
+                == renewal_expiry
+            )
+
+    def test_chain_of_three_documents(self, app):
+        import datetime
+
+        from documents.routes import (  # pyright: ignore[reportMissingImports]
+            effective_coverage_until,
+        )
+        from models import DocType  # pyright: ignore[reportMissingImports]
+
+        _uid, tid = _create_user_and_tenant(app, "ecu4@x.com")
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            today = datetime.date.today()
+            d1 = today + datetime.timedelta(days=30)
+            d2 = d1 + datetime.timedelta(days=90)
+            d3 = d2 + datetime.timedelta(days=90)
+            db.session.add_all(
+                [
+                    Document(
+                        aircraft_id=ac_id,
+                        filename="a.pdf",
+                        original_filename="a.pdf",
+                        doc_type=DocType.INSURANCE_CERT,
+                        valid_until=d1,
+                    ),
+                    Document(
+                        aircraft_id=ac_id,
+                        filename="b.pdf",
+                        original_filename="b.pdf",
+                        doc_type=DocType.INSURANCE_CERT,
+                        valid_from=d1 + datetime.timedelta(days=1),
+                        valid_until=d2,
+                    ),
+                    Document(
+                        aircraft_id=ac_id,
+                        filename="c.pdf",
+                        original_filename="c.pdf",
+                        doc_type=DocType.INSURANCE_CERT,
+                        valid_from=d2 + datetime.timedelta(days=1),
+                        valid_until=d3,
+                    ),
+                ]
+            )
+            db.session.commit()
+            assert effective_coverage_until(ac_id, DocType.INSURANCE_CERT) == d3
+
+    def test_real_gap_is_not_bridged(self, app):
+        """A renewal that starts well after the current one expires is a
+        genuine coverage gap -- must not extend the reported expiry."""
+        import datetime
+
+        from documents.routes import (  # pyright: ignore[reportMissingImports]
+            effective_coverage_until,
+        )
+        from models import DocType  # pyright: ignore[reportMissingImports]
+
+        _uid, tid = _create_user_and_tenant(app, "ecu5@x.com")
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            today = datetime.date.today()
+            current_expiry = today + datetime.timedelta(days=10)
+            db.session.add_all(
+                [
+                    Document(
+                        aircraft_id=ac_id,
+                        filename="current.pdf",
+                        original_filename="current.pdf",
+                        doc_type=DocType.ARC,
+                        valid_until=current_expiry,
+                    ),
+                    Document(
+                        aircraft_id=ac_id,
+                        filename="later.pdf",
+                        original_filename="later.pdf",
+                        doc_type=DocType.ARC,
+                        valid_from=current_expiry + datetime.timedelta(days=20),
+                        valid_until=current_expiry + datetime.timedelta(days=100),
+                    ),
+                ]
+            )
+            db.session.commit()
+            assert effective_coverage_until(ac_id, DocType.ARC) == current_expiry
+
+    def test_picks_furthest_reaching_candidate_among_overlaps(self, app):
+        import datetime
+
+        from documents.routes import (  # pyright: ignore[reportMissingImports]
+            effective_coverage_until,
+        )
+        from models import DocType  # pyright: ignore[reportMissingImports]
+
+        _uid, tid = _create_user_and_tenant(app, "ecu6@x.com")
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            today = datetime.date.today()
+            current_expiry = today + datetime.timedelta(days=10)
+            short_renewal = current_expiry + datetime.timedelta(days=30)
+            long_renewal = current_expiry + datetime.timedelta(days=90)
+            db.session.add_all(
+                [
+                    Document(
+                        aircraft_id=ac_id,
+                        filename="current.pdf",
+                        original_filename="current.pdf",
+                        doc_type=DocType.ARC,
+                        valid_until=current_expiry,
+                    ),
+                    Document(
+                        aircraft_id=ac_id,
+                        filename="short.pdf",
+                        original_filename="short.pdf",
+                        doc_type=DocType.ARC,
+                        valid_from=current_expiry + datetime.timedelta(days=1),
+                        valid_until=short_renewal,
+                    ),
+                    Document(
+                        aircraft_id=ac_id,
+                        filename="long.pdf",
+                        original_filename="long.pdf",
+                        doc_type=DocType.ARC,
+                        valid_from=current_expiry + datetime.timedelta(days=1),
+                        valid_until=long_renewal,
+                    ),
+                ]
+            )
+            db.session.commit()
+            assert effective_coverage_until(ac_id, DocType.ARC) == long_renewal
+
+    def test_component_scoping_respected(self, app):
+        import datetime
+
+        from documents.routes import (  # pyright: ignore[reportMissingImports]
+            effective_coverage_until,
+        )
+        from models import DocType  # pyright: ignore[reportMissingImports]
+
+        _uid, tid = _create_user_and_tenant(app, "ecu7@x.com")
+        ac_id = _add_aircraft(app, tid)
+        comp_id = _add_component(app, ac_id)
+        with app.app_context():
+            expiry = datetime.date.today() + datetime.timedelta(days=10)
+            db.session.add(
+                Document(
+                    aircraft_id=ac_id,
+                    component_id=comp_id,
+                    filename="c.pdf",
+                    original_filename="c.pdf",
+                    doc_type=DocType.INSURANCE_CERT,
+                    valid_until=expiry,
+                )
+            )
+            db.session.commit()
+            assert (
+                effective_coverage_until(
+                    ac_id, DocType.INSURANCE_CERT, component_id=None
+                )
+                is None
+            )
+            assert (
+                effective_coverage_until(
+                    ac_id, DocType.INSURANCE_CERT, component_id=comp_id
+                )
+                == expiry
+            )
+
+
 # ── valid_from: upload/edit validation and "not yet active" behaviour ─────────
 
 

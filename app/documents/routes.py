@@ -6,7 +6,7 @@ import os
 import re as _re
 import uuid
 import zipfile
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from datetime import date as _date
 
 from flask import (  # pyright: ignore[reportMissingImports]
@@ -161,6 +161,58 @@ def active_document_for(
         .first()
     )
     return result
+
+
+def effective_coverage_until(
+    aircraft_id: int,
+    doc_type: str,
+    component_id: int | None = None,
+    as_of: _date | None = None,
+) -> _date | None:
+    """How far into the future coverage is unbroken, following a chain of
+    documents whose valid_from picks up on or the day after the previous
+    one's valid_until (no gap) -- e.g. next quarter's insurance cert
+    uploaded a month ahead of the current one's expiry. None if nothing is
+    currently active (active_document_for finds no document in force);
+    otherwise at least the active document's own valid_until.
+
+    Deliberately independent of the single-hop upcoming_*_cert query in
+    aircraft/routes.py, which only looks one step ahead and doesn't check
+    for a gap (it's a display hint: "here's the next thing on file",
+    correct even when there IS a gap). This instead walks as many chained
+    documents as exist and stops the moment a real gap appears -- a real
+    gap still means genuine expiry risk between the two documents and must
+    still be reported as such.
+    """
+    as_of = as_of or _date.today()
+    active = active_document_for(aircraft_id, doc_type, component_id, as_of=as_of)
+    if active is None or active.valid_until is None:
+        return None
+
+    frontier: _date = active.valid_until
+    while True:
+        # frontier only ever advances to a candidate's own valid_until, and
+        # every candidate here must have valid_until > frontier -- so a
+        # document picked in a prior iteration can never qualify again
+        # (its valid_until now equals frontier, not exceeds it). No
+        # "already visited" bookkeeping needed to avoid a repeat/infinite
+        # loop.
+        candidates = Document.query.filter(
+            Document.aircraft_id == aircraft_id,
+            Document.doc_type == doc_type,
+            Document.component_id == component_id,
+            Document.valid_from > as_of,
+            Document.valid_from <= frontier + timedelta(days=1),
+            Document.valid_until.isnot(None),
+            Document.valid_until > frontier,
+        ).all()
+        nxt: Document | None = None
+        for c in candidates:
+            if nxt is None or c.valid_until > nxt.valid_until:
+                nxt = c
+        if nxt is None:
+            return frontier
+        frontier = nxt.valid_until
 
 
 def _recompute_expiry_field(ac: Aircraft, doc_type: str | None) -> None:
