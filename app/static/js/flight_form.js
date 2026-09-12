@@ -13,13 +13,12 @@
     var acLogSection = document.getElementById('aircraft-log-section');
     var pilotLogSection = document.getElementById('pilot-log-section');
     var pilotRoleNoneOpt = document.getElementById('pilot-role-none-option');
-    var crewSection = document.getElementById('crew-section');
 
     function isOtherAircraft() { return acSelect.value === 'other'; }
     function hasManagedAircraft() {
       // Not-yet-decided (blank dropdown) counts as "managed" too, same as
       // edit mode — only an explicit "other aircraft" pick hides the
-      // crew/counters/photos sections. Keeps the new-flight form's field
+      // counters/photos sections. Keeps the new-flight form's field
       // set consistent with editing instead of hiding most of it until a
       // specific aircraft is chosen.
       return !isOtherAircraft();
@@ -36,7 +35,6 @@
       if (otherWarning) otherWarning.classList.toggle('d-none', !other);
       if (otherHidden) otherHidden.value = other ? '1' : '0';
       if (acLogSection) acLogSection.classList.toggle('d-none', !managed);
-      if (crewSection) crewSection.classList.toggle('d-none', !managed);
       if (pilotRoleNoneOpt) pilotRoleNoneOpt.classList.toggle('d-none', other);
       if (other && getPilotRole() === 'none') {
         var picRadio = document.getElementById('pilot_role_pic');

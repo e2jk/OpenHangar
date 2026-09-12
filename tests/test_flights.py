@@ -1861,6 +1861,105 @@ class TestStandaloneOtherAircraftRoute:
             assert entry is not None
             assert entry.departure_icao == "EBNM"
 
+    def test_post_dual_saves_both_crew_names_as_free_text(self, app, client):
+        """Other-aircraft dual flight: the PIC (instructor) and second-crew
+        names are stored as typed; only the logged-in user's own slot is
+        linked to an account."""
+        _create_user_and_tenant(app)
+        uid = _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data={
+                "other_aircraft": "1",
+                "other_ac_make_model": "Cessna C172",
+                "other_ac_reg": "OO-TST",
+                "date": "2026-05-27",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "pilot_role": "dual",
+                "crew_name_0": "Jan Instructor",
+                "crew_name_1": "Me Student",
+                "crew_role_1": CrewRole.STUDENT,
+                "flight_time": "1.0",
+            },
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            entry = Flight.query.filter_by(second_crew_user_id=uid).one()
+            assert entry.aircraft_id is None
+            assert entry.pic_name == "Jan Instructor"
+            assert entry.pic_user_id is None
+            assert entry.second_crew_name == "Me Student"
+            assert entry.second_crew_role == CrewRole.STUDENT
+
+    def test_post_without_pic_name_is_rejected(self, app, client):
+        _create_user_and_tenant(app)
+        _login(app, client)
+        resp = client.post(
+            "/flights/new",
+            data={
+                "other_aircraft": "1",
+                "other_ac_make_model": "Cessna C172",
+                "other_ac_reg": "OO-TST",
+                "date": "2026-05-27",
+                "departure_icao": "EBNM",
+                "arrival_icao": "EBAW",
+                "pilot_role": "dual",
+                "crew_name_0": "",
+            },
+            follow_redirects=False,
+        )
+        assert resp.status_code == 200
+        assert b"Pilot name is required." in resp.data
+        with app.app_context():
+            assert Flight.query.count() == 0
+
+    def test_get_suggests_tenant_pilot_names_only(self, app, client):
+        """The crew-name datalist lists active pilot-capable users of the
+        current tenant — not maintenance/viewer-only users, inactive users,
+        or users of another tenant."""
+        _uid, tid = _create_user_and_tenant(app)
+        with app.app_context():
+            other_tenant = Tenant(name="Other Hangar")
+            db.session.add(other_tenant)
+            db.session.flush()
+            for email, name, tenant_id, role, active, is_pilot in [
+                ("p@x.com", "Paula Pilot", tid, Role.PILOT, True, False),
+                ("i@x.com", "Ivan Instructor", tid, Role.INSTRUCTOR, True, False),
+                ("m@x.com", "Mona Mechanic", tid, Role.MAINTENANCE, True, False),
+                ("f@x.com", "Frank Flagged", tid, Role.VIEWER, True, True),
+                ("g@x.com", "Gone Pilot", tid, Role.PILOT, False, False),
+                ("o@x.com", "Outsider Pilot", other_tenant.id, Role.PILOT, True, False),
+            ]:
+                u = User(
+                    email=email,
+                    password_hash=_pw_hash.hash("x"),
+                    is_active=active,
+                    is_pilot=is_pilot,
+                    name=name,
+                )
+                db.session.add(u)
+                db.session.flush()
+                db.session.add(TenantUser(user_id=u.id, tenant_id=tenant_id, role=role))
+            db.session.commit()
+        _login(app, client)
+        resp = client.get("/flights/new")
+        assert resp.status_code == 200
+        html = resp.data.decode()
+        datalist = html.split('<datalist id="crew-name-suggestions">', 1)[1].split(
+            "</datalist>", 1
+        )[0]
+        assert 'value="Paula Pilot"' in datalist
+        assert 'value="Ivan Instructor"' in datalist
+        assert 'value="Frank Flagged"' in datalist
+        # The logged-in admin (no name set) shows by the local part of their email.
+        assert 'value="pilot"' in datalist
+        assert "Mona Mechanic" not in datalist
+        assert "Gone Pilot" not in datalist
+        assert "Outsider Pilot" not in datalist
+        assert 'list="crew-name-suggestions"' in html
+
     def test_get_redirects_when_not_logged_in(self, client):
         resp = client.get("/flights/new")
         assert resp.status_code == 302

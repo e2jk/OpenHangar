@@ -315,11 +315,19 @@
             </div>
           </div>
 
-          {# Crew fields (only shown when a managed aircraft is selected) #}
+          {# Crew fields — shown for every aircraft choice, managed or not. Both
+             name inputs suggest this tenant's pilots but accept any free text;
+             picking a suggestion only fills in the name (no account link). #}
           <div id="crew-section">
+            <datalist id="crew-name-suggestions">
+              {% for name in crew_name_suggestions | default([]) %}
+              <option value="{{ name }}">
+              {% endfor %}
+            </datalist>
             <div class="mb-3">
               <label for="crew_name_0" class="form-label">{{ _('PIC / Commander') }} <span class="text-danger">*</span></label>
               <input type="text" class="form-control" id="crew_name_0" name="crew_name_0"
+                     list="crew-name-suggestions" autocomplete="off"
                      value="{{ flight.pic_name if flight else (request.form.get('crew_name_0', '') or (pilot_name_hint | default(''))) }}"
                      placeholder="e.g. J. Smith" maxlength="128">
             </div>
@@ -329,6 +337,7 @@
                   {{ _('Second crew') }} <span class="text-muted small">({{ _('optional') }})</span>
                 </label>
                 <input type="text" class="form-control" id="crew_name_1" name="crew_name_1"
+                       list="crew-name-suggestions" autocomplete="off"
                        value="{{ (flight.second_crew_name or '') if flight else request.form.get('crew_name_1', '') }}"
                        placeholder="e.g. M. Dupont" maxlength="128">
               </div>

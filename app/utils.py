@@ -1302,6 +1302,30 @@ def require_maint_access(f: Callable[..., Any]) -> Callable[..., Any]:
     return decorated
 
 
+def tenant_pilot_names(tenant_id: int) -> list[str]:
+    """Display names of the active users in *tenant_id* with pilot access
+    (same rule as ``require_pilot_access``: a pilot-capable role or the
+    ``is_pilot`` flag), sorted case-insensitively and de-duplicated.
+
+    Used only as type-ahead suggestions for the free-text crew name fields —
+    picking one fills in the name, it never links the flight to that
+    user's account.
+    """
+    from models import Role, TenantUser, User, db
+    from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
+
+    pilot_roles = (Role.ADMIN, Role.OWNER, Role.PILOT, Role.STUDENT, Role.INSTRUCTOR)
+    users = (
+        db.session.query(User)
+        .join(TenantUser, TenantUser.user_id == User.id)
+        .filter(TenantUser.tenant_id == tenant_id)
+        .filter(User.is_active.is_(True))
+        .filter(or_(TenantUser.role.in_(pilot_roles), User.is_pilot.is_(True)))
+        .all()
+    )
+    return sorted({u.display_name for u in users}, key=str.casefold)
+
+
 def user_can_access_aircraft(aircraft_id: int) -> bool:
     """Return True when the current user may access this aircraft.
 
