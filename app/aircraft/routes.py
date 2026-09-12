@@ -293,10 +293,26 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
 
     from documents.routes import (  # pyright: ignore[reportMissingImports]
         active_document_for,
+        effective_coverage_until,
     )
 
     active_insurance_cert = active_document_for(ac.id, DocType.INSURANCE_CERT)
     active_arc_cert = active_document_for(ac.id, DocType.ARC)
+    # Chain-aware "actually covered until" -- accounts for a renewal already
+    # on file (e.g. next quarter's cert uploaded a month ahead), unlike the
+    # raw insurance_expiry/arc_expiry cache fields, which only reflect the
+    # currently-active document's own expiry. Falls back to the cache field
+    # itself when there's no backing Document (e.g. dev/demo seed data) --
+    # see the matching fallback in services.notification_service.
+    insurance_covered_until = (
+        effective_coverage_until(ac.id, DocType.INSURANCE_CERT) or ac.insurance_expiry
+    )
+    arc_covered_until = effective_coverage_until(ac.id, DocType.ARC) or ac.arc_expiry
+    # Status badges use the chain-aware date too, so a renewal already on
+    # file also stops the compliance section itself claiming "expiring
+    # soon" -- not just the (separate) notification email.
+    insurance_display_status = Aircraft._expiry_status(insurance_covered_until)
+    arc_display_status = Aircraft._expiry_status(arc_covered_until)
     upcoming_insurance_cert = (
         Document.query.filter(
             Document.aircraft_id == ac.id,
@@ -412,6 +428,10 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         active_arc_cert=active_arc_cert,
         upcoming_insurance_cert=upcoming_insurance_cert,
         upcoming_arc_cert=upcoming_arc_cert,
+        insurance_covered_until=insurance_covered_until,
+        arc_covered_until=arc_covered_until,
+        insurance_display_status=insurance_display_status,
+        arc_display_status=arc_display_status,
         open_snags=open_snags,
         wb_config=wb_cfg,
         last_wb_entry=last_wb_entry,
