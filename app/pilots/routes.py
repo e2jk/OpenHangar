@@ -56,6 +56,7 @@ from sqlalchemy import func  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
     login_required,
     require_pilot_access,
+    tenant_pilot_names,
     user_can_access_aircraft,
 )
 from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
@@ -1008,6 +1009,7 @@ def new_entry() -> ResponseReturnValue:
                 openaip_key=_openaip_key(),
                 LogbookEntryType=LogbookEntryType,
                 FstdType=FstdType,
+                crew_name_suggestions=_crew_name_suggestions(uid),
             ), 422
         entry = Flight(pic_user_id=uid)
         apply_pilot_fields(entry, values)
@@ -1027,6 +1029,7 @@ def new_entry() -> ResponseReturnValue:
         openaip_key=_openaip_key(),
         LogbookEntryType=LogbookEntryType,
         FstdType=FstdType,
+        crew_name_suggestions=_crew_name_suggestions(uid),
     )
 
 
@@ -1058,6 +1061,7 @@ def edit_entry(entry_id: int) -> ResponseReturnValue:
                 openaip_key=_openaip_key(),
                 LogbookEntryType=LogbookEntryType,
                 FstdType=FstdType,
+                crew_name_suggestions=_crew_name_suggestions(uid),
             ), 422
         apply_pilot_fields(entry, values)
         _apply_gps_to_pilot_entry(entry)
@@ -1073,6 +1077,7 @@ def edit_entry(entry_id: int) -> ResponseReturnValue:
         openaip_key=_openaip_key(),
         LogbookEntryType=LogbookEntryType,
         FstdType=FstdType,
+        crew_name_suggestions=_crew_name_suggestions(uid),
     )
 
 
@@ -1897,6 +1902,11 @@ def _pilot_gps_tmp_dir() -> str:
 def _pilot_tenant_id(user_id: int) -> int | None:
     tu = TenantUser.query.filter_by(user_id=user_id).first()
     return tu.tenant_id if tu else None
+
+
+def _crew_name_suggestions(user_id: int) -> list[str]:
+    tenant_id = _pilot_tenant_id(user_id)
+    return tenant_pilot_names(tenant_id) if tenant_id is not None else []
 
 
 def _pilot_match_segment(

@@ -192,7 +192,13 @@
         <div class="col-sm-6">
           <label class="form-label" for="pic_name">{{ _('PIC name') }}</label>
           <input type="text" class="form-control" id="pic_name" name="pic_name"
+                 list="crew-name-suggestions" autocomplete="off"
                  value="{{ fv_str('pic_name') }}">
+          <datalist id="crew-name-suggestions">
+            {% for name in crew_name_suggestions | default([]) %}
+            <option value="{{ name }}">
+            {% endfor %}
+          </datalist>
         </div>
       </div>
 

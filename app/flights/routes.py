@@ -63,6 +63,7 @@ from utils import (
     login_required,
     require_pilot_access,
     require_role,
+    tenant_pilot_names,
     user_can_access_aircraft,
 )  # pyright: ignore[reportMissingImports]
 from werkzeug.utils import secure_filename
@@ -621,6 +622,7 @@ def log_flight() -> ResponseReturnValue:
         gps_prefill=gps_prefill,
         nature_suggestions=nature_suggestions,
         pilot_name_hint=pilot_name_hint,
+        crew_name_suggestions=tenant_pilot_names(tid),
         crew_roles=CrewRole,
         fuel_units=_FUEL_UNITS,
         duplicate=None,
@@ -663,6 +665,7 @@ def edit_flight(flight_id: int) -> ResponseReturnValue:
         gps_prefill=gps_prefill,
         nature_suggestions=_nature_suggestions(fe.aircraft_id),
         pilot_name_hint=None,
+        crew_name_suggestions=tenant_pilot_names(tid),
         crew_roles=CrewRole,
         fuel_units=_FUEL_UNITS,
         duplicate=None,
@@ -1394,6 +1397,7 @@ def _render_form(
         gps_prefill=None,
         nature_suggestions=nature_suggestions,
         pilot_name_hint=None,
+        crew_name_suggestions=tenant_pilot_names(_tenant_id()),
         crew_roles=CrewRole,
         fuel_units=_FUEL_UNITS,
         duplicate=duplicate,
