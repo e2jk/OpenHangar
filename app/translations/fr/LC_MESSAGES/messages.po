@@ -867,6 +867,10 @@ msgstr "Certificat d'assurance"
 msgid "Airworthiness Review Certificate (ARC)"
 msgstr "Certificat d'examen de navigabilité (ARC)"
 
+#: app/templates/aircraft/detail.html
+msgid "Certificates"
+msgstr "Certificats"
+
 #: app/documents/routes.py:496 app/documents/routes.py:740
 #: app/documents/routes.py:839 app/flights/routes.py:1540
 #: app/maintenance/routes.py:852 app/pilots/routes.py:1228

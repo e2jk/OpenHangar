@@ -728,146 +728,118 @@
   </div>
   {% endmacro %}
 
-  {# ── Insurance ─────────────────────────────────────────────────────────── #}
-  {% macro insurance_section() %}
-  {% if aircraft.insurance_expiry %}
-  {% set ins = aircraft.insurance_status %}
-  <div class="d-flex align-items-center justify-content-between mb-3" id="insurance-section">
-    <h2 class="section-title mb-0"><i class="bi bi-shield me-2"></i>{{ _('Insurance') }}</h2>
-    {% if is_owner %}
-    <div class="d-flex gap-2 flex-wrap align-items-center">
-      <form method="post"
-            action="{{ url_for('documents.upload_insurance_cert', aircraft_id=aircraft.id) }}"
+  {# ── Compliance: ARC + Insurance, combined ────────────────────────────────
+     Each row's date is effective_coverage_until() (a chain of documents
+     with no gap between them), not just the currently-active document's
+     own expiry -- a renewal already on file (e.g. next quarter's cert
+     uploaded a month ahead) pushes this forward and correspondingly clears
+     the expiring-soon badge here too, matching
+     services.notification_service's own use of the same helper (reported
+     in production: the old expiry-only reading kept sending "expiring
+     soon" emails despite a renewal already covering the gap). #}
+  {% macro _compliance_row(section_id, icon, badge_class, label_text, active_cert, upcoming_cert, kind, history_doc_type) %}
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 py-2" id="{{ section_id }}">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <span class="ac-status-badge {{ badge_class }}">
+        <i class="bi {{ icon }} me-1"></i>{{ label_text }}
+      </span>
+      {% if upcoming_cert %}
+      <span class="oh-fs-08 text-muted">
+        <i class="bi bi-hourglass-split me-1"></i>{{ _('Renewal on file, valid from %(date)s', date=upcoming_cert.valid_from.strftime('%Y-%m-%d')) }}
+      </span>
+      {% endif %}
+    </div>
+    <div class="d-flex align-items-center gap-1 flex-wrap">
+      {% if active_cert %}
+      <a href="{{ url_for('flights.serve_upload', filename=active_cert.filename) }}"
+         class="btn btn-ac-ghost btn-sm" target="_blank" title="{{ _('View certificate') }}">
+        <i class="bi bi-file-earmark-text"></i>
+      </a>
+      {% endif %}
+      <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id, doc_type=history_doc_type, sensitive=1) }}"
+         class="btn btn-ac-ghost btn-sm" title="{{ _('History') }}">
+        <i class="bi bi-clock-history"></i>
+      </a>
+      {% if is_owner %}
+      {# test_scroll_anchor_forms.py statically scans raw template source for
+         a <form> tag containing both a literal url_for(...) call to each
+         in-place-action endpoint AND a literal data-scroll-anchor="<id>" --
+         it doesn't evaluate Jinja, so neither can be a macro variable
+         (kind/section_id) here even though both branches are otherwise
+         identical; hardcode both literally per branch instead. #}
+      {% if kind == 'insurance' %}
+      <form method="post" action="{{ url_for('documents.upload_insurance_cert', aircraft_id=aircraft.id) }}"
             enctype="multipart/form-data"
             hx-swap="innerHTML show:none" data-scroll-anchor="insurance-section"
-            class="d-flex gap-2 flex-wrap align-items-center">
-        <input type="date" name="valid_from" class="form-control form-control-sm w-auto"
-               aria-label="{{ _('Valid from (optional)') }}"
-               title="{{ _('Only needed for a document that should not become active yet, e.g. next quarter\'s cert uploaded ahead of time.') }}">
-        <input type="date" name="valid_until" class="form-control form-control-sm w-auto" required
-               aria-label="{{ _('New expiry date') }}">
-        <label class="btn btn-ac-primary btn-sm mb-0 oh-cursor-pointer">
-          <i class="bi bi-upload me-1"></i>{{ _('Upload cert') }}
-          <input type="file" name="file"
-                 accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.pdf,.doc,.docx,.xls,.xlsx,.txt"
-                 class="d-none" data-auto-submit>
-        </label>
-      </form>
-    </div>
-    {% endif %}
-  </div>
-  <div class="ac-form-card p-3 mb-3">
-    <p class="mb-0 oh-fs-09">
-      {% if ins == 'expired' %}
-      <span class="ac-status-badge ac-status-overdue">
-        <i class="bi bi-shield-x me-1"></i>{{ _('Insurance expired') }} — {{ aircraft.insurance_expiry.strftime('%Y-%m-%d') }}
-      </span>
-      {% elif ins == 'expiring_soon' %}
-      <span class="ac-status-badge ac-status-warn">
-        <i class="bi bi-shield-exclamation me-1"></i>{{ _('Insurance expires') }} {{ aircraft.insurance_expiry.strftime('%Y-%m-%d') }}
-      </span>
+            class="d-flex gap-1 align-items-center">
       {% else %}
-      <span class="ac-status-badge ac-status-ok">
-        <i class="bi bi-shield-check me-1"></i>{{ _('Insurance valid until') }} {{ aircraft.insurance_expiry.strftime('%Y-%m-%d') }}
-      </span>
-      {% endif %}
-    </p>
-    {% if active_insurance_cert %}
-    <div class="mt-2 oh-fs-09">
-      <a href="{{ url_for('flights.serve_upload', filename=active_insurance_cert.filename) }}"
-         class="btn btn-ac-secondary btn-sm" target="_blank">
-        <i class="bi bi-file-earmark-text me-1"></i>{{ _('View certificate') }}
-      </a>
-      <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id, doc_type='insurance_certificate', sensitive=1) }}"
-         class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-clock-history me-1"></i>{{ _('History') }}
-      </a>
-    </div>
-    {% endif %}
-    {% if upcoming_insurance_cert %}
-    <div class="mt-2 oh-fs-085 text-muted">
-      <i class="bi bi-hourglass-split me-1"></i>
-      {{ _('Renewal on file, valid from %(date)s', date=upcoming_insurance_cert.valid_from.strftime('%Y-%m-%d')) }}
-      <a href="{{ url_for('flights.serve_upload', filename=upcoming_insurance_cert.filename) }}"
-         target="_blank">{{ _('View') }}</a>
-    </div>
-    {% endif %}
-  </div>
-  {% endif %}
-  {% endmacro %}
-
-  {# ── Airworthiness Review Certificate (ARC) ────────────────────────────── #}
-  {% macro arc_section() %}
-  {% if aircraft.arc_expiry %}
-  {% set arc = aircraft.arc_status %}
-  <div class="d-flex align-items-center justify-content-between mb-3" id="arc-section">
-    <h2 class="section-title mb-0"><i class="bi bi-patch-check me-2"></i>{{ _('Airworthiness Review Certificate (ARC)') }}</h2>
-    {% if is_owner %}
-    <div class="d-flex gap-2 flex-wrap align-items-center">
-      <form method="post"
-            action="{{ url_for('documents.upload_arc_cert', aircraft_id=aircraft.id) }}"
+      <form method="post" action="{{ url_for('documents.upload_arc_cert', aircraft_id=aircraft.id) }}"
             enctype="multipart/form-data"
             hx-swap="innerHTML show:none" data-scroll-anchor="arc-section"
-            class="d-flex gap-2 flex-wrap align-items-center">
+            class="d-flex gap-1 align-items-center">
+      {% endif %}
         <input type="date" name="valid_from" class="form-control form-control-sm w-auto"
                aria-label="{{ _('Valid from (optional)') }}"
                title="{{ _('Only needed for a document that should not become active yet, e.g. next quarter\'s cert uploaded ahead of time.') }}">
         <input type="date" name="valid_until" class="form-control form-control-sm w-auto" required
                aria-label="{{ _('New expiry date') }}">
-        <label class="btn btn-ac-primary btn-sm mb-0 oh-cursor-pointer">
-          <i class="bi bi-upload me-1"></i>{{ _('Upload cert') }}
+        <label class="btn btn-ac-primary btn-sm mb-0 oh-cursor-pointer" title="{{ _('Upload cert') }}">
+          <i class="bi bi-upload"></i>
           <input type="file" name="file"
                  accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.pdf,.doc,.docx,.xls,.xlsx,.txt"
                  class="d-none" data-auto-submit>
         </label>
       </form>
-    </div>
-    {% endif %}
-  </div>
-  <div class="ac-form-card p-3 mb-3">
-    <p class="mb-0 oh-fs-09">
-      {% if arc == 'expired' %}
-      <span class="ac-status-badge ac-status-overdue">
-        <i class="bi bi-patch-exclamation me-1"></i>{{ _('ARC expired') }} — {{ aircraft.arc_expiry.strftime('%Y-%m-%d') }}
-      </span>
-      {% elif arc == 'expiring_soon' %}
-      <span class="ac-status-badge ac-status-warn">
-        <i class="bi bi-patch-exclamation me-1"></i>{{ _('ARC expires') }} {{ aircraft.arc_expiry.strftime('%Y-%m-%d') }}
-      </span>
-      {% else %}
-      <span class="ac-status-badge ac-status-ok">
-        <i class="bi bi-patch-check me-1"></i>{{ _('ARC valid until') }} {{ aircraft.arc_expiry.strftime('%Y-%m-%d') }}
-      </span>
       {% endif %}
-    </p>
-    {% if active_arc_cert %}
-    <div class="mt-2 oh-fs-09">
-      <a href="{{ url_for('flights.serve_upload', filename=active_arc_cert.filename) }}"
-         class="btn btn-ac-secondary btn-sm" target="_blank">
-        <i class="bi bi-file-earmark-text me-1"></i>{{ _('View certificate') }}
-      </a>
-      <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id, doc_type='arc_certificate', sensitive=1) }}"
-         class="btn btn-ac-ghost btn-sm">
-        <i class="bi bi-clock-history me-1"></i>{{ _('History') }}
-      </a>
     </div>
+  </div>
+  {% endmacro %}
+
+  {% macro compliance_section() %}
+  {% if aircraft.insurance_expiry or aircraft.arc_expiry %}
+  <div class="ac-form-card">
+    <h2 class="section-title mb-2"><i class="bi bi-patch-check me-2"></i>{{ _('Certificates') }}</h2>
+    {% if aircraft.insurance_expiry %}
+      {% if insurance_display_status == 'expired' %}
+      {{ _compliance_row('insurance-section', 'bi-shield-x', 'ac-status-overdue',
+           _('Insurance expired') ~ ' — ' ~ insurance_covered_until.strftime('%Y-%m-%d'),
+           active_insurance_cert, upcoming_insurance_cert,
+           'insurance', 'insurance_certificate') }}
+      {% elif insurance_display_status == 'expiring_soon' %}
+      {{ _compliance_row('insurance-section', 'bi-shield-exclamation', 'ac-status-warn',
+           _('Insurance expires') ~ ' ' ~ insurance_covered_until.strftime('%Y-%m-%d'),
+           active_insurance_cert, upcoming_insurance_cert,
+           'insurance', 'insurance_certificate') }}
+      {% else %}
+      {{ _compliance_row('insurance-section', 'bi-shield-check', 'ac-status-ok',
+           _('Insurance valid until') ~ ' ' ~ insurance_covered_until.strftime('%Y-%m-%d'),
+           active_insurance_cert, upcoming_insurance_cert,
+           'insurance', 'insurance_certificate') }}
+      {% endif %}
     {% endif %}
-    {% if upcoming_arc_cert %}
-    <div class="mt-2 oh-fs-085 text-muted">
-      <i class="bi bi-hourglass-split me-1"></i>
-      {{ _('Renewal on file, valid from %(date)s', date=upcoming_arc_cert.valid_from.strftime('%Y-%m-%d')) }}
-      <a href="{{ url_for('flights.serve_upload', filename=upcoming_arc_cert.filename) }}"
-         target="_blank">{{ _('View') }}</a>
-    </div>
+    {% if aircraft.insurance_expiry and aircraft.arc_expiry %}
+    <hr class="my-1">
+    {% endif %}
+    {% if aircraft.arc_expiry %}
+      {% if arc_display_status == 'expired' %}
+      {{ _compliance_row('arc-section', 'bi-patch-exclamation', 'ac-status-overdue',
+           _('ARC expired') ~ ' — ' ~ arc_covered_until.strftime('%Y-%m-%d'),
+           active_arc_cert, upcoming_arc_cert,
+           'arc', 'arc_certificate') }}
+      {% elif arc_display_status == 'expiring_soon' %}
+      {{ _compliance_row('arc-section', 'bi-patch-exclamation', 'ac-status-warn',
+           _('ARC expires') ~ ' ' ~ arc_covered_until.strftime('%Y-%m-%d'),
+           active_arc_cert, upcoming_arc_cert,
+           'arc', 'arc_certificate') }}
+      {% else %}
+      {{ _compliance_row('arc-section', 'bi-patch-check', 'ac-status-ok',
+           _('ARC valid until') ~ ' ' ~ arc_covered_until.strftime('%Y-%m-%d'),
+           active_arc_cert, upcoming_arc_cert,
+           'arc', 'arc_certificate') }}
+      {% endif %}
     {% endif %}
   </div>
   {% endif %}
-  {% endmacro %}
-
-  {# ── Insurance + ARC, stacked (shared column slot) ──────────────────────── #}
-  {% macro compliance_section() %}
-  {{ insurance_section() }}
-  {{ arc_section() }}
   {% endmacro %}
 
   {# ── Documents ─────────────────────────────────────────────────────────── #}
