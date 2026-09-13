@@ -10,6 +10,14 @@ Ideas that were considered but deferred. Not prioritised, not scheduled.
 unifying `FlightEntry`/`FlightCrew`/`PilotLogbookEntry` into one `Flight`
 table) — this is explicitly a *later* pass, not part of it.
 
+**Related but separate**: [PR #254](https://github.com/e2jk/OpenHangar/pull/254)
+added type-ahead name suggestions for the free-text `crew_name_*`/`pic_name`
+fields (`tenant_pilot_names()` in `utils.py`) — autocomplete only, picking a
+suggestion just fills in the text, no `user_id` is ever attached. Useful
+prior art (same tenant/pilot-role query this item would also need to find
+candidate accounts) but doesn't implement any part of the "claim your slot"
+flow below, which is still fully unbuilt.
+
 Today there is still no UI path for a second crew member to attach their
 own logbook figures to a flight someone else already logged —
 `_find_duplicate_flight` only ever offers "create a duplicate" or "just
