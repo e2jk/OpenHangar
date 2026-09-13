@@ -1,19 +1,49 @@
 name: Auto-PR and auto-merge
 
-# Push to `ship` to land it on main without opening a PR by hand. This
-# workflow does no CI work of its own — it only opens (or reuses) a PR to
-# main and enables GitHub's native auto-merge. The pull_request event that
-# opening the PR generates is what triggers ci.yml's real work: computing
-# the real version, building, running the full test suite against that
-# exact image, and publishing immediately on success (see ci.yml's version
-# job). Once the required checks recorded against the PR's head SHA pass,
-# auto-merge lands it on main on its own — main only ever receives content
-# that's already been fully tested and already published.
+# Two independent auto-merge paths, gated very differently on purpose:
+#
+# 1. Push to `ship` (this repo owner's own aggregated local commits, landed
+#    via scripts/ship.sh) lands it on main without a human review — it's
+#    already-tested work by the repo owner, so opening the PR and enabling
+#    auto-merge unconditionally is enough; CI passing (via the branch
+#    ruleset's required status checks) is the only real gate. Renovate's
+#    own dependency-update PRs are NOT handled by this workflow at all —
+#    Renovate enables auto-merge on those itself (see automerge: true in
+#    renovate.json); they never reach either job here.
+#
+# 2. Any other pull request to main (i.e. from an external contributor)
+#    additionally requires this repo's owner to submit a formal "Approve"
+#    review on it -- a deliberate human sign-off on untrusted code, on top
+#    of the same required-status-checks gate. That's a different action
+#    from approving a first-time contributor's pending workflow runs so
+#    their CI is even allowed to execute (see docs/development.md) -- both
+#    are needed for one of these PRs to merge, neither alone is enough.
+#    Excludes ship/renovate branches defensively (redundant with path 1 /
+#    Renovate's own automerge, not harmful, just pointless to also trigger).
+#
+# Both paths just enable GitHub's native auto-merge and let the branch
+# ruleset's required status checks decide when it's actually safe to land —
+# neither path does any CI work itself, and merging still waits for CI
+# (which may finish before or after the approval; auto-merge doesn't care
+# about the order, only that both end up satisfied).
 on:
   push:
     branches: [ship]
+  pull_request_review:
+    types: [submitted]
+  workflow_dispatch:
+    # Manual escape hatch for path 2 (see auto-merge-on-approval below) --
+    # an approval submitted before this workflow existed (or any missed
+    # pull_request_review webhook delivery) doesn't retroactively fire the
+    # trigger above, so this re-runs the exact same "enable auto-merge"
+    # step by hand instead of ever needing `gh pr merge` run directly.
+    inputs:
+      pr_number:
+        description: 'PR number to enable auto-merge on (must already have an owner-approved review)'
+        required: true
+        type: number
 
-permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, the job below opts into exactly the write scopes it needs
+permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, each job opts into exactly the write scopes it needs
 
 concurrency:
   group: auto-pr-merge
@@ -22,6 +52,10 @@ concurrency:
 jobs:
   auto-pr:
     name: Open PR to main and enable auto-merge
+    # See path 1 in the on: comment above -- push-to-ship only; the second
+    # trigger this workflow now has (pull_request_review) is handled by the
+    # other job below instead.
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -68,4 +102,82 @@ jobs:
             sleep 10
           done
           echo "::error::Failed to enable auto-merge on PR #$pr_number after 5 attempts"
+          exit 1
+
+  auto-merge-on-approval:
+    name: Enable auto-merge after maintainer approval
+    # See path 2 in the on: comment above. The pull_request_review branch of
+    # this condition is checked directly against github.event.* so a review
+    # that doesn't qualify skips this job entirely instead of running and
+    # then failing partway through; workflow_dispatch (the manual escape
+    # hatch — see its input's own description above) re-verifies the same
+    # approval requirement itself in the first step below instead, since a
+    # dispatch's event payload carries no PR/review context to check here.
+    if: |
+      (github.event_name == 'pull_request_review' &&
+       github.event.review.state == 'approved' &&
+       github.event.review.user.login == github.repository_owner &&
+       github.event.pull_request.base.ref == 'main' &&
+       github.event.pull_request.head.ref != 'ship' &&
+       !startsWith(github.event.pull_request.head.ref, 'renovate/')) ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write       # gh pr merge
+      pull-requests: write  # gh pr merge
+    steps:
+      - name: Resolve and verify the target PR
+        id: resolve
+        env:
+          # Default GITHUB_TOKEN is fine here, unlike the PAT the job above
+          # needs — that workaround is specifically for a PR *created* with
+          # GITHUB_TOKEN (which makes it github-actions[bot]-authored and so
+          # subject to the same first-time-contributor approval gate as any
+          # other outside identity). This job never creates a PR, only
+          # enables auto-merge on one that already exists and already has
+          # its own (external) author.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+        run: |
+          echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+          base_ref=$(gh pr view "$PR_NUMBER" --json baseRefName --jq .baseRefName)
+          head_ref=$(gh pr view "$PR_NUMBER" --json headRefName --jq .headRefName)
+          if [ "$base_ref" != "main" ]; then
+            echo "::error::PR #$PR_NUMBER does not target main (targets $base_ref)"
+            exit 1
+          fi
+          case "$head_ref" in
+            ship|renovate/*)
+              echo "::error::PR #$PR_NUMBER is a ship/renovate branch -- use the other job (push to ship) or Renovate's own automerge instead"
+              exit 1
+              ;;
+          esac
+          # Re-checked here (not just trusted from the triggering event)
+          # so the workflow_dispatch escape hatch can't be used to bypass
+          # the approval requirement this job exists to enforce.
+          approved=$(gh pr view "$PR_NUMBER" --json latestReviews \
+            --jq ".latestReviews | map(select(.author.login == \"${GITHUB_REPOSITORY_OWNER}\" and .state == \"APPROVED\")) | length > 0")
+          if [ "$approved" != "true" ]; then
+            echo "::error::PR #$PR_NUMBER has no approved review from ${GITHUB_REPOSITORY_OWNER}"
+            exit 1
+          fi
+
+      - name: Enable auto-merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.resolve.outputs.pr_number }}
+        run: |
+          # Same transient-mergeability race as the ship-branch job above —
+          # same retry treatment.
+          for attempt in 1 2 3 4 5; do
+            if gh pr merge "$PR_NUMBER" --auto --rebase; then
+              exit 0
+            fi
+            echo "Attempt ${attempt}/5 failed — retrying in 10s..."
+            sleep 10
+          done
+          echo "::error::Failed to enable auto-merge on PR #$PR_NUMBER after 5 attempts"
           exit 1
