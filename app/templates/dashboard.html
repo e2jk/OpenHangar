@@ -214,6 +214,18 @@
   </div>
   {% endif %}
 
+  {# ── Flights other pilots logged with this pilot on board ─────────────────── #}
+  {% set crew_invites_next = 'dashboard' %}
+  {% if crew_invites %}
+  {% include 'partials/_crew_invites.html' %}
+  {% endif %}
+  {% if crew_claims %}
+  {% include 'partials/_crew_claims.html' %}
+  {% endif %}
+  {% if flight_corrections %}
+  {% include 'partials/_flight_corrections.html' %}
+  {% endif %}
+
   {# ── Pilot currency card ──────────────────────────────────────────────────── #}
   {% if pilot_currency %}
   {% set _oc = pilot_currency.overall %}

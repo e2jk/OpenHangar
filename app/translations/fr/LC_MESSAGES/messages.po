@@ -11680,3 +11680,375 @@ msgstr "La valeur doit être inférieure ou égale à {max}."
 #: app/templates/base.html
 msgid "Please enter a valid value."
 msgstr "Veuillez saisir une valeur valide."
+
+#: app/flights/crew_invites.py
+msgid "Confirm your flight on %(date)s"
+msgstr "Confirmez votre vol du %(date)s"
+
+#: app/flights/crew_invites.py
+msgid "%(name)s added you to a flight"
+msgstr "%(name)s vous a ajouté à un vol"
+
+#: app/flights/crew_invites.py
+msgid "%(name)s logged a flight with you on board. Confirm it to add it to your pilot logbook, or decline if it isn't yours."
+msgstr "%(name)s a enregistré un vol avec vous à bord. Confirmez-le pour l’ajouter à votre carnet de vol, ou refusez-le s’il ne vous concerne pas."
+
+#: app/flights/crew_invites.py
+msgid "Your role"
+msgstr "Votre rôle"
+
+#: app/flights/crew_invites.py
+msgid "Review in OpenHangar"
+msgstr "Vérifier dans OpenHangar"
+
+#: app/flights/routes.py
+msgid "This flight invitation is no longer open."
+msgstr "Cette invitation de vol n’est plus ouverte."
+
+#: app/flights/routes.py
+msgid "Flight confirmed — it's now in your pilot logbook."
+msgstr "Vol confirmé — il figure désormais dans votre carnet de vol."
+
+#: app/flights/routes.py
+msgid "This flight's crew slot has already been filled — nothing to confirm."
+msgstr "Ce poste d’équipage est déjà occupé — rien à confirmer."
+
+#: app/flights/routes.py
+msgid "Flight invitation declined."
+msgstr "Invitation de vol refusée."
+
+#: app/templates/partials/_crew_invites.html
+msgid "Flights waiting for your confirmation"
+msgstr "Vols en attente de votre confirmation"
+
+#: app/templates/partials/_crew_invites.html
+msgid "Another pilot logged these flights with you on board. Confirm to add them to your pilot logbook."
+msgstr "Un autre pilote a enregistré ces vols avec vous à bord. Confirmez pour les ajouter à votre carnet de vol."
+
+#: app/templates/partials/_crew_invites.html
+msgid "Logged by"
+msgstr "Enregistré par"
+
+#: app/templates/flights/flight_form.html
+msgid "%(name)s will be asked to confirm this flight in their own pilot logbook."
+msgstr "%(name)s sera invité(e) à confirmer ce vol dans son propre carnet de vol."
+
+#: app/templates/flights/flight_form.html
+msgid "Waiting for %(name)s to confirm this flight."
+msgstr "En attente de la confirmation de ce vol par %(name)s."
+
+#: app/templates/config/notifications.html
+msgid "Flight crew confirmation request"
+msgstr "Demande de confirmation d’équipage"
+
+#: app/templates/config/notifications.html
+msgid "Another pilot logged a flight with you on board and asks you to confirm it in your pilot logbook."
+msgstr "Un autre pilote a enregistré un vol avec vous à bord et vous demande de le confirmer dans votre carnet de vol."
+
+#: app/pilots/routes.py
+msgid "Flight removed from your logbook. It stays in the other pilot's logbook."
+msgstr "Vol retiré de votre carnet de vol. Il reste dans le carnet de vol de l’autre pilote."
+
+#: app/flights/routes.py
+msgid "Flight %(label)s removed from the aircraft log. It stays in the pilot logbook of the crew linked to it."
+msgstr "Vol %(label)s retiré du carnet de route de l’aéronef. Il reste dans le carnet de vol de l’équipage qui y est lié."
+
+#: app/templates/pilots/logbook.html
+msgid "Remove this flight from your logbook? It stays in the other pilot's logbook."
+msgstr "Retirer ce vol de votre carnet de vol ? Il reste dans le carnet de vol de l’autre pilote."
+
+#: app/templates/flights/list.html
+msgid "Remove this flight from the aircraft log? It stays in the pilot logbook of the crew linked to it."
+msgstr "Retirer ce vol du carnet de route de l’aéronef ? Il reste dans le carnet de vol de l’équipage qui y est lié."
+
+#: app/pilots/routes.py
+msgid "One flight stays in another pilot's logbook; it was only removed from yours."
+msgid_plural "%(count)d flights stay in other pilots' logbooks; they were only removed from yours."
+msgstr[0] "Un vol reste dans le carnet de vol d’un autre pilote ; il a seulement été retiré du vôtre."
+msgstr[1] "%(count)d vols restent dans les carnets de vol d’autres pilotes ; ils ont seulement été retirés du vôtre."
+
+#: app/flights/crew_removal.py
+msgid "One flight stays in a pilot's logbook as a flight on another aircraft; it was only removed from this aircraft's log."
+msgid_plural "%(num)d flights stay in pilots' logbooks as flights on another aircraft; they were only removed from this aircraft's log."
+msgstr[0] "Un vol reste dans le carnet de vol d’un pilote comme vol sur un autre aéronef ; il a seulement été retiré du carnet de route de cet aéronef."
+msgstr[1] "%(num)d vols restent dans les carnets de vol des pilotes comme vols sur un autre aéronef ; ils ont seulement été retirés du carnet de route de cet aéronef."
+
+#: app/flights/crew_invites.py
+msgid "%(name)s confirmed your flight"
+msgstr "%(name)s a confirmé votre vol"
+
+#: app/flights/crew_invites.py
+msgid "%(name)s confirmed the flight %(route)s on %(date)s; it is now in their pilot logbook too."
+msgstr "%(name)s a confirmé le vol %(route)s du %(date)s ; il figure désormais aussi dans son carnet de vol."
+
+#: app/flights/crew_invites.py
+msgid "%(name)s declined your flight"
+msgstr "%(name)s a refusé votre vol"
+
+#: app/flights/crew_invites.py
+msgid "%(name)s declined the flight %(route)s on %(date)s; their name stays on your entry without a link to their logbook."
+msgstr "%(name)s a refusé le vol %(route)s du %(date)s ; son nom reste sur votre entrée, sans lien avec son carnet de vol."
+
+#: app/flights/routes.py
+msgid "Your part of this flight was saved."
+msgstr "Votre partie de ce vol a été enregistrée."
+
+#: app/flights/routes.py
+msgid "Nothing to suggest — the values are unchanged."
+msgstr "Rien à suggérer — les valeurs sont inchangées."
+
+#: app/flights/routes.py
+msgid "Correction sent. It is applied once the pilot who logged this flight accepts it."
+msgstr "Correction envoyée. Elle sera appliquée dès que le pilote qui a enregistré ce vol l’aura acceptée."
+
+#: app/flights/routes.py
+msgid "This correction has already been handled."
+msgstr "Cette correction a déjà été traitée."
+
+#: app/flights/routes.py
+msgid "Correction applied to the flight."
+msgstr "Correction appliquée au vol."
+
+#: app/flights/routes.py
+msgid "Correction rejected."
+msgstr "Correction refusée."
+
+#: app/flights/routes.py
+msgid "That crew position is already confirmed by %(name)s — pick your own role on this flight."
+msgstr "Ce poste d’équipage est déjà confirmé par %(name)s — choisissez votre propre rôle sur ce vol."
+
+#: app/flights/shared_flight.py
+msgid "Takeoff time"
+msgstr "Heure de décollage"
+
+#: app/flights/shared_flight.py
+msgid "Landing time"
+msgstr "Heure d’atterrissage"
+
+#: app/flights/shared_flight.py
+msgid "Function time"
+msgstr "Temps de fonction"
+
+#: app/flights/shared_flight.py
+msgid "Please choose your role on this flight."
+msgstr "Veuillez choisir votre rôle sur ce vol."
+
+#: app/flights/shared_flight.py
+msgid "Your flight on %(date)s was updated"
+msgstr "Votre vol du %(date)s a été modifié"
+
+#: app/flights/shared_flight.py
+msgid "%(name)s updated a flight you're on"
+msgstr "%(name)s a modifié un vol auquel vous avez participé"
+
+#: app/flights/shared_flight.py
+msgid "These details of your flight %(route)s on %(date)s changed:"
+msgstr "Ces détails de votre vol %(route)s du %(date)s ont changé :"
+
+#: app/flights/shared_flight.py
+msgid "Correction suggested for your flight on %(date)s"
+msgstr "Correction suggérée pour votre vol du %(date)s"
+
+#: app/flights/shared_flight.py
+msgid "%(name)s suggests a correction"
+msgstr "%(name)s suggère une correction"
+
+#: app/flights/shared_flight.py
+msgid "%(name)s suggests changing your flight %(route)s on %(date)s. Accept to apply it for both of you, or reject it."
+msgstr "%(name)s suggère de modifier votre vol %(route)s du %(date)s. Acceptez pour l’appliquer à vous deux, ou refusez."
+
+#: app/flights/shared_flight.py
+msgid "Correction not applied to your flight on %(date)s"
+msgstr "Correction non appliquée à votre vol du %(date)s"
+
+#: app/flights/shared_flight.py
+msgid "%(name)s rejected your correction"
+msgstr "%(name)s a refusé votre correction"
+
+#: app/flights/shared_flight.py
+msgid "Your suggested correction for the flight %(route)s on %(date)s was not applied."
+msgstr "La correction que vous avez suggérée pour le vol %(route)s du %(date)s n’a pas été appliquée."
+
+#: app/offline/routes.py
+msgid "Another pilot logged this flight, so only they can change its details. Open the flight online to suggest a correction."
+msgstr "Un autre pilote a enregistré ce vol, lui seul peut donc en modifier les détails. Ouvrez le vol en ligne pour suggérer une correction."
+
+#: app/templates/config/notifications.html
+msgid "Flight crew confirmation answered"
+msgstr "Réponse à une demande de confirmation d’équipage"
+
+#: app/templates/config/notifications.html
+msgid "Shared flight changed"
+msgstr "Vol partagé modifié"
+
+#: app/templates/config/notifications.html
+msgid "Flight correction suggestions"
+msgstr "Suggestions de correction de vol"
+
+#: app/templates/config/notifications.html
+msgid "A pilot you named on a flight confirmed or declined it."
+msgstr "Un pilote que vous avez indiqué sur un vol l’a confirmé ou refusé."
+
+#: app/templates/config/notifications.html
+msgid "The pilot who logged a flight you are on changed its shared details."
+msgstr "Le pilote qui a enregistré un vol auquel vous avez participé en a modifié les détails partagés."
+
+#: app/templates/config/notifications.html
+msgid "A pilot on your flight suggests a correction, or your own suggestion was not applied."
+msgstr "Un pilote de votre vol suggère une correction, ou votre propre suggestion n’a pas été appliquée."
+
+#: app/templates/flights/crew_entry.html
+msgid "My part of this flight"
+msgstr "Ma partie de ce vol"
+
+#: app/templates/flights/crew_entry.html
+msgid "Edit flight details"
+msgstr "Modifier les détails du vol"
+
+#: app/templates/flights/crew_entry.html
+msgid "Back to flight"
+msgstr "Retour au vol"
+
+#: app/templates/flights/crew_entry.html
+msgid "%(name)s logged this flight, so its details are shared with them. You can change your own name, role, function time and remark here; for anything else, suggest a correction below."
+msgstr "%(name)s a enregistré ce vol, ses détails sont donc partagés avec lui. Vous pouvez modifier ici votre nom, votre rôle, votre temps de fonction et votre remarque ; pour tout le reste, suggérez une correction ci-dessous."
+
+#: app/templates/flights/crew_entry.html
+msgid "Only for you"
+msgstr "Uniquement pour vous"
+
+#: app/templates/flights/crew_entry.html
+msgid "Your name on this flight"
+msgstr "Votre nom sur ce vol"
+
+#: app/templates/flights/crew_entry.html
+msgid "Your function time (hours)"
+msgstr "Votre temps de fonction (heures)"
+
+#: app/templates/flights/crew_entry.html
+msgid "Your personal remark"
+msgstr "Votre remarque personnelle"
+
+#: app/templates/flights/crew_entry.html
+msgid "Save my part"
+msgstr "Enregistrer ma partie"
+
+#: app/templates/flights/crew_entry.html
+msgid "Your corrections waiting for review"
+msgstr "Vos corrections en attente d’examen"
+
+#: app/templates/flights/crew_entry.html
+msgid "Suggest a correction"
+msgstr "Suggérer une correction"
+
+#: app/templates/flights/crew_entry.html
+msgid "Change what is wrong and send it. Nothing changes until %(name)s accepts it; then it applies for both of you."
+msgstr "Modifiez ce qui est incorrect et envoyez-le. Rien ne change tant que %(name)s ne l’a pas accepté ; la correction s’applique alors à vous deux."
+
+#: app/templates/flights/crew_entry.html
+msgid "Send correction"
+msgstr "Envoyer la correction"
+
+#: app/templates/flights/flight_form.html
+msgid "Confirmed by %(name)s — only they can change their name and role."
+msgstr "Confirmé par %(name)s — lui seul peut modifier son nom et son rôle."
+
+#: app/templates/partials/_flight_corrections.html
+msgid "Suggested corrections to your flights"
+msgstr "Corrections suggérées pour vos vols"
+
+#: app/templates/partials/_flight_corrections.html
+msgid "A pilot on these flights suggests changing shared details. Accepting applies the change for both of you."
+msgstr "Un pilote de ces vols suggère de modifier des détails partagés. Accepter applique la modification à vous deux."
+
+#: app/templates/partials/_flight_corrections.html
+msgid "Suggested by"
+msgstr "Suggéré par"
+
+#: app/templates/partials/_flight_corrections.html
+msgid "Changes"
+msgstr "Modifications"
+
+#: app/templates/partials/_flight_corrections.html
+msgid "Accept"
+msgstr "Accepter"
+
+#: app/templates/partials/_flight_corrections.html
+msgid "Reject"
+msgstr "Refuser"
+
+#: app/flights/crew_invites.py
+msgid "%(name)s asks to be added to your flight"
+msgstr "%(name)s demande à être ajouté(e) à votre vol"
+
+#: app/flights/crew_invites.py
+msgid "%(name)s says they were on your flight %(route)s on %(date)s and asks to add it to their pilot logbook. Approve or decline the request."
+msgstr "%(name)s indique avoir participé à votre vol %(route)s du %(date)s et demande à l’ajouter à son carnet de vol. Approuvez ou refusez la demande."
+
+#: app/flights/crew_invites.py
+msgid "%(name)s approved your request: the flight %(route)s on %(date)s is now in your pilot logbook."
+msgstr "%(name)s a approuvé votre demande : le vol %(route)s du %(date)s figure désormais dans votre carnet de vol."
+
+#: app/flights/crew_invites.py
+msgid "%(name)s declined your request"
+msgstr "%(name)s a refusé votre demande"
+
+#: app/flights/crew_invites.py
+msgid "%(name)s declined your request to be added to the flight %(route)s on %(date)s."
+msgstr "%(name)s a refusé votre demande d’ajout au vol %(route)s du %(date)s."
+
+#: app/flights/routes.py
+msgid "This request has already been handled."
+msgstr "Cette demande a déjà été traitée."
+
+#: app/flights/routes.py
+msgid "%(name)s was added to the flight."
+msgstr "%(name)s a été ajouté(e) au vol."
+
+#: app/flights/routes.py
+msgid "That crew position has already been filled — nothing to approve."
+msgstr "Ce poste d’équipage est déjà occupé — rien à approuver."
+
+#: app/flights/routes.py
+msgid "Request declined."
+msgstr "Demande refusée."
+
+#: app/flights/routes.py
+msgid "Could not send the request — this flight can't be claimed."
+msgstr "Impossible d’envoyer la demande — ce vol ne peut pas être revendiqué."
+
+#: app/flights/routes.py
+msgid "Request sent to %(names)s. The flight appears in your logbook once they approve it."
+msgstr "Demande envoyée à %(names)s. Le vol apparaîtra dans votre carnet de vol dès son approbation."
+
+#: app/templates/config/notifications.html
+msgid "Pilot asks to be added to your flight"
+msgstr "Un pilote demande à être ajouté à votre vol"
+
+#: app/templates/config/notifications.html
+msgid "A pilot found a flight you logged already in the system and asks to add it to their own logbook."
+msgstr "Un pilote a trouvé un vol que vous avez déjà enregistré et demande à l’ajouter à son propre carnet de vol."
+
+#: app/templates/flights/flight_form.html
+msgid "You already asked %(names)s to add you to this flight — it appears in your logbook once they approve."
+msgstr "Vous avez déjà demandé à %(names)s de vous ajouter à ce vol — il apparaîtra dans votre carnet de vol dès son approbation."
+
+#: app/templates/flights/flight_form.html
+msgid "Were you on this flight? Ask %(names)s to add you to it instead of logging it twice."
+msgstr "Étiez-vous sur ce vol ? Demandez à %(names)s de vous y ajouter plutôt que de l’enregistrer deux fois."
+
+#: app/templates/flights/flight_form.html
+msgid "Ask to be added to this flight"
+msgstr "Demander à être ajouté(e) à ce vol"
+
+#: app/templates/partials/_crew_claims.html
+msgid "Pilots asking to be added to your flights"
+msgstr "Pilotes demandant à être ajoutés à vos vols"
+
+#: app/templates/partials/_crew_claims.html
+msgid "These pilots say they were on a flight you logged. Approving adds the flight to their pilot logbook."
+msgstr "Ces pilotes indiquent avoir participé à un vol que vous avez enregistré. Approuver ajoute le vol à leur carnet de vol."
+
+#: app/flights/crew_invites.py
+msgid "%(name)s approved your request"
+msgstr "%(name)s a approuvé votre demande"

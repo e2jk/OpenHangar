@@ -21,7 +21,7 @@ Self-hosted, open-source platform for pilots, owner-operators, and clubs to mana
 - **Fleet management** — model aircraft (airframe, engines, props, avionics); lightweight placeholders for quick onboarding; archive without losing history
 - **Maintenance tracking** — calendar and hours-based triggers; engine/propeller TBO & life-limited components; green/yellow/red dashboard status
 - **Flight logging** — unified aircraft + pilot logbook entry; counter photo proofs; GPS-file autofill; fuel & oil tracking
-- **Pilot logbook** — EASA FCL.050 column mapping; passenger/night currency monitoring; FSTD sessions; CSV/Excel import
+- **Pilot logbook** — EASA FCL.050 column mapping; passenger/night currency monitoring; FSTD sessions; CSV/Excel import; crew confirmation between pilots
 - **GPS tracks** — GPX/KML/Garmin import; per-flight maps; track image & animation exports
 - **Airworthiness** — AD/SIB/ARC/STC tracking with automatic EASA sync
 - **Reservations** — per-aircraft booking calendar with approval workflow and cost estimation

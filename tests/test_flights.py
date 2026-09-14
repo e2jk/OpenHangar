@@ -1958,7 +1958,7 @@ class TestStandaloneOtherAircraftRoute:
         assert "Mona Mechanic" not in datalist
         assert "Gone Pilot" not in datalist
         assert "Outsider Pilot" not in datalist
-        assert 'list="crew-name-suggestions"' in html
+        assert 'data-name-ac="crew-name-suggestions"' in html
 
     def test_get_redirects_when_not_logged_in(self, client):
         resp = client.get("/flights/new")

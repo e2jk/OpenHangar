@@ -69,6 +69,17 @@
   </div>
   {% endif %}
 
+  {% set crew_invites_next = 'logbook' %}
+  {% if crew_invites %}
+  {% include 'partials/_crew_invites.html' %}
+  {% endif %}
+  {% if crew_claims %}
+  {% include 'partials/_crew_claims.html' %}
+  {% endif %}
+  {% if flight_corrections %}
+  {% include 'partials/_flight_corrections.html' %}
+  {% endif %}
+
   {% if entries or total_entries > 0 %}
 
   {# ── Per-page selector + entry count ─────────────────────────────────────── #}
@@ -221,12 +232,23 @@
           <td class="col-group"><strong>{{ '%g' % e.total_flight_time if e.total_flight_time is not none else '—' }}</strong></td>
           <td class="col-group">{{ '%g' % e.night_time if e.night_time is not none else '—' }}</td>
           <td>{{ '%g' % e.instrument_time if e.instrument_time is not none else '—' }}</td>
-          <td class="col-group">{{ '%g' % e.function_pic if e.function_pic is not none else '—' }}</td>
-          <td>{{ '%g' % e.function_copilot if e.function_copilot is not none else '—' }}</td>
-          <td>{{ '%g' % e.function_dual if e.function_dual is not none else '—' }}</td>
-          <td>{{ '%g' % e.function_instructor if e.function_instructor is not none else '—' }}</td>
-          <td class="col-group oh-mw-160 overflow-hidden oh-text-ellipsis">{{ e.notes or '' }}</td>
+          {# A flight shared with another linked pilot shows only this pilot's
+             own function hours and personal remark (flights/shared_flight.py). #}
+          {% set _uid = session.get('user_id') %}
+          {% set _fn = e.visible_function_fields(_uid) %}
+          {% set _my_remark = e.personal_remark_for(_uid) %}
+          <td class="col-group">{{ '%g' % e.function_pic if e.function_pic is not none and 'function_pic' in _fn else '—' }}</td>
+          <td>{{ '%g' % e.function_copilot if e.function_copilot is not none and 'function_copilot' in _fn else '—' }}</td>
+          <td>{{ '%g' % e.function_dual if e.function_dual is not none and 'function_dual' in _fn else '—' }}</td>
+          <td>{{ '%g' % e.function_instructor if e.function_instructor is not none and 'function_instructor' in _fn else '—' }}</td>
+          <td class="col-group oh-mw-160 overflow-hidden oh-text-ellipsis">{{ e.notes or '' }}{% if e.notes and _my_remark %} · {% endif %}{{ _my_remark or '' }}</td>
           <td class="col-actions" data-stop-prop>
+            {% if e.other_linked_user_ids(_uid) %}
+            <a href="{{ url_for('flights.crew_entry', flight_id=e.id) }}"
+               class="btn btn-sm btn-outline-secondary me-1" title="{{ _('My part of this flight') }}">
+              <i class="bi bi-person-lines-fill"></i>
+            </a>
+            {% endif %}
             {% if e.aircraft_id %}
             <a href="{{ url_for('aircraft.flight_detail', aircraft_id=e.aircraft_id, flight_id=e.id) }}"
                class="btn btn-sm btn-outline-secondary me-1" title="{{ _('Aircraft logbook') }}">
@@ -245,7 +267,7 @@
                aircraft log entry — there's only one way to delete it now. #}
             <form method="POST" action="{{ url_for('pilots.delete_entry', entry_id=e.id) }}"
                   class="d-inline"
-                  data-confirm="{{ _('Delete this logbook entry and its aircraft log entry? This cannot be undone.') if e.aircraft_id else _('Delete this logbook entry?') }}">
+                  data-confirm="{{ _('Remove this flight from your logbook? It stays in the other pilot\'s logbook.') if e.other_linked_user_ids(session.get('user_id')) else (_('Delete this logbook entry and its aircraft log entry? This cannot be undone.') if e.aircraft_id else _('Delete this logbook entry?')) }}">
               <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ _('Delete') }}">
                 <i class="bi bi-trash"></i>
               </button>

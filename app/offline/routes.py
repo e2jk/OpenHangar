@@ -27,6 +27,13 @@ from flights.routes import (  # pyright: ignore[reportMissingImports]
     _check_flight_hour_milestone,
     _find_duplicate_flight,
 )
+from flights.shared_flight import (  # pyright: ignore[reportMissingImports]
+    can_edit_shared,
+    notify_shared_changes,
+    protect_other_pilots,
+    restore_other_pilots,
+    shared_snapshot,
+)
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     Flight,
@@ -38,6 +45,7 @@ from pilots.form_parsing import (  # pyright: ignore[reportMissingImports]
     parse_pilot_fields,
 )
 from utils import (  # pyright: ignore[reportMissingImports]
+    current_user_role,
     login_required,
     require_pilot_access,
     user_can_access_aircraft,
@@ -236,6 +244,25 @@ def _apply_easa_fields(fe: Flight, effective: dict[str, str]) -> None:
         setattr(fe, key, _parse_easa_int(effective[key]))
 
 
+def _shared_flight_locked_response() -> ResponseReturnValue:
+    """A pilot who confirmed someone else's flight can't change its shared
+    details offline — they suggest a correction online instead."""
+    return (
+        jsonify(
+            {
+                "status": "invalid",
+                "errors": [
+                    _(
+                        "Another pilot logged this flight, so only they can change "
+                        "its details. Open the flight online to suggest a correction."
+                    )
+                ],
+            }
+        ),
+        400,
+    )
+
+
 def _malformed_sync_body(fields: Any, base: Any) -> bool:
     return (
         not isinstance(fields, dict)
@@ -253,6 +280,8 @@ def _malformed_sync_body(fields: Any, base: Any) -> bool:
 def sync_flight(flight_id: int) -> ResponseReturnValue:
     fe = _get_flight_or_404(flight_id)
     uid = int(session["user_id"])
+    if not can_edit_shared(fe, uid, current_user_role()):
+        return _shared_flight_locked_response()
 
     body = request.get_json(silent=True)
     if not isinstance(body, dict):
@@ -319,10 +348,14 @@ def sync_flight(flight_id: int) -> ResponseReturnValue:
         if dup and not force_duplicate:
             return jsonify({"status": "duplicate"}), 409
 
+    shared_before = shared_snapshot(fe)
+    other_pilots = protect_other_pilots(fe, uid)
     apply_flight_fields(fe, values)
     _apply_easa_fields(fe, effective)
+    restore_other_pilots(fe, other_pilots)
 
     db.session.commit()
+    notify_shared_changes(fe, uid, shared_before)
     if fe.aircraft_id:
         _check_flight_hour_milestone(fe)
 
@@ -380,6 +413,8 @@ def sync_pilot_entry(entry_id: int) -> ResponseReturnValue:
         or pe.aircraft_id is not None
     ):
         abort(404)
+    if not can_edit_shared(pe, uid, current_user_role()):
+        return _shared_flight_locked_response()
 
     body = request.get_json(silent=True)
     if not isinstance(body, dict):
@@ -421,7 +456,11 @@ def sync_pilot_entry(entry_id: int) -> ResponseReturnValue:
     if errors:
         return jsonify({"status": "invalid", "errors": errors}), 400
 
+    shared_before = shared_snapshot(pe)
+    other_pilots = protect_other_pilots(pe, uid)
     apply_pilot_fields(pe, values)
+    restore_other_pilots(pe, other_pilots)
     db.session.commit()
+    notify_shared_changes(pe, uid, shared_before)
 
     return jsonify({"status": "ok", "entry": canonical_pilot_entry(pe)})

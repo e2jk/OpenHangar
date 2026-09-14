@@ -978,6 +978,20 @@ def create_app() -> Flask:
         _legacy_logbook_data_present = (
             check_legacy_logbook_data() if _is_owner and _in_request else False
         )
+        if uid:
+            from flights.crew_invites import (
+                pending_claims_to_review,
+                pending_invite_count,
+            )
+            from flights.shared_flight import pending_suggestions_to_review
+
+            _nav_crew_invite_count = (
+                pending_invite_count(uid)
+                + len(pending_claims_to_review(uid))
+                + len(pending_suggestions_to_review(uid))
+            )
+        else:
+            _nav_crew_invite_count = 0
 
         return {
             "logged_in": bool(uid),
@@ -1013,6 +1027,7 @@ def create_app() -> Flask:
             "today": _date.today(),
             "current_theme": _current_theme(_user_flags, _in_request, session, is_demo),
             "nav_update_available": _nav_update_available,
+            "nav_crew_invite_count": _nav_crew_invite_count,
             "legacy_logbook_data_present": _legacy_logbook_data_present,
             "oh_debug": app.debug
             and os.environ.get("OPENHANGAR_SW_ENABLED", "").lower()
@@ -1349,8 +1364,19 @@ def create_app() -> Flask:
             cal_next_year = cal_year + 1 if cal_month == 12 else cal_year
             cal_month_name = _dt(cal_year, cal_month, 1).strftime("%B %Y")
 
+            from flights.crew_invites import (
+                pending_claims_to_review,
+                pending_invites_for_user,
+            )
+            from flights.shared_flight import pending_suggestions_to_review
+            from models import CrewRole
+
             return render_template(
                 "dashboard.html",
+                crew_invites=pending_invites_for_user(session["user_id"]),
+                crew_claims=pending_claims_to_review(session["user_id"]),
+                flight_corrections=pending_suggestions_to_review(session["user_id"]),
+                crew_roles=CrewRole,
                 aircraft=aircraft,
                 cover_photos=cover_photos,
                 pending_reservations=pending_reservations,

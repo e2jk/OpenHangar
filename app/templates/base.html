@@ -198,7 +198,7 @@
           {% endif %}
           {% if is_pilot %}
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('pilots.logbook') }}"><i class="bi bi-person me-1"></i>{{ _('Pilot') }}</a>
+            <a class="nav-link" href="{{ url_for('pilots.logbook') }}"><i class="bi bi-person me-1"></i>{{ _('Pilot') }}{% if nav_crew_invite_count %}<span class="badge rounded-pill bg-warning text-dark ms-1 oh-fs-07" title="{{ _('Flights waiting for your confirmation') }}">{{ nav_crew_invite_count }}</span>{% endif %}</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('flights.log_flight') }}"><i class="bi bi-plus-circle me-1"></i>{{ _('Log a flight') }}</a>
@@ -309,7 +309,7 @@
     </a>
     <a href="{{ url_for('pilots.logbook') }}" class="{{ 'active' if _ep.startswith('pilots.') }}">
       <i class="bi bi-person"></i>
-      <span>{{ _('Pilot') }}</span>
+      <span>{{ _('Pilot') }}{% if nav_crew_invite_count %} <span class="badge rounded-pill bg-warning text-dark oh-fs-07">{{ nav_crew_invite_count }}</span>{% endif %}</span>
     </a>
     {% endif %}
   </nav>
@@ -337,6 +337,7 @@
   <!-- Autocomplete widgets (safe no-op when target inputs are absent) -->
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/airport_autocomplete.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/aircraft_type_autocomplete.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/name_autocomplete.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/ui.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/prefetch.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/logbook_view_toggle.js') }}"></script>

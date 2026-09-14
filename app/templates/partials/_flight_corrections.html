@@ -1,0 +1,54 @@
+{#- Pending correction suggestions on flights the logged-in pilot logged.
+    Expects: flight_corrections (list of FlightCorrectionSuggestion),
+    crew_invites_next ('dashboard' | 'logbook'). -#}
+<div id="flight-corrections" class="dash-panel mb-4">
+  <div class="dash-panel-header">
+    <i class="bi bi-chat-square-text me-2"></i>{{ _('Suggested corrections to your flights') }}
+    <span class="ms-2 badge bg-warning text-dark oh-fs-07">{{ flight_corrections | length }}</span>
+  </div>
+  <div class="dash-panel-body p-0">
+    <p class="text-muted oh-fs-085 px-3 pt-2 mb-2">{{ _('A pilot on these flights suggests changing shared details. Accepting applies the change for both of you.') }}</p>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 oh-fs-088">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">{{ _('Flight') }}</th>
+            <th>{{ _('Suggested by') }}</th>
+            <th>{{ _('Changes') }}</th>
+            <th class="pe-3 text-end">{{ _('Actions') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in flight_corrections %}
+          {% set fe = s.flight %}
+          <tr>
+            <td class="ps-3 text-nowrap">
+              <a href="{{ url_for('pilots.view_entry', entry_id=fe.id) }}" class="text-decoration-none">
+                {{ fe.date.isoformat() }} · {{ fe.departure_icao or '?' }} → {{ fe.arrival_icao or '?' }}
+              </a>
+            </td>
+            <td class="text-muted">{{ s.suggested_by.display_name if s.suggested_by else '—' }}</td>
+            <td>
+              <ul class="list-unstyled mb-0">
+                {% for field, change in s.changes.items() %}
+                <li><span class="text-muted">{{ correction_field_label(field) }}:</span> {{ change[0] or '—' }} → <strong>{{ change[1] or '—' }}</strong></li>
+                {% endfor %}
+              </ul>
+            </td>
+            <td class="pe-3 text-end text-nowrap">
+              <form method="post" action="{{ url_for('flights.accept_correction', suggestion_id=s.id) }}" class="d-inline">
+                <input type="hidden" name="next" value="{{ crew_invites_next }}">
+                <button type="submit" class="btn btn-sm btn-success py-0 px-2">{{ _('Accept') }}</button>
+              </form>
+              <form method="post" action="{{ url_for('flights.reject_correction', suggestion_id=s.id) }}" class="d-inline ms-1">
+                <input type="hidden" name="next" value="{{ crew_invites_next }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2">{{ _('Reject') }}</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

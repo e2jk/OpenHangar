@@ -137,6 +137,20 @@ permission:
 - Available to any user with pilot capability, regardless of aircraft grants.
 - Creates a personal pilot logbook entry only; no aircraft record is created.
 
+**Crew confirmation** (both cases):
+- Naming another pilot of the same tenant in a crew slot never links their
+  account directly — it sends them a confirmation request, and only that pilot
+  can confirm or decline it.
+- On a confirmed shared flight, only the pilot who logged it (and tenant
+  owners/admins, for a managed aircraft) edits the shared details; the other
+  pilot edits only their own name, role, function time and remark, and
+  suggests corrections that the logger accepts or rejects.
+- Deleting never removes another pilot's hours: a pilot-side delete or
+  logbook-import rollback only unlinks the acting pilot while another account
+  is linked, and an aircraft-side delete (flight entry, airframe/GPS import
+  rollback, aircraft deletion) keeps pilot-linked flights in those pilots'
+  logbooks as flights on another aircraft.
+
 ---
 
 ## Planned extensions

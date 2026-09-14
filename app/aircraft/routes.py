@@ -19,6 +19,11 @@ from flask import (  # pyright: ignore[reportMissingImports]
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 from flask_babel import ngettext
+from flights.crew_removal import (  # pyright: ignore[reportMissingImports]
+    detach_from_aircraft,
+    flash_kept_in_pilot_logbooks,
+    remove_from_aircraft_log,
+)
 from models import (
     FUEL_DENSITY,
     GAL_TO_L,
@@ -1177,9 +1182,22 @@ def delete_aircraft(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     reg = ac.registration
     activity("aircraft.deleted", registration=reg, aircraft_id=aircraft_id)
+    # Pilot hours outlive the aircraft: every flight linked to a pilot account
+    # (the owner's own included) is detached and kept as an "other aircraft"
+    # flight; only flights nobody has in their logbook are deleted with it.
+    kept = 0
+    for fe in Flight.query.filter_by(aircraft_id=ac.id).all():
+        if fe.pic_user_id is not None or fe.second_crew_user_id is not None:
+            detach_from_aircraft(fe)
+            kept += 1
+    db.session.flush()
+    # The detached rows must not be swept up by Aircraft.flights'
+    # delete-orphan cascade if that collection was already loaded.
+    db.session.expire(ac, ["flights"])
     db.session.delete(ac)
     db.session.commit()
     flash(_("%(reg)s and all its components have been deleted.", reg=reg), "success")
+    flash_kept_in_pilot_logbooks(kept)
     return redirect(url_for("aircraft.list_aircraft"))
 
 
@@ -2561,9 +2579,13 @@ def gps_import_rollback(aircraft_id: int, batch_id: int) -> ResponseReturnValue:
     # Flights created by this batch — delete them entirely. Unified model:
     # this already covers what used to be a separate PilotLogbookEntry
     # deletion pass (gps_batch_id and gps_import_batch_id were merged into
-    # one column on the unified row).
-    Flight.query.filter_by(gps_import_batch_id=batch.id).delete(
-        synchronize_session="fetch"
+    # one column on the unified row). A flight another pilot has in their
+    # logbook is detached from the aircraft instead of deleted
+    # (flights/crew_removal.py).
+    actor_id = session.get("user_id")
+    kept = sum(
+        not remove_from_aircraft_log(fe, actor_id)
+        for fe in Flight.query.filter_by(gps_import_batch_id=batch.id).all()
     )
 
     # Flights that were pre-existing but got a GPS track linked — unlink only.
@@ -2584,6 +2606,7 @@ def gps_import_rollback(aircraft_id: int, batch_id: int) -> ResponseReturnValue:
         _("GPS import batch rolled back and all linked flight entries removed."),
         "success",
     )
+    flash_kept_in_pilot_logbooks(kept)
     return redirect(url_for("aircraft.gps_import_history", aircraft_id=aircraft_id))
 
 

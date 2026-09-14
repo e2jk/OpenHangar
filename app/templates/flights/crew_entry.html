@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('My part of this flight') }} — OpenHangar{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-person-lines-fill me-2"></i>{{ _('My part of this flight') }}</h1>
+      <p class="page-sub">
+        {{ flight.date }} · {{ flight.departure_icao or '?' }} → {{ flight.arrival_icao or '?' }}
+        {% if flight.display_registration %}· {{ flight.display_registration }}{% endif %}
+        {% if flight.display_aircraft_type %}· {{ flight.display_aircraft_type }}{% endif %}
+      </p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      {% if can_edit_shared %}
+      <a href="{{ url_for('flights.edit_flight', flight_id=flight.id) if flight.aircraft_id else url_for('pilots.edit_entry', entry_id=flight.id) }}"
+         class="btn btn-ac-secondary btn-sm">
+        <i class="bi bi-pencil me-1"></i>{{ _('Edit flight details') }}
+      </a>
+      {% endif %}
+      <a href="{{ url_for('pilots.view_entry', entry_id=flight.id) }}" class="btn btn-ac-ghost">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Back to flight') }}
+      </a>
+    </div>
+  </div>
+
+  {% if not can_edit_shared %}
+  <div class="alert alert-info">
+    <i class="bi bi-people me-2"></i>
+    {{ _('%(name)s logged this flight, so its details are shared with them. You can change your own name, role, function time and remark here; for anything else, suggest a correction below.', name=logger.display_name if logger else '—') }}
+  </div>
+  {% endif %}
+
+  {# ── Personal fields ───────────────────────────────────────────────────── #}
+  <form method="post" class="ac-form-card p-4 mb-4" id="crew-personal-form">
+    <input type="hidden" name="action" value="personal">
+    <h2 class="h6 text-muted mb-3"><i class="bi bi-person me-1"></i>{{ _('Only for you') }}</h2>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label for="crew-name" class="form-label">{{ _('Your name on this flight') }}</label>
+        <input type="text" class="form-control" id="crew-name" name="name" maxlength="128" required
+               value="{{ (flight.pic_name if slot == 'pic' else flight.second_crew_name) or '' }}">
+      </div>
+      <div class="col-md-6">
+        {% if slot == 'pic' %}
+        <div class="form-label">{{ _('Your role') }}</div>
+        <div class="form-control-plaintext">{{ _('PIC / Commander') }}</div>
+        {% else %}
+        <label for="crew-role" class="form-label">{{ _('Your role') }}</label>
+        <select class="form-select" id="crew-role" name="role" required>
+          <option value="">{{ _('Select…') }}</option>
+          {% for role, label in crew_roles.LABELS.items() %}
+          {% if role != 'PIC' %}
+          <option value="{{ role }}" {% if flight.second_crew_role == role %}selected{% endif %}>{{ _(label) }}</option>
+          {% endif %}
+          {% endfor %}
+        </select>
+        {% endif %}
+      </div>
+      <div class="col-md-6">
+        <label for="crew-hours" class="form-label">{{ _('Your function time (hours)') }}</label>
+        <input type="number" step="0.1" min="0" class="form-control" id="crew-hours" name="function_hours"
+               value="{{ '%g' % function_hours if function_hours is not none else '' }}">
+      </div>
+      <div class="col-12">
+        <label for="crew-remark" class="form-label">{{ _('Your personal remark') }}</label>
+        <textarea class="form-control" id="crew-remark" name="remark" rows="2">{{ flight.personal_remark_for(session.get('user_id')) or '' }}</textarea>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-ac-primary mt-3">{{ _('Save my part') }}</button>
+  </form>
+
+  {# ── Suggest a correction ──────────────────────────────────────────────── #}
+  {% if not can_edit_shared %}
+  {% if my_suggestions %}
+  <div class="ac-form-card p-3 mb-4">
+    <h2 class="h6 text-muted mb-2"><i class="bi bi-hourglass-split me-1"></i>{{ _('Your corrections waiting for review') }}</h2>
+    <ul class="mb-0">
+      {% for s in my_suggestions %}
+      <li>
+        {% for field, change in s.changes.items() %}
+        {{ field_label(field) }}: {{ change[0] or '—' }} → {{ change[1] or '—' }}{% if not loop.last %}; {% endif %}
+        {% endfor %}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <form method="post" class="ac-form-card p-4 mb-4" id="crew-suggest-form">
+    <input type="hidden" name="action" value="suggest">
+    <h2 class="h6 text-muted mb-1"><i class="bi bi-chat-square-text me-1"></i>{{ _('Suggest a correction') }}</h2>
+    <p class="text-muted small mb-3">{{ _('Change what is wrong and send it. Nothing changes until %(name)s accepts it; then it applies for both of you.', name=logger.display_name if logger else '—') }}</p>
+    <div class="row g-3">
+      {% for field in suggestable %}
+      {% set kind = field_specs[field][0] %}
+      <div class="{{ 'col-12' if field == 'notes' else 'col-md-4' }}">
+        <label for="suggest-{{ field }}" class="form-label">{{ field_label(field) }}</label>
+        {% if field == 'notes' %}
+        <textarea class="form-control" id="suggest-{{ field }}" name="{{ field }}" rows="2">{{ form_values[field] }}</textarea>
+        {% else %}
+        <input class="form-control" id="suggest-{{ field }}" name="{{ field }}"
+               {% if kind == 'date' %}type="date"
+               {% elif kind == 'time' %}type="time"
+               {% elif kind == 'decimal' %}type="number" step="0.1" min="0"
+               {% elif kind == 'int' %}type="number" step="1" min="0"
+               {% else %}type="text"{% endif %}
+               value="{{ form_values[field] }}">
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <button type="submit" class="btn btn-ac-secondary mt-3">
+      <i class="bi bi-send me-1"></i>{{ _('Send correction') }}
+    </button>
+  </form>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1302,14 +1302,14 @@ def require_maint_access(f: Callable[..., Any]) -> Callable[..., Any]:
     return decorated
 
 
-def tenant_pilot_names(tenant_id: int) -> list[str]:
-    """Display names of the active users in *tenant_id* with pilot access
-    (same rule as ``require_pilot_access``: a pilot-capable role or the
-    ``is_pilot`` flag), sorted case-insensitively and de-duplicated.
+def tenant_pilots(tenant_id: int) -> list[tuple[int, str]]:
+    """``(user_id, label)`` for the active users in *tenant_id* with pilot
+    access (same rule as ``require_pilot_access``: a pilot-capable role or
+    the ``is_pilot`` flag), sorted case-insensitively by label.
 
-    Used only as type-ahead suggestions for the free-text crew name fields —
-    picking one fills in the name, it never links the flight to that
-    user's account.
+    The label is the user's display name; when two pilots share one, both
+    get their e-mail local part appended so every label is unique and a
+    picked suggestion maps back to exactly one account.
     """
     from models import Role, TenantUser, User, db
     from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
@@ -1323,7 +1323,26 @@ def tenant_pilot_names(tenant_id: int) -> list[str]:
         .filter(or_(TenantUser.role.in_(pilot_roles), User.is_pilot.is_(True)))
         .all()
     )
-    return sorted({u.display_name for u in users}, key=str.casefold)
+    name_counts: dict[str, int] = defaultdict(int)
+    for u in users:
+        name_counts[u.display_name.casefold()] += 1
+    labelled = [
+        (
+            u.id,
+            f"{u.display_name} ({u.email.split('@')[0]})"
+            if name_counts[u.display_name.casefold()] > 1
+            else u.display_name,
+        )
+        for u in users
+    ]
+    return sorted(labelled, key=lambda p: p[1].casefold())
+
+
+def tenant_pilot_names(tenant_id: int) -> list[str]:
+    """Plain display names of ``tenant_pilots`` — type-ahead suggestions for
+    free-text crew name fields that never link to an account (e.g. the
+    standalone pilot-logbook entry form's PIC name)."""
+    return sorted({label for _uid, label in tenant_pilots(tenant_id)}, key=str.casefold)
 
 
 def user_can_access_aircraft(aircraft_id: int) -> bool:

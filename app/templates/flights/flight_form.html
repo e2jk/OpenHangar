@@ -103,7 +103,23 @@
           date=duplicate.entry.date) }}</p>
     {% endif %}
     <p class="mb-3 small text-muted">{{ _('Choose how to proceed, or continue editing below.') }}</p>
+    {% if duplicate.claim %}
+    <p class="mb-2">
+      <i class="bi bi-people me-1"></i>
+      {% if duplicate.claim.already_requested %}
+      {{ _('You already asked %(names)s to add you to this flight — it appears in your logbook once they approve.', names=duplicate.claim.approver_names) }}
+      {% else %}
+      {{ _('Were you on this flight? Ask %(names)s to add you to it instead of logging it twice.', names=duplicate.claim.approver_names) }}
+      {% endif %}
+    </p>
+    {% endif %}
     <div class="d-flex gap-2 flex-wrap">
+      {% if duplicate.claim and not duplicate.claim.already_requested %}
+      <button type="submit" form="flight-form" name="duplicate_action" value="claim"
+              class="btn btn-ac-primary btn-sm">
+        <i class="bi bi-person-plus me-1"></i>{{ _('Ask to be added to this flight') }}
+      </button>
+      {% endif %}
       <button type="submit" form="flight-form" name="duplicate_action" value="create"
               class="btn btn-warning btn-sm">
         <i class="bi bi-plus-lg me-1"></i>{{ _('Create anyway') }}
@@ -316,20 +332,43 @@
           </div>
 
           {# Crew fields — shown for every aircraft choice, managed or not. Both
-             name inputs suggest this tenant's pilots but accept any free text;
-             picking a suggestion only fills in the name (no account link). #}
-          <div id="crew-section">
+             name inputs suggest this tenant's pilots (name_autocomplete.js,
+             fed by the datalist below) but accept any free text. Picking
+             another pilot's suggestion also fills the hidden crew_user_id_*
+             field (flight_form.js), which asks that pilot to confirm the
+             flight in their own logbook (flights/crew_invites.py). A slot a
+             pilot already confirmed is read-only: only they change their own
+             name and role (flights/shared_flight.py). #}
+          {% set _pending_invites = crew_pending_invites | default({}) %}
+          {% set _locked = crew_locked_slots | default({}) %}
+          <div id="crew-section"
+               data-current-user-id="{{ session.get('user_id', '') }}"
+               data-invite-hint="{{ _('%(name)s will be asked to confirm this flight in their own pilot logbook.', name='__NAME__') }}">
             <datalist id="crew-name-suggestions">
-              {% for name in crew_name_suggestions | default([]) %}
-              <option value="{{ name }}">
+              {% for pilot_id, label in crew_pilots | default([]) %}
+              <option value="{{ label }}" data-user-id="{{ pilot_id }}">
               {% endfor %}
             </datalist>
+            {% for slot_idx, slot in [(0, 'pic'), (1, 'second')] %}
+            {% set _hidden_name = 'crew_user_id_' ~ slot_idx %}
+            {% set _pending = _pending_invites.get(slot) %}
+            <input type="hidden" name="{{ _hidden_name }}" id="{{ _hidden_name }}"
+                   data-pending-user-id="{{ _pending.invited_user_id if _pending else '' }}"
+                   value="{{ request.form.get(_hidden_name, '') if request.method == 'POST' else (_pending.invited_user_id if _pending else '') }}">
+            {% endfor %}
             <div class="mb-3">
               <label for="crew_name_0" class="form-label">{{ _('PIC / Commander') }} <span class="text-danger">*</span></label>
               <input type="text" class="form-control" id="crew_name_0" name="crew_name_0"
-                     list="crew-name-suggestions" autocomplete="off"
+                     data-name-ac="crew-name-suggestions" autocomplete="off"
                      value="{{ flight.pic_name if flight else (request.form.get('crew_name_0', '') or (pilot_name_hint | default(''))) }}"
-                     placeholder="e.g. J. Smith" maxlength="128">
+                     placeholder="e.g. J. Smith" maxlength="128"{% if _locked.get('pic') %} readonly{% endif %}>
+              {% if _locked.get('pic') %}
+              <div class="form-text"><i class="bi bi-person-check me-1"></i>{{ _('Confirmed by %(name)s — only they can change their name and role.', name=_locked.pic) }}</div>
+              {% endif %}
+              {% if _pending_invites.get('pic') %}
+              <div class="form-text"><i class="bi bi-hourglass-split me-1"></i>{{ _('Waiting for %(name)s to confirm this flight.', name=_pending_invites.pic.invited_user.display_name) }}</div>
+              {% endif %}
+              <div class="form-text text-info d-none" id="crew_invite_hint_0"></div>
             </div>
             <div class="row mb-3">
               <div class="col-7">
@@ -337,19 +376,32 @@
                   {{ _('Second crew') }} <span class="text-muted small">({{ _('optional') }})</span>
                 </label>
                 <input type="text" class="form-control" id="crew_name_1" name="crew_name_1"
-                       list="crew-name-suggestions" autocomplete="off"
+                       data-name-ac="crew-name-suggestions" autocomplete="off"
                        value="{{ (flight.second_crew_name or '') if flight else request.form.get('crew_name_1', '') }}"
-                       placeholder="e.g. M. Dupont" maxlength="128">
+                       placeholder="e.g. M. Dupont" maxlength="128"{% if _locked.get('second') %} readonly{% endif %}>
+                {% if _locked.get('second') %}
+                <div class="form-text"><i class="bi bi-person-check me-1"></i>{{ _('Confirmed by %(name)s — only they can change their name and role.', name=_locked.second) }}</div>
+                {% endif %}
+                {% if _pending_invites.get('second') %}
+                <div class="form-text"><i class="bi bi-hourglass-split me-1"></i>{{ _('Waiting for %(name)s to confirm this flight.', name=_pending_invites.second.invited_user.display_name) }}</div>
+                {% endif %}
+                <div class="form-text text-info d-none" id="crew_invite_hint_1"></div>
               </div>
               <div class="col-5">
                 <label for="crew_role_1" class="form-label">{{ _('Role') }}</label>
-                <select class="form-select" id="crew_role_1" name="crew_role_1">
+                {% if _locked.get('second') %}
+                <input type="hidden" name="crew_role_1" value="{{ flight.second_crew_role or '' }}">
+                {% endif %}
+                {# On a re-render (validation error, duplicate warning) keep what
+                   was submitted — otherwise the role silently resets to blank. #}
+                {% set _role_1 = request.form.get('crew_role_1') if request.method == 'POST' else (flight.second_crew_role if flight else none) %}
+                <select class="form-select" id="crew_role_1"{% if _locked.get('second') %} disabled{% else %} name="crew_role_1"{% endif %}>
                   <option value=""
-                    {% if not flight or flight.second_crew_role is none %}selected{% endif %}>{{ _('Select…') }}</option>
+                    {% if not _role_1 %}selected{% endif %}>{{ _('Select…') }}</option>
                   {% for role, label in crew_roles.LABELS.items() %}
                   {% if role != 'PIC' %}
                   <option value="{{ role }}"
-                    {% if flight and flight.second_crew_role == role %}selected{% endif %}>{{ _(label) }}</option>
+                    {% if _role_1 == role %}selected{% endif %}>{{ _(label) }}</option>
                   {% endif %}
                   {% endfor %}
                 </select>

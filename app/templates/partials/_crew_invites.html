@@ -1,0 +1,52 @@
+{#- Pending crew invites for the logged-in pilot, with Confirm / Decline.
+    Expects: crew_invites (list of FlightCrewInvite), crew_invites_next
+    ('dashboard' | 'logbook' — where to return after answering). -#}
+<div id="crew-invites" class="dash-panel mb-4">
+  <div class="dash-panel-header">
+    <i class="bi bi-person-plus me-2"></i>{{ _('Flights waiting for your confirmation') }}
+    <span class="ms-2 badge bg-warning text-dark oh-fs-07">{{ crew_invites | length }}</span>
+  </div>
+  <div class="dash-panel-body p-0">
+    <p class="text-muted oh-fs-085 px-3 pt-2 mb-2">{{ _('Another pilot logged these flights with you on board. Confirm to add them to your pilot logbook.') }}</p>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 oh-fs-088">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">{{ _('Date') }}</th>
+            <th>{{ _('Route') }}</th>
+            <th>{{ _('Aircraft') }}</th>
+            <th>{{ _('Logged by') }}</th>
+            <th>{{ _('Your role') }}</th>
+            <th class="pe-3 text-end">{{ _('Actions') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inv in crew_invites %}
+          {% set fe = inv.flight %}
+          <tr>
+            <td class="ps-3 text-nowrap">{{ fe.date.isoformat() }}</td>
+            <td class="text-nowrap">{{ fe.departure_icao or '?' }} → {{ fe.arrival_icao or '?' }}</td>
+            <td><span class="oh-reg-plate">{{ fe.display_registration or '—' }}</span></td>
+            <td class="text-muted">{{ inv.invited_by.display_name if inv.invited_by else '—' }}</td>
+            <td>
+              {% if inv.slot == 'pic' %}{{ _('PIC / Commander') }}
+              {% elif fe.second_crew_role in crew_roles.LABELS %}{{ _(crew_roles.LABELS[fe.second_crew_role]) }}
+              {% else %}{{ _('Second crew') }}{% endif %}
+            </td>
+            <td class="pe-3 text-end text-nowrap">
+              <form method="post" action="{{ url_for('flights.accept_crew_invite', invite_id=inv.id) }}" class="d-inline">
+                <input type="hidden" name="next" value="{{ crew_invites_next }}">
+                <button type="submit" class="btn btn-sm btn-success py-0 px-2">{{ _('Confirm') }}</button>
+              </form>
+              <form method="post" action="{{ url_for('flights.decline_crew_invite', invite_id=inv.id) }}" class="d-inline ms-1">
+                <input type="hidden" name="next" value="{{ crew_invites_next }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2">{{ _('Decline') }}</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

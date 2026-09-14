@@ -129,6 +129,7 @@ var NOT_CACHED_PATTERNS = [
   [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/reservations\/\d+$/, 'individual reservation detail — same reasoning'],
   [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/components\/\d+\/logbook$/, 'nested per-component leaf view — low repeat-visit value'],
   [/^\/pilot\/logbook\/\d+\/view$/, 'individual logbook-entry detail — same reasoning'],
+  [/^\/flights\/\d+\/my-part$/, 'personal crew-slot + correction form of one shared flight — needs fresh state on every open, same reasoning as /edit'],
   [/^\/pilot\/minimums\/revision\/\d+$/, 'individual revision detail — same reasoning'],
   [/^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/owners$/, 'co-owner management form — needs fresh owner/share state on every open, same reasoning as /edit'],
   [/^\/config\/renters\/\d+\/account$/, 'shows live account balance — staleness here is about money, not a badge'],

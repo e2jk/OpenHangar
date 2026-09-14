@@ -1,0 +1,53 @@
+{#- Pending requests from pilots asking to be added to flights the logged-in
+    pilot logged. Expects: crew_claims (list of FlightCrewInvite, kind
+    "claim"), crew_roles, crew_invites_next ('dashboard' | 'logbook'). -#}
+<div id="crew-claims" class="dash-panel mb-4">
+  <div class="dash-panel-header">
+    <i class="bi bi-person-plus me-2"></i>{{ _('Pilots asking to be added to your flights') }}
+    <span class="ms-2 badge bg-warning text-dark oh-fs-07">{{ crew_claims | length }}</span>
+  </div>
+  <div class="dash-panel-body p-0">
+    <p class="text-muted oh-fs-085 px-3 pt-2 mb-2">{{ _('These pilots say they were on a flight you logged. Approving adds the flight to their pilot logbook.') }}</p>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 oh-fs-088">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">{{ _('Flight') }}</th>
+            <th>{{ _('Pilot') }}</th>
+            <th>{{ _('Role') }}</th>
+            <th class="pe-3 text-end">{{ _('Actions') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in crew_claims %}
+          {% set fe = c.flight %}
+          <tr>
+            <td class="ps-3 text-nowrap">
+              <a href="{{ url_for('pilots.view_entry', entry_id=fe.id) }}" class="text-decoration-none">
+                {{ fe.date.isoformat() }} · {{ fe.departure_icao or '?' }} → {{ fe.arrival_icao or '?' }}
+              </a>
+              {% if fe.display_registration %}<span class="oh-reg-plate ms-1">{{ fe.display_registration }}</span>{% endif %}
+            </td>
+            <td class="text-muted">{{ c.invited_user.display_name if c.invited_user else '—' }}</td>
+            <td>
+              {% if c.slot == 'pic' %}{{ _('PIC / Commander') }}
+              {% elif (fe.second_crew_role or c.requested_role) in crew_roles.LABELS %}{{ _(crew_roles.LABELS[fe.second_crew_role or c.requested_role]) }}
+              {% else %}{{ _('Second crew') }}{% endif %}
+            </td>
+            <td class="pe-3 text-end text-nowrap">
+              <form method="post" action="{{ url_for('flights.approve_crew_claim', claim_id=c.id) }}" class="d-inline">
+                <input type="hidden" name="next" value="{{ crew_invites_next }}">
+                <button type="submit" class="btn btn-sm btn-success py-0 px-2">{{ _('Approve') }}</button>
+              </form>
+              <form method="post" action="{{ url_for('flights.decline_crew_claim', claim_id=c.id) }}" class="d-inline ms-1">
+                <input type="hidden" name="next" value="{{ crew_invites_next }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2">{{ _('Decline') }}</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

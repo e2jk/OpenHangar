@@ -41,9 +41,15 @@ from models import (
     Aircraft,
     AppSetting,
     Component,
+    CorrectionStatus,
+    CrewInviteKind,
+    CrewInviteStatus,
     CrewRole,
+    CrewSlot,
     Document,
     Flight,
+    FlightCorrectionSuggestion,
+    FlightCrewInvite,
     GpsTrack,
     Reservation,
     ReservationStatus,
@@ -60,18 +66,58 @@ from sqlalchemy import func, or_  # pyright: ignore[reportMissingImports]
 from utils import (
     accessible_aircraft,
     activity,
+    current_user_role,
     login_required,
     require_pilot_access,
     require_role,
-    tenant_pilot_names,
+    tenant_pilots,
     user_can_access_aircraft,
 )  # pyright: ignore[reportMissingImports]
 from werkzeug.utils import secure_filename
 
+from flights.crew_invites import (  # pyright: ignore[reportMissingImports]
+    accept_invite,
+    claim_option,
+    create_claim,
+    decline_invite,
+    notify_claim_answered,
+    notify_claim_created,
+    notify_invite_answered,
+    notify_invites,
+    own_slot,
+    pending_invites_for_flight,
+    requested_invites,
+    sync_crew_invites,
+)
+from flights.crew_removal import (  # pyright: ignore[reportMissingImports]
+    flash_kept_in_pilot_logbooks,
+    remove_from_aircraft_log,
+    unlink_user,
+)
 from flights.form_parsing import (  # pyright: ignore[reportMissingImports]
     apply_flight_fields,
     flight_is_lenient,
     parse_flight_fields,
+)
+from flights.shared_flight import (  # pyright: ignore[reportMissingImports]
+    FIELD_SPECS,
+    apply_personal_fields,
+    apply_suggestion,
+    build_suggestion,
+    can_edit_shared,
+    current_values,
+    field_label,
+    notify_shared_changes,
+    notify_suggestion_created,
+    notify_suggestion_rejected,
+    pending_suggestions_by,
+    personal_function_hours,
+    protect_other_pilots,
+    reject_suggestion,
+    restore_other_pilots,
+    shared_editor_ids,
+    shared_snapshot,
+    suggestable_fields,
 )
 
 flights_bp = Blueprint("flights", __name__)
@@ -622,7 +668,8 @@ def log_flight() -> ResponseReturnValue:
         gps_prefill=gps_prefill,
         nature_suggestions=nature_suggestions,
         pilot_name_hint=pilot_name_hint,
-        crew_name_suggestions=tenant_pilot_names(tid),
+        crew_pilots=tenant_pilots(tid),
+        crew_pending_invites={},
         crew_roles=CrewRole,
         fuel_units=_FUEL_UNITS,
         duplicate=None,
@@ -646,6 +693,11 @@ def edit_flight(flight_id: int) -> ResponseReturnValue:
     uid = int(session["user_id"])
     fe = _get_flight_or_404(flight_id)
 
+    # A pilot who confirmed someone else's flight edits only their own part
+    # of it and suggests corrections to the rest (flights/shared_flight.py).
+    if not can_edit_shared(fe, uid, current_user_role()):
+        return redirect(url_for("flights.crew_entry", flight_id=fe.id))
+
     if request.method == "POST":
         return _handle_log_flight_post(managed_aircraft, uid, fe=fe)
 
@@ -665,7 +717,9 @@ def edit_flight(flight_id: int) -> ResponseReturnValue:
         gps_prefill=gps_prefill,
         nature_suggestions=_nature_suggestions(fe.aircraft_id),
         pilot_name_hint=None,
-        crew_name_suggestions=tenant_pilot_names(tid),
+        crew_pilots=tenant_pilots(tid),
+        crew_pending_invites=pending_invites_for_flight(fe),
+        crew_locked_slots=_crew_locked_slots(fe, uid),
         crew_roles=CrewRole,
         fuel_units=_FUEL_UNITS,
         duplicate=None,
@@ -677,6 +731,267 @@ def edit_flight(flight_id: int) -> ResponseReturnValue:
         active_minimums=None,
         minimums_breaches=[],
     )
+
+
+@flights_bp.app_template_global("correction_field_label")
+def correction_field_label(field: str) -> str:
+    return field_label(field)
+
+
+def _crew_locked_slots(fe: Flight, uid: int | None) -> dict[str, str]:
+    """Slots linked to another pilot's account → that pilot's name. The
+    flight form shows their name/role read-only: only they change them."""
+    locked: dict[str, str] = {}
+    for slot, occupant in (
+        (CrewSlot.PIC, fe.pic_user_id),
+        (CrewSlot.SECOND, fe.second_crew_user_id),
+    ):
+        if occupant is not None and occupant != uid:
+            user = db.session.get(User, occupant)
+            locked[slot] = user.display_name if user else "—"
+    return locked
+
+
+# ── My part of a shared flight ───────────────────────────────────────────────
+
+
+@flights_bp.route("/flights/<int:flight_id>/my-part", methods=["GET", "POST"])
+@login_required
+@require_pilot_access
+def crew_entry(flight_id: int) -> ResponseReturnValue:
+    """A linked pilot's own name, role, function time and remark on a flight,
+    plus (when they don't own its shared fields) suggesting corrections."""
+    uid = int(session["user_id"])
+    fe = db.session.get(Flight, flight_id)
+    slot = fe.slot_for(uid) if fe else None
+    if fe is None or slot is None:
+        abort(404)
+    can_edit = can_edit_shared(fe, uid, current_user_role())
+    form_values = current_values(fe)
+
+    if request.method == "POST":
+        action = request.form.get("action")
+        # flask.abort() always raises — the `else` branch below never falls
+        # through — but static analysis doesn't know that, so this is
+        # initialized unconditionally rather than relying on it.
+        errors: list[str] = []
+        if action == "personal":
+            errors = apply_personal_fields(fe, slot, request.form)
+            if not errors:
+                db.session.commit()
+                flash(_("Your part of this flight was saved."), "success")
+                return redirect(url_for("flights.crew_entry", flight_id=fe.id))
+        elif action == "suggest" and not can_edit:
+            changes, errors = build_suggestion(fe, request.form)
+            form_values.update(
+                {k: request.form.get(k, "") for k in suggestable_fields(fe)}
+            )
+            if not errors and not changes:
+                errors = [_("Nothing to suggest — the values are unchanged.")]
+            if not errors:
+                suggestion = FlightCorrectionSuggestion(
+                    flight_id=fe.id, suggested_by_user_id=uid, changes=changes
+                )
+                db.session.add(suggestion)
+                db.session.commit()
+                notify_suggestion_created(suggestion)
+                flash(
+                    _(
+                        "Correction sent. It is applied once the pilot who logged "
+                        "this flight accepts it."
+                    ),
+                    "success",
+                )
+                return redirect(url_for("flights.crew_entry", flight_id=fe.id))
+        else:
+            abort(400)
+        for msg in errors:
+            flash(msg, "danger")
+
+    logger_ids = shared_editor_ids(fe) - {uid}
+    logger = db.session.get(User, min(logger_ids)) if logger_ids else None
+    return render_template(
+        "flights/crew_entry.html",
+        flight=fe,
+        slot=slot,
+        can_edit_shared=can_edit,
+        logger=logger,
+        function_hours=personal_function_hours(fe, slot),
+        crew_roles=CrewRole,
+        suggestable=suggestable_fields(fe),
+        field_specs=FIELD_SPECS,
+        form_values=form_values,
+        my_suggestions=pending_suggestions_by(uid, fe),
+        field_label=field_label,
+    )
+
+
+def _get_reviewable_suggestion_or_404(suggestion_id: int) -> FlightCorrectionSuggestion:
+    uid = session.get("user_id")
+    suggestion = db.session.get(FlightCorrectionSuggestion, suggestion_id)
+    if suggestion is None:
+        abort(404)
+    fe = db.session.get(Flight, suggestion.flight_id)
+    assert fe is not None, "flight_id is a non-null CASCADE foreign key"
+    if uid == suggestion.suggested_by_user_id or uid not in shared_editor_ids(fe):
+        abort(404)
+    return suggestion
+
+
+def _correction_redirect() -> ResponseReturnValue:
+    """Fixed allow-list, like _crew_invite_redirect."""
+    if request.form.get("next") == "dashboard":
+        return redirect(url_for("index") + "#flight-corrections")
+    return redirect(url_for("pilots.logbook") + "#flight-corrections")
+
+
+@flights_bp.route("/flights/corrections/<int:suggestion_id>/accept", methods=["POST"])
+@login_required
+@require_pilot_access
+def accept_correction(suggestion_id: int) -> ResponseReturnValue:
+    suggestion = _get_reviewable_suggestion_or_404(suggestion_id)
+    if suggestion.status != CorrectionStatus.PENDING:
+        flash(_("This correction has already been handled."), "warning")
+        return _correction_redirect()
+    uid = int(session["user_id"])
+    before = apply_suggestion(suggestion, uid)
+    db.session.commit()
+    fe = db.session.get(Flight, suggestion.flight_id)
+    assert fe is not None, "flight_id is a non-null CASCADE foreign key"
+    notify_shared_changes(fe, uid, before)
+    flash(_("Correction applied to the flight."), "success")
+    return _correction_redirect()
+
+
+@flights_bp.route("/flights/corrections/<int:suggestion_id>/reject", methods=["POST"])
+@login_required
+@require_pilot_access
+def reject_correction(suggestion_id: int) -> ResponseReturnValue:
+    suggestion = _get_reviewable_suggestion_or_404(suggestion_id)
+    if suggestion.status != CorrectionStatus.PENDING:
+        flash(_("This correction has already been handled."), "warning")
+        return _correction_redirect()
+    reject_suggestion(suggestion)
+    db.session.commit()
+    notify_suggestion_rejected(suggestion, int(session["user_id"]))
+    flash(_("Correction rejected."), "info")
+    return _correction_redirect()
+
+
+def _get_own_pending_invite_or_404(invite_id: int) -> FlightCrewInvite:
+    invite = db.session.get(FlightCrewInvite, invite_id)
+    if (
+        not invite
+        or invite.kind != CrewInviteKind.INVITE
+        or invite.invited_user_id != session.get("user_id")
+    ):
+        abort(404)
+    return invite
+
+
+def _get_reviewable_claim_or_404(claim_id: int) -> FlightCrewInvite:
+    claim = db.session.get(FlightCrewInvite, claim_id)
+    if claim is None or claim.kind != CrewInviteKind.CLAIM:
+        abort(404)
+    fe = db.session.get(Flight, claim.flight_id)
+    assert fe is not None, "flight_id is a non-null CASCADE foreign key"
+    if session.get("user_id") not in shared_editor_ids(fe):
+        abort(404)
+    return claim
+
+
+def _claim_redirect() -> ResponseReturnValue:
+    """Fixed allow-list, like _crew_invite_redirect."""
+    if request.form.get("next") == "dashboard":
+        return redirect(url_for("index") + "#crew-claims")
+    return redirect(url_for("pilots.logbook") + "#crew-claims")
+
+
+@flights_bp.route("/flights/crew-claims/<int:claim_id>/approve", methods=["POST"])
+@login_required
+@require_pilot_access
+def approve_crew_claim(claim_id: int) -> ResponseReturnValue:
+    claim = _get_reviewable_claim_or_404(claim_id)
+    if claim.status != CrewInviteStatus.PENDING:
+        flash(_("This request has already been handled."), "warning")
+        return _claim_redirect()
+    claimant = db.session.get(User, claim.invited_user_id)
+    assert claimant is not None, "invited_user_id is a non-null CASCADE foreign key"
+    accepted = accept_invite(claim, claimant)
+    db.session.commit()
+    if accepted:
+        notify_claim_answered(claim, accepted=True, actor_id=int(session["user_id"]))
+        flash(
+            _("%(name)s was added to the flight.", name=claimant.display_name),
+            "success",
+        )
+    else:
+        flash(
+            _("That crew position has already been filled — nothing to approve."),
+            "warning",
+        )
+    return _claim_redirect()
+
+
+@flights_bp.route("/flights/crew-claims/<int:claim_id>/decline", methods=["POST"])
+@login_required
+@require_pilot_access
+def decline_crew_claim(claim_id: int) -> ResponseReturnValue:
+    claim = _get_reviewable_claim_or_404(claim_id)
+    if claim.status != CrewInviteStatus.PENDING:
+        flash(_("This request has already been handled."), "warning")
+        return _claim_redirect()
+    decline_invite(claim)
+    db.session.commit()
+    notify_claim_answered(claim, accepted=False, actor_id=int(session["user_id"]))
+    flash(_("Request declined."), "info")
+    return _claim_redirect()
+
+
+def _crew_invite_redirect() -> ResponseReturnValue:
+    """Back to where the Confirm/Decline button was clicked — a fixed
+    allow-list, so the `next` field can never become an open redirect."""
+    if request.form.get("next") == "dashboard":
+        return redirect(url_for("index") + "#crew-invites")
+    return redirect(url_for("pilots.logbook") + "#crew-invites")
+
+
+@flights_bp.route("/flights/crew-invites/<int:invite_id>/accept", methods=["POST"])
+@login_required
+@require_pilot_access
+def accept_crew_invite(invite_id: int) -> ResponseReturnValue:
+    invite = _get_own_pending_invite_or_404(invite_id)
+    if invite.status != CrewInviteStatus.PENDING:
+        flash(_("This flight invitation is no longer open."), "warning")
+        return _crew_invite_redirect()
+    user = db.session.get(User, invite.invited_user_id)
+    assert user is not None, "invited_user_id is a non-null CASCADE foreign key"
+    accepted = accept_invite(invite, user)
+    db.session.commit()
+    if accepted:
+        notify_invite_answered(invite, accepted=True)
+        flash(_("Flight confirmed — it's now in your pilot logbook."), "success")
+    else:
+        flash(
+            _("This flight's crew slot has already been filled — nothing to confirm."),
+            "warning",
+        )
+    return _crew_invite_redirect()
+
+
+@flights_bp.route("/flights/crew-invites/<int:invite_id>/decline", methods=["POST"])
+@login_required
+@require_pilot_access
+def decline_crew_invite(invite_id: int) -> ResponseReturnValue:
+    invite = _get_own_pending_invite_or_404(invite_id)
+    if invite.status != CrewInviteStatus.PENDING:
+        flash(_("This flight invitation is no longer open."), "warning")
+        return _crew_invite_redirect()
+    decline_invite(invite)
+    db.session.commit()
+    notify_invite_answered(invite, accepted=False)
+    flash(_("Flight invitation declined."), "info")
+    return _crew_invite_redirect()
 
 
 @flights_bp.route("/flights/<int:flight_id>/track/image.png")
@@ -1105,6 +1420,22 @@ def _handle_log_flight_post(
         errors.append(
             _("Aircraft registration is required for other aircraft flights.")
         )
+    # The slot this pilot picks for themselves must not already belong to the
+    # other pilot who confirmed this flight.
+    requested_slot = own_slot(pilot_role)
+    if fe is not None and requested_slot is not None:
+        occupant = (
+            fe.pic_user_id if requested_slot == CrewSlot.PIC else fe.second_crew_user_id
+        )
+        if occupant is not None and occupant != uid:
+            occupant_user = db.session.get(User, occupant)
+            errors.append(
+                _(
+                    "That crew position is already confirmed by %(name)s — pick "
+                    "your own role on this flight.",
+                    name=occupant_user.display_name if occupant_user else "—",
+                )
+            )
 
     # The aircraft-log `landing_count` is derived from the pilot-log day/night
     # split (there is no separate `landing_count` form field); when neither is
@@ -1167,7 +1498,43 @@ def _handle_log_flight_post(
             exclude_flight_id=fe.id if fe else None,
         )
         if dup:
+            # Someone else already logged this flight: offer to ask them to
+            # add this pilot to it, instead of logging a duplicate.
+            dup["claim"] = (
+                claim_option(dup["entry"], uid, pilot_role) if fe is None else None
+            )
             return _render_form(managed_aircraft, fe, None, aircraft_id_raw, dup)
+
+    # ── Claim path: ask to be added to the already-logged flight ──────────────
+    if duplicate_action == "claim" and fe is None and flight_date:
+        dup = _find_duplicate_flight(
+            aircraft_id=ac.id if ac else None,
+            pilot_user_id=uid,
+            date=flight_date,
+            dep_icao=dep,
+            arr_icao=arr,
+            block_off=gps_block_off,
+            block_on=gps_block_on,
+        )
+        option = claim_option(dup["entry"], uid, pilot_role) if dup else None
+        if dup is None or option is None or option["already_requested"]:
+            flash(
+                _("Could not send the request — this flight can't be claimed."),
+                "warning",
+            )
+            return redirect(url_for("pilots.logbook"))
+        claim = create_claim(dup["entry"], uid, option["slot"], f.get("crew_role_1"))
+        db.session.commit()
+        notify_claim_created(claim)
+        flash(
+            _(
+                "Request sent to %(names)s. The flight appears in your logbook "
+                "once they approve it.",
+                names=option["approver_names"],
+            ),
+            "success",
+        )
+        return redirect(url_for("pilots.logbook"))
 
     # ── GPS-attach-only path ───────────────────────────────────────────────────
     if duplicate_action == "link_gps" and flight_date:
@@ -1239,10 +1606,16 @@ def _handle_log_flight_post(
     # instead of a FlightEntry; that distinction no longer exists in the
     # unified schema, only aircraft_id being NULL vs set.
     _fe_is_new = fe is None
+    shared_before: dict[str, str] | None = None
     if fe is None:
-        fe = Flight(aircraft_id=ac.id if ac else None)
+        fe = Flight(aircraft_id=ac.id if ac else None, created_by_user_id=uid)
         db.session.add(fe)
+        other_pilots: dict[str, Any] = {"total": None, "slots": {}}
     else:
+        # Editing a flight another pilot has in their logbook: never touch
+        # their name/role/function hours/remark, and tell them what changed.
+        shared_before = shared_snapshot(fe)
+        other_pilots = protect_other_pilots(fe, uid)
         fe.aircraft_id = ac.id if ac else None
 
     if ac:
@@ -1310,14 +1683,19 @@ def _handle_log_flight_post(
         # figures — the shared EASA figures (night_time etc.) stay, since
         # they describe the flight itself and another crew member may still
         # depend on them.
-        if fe.pic_user_id == uid:
-            fe.pic_user_id = None
-            fe.function_pic = None
-        elif fe.second_crew_user_id == uid:
-            fe.second_crew_user_id = None
-            fe.function_dual = None
+        unlink_user(fe, uid)
+
+    restore_other_pilots(fe, other_pilots)
+
+    # ── Crew invites (a tenant pilot picked in a crew name field) ──────────────
+    tid = _tenant_id()
+    db.session.flush()
+    new_invites = sync_crew_invites(fe, uid, requested_invites(f, uid, tid, pilot_role))
 
     db.session.commit()
+    notify_invites(new_invites, tid)
+    if shared_before is not None:
+        notify_shared_changes(fe, uid, shared_before)
 
     if ac:
         event_name = "flight.logged" if _fe_is_new else "flight.updated"
@@ -1397,7 +1775,11 @@ def _render_form(
         gps_prefill=None,
         nature_suggestions=nature_suggestions,
         pilot_name_hint=None,
-        crew_name_suggestions=tenant_pilot_names(_tenant_id()),
+        crew_pilots=tenant_pilots(_tenant_id()),
+        crew_pending_invites=pending_invites_for_flight(flight) if flight else {},
+        crew_locked_slots=_crew_locked_slots(flight, session.get("user_id"))
+        if flight
+        else {},
         crew_roles=CrewRole,
         fuel_units=_FUEL_UNITS,
         duplicate=duplicate,
@@ -1426,6 +1808,24 @@ def delete_flight(aircraft_id: int, flight_id: int) -> ResponseReturnValue:
     if not fe or fe.aircraft_id != ac.id:
         abort(404)
     label = f"{fe.departure_icao}→{fe.arrival_icao} on {fe.date}"
+    # Linked to another pilot's logbook: take it off this aircraft's log but
+    # keep it for them as an "other aircraft" flight (flights/crew_removal.py).
+    if fe.other_linked_user_ids(session.get("user_id")):
+        remove_from_aircraft_log(fe, session.get("user_id"))
+        db.session.commit()
+        activity(
+            "flight.detached", flight_id=flight_id, aircraft_id=aircraft_id, label=label
+        )
+        flash(
+            _(
+                "Flight %(label)s removed from the aircraft log. It stays in the "
+                "pilot logbook of the crew linked to it.",
+                label=label,
+            ),
+            "success",
+        )
+        return redirect(url_for("flights.list_flights", aircraft_id=ac.id))
+
     activity(
         "flight.deleted", flight_id=flight_id, aircraft_id=aircraft_id, label=label
     )
@@ -2106,24 +2506,22 @@ def airframe_import_rollback(aircraft_id: int, batch_id: int) -> ResponseReturnV
     if not batch or batch.aircraft_id != ac.id:
         abort(404)
 
-    entry_ids = [
-        row.id
-        for row in Flight.query.filter_by(airframe_import_batch_id=batch.id)
-        .with_entities(Flight.id)
-        .all()
-    ]
-    if entry_ids:
-        Flight.query.filter(Flight.id.in_(entry_ids)).delete(synchronize_session=False)
+    actor_id = session.get("user_id")
+    entries = Flight.query.filter_by(airframe_import_batch_id=batch.id).all()
+    # Rows a pilot has since confirmed in their logbook are detached instead
+    # of deleted, so undoing the import never removes pilot hours.
+    kept = sum(not remove_from_aircraft_log(fe, actor_id) for fe in entries)
     db.session.delete(batch)
     db.session.commit()
 
     flash(
         _(
             "Import deleted: %(n)d flight entries removed.",
-            n=len(entry_ids),
+            n=len(entries) - kept,
         ),
         "success",
     )
+    flash_kept_in_pilot_logbooks(kept)
     return redirect(url_for("flights.airframe_import_upload", aircraft_id=ac.id))
 
 

@@ -39,6 +39,39 @@ per-user boundary on shared flights (`edit_flight` today never touches
 another pilot's linked entry) — claiming a slot should not let a second
 pilot silently overwrite the header fields the first pilot logged.
 
+**Status — phase 1 built (invite from the logger's side):** picking a tenant
+pilot in the flight form's PIC / second-crew name field now records a pending
+`FlightCrewInvite` (`flights/crew_invites.py`), e-mails that pilot
+(`NotificationType.CREW_INVITE`), and lists it on their dashboard and pilot
+logbook (plus a nav badge) with Confirm / Decline. Only confirming writes
+their `user_id` into the slot. Deleting never removes another pilot's hours
+(`flights/crew_removal.py`): a pilot-side delete or logbook import rollback
+only unlinks the acting pilot while another account is linked, and an
+aircraft-side delete (flight log, airframe/GPS import rollback, deleting the
+aircraft) detaches linked flights into "other aircraft" flights instead of
+deleting them.
+
+**Status — phase 2 built (per-pilot edit boundary):** `Flight.created_by_user_id`
+records the logger; while linked, only they (plus tenant owners/admins on a
+managed aircraft) edit the shared fields, and every save path — flight form,
+standalone entry form, offline sync — restores the other linked pilot's
+personal fields (name, role, function hours, new `pic_remarks` /
+`second_crew_remarks`). The other pilot edits those on *My part of this
+flight* (`flights.crew_entry`) and proposes changes to shared fields as a
+`FlightCorrectionSuggestion` the logger accepts or rejects
+(`flights/shared_flight.py`), with `crew_invite_answered`,
+`shared_flight_changed` and `flight_correction` notifications.
+
+**Status — phase 3 built (claim from the other side):** the duplicate-flight
+warning offers *Ask to be added to this flight* when the matched flight was
+logged by someone else and the slot for the pilot's role is free; it records
+a `FlightCrewInvite` with `kind="claim"` that the logger approves or declines
+(`crew_claim` notification). Remaining gap: `_find_duplicate_flight` only
+matches *other* pilots' flights on a managed aircraft, so there is still no
+claim path for a standalone ("other aircraft") flight someone else logged —
+it would need a tenant-wide search by date/registration/route, which exposes
+other pilots' private logbook entries and so needs a product decision first.
+
 ---
 
 ## Shared ownership: deferred scope from Phase 39

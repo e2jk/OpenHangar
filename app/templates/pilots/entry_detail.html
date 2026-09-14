@@ -30,6 +30,12 @@
       </p>
     </div>
     <div class="d-flex gap-2">
+      {% if entry.other_linked_user_ids(session.get('user_id')) %}
+      <a href="{{ url_for('flights.crew_entry', flight_id=entry.id) }}"
+         class="btn btn-ac-secondary btn-sm">
+        <i class="bi bi-person-lines-fill me-1"></i>{{ _('My part of this flight') }}
+      </a>
+      {% endif %}
       <a href="{{ url_for('pilots.edit_entry', entry_id=entry.id) }}"
          class="btn btn-ac-secondary btn-sm">
         <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
@@ -83,14 +89,15 @@
       </div>
       {% endif %}
 
-      {# Function times #}
-      {% for label, val in [
-          (_('PIC'),        entry.function_pic),
-          (_('Co-pilot'),   entry.function_copilot),
-          (_('Dual'),       entry.function_dual),
-          (_('Instructor'), entry.function_instructor),
+      {# Function times — on a shared flight only this pilot's own #}
+      {% set _fn = entry.visible_function_fields(session.get('user_id')) %}
+      {% for field, label, val in [
+          ('function_pic',        _('PIC'),        entry.function_pic),
+          ('function_copilot',    _('Co-pilot'),   entry.function_copilot),
+          ('function_dual',       _('Dual'),       entry.function_dual),
+          ('function_instructor', _('Instructor'), entry.function_instructor),
       ] %}
-      {% if val is not none %}
+      {% if val is not none and field in _fn %}
       <div class="col-sm-4">
         <div class="text-muted small">{{ label }}</div>
         <div class="fw-semibold">{{ '%g'|format(val|float) }} h</div>
@@ -155,6 +162,13 @@
       <div class="col-12">
         <div class="text-muted small">{{ _('Remarks') }}</div>
         <div>{{ entry.notes }}</div>
+      </div>
+      {% endif %}
+      {% set _my_remark = entry.personal_remark_for(session.get('user_id')) %}
+      {% if _my_remark %}
+      <div class="col-12">
+        <div class="text-muted small">{{ _('Your personal remark') }}</div>
+        <div>{{ _my_remark }}</div>
       </div>
       {% endif %}
 

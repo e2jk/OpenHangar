@@ -61,6 +61,12 @@ _SKIP_GET_ENDPOINTS = {
     "flights.flight_track_gif",  # binary GIF — requires a GPS track on the seed flight
     "config.upgrade_status",  # returns 404 when OPENHANGAR_UPGRADE_DIR is not set; covered by tests/test_config_upgrade.py
     "reservations.rental_charge",  # requires a checked-in reservation with a drafted/finalized RentalCharge; the generic SEED res_id points to a plain (uncharged) reservation
+    "flights.crew_entry",  # "my part of this flight" 404s for anyone not occupying
+    # pic_user_id/second_crew_user_id on that exact flight — a stricter check than
+    # every other flight_id route (which only gate on tenant/aircraft access), so the
+    # generic fe_flt SEED flight (just "most recent flight on the primary aircraft",
+    # relied on as-is by several other routes) isn't guaranteed to satisfy it. Covered
+    # by tests/test_shared_flight.py::TestCrewEntryPage instead.
     "config.renter_statement_csv",  # CSV download — needs dedicated UI interaction test
     "reservations.my_account_statement_csv",  # CSV download — needs dedicated UI interaction test
     "aircraft.owner_statement_csv",  # CSV download — covered by tests/test_shared_ownership_statements.py

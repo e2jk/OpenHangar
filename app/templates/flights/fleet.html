@@ -74,7 +74,7 @@
             <form method="post"
                   action="{{ url_for('flights.delete_flight', aircraft_id=ac.id, flight_id=f.id) }}"
                   class="d-inline"
-                  data-confirm="{{ _('Delete this flight entry?') }}">
+                  data-confirm="{{ _('Remove this flight from the aircraft log? It stays in the pilot logbook of the crew linked to it.') if f.other_linked_user_ids(session.get('user_id')) else _('Delete this flight entry?') }}">
               <button type="submit" class="btn btn-ac-danger btn-xs">
                 <i class="bi bi-trash"></i>
               </button>

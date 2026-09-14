@@ -149,12 +149,17 @@ Each flight entry supports one or two crew members. For each crew member:
 
 | Field | Description |
 |-------|-------------|
-| **Name** | Free text, or select from pilots already registered in the system. Selecting a registered user enables automatic population of that pilot's personal logbook. |
+| **Name** | Free text, with the pilots of your organisation suggested as you type. Picking a registered pilot other than yourself asks them to confirm the flight in their own personal logbook (see [Flights with two pilots](logbook_pilot.md#flights-with-two-pilots)). |
 | **Role** | Dropdown: **PIC** (Pilot in Command), **IP** (Instructor Pilot), **SP** (Student Pilot), **Co-pilot**. Required under EASA; optional under FAA. |
 
 For a dual flight (instructor + student), enter both as separate crew rows with
 roles IP and SP respectively — rather than slash-separating names in a single
 field as is common in paper logbooks.
+
+Deleting a flight entry that is in a pilot's personal logbook removes it from
+this aircraft logbook only: it stays in that pilot's logbook as a flight on
+another aircraft, with the registration and type kept. The same applies when
+undoing an import or deleting the aircraft.
 
 > **Pilot logbook note:** flights on aircraft *not* managed in OpenHangar (a
 > rental, a friend's plane, another club's aircraft) can be entered directly in
@@ -287,7 +292,9 @@ the aircraft's flight tracks map, and the precise block-off/block-on UTC
 timestamps separately from the logbook departure/arrival times.
 
 A GPS import can be rolled back from the import history page — this deletes the
-batch and all linked flight entries in one operation.
+batch and all linked flight entries in one operation, except entries that are in
+a pilot's personal logbook: those are removed from this aircraft logbook but kept
+in the pilot's logbook.
 
 ---
 

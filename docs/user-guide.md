@@ -50,7 +50,7 @@ Each person you then invite to your installation is assigned a **role** that con
 - **Cost tracking** — expenses with receipt attachments, recurring fixed costs, and an operating-cost dashboard computing the true hourly (wet) rate.
 - **Document management** — attach PDFs and photos to aircraft, components, pilots, and logbook entries; inline viewer; sensitive-document controls hide files from renter/viewer roles; Syncthing-friendly on-disk layout.
 - **Share links** — passwordless read-only aircraft status pages with QR codes, for notice boards or your maintenance shop.
-- **Email notifications** — per-user preferences for maintenance, airworthiness, reservation, and pilot-currency alerts.
+- **Email notifications** — per-user preferences for maintenance, airworthiness, reservation, pilot-currency, and crew-confirmation alerts.
 - **Progressive Web App** — installable on mobile; offline flight logging with automatic sync when connectivity returns.
 - **Security** — role-based access with per-aircraft permissions, optional TOTP 2FA, and encrypted AES-256-GCM backups with built-in scheduling and retention (see [backup & restore guide](backup_restore.md)).
 - **Multi-language** — English, French, Dutch; language selectable per user.
@@ -112,6 +112,22 @@ The **Pilot logbook** view shows your personal flight history with EASA FCL.050 
 
 ![Pilot logbook](screenshots/pilot_logbook.png)
 
+#### Flights with another pilot on board
+
+The **PIC / Commander** and **Second crew** fields on the *Log a flight* form suggest the pilots of your organisation as you type, and still accept any other name. When you pick a colleague who has an OpenHangar account, they are asked to confirm the flight in their own logbook:
+
+1. They receive an e-mail (they can switch this off under **Configuration → Notifications** — *Flight crew confirmation request*).
+2. The flight appears under **Flights waiting for your confirmation** on their dashboard and pilot logbook, and a badge shows on the **Pilot** menu item.
+3. **Confirm** adds the flight to their pilot logbook, with their function time (PIC, instructor, co-pilot or dual) taken from their role on the flight. **Decline** leaves only their name on your entry.
+
+Until they confirm, the flight does not count towards their hours or currency. Changing or removing their name before they answer withdraws the request. You get an e-mail when they confirm or decline (*Flight crew confirmation answered*).
+
+Once confirmed, the flight's details — date, route, times, landings, night and instrument time, remarks — are **shared**, and only the pilot who logged it edits them; the other pilot is e-mailed a summary of what changed (*Shared flight changed*). Each pilot keeps **their own part** of the flight: their name, role, function time and a personal remark. Open it with the *My part of this flight* button (person icon) in the pilot logbook or on the entry's detail page; changing it never affects the other pilot. If you are not the pilot who logged the flight and a shared detail is wrong, use **Suggest a correction** on that same page: the logger sees it under *Suggested corrections to your flights* on their dashboard and logbook (and by e-mail) and can accept it — applying it for both of you — or reject it. On a flight in a managed aircraft, times and flight time follow the aircraft's counters, so ask the logger to correct those directly.
+
+It also works the other way round. If you log a flight on one of your organisation's aircraft and the *Possible duplicate detected* warning shows that someone else already logged it with you on board, click **Ask to be added to this flight** instead of *Create anyway*. The pilot who logged it sees your request under *Pilots asking to be added to your flights* (and by e-mail) and approves or declines it; once approved the flight is in your logbook with your role and function time.
+
+Removing a shared flight only ever removes it **for you**: if the other pilot also has it in their logbook, deleting it from your logbook just takes you off the flight and leaves their entry untouched. Likewise, deleting a flight from an aircraft's logbook, undoing an aircraft or GPS import, or deleting an aircraft never deletes pilots' hours — flights that are in someone's pilot logbook are removed from the aircraft's log but stay in that logbook as a flight on another aircraft, with the registration and type kept.
+
 The **Mass & balance** page lets you record and verify CG position before a flight:
 
 ![Mass & balance calculation](screenshots/wb_calc.png)
@@ -132,7 +148,7 @@ Your **pilot logbook** works offline the same way. If a flight's aircraft-logboo
 
 Pilot-logbook edits queue and sync the same way, and show up on the **Offline changes** page alongside your aircraft-logbook edits — a linked entry's pilot changes appear inline under its flight's card, and standalone entries get their own cards. If the personal logbook entry a flight was linked to gets removed online while you're offline, the changes page tells you so and lets you keep the flight-side edit while dropping the stale pilot one.
 
-A few things are deliberately **not** available offline: creating or deleting logbook entries (aircraft or pilot), linking a pilot entry to a flight for the first time, photos, GPS tracks, and maintenance all require a connection — the workbenches are for correcting what's already there. Any other page you weren't browsing before losing connectivity — a maintenance form, a new pilot-logbook entry — shows a plain "you're offline" message instead of failing silently if you try to submit it. Firefox in a regular browser tab works fine; installing OpenHangar as an app is optional and only changes how it looks, not what works offline. A browser profile set to permanently private browsing (e.g. Firefox's "Always use private browsing mode") disables offline access entirely, since browsers block Service Workers outright in that mode — use a regular profile if you need offline access. Log in again if your session has expired before syncing — your queued changes stay safe on the device either way. Since this offline data lives unencrypted in the browser's local storage, avoid leaving pending logbook edits on a shared or public device.
+A few things are deliberately **not** available offline: creating or deleting logbook entries (aircraft or pilot), linking a pilot entry to a flight for the first time, photos, GPS tracks, and maintenance all require a connection — the workbenches are for correcting what's already there. Editing a flight another pilot has confirmed in their own logbook is also not available offline for its shared details (date, route, times, landings, remarks) — only the pilot who logged it can change those; your queued edit is rejected with an explanation on the **Offline changes** page once you're back online, and you can suggest a correction there instead (see [Flights with two pilots](logbook_pilot.md#flights-with-two-pilots)). Any other page you weren't browsing before losing connectivity — a maintenance form, a new pilot-logbook entry — shows a plain "you're offline" message instead of failing silently if you try to submit it. Firefox in a regular browser tab works fine; installing OpenHangar as an app is optional and only changes how it looks, not what works offline. A browser profile set to permanently private browsing (e.g. Firefox's "Always use private browsing mode") disables offline access entirely, since browsers block Service Workers outright in that mode — use a regular profile if you need offline access. Log in again if your session has expired before syncing — your queued changes stay safe on the device either way. Since this offline data lives unencrypted in the browser's local storage, avoid leaving pending logbook edits on a shared or public device.
 
 ### Importing an existing pilot logbook
 
@@ -151,7 +167,7 @@ Sub-total rows (rows where the date cell contains "TOTAL", is blank, or contains
 
 #### Import history and rollback
 
-Every import is recorded on the **Pilot → Import history** page.  If you imported incorrect data, click **Delete this import** to remove all entries that belong to that batch in one operation — your manually-entered entries are never affected.
+Every import is recorded on the **Pilot → Import history** page.  If you imported incorrect data, click **Delete this import** to remove all entries that belong to that batch in one operation — your manually-entered entries are never affected. An imported flight that another pilot has since confirmed in their own logbook stays there; it is only removed from yours.
 
 ![Pilot logbook import history](screenshots/pilot_logbook_import_history.png)
 
@@ -276,7 +292,7 @@ Backups, SMTP settings, and usage profile are managed from the **Configuration**
 
 ### Choosing your notifications
 
-Every user picks which email notifications they receive — maintenance, airworthiness, reservation, and pilot-currency alerts — from **Configuration → Notifications**.  Administrators can additionally set fleet-wide defaults.
+Every user picks which email notifications they receive — maintenance, airworthiness, reservation, pilot-currency, and crew-confirmation alerts — from **Configuration → Notifications**.  Administrators can additionally set fleet-wide defaults.
 
 ![Email notification preferences](screenshots/config_notifications.png)
 

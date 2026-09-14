@@ -959,6 +959,17 @@ class Flight(db.Model):
     )
     second_crew_name = db.Column(db.String(128), nullable=True)
     second_crew_role = db.Column(db.String(16), nullable=True)  # CrewRole constant
+    # Personal remark per slot — only ever edited by the pilot in that slot,
+    # unlike the shared `notes` (see flights/shared_flight.py).
+    pic_remarks = db.Column(db.Text, nullable=True)
+    second_crew_remarks = db.Column(db.Text, nullable=True)
+    # Who logged the flight. While they're still linked to a slot, only they
+    # (plus tenant owners/admins, for managed aircraft) edit the shared
+    # fields; the other linked pilot suggests corrections instead. NULL for
+    # rows created before this was tracked → every linked pilot may edit.
+    created_by_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
 
     # Phase 30: GPS import
     source = db.Column(db.String(32), nullable=True)
@@ -1068,6 +1079,202 @@ class Flight(db.Model):
         if self.aircraft_id and self.aircraft:
             return self.aircraft.registration
         return self.other_aircraft_registration
+
+    def slot_for(self, user_id: int | None) -> str | None:
+        """The crew slot ("pic" / "second") *user_id* is linked to, if any."""
+        if user_id is None:
+            return None
+        if self.pic_user_id == user_id:
+            return "pic"
+        if self.second_crew_user_id == user_id:
+            return "second"
+        return None
+
+    def visible_function_fields(self, user_id: int | None) -> set[str]:
+        """function_* columns to show *user_id* in their logbook: on a flight
+        shared with another linked pilot, only their own slot's hours."""
+        if self.other_linked_user_ids(user_id):
+            if self.slot_for(user_id) == "pic":
+                return {"function_pic"}
+            if self.slot_for(user_id) == "second":
+                return {"function_copilot", "function_dual", "function_instructor"}
+        return {
+            "function_pic",
+            "function_copilot",
+            "function_dual",
+            "function_instructor",
+        }
+
+    def personal_remark_for(self, user_id: int | None) -> str | None:
+        slot = self.slot_for(user_id)
+        if slot == "pic":
+            remark: str | None = self.pic_remarks
+            return remark
+        if slot == "second":
+            remark = self.second_crew_remarks
+            return remark
+        return None
+
+    def other_linked_user_ids(self, user_id: int | None) -> set[int]:
+        """Accounts linked to either crew slot, other than *user_id* — the
+        pilots whose logbooks a delete by *user_id* must not touch (see
+        flights/crew_removal.py)."""
+        return {
+            uid
+            for uid in (self.pic_user_id, self.second_crew_user_id)
+            if uid is not None and uid != user_id
+        }
+
+
+# ── Crew invites (ask another pilot to confirm their slot on a flight) ────────
+
+
+class CrewSlot:
+    """Which of a Flight row's two identity slots an invite targets."""
+
+    PIC = "pic"  # pic_user_id / pic_name
+    SECOND = "second"  # second_crew_user_id / second_crew_name / second_crew_role
+    ALL: ClassVar[list[str]] = [PIC, SECOND]
+
+
+class CrewInviteStatus:
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    DECLINED = "declined"
+    # The inviter changed/removed the name, or the slot got filled another way.
+    CANCELLED = "cancelled"
+    ALL: ClassVar[list[str]] = [PENDING, ACCEPTED, DECLINED, CANCELLED]
+
+
+class CrewInviteKind:
+    # The logger named a pilot; that pilot confirms or declines.
+    INVITE = "invite"
+    # A pilot found the flight already logged (duplicate warning) and asks to
+    # be added; the pilot who owns the flight's shared fields approves.
+    CLAIM = "claim"
+    ALL: ClassVar[list[str]] = [INVITE, CLAIM]
+
+
+class FlightCrewInvite(db.Model):
+    """A request to link ``invited_user_id`` into one of a flight's crew slots.
+
+    ``kind`` says who answers it: for an invite (a pilot named another pilot
+    of the same tenant) the invited pilot confirms or declines; for a claim (a
+    pilot asks to be added to a flight someone else logged) the pilot who owns
+    the flight's shared fields approves or declines. Either way, on acceptance
+    the user id is written into the slot and the flight appears in that
+    pilot's logbook.
+
+    The slot's user id is deliberately *not* set while the request is
+    pending, so an unconfirmed flight never counts towards that pilot's totals
+    or currency.
+    """
+
+    __tablename__ = "flight_crew_invites"
+
+    id = db.Column(db.Integer, primary_key=True)
+    flight_id = db.Column(
+        db.Integer,
+        db.ForeignKey("flights.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    slot = db.Column(db.String(16), nullable=False)  # CrewSlot constant
+    invited_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    invited_by_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    status = db.Column(
+        db.String(16),
+        nullable=False,
+        default=CrewInviteStatus.PENDING,
+        server_default=CrewInviteStatus.PENDING,
+    )
+    kind = db.Column(
+        db.String(16),
+        nullable=False,
+        default=CrewInviteKind.INVITE,
+        server_default=CrewInviteKind.INVITE,
+    )
+    # Claims only: the second-crew role the claiming pilot says they flew as,
+    # applied on approval when the flight doesn't name one yet.
+    requested_role = db.Column(db.String(16), nullable=True)  # CrewRole constant
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+    responded_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    flight = db.relationship(
+        "Flight",
+        backref=db.backref(
+            "crew_invites", cascade="all, delete-orphan", passive_deletes=True
+        ),
+    )
+    invited_user = db.relationship("User", foreign_keys=[invited_user_id])
+    invited_by = db.relationship("User", foreign_keys=[invited_by_user_id])
+
+    __table_args__ = (
+        db.Index(
+            "ix_flight_crew_invites_invited_user_id_status",
+            invited_user_id,
+            status,
+        ),
+    )
+
+
+class CorrectionStatus:
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    ALL: ClassVar[list[str]] = [PENDING, ACCEPTED, REJECTED]
+
+
+class FlightCorrectionSuggestion(db.Model):
+    """A linked pilot who may not edit a shared flight's common fields
+    proposes new values; the pilot who logged it accepts (applied for both)
+    or rejects. ``changes`` maps field name → [old, new] canonical strings
+    (flights/shared_flight.py)."""
+
+    __tablename__ = "flight_correction_suggestions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    flight_id = db.Column(
+        db.Integer,
+        db.ForeignKey("flights.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    suggested_by_user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    changes = db.Column(db.JSON, nullable=False)
+    status = db.Column(
+        db.String(16),
+        nullable=False,
+        default=CorrectionStatus.PENDING,
+        server_default=CorrectionStatus.PENDING,
+    )
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+    responded_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    flight = db.relationship(
+        "Flight",
+        backref=db.backref(
+            "correction_suggestions", cascade="all, delete-orphan", passive_deletes=True
+        ),
+    )
+    suggested_by = db.relationship("User", foreign_keys=[suggested_by_user_id])
 
 
 # ── Pilot Profile ──────────────────────────────────────────────────────────────
@@ -3086,6 +3293,11 @@ class NotificationType:
     RENTER_AUTHORIZATION_EXPIRY = "renter_authorization_expiry"
     RESERVATION_AIRCRAFT_GROUNDED = "reservation_aircraft_grounded"
     PERSONAL_MINIMUMS_RECENCY = "personal_minimums_recency"
+    CREW_INVITE = "crew_invite"
+    CREW_INVITE_ANSWERED = "crew_invite_answered"
+    SHARED_FLIGHT_CHANGED = "shared_flight_changed"
+    FLIGHT_CORRECTION = "flight_correction"
+    CREW_CLAIM = "crew_claim"
 
     ALL: ClassVar[list[str]] = [
         GROUNDING_SNAG_OPENED,
@@ -3106,6 +3318,11 @@ class NotificationType:
         RENTER_AUTHORIZATION_EXPIRY,
         RESERVATION_AIRCRAFT_GROUNDED,
         PERSONAL_MINIMUMS_RECENCY,
+        CREW_INVITE,
+        CREW_INVITE_ANSWERED,
+        SHARED_FLIGHT_CHANGED,
+        FLIGHT_CORRECTION,
+        CREW_CLAIM,
     ]
 
     # System defaults — coded constants; DB only stores per-user or per-tenant overrides
@@ -3128,6 +3345,11 @@ class NotificationType:
         RENTER_AUTHORIZATION_EXPIRY: {"enabled": True, "threshold_days": 30},
         RESERVATION_AIRCRAFT_GROUNDED: {"enabled": True, "threshold_days": None},
         PERSONAL_MINIMUMS_RECENCY: {"enabled": True, "threshold_days": None},
+        CREW_INVITE: {"enabled": True, "threshold_days": None},
+        CREW_INVITE_ANSWERED: {"enabled": True, "threshold_days": None},
+        SHARED_FLIGHT_CHANGED: {"enabled": True, "threshold_days": None},
+        FLIGHT_CORRECTION: {"enabled": True, "threshold_days": None},
+        CREW_CLAIM: {"enabled": True, "threshold_days": None},
     }
 
     # Capability flags required — user sees this type in their prefs if they have >= 1
@@ -3152,6 +3374,11 @@ class NotificationType:
         # Any authenticated role that could hold a reservation.
         RESERVATION_AIRCRAFT_GROUNDED: ["is_owner", "is_pilot", "is_maint"],
         PERSONAL_MINIMUMS_RECENCY: ["is_pilot"],
+        CREW_INVITE: ["is_pilot"],
+        CREW_INVITE_ANSWERED: ["is_pilot"],
+        SHARED_FLIGHT_CHANGED: ["is_pilot"],
+        FLIGHT_CORRECTION: ["is_pilot"],
+        CREW_CLAIM: ["is_pilot"],
     }
 
     # Types that have a configurable days-ahead threshold
