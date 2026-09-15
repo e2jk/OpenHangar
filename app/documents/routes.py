@@ -78,6 +78,14 @@ _AIRCRAFT_DOC_TYPES = [
     (DocType.ARC, _l("Airworthiness Review Certificate (ARC)")),
 ]
 
+# Sentinel accepted by the aircraft Documents list's type filter alongside the
+# real DocType values above, to isolate documents with no type set -- e.g. an
+# insurance/ARC certificate uploaded without picking "Document type", which
+# silently falls outside the expiry-tracking/supersession machinery those two
+# real types drive (see _EXPIRY_DRIVING_DOC_TYPES).
+_NO_TYPE_FILTER = "none"
+_NO_TYPE_LABEL = _l("No type set")
+
 # doc_type -> Aircraft attribute it drives. Aircraft.insurance_expiry/arc_expiry
 # are synced caches, not directly user-editable — see the comment on those
 # columns in models.py. Kept in step by _recompute_expiry_field() below
@@ -467,13 +475,16 @@ def list_documents(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     show_sensitive = request.args.get("sensitive") == "1"
     doc_type_labels = dict(_AIRCRAFT_DOC_TYPES)
+    doc_type_labels[_NO_TYPE_FILTER] = _NO_TYPE_LABEL
     filter_doc_type = request.args.get("doc_type") or None
     if filter_doc_type not in doc_type_labels:
         filter_doc_type = None
     query = Document.query.filter_by(aircraft_id=ac.id)
     if not show_sensitive:
         query = query.filter_by(is_sensitive=False)
-    if filter_doc_type:
+    if filter_doc_type == _NO_TYPE_FILTER:
+        query = query.filter(Document.doc_type.is_(None))
+    elif filter_doc_type:
         query = query.filter_by(doc_type=filter_doc_type)
     docs = query.order_by(Document.uploaded_at.desc()).all()
     sensitive_count = Document.query.filter_by(
@@ -504,7 +515,7 @@ def list_documents(aircraft_id: int) -> ResponseReturnValue:
         broken_ids=broken_ids,
         category_labels=_CATEGORY_LABELS,
         filter_doc_type=filter_doc_type,
-        filter_doc_type_label=doc_type_labels.get(filter_doc_type or ""),
+        doc_type_filter_options=list(doc_type_labels.items()),
         active_doc_ids=active_doc_ids,
         expiry_driving_doc_types=_EXPIRY_DRIVING_DOC_TYPES,
     )

@@ -50,15 +50,25 @@
   </div>
   {% endif %}
 
-  {% if filter_doc_type %}
-  <div class="mb-3">
-    <span class="badge bg-secondary-subtle text-secondary-emphasis oh-fs-085">
-      {{ _('Showing: %(type)s', type=filter_doc_type_label) }}
-      <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id, sensitive=1 if show_sensitive else none) }}"
-         class="text-decoration-none ms-1" title="{{ _('Clear filter') }}">&times;</a>
-    </span>
-  </div>
-  {% endif %}
+  <form method="get" class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+    {% if show_sensitive %}
+    <input type="hidden" name="sensitive" value="1">
+    {% endif %}
+    <label for="doc_type" class="form-label mb-0">{{ _('Type') }}</label>
+    <select name="doc_type" id="doc_type" class="form-select form-select-sm oh-mw-260"
+            onchange="this.form.submit()">
+      <option value="">{{ _('All types') }}</option>
+      {% for value, label in doc_type_filter_options %}
+      <option value="{{ value }}" {% if filter_doc_type == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    {% if filter_doc_type %}
+    <a href="{{ url_for('documents.list_documents', aircraft_id=aircraft.id, sensitive=1 if show_sensitive else none) }}"
+       class="btn btn-sm btn-outline-secondary" title="{{ _('Clear filter') }}">
+      <i class="bi bi-x-lg"></i>
+    </a>
+    {% endif %}
+  </form>
 
   {% if docs %}
   <div class="ac-form-card p-0">
