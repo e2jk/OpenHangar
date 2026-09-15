@@ -271,9 +271,25 @@ class TestListDocumentsDocTypeFilter:
         assert "Unrelated" not in html
         assert "Current" in html
         assert "Future" in html
-        assert "Showing:" in html
+        assert 'value="insurance_certificate" selected' in html
+        assert "Clear filter" in html
         assert "Document currently active" in html
         assert "Document upcoming" in html
+
+    def test_no_type_filter_isolates_untyped_documents(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, "ldf3@x.com")
+        ac_id = _add_aircraft(app, tid)
+        _add_document(app, ac_id, title="Unrelated")
+        self._make_pair(app, ac_id)
+        _login(app, client, "ldf3@x.com")
+
+        rv = client.get(f"/aircraft/{ac_id}/documents?doc_type=none")
+        assert rv.status_code == 200
+        html = rv.data.decode()
+        assert "Unrelated" in html
+        assert "Current" not in html
+        assert "Future" not in html
+        assert 'value="none" selected' in html
 
     def test_invalid_doc_type_is_ignored(self, app, client):
         _uid, tid = _create_user_and_tenant(app, "ldf2@x.com")
@@ -283,8 +299,9 @@ class TestListDocumentsDocTypeFilter:
 
         rv = client.get(f"/aircraft/{ac_id}/documents?doc_type=not-a-real-type")
         assert rv.status_code == 200
-        assert "Unrelated" in rv.data.decode()
-        assert "Showing:" not in rv.data.decode()
+        html = rv.data.decode()
+        assert "Unrelated" in html
+        assert "Clear filter" not in html
 
 
 # ── Upload document ───────────────────────────────────────────────────────────
