@@ -166,7 +166,19 @@ jobs:
 
       - name: Enable auto-merge
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Unlike the read-only "resolve and verify" step above, this one
+          # writes (enablePullRequestAutoMerge). For a pull_request_review
+          # event on a fork-authored PR (the normal case here -- external
+          # contributor), GitHub always caps the default GITHUB_TOKEN to
+          # read-only regardless of this job's declared `permissions:` --
+          # a platform-level anti-privilege-escalation safeguard for any
+          # fork-PR-associated event, not something fixable via YAML. Fails
+          # with "GraphQL: Resource not accessible by integration". The
+          # workflow_dispatch path (trusted invoker, not fork-PR-triggered)
+          # isn't subject to this cap, but uses the same token here anyway
+          # for one consistent code path. Same PAT, same reasoning, as the
+          # auto-pr job above -- see its comment for the PAT's exact scope.
+          GH_TOKEN: ${{ secrets.PAT_AUTO_PR_MERGE }}
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ steps.resolve.outputs.pr_number }}
         run: |
