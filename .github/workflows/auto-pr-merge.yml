@@ -41,7 +41,18 @@ on:
     branches: [ship]
   pull_request_review:
     types: [submitted]
-  pull_request:
+  # pull_request_target, not pull_request: a plain `pull_request` event
+  # triggered by a fork PR withholds repo secrets entirely (not just the
+  # read-only GITHUB_TOKEN cap pull_request_review already has to work
+  # around below) -- PAT_AUTO_PR_MERGE would come through empty and every
+  # `gh` call would fail before even authenticating. pull_request_target
+  # runs in the base repo's trusted context instead (same "workflow
+  # definition always comes from main, never the fork" guarantee as
+  # pull_request_review), which does get secrets/token access. Its usual
+  # danger -- checking out and running the PR's own code while holding
+  # real secrets -- doesn't apply: this job never checks out anything, it
+  # only calls the GitHub API by PR number/SHA.
+  pull_request_target:  # zizmor: ignore[dangerous-triggers] intentional: no checkout of PR code anywhere in this file, only gh api/pr calls by number/SHA -- see the comment above
     types: [synchronize]
   workflow_dispatch:
     # Manual escape hatch for path 2 (see auto-merge-on-approval below) --
@@ -132,7 +143,7 @@ jobs:
        github.event.pull_request.base.ref == 'main' &&
        github.event.pull_request.head.ref != 'ship' &&
        !startsWith(github.event.pull_request.head.ref, 'renovate/')) ||
-      (github.event_name == 'pull_request' &&
+      (github.event_name == 'pull_request_target' &&
        github.event.action == 'synchronize' &&
        github.event.pull_request.base.ref == 'main' &&
        github.event.pull_request.head.ref != 'ship' &&
@@ -180,7 +191,7 @@ jobs:
           approved=$(gh pr view "$PR_NUMBER" --json latestReviews \
             --jq ".latestReviews | map(select(.author.login == \"${GITHUB_REPOSITORY_OWNER}\" and .state == \"APPROVED\")) | length > 0")
           if [ "$approved" != "true" ]; then
-            if [ "$EVENT_NAME" = "pull_request" ]; then
+            if [ "$EVENT_NAME" = "pull_request_target" ]; then
               # Normal for most pushes during PR development, pre-approval --
               # not an error, just nothing to (re-)arm yet.
               echo "PR #$PR_NUMBER has no approved review yet -- nothing to re-arm"
@@ -191,8 +202,8 @@ jobs:
             exit 1
           fi
 
-          if [ "$EVENT_NAME" = "pull_request" ]; then
-            # A push to an already-approved PR (see the pull_request/synchronize
+          if [ "$EVENT_NAME" = "pull_request_target" ]; then
+            # A push to an already-approved PR (see the pull_request_target/synchronize
             # path in the top-of-file comment) only re-arms auto-merge when it
             # provably didn't change the PR's own file content -- e.g. rebasing
             # onto a newer main via "Update branch". Comparing BEFORE's tree to
