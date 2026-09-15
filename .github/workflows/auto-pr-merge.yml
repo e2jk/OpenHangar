@@ -21,6 +21,16 @@ name: Auto-PR and auto-merge
 #    Excludes ship/renovate branches defensively (redundant with path 1 /
 #    Renovate's own automerge, not harmful, just pointless to also trigger).
 #
+#    Also re-arms auto-merge on a later push to an already-approved PR --
+#    e.g. rebasing it onto a newer main via the GitHub UI's "Update branch"
+#    -- but ONLY when that push provably didn't change the PR's own file
+#    content. This repo's ruleset has dismiss_stale_reviews_on_push: false
+#    (deliberately -- rebasing an approved PR shouldn't force a re-review),
+#    so an approval survives ANY subsequent push, content-changing or not;
+#    re-arming unconditionally on every push would auto-merge unreviewed
+#    new commits slipped in after approval exactly as readily as a harmless
+#    rebase. See the content-diff check in the first job step below.
+#
 # Both paths just enable GitHub's native auto-merge and let the branch
 # ruleset's required status checks decide when it's actually safe to land —
 # neither path does any CI work itself, and merging still waits for CI
@@ -31,6 +41,8 @@ on:
     branches: [ship]
   pull_request_review:
     types: [submitted]
+  pull_request:
+    types: [synchronize]
   workflow_dispatch:
     # Manual escape hatch for path 2 (see auto-merge-on-approval below) --
     # an approval submitted before this workflow existed (or any missed
@@ -120,6 +132,11 @@ jobs:
        github.event.pull_request.base.ref == 'main' &&
        github.event.pull_request.head.ref != 'ship' &&
        !startsWith(github.event.pull_request.head.ref, 'renovate/')) ||
+      (github.event_name == 'pull_request' &&
+       github.event.action == 'synchronize' &&
+       github.event.pull_request.base.ref == 'main' &&
+       github.event.pull_request.head.ref != 'ship' &&
+       !startsWith(github.event.pull_request.head.ref, 'renovate/')) ||
       github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -140,6 +157,9 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr_number }}
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.event.after }}
         run: |
           echo "pr_number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
           base_ref=$(gh pr view "$PR_NUMBER" --json baseRefName --jq .baseRefName)
@@ -160,11 +180,52 @@ jobs:
           approved=$(gh pr view "$PR_NUMBER" --json latestReviews \
             --jq ".latestReviews | map(select(.author.login == \"${GITHUB_REPOSITORY_OWNER}\" and .state == \"APPROVED\")) | length > 0")
           if [ "$approved" != "true" ]; then
+            if [ "$EVENT_NAME" = "pull_request" ]; then
+              # Normal for most pushes during PR development, pre-approval --
+              # not an error, just nothing to (re-)arm yet.
+              echo "PR #$PR_NUMBER has no approved review yet -- nothing to re-arm"
+              echo "enable=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
             echo "::error::PR #$PR_NUMBER has no approved review from ${GITHUB_REPOSITORY_OWNER}"
             exit 1
           fi
 
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            # A push to an already-approved PR (see the pull_request/synchronize
+            # path in the top-of-file comment) only re-arms auto-merge when it
+            # provably didn't change the PR's own file content -- e.g. rebasing
+            # onto a newer main via "Update branch". Comparing BEFORE's tree to
+            # AFTER's tree directly would be wrong: main moved forward between
+            # them (that's the point of the rebase), so the tree legitimately
+            # differs even with zero new code, since it now also carries main's
+            # own unrelated changes. Instead, diff each side against the SAME
+            # reference point (main's current tip) with a three-dot compare --
+            # that isolates each side's own unique contribution, filtering out
+            # whatever came from main itself, so the two are directly comparable
+            # regardless of how far main moved in between.
+            main_sha=$(gh api "repos/$GH_REPO/git/ref/heads/main" --jq .object.sha)
+            diff_before=$(gh api "repos/$GH_REPO/compare/${main_sha}...${BEFORE}" \
+              --jq '[.files[] | {filename, sha}] | sort_by(.filename)' 2>/dev/null) || diff_before=""
+            diff_after=$(gh api "repos/$GH_REPO/compare/${main_sha}...${AFTER}" \
+              --jq '[.files[] | {filename, sha}] | sort_by(.filename)' 2>/dev/null) || diff_after=""
+            # Each entry pairs a filename with its blob SHA (a content hash) --
+            # so this catches any actual content change to an already-touched
+            # file, not just files being added or removed. Any comparison
+            # failure (e.g. BEFORE unreachable after a force-push) also falls
+            # through here, failing closed -- skip re-arming rather than risk
+            # a false "unchanged".
+            if [ -z "$diff_before" ] || [ -z "$diff_after" ] || [ "$diff_before" != "$diff_after" ]; then
+              echo "PR #$PR_NUMBER: this push changed the PR's own content (or couldn't be verified) -- leaving auto-merge for a fresh manual look"
+              echo "enable=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
+          echo "enable=true" >> "$GITHUB_OUTPUT"
+
       - name: Enable auto-merge
+        if: steps.resolve.outputs.enable == 'true'
         env:
           # Unlike the read-only "resolve and verify" step above, this one
           # writes (enablePullRequestAutoMerge). For a pull_request_review
