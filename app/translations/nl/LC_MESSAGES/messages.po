@@ -11692,7 +11692,7 @@ msgstr "Uw rol"
 
 #: app/flights/crew_invites.py
 msgid "Review in OpenHangar"
-msgstr "Bekijken in OpenHangar"
+msgstr "Controleren in OpenHangar"
 
 #: app/flights/routes.py
 msgid "This flight invitation is no longer open."
@@ -11968,7 +11968,7 @@ msgstr "Aanvaarden"
 
 #: app/templates/partials/_flight_corrections.html
 msgid "Reject"
-msgstr "Weigeren"
+msgstr "Afwijzen"
 
 #: app/flights/crew_invites.py
 msgid "%(name)s asks to be added to your flight"
