@@ -20,7 +20,7 @@ RUN python3 install_vendor_assets.py \
 # every C-extension dependency at review time — cryptography, Pillow, bcrypt,
 # argon2-cffi-bindings, cffi, greenlet, markupsafe, psycopg-binary, SQLAlchemy,
 # wrapt), so no compiler or system headers are needed here.
-FROM python:3.14-alpine@sha256:05b2b8b732ecd268fee8727a369f936f022d1321b59befd13c30ede22769dcdc AS builder
+FROM python:3.14-alpine@sha256:c6ead215bfd31f1e433d968853b7a769989117115b728874824e6c0a27cb96fc AS builder
 
 COPY requirements/pip-bootstrap.txt /tmp/pip-bootstrap.txt
 COPY requirements/runtime.txt /tmp/requirements.txt
@@ -77,7 +77,7 @@ RUN /venv/bin/pip uninstall -y pip setuptools wheel && \
 # purely to avoid postgresql-client-18's ~50 MB Perl dependency via
 # postgresql-client-common; apk's package has no such dependency, so that
 # whole stage is gone).
-FROM python:3.14-alpine@sha256:05b2b8b732ecd268fee8727a369f936f022d1321b59befd13c30ede22769dcdc
+FROM python:3.14-alpine@sha256:c6ead215bfd31f1e433d968853b7a769989117115b728874824e6c0a27cb96fc
 
 ARG VERSION=development
 LABEL org.opencontainers.image.version=${VERSION}
