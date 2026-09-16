@@ -11968,7 +11968,7 @@ msgstr "Accepter"
 
 #: app/templates/partials/_flight_corrections.html
 msgid "Reject"
-msgstr "Refuser"
+msgstr "Rejeter"
 
 #: app/flights/crew_invites.py
 msgid "%(name)s asks to be added to your flight"
