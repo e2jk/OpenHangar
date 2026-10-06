@@ -35,6 +35,8 @@
   "vulnerabilityAlerts": {
     "labels": ["security"],
     "schedule": ["at any time"],
-    "minimumReleaseAge": "0 days"
+    "minimumReleaseAge": "0 days",
+    "groupName": "security patches",
+    "description": "Bundle all currently-advised fixes into one PR -- a CI vulnerability scan checks the whole dependency tree, not just the diff, so one-PR-per-package left every PR blocked by whichever other CVE hadn't landed yet."
   }
 }
