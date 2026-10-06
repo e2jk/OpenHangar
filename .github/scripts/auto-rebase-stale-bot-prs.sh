@@ -17,6 +17,19 @@
 # inaction. This script exists so that failure mode is visible instead of
 # silent.
 #
+# Treats mergeStateStatus=UNKNOWN the same as BEHIND/DIRTY (worth a nudge),
+# not "not stale". UNKNOWN isn't a real merge state -- it's GitHub's "still
+# computing, ask again later" placeholder, returned while it recomputes
+# mergeability after a base-branch push. This workflow's own push:main
+# trigger fires at exactly that moment for every *other* open PR, so under
+# a merge cascade (several bot PRs landing within minutes of each other) it
+# can read UNKNOWN for everyone, every time, and skip the whole batch --
+# the only backstop left is the 6h cron, which needs to catch a lull where
+# GitHub's computation has actually settled. A false-positive nudge here
+# (asking Renovate to rebase a PR that turns out to not need it) is a
+# harmless no-op, same tolerance MAX_ATTEMPTS already assumes elsewhere in
+# this script.
+#
 # Requires GH_TOKEN and GH_REPO in the environment, same as any other gh
 # CLI invocation — safe to run locally with a personal token to debug.
 #
@@ -70,7 +83,7 @@ echo "$prs_json" | jq -c '.[]' | while read -r pr; do
     continue
   fi
 
-  if [ "$status" != "BEHIND" ] && [ "$status" != "DIRTY" ]; then
+  if [ "$status" != "BEHIND" ] && [ "$status" != "DIRTY" ] && [ "$status" != "UNKNOWN" ]; then
     echo "PR #$number ($bot, author '$login'): mergeStateStatus=$status — not stale, skipping."
     continue
   fi
