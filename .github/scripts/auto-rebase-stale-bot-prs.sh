@@ -81,7 +81,25 @@ pr_count=$(echo "$prs_json" | jq 'length')
 echo "Found $pr_count open PR(s) targeting main."
 echo
 
-echo "$prs_json" | jq -c '.[]' | while read -r pr; do
+# Nudges at most one PR per run, not every stale one -- labelling several
+# bot PRs with `rebase` in the same breath makes Renovate force-push all
+# of them within the same minute or two, and they then queue up behind
+# each other in ci.yml's single 'bot-pipeline' concurrency lane with their
+# merge-ref locked in at synchronize time, not refreshed while queued --
+# by the time one several slots back actually runs, main has usually
+# moved again, wasting that attempt. Observed for real after #313/#315
+# landed: all 7 then-stale PRs got rebased together and were already
+# BEHIND again minutes later. The normal push:main trigger re-invokes this
+# script as soon as *that* one PR's turn resolves (merge or 3 exhausted
+# attempts), pacing nudges to the actual merge cadence.
+#
+# `shuf` randomizes which stale PR gets that one slot, rather than always
+# the first in list order -- a PR that's stale for a real, unrelated
+# reason (its own bump genuinely breaks something) would otherwise
+# monopolize every run until it burns all 3 attempts, leaving any PR that
+# *would* merge cleanly stuck behind it. Random choice means a broken PR
+# competes for a slot like everyone else instead of blocking the line.
+echo "$prs_json" | jq -c '.[]' | shuf | while read -r pr; do
   number=$(echo "$pr" | jq -r '.number')
   login=$(echo "$pr" | jq -r '.author.login')
   status=$(echo "$pr" | jq -r '.mergeStateStatus')
@@ -124,6 +142,12 @@ echo "$prs_json" | jq -c '.[]' | while read -r pr; do
   if ! gh pr comment "$number" --body "$body"; then
     echo "::warning::Failed to comment on PR #$number"
   fi
+
+  # One nudge per run -- see the comment above this loop for why. Any
+  # other stale PR is left for this script's next invocation (the very
+  # next push to main, or the 6h cron at the latest).
+  echo "Nudged PR #$number this run -- leaving any other stale PR for next time."
+  break
 done
 
 echo
