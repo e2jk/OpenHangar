@@ -1614,18 +1614,20 @@ class TestValidFrom:
         _login(app, client, "vf1@x.com")
         app.config["UPLOAD_FOLDER"] = str(tmp_path)
 
+        current_expiry = datetime.date.today()
+        future_valid_from = current_expiry + datetime.timedelta(days=30)
+        future_valid_until = current_expiry + datetime.timedelta(days=120)
+
         with app.app_context():
             current = Document(
                 aircraft_id=ac_id,
                 filename="q3.pdf",
                 original_filename="q3.pdf",
                 doc_type=DocType.INSURANCE_CERT,
-                valid_until=datetime.date(2026, 9, 30),
+                valid_until=current_expiry,
             )
             db.session.add(current)
-            db.session.get(Aircraft, ac_id).insurance_expiry = datetime.date(
-                2026, 9, 30
-            )
+            db.session.get(Aircraft, ac_id).insurance_expiry = current_expiry
             db.session.commit()
 
         client.post(
@@ -1633,8 +1635,8 @@ class TestValidFrom:
             data={
                 "file": _fake_file("q4.pdf", b"%PDF", "application/pdf"),
                 "category": DocCategory.INSURANCE,
-                "valid_from": "2026-09-30",
-                "valid_until": "2026-12-31",
+                "valid_from": future_valid_from.isoformat(),
+                "valid_until": future_valid_until.isoformat(),
             },
             content_type="multipart/form-data",
         )
@@ -1642,7 +1644,7 @@ class TestValidFrom:
             ac = db.session.get(Aircraft, ac_id)
             # Unchanged -- the new document hasn't started yet, so the
             # still-current Q3 one remains active.
-            assert ac.insurance_expiry == datetime.date(2026, 9, 30)
+            assert ac.insurance_expiry == current_expiry
 
     def test_upload_rejects_valid_from_after_valid_until(self, app, client, tmp_path):
         from models import DocCategory  # pyright: ignore[reportMissingImports]
