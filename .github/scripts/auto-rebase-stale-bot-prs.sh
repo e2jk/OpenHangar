@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # .github/scripts/auto-rebase-stale-bot-prs.sh
 #
-# Finds open Renovate PRs against main that have fallen behind (or hit a
-# conflict) and asks Renovate to rebase, via its own API-friendly path
+# Finds open Renovate PRs against main that have fallen behind, hit a
+# conflict, or are just sitting on a stale CI run from before the base
+# advanced, and asks Renovate to rebase, via its own API-friendly path
 # (see .github/workflows/auto-rebase-stale-bot-prs.yml for the full "why"
 # — the ruleset's strict required-status-checks policy means any PR merge
 # makes every other open PR stale at once).
@@ -17,18 +18,33 @@
 # inaction. This script exists so that failure mode is visible instead of
 # silent.
 #
-# Treats mergeStateStatus=UNKNOWN the same as BEHIND/DIRTY (worth a nudge),
-# not "not stale". UNKNOWN isn't a real merge state -- it's GitHub's "still
-# computing, ask again later" placeholder, returned while it recomputes
-# mergeability after a base-branch push. This workflow's own push:main
-# trigger fires at exactly that moment for every *other* open PR, so under
-# a merge cascade (several bot PRs landing within minutes of each other) it
-# can read UNKNOWN for everyone, every time, and skip the whole batch --
-# the only backstop left is the 6h cron, which needs to catch a lull where
-# GitHub's computation has actually settled. A false-positive nudge here
-# (asking Renovate to rebase a PR that turns out to not need it) is a
-# harmless no-op, same tolerance MAX_ATTEMPTS already assumes elsewhere in
-# this script.
+# Treats mergeStateStatus=UNKNOWN and BLOCKED the same as BEHIND/DIRTY
+# (worth a nudge), not "not stale":
+#
+# - UNKNOWN isn't a real merge state -- it's GitHub's "still computing, ask
+#   again later" placeholder, returned while it recomputes mergeability
+#   after a base-branch push. This workflow's own push:main trigger fires
+#   at exactly that moment for every *other* open PR, so under a merge
+#   cascade (several bot PRs landing within minutes of each other) it can
+#   read UNKNOWN for everyone, every time, and skip the whole batch.
+# - BLOCKED is what UNKNOWN settles into once GitHub finishes that
+#   computation, for a PR whose merge-preview is already clean against the
+#   current base but whose *last CI run* predates that base and never got
+#   re-triggered (no new commit landed on the PR branch itself, so neither
+#   Renovate's own rebaseWhen:conflicted nor this script's BEHIND/DIRTY
+#   check ever fires for it). Confirmed for real on PR #302 after
+#   PR #313/#315 landed: its merge-commit already carried the fixed pins,
+#   but its CI run still showed the pre-fix failure from before main
+#   advanced.
+#
+# Either way the only backstop left, without this, is the 6h cron, which
+# needs to catch a lull where GitHub's computation has actually settled
+# *and* nothing else is making other PRs newly stale in the meantime. A
+# false-positive nudge here (asking Renovate to rebase a PR that turns out
+# not to need it, or that's genuinely still failing for an unrelated
+# reason) is a bounded cost, not an unbounded one -- same MAX_ATTEMPTS
+# tolerance this script already relies on elsewhere: a truly broken PR
+# just burns its 3 attempts and then gets left for a human, same as today.
 #
 # Requires GH_TOKEN and GH_REPO in the environment, same as any other gh
 # CLI invocation — safe to run locally with a personal token to debug.
@@ -83,7 +99,7 @@ echo "$prs_json" | jq -c '.[]' | while read -r pr; do
     continue
   fi
 
-  if [ "$status" != "BEHIND" ] && [ "$status" != "DIRTY" ] && [ "$status" != "UNKNOWN" ]; then
+  if [ "$status" != "BEHIND" ] && [ "$status" != "DIRTY" ] && [ "$status" != "UNKNOWN" ] && [ "$status" != "BLOCKED" ]; then
     echo "PR #$number ($bot, author '$login'): mergeStateStatus=$status — not stale, skipping."
     continue
   fi
