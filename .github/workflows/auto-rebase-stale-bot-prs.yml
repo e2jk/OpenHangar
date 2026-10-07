@@ -54,8 +54,9 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read        # actions/checkout, to fetch the script file
-      pull-requests: write  # gh pr comment / gh pr edit --add-label
+      pull-requests: write  # gh pr comment / gh pr edit --add-label / gh pr close / gh pr reopen
       issues: write         # gh label create (labels are an Issues-API resource)
+      actions: write        # gh run cancel, to clear a stuck CI run (see the script's own comment)
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
