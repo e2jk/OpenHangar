@@ -2,10 +2,13 @@
 # .github/scripts/auto-rebase-stale-bot-prs.sh
 #
 # Finds open Renovate PRs against main that have fallen behind, hit a
-# conflict, or are just sitting on a stale CI run from before the base
-# advanced, and asks Renovate to rebase, via its own API-friendly path
-# (see .github/workflows/auto-rebase-stale-bot-prs.yml for the full "why"
-# — the ruleset's strict required-status-checks policy means any PR merge
+# conflict, are sitting on a stale CI run from before the base advanced,
+# or whose CI run never started at all (a GitHub-side scheduling hiccup
+# on the shared bot-pipeline lane -- see the dedicated check near the top
+# of the main body below), and recovers them, via Renovate's own
+# API-friendly rebase path where applicable (see
+# .github/workflows/auto-rebase-stale-bot-prs.yml for the full "why" —
+# the ruleset's strict required-status-checks policy means any PR merge
 # makes every other open PR stale at once).
 #
 # Every PR this script looks at is logged — number, author login, and
@@ -76,10 +79,81 @@ is_renovate() {
 }
 
 echo "Listing open PRs against main..."
-prs_json=$(gh pr list --state open --base main --limit 100 --json number,author,mergeStateStatus,labels)
+prs_json=$(gh pr list --state open --base main --limit 100 --json number,author,mergeStateStatus,labels,headRefName)
 pr_count=$(echo "$prs_json" | jq 'length')
 echo "Found $pr_count open PR(s) targeting main."
 echo
+
+# Before looking at staleness at all: recover a pull_request CI run for a
+# ship/renovate branch that never actually started. Those branches are
+# all forced into ci.yml's single 'bot-pipeline' concurrency lane
+# (cancel-in-progress: false, so a new run queues rather than cancelling
+# an older one) -- observed in practice to occasionally get stuck
+# `pending` with zero jobs ever dispatched, sometimes for hours, even
+# with nothing else contending for the lane. Looks like a GitHub Actions
+# platform-side scheduling hiccup on this lane, not a bug in this repo's
+# own YAML -- but it still means auto-merge never gets anything to act
+# on, and neither Renovate's own schedule nor the mergeStateStatus checks
+# below can tell "stuck" apart from "legitimately still running".
+STUCK_MINUTES="${STUCK_MINUTES:-15}"
+
+echo "Checking for a stuck pull_request CI run on a ship/renovate branch..."
+lane_busy=$(gh run list --workflow=ci.yml --status in_progress --limit 20 --json headBranch |
+  jq '[.[] | select(.headBranch == "ship" or (.headBranch | startswith("renovate/")))] | length')
+
+recovered=false
+
+if [ "$lane_busy" -gt 0 ]; then
+  echo "bot-pipeline lane has $lane_busy run(s) genuinely in progress -- nothing stuck to recover."
+else
+  stuck=$(gh run list --workflow=ci.yml --status pending --limit 20 \
+            --json databaseId,headBranch,event,createdAt |
+    jq --argjson mins "$STUCK_MINUTES" '
+      [.[] | select(.event == "pull_request"
+                     and (.headBranch == "ship" or (.headBranch | startswith("renovate/")))
+                     and ((now - (.createdAt | fromdateiso8601)) > ($mins * 60)))] | .[0] // empty')
+
+  if [ -n "$stuck" ]; then
+    stuck_id=$(echo "$stuck" | jq -r '.databaseId')
+    stuck_branch=$(echo "$stuck" | jq -r '.headBranch')
+    job_count=$(gh run view "$stuck_id" --json jobs --jq '.jobs | length')
+
+    if [ "$job_count" -eq 0 ]; then
+      number=$(echo "$prs_json" | jq -r --arg b "$stuck_branch" '.[] | select(.headRefName == $b) | .number')
+      if [ -n "$number" ]; then
+        echo "PR #$number (branch $stuck_branch): CI run $stuck_id has sat pending with 0 jobs for over ${STUCK_MINUTES}m -- recovering."
+        gh run cancel "$stuck_id" || echo "::warning::Failed to cancel run $stuck_id"
+        # Close/reopen rather than the rebase label below: this PR may
+        # already be perfectly up to date, in which case asking Renovate
+        # to rebase it would be a true no-op (no new commit, no fresh
+        # pull_request event). Closing/reopening always produces a fresh
+        # 'reopened' event regardless of git state.
+        if gh pr close "$number" --comment "Closing/reopening to clear a stuck CI run -- run $stuck_id sat pending with no jobs ever dispatched, a GitHub Actions scheduling hiccup, not a real failure."; then
+          sleep 2
+          gh pr reopen "$number" || echo "::warning::Failed to reopen PR #$number"
+          recovered=true
+        else
+          echo "::warning::Failed to close PR #$number"
+        fi
+      else
+        echo "::warning::Could not map branch $stuck_branch back to an open PR -- skipping."
+      fi
+    else
+      echo "Run $stuck_id on $stuck_branch has $job_count job(s) already -- not actually stuck, leaving it."
+    fi
+  else
+    echo "No run has been stuck for more than ${STUCK_MINUTES}m -- nothing to recover."
+  fi
+fi
+
+echo
+
+if [ "$recovered" = "true" ]; then
+  echo "Recovered a stuck run this invocation -- skipping the staleness pass below (same one-nudge-per-run discipline)."
+  echo
+  echo "Done — checked $pr_count PR(s)."
+  exit 0
+fi
 
 # Nudges at most one PR per run, not every stale one -- labelling several
 # bot PRs with `rebase` in the same breath makes Renovate force-push all
