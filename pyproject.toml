@@ -47,5 +47,14 @@ module = ["models", "_seed_helpers", "reservations.routes"]
 ignore_errors = true
 
 [[tool.mypy.overrides]]
+# `deprecated` (transitive, via flask-limiter) ships inline type annotations
+# as of 3.x using `type X = ...` syntax, which requires Python 3.12+ and is
+# a syntax error under our python_version = "3.11" target. We never import
+# it directly, so skip following into its source rather than type-checking
+# a third-party package we don't control.
+module = ["deprecated.*"]
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
 module = ["migrations.*"]
 ignore_errors = true
