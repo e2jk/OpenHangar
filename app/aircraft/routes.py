@@ -50,6 +50,7 @@ from models import (
     ReservationStatus,
     Role,
     Snag,
+    Tenant,
     TenantProfile,
     TenantUser,
     User,
@@ -58,6 +59,13 @@ from models import (
     WeightBalanceStation,
     db,
 )  # pyright: ignore[reportMissingImports]
+from services.gps_archive import (  # pyright: ignore[reportMissingImports]
+    archive_gps_file,
+    pilot_archive_parts,
+)
+from services.upload_layout import (  # pyright: ignore[reportMissingImports]
+    GPS_ARCHIVE_DIRNAME,
+)
 from utils import (
     accessible_aircraft,
     activity,
@@ -77,7 +85,7 @@ from aircraft.gps_import import (  # pyright: ignore[reportMissingImports]
     detect_segments,
     merge_and_sort,
     parse_gps_file,
-    round_flight_time,
+    segment_times,
 )
 
 aircraft_bp = Blueprint("aircraft", __name__, url_prefix="/aircraft")
@@ -1754,6 +1762,26 @@ _GPS_ALLOWED_EXTS = {".gpx", ".kml", ".csv"}
 _GPS_MAX_BYTES = 20 * 1024 * 1024  # 20 MB per file
 
 
+def _gps_archive_dir(ac: Aircraft, other_aircraft: bool) -> str:
+    """Where this upload's original files are kept (services.gps_archive):
+    with the aircraft's own files, or — for an upload recorded on an
+    aircraft not managed here — in the uploading pilot's own archive."""
+    from documents.routes import (  # pyright: ignore[reportMissingImports]
+        _ensure_tenant_slug,
+        _safe_join,
+    )
+
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    if other_aircraft:
+        return _safe_join(folder, *pilot_archive_parts(int(session["user_id"])))
+    tenant = db.session.get(Tenant, ac.tenant_id)
+    assert tenant is not None, "every aircraft belongs to a tenant"
+    slug = _ensure_tenant_slug(tenant)
+    db.session.commit()  # a freshly generated slug must outlive this request
+    safe_reg = ac.registration.replace("/", "-").replace(" ", "-").upper()
+    return _safe_join(folder, slug, safe_reg, GPS_ARCHIVE_DIRNAME)
+
+
 def _gps_tmp_dir() -> str:
     """Return (and create if needed) the tmp directory for GPS uploads."""
     upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
@@ -1847,6 +1875,42 @@ def _load_segment_geojson(seg: dict[str, Any]) -> Any:
         return json.load(fh)
 
 
+# The per-file and per-segment lists of a GPS import grow with the number
+# of files/flights in one upload — a season of Garmin data logs easily
+# makes 20+ segments, past Flask's ~4 KB cookie-session limit (browsers
+# then silently drop the cookie and the next step reports the session as
+# expired). They live in a server-side JSON file instead; the signed
+# session only keeps its path.
+_GPS_STATE_SPILL_KEYS = ("files", "segments")
+
+
+def _gps_state_load() -> dict[str, Any] | None:
+    """The current GPS import state, with its spilled lists merged back in.
+    None when there's no import in progress, or its state file is gone."""
+    state = session.get("gps_import")
+    if not state or "spill_path" not in state:
+        return state
+    try:
+        with open(state["spill_path"], encoding="utf-8") as fh:
+            spilled = json.load(fh)
+    except (OSError, ValueError):
+        return None
+    return {**state, **spilled}
+
+
+def _gps_state_save(state: dict[str, Any]) -> None:
+    spilled = {k: state[k] for k in _GPS_STATE_SPILL_KEYS if k in state}
+    slim = {k: v for k, v in state.items() if k not in _GPS_STATE_SPILL_KEYS}
+    path = slim.get("spill_path") or os.path.join(
+        _gps_tmp_dir(), f"state_{_uuid_mod.uuid4().hex}.json"
+    )
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(spilled, fh)
+    slim["spill_path"] = path
+    session["gps_import"] = slim
+    session.modified = True
+
+
 def _segment_for_session(seg_dict: dict[str, Any], tmp_dir: str) -> dict[str, Any]:
     """Return a copy of seg_dict safe for cookie-session storage.
 
@@ -1879,6 +1943,7 @@ def gps_import_upload(aircraft_id: int) -> ResponseReturnValue:
         return render_template("aircraft/gps_import_upload.html", aircraft=ac)
 
     tmp_dir = _gps_tmp_dir()
+    archive_dir = _gps_archive_dir(ac, request.form.get("other_aircraft") == "1")
     parsed_meta: list[dict[str, Any]] = []
     errors: list[str] = []
     skipped_empty = 0
@@ -1901,6 +1966,9 @@ def gps_import_upload(aircraft_id: int) -> ResponseReturnValue:
         if len(data) > _GPS_MAX_BYTES:
             errors.append(_("%(fn)s: file too large (20 MB limit).", fn=f.filename))
             continue
+
+        # Kept whatever the parser makes of it — see services.gps_archive.
+        archive_gps_file(data, f.filename, archive_dir)
 
         try:
             parsed = parse_gps_file(data, f.filename)
@@ -1955,15 +2023,17 @@ def gps_import_upload(aircraft_id: int) -> ResponseReturnValue:
     other_ac_make_model = request.form.get("other_ac_make_model", "").strip()
     other_ac_reg = request.form.get("other_ac_reg", "").strip().upper()
 
-    session["gps_import"] = {
-        "user_id": session["user_id"],
-        "aircraft_id": aircraft_id,
-        "files": parsed_meta,
-        "skipped_empty": skipped_empty,
-        "other_aircraft": other_aircraft,
-        "other_ac_make_model": other_ac_make_model,
-        "other_ac_reg": other_ac_reg,
-    }
+    _gps_state_save(
+        {
+            "user_id": session["user_id"],
+            "aircraft_id": aircraft_id,
+            "files": parsed_meta,
+            "skipped_empty": skipped_empty,
+            "other_aircraft": other_aircraft,
+            "other_ac_make_model": other_ac_make_model,
+            "other_ac_reg": other_ac_reg,
+        }
+    )
     return redirect(url_for("aircraft.gps_import_review", aircraft_id=aircraft_id))
 
 
@@ -1972,7 +2042,7 @@ def gps_import_upload(aircraft_id: int) -> ResponseReturnValue:
 @require_role(*_PILOT_ROLES)
 def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
-    state = session.get("gps_import")
+    state = _gps_state_load()
     if not state or state.get("aircraft_id") != aircraft_id:
         flash(_("Session expired — please upload your GPS files again."), "warning")
         return redirect(url_for("aircraft.gps_import_upload", aircraft_id=aircraft_id))
@@ -2110,10 +2180,8 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
             seg["linked_pilot_entries"] = []
 
     tmp_dir = _gps_tmp_dir()
-    session["gps_import"]["segments"] = [
-        _segment_for_session(s, tmp_dir) for s in full_segs
-    ]
-    session.modified = True
+    state["segments"] = [_segment_for_session(s, tmp_dir) for s in full_segs]
+    _gps_state_save(state)
 
     # Get OpenAIP API key for map tiles
     tile_setting = db.session.get(AppSetting, "openaip_api_key")
@@ -2155,7 +2223,6 @@ def _gps_import_create_segment(
 
     Returns (entry_or_None, updated_linked_ids).
     """
-    import decimal as _dec
     from datetime import datetime as _dt
 
     create_pilot_entries = pilot_role in ("pic", "dual")
@@ -2164,9 +2231,7 @@ def _gps_import_create_segment(
     block_on = _dt.fromisoformat(seg["block_on_utc"])
     dep_time = block_off.time().replace(tzinfo=None)
     arr_time = block_on.time().replace(tzinfo=None)
-    flight_time_h = round_flight_time(
-        seg["flight_time_raw_h"], ac.logbook_time_precision
-    )
+    times = segment_times(seg, ac.logbook_time_precision)
 
     entry = None
     gps_track: GpsTrack | None = None
@@ -2230,7 +2295,10 @@ def _gps_import_create_segment(
                 arrival_icao=arr_icao,
                 departure_time=dep_time,
                 arrival_time=arr_time,
-                flight_time=_dec.Decimal(str(flight_time_h)),
+                takeoff_time=times.takeoff_time,
+                landing_time=times.landing_time,
+                flight_time=times.airborne_time,
+                engine_time=times.block_time,
                 landing_count=seg.get("landing_count") or 0,
                 nature_of_flight=nature,
                 source="gps_import",
@@ -2276,7 +2344,14 @@ def _gps_import_create_segment(
             db.session.add(entry)
             db.session.flush()
 
-        entry.flight_time = _dec.Decimal(str(flight_time_h))
+        # The pilot's figures come from the block time (see
+        # flights.routes.pilot_time) — recorded as engine_time unless the
+        # flight already has one (e.g. from its engine counters). A matched
+        # flight's own airborne flight_time is never replaced by it.
+        if entry.engine_time is None:
+            entry.engine_time = times.block_time
+        if entry.flight_time is None:
+            entry.flight_time = times.airborne_time
         # GPS-derived landing count has no day/night split — treat them all
         # as day landings, same simplification the old standalone pilot
         # entry made.
@@ -2290,7 +2365,14 @@ def _gps_import_create_segment(
 
 
 def _gps_cleanup(state: dict[str, Any]) -> None:
-    """Delete tmp GPS and GeoJSON files from a gps_import session state."""
+    """Delete tmp GPS and GeoJSON files (and the spilled state file) of a
+    gps_import session state."""
+    spill_path = state.get("spill_path")
+    if spill_path:
+        try:
+            os.unlink(spill_path)
+        except OSError as exc:
+            current_app.logger.debug("cleanup GPS state file: %s", exc)
     for meta in state.get("files", []):
         try:
             os.unlink(meta["tmp_path"])
@@ -2313,7 +2395,7 @@ def _gps_cleanup(state: dict[str, Any]) -> None:
 def gps_import_confirm_one(aircraft_id: int) -> ResponseReturnValue:
     """Confirm a single GPS segment as-is and redirect back to the review page."""
     ac = _get_aircraft_or_404(aircraft_id)
-    state = session.get("gps_import")
+    state = _gps_state_load()
     if not state or state.get("aircraft_id") != aircraft_id:
         flash(_("Session expired — please upload your GPS files again."), "warning")
         return redirect(url_for("aircraft.gps_import_upload", aircraft_id=aircraft_id))
@@ -2343,8 +2425,7 @@ def gps_import_confirm_one(aircraft_id: int) -> ResponseReturnValue:
     if request.form.get("skip") == "1":
         confirmed[str(seg_idx)] = "skip"
         state["confirmed_segments"] = confirmed
-        session["gps_import"] = state
-        session.modified = True
+        _gps_state_save(state)
 
         all_handled = len(confirmed) == len(segments_data)
         if all_handled:
@@ -2471,15 +2552,14 @@ def gps_import_confirm_one(aircraft_id: int) -> ResponseReturnValue:
 
     confirmed[str(seg_idx)] = entry.id if entry else 0
     state["confirmed_segments"] = confirmed
-    session["gps_import"] = state
-    session.modified = True
+    _gps_state_save(state)
 
     all_confirmed = len(confirmed) == len(segments_data)
 
     if all_confirmed:
         _gps_cleanup(state)
         session.pop("gps_import", None)
-        total = len(confirmed)
+        total = sum(1 for v in confirmed.values() if v != "skip")
         flash(
             ngettext(
                 "one flight imported successfully.",
@@ -2489,6 +2569,17 @@ def gps_import_confirm_one(aircraft_id: int) -> ResponseReturnValue:
             ),
             "success",
         )
+        skipped_count = len(confirmed) - total
+        if skipped_count:
+            flash(
+                ngettext(
+                    "one segment skipped.",
+                    "%(n)s segments skipped.",
+                    skipped_count,
+                    n=skipped_count,
+                ),
+                "info",
+            )
         if pilot_role in ("pic", "dual"):
             return redirect(url_for("pilots.logbook"))
         return redirect(url_for("flights.list_flights", aircraft_id=aircraft_id))
@@ -2509,7 +2600,7 @@ def gps_import_prefill_segment(aircraft_id: int, seg_idx: int) -> ResponseReturn
     from datetime import datetime as _dt
 
     _get_aircraft_or_404(aircraft_id)
-    state = session.get("gps_import")
+    state = _gps_state_load()
     if not state or state.get("aircraft_id") != aircraft_id:
         flash(_("Session expired — please upload your GPS files again."), "warning")
         return redirect(url_for("aircraft.gps_import_upload", aircraft_id=aircraft_id))

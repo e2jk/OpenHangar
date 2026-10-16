@@ -136,7 +136,8 @@ container will write the key into the database automatically on every startup
 ## Backups
 
 OpenHangar produces encrypted ZIP backups of the database dump and all uploaded
-documents. See the [backup & restore guide](backup_restore.md) for configuration,
+files — documents, photos, and the original GPS log files kept from every GPS
+import (the database itself only stores a simplified track). See the [backup & restore guide](backup_restore.md) for configuration,
 the full restore procedure, and the backup file format.
 
 **Scheduling and retention are built in** — set `OPENHANGAR_BACKUP_TIME` (and
@@ -453,7 +454,7 @@ Browser
        └─ OpenHangar web container (Flask / gunicorn, port 5000)
             ├─ PostgreSQL container (or external managed DB)
             └─ Host-mounted volumes
-                 ├─ /data/uploads  — uploaded documents & photos
+                 ├─ /data/uploads  — uploaded documents, photos & original GPS logs
                  └─ /data/backups  — encrypted backup archives
 ```
 

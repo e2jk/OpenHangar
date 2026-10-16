@@ -12157,3 +12157,19 @@ msgstr "Les propriétaires et administrateurs ont toujours accès à toute la fl
 msgid "Permissions updated."
 msgstr "Permissions mises à jour."
 
+
+msgid "One row matched a flight already in the aircraft log and was merged into it."
+msgid_plural "%(n)d rows matched a flight already in the aircraft log and were merged into it."
+msgstr[0] "Une ligne correspondait à un vol déjà présent dans le carnet de l'appareil et y a été fusionnée."
+msgstr[1] "%(n)d lignes correspondaient à des vols déjà présents dans le carnet de l'appareil et y ont été fusionnées."
+
+msgid "One row matched a flight already in a pilot logbook and was merged into it."
+msgid_plural "%(n)d rows matched a flight already in a pilot logbook and were merged into it."
+msgstr[0] "Une ligne correspondait à un vol déjà présent dans un carnet de vol de pilote et y a été fusionnée."
+msgstr[1] "%(n)d lignes correspondaient à des vols déjà présents dans un carnet de vol de pilote et y ont été fusionnées."
+
+msgid "This upload is too large (maximum %(mb)s MB in total). Please upload the files in smaller batches."
+msgstr "Cet envoi est trop volumineux (maximum %(mb)s Mo au total). Veuillez envoyer les fichiers en plusieurs fois."
+
+msgid "A copy of each original file is kept unchanged and included in backups."
+msgstr "Une copie de chaque fichier original est conservée telle quelle et incluse dans les sauvegardes."

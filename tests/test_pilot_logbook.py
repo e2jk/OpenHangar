@@ -2549,16 +2549,16 @@ class TestLinkEntriesToAircraft:
             assert entry.pic_user_id == uid
             assert entry.pic_name == "Link Pilot"
 
-    def test_promotion_never_guesses_engine_time_counter(self, app):
-        """Step 2 (docs/backlog.md): the true airframe-side fields
-        (flight_time_counter_*/flight_time, engine_time_counter_*/
-        engine_time) aren't known from a personal logbook and stay NULL —
-        that's what keeps the needs-attention icon lit until a human fills
-        them in from a real airframe source. No placeholder is invented for
-        engine_time_counter_* even when a prior real reading exists to
-        chain from — services/component_limits.py sums it for engine/
-        propeller TBO, so a guessed value would silently skew maintenance
-        tracking."""
+    def test_promotion_fills_engine_time_but_never_guesses_counters(self, app):
+        """The pilot's logged block time is a real engine-run figure, so
+        promotion records it as engine_time — but the counter readings
+        (engine_time_counter_*/flight_time_counter_*) and the airborne
+        flight_time aren't known from a personal logbook and stay NULL. No
+        counter placeholder is invented even when a prior real reading
+        exists to chain from — services/component_limits.py sums counters
+        for engine/propeller TBO, so a guessed value would silently skew
+        maintenance tracking — and flight_time staying NULL keeps the
+        needs-attention icon lit until an airframe source fills it in."""
         from decimal import Decimal
 
         from pilots.logbook_import import (
@@ -2592,7 +2592,8 @@ class TestLinkEntriesToAircraft:
             assert entry.flight_time_counter_end is None
             assert entry.engine_time_counter_start is None
             assert entry.engine_time_counter_end is None
-            assert entry.engine_time is None
+            assert entry.flight_time is None
+            assert entry.engine_time == Decimal("1.5")
 
     def test_skips_entry_with_no_registration(self, app):
         from pilots.logbook_import import (

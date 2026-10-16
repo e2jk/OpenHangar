@@ -532,6 +532,11 @@ def _build_parsed_file(
     norm_raw = [_norm(c) for c in raw_header]
     norm_cols = _disambiguate(norm_raw)
     data_rows = all_rows[header_idx + 1 :]
+    # Spreadsheets often carry a tail of formatted-but-empty rows; they'd
+    # otherwise each be reported as an ignored "subtotal" row. Only the
+    # trailing run is dropped, so row numbers stay those of the file.
+    while data_rows and not any(_is_nonempty(v) for v in data_rows[-1]):
+        data_rows.pop()
 
     return ParsedFile(
         norm_cols=norm_cols,
@@ -899,9 +904,12 @@ def _num(v: Any) -> float | None:
 
 
 def _dup_key(kwargs: dict[str, Any]) -> tuple[Any, ...]:
-    """Exact-duplicate key: date + aircraft + duration + landings. Shared by
-    execute_import (silently skips exact matches) and find_conflicting_rows
-    (must not also flag them as a near-match conflict needing review)."""
+    """Coarse exact-duplicate key: date + aircraft + duration + landings.
+    Necessary but not sufficient for a duplicate — see DedupIndex, which
+    additionally requires the route and departure time to be compatible.
+    Shared by execute_import (silently skips exact matches) and
+    find_conflicting_rows (must not also flag them as a near-match conflict
+    needing review)."""
     return (
         kwargs["date"],
         kwargs.get("other_aircraft_registration"),
@@ -913,7 +921,75 @@ def _dup_key(kwargs: dict[str, Any]) -> tuple[Any, ...]:
     )
 
 
-def _fetch_existing_dedup_keys(pilot_user_id: int) -> set[tuple[Any, ...]]:
+def _place_key(place: str | None) -> str | None:
+    """Normalise a departure/arrival place for duplicate matching — the same
+    4-char cleanup link_entries_to_aircraft applies when promoting a row to
+    a managed aircraft, so a promoted row still matches its source row.
+    None (unknown) for anything that doesn't reduce to a 4-char code."""
+    if not place:
+        return None
+    clean = re.sub(r"[^A-Z0-9]", "", place.upper())[:4]
+    return clean if len(clean) == 4 and clean != "ZZZZ" else None
+
+
+def _dup_detail(
+    departure: str | None, arrival: str | None, departure_time: time | None
+) -> tuple[str | None, str | None, time | None]:
+    return (_place_key(departure), _place_key(arrival), departure_time)
+
+
+def _details_compatible(a: tuple[Any, ...], b: tuple[Any, ...]) -> bool:
+    """Equal wherever both sides know the value — a missing route or time on
+    either side is neutral, never a mismatch."""
+    return all(x is None or y is None or x == y for x, y in zip(a, b, strict=True))
+
+
+class DedupIndex:
+    """Exact-duplicate lookup shared by the pilot and airframe logbook
+    imports: a row is a duplicate of an existing entry when their coarse
+    key matches AND their details are compatible (see _details_compatible)
+    — for the pilot import, departure, arrival and departure time; for the
+    airframe import, takeoff/landing time and counter readings.
+
+    The coarse key alone is not enough: two genuinely different flights on
+    the same day in the same aircraft routinely share duration and landings
+    (an out-and-back pair of 0.5 h legs, or a day of identical training
+    circuits), and keying on it alone silently dropped them as
+    "duplicates" — or matched a row to the wrong flight of that day. The
+    details can't simply be added to the key either, since entries where
+    they genuinely aren't captured (a hand-entered or backfilled row) would
+    then never match at all.
+    """
+
+    def __init__(self) -> None:
+        self._by_key: dict[tuple[Any, ...], list[tuple[Any, ...]]] = {}
+
+    def add(self, key: tuple[Any, ...], detail: tuple[Any, ...]) -> None:
+        self._by_key.setdefault(key, []).append(detail)
+
+    def contains(self, key: tuple[Any, ...], detail: tuple[Any, ...]) -> bool:
+        return any(
+            _details_compatible(detail, other) for other in self._by_key.get(key, [])
+        )
+
+
+def _add_kwargs(index: DedupIndex, kwargs: dict[str, Any]) -> None:
+    index.add(_dup_key(kwargs), _kwargs_dup_detail(kwargs))
+
+
+def _contains_kwargs(index: DedupIndex, kwargs: dict[str, Any]) -> bool:
+    return index.contains(_dup_key(kwargs), _kwargs_dup_detail(kwargs))
+
+
+def _kwargs_dup_detail(kwargs: dict[str, Any]) -> tuple[Any, ...]:
+    return _dup_detail(
+        kwargs.get("departure_icao"),
+        kwargs.get("arrival_icao"),
+        kwargs.get("departure_time"),
+    )
+
+
+def _fetch_existing_dedup_index(pilot_user_id: int) -> DedupIndex:
     from models import Aircraft, Flight, db  # pyright: ignore[reportMissingImports]
     from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
 
@@ -929,6 +1005,9 @@ def _fetch_existing_dedup_keys(pilot_user_id: int) -> set[tuple[Any, ...]]:
             Flight.multi_pilot,
             Flight.landings_day,
             Flight.landings_night,
+            Flight.departure_icao,
+            Flight.arrival_icao,
+            Flight.departure_time,
         )
         .outerjoin(Aircraft, Aircraft.id == Flight.aircraft_id)
         .filter(
@@ -938,18 +1017,21 @@ def _fetch_existing_dedup_keys(pilot_user_id: int) -> set[tuple[Any, ...]]:
             )
         )
     )
-    return {
-        (
-            row[0],
-            row[2] or row[1],
-            _num(row[3]),
-            _num(row[4]),
-            _num(row[5]),
-            row[6],
-            row[7],
+    index = DedupIndex()
+    for row in rows:
+        index.add(
+            (
+                row[0],
+                row[2] or row[1],
+                _num(row[3]),
+                _num(row[4]),
+                _num(row[5]),
+                row[6],
+                row[7],
+            ),
+            _dup_detail(row[8], row[9], row[10]),
         )
-        for row in rows
-    }
+    return index
 
 
 def _assign_pilot_identity(kwargs: dict[str, Any], pilot_user_id: int) -> None:
@@ -1015,13 +1097,10 @@ def execute_import(
     # deliberately after appending new rows to the source spreadsheet, which
     # is the expected workflow for keeping an import-based logbook current —
     # must only add genuinely new rows, not double up everything already
-    # imported. Match on date + aircraft + the duration/landings figures
-    # rather than departure/arrival place & time: those are the fields that
-    # actually drive currency and compliance totals, and they stay populated
-    # even for entries whose route/time genuinely isn't captured (e.g. a
-    # hand-entered or backfilled logbook row) — a key that depended on
-    # route/time would silently fail to match those.
-    existing_keys = _fetch_existing_dedup_keys(pilot_user_id)
+    # imported. Match on date + aircraft + the duration/landings figures,
+    # with departure/arrival place & time only required to agree where both
+    # sides actually record them — see DedupIndex.
+    existing = _fetch_existing_dedup_index(pilot_user_id)
 
     for row_num, row in enumerate(parsed.data_rows, start=1):
         if row_num in skip_row_nums:
@@ -1047,8 +1126,7 @@ def execute_import(
         for col, target, raw_repr in parse_warnings:
             result.parse_warnings.append((row_num, col, target, raw_repr))
 
-        dup_key = _dup_key(kwargs)
-        if dup_key in existing_keys:
+        if _contains_kwargs(existing, kwargs):
             result.duplicates.append(
                 (
                     row_num,
@@ -1059,7 +1137,7 @@ def execute_import(
                 )
             )
             continue
-        existing_keys.add(dup_key)
+        _add_kwargs(existing, kwargs)
 
         if source_total is not None:
             computed = round(
@@ -1165,7 +1243,8 @@ def _score_candidate(kwargs: dict[str, Any], existing: Any) -> float:
     from services.time_band_matching import (  # pyright: ignore[reportMissingImports]
         DEFAULT_OFFSET_HOURS,
         offset_ring_step_minutes,
-        shift_time,
+        taxi_in_score,
+        taxi_out_score,
         time_band_score,
     )
 
@@ -1195,9 +1274,10 @@ def _score_candidate(kwargs: dict[str, Any], existing: Any) -> float:
     # has no managed aircraft to read a real offset from. Cross-pair
     # (existing only has takeoff_time/landing_time — an airframe-import
     # placeholder, e.g. a hand-entered row from before this pilot ever ran
-    # a logbook import) is scored against that time shifted by this same
-    # offset, the closest estimate available of the block-to-airborne time
-    # gap — this needs a *real* managed-aircraft offset, so a standalone
+    # a logbook import) is scored by whether this time falls within the
+    # taxi window that offset allows (see
+    # services.time_band_matching.taxi_out_score) — this needs a *real*
+    # managed-aircraft offset, so a standalone
     # existing row (no aircraft_id, e.g. a rental logged nowhere else) has
     # this comparison skipped entirely rather than guessing one.
     offset_hours = (
@@ -1212,22 +1292,14 @@ def _score_candidate(kwargs: dict[str, Any], existing: Any) -> float:
         score += time_band_score(
             dep_time_new, (existing.departure_time,), same_pair_step
         )
-    elif existing.takeoff_time is not None and offset_hours is not None:
-        offset_minutes = round(offset_hours * 60)
-        center = shift_time(existing.takeoff_time, -offset_minutes)
-        score += time_band_score(
-            dep_time_new, (center,), offset_ring_step_minutes(offset_hours)
-        )
+    elif offset_hours is not None:
+        score += taxi_out_score(dep_time_new, existing.takeoff_time, offset_hours)
 
     arr_time_new = kwargs.get("arrival_time")
     if existing.arrival_time is not None:
         score += time_band_score(arr_time_new, (existing.arrival_time,), same_pair_step)
-    elif existing.landing_time is not None and offset_hours is not None:
-        offset_minutes = round(offset_hours * 60)
-        center = shift_time(existing.landing_time, offset_minutes)
-        score += time_band_score(
-            arr_time_new, (center,), offset_ring_step_minutes(offset_hours)
-        )
+    elif offset_hours is not None:
+        score += taxi_in_score(existing.landing_time, arr_time_new, offset_hours)
 
     dur_new = _kwargs_duration(kwargs)
     dur_old = existing.total_flight_time
@@ -1291,7 +1363,7 @@ def find_conflicting_rows(
     exclude_row_nums = exclude_row_nums or set()
     date_idx = _date_col_index(parsed.norm_cols, mapping)
     col_index = {col: i for i, col in enumerate(parsed.norm_cols)}
-    existing_keys = _fetch_existing_dedup_keys(pilot_user_id)
+    existing = _fetch_existing_dedup_index(pilot_user_id)
     conflicts: list[ConflictRow] = []
 
     tenant_ids = [
@@ -1310,7 +1382,7 @@ def find_conflicting_rows(
         kwargs, _source_total, _parse_warnings = _build_entry_kwargs(
             row, mapping, col_index, date_val
         )
-        if _dup_key(kwargs) in existing_keys:
+        if _contains_kwargs(existing, kwargs):
             continue  # exact duplicate — execute_import's own dedup handles this
 
         same_day_filters = [
@@ -1345,6 +1417,152 @@ def find_conflicting_rows(
             )
 
     return conflicts
+
+
+# ── Merging a row into an existing entry ─────────────────────────────────────
+
+# Fields a merge never takes from the parsed row: the date and route are
+# what matched it to the existing entry in the first place.
+_MERGE_SKIP_FIELDS = frozenset({"date", "departure_icao", "arrival_icao"})
+_OTHER_AIRCRAFT_FIELDS = frozenset(
+    {"other_aircraft_type", "other_aircraft_type_icao", "other_aircraft_registration"}
+)
+
+
+def merge_into_existing(
+    existing: Any, kwargs: dict[str, Any], pilot_user_id: int, *, fill_only: bool
+) -> None:
+    """Apply a parsed row's *kwargs* onto *existing* (a Flight), as the same
+    real-world flight. Caller must commit.
+
+    *fill_only* (an automatic merge with an entry logged from the airframe
+    side) only fills fields that are still empty. Otherwise (the review
+    step's "overwrite") the row's values replace the existing ones. Either
+    way an empty cell in the file never clears data already on the entry —
+    it means "not recorded here", e.g. the pilot logbook has no column for
+    the airframe log's remarks — and a managed-aircraft row never gets the
+    free-text other_aircraft_* fields (its aircraft comes from the Aircraft
+    join, see link_entries_to_aircraft).
+    """
+    for field_name, value in kwargs.items():
+        if value is None or field_name in _MERGE_SKIP_FIELDS:
+            continue
+        if existing.aircraft_id is not None and field_name in _OTHER_AIRCRAFT_FIELDS:
+            continue
+        current = getattr(existing, field_name)
+        if field_name == "notes" and current and current != value:
+            if fill_only and value not in current:
+                existing.notes = f"{current}\n{value}"
+            elif not fill_only:
+                existing.notes = value
+            continue
+        if not fill_only or current is None:
+            setattr(existing, field_name, value)
+
+    ident: dict[str, Any] = dict(kwargs)
+    _assign_pilot_identity(ident, pilot_user_id)
+    existing.pic_user_id = ident.get("pic_user_id")
+    existing.second_crew_user_id = ident.get("second_crew_user_id")
+    existing.second_crew_role = ident.get("second_crew_role")
+    _fill_engine_time(existing)
+
+
+def _fill_engine_time(entry: Any) -> None:
+    """A managed aircraft's engine_time (engine-run hours, summed for
+    engine/propeller TBO) from the pilot's logged block time, when nothing
+    better is known yet. Block time is engine time — the engine runs from
+    block-off to block-on — whereas the airborne flight_time side is never
+    derived from a personal logbook (see link_entries_to_aircraft)."""
+    if entry.aircraft_id is None or entry.engine_time is not None:
+        return
+    parts = [entry.single_pilot_se, entry.single_pilot_me, entry.multi_pilot]
+    vals = [float(p) for p in parts if p is not None]
+    if vals:
+        entry.engine_time = round(sum(vals), 1)
+
+
+def _is_airframe_only(existing: Any) -> bool:
+    """An entry logged only from the airframe side: on a managed aircraft,
+    no pilot claimed it and no pilot figures recorded yet."""
+    return (
+        existing.aircraft_id is not None
+        and existing.pic_user_id is None
+        and existing.second_crew_user_id is None
+        and existing.single_pilot_se is None
+        and existing.single_pilot_me is None
+        and existing.multi_pilot is None
+    )
+
+
+# Combined score of the two cross-pair time checks (block-off vs takeoff,
+# block-on vs landing, each 0–1) needed to merge automatically: both inside
+# their offset band, or one inside and the other within the first ring.
+_AUTO_MERGE_MIN_TIME_SCORE = 1.75
+
+
+def _is_strong_cross_match(kwargs: dict[str, Any], existing: Any) -> bool:
+    """Same aircraft, same known route, and both clock times within the
+    taxi window (the aircraft's block-to-airborne offset) of the airframe
+    row's takeoff/landing times — strong enough to merge without asking."""
+    from services.time_band_matching import (  # pyright: ignore[reportMissingImports]
+        taxi_in_score,
+        taxi_out_score,
+    )
+
+    reg_new = (kwargs.get("other_aircraft_registration") or "").strip().upper()
+    if reg_new.replace("-", "") != (
+        existing.display_registration or ""
+    ).upper().replace("-", ""):
+        return False
+    dep, arr = (
+        _place_key(kwargs.get("departure_icao")),
+        _place_key(kwargs.get("arrival_icao")),
+    )
+    if not dep or not arr:
+        return False
+    if (dep, arr) != (
+        _place_key(existing.departure_icao),
+        _place_key(existing.arrival_icao),
+    ):
+        return False
+    offset_hours = float(existing.aircraft.flight_counter_offset)
+    score = taxi_out_score(
+        kwargs.get("departure_time"), existing.takeoff_time, offset_hours
+    ) + taxi_in_score(existing.landing_time, kwargs.get("arrival_time"), offset_hours)
+    return score >= _AUTO_MERGE_MIN_TIME_SCORE
+
+
+def split_auto_merges(
+    conflicts: list[ConflictRow],
+) -> tuple[list[tuple[ConflictRow, int]], list[ConflictRow]]:
+    """Split near-match *conflicts* into (auto_merges, needs_review).
+
+    A row merges automatically — no human decision needed — when exactly
+    one of its candidates is an entry logged only from the airframe side
+    (see _is_airframe_only) and that candidate is a strong match (see
+    _is_strong_cross_match): the two sides then simply complement each
+    other, there's nothing to choose between. Each existing entry is
+    claimed by at most one row; anything else goes to review.
+    """
+    from models import Flight, db  # pyright: ignore[reportMissingImports]
+
+    auto: list[tuple[ConflictRow, int]] = []
+    review: list[ConflictRow] = []
+    claimed: set[int] = set()
+    for conflict in conflicts:
+        strong = [
+            cid
+            for _score, cid in conflict.candidates
+            if (existing := db.session.get(Flight, cid)) is not None
+            and _is_airframe_only(existing)
+            and _is_strong_cross_match(conflict.kwargs, existing)
+        ]
+        if len(strong) == 1 and strong[0] not in claimed:
+            claimed.add(strong[0])
+            auto.append((conflict, strong[0]))
+        else:
+            review.append(conflict)
+    return auto, review
 
 
 def link_entries_to_aircraft(entries: list[Any]) -> int:
@@ -1415,20 +1633,18 @@ def link_entries_to_aircraft(entries: list[Any]) -> int:
         entry.other_aircraft_registration = None
         entry.source = "logbook_import"
 
-        # Step 2 (docs/backlog.md "reconcile imports from either side"): the
-        # true airframe-side fields (flight_time_counter_*/flight_time,
-        # engine_time_counter_*/engine_time — the maintenance-relevant hour
-        # figures) aren't known from a personal logbook and stay NULL, same
-        # as everywhere else in this app "if a field is not filled, it's not
-        # filled" — no supposition, interpolation, or guessed value gets
-        # invented here. That's also what keeps the flight list's
+        # The airframe-side figures (flight_time_counter_*/flight_time —
+        # airborne time) and the engine counter readings aren't known from
+        # a personal logbook and stay NULL: no supposition, interpolation,
+        # or guessed counter value gets invented here (a previous version
+        # seeded a rough engine_time_counter estimate, which
+        # services/component_limits.py would then have summed for TBO).
+        # flight_time staying NULL is also what keeps the flight list's
         # needs-attention icon (source == "logbook_import" and flight_time
-        # is None) lit until a human fills these in from a real airframe
-        # source. (A previous version of this function seeded a rough
-        # engine_time_counter estimate here, on the assumption that nothing
-        # read it for maintenance tracking — services/component_limits.py
-        # now sums engine_time_counter for engine/propeller TBO, so that
-        # assumption no longer holds and the guess was removed.)
+        # is None) lit until a human, or an airframe-log import, fills it
+        # in. The pilot's block time is a real engine-run figure, though,
+        # so it does go to engine_time.
+        _fill_engine_time(entry)
 
         if not entry.pic_name:
             pilot_user = db.session.get(User, pilot_user_id)

@@ -1049,6 +1049,29 @@ def create_app() -> Flask:
     def not_found(e: Exception) -> ResponseReturnValue:
         return render_template("errors/404.html"), 404
 
+    @app.errorhandler(413)
+    def payload_too_large(e: Exception) -> ResponseReturnValue:
+        # Typically a multi-file upload (e.g. a season of GPS data logs)
+        # over MAX_CONTENT_LENGTH in total, each file being within its own
+        # per-file limit — send the user back to the form with a reason
+        # instead of a bare error page.
+        from flask import flash, redirect, url_for
+        from flask_babel import gettext as _
+
+        max_mb = round((app.config.get("MAX_CONTENT_LENGTH") or 0) / (1024 * 1024))
+        flash(
+            _(
+                "This upload is too large (maximum %(mb)s MB in total). "
+                "Please upload the files in smaller batches.",
+                mb=max_mb,
+            ),
+            "danger",
+        )
+        referrer = request.referrer or ""
+        if referrer.startswith(request.host_url):
+            return redirect(referrer)
+        return redirect(url_for("index"))
+
     @app.errorhandler(500)
     def internal_error(e: Exception) -> ResponseReturnValue:
         import traceback as _tb

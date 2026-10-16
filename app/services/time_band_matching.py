@@ -109,3 +109,45 @@ def widened_span_score(
         shift_time(t, widen_minutes) for t in reference_edges
     )
     return time_band_score(new_time, widened, widen_minutes)
+
+
+def taxi_out_score(
+    block_off: time | None, takeoff: time | None, offset_hours: float
+) -> float:
+    """Cross-pair score for a block-off time (pilot-log departure_time)
+    against a takeoff time (airframe-log takeoff_time) of the same flight.
+
+    The aircraft's flight_counter_offset is the *total* block-to-airborne
+    gap (taxi-out plus taxi-in), so block-off falls anywhere from the whole
+    offset before takeoff up to takeoff itself: full credit inside
+    [takeoff - offset, takeoff], degrading in time_band_score's rings
+    outside it. (Shifting each edge by the whole offset instead — as this
+    used to — counts that gap twice, so a real flight with an ordinary
+    6-minute taxi each way ended up two rings out on both edges.)
+    Symmetric: the same window, seen from the takeoff side, is
+    [block_off, block_off + offset].
+    """
+    if block_off is None or takeoff is None:
+        return 0.0
+    offset_minutes = round(offset_hours * 60)
+    return time_band_score(
+        block_off,
+        (shift_time(takeoff, -offset_minutes), takeoff),
+        offset_ring_step_minutes(offset_hours),
+    )
+
+
+def taxi_in_score(
+    landing: time | None, block_on: time | None, offset_hours: float
+) -> float:
+    """Cross-pair score for a landing time (airframe log) against a block-on
+    time (pilot-log arrival_time): full credit inside
+    [landing, landing + offset] — see taxi_out_score."""
+    if landing is None or block_on is None:
+        return 0.0
+    offset_minutes = round(offset_hours * 60)
+    return time_band_score(
+        block_on,
+        (landing, shift_time(landing, offset_minutes)),
+        offset_ring_step_minutes(offset_hours),
+    )

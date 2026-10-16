@@ -17,6 +17,7 @@ from typing import Any
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
+    DedupIndex,
     ParsedFile,
     parse_date_value,
     parse_duration_value,
@@ -96,6 +97,8 @@ _AIRFRAME_ALIASES: dict[str, str] = {
     "tach end": "engine_counter_end",
     "flight counter start": "flight_counter_start",
     "flight counter end": "flight_counter_end",
+    "flight start": "flight_counter_start",
+    "flight end": "flight_counter_end",
     "counter start": "flight_counter_start",
     "counter end": "flight_counter_end",
 }
@@ -141,10 +144,11 @@ def _num(v: Any) -> float | None:
 
 
 def _dup_key(fields: dict[str, Any]) -> tuple[Any, ...]:
-    """Exact-duplicate key: date + route + duration + landings. Re-importing
-    the same airframe logbook file (by mistake, or deliberately after
-    appending new rows) must only add genuinely new flights, not double up
-    everything already imported."""
+    """Coarse exact-duplicate key: date + route + duration + landings.
+    Re-importing the same airframe logbook file (by mistake, or deliberately
+    after appending new rows) must only add genuinely new flights, not
+    double up everything already imported. Necessary but not sufficient —
+    see _dup_detail and DedupIndex."""
     return (
         fields["date"],
         fields.get("departure_icao") or "ZZZZ",
@@ -154,19 +158,44 @@ def _dup_key(fields: dict[str, Any]) -> tuple[Any, ...]:
     )
 
 
-def _fetch_existing_dedup_keys(aircraft_id: int) -> set[tuple[Any, ...]]:
+def _dup_detail(
+    takeoff: Any, landing: Any, flight_end: Any, engine_end: Any
+) -> tuple[Any, ...]:
+    """What tells apart two flights sharing a _dup_key — e.g. a day of
+    identical 0.5 h training circuits: their times and counter readings.
+    Only compared where both sides record them."""
+    return (takeoff, landing, _num(flight_end), _num(engine_end))
+
+
+def _fields_dup_detail(fields: dict[str, Any]) -> tuple[Any, ...]:
+    return _dup_detail(
+        fields.get("takeoff_time"),
+        fields.get("landing_time"),
+        fields.get("flight_counter_end"),
+        fields.get("engine_counter_end"),
+    )
+
+
+def _fetch_existing_dedup_index(aircraft_id: int) -> DedupIndex:
     from models import Flight, db  # pyright: ignore[reportMissingImports]
 
-    return {
-        (row[0], row[1], row[2], _num(row[3]), row[4])
-        for row in db.session.query(
-            Flight.date,
-            Flight.departure_icao,
-            Flight.arrival_icao,
-            Flight.flight_time,
-            Flight.landing_count,
-        ).filter_by(aircraft_id=aircraft_id)
-    }
+    index = DedupIndex()
+    for row in db.session.query(
+        Flight.date,
+        Flight.departure_icao,
+        Flight.arrival_icao,
+        Flight.flight_time,
+        Flight.landing_count,
+        Flight.takeoff_time,
+        Flight.landing_time,
+        Flight.flight_time_counter_end,
+        Flight.engine_time_counter_end,
+    ).filter_by(aircraft_id=aircraft_id):
+        index.add(
+            (row[0], row[1], row[2], _num(row[3]), row[4]),
+            _dup_detail(row[5], row[6], row[7], row[8]),
+        )
+    return index
 
 
 def propose_airframe_mapping(
@@ -183,8 +212,37 @@ def propose_airframe_mapping(
                 for col in parsed.norm_cols
             }
             return mapping, "exact"
-    mapping = {col: _AIRFRAME_ALIASES.get(col, "ignore") for col in parsed.norm_cols}
+    mapping = {}
+    taken: set[str] = set()
+    for idx, col in enumerate(parsed.norm_cols):
+        target = _AIRFRAME_ALIASES.get(col, "ignore")
+        if target in _PLACE_TO_TIME and _column_holds_times(parsed, idx):
+            # "Dep"/"Arr" are as often the departure/arrival *times* as the
+            # places — let the data decide.
+            target = _PLACE_TO_TIME[target]
+        if target in taken:
+            # Never propose two columns for one field: the second would
+            # silently overwrite the first on every row.
+            target = "ignore"
+        if target != "ignore":
+            taken.add(target)
+        mapping[col] = target
     return mapping, "alias"
+
+
+_PLACE_TO_TIME = {"departure_icao": "takeoff_time", "arrival_icao": "landing_time"}
+
+
+def _column_holds_times(parsed: ParsedFile, idx: int) -> bool:
+    """True when most sampled non-blank cells of column *idx* parse as a
+    time of day (an airfield code never does)."""
+    sample = [
+        row[idx]
+        for row in parsed.data_rows[:_HINT_SAMPLE_ROWS]
+        if idx < len(row) and not _is_blank_cell(row[idx])
+    ]
+    times = sum(1 for v in sample if parse_time_value(v) is not None)
+    return bool(sample) and times * 2 > len(sample)
 
 
 _HINT_SAMPLE_ROWS = 25
@@ -314,6 +372,14 @@ def _build_airframe_fields(
         else:  # nature_of_flight, notes — free text
             val = str(raw).strip() if raw is not None else None
             fields[target] = val or None
+    # The flight counters are the authoritative airborne figure, as on the
+    # flight form (flights/form_parsing.py): a logged duration is often the
+    # block time (departure to arrival) instead — on paper logs typically
+    # by exactly the aircraft's block-to-airborne offset.
+    ctr_start = fields.get("flight_counter_start")
+    ctr_end = fields.get("flight_counter_end")
+    if ctr_start is not None and ctr_end is not None and ctr_end >= ctr_start:
+        fields["flight_time"] = round(ctr_end - ctr_start, 1)
     return fields, crew_name, parse_warnings
 
 
@@ -373,7 +439,7 @@ def execute_airframe_import(
     )
     skip_row_nums = skip_row_nums or set()
 
-    existing_keys = _fetch_existing_dedup_keys(aircraft.id)
+    existing = _fetch_existing_dedup_index(aircraft.id)
     rows: list[tuple[int, dict[str, Any], str | None]] = []
     for row_num, row in enumerate(parsed.data_rows, start=1):
         if row_num in skip_row_nums:
@@ -397,7 +463,8 @@ def execute_airframe_import(
             result.parse_warnings.append((row_num, col, target, raw_repr))
 
         dup_key = _dup_key(fields)
-        if dup_key in existing_keys:
+        dup_detail = _fields_dup_detail(fields)
+        if existing.contains(dup_key, dup_detail):
             result.duplicates.append(
                 (
                     row_num,
@@ -408,7 +475,7 @@ def execute_airframe_import(
                 )
             )
             continue
-        existing_keys.add(dup_key)
+        existing.add(dup_key, dup_detail)
 
         rows.append((row_num, fields, crew_name))
 
@@ -546,7 +613,8 @@ def _score_airframe_candidate(
     """
     from services.time_band_matching import (  # pyright: ignore[reportMissingImports]
         offset_ring_step_minutes,
-        shift_time,
+        taxi_in_score,
+        taxi_out_score,
         time_band_score,
     )
 
@@ -559,25 +627,22 @@ def _score_airframe_candidate(
     # to a fixed precision (0.1h/6min at the 0.3h default) — a flat few-
     # minutes tolerance would put an ordinary rounding difference in the
     # wrong ring, so the same offset-derived step is used for both instead
-    # of a separate hardcoded constant. Cross-pair additionally shifts the
-    # centre by that offset, the closest estimate available of the
-    # block-to-airborne time gap.
+    # of a separate hardcoded constant. Cross-pair instead checks the time
+    # falls within the taxi window the offset allows — see
+    # services.time_band_matching.taxi_out_score.
     offset_step = offset_ring_step_minutes(offset_hours)
-    offset_minutes = round(offset_hours * 60)
 
     takeoff_new = fields.get("takeoff_time")
     if existing.takeoff_time is not None:
         score += time_band_score(takeoff_new, (existing.takeoff_time,), offset_step)
-    elif existing.departure_time is not None:
-        center = shift_time(existing.departure_time, offset_minutes)
-        score += time_band_score(takeoff_new, (center,), offset_step)
+    else:
+        score += taxi_out_score(existing.departure_time, takeoff_new, offset_hours)
 
     landing_new = fields.get("landing_time")
     if existing.landing_time is not None:
         score += time_band_score(landing_new, (existing.landing_time,), offset_step)
-    elif existing.arrival_time is not None:
-        center = shift_time(existing.arrival_time, -offset_minutes)
-        score += time_band_score(landing_new, (center,), offset_step)
+    else:
+        score += taxi_in_score(landing_new, existing.arrival_time, offset_hours)
 
     return score
 
@@ -608,7 +673,7 @@ def find_conflicting_airframe_rows(
     )
     aircraft = db.session.get(Aircraft, aircraft_id)
     offset_hours = float(aircraft.flight_counter_offset) if aircraft else 0.0
-    existing_keys = _fetch_existing_dedup_keys(aircraft_id)
+    existing = _fetch_existing_dedup_index(aircraft_id)
     conflicts: list[AirframeConflictRow] = []
 
     for row_num, row in enumerate(parsed.data_rows, start=1):
@@ -623,7 +688,7 @@ def find_conflicting_airframe_rows(
         fields, crew_name, _parse_warnings = _build_airframe_fields(
             row, mapping, col_index, date_val
         )
-        if _dup_key(fields) in existing_keys:
+        if existing.contains(_dup_key(fields), _fields_dup_detail(fields)):
             continue  # exact duplicate — execute_airframe_import's own dedup handles this
 
         same_day = Flight.query.filter_by(aircraft_id=aircraft_id, date=date_val).all()
@@ -645,3 +710,117 @@ def find_conflicting_airframe_rows(
             )
 
     return conflicts
+
+
+# ── Merging a row into an existing flight ────────────────────────────────────
+
+# Fields a merge never takes from the parsed row: the date and route are
+# what matched it to the existing flight in the first place.
+_MERGE_SKIP_FIELDS = frozenset({"date", "departure_icao", "arrival_icao"})
+
+
+def merge_airframe_into_existing(
+    existing: Any, fields: dict[str, Any], crew_name: str | None, *, fill_only: bool
+) -> None:
+    """Apply a parsed airframe-log row onto *existing* (a Flight), as the
+    same real-world flight. Caller must commit.
+
+    *fill_only* (an automatic merge with a flight logged from the pilot
+    side) only fills fields that are still empty. Otherwise (the review
+    step's "overwrite") the row's values replace the existing ones. Either
+    way an empty or unmapped cell never clears data already on the flight
+    — e.g. the engine counters, or the pilot's departure/arrival times and
+    remarks, which an airframe log row typically doesn't carry.
+    """
+    for field_name, value in _fields_to_flight_entry_kwargs(fields).items():
+        if value is None or field_name in _MERGE_SKIP_FIELDS:
+            continue
+        current = getattr(existing, field_name)
+        if field_name == "notes" and current and current != value:
+            if fill_only and value not in current:
+                existing.notes = f"{current}\n{value}"
+            elif not fill_only:
+                existing.notes = value
+            continue
+        if not fill_only or current is None:
+            setattr(existing, field_name, value)
+    if crew_name and not existing.pic_name:
+        existing.pic_name = crew_name
+
+
+def _is_pilot_only(existing: Any) -> bool:
+    """A flight logged only from the pilot side (e.g. promoted from a
+    personal logbook import): nothing airframe-facing recorded yet."""
+    return (
+        existing.takeoff_time is None
+        and existing.landing_time is None
+        and existing.flight_time is None
+        and existing.flight_time_counter_start is None
+        and existing.flight_time_counter_end is None
+    )
+
+
+# Combined score of the two cross-pair time checks (takeoff vs block-off,
+# landing vs block-on, each 0–1) needed to merge automatically: both inside
+# their offset band, or one inside and the other within the first ring.
+_AUTO_MERGE_MIN_TIME_SCORE = 1.75
+
+
+def _is_strong_cross_match(
+    fields: dict[str, Any], existing: Any, offset_hours: float
+) -> bool:
+    """Same known route, and both takeoff/landing times within the taxi
+    window (the aircraft's block-to-airborne offset) of the pilot-side
+    departure/arrival times — strong enough to merge without asking."""
+    from services.time_band_matching import (  # pyright: ignore[reportMissingImports]
+        taxi_in_score,
+        taxi_out_score,
+    )
+
+    dep = (fields.get("departure_icao") or "ZZZZ").upper()
+    arr = (fields.get("arrival_icao") or "ZZZZ").upper()
+    if "ZZZZ" in (dep, arr):
+        return False
+    if (dep, arr) != (
+        (existing.departure_icao or "").upper(),
+        (existing.arrival_icao or "").upper(),
+    ):
+        return False
+    score = taxi_out_score(
+        existing.departure_time, fields.get("takeoff_time"), offset_hours
+    ) + taxi_in_score(fields.get("landing_time"), existing.arrival_time, offset_hours)
+    return score >= _AUTO_MERGE_MIN_TIME_SCORE
+
+
+def split_airframe_auto_merges(
+    conflicts: list[AirframeConflictRow], aircraft: Any
+) -> tuple[list[tuple[AirframeConflictRow, int]], list[AirframeConflictRow]]:
+    """Split near-match *conflicts* into (auto_merges, needs_review).
+
+    A row merges automatically — no human decision needed — when exactly
+    one of its candidates is a flight logged only from the pilot side (see
+    _is_pilot_only) and that candidate is a strong match (see
+    _is_strong_cross_match): the two sides then simply complement each
+    other, there's nothing to choose between. Each existing flight is
+    claimed by at most one row; anything else goes to review.
+    """
+    from models import Flight, db  # pyright: ignore[reportMissingImports]
+
+    offset_hours = float(aircraft.flight_counter_offset)
+    auto: list[tuple[AirframeConflictRow, int]] = []
+    review: list[AirframeConflictRow] = []
+    claimed: set[int] = set()
+    for conflict in conflicts:
+        strong = [
+            cid
+            for _score, cid in conflict.candidates
+            if (existing := db.session.get(Flight, cid)) is not None
+            and _is_pilot_only(existing)
+            and _is_strong_cross_match(conflict.fields, existing, offset_hours)
+        ]
+        if len(strong) == 1 and strong[0] not in claimed:
+            claimed.add(strong[0])
+            auto.append((conflict, strong[0]))
+        else:
+            review.append(conflict)
+    return auto, review

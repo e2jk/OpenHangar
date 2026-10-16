@@ -1,10 +1,11 @@
 """Tests for pilot GPS import (airplane-agnostic batch upload from pilot logbook)."""
 
 import contextlib
+import decimal
 import io
 import os
 import tempfile
-from datetime import UTC, datetime
+from datetime import UTC, datetime, time
 from textwrap import dedent
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
@@ -663,7 +664,10 @@ class TestPilotGpsConfirmOne:
     def test_confirm_managed_aircraft_creates_single_flight_row(self, client, app):
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
-        _set_upload_session(client, uid)
+        seg = _seg_dict()
+        seg["takeoff_utc"] = "2024-06-01T10:06:00+00:00"
+        seg["landing_utc"] = "2024-06-01T10:54:00+00:00"
+        _set_upload_session(client, uid, segments=[seg])
         resp = client.post(
             "/pilot/gps-import/confirm-one",
             data={
@@ -681,6 +685,11 @@ class TestPilotGpsConfirmOne:
             # no separate linked pilot-logbook entry to check for.
             assert len(flights) == 1
             assert flights[0].pic_user_id == uid
+            # Block time on the engine side, airborne span on the airframe side.
+            assert flights[0].engine_time == decimal.Decimal("1.0")
+            assert flights[0].flight_time == decimal.Decimal("0.8")
+            assert flights[0].takeoff_time == time(10, 6)
+            assert flights[0].single_pilot_se == decimal.Decimal("1.0")
 
     def test_confirm_managed_aircraft_rejects_cross_tenant_aircraft_id(
         self, client, app

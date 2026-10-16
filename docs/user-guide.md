@@ -42,7 +42,7 @@ Each person you then invite to your installation is assigned a **role** that con
 - **Maintenance tracking** — calendar and hours-based triggers with a clear green/yellow/red dashboard status; engine and propeller TBO and life-limited component tracking.
 - **Flight logging** — one unified form that fills the aircraft and pilot logbooks together; counter pre-fill, photo proofs, fuel and oil tracking, GPS-file autofill.
 - **Pilot logbook** — EASA FCL.050 layout with passenger/night currency tracking, FSTD/simulator sessions, and bulk import from CSV or Excel.
-- **GPS tracks** — import GPX, KML, or Garmin CSV files; per-flight maps, a cumulative track view, and downloadable track images and animations.
+- **GPS tracks** — import GPX, KML, or Garmin CSV files; per-flight maps, a cumulative track view, and downloadable track images and animations. Each uploaded file is also kept unchanged (and included in backups), so it can be reprocessed later — the database only holds a simplified track.
 - **Airworthiness** — track ADs, SIBs, ARC, and installed STCs per aircraft, with automatic daily sync from the EASA Safety Publications Tool.
 - **Snag tracking** — log defects, flag grounding items, and see them fleet-wide before the next flight.
 - **Reservations** — per-aircraft booking calendar with owner approval, conflict detection, and cost estimation (shown when rental is enabled).

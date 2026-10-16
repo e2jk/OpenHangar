@@ -91,10 +91,12 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     execute_import,
     find_conflicting_rows,
     link_entries_to_aircraft,
+    merge_into_existing,
     parse_duration_value,
     parse_file,
     preview_rows,
     propose_mapping,
+    split_auto_merges,
     type_hints,
 )
 from pilots.personal_minimums import (  # pyright: ignore[reportMissingImports]
@@ -1453,7 +1455,17 @@ def import_execute() -> ResponseReturnValue:
     # guess — carve them out of this pass and route them through the
     # interactive review step below instead of silently importing or
     # skipping them.
-    conflicts = find_conflicting_rows(parsed, mapping, uid)
+    all_conflicts = find_conflicting_rows(parsed, mapping, uid)
+    # A row whose only match is the same flight logged from the airframe
+    # side just completes it — merged straight away, no decision needed.
+    auto_merges, conflicts = split_auto_merges(all_conflicts)
+    for auto_conflict, existing_id in auto_merges:
+        merge_into_existing(
+            db.session.get(Flight, existing_id),
+            auto_conflict.kwargs,
+            uid,
+            fill_only=True,
+        )
 
     result = execute_import(
         parsed=parsed,
@@ -1461,7 +1473,7 @@ def import_execute() -> ResponseReturnValue:
         pilot_user_id=uid,
         batch_id=batch.id,
         opening_balance=resolved_opening_balance,
-        skip_row_nums={c.row_num for c in conflicts},
+        skip_row_nums={c.row_num for c in all_conflicts},
     )
 
     batch.row_count = result.imported
@@ -1470,6 +1482,19 @@ def import_execute() -> ResponseReturnValue:
     batch.has_opening_balance = result.has_opening_balance
 
     db.session.commit()
+
+    if auto_merges:
+        flash(
+            ngettext(
+                "One row matched a flight already in the aircraft log and was "
+                "merged into it.",
+                "%(n)d rows matched a flight already in the aircraft log and "
+                "were merged into it.",
+                len(auto_merges),
+                n=len(auto_merges),
+            ),
+            "info",
+        )
 
     if conflicts:
         # Defer the aircraft-link pass and tmp-file cleanup until every
@@ -1482,6 +1507,7 @@ def import_execute() -> ResponseReturnValue:
             "mapping": mapping,
             "batch_id": batch.id,
             "resolved": {},
+            "auto_merged": [c.row_num for c, _eid in auto_merges],
         }
         session.pop(_IMPORT_SESSION_KEY, None)
         session.modified = True
@@ -1645,6 +1671,14 @@ def import_execute() -> ResponseReturnValue:
     return redirect(url_for("pilots.import_history"))
 
 
+def _review_excluded_rows(state: dict[str, Any]) -> set[int]:
+    """Rows the review step no longer offers: already resolved, or merged
+    automatically when the import ran."""
+    return {int(k) for k in state.get("resolved", {})} | set(
+        state.get("auto_merged", [])
+    )
+
+
 def _finalize_import_review(state: dict[str, Any]) -> ResponseReturnValue:
     """Common tail once every conflict row from a review has a decision:
     aircraft-link pass (covers both the rows auto-imported before the review
@@ -1729,7 +1763,7 @@ def import_review() -> ResponseReturnValue:
         session.pop(_IMPORT_REVIEW_SESSION_KEY, None)
         return redirect(url_for("pilots.import_upload"))
 
-    exclude_row_nums = {int(k) for k in resolved}
+    exclude_row_nums = _review_excluded_rows(state)
     conflicts = find_conflicting_rows(
         parsed, mapping, uid, exclude_row_nums=exclude_row_nums
     )
@@ -1801,7 +1835,7 @@ def import_review_resolve() -> ResponseReturnValue:
         session.pop(_IMPORT_REVIEW_SESSION_KEY, None)
         return redirect(url_for("pilots.import_upload"))
 
-    exclude_row_nums = {int(k) for k in resolved}
+    exclude_row_nums = _review_excluded_rows(state)
     conflicts = find_conflicting_rows(
         parsed, mapping, uid, exclude_row_nums=exclude_row_nums
     )
@@ -1836,22 +1870,15 @@ def import_review_resolve() -> ResponseReturnValue:
             # candidate_ids just came from a live query in the same
             # request — only a concurrent delete from elsewhere reaches this.
             abort(404)  # pragma: no cover
-        # Full replace of every field this row provides — id, import_batch_id,
-        # aircraft_id and gps_* links are deliberately left untouched, so this
-        # entry stays outside the *current* batch's rollback (it wasn't
-        # created by it) and any existing aircraft/GPS linkage survives.
-        for field, value in conflict.kwargs.items():
-            setattr(existing, field, value)
-        # Crew identity isn't part of conflict.kwargs (the caller's
-        # responsibility, per _build_entry_kwargs's docstring) — recompute
-        # it the same way a fresh import would, replacing whatever slot
-        # *existing* previously had (e.g. an unclaimed airframe-log row
-        # being claimed here for the first time).
-        ident_kwargs: dict[str, Any] = dict(conflict.kwargs)
-        _assign_pilot_identity(ident_kwargs, uid)
-        existing.pic_user_id = ident_kwargs.get("pic_user_id")
-        existing.second_crew_user_id = ident_kwargs.get("second_crew_user_id")
-        existing.second_crew_role = ident_kwargs.get("second_crew_role")
+        # Replace with the row's values — see merge_into_existing for what's
+        # deliberately left alone. id, import_batch_id, aircraft_id and gps_*
+        # links are never touched, so this entry stays outside the *current*
+        # batch's rollback (it wasn't created by it) and any existing
+        # aircraft/GPS linkage survives. Crew identity is recomputed the same
+        # way a fresh import would, replacing whatever slot *existing*
+        # previously had (e.g. an unclaimed airframe-log row being claimed
+        # here for the first time).
+        merge_into_existing(existing, conflict.kwargs, uid, fill_only=False)
         db.session.commit()
     elif decision == "new":
         batch_id: int = state["batch_id"]
@@ -1878,7 +1905,7 @@ def import_review_resolve() -> ResponseReturnValue:
     session.modified = True
 
     remaining = find_conflicting_rows(
-        parsed, mapping, uid, exclude_row_nums={int(k) for k in resolved}
+        parsed, mapping, uid, exclude_row_nums=_review_excluded_rows(state)
     )
     if not remaining:
         return _finalize_import_review(state)
@@ -2094,8 +2121,17 @@ def pilot_gps_import_upload() -> ResponseReturnValue:
         )
 
     from aircraft.gps_import import parse_gps_file
+    from documents.routes import _safe_join  # pyright: ignore[reportMissingImports]
+    from services.gps_archive import (  # pyright: ignore[reportMissingImports]
+        archive_gps_file,
+        pilot_archive_parts,
+    )
 
     tmp_dir = _pilot_gps_tmp_dir()
+    archive_dir = _safe_join(
+        current_app.config.get("UPLOAD_FOLDER", "/data/uploads"),
+        *pilot_archive_parts(uid),
+    )
     parsed_meta: list[dict[str, Any]] = []
     errors: list[str] = []
     skipped_empty = 0
@@ -2116,6 +2152,8 @@ def pilot_gps_import_upload() -> ResponseReturnValue:
         if len(data) > _GPS_MAX_BYTES:
             errors.append(_("%(fn)s: file too large (20 MB limit).", fn=f.filename))
             continue
+        # Kept whatever the parser makes of it — see services.gps_archive.
+        archive_gps_file(data, f.filename, archive_dir)
         try:
             parsed = parse_gps_file(data, f.filename)
         except ValueError as exc:
@@ -2292,9 +2330,8 @@ def pilot_gps_import_review() -> ResponseReturnValue:
 @login_required
 @require_pilot_access
 def pilot_gps_import_confirm_one() -> ResponseReturnValue:
-    import decimal as _dec
 
-    from aircraft.gps_import import round_flight_time
+    from aircraft.gps_import import segment_times
     from aircraft.routes import _gps_cleanup, _load_segment_geojson
 
     uid = _current_user_id()
@@ -2462,9 +2499,8 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
             )
             db.session.add(gps_track)
             db.session.flush()
-            flight_time_h = round_flight_time(
-                seg.get("flight_time_raw_h", 0),
-                getattr(ac, "logbook_time_precision", "tenth_hour"),
+            ac_times = segment_times(
+                seg, getattr(ac, "logbook_time_precision", "tenth_hour")
             )
             entry = Flight(
                 aircraft_id=ac.id,
@@ -2473,7 +2509,10 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
                 arrival_icao=arr_icao,
                 departure_time=block_off.time().replace(tzinfo=None),
                 arrival_time=block_on.time().replace(tzinfo=None),
-                flight_time=_dec.Decimal(str(flight_time_h)),
+                takeoff_time=ac_times.takeoff_time,
+                landing_time=ac_times.landing_time,
+                flight_time=ac_times.airborne_time,
+                engine_time=ac_times.block_time,
                 landing_count=seg.get("landing_count") or 0,
                 nature_of_flight=nature,
                 source="gps_import",
@@ -2504,7 +2543,7 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
     if create_pilot_entry:
         from flights.routes import apply_pilot_identity
 
-        flight_time_h = round_flight_time(seg.get("flight_time_raw_h", 0), "tenth_hour")
+        times = segment_times(seg, "tenth_hour")
 
         if entry is None:
             # Other/external aircraft, no existing match — standalone row.
@@ -2524,7 +2563,14 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
             db.session.add(entry)
             db.session.flush()
 
-        entry.flight_time = _dec.Decimal(str(flight_time_h))
+        # The pilot's figures come from the block time (see
+        # flights.routes.pilot_time) — recorded as engine_time unless the
+        # flight already has one (e.g. from its engine counters). A matched
+        # flight's own airborne flight_time is never replaced by it.
+        if entry.engine_time is None:
+            entry.engine_time = times.block_time
+        if entry.flight_time is None:
+            entry.flight_time = times.airborne_time
         # GPS-derived landing count has no day/night split — treat them all
         # as day landings, same simplification the old standalone pilot
         # entry made.

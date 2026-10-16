@@ -38,6 +38,9 @@ from models import (  # pyright: ignore[reportMissingImports]
     TenantUser,
     db,
 )
+from services.upload_layout import (  # pyright: ignore[reportMissingImports]
+    is_app_managed,
+)
 from sqlalchemy.orm import joinedload  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
     activity,
@@ -1108,6 +1111,8 @@ def scan_documents() -> ResponseReturnValue:
 
             # Parse canonical path: slug/reg/category/YYYY-MM-DD - title.ext
             parts = relpath.split("/")
+            if is_app_managed(relpath):
+                continue
             aircraft_obj: Aircraft | None = None
             category: str | None = None
             title_hint: str | None = None

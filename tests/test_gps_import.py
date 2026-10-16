@@ -1,10 +1,11 @@
 """Tests for Phase 30: GPS log import (parsers, classification, segments, routes)."""
 
+import decimal
 import io
 import json
 import os
 import tempfile
-from datetime import UTC, datetime, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from textwrap import dedent
 from unittest.mock import patch
 
@@ -627,6 +628,13 @@ def _make_user_and_aircraft(app):
         return user.id, tenant.id, ac.id
 
 
+def _session_segments(sess):
+    """The review step's segments — spilled to a server-side state file
+    (see aircraft.routes._gps_state_save), the session keeps its path."""
+    with open(sess["gps_import"]["spill_path"], encoding="utf-8") as fh:
+        return json.load(fh)["segments"]
+
+
 def _login(client, uid):
     with client.session_transaction() as sess:
         sess["user_id"] = uid
@@ -1093,6 +1101,71 @@ class TestSplitIntoRawGroups:
         assert len(groups) == 1
 
 
+class TestBreakBetweenFlightsKeepsTaxi:
+    """At a break between two flights each keeps its own taxi: the first
+    ends where the aircraft came to rest (so its landing is counted and its
+    block-on is real), the second starts where it moved off."""
+
+    def _two_flights(self, middle):
+        return (
+            [_tp_at(80.0, m) for m in range(10)]  # flight 1 airborne
+            + middle
+            + [_tp_at(80.0, m) for m in range(40, 50)]  # flight 2 airborne
+            + [_tp_at(12.0, m) for m in range(50, 53)]  # flight 2 taxi in
+        )
+
+    def test_split_at_longest_stop(self):
+        middle = (
+            [_tp_at(12.0, m) for m in range(10, 13)]  # taxi in
+            + [_tp_at(0.0, 13)]  # short hold — not the parking stop
+            + [_tp_at(12.0, 14)]
+            + [_tp_at(0.0, m) for m in range(15, 35)]  # parked
+            + [_tp_at(12.0, m) for m in range(35, 40)]  # taxi out
+        )
+        pts = self._two_flights(middle)
+        groups = _split_into_raw_groups(pts)
+        assert len(groups) == 2
+        assert groups[0][-1].utc_dt == _tp_at(0.0, 15).utc_dt  # block-on
+        assert groups[1][0].utc_dt == _tp_at(0.0, 34).utc_dt  # block-off
+        segs = detect_segments(pts)
+        assert [s.landing_count for s in segs] == [1, 1]
+
+    def test_split_at_recording_gap(self):
+        middle = [_tp_at(12.0, m) for m in (10, 11)] + [
+            _tp_at(12.0, m) for m in (38, 39)
+        ]
+        groups = _split_into_raw_groups(self._two_flights(middle))
+        assert len(groups) == 2
+        assert groups[0][-1].utc_dt == _tp_at(12.0, 11).utc_dt
+        assert groups[1][0].utc_dt == _tp_at(12.0, 38).utc_dt
+
+    def test_ground_only_session_between_flights_is_dropped(self):
+        """Months between two flights, with an engine ground run recorded
+        in between: the second flight must start after the *last* gap, not
+        swallow the ground run (a real import produced a 42.9 h segment)."""
+        middle = (
+            [_tp_at(12.0, m) for m in (10, 11)]  # flight 1 taxi in
+            + [_tp_at(3.0, m) for m in range(100, 110)]  # ground run
+            + [_tp_at(12.0, m) for m in (38 + 200, 39 + 200)]  # taxi out
+        )
+        pts = (
+            [_tp_at(80.0, m) for m in range(10)]
+            + middle
+            + [_tp_at(80.0, m) for m in range(240, 250)]
+        )
+        groups = _split_into_raw_groups(pts)
+        assert len(groups) == 2
+        assert groups[0][-1].utc_dt == _tp_at(12.0, 11).utc_dt
+        assert groups[1][0].utc_dt == _tp_at(12.0, 238).utc_dt
+
+    def test_no_stop_leaves_slow_stretch_out(self):
+        middle = [_tp_at(12.0, m) for m in range(10, 40)]
+        groups = _split_into_raw_groups(self._two_flights(middle))
+        assert len(groups) == 2
+        assert groups[0][-1].utc_dt == _tp_at(80.0, 9).utc_dt
+        assert groups[1][0].utc_dt == _tp_at(80.0, 40).utc_dt
+
+
 # ── detect_segments: hint_arr for non-last segment ───────────────────────────
 
 
@@ -1203,6 +1276,30 @@ class TestGpsReviewAndConfirm:
         assert resp.status_code == 302
         assert "gps-import" in resp.headers["Location"]
 
+    def test_review_with_lost_state_file_redirects(self, client, app):
+        """The spilled state file is gone (e.g. tmp cleaned up) — treated
+        like an expired session, not a crash."""
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        with client.session_transaction() as sess:
+            sess["gps_import"] = {
+                "aircraft_id": ac_id,
+                "spill_path": "/nonexistent/state.json",
+            }
+        resp = client.get(
+            f"/aircraft/{ac_id}/gps-import/review", follow_redirects=False
+        )
+        assert resp.status_code == 302
+        assert resp.headers["Location"].endswith("/gps-import")
+
+    def test_cleanup_tolerates_missing_state_file(self, app):
+        from aircraft.routes import (
+            _gps_cleanup,  # pyright: ignore[reportMissingImports]
+        )
+
+        with app.test_request_context():
+            _gps_cleanup({"spill_path": "/nonexistent/state.json"})
+
     def test_review_loads_after_upload(self, client, app):
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
@@ -1312,7 +1409,10 @@ class TestGpsReviewAndConfirm:
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
-        self._set_confirm_session(client, uid, ac_id)
+        seg = self._make_segment_dict()
+        seg["takeoff_utc"] = "2024-06-01T10:06:00+00:00"
+        seg["landing_utc"] = "2024-06-01T10:54:00+00:00"
+        self._set_confirm_session(client, uid, ac_id, segments=[seg])
         resp = client.post(
             f"/aircraft/{ac_id}/gps-import/confirm-one",
             data={"seg_idx": "0"},
@@ -1320,7 +1420,46 @@ class TestGpsReviewAndConfirm:
         )
         assert resp.status_code == 200
         with app.app_context():
-            assert Flight.query.filter_by(aircraft_id=ac_id).count() == 1
+            fe = Flight.query.filter_by(aircraft_id=ac_id).one()
+            # Block time is the engine side, the detected airborne span
+            # the airframe log's flight time.
+            assert fe.departure_time == time(10, 0)
+            assert fe.engine_time == decimal.Decimal("1.0")
+            assert fe.takeoff_time == time(10, 6)
+            assert fe.landing_time == time(10, 54)
+            assert fe.flight_time == decimal.Decimal("0.8")
+
+    def test_confirm_matched_flight_keeps_its_airborne_time(self, client, app):
+        """Confirming with a pilot role onto a matched flight records the
+        pilot's block time, but never replaces the flight's own airborne
+        flight_time (e.g. from its counters) with it."""
+        from models import Flight  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        with app.app_context():
+            existing = Flight(
+                aircraft_id=ac_id,
+                date=date(2024, 6, 1),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("0.8"),
+            )
+            db.session.add(existing)
+            db.session.commit()
+            existing_id = existing.id
+        seg = self._make_segment_dict()
+        seg["matched_flight_id"] = existing_id
+        self._set_confirm_session(client, uid, ac_id, segments=[seg])
+        client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "pic"},
+        )
+        with app.app_context():
+            fe = db.session.get(Flight, existing_id)
+            assert fe.flight_time == decimal.Decimal("0.8")
+            assert fe.engine_time == decimal.Decimal("1.0")
+            assert fe.single_pilot_se == decimal.Decimal("1.0")
 
     def test_confirm_with_pilot_entries(self, client, app):
         from models import Flight  # pyright: ignore[reportMissingImports]
@@ -1663,7 +1802,7 @@ class TestGpsReviewAndConfirm:
 
         # Session should now have matched_flight_id for the segment
         with client.session_transaction() as sess:
-            segs = sess["gps_import"]["segments"]
+            segs = _session_segments(sess)
             assert any(s.get("matched_flight_id") == existing_id for s in segs)
 
     def test_confirm_stale_matched_flight_falls_through_to_create(self, client, app):
@@ -1817,6 +1956,26 @@ class TestGpsReviewAndConfirm:
         assert resp.status_code in (302, 303)
         assert "review" in resp.headers["Location"]
 
+    def test_final_summary_counts_skipped_segments_separately(self, client, app):
+        """Skipping one segment then confirming the last one must not report
+        the skipped segment as an imported flight."""
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        seg0 = self._make_segment_dict()
+        seg1 = {
+            **self._make_segment_dict(),
+            "block_off_utc": "2024-06-01T12:00:00+00:00",
+            "block_on_utc": "2024-06-01T13:00:00+00:00",
+        }
+        self._set_confirm_session(client, uid, ac_id, segments=[seg0, seg1])
+        url = f"/aircraft/{ac_id}/gps-import/confirm-one"
+        client.post(url, data={"seg_idx": "0", "skip": "1"})
+        client.post(url, data={"seg_idx": "1", "pilot_role": "none"})
+        with client.session_transaction() as sess:
+            messages = [msg for _cat, msg in sess.get("_flashes", [])]
+        assert "one flight imported successfully." in messages
+        assert "one segment skipped." in messages
+
 
 # ── Route integration: prefill-segment ───────────────────────────────────────
 
@@ -1935,7 +2094,7 @@ class TestDuplicateDetection:
         )
         client.get(f"/aircraft/{ac_id}/gps-import/review")
         with client.session_transaction() as sess:
-            return sess["gps_import"]["segments"]
+            return _session_segments(sess)
 
     def test_flight_within_tolerance_is_matched(self, client, app):
         """A flight that ends 10 min before the GPS block_off is matched (within ±15 min)."""
@@ -2186,7 +2345,7 @@ class TestFuzzyGpsMatchAircraftSide:
         resp = client.get(f"/aircraft/{ac_id}/gps-import/review")
         assert resp.status_code == 200
         with client.session_transaction() as sess:
-            return sess["gps_import"]["segments"]
+            return _session_segments(sess)
 
     def test_fuzzy_match_finds_csv_imported_flight(self, client, app):
         import decimal
@@ -3201,3 +3360,43 @@ class TestConfirmNatureAndRemarks:
             entry = Flight.query.filter_by(aircraft_id=ac_id).first()
             assert entry is not None
             assert entry.nature_of_flight is None
+
+
+class TestUploadTooLarge:
+    """A multi-file upload over MAX_CONTENT_LENGTH in total (e.g. a season of
+    Garmin data logs, each file within the per-file limit) gets a reason and
+    a way back to the form, not a bare 413 page."""
+
+    def _post_oversized(self, client, ac_id, headers):
+        return client.post(
+            f"/aircraft/{ac_id}/gps-import",
+            data={
+                "gps_files": [
+                    (io.BytesIO(b"x" * 4096), f"log_{i}.csv") for i in range(2)
+                ]
+            },
+            content_type="multipart/form-data",
+            headers=headers,
+        )
+
+    def test_redirects_back_to_form_with_message(self, client, app, monkeypatch):
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        monkeypatch.setitem(app.config, "MAX_CONTENT_LENGTH", 4096)
+        form_url = f"http://localhost/aircraft/{ac_id}/gps-import"
+        resp = self._post_oversized(client, ac_id, {"Referer": form_url})
+        assert resp.status_code == 302
+        assert resp.headers["Location"] == form_url
+        with client.session_transaction() as sess:
+            flashes = sess.get("_flashes", [])
+        assert any(
+            cat == "danger" and "maximum 0 MB in total" in msg for cat, msg in flashes
+        )
+
+    def test_foreign_referrer_falls_back_to_home(self, client, app, monkeypatch):
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        monkeypatch.setitem(app.config, "MAX_CONTENT_LENGTH", 4096)
+        resp = self._post_oversized(client, ac_id, {"Referer": "https://evil.example/"})
+        assert resp.status_code == 302
+        assert resp.headers["Location"] == "/"

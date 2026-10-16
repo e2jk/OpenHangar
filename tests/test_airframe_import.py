@@ -134,6 +134,67 @@ class TestHelpers:
         assert mapping["pilot"] == "crew_name"
         assert mapping["hobbs start"] == "engine_counter_start"
 
+    def test_alias_proposal_dep_arr_holding_times(self):
+        """A real airframe log with From/To places *and* Dep/Arr clock
+        times: "Dep"/"Arr" must become takeoff/landing time, not a second
+        departure/arrival place column that would overwrite the airfield
+        code with "09:4" on every row."""
+        csv = (
+            "Date,From,To,Dep,Arr,Duration,Flight Start,Flight End\n"
+            "2020-07-30,LFGI,EBST,09:45,12:15,2.5,100.0,102.5\n"
+            "2020-10-10,EBST,EBST,14:19,,1.6,102.5,104.1\n"
+        )
+        mapping, _mt = propose_airframe_mapping(parse_file(csv.encode(), "a.csv"), [])
+        assert mapping["from"] == "departure_icao"
+        assert mapping["to"] == "arrival_icao"
+        assert mapping["dep"] == "takeoff_time"
+        assert mapping["arr"] == "landing_time"
+        assert mapping["flight start"] == "flight_counter_start"
+        assert mapping["flight end"] == "flight_counter_end"
+
+    def test_alias_proposal_dep_arr_holding_places(self):
+        csv = "Date,Pilot,Dep,Arr,Duration\n2020-07-30,Jean,LFGI,EBST,2.5\n"
+        mapping, _mt = propose_airframe_mapping(parse_file(csv.encode(), "a.csv"), [])
+        assert mapping["dep"] == "departure_icao"
+        assert mapping["arr"] == "arrival_icao"
+
+    def test_alias_proposal_never_maps_two_columns_to_one_field(self):
+        csv = (
+            "Date,Pilot,From,Departure,To,Duration\n"
+            "2020-07-30,Jean,LFGI,LFGI,EBST,2.5\n"
+        )
+        mapping, _mt = propose_airframe_mapping(parse_file(csv.encode(), "a.csv"), [])
+        assert mapping["from"] == "departure_icao"
+        assert mapping["departure"] == "ignore"
+
+    def test_flight_counters_override_logged_block_duration(self):
+        """A paper log's Duration is often the block time; the flight
+        counters are the authoritative airborne figure (as on the flight
+        form). An implausible counter pair (end before start) is ignored."""
+        from flights.airframe_import import _build_airframe_fields
+
+        mapping = {
+            "date": "date",
+            "duration": "flight_time",
+            "fs": "flight_counter_start",
+            "fe": "flight_counter_end",
+        }
+        col_index = {"date": 0, "duration": 1, "fs": 2, "fe": 3}
+        day = date(2023, 8, 24)
+        fields, _crew, _w = _build_airframe_fields(
+            ["2023-08-24", "1.5", "1147.7", "1148.9"], mapping, col_index, day
+        )
+        assert fields["flight_time"] == 1.2
+        fields, _crew, _w = _build_airframe_fields(
+            ["2023-08-24", "1.5", "1148.9", "1147.7"], mapping, col_index, day
+        )
+        assert fields["flight_time"] == 1.5
+
+    def test_trailing_blank_rows_are_not_reported_as_subtotals(self):
+        csv = _CSV + ",,,,,,,,\n,,,,,,,,\n"
+        parsed = parse_file(csv.encode(), "airframe.csv")
+        assert len(parsed.data_rows) == 3
+
     def test_saved_fingerprint_proposal_filters_invalid_fields(self, app):
         parsed = parse_file(_CSV.encode(), "airframe.csv")
         stored = {col: "ignore" for col in parsed.norm_cols}
@@ -618,6 +679,29 @@ class TestDuplicateDetection:
         success_messages = [msg for cat, msg in flashes if cat == "success"]
         assert any("1 new flights imported" in msg for msg in success_messages)
 
+    def test_identical_same_day_circuits_all_imported_once(self, app, client):
+        """A day of identical training circuits (same date, route, duration
+        and landings) is several real flights, told apart by their counter
+        readings — reproduces a real airframe log where 154 such rows were
+        silently dropped as "duplicates". A re-import still skips them all."""
+        _uid, tid = _create_user_and_tenant(app, email="dup_circ@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-CIRC")
+        _login(app, client, email="dup_circ@example.com")
+        circuits_csv = (
+            "Date,Pilot,From,To,Flight time,Landings,Hobbs start,Hobbs end,Remarks\n"
+            "2021-03-10,A,EBAW,EBAW,0.5,1,59.9,60.4,\n"
+            "2021-03-10,B,EBAW,EBAW,0.5,1,60.4,60.9,\n"
+        )
+        _upload(client, acid, csv_text=circuits_csv)
+        assert _execute(client, acid).status_code == 302
+        with app.app_context():
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 2
+
+        _upload(client, acid, csv_text=circuits_csv)
+        assert _execute(client, acid).status_code == 302
+        with app.app_context():
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 2
+
     def test_reimport_all_duplicates_shows_neutral_message(self, app, client):
         _uid, tid = _create_user_and_tenant(app, email="dup3@example.com")
         acid = _add_aircraft(app, tid, registration="OO-DUP3")
@@ -762,36 +846,26 @@ class TestAirframeConflictScoring:
                 == 0.0
             )
 
-    def test_score_cross_pair_fallback_centred_on_offset(self, app):
+    def test_score_cross_pair_fallback_uses_taxi_window(self, app):
         """existing.takeoff_time absent, existing.departure_time set (a
-        pilot-import placeholder) — scored against departure_time shifted
-        by the aircraft's flight_counter_offset (0.3h → centre at +18min,
-        ring width 6min), not against departure_time itself."""
+        pilot-import placeholder) — takeoff is expected anywhere within the
+        aircraft's flight_counter_offset after block-off (0.3h → window
+        9:00–9:18, ring width 6min). The offset is the *total* taxi-out +
+        taxi-in gap, so an ordinary few-minute taxi must score in full."""
         with app.app_context():
             existing = self._entry(departure_time=time(9, 0), takeoff_time=None)
-            assert (
-                _score_airframe_candidate({"takeoff_time": time(9, 18)}, existing, 0.3)
-                == 1.0
-            )
-            assert (
-                _score_airframe_candidate({"takeoff_time": time(9, 24)}, existing, 0.3)
-                == 0.75
-            )
-            assert (
-                _score_airframe_candidate({"takeoff_time": time(9, 30)}, existing, 0.3)
-                == 0.5
-            )
-            assert (
-                _score_airframe_candidate({"takeoff_time": time(9, 31)}, existing, 0.3)
-                == 0.0
-            )
-            # Same as departure_time itself (0 diff from the centre would
-            # be 9:18, so departure_time=9:00 is 18 min away — outside even
-            # the loose ring at the default 0.3h offset).
-            assert (
-                _score_airframe_candidate({"takeoff_time": time(9, 0)}, existing, 0.3)
-                == 0.0
-            )
+
+            def score(t):
+                return _score_airframe_candidate({"takeoff_time": t}, existing, 0.3)
+
+            assert score(time(9, 0)) == 1.0
+            assert score(time(9, 6)) == 1.0
+            assert score(time(9, 18)) == 1.0
+            assert score(time(9, 24)) == 0.75
+            assert score(time(9, 30)) == 0.5
+            assert score(time(9, 31)) == 0.0
+            # Taking off before block-off is implausible — rings only.
+            assert score(time(8, 54)) == 0.75
 
     def test_score_landing_cross_pair_fallback_shifts_earlier(self, app):
         """landing_time (wheels-down) is expected *before* arrival_time
@@ -801,6 +875,15 @@ class TestAirframeConflictScoring:
             assert (
                 _score_airframe_candidate({"landing_time": time(10, 12)}, existing, 0.3)
                 == 1.0
+            )
+            # Window is arrival_time - 18min = 10:12 up to 10:30.
+            assert (
+                _score_airframe_candidate({"landing_time": time(10, 24)}, existing, 0.3)
+                == 1.0
+            )
+            assert (
+                _score_airframe_candidate({"landing_time": time(10, 31)}, existing, 0.3)
+                == 0.75
             )
 
     def test_score_no_existing_time_at_all_scores_zero_for_that_dimension(self, app):
