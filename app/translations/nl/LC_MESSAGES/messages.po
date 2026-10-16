@@ -12167,3 +12167,6 @@ msgid "One row matched a flight already in a pilot logbook and was merged into i
 msgid_plural "%(n)d rows matched a flight already in a pilot logbook and were merged into it."
 msgstr[0] "Eén rij kwam overeen met een vlucht die al in een pilotenlogboek stond en is ermee samengevoegd."
 msgstr[1] "%(n)d rijen kwamen overeen met vluchten die al in een pilotenlogboek stonden en zijn ermee samengevoegd."
+
+msgid "This upload is too large (maximum %(mb)s MB in total). Please upload the files in smaller batches."
+msgstr "Deze upload is te groot (maximaal %(mb)s MB in totaal). Upload de bestanden in kleinere delen."
