@@ -77,7 +77,7 @@ from aircraft.gps_import import (  # pyright: ignore[reportMissingImports]
     detect_segments,
     merge_and_sort,
     parse_gps_file,
-    round_flight_time,
+    segment_times,
 )
 
 aircraft_bp = Blueprint("aircraft", __name__, url_prefix="/aircraft")
@@ -2191,7 +2191,6 @@ def _gps_import_create_segment(
 
     Returns (entry_or_None, updated_linked_ids).
     """
-    import decimal as _dec
     from datetime import datetime as _dt
 
     create_pilot_entries = pilot_role in ("pic", "dual")
@@ -2200,9 +2199,7 @@ def _gps_import_create_segment(
     block_on = _dt.fromisoformat(seg["block_on_utc"])
     dep_time = block_off.time().replace(tzinfo=None)
     arr_time = block_on.time().replace(tzinfo=None)
-    flight_time_h = round_flight_time(
-        seg["flight_time_raw_h"], ac.logbook_time_precision
-    )
+    times = segment_times(seg, ac.logbook_time_precision)
 
     entry = None
     gps_track: GpsTrack | None = None
@@ -2266,7 +2263,10 @@ def _gps_import_create_segment(
                 arrival_icao=arr_icao,
                 departure_time=dep_time,
                 arrival_time=arr_time,
-                flight_time=_dec.Decimal(str(flight_time_h)),
+                takeoff_time=times.takeoff_time,
+                landing_time=times.landing_time,
+                flight_time=times.airborne_time,
+                engine_time=times.block_time,
                 landing_count=seg.get("landing_count") or 0,
                 nature_of_flight=nature,
                 source="gps_import",
@@ -2312,7 +2312,14 @@ def _gps_import_create_segment(
             db.session.add(entry)
             db.session.flush()
 
-        entry.flight_time = _dec.Decimal(str(flight_time_h))
+        # The pilot's figures come from the block time (see
+        # flights.routes.pilot_time) — recorded as engine_time unless the
+        # flight already has one (e.g. from its engine counters). A matched
+        # flight's own airborne flight_time is never replaced by it.
+        if entry.engine_time is None:
+            entry.engine_time = times.block_time
+        if entry.flight_time is None:
+            entry.flight_time = times.airborne_time
         # GPS-derived landing count has no day/night split — treat them all
         # as day landings, same simplification the old standalone pilot
         # entry made.
