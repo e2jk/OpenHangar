@@ -2923,9 +2923,9 @@ class TestConflictScoring:
 
     def test_score_cross_pair_fallback_against_airframe_placeholder(self, app):
         """existing.departure_time absent but existing.takeoff_time set (a
-        row created by an airframe import, on a managed aircraft) — scored
-        against takeoff_time shifted *earlier* by the aircraft's own
-        flight_counter_offset, the mirror image of
+        row created by an airframe import, on a managed aircraft) — block-off
+        is expected anywhere within the aircraft's own flight_counter_offset
+        *before* takeoff_time, the mirror image of
         flights.airframe_import._score_airframe_candidate's fallback in the
         other direction."""
         with app.app_context():
@@ -2948,16 +2948,17 @@ class TestConflictScoring:
             # builds a transient Flight and never commits it.
             existing.aircraft = ac
 
-            # Centre is takeoff_time(9:18) - 18min = 9:00.
+            # Window is takeoff_time(9:18) - 18min = 9:00 up to 9:18.
             assert _score_candidate({"departure_time": time(9, 0)}, existing) == 1.0
+            assert _score_candidate({"departure_time": time(9, 12)}, existing) == 1.0
             assert _score_candidate({"departure_time": time(8, 54)}, existing) == 0.75
             assert _score_candidate({"departure_time": time(8, 48)}, existing) == 0.5
             assert _score_candidate({"departure_time": time(8, 47)}, existing) == 0.0
 
     def test_score_arrival_cross_pair_fallback_shifts_later(self, app):
         """Mirror of the departure/takeoff case above, on the arrival side:
-        existing.arrival_time absent but existing.landing_time set — scored
-        against landing_time shifted *later* by flight_counter_offset (wheels-
+        existing.arrival_time absent but existing.landing_time set — block-on
+        is expected within flight_counter_offset *after* landing_time (wheels-
         down happens before block-on/engine-off, the opposite direction from
         departure/takeoff)."""
         with app.app_context():
@@ -2976,8 +2977,9 @@ class TestConflictScoring:
             existing = self._entry(app, arrival_time=None, landing_time=time(10, 0))
             existing.aircraft = ac
 
-            # Centre is landing_time(10:00) + 18min = 10:18.
+            # Window is landing_time(10:00) up to 10:00 + 18min = 10:18.
             assert _score_candidate({"arrival_time": time(10, 18)}, existing) == 1.0
+            assert _score_candidate({"arrival_time": time(10, 6)}, existing) == 1.0
             assert _score_candidate({"arrival_time": time(10, 24)}, existing) == 0.75
             assert _score_candidate({"arrival_time": time(10, 30)}, existing) == 0.5
             assert _score_candidate({"arrival_time": time(10, 31)}, existing) == 0.0

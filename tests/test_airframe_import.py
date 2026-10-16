@@ -785,36 +785,26 @@ class TestAirframeConflictScoring:
                 == 0.0
             )
 
-    def test_score_cross_pair_fallback_centred_on_offset(self, app):
+    def test_score_cross_pair_fallback_uses_taxi_window(self, app):
         """existing.takeoff_time absent, existing.departure_time set (a
-        pilot-import placeholder) — scored against departure_time shifted
-        by the aircraft's flight_counter_offset (0.3h → centre at +18min,
-        ring width 6min), not against departure_time itself."""
+        pilot-import placeholder) — takeoff is expected anywhere within the
+        aircraft's flight_counter_offset after block-off (0.3h → window
+        9:00–9:18, ring width 6min). The offset is the *total* taxi-out +
+        taxi-in gap, so an ordinary few-minute taxi must score in full."""
         with app.app_context():
             existing = self._entry(departure_time=time(9, 0), takeoff_time=None)
-            assert (
-                _score_airframe_candidate({"takeoff_time": time(9, 18)}, existing, 0.3)
-                == 1.0
-            )
-            assert (
-                _score_airframe_candidate({"takeoff_time": time(9, 24)}, existing, 0.3)
-                == 0.75
-            )
-            assert (
-                _score_airframe_candidate({"takeoff_time": time(9, 30)}, existing, 0.3)
-                == 0.5
-            )
-            assert (
-                _score_airframe_candidate({"takeoff_time": time(9, 31)}, existing, 0.3)
-                == 0.0
-            )
-            # Same as departure_time itself (0 diff from the centre would
-            # be 9:18, so departure_time=9:00 is 18 min away — outside even
-            # the loose ring at the default 0.3h offset).
-            assert (
-                _score_airframe_candidate({"takeoff_time": time(9, 0)}, existing, 0.3)
-                == 0.0
-            )
+
+            def score(t):
+                return _score_airframe_candidate({"takeoff_time": t}, existing, 0.3)
+
+            assert score(time(9, 0)) == 1.0
+            assert score(time(9, 6)) == 1.0
+            assert score(time(9, 18)) == 1.0
+            assert score(time(9, 24)) == 0.75
+            assert score(time(9, 30)) == 0.5
+            assert score(time(9, 31)) == 0.0
+            # Taking off before block-off is implausible — rings only.
+            assert score(time(8, 54)) == 0.75
 
     def test_score_landing_cross_pair_fallback_shifts_earlier(self, app):
         """landing_time (wheels-down) is expected *before* arrival_time
@@ -824,6 +814,15 @@ class TestAirframeConflictScoring:
             assert (
                 _score_airframe_candidate({"landing_time": time(10, 12)}, existing, 0.3)
                 == 1.0
+            )
+            # Window is arrival_time - 18min = 10:12 up to 10:30.
+            assert (
+                _score_airframe_candidate({"landing_time": time(10, 24)}, existing, 0.3)
+                == 1.0
+            )
+            assert (
+                _score_airframe_candidate({"landing_time": time(10, 31)}, existing, 0.3)
+                == 0.75
             )
 
     def test_score_no_existing_time_at_all_scores_zero_for_that_dimension(self, app):
