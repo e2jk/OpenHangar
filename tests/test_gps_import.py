@@ -1,10 +1,11 @@
 """Tests for Phase 30: GPS log import (parsers, classification, segments, routes)."""
 
+import decimal
 import io
 import json
 import os
 import tempfile
-from datetime import UTC, datetime, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from textwrap import dedent
 from unittest.mock import patch
 
@@ -1408,7 +1409,10 @@ class TestGpsReviewAndConfirm:
 
         uid, _, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
-        self._set_confirm_session(client, uid, ac_id)
+        seg = self._make_segment_dict()
+        seg["takeoff_utc"] = "2024-06-01T10:06:00+00:00"
+        seg["landing_utc"] = "2024-06-01T10:54:00+00:00"
+        self._set_confirm_session(client, uid, ac_id, segments=[seg])
         resp = client.post(
             f"/aircraft/{ac_id}/gps-import/confirm-one",
             data={"seg_idx": "0"},
@@ -1416,7 +1420,46 @@ class TestGpsReviewAndConfirm:
         )
         assert resp.status_code == 200
         with app.app_context():
-            assert Flight.query.filter_by(aircraft_id=ac_id).count() == 1
+            fe = Flight.query.filter_by(aircraft_id=ac_id).one()
+            # Block time is the engine side, the detected airborne span
+            # the airframe log's flight time.
+            assert fe.departure_time == time(10, 0)
+            assert fe.engine_time == decimal.Decimal("1.0")
+            assert fe.takeoff_time == time(10, 6)
+            assert fe.landing_time == time(10, 54)
+            assert fe.flight_time == decimal.Decimal("0.8")
+
+    def test_confirm_matched_flight_keeps_its_airborne_time(self, client, app):
+        """Confirming with a pilot role onto a matched flight records the
+        pilot's block time, but never replaces the flight's own airborne
+        flight_time (e.g. from its counters) with it."""
+        from models import Flight  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        with app.app_context():
+            existing = Flight(
+                aircraft_id=ac_id,
+                date=date(2024, 6, 1),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("0.8"),
+            )
+            db.session.add(existing)
+            db.session.commit()
+            existing_id = existing.id
+        seg = self._make_segment_dict()
+        seg["matched_flight_id"] = existing_id
+        self._set_confirm_session(client, uid, ac_id, segments=[seg])
+        client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "pic"},
+        )
+        with app.app_context():
+            fe = db.session.get(Flight, existing_id)
+            assert fe.flight_time == decimal.Decimal("0.8")
+            assert fe.engine_time == decimal.Decimal("1.0")
+            assert fe.single_pilot_se == decimal.Decimal("1.0")
 
     def test_confirm_with_pilot_entries(self, client, app):
         from models import Flight  # pyright: ignore[reportMissingImports]

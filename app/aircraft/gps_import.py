@@ -17,7 +17,8 @@ import os
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, time
+from decimal import Decimal
 from typing import Any
 from xml.etree.ElementTree import ParseError as _ETParseError
 
@@ -674,6 +675,42 @@ def round_flight_time(raw_hours: float, precision: str) -> float:
 
 
 # ── GeoJSON / downsampling ────────────────────────────────────────────────────
+
+
+@dataclass
+class SegmentTimes:
+    """A confirmed GPS segment's two duration tracks (see models.Flight's
+    docstring): block-off to block-on is the engine side (block time,
+    feeds the pilot logbook), the detected takeoff-to-landing span is the
+    airborne side the airframe log's flight_time tracks."""
+
+    block_time: Decimal
+    airborne_time: Decimal | None
+    takeoff_time: time | None
+    landing_time: time | None
+
+
+def segment_times(seg: dict[str, Any], precision: str) -> SegmentTimes:
+    """SegmentTimes for a serialised segment dict (as kept between the
+    review and confirm steps), rounded to the aircraft's *precision*."""
+    takeoff = (
+        datetime.fromisoformat(seg["takeoff_utc"]) if seg.get("takeoff_utc") else None
+    )
+    landing = (
+        datetime.fromisoformat(seg["landing_utc"]) if seg.get("landing_utc") else None
+    )
+    airborne: Decimal | None = None
+    if takeoff is not None and landing is not None:
+        hours = (landing - takeoff).total_seconds() / 3600.0
+        airborne = Decimal(str(round_flight_time(hours, precision)))
+    return SegmentTimes(
+        block_time=Decimal(
+            str(round_flight_time(seg.get("flight_time_raw_h", 0), precision))
+        ),
+        airborne_time=airborne,
+        takeoff_time=takeoff.time().replace(tzinfo=None) if takeoff else None,
+        landing_time=landing.time().replace(tzinfo=None) if landing else None,
+    )
 
 
 def downsample_track(

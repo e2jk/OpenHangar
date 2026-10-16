@@ -2319,9 +2319,8 @@ def pilot_gps_import_review() -> ResponseReturnValue:
 @login_required
 @require_pilot_access
 def pilot_gps_import_confirm_one() -> ResponseReturnValue:
-    import decimal as _dec
 
-    from aircraft.gps_import import round_flight_time
+    from aircraft.gps_import import segment_times
     from aircraft.routes import _gps_cleanup, _load_segment_geojson
 
     uid = _current_user_id()
@@ -2489,9 +2488,8 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
             )
             db.session.add(gps_track)
             db.session.flush()
-            flight_time_h = round_flight_time(
-                seg.get("flight_time_raw_h", 0),
-                getattr(ac, "logbook_time_precision", "tenth_hour"),
+            ac_times = segment_times(
+                seg, getattr(ac, "logbook_time_precision", "tenth_hour")
             )
             entry = Flight(
                 aircraft_id=ac.id,
@@ -2500,7 +2498,10 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
                 arrival_icao=arr_icao,
                 departure_time=block_off.time().replace(tzinfo=None),
                 arrival_time=block_on.time().replace(tzinfo=None),
-                flight_time=_dec.Decimal(str(flight_time_h)),
+                takeoff_time=ac_times.takeoff_time,
+                landing_time=ac_times.landing_time,
+                flight_time=ac_times.airborne_time,
+                engine_time=ac_times.block_time,
                 landing_count=seg.get("landing_count") or 0,
                 nature_of_flight=nature,
                 source="gps_import",
@@ -2531,7 +2532,7 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
     if create_pilot_entry:
         from flights.routes import apply_pilot_identity
 
-        flight_time_h = round_flight_time(seg.get("flight_time_raw_h", 0), "tenth_hour")
+        times = segment_times(seg, "tenth_hour")
 
         if entry is None:
             # Other/external aircraft, no existing match — standalone row.
@@ -2551,7 +2552,14 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
             db.session.add(entry)
             db.session.flush()
 
-        entry.flight_time = _dec.Decimal(str(flight_time_h))
+        # The pilot's figures come from the block time (see
+        # flights.routes.pilot_time) — recorded as engine_time unless the
+        # flight already has one (e.g. from its engine counters). A matched
+        # flight's own airborne flight_time is never replaced by it.
+        if entry.engine_time is None:
+            entry.engine_time = times.block_time
+        if entry.flight_time is None:
+            entry.flight_time = times.airborne_time
         # GPS-derived landing count has no day/night split — treat them all
         # as day landings, same simplification the old standalone pilot
         # entry made.
