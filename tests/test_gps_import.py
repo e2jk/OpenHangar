@@ -3386,7 +3386,7 @@ class TestUploadTooLarge:
         form_url = f"http://localhost/aircraft/{ac_id}/gps-import"
         resp = self._post_oversized(client, ac_id, {"Referer": form_url})
         assert resp.status_code == 302
-        assert resp.headers["Location"] == form_url
+        assert resp.headers["Location"] == f"/aircraft/{ac_id}/gps-import"
         with client.session_transaction() as sess:
             flashes = sess.get("_flashes", [])
         assert any(
@@ -3399,4 +3399,22 @@ class TestUploadTooLarge:
         monkeypatch.setitem(app.config, "MAX_CONTENT_LENGTH", 4096)
         resp = self._post_oversized(client, ac_id, {"Referer": "https://evil.example/"})
         assert resp.status_code == 302
+        assert resp.headers["Location"] == "/"
+
+    def test_keeps_query_string(self, client, app, monkeypatch):
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        monkeypatch.setitem(app.config, "MAX_CONTENT_LENGTH", 4096)
+        resp = self._post_oversized(
+            client, ac_id, {"Referer": "http://localhost/pilot/gps-import?x=1"}
+        )
+        assert resp.headers["Location"] == "/pilot/gps-import?x=1"
+
+    def test_protocol_relative_path_falls_back_to_home(self, client, app, monkeypatch):
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        monkeypatch.setitem(app.config, "MAX_CONTENT_LENGTH", 4096)
+        resp = self._post_oversized(
+            client, ac_id, {"Referer": "http://localhost//evil.example/x"}
+        )
         assert resp.headers["Location"] == "/"
