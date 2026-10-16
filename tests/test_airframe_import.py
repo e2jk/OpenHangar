@@ -618,6 +618,29 @@ class TestDuplicateDetection:
         success_messages = [msg for cat, msg in flashes if cat == "success"]
         assert any("1 new flights imported" in msg for msg in success_messages)
 
+    def test_identical_same_day_circuits_all_imported_once(self, app, client):
+        """A day of identical training circuits (same date, route, duration
+        and landings) is several real flights, told apart by their counter
+        readings — reproduces a real airframe log where 154 such rows were
+        silently dropped as "duplicates". A re-import still skips them all."""
+        _uid, tid = _create_user_and_tenant(app, email="dup_circ@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-CIRC")
+        _login(app, client, email="dup_circ@example.com")
+        circuits_csv = (
+            "Date,Pilot,From,To,Flight time,Landings,Hobbs start,Hobbs end,Remarks\n"
+            "2021-03-10,A,EBAW,EBAW,0.5,1,59.9,60.4,\n"
+            "2021-03-10,B,EBAW,EBAW,0.5,1,60.4,60.9,\n"
+        )
+        _upload(client, acid, csv_text=circuits_csv)
+        assert _execute(client, acid).status_code == 302
+        with app.app_context():
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 2
+
+        _upload(client, acid, csv_text=circuits_csv)
+        assert _execute(client, acid).status_code == 302
+        with app.app_context():
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 2
+
     def test_reimport_all_duplicates_shows_neutral_message(self, app, client):
         _uid, tid = _create_user_and_tenant(app, email="dup3@example.com")
         acid = _add_aircraft(app, tid, registration="OO-DUP3")

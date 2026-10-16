@@ -17,6 +17,7 @@ from typing import Any
 
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
+    DedupIndex,
     ParsedFile,
     parse_date_value,
     parse_duration_value,
@@ -141,10 +142,11 @@ def _num(v: Any) -> float | None:
 
 
 def _dup_key(fields: dict[str, Any]) -> tuple[Any, ...]:
-    """Exact-duplicate key: date + route + duration + landings. Re-importing
-    the same airframe logbook file (by mistake, or deliberately after
-    appending new rows) must only add genuinely new flights, not double up
-    everything already imported."""
+    """Coarse exact-duplicate key: date + route + duration + landings.
+    Re-importing the same airframe logbook file (by mistake, or deliberately
+    after appending new rows) must only add genuinely new flights, not
+    double up everything already imported. Necessary but not sufficient —
+    see _dup_detail and DedupIndex."""
     return (
         fields["date"],
         fields.get("departure_icao") or "ZZZZ",
@@ -154,19 +156,44 @@ def _dup_key(fields: dict[str, Any]) -> tuple[Any, ...]:
     )
 
 
-def _fetch_existing_dedup_keys(aircraft_id: int) -> set[tuple[Any, ...]]:
+def _dup_detail(
+    takeoff: Any, landing: Any, flight_end: Any, engine_end: Any
+) -> tuple[Any, ...]:
+    """What tells apart two flights sharing a _dup_key — e.g. a day of
+    identical 0.5 h training circuits: their times and counter readings.
+    Only compared where both sides record them."""
+    return (takeoff, landing, _num(flight_end), _num(engine_end))
+
+
+def _fields_dup_detail(fields: dict[str, Any]) -> tuple[Any, ...]:
+    return _dup_detail(
+        fields.get("takeoff_time"),
+        fields.get("landing_time"),
+        fields.get("flight_counter_end"),
+        fields.get("engine_counter_end"),
+    )
+
+
+def _fetch_existing_dedup_index(aircraft_id: int) -> DedupIndex:
     from models import Flight, db  # pyright: ignore[reportMissingImports]
 
-    return {
-        (row[0], row[1], row[2], _num(row[3]), row[4])
-        for row in db.session.query(
-            Flight.date,
-            Flight.departure_icao,
-            Flight.arrival_icao,
-            Flight.flight_time,
-            Flight.landing_count,
-        ).filter_by(aircraft_id=aircraft_id)
-    }
+    index = DedupIndex()
+    for row in db.session.query(
+        Flight.date,
+        Flight.departure_icao,
+        Flight.arrival_icao,
+        Flight.flight_time,
+        Flight.landing_count,
+        Flight.takeoff_time,
+        Flight.landing_time,
+        Flight.flight_time_counter_end,
+        Flight.engine_time_counter_end,
+    ).filter_by(aircraft_id=aircraft_id):
+        index.add(
+            (row[0], row[1], row[2], _num(row[3]), row[4]),
+            _dup_detail(row[5], row[6], row[7], row[8]),
+        )
+    return index
 
 
 def propose_airframe_mapping(
@@ -373,7 +400,7 @@ def execute_airframe_import(
     )
     skip_row_nums = skip_row_nums or set()
 
-    existing_keys = _fetch_existing_dedup_keys(aircraft.id)
+    existing = _fetch_existing_dedup_index(aircraft.id)
     rows: list[tuple[int, dict[str, Any], str | None]] = []
     for row_num, row in enumerate(parsed.data_rows, start=1):
         if row_num in skip_row_nums:
@@ -397,7 +424,8 @@ def execute_airframe_import(
             result.parse_warnings.append((row_num, col, target, raw_repr))
 
         dup_key = _dup_key(fields)
-        if dup_key in existing_keys:
+        dup_detail = _fields_dup_detail(fields)
+        if existing.contains(dup_key, dup_detail):
             result.duplicates.append(
                 (
                     row_num,
@@ -408,7 +436,7 @@ def execute_airframe_import(
                 )
             )
             continue
-        existing_keys.add(dup_key)
+        existing.add(dup_key, dup_detail)
 
         rows.append((row_num, fields, crew_name))
 
@@ -608,7 +636,7 @@ def find_conflicting_airframe_rows(
     )
     aircraft = db.session.get(Aircraft, aircraft_id)
     offset_hours = float(aircraft.flight_counter_offset) if aircraft else 0.0
-    existing_keys = _fetch_existing_dedup_keys(aircraft_id)
+    existing = _fetch_existing_dedup_index(aircraft_id)
     conflicts: list[AirframeConflictRow] = []
 
     for row_num, row in enumerate(parsed.data_rows, start=1):
@@ -623,7 +651,7 @@ def find_conflicting_airframe_rows(
         fields, crew_name, _parse_warnings = _build_airframe_fields(
             row, mapping, col_index, date_val
         )
-        if _dup_key(fields) in existing_keys:
+        if existing.contains(_dup_key(fields), _fields_dup_detail(fields)):
             continue  # exact duplicate — execute_airframe_import's own dedup handles this
 
         same_day = Flight.query.filter_by(aircraft_id=aircraft_id, date=date_val).all()
