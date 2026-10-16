@@ -3201,3 +3201,43 @@ class TestConfirmNatureAndRemarks:
             entry = Flight.query.filter_by(aircraft_id=ac_id).first()
             assert entry is not None
             assert entry.nature_of_flight is None
+
+
+class TestUploadTooLarge:
+    """A multi-file upload over MAX_CONTENT_LENGTH in total (e.g. a season of
+    Garmin data logs, each file within the per-file limit) gets a reason and
+    a way back to the form, not a bare 413 page."""
+
+    def _post_oversized(self, client, ac_id, headers):
+        return client.post(
+            f"/aircraft/{ac_id}/gps-import",
+            data={
+                "gps_files": [
+                    (io.BytesIO(b"x" * 4096), f"log_{i}.csv") for i in range(2)
+                ]
+            },
+            content_type="multipart/form-data",
+            headers=headers,
+        )
+
+    def test_redirects_back_to_form_with_message(self, client, app, monkeypatch):
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        monkeypatch.setitem(app.config, "MAX_CONTENT_LENGTH", 4096)
+        form_url = f"http://localhost/aircraft/{ac_id}/gps-import"
+        resp = self._post_oversized(client, ac_id, {"Referer": form_url})
+        assert resp.status_code == 302
+        assert resp.headers["Location"] == form_url
+        with client.session_transaction() as sess:
+            flashes = sess.get("_flashes", [])
+        assert any(
+            cat == "danger" and "maximum 0 MB in total" in msg for cat, msg in flashes
+        )
+
+    def test_foreign_referrer_falls_back_to_home(self, client, app, monkeypatch):
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        monkeypatch.setitem(app.config, "MAX_CONTENT_LENGTH", 4096)
+        resp = self._post_oversized(client, ac_id, {"Referer": "https://evil.example/"})
+        assert resp.status_code == 302
+        assert resp.headers["Location"] == "/"
