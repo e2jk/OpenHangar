@@ -2121,8 +2121,17 @@ def pilot_gps_import_upload() -> ResponseReturnValue:
         )
 
     from aircraft.gps_import import parse_gps_file
+    from documents.routes import _safe_join  # pyright: ignore[reportMissingImports]
+    from services.gps_archive import (  # pyright: ignore[reportMissingImports]
+        archive_gps_file,
+        pilot_archive_parts,
+    )
 
     tmp_dir = _pilot_gps_tmp_dir()
+    archive_dir = _safe_join(
+        current_app.config.get("UPLOAD_FOLDER", "/data/uploads"),
+        *pilot_archive_parts(uid),
+    )
     parsed_meta: list[dict[str, Any]] = []
     errors: list[str] = []
     skipped_empty = 0
@@ -2143,6 +2152,8 @@ def pilot_gps_import_upload() -> ResponseReturnValue:
         if len(data) > _GPS_MAX_BYTES:
             errors.append(_("%(fn)s: file too large (20 MB limit).", fn=f.filename))
             continue
+        # Kept whatever the parser makes of it — see services.gps_archive.
+        archive_gps_file(data, f.filename, archive_dir)
         try:
             parsed = parse_gps_file(data, f.filename)
         except ValueError as exc:
