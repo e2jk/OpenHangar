@@ -1067,9 +1067,16 @@ def create_app() -> Flask:
             ),
             "danger",
         )
-        referrer = request.referrer or ""
-        if referrer.startswith(request.host_url):
-            return redirect(referrer)
+        # Back to the submitting page — on this host only, and as a relative
+        # path (same guard as the language switcher's ?next=).
+        ref = urlparse(request.referrer or "")
+        back = ref.path.replace("\\", "") + (f"?{ref.query}" if ref.query else "")
+        if (
+            ref.netloc == request.host
+            and back.startswith("/")
+            and not back.startswith("//")
+        ):
+            return redirect(back)
         return redirect(url_for("index"))
 
     @app.errorhandler(500)
