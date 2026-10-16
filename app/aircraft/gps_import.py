@@ -449,7 +449,9 @@ def _split_into_raw_groups(trackpoints: list[TrackPoint]) -> list[list[TrackPoin
     """Split merged trackpoints into groups at slow/time gaps ≥ 5 min.
 
     Only looks for breaks between the first and last fast (≥ 30kt) points, so
-    pre-flight taxi and post-landing taxi are preserved in the enclosing segment.
+    pre-flight taxi and post-landing taxi are preserved in the enclosing
+    segment — and at a break between two flights, each keeps its own taxi
+    (see _break_points).
     """
     n = len(trackpoints)
     if n == 0:
@@ -482,13 +484,15 @@ def _split_into_raw_groups(trackpoints: list[TrackPoint]) -> list[list[TrackPoin
             j = i + 2
             while j <= last_fast and trackpoints[j].speed_kt < _FLIGHT_SPEED_KT:
                 j += 1
-            slow_dur = (
-                trackpoints[j - 1].utc_dt - trackpoints[i + 1].utc_dt
-            ).total_seconds()
+            # Elapsed from the last fast point to the next one, so a
+            # recording gap at either end of the slow run counts too.
+            slow_dur = (trackpoints[j].utc_dt - trackpoints[i].utc_dt).total_seconds()
             if slow_dur >= _SEGMENT_GAP_S:
-                # Real segment break — exclude slow gap from both segments
-                groups.append(trackpoints[current_start : i + 1])
-                current_start = j
+                # Real segment break between two flights — the taxi-in
+                # stays with the first, the taxi-out with the second.
+                end_prev, start_next = _break_points(trackpoints, i, j)
+                groups.append(trackpoints[current_start : end_prev + 1])
+                current_start = start_next
                 i = j
             else:
                 i = j  # short slow run — keep in current segment
@@ -497,6 +501,57 @@ def _split_into_raw_groups(trackpoints: list[TrackPoint]) -> list[list[TrackPoin
 
     groups.append(trackpoints[current_start:])
     return [g for g in groups if g]
+
+
+def _break_points(
+    trackpoints: list[TrackPoint], last_fast: int, next_fast: int
+) -> tuple[int, int]:
+    """Where to split the slow stretch between two flights — the points
+    strictly between *last_fast* (the first flight's landing roll) and
+    *next_fast* (the second's takeoff roll). Returns (end of the first
+    segment, start of the second), both indices into *trackpoints*.
+
+    Splitting must keep each flight's taxi with it: the taxi-in carries the
+    first flight's landing (fast-to-slow transition, see _count_landings)
+    and its block-on, the taxi-out the second flight's block-off. In order:
+      - a recording gap (the GPS was off, e.g. one data-log file per
+        flight): the first flight ends at the first gap, the second starts
+        after the last one;
+      - otherwise the longest stop (below _GROUND_MOVE_KT — the aircraft
+        parked): the first flight ends where it came to rest, the second
+        starts where it moved off;
+      - otherwise (slow movement throughout, nothing to go by) the whole
+        slow stretch is left out of both.
+    """
+    gaps = [
+        k
+        for k in range(last_fast, next_fast)
+        if (trackpoints[k + 1].utc_dt - trackpoints[k].utc_dt).total_seconds()
+        >= _SEGMENT_GAP_S
+    ]
+    if gaps:
+        # Anything between the first and last gap is recording sessions
+        # with no flight in them (e.g. an engine ground run on another day).
+        return gaps[0], gaps[-1] + 1
+
+    best: tuple[float, int, int] | None = None
+    k = last_fast + 1
+    while k < next_fast:
+        if trackpoints[k].speed_kt >= _GROUND_MOVE_KT:
+            k += 1
+            continue
+        stop_start = k
+        while k + 1 < next_fast and trackpoints[k + 1].speed_kt < _GROUND_MOVE_KT:
+            k += 1
+        stop_s = (
+            trackpoints[k].utc_dt - trackpoints[stop_start].utc_dt
+        ).total_seconds()
+        if best is None or stop_s > best[0]:
+            best = (stop_s, stop_start, k)
+        k += 1
+    if best is not None:
+        return best[1], best[2]
+    return last_fast, next_fast
 
 
 def _count_landings(pts: list[TrackPoint]) -> int:

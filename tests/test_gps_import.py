@@ -627,6 +627,13 @@ def _make_user_and_aircraft(app):
         return user.id, tenant.id, ac.id
 
 
+def _session_segments(sess):
+    """The review step's segments — spilled to a server-side state file
+    (see aircraft.routes._gps_state_save), the session keeps its path."""
+    with open(sess["gps_import"]["spill_path"], encoding="utf-8") as fh:
+        return json.load(fh)["segments"]
+
+
 def _login(client, uid):
     with client.session_transaction() as sess:
         sess["user_id"] = uid
@@ -1093,6 +1100,71 @@ class TestSplitIntoRawGroups:
         assert len(groups) == 1
 
 
+class TestBreakBetweenFlightsKeepsTaxi:
+    """At a break between two flights each keeps its own taxi: the first
+    ends where the aircraft came to rest (so its landing is counted and its
+    block-on is real), the second starts where it moved off."""
+
+    def _two_flights(self, middle):
+        return (
+            [_tp_at(80.0, m) for m in range(10)]  # flight 1 airborne
+            + middle
+            + [_tp_at(80.0, m) for m in range(40, 50)]  # flight 2 airborne
+            + [_tp_at(12.0, m) for m in range(50, 53)]  # flight 2 taxi in
+        )
+
+    def test_split_at_longest_stop(self):
+        middle = (
+            [_tp_at(12.0, m) for m in range(10, 13)]  # taxi in
+            + [_tp_at(0.0, 13)]  # short hold — not the parking stop
+            + [_tp_at(12.0, 14)]
+            + [_tp_at(0.0, m) for m in range(15, 35)]  # parked
+            + [_tp_at(12.0, m) for m in range(35, 40)]  # taxi out
+        )
+        pts = self._two_flights(middle)
+        groups = _split_into_raw_groups(pts)
+        assert len(groups) == 2
+        assert groups[0][-1].utc_dt == _tp_at(0.0, 15).utc_dt  # block-on
+        assert groups[1][0].utc_dt == _tp_at(0.0, 34).utc_dt  # block-off
+        segs = detect_segments(pts)
+        assert [s.landing_count for s in segs] == [1, 1]
+
+    def test_split_at_recording_gap(self):
+        middle = [_tp_at(12.0, m) for m in (10, 11)] + [
+            _tp_at(12.0, m) for m in (38, 39)
+        ]
+        groups = _split_into_raw_groups(self._two_flights(middle))
+        assert len(groups) == 2
+        assert groups[0][-1].utc_dt == _tp_at(12.0, 11).utc_dt
+        assert groups[1][0].utc_dt == _tp_at(12.0, 38).utc_dt
+
+    def test_ground_only_session_between_flights_is_dropped(self):
+        """Months between two flights, with an engine ground run recorded
+        in between: the second flight must start after the *last* gap, not
+        swallow the ground run (a real import produced a 42.9 h segment)."""
+        middle = (
+            [_tp_at(12.0, m) for m in (10, 11)]  # flight 1 taxi in
+            + [_tp_at(3.0, m) for m in range(100, 110)]  # ground run
+            + [_tp_at(12.0, m) for m in (38 + 200, 39 + 200)]  # taxi out
+        )
+        pts = (
+            [_tp_at(80.0, m) for m in range(10)]
+            + middle
+            + [_tp_at(80.0, m) for m in range(240, 250)]
+        )
+        groups = _split_into_raw_groups(pts)
+        assert len(groups) == 2
+        assert groups[0][-1].utc_dt == _tp_at(12.0, 11).utc_dt
+        assert groups[1][0].utc_dt == _tp_at(12.0, 238).utc_dt
+
+    def test_no_stop_leaves_slow_stretch_out(self):
+        middle = [_tp_at(12.0, m) for m in range(10, 40)]
+        groups = _split_into_raw_groups(self._two_flights(middle))
+        assert len(groups) == 2
+        assert groups[0][-1].utc_dt == _tp_at(80.0, 9).utc_dt
+        assert groups[1][0].utc_dt == _tp_at(80.0, 40).utc_dt
+
+
 # ── detect_segments: hint_arr for non-last segment ───────────────────────────
 
 
@@ -1202,6 +1274,30 @@ class TestGpsReviewAndConfirm:
         )
         assert resp.status_code == 302
         assert "gps-import" in resp.headers["Location"]
+
+    def test_review_with_lost_state_file_redirects(self, client, app):
+        """The spilled state file is gone (e.g. tmp cleaned up) — treated
+        like an expired session, not a crash."""
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        with client.session_transaction() as sess:
+            sess["gps_import"] = {
+                "aircraft_id": ac_id,
+                "spill_path": "/nonexistent/state.json",
+            }
+        resp = client.get(
+            f"/aircraft/{ac_id}/gps-import/review", follow_redirects=False
+        )
+        assert resp.status_code == 302
+        assert resp.headers["Location"].endswith("/gps-import")
+
+    def test_cleanup_tolerates_missing_state_file(self, app):
+        from aircraft.routes import (
+            _gps_cleanup,  # pyright: ignore[reportMissingImports]
+        )
+
+        with app.test_request_context():
+            _gps_cleanup({"spill_path": "/nonexistent/state.json"})
 
     def test_review_loads_after_upload(self, client, app):
         uid, _, ac_id = _make_user_and_aircraft(app)
@@ -1663,7 +1759,7 @@ class TestGpsReviewAndConfirm:
 
         # Session should now have matched_flight_id for the segment
         with client.session_transaction() as sess:
-            segs = sess["gps_import"]["segments"]
+            segs = _session_segments(sess)
             assert any(s.get("matched_flight_id") == existing_id for s in segs)
 
     def test_confirm_stale_matched_flight_falls_through_to_create(self, client, app):
@@ -1935,7 +2031,7 @@ class TestDuplicateDetection:
         )
         client.get(f"/aircraft/{ac_id}/gps-import/review")
         with client.session_transaction() as sess:
-            return sess["gps_import"]["segments"]
+            return _session_segments(sess)
 
     def test_flight_within_tolerance_is_matched(self, client, app):
         """A flight that ends 10 min before the GPS block_off is matched (within ±15 min)."""
@@ -2186,7 +2282,7 @@ class TestFuzzyGpsMatchAircraftSide:
         resp = client.get(f"/aircraft/{ac_id}/gps-import/review")
         assert resp.status_code == 200
         with client.session_transaction() as sess:
-            return sess["gps_import"]["segments"]
+            return _session_segments(sess)
 
     def test_fuzzy_match_finds_csv_imported_flight(self, client, app):
         import decimal
