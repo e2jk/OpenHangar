@@ -2527,7 +2527,7 @@ def gps_import_confirm_one(aircraft_id: int) -> ResponseReturnValue:
     if all_confirmed:
         _gps_cleanup(state)
         session.pop("gps_import", None)
-        total = len(confirmed)
+        total = sum(1 for v in confirmed.values() if v != "skip")
         flash(
             ngettext(
                 "one flight imported successfully.",
@@ -2537,6 +2537,17 @@ def gps_import_confirm_one(aircraft_id: int) -> ResponseReturnValue:
             ),
             "success",
         )
+        skipped_count = len(confirmed) - total
+        if skipped_count:
+            flash(
+                ngettext(
+                    "one segment skipped.",
+                    "%(n)s segments skipped.",
+                    skipped_count,
+                    n=skipped_count,
+                ),
+                "info",
+            )
         if pilot_role in ("pic", "dual"):
             return redirect(url_for("pilots.logbook"))
         return redirect(url_for("flights.list_flights", aircraft_id=aircraft_id))
