@@ -40,26 +40,44 @@ def _sha256_file(path: str) -> str:
     return digest.hexdigest()
 
 
+def _find_identical(dest_dir: str, data: bytes, digest: str) -> str | None:
+    """Path of a file already in *dest_dir* with exactly this content, if any.
+
+    Only files of the same size are hashed, so an upload usually costs no
+    reads at all.
+    """
+    size = len(data)
+    for entry in os.scandir(dest_dir):
+        if entry.name.startswith(".") or not entry.is_file():
+            continue
+        if entry.stat().st_size == size and _sha256_file(entry.path) == digest:
+            return entry.path
+    return None
+
+
 def archive_gps_file(data: bytes, original_filename: str, dest_dir: str) -> str:
     """Store *data* in *dest_dir* under its (sanitised) original name and
     return the stored file's full path.
 
-    Re-uploading the same file (same name and content) stores nothing new.
-    A different file arriving under a name already taken — "flight.gpx"
-    from two different days, say — gets a short content-hash suffix rather
-    than overwriting the earlier one.
+    A file whose content is already in *dest_dir* — under any name — stores
+    nothing new; the existing copy's path is returned. This only governs the
+    archive: the upload is parsed and offered for import either way (e.g.
+    after its flight was deleted). A different file arriving under a name
+    already taken — "flight.gpx" from two different days, say — gets a short
+    content-hash suffix rather than overwriting the earlier one.
     """
     os.makedirs(dest_dir, exist_ok=True)
-    name = secure_filename(original_filename) or "gps_log"
     digest = hashlib.sha256(data).hexdigest()
+    existing = _find_identical(dest_dir, data, digest)
+    if existing:
+        return existing
+    name = secure_filename(original_filename) or "gps_log"
     path = os.path.join(dest_dir, name)
     if os.path.exists(path):
-        if _sha256_file(path) == digest:
-            return path
         stem, ext = os.path.splitext(name)
         path = os.path.join(dest_dir, f"{stem}-{digest[:8]}{ext}")
-        if os.path.exists(path):
-            return path  # the hash suffix already identifies this content
+        if os.path.exists(path):  # short-hash collision: use the full hash
+            path = os.path.join(dest_dir, f"{stem}-{digest}{ext}")
     # Write under a dot-prefixed temporary name first (the document scan
     # ignores those) so an interrupted write never leaves a truncated file
     # under the real name.

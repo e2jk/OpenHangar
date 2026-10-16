@@ -1,8 +1,8 @@
 """
 Tests for keeping the original uploaded GPS log files on disk (they're only
 stored simplified in the database):
-  - archive_gps_file: dedup of identical re-uploads, no overwrite on a name
-    clash
+  - archive_gps_file: dedup of identical content under any name, no
+    overwrite on a name clash
   - the aircraft and pilot GPS uploads keep every accepted file, whatever
     the parser makes of it
   - the document scan never offers app-managed folders for reconciliation
@@ -80,6 +80,32 @@ class TestArchiveGpsFile:
         )
         with open(tmp_path / "flight.gpx", "rb") as fh:
             assert fh.read() == b"day one"
+
+    def test_same_content_under_another_name_stores_nothing_new(self, tmp_path):
+        first = archive_gps_file(b"abc", "flight.gpx", str(tmp_path))
+        renamed = archive_gps_file(b"abc", "renamed.gpx", str(tmp_path))
+        assert renamed == first
+        assert os.listdir(tmp_path) == ["flight.gpx"]
+
+    def test_same_size_different_content_is_kept(self, tmp_path):
+        archive_gps_file(b"abc", "a.gpx", str(tmp_path))
+        archive_gps_file(b"xyz", "b.gpx", str(tmp_path))
+        assert sorted(os.listdir(tmp_path)) == ["a.gpx", "b.gpx"]
+
+    def test_ignores_temporary_files_and_subfolders(self, tmp_path):
+        (tmp_path / ".x.gpx.part").write_bytes(b"abc")
+        (tmp_path / "sub").mkdir()
+        path = archive_gps_file(b"abc", "x.gpx", str(tmp_path))
+        assert path == str(tmp_path / "x.gpx")
+
+    def test_short_hash_collision_falls_back_to_full_hash(self, tmp_path):
+        import hashlib
+
+        digest = hashlib.sha256(b"day two").hexdigest()
+        archive_gps_file(b"day one", "flight.gpx", str(tmp_path))
+        (tmp_path / f"flight-{digest[:8]}.gpx").write_bytes(b"something else")
+        path = archive_gps_file(b"day two", "flight.gpx", str(tmp_path))
+        assert os.path.basename(path) == f"flight-{digest}.gpx"
 
     def test_unusable_name_gets_a_default(self, tmp_path):
         path = archive_gps_file(b"abc", "../", str(tmp_path))
