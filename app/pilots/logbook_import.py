@@ -900,7 +900,7 @@ def _num(v: Any) -> float | None:
 
 def _dup_key(kwargs: dict[str, Any]) -> tuple[Any, ...]:
     """Coarse exact-duplicate key: date + aircraft + duration + landings.
-    Necessary but not sufficient for a duplicate — see _DedupIndex, which
+    Necessary but not sufficient for a duplicate — see DedupIndex, which
     additionally requires the route and departure time to be compatible.
     Shared by execute_import (silently skips exact matches) and
     find_conflicting_rows (must not also flag them as a near-match conflict
@@ -939,18 +939,21 @@ def _details_compatible(a: tuple[Any, ...], b: tuple[Any, ...]) -> bool:
     return all(x is None or y is None or x == y for x, y in zip(a, b, strict=True))
 
 
-class _DedupIndex:
-    """Exact-duplicate lookup: a row is a duplicate of an existing entry
-    when their _dup_key matches AND their departure, arrival and departure
-    time are compatible (see _details_compatible).
+class DedupIndex:
+    """Exact-duplicate lookup shared by the pilot and airframe logbook
+    imports: a row is a duplicate of an existing entry when their coarse
+    key matches AND their details are compatible (see _details_compatible)
+    — for the pilot import, departure, arrival and departure time; for the
+    airframe import, takeoff/landing time and counter readings.
 
     The coarse key alone is not enough: two genuinely different flights on
     the same day in the same aircraft routinely share duration and landings
-    (an out-and-back pair of 0.5 h legs, say), and keying on it alone
-    silently dropped one of them as a "duplicate" — or matched a row to the
-    wrong flight of that day. Route/time can't simply be added to the key
-    either, since entries whose route/time genuinely isn't captured (a
-    hand-entered or backfilled row) would then never match at all.
+    (an out-and-back pair of 0.5 h legs, or a day of identical training
+    circuits), and keying on it alone silently dropped them as
+    "duplicates" — or matched a row to the wrong flight of that day. The
+    details can't simply be added to the key either, since entries where
+    they genuinely aren't captured (a hand-entered or backfilled row) would
+    then never match at all.
     """
 
     def __init__(self) -> None:
@@ -964,11 +967,13 @@ class _DedupIndex:
             _details_compatible(detail, other) for other in self._by_key.get(key, [])
         )
 
-    def add_kwargs(self, kwargs: dict[str, Any]) -> None:
-        self.add(_dup_key(kwargs), _kwargs_dup_detail(kwargs))
 
-    def contains_kwargs(self, kwargs: dict[str, Any]) -> bool:
-        return self.contains(_dup_key(kwargs), _kwargs_dup_detail(kwargs))
+def _add_kwargs(index: DedupIndex, kwargs: dict[str, Any]) -> None:
+    index.add(_dup_key(kwargs), _kwargs_dup_detail(kwargs))
+
+
+def _contains_kwargs(index: DedupIndex, kwargs: dict[str, Any]) -> bool:
+    return index.contains(_dup_key(kwargs), _kwargs_dup_detail(kwargs))
 
 
 def _kwargs_dup_detail(kwargs: dict[str, Any]) -> tuple[Any, ...]:
@@ -979,7 +984,7 @@ def _kwargs_dup_detail(kwargs: dict[str, Any]) -> tuple[Any, ...]:
     )
 
 
-def _fetch_existing_dedup_index(pilot_user_id: int) -> _DedupIndex:
+def _fetch_existing_dedup_index(pilot_user_id: int) -> DedupIndex:
     from models import Aircraft, Flight, db  # pyright: ignore[reportMissingImports]
     from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
 
@@ -1007,7 +1012,7 @@ def _fetch_existing_dedup_index(pilot_user_id: int) -> _DedupIndex:
             )
         )
     )
-    index = _DedupIndex()
+    index = DedupIndex()
     for row in rows:
         index.add(
             (
@@ -1089,7 +1094,7 @@ def execute_import(
     # must only add genuinely new rows, not double up everything already
     # imported. Match on date + aircraft + the duration/landings figures,
     # with departure/arrival place & time only required to agree where both
-    # sides actually record them — see _DedupIndex.
+    # sides actually record them — see DedupIndex.
     existing = _fetch_existing_dedup_index(pilot_user_id)
 
     for row_num, row in enumerate(parsed.data_rows, start=1):
@@ -1116,7 +1121,7 @@ def execute_import(
         for col, target, raw_repr in parse_warnings:
             result.parse_warnings.append((row_num, col, target, raw_repr))
 
-        if existing.contains_kwargs(kwargs):
+        if _contains_kwargs(existing, kwargs):
             result.duplicates.append(
                 (
                     row_num,
@@ -1127,7 +1132,7 @@ def execute_import(
                 )
             )
             continue
-        existing.add_kwargs(kwargs)
+        _add_kwargs(existing, kwargs)
 
         if source_total is not None:
             computed = round(
@@ -1378,7 +1383,7 @@ def find_conflicting_rows(
         kwargs, _source_total, _parse_warnings = _build_entry_kwargs(
             row, mapping, col_index, date_val
         )
-        if existing.contains_kwargs(kwargs):
+        if _contains_kwargs(existing, kwargs):
             continue  # exact duplicate — execute_import's own dedup handles this
 
         same_day_filters = [
