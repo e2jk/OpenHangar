@@ -1070,14 +1070,20 @@ def create_app() -> Flask:
         # Back to the submitting page — on this host only, and as a relative
         # path (same guard as the language switcher's ?next=).
         ref = urlparse(request.referrer or "")
-        back = ref.path.replace("\\", "") + (f"?{ref.query}" if ref.query else "")
+        back = ""
+        if ref.netloc == request.host:
+            back = ref.path + (f"?{ref.query}" if ref.query else "")
+        back = back.replace("\\", "")  # browsers treat \ as /; strip before parsing
+        parsed_back = urlparse(back)
         if (
-            ref.netloc == request.host
-            and back.startswith("/")
-            and not back.startswith("//")
+            not back
+            or parsed_back.netloc
+            or parsed_back.scheme
+            or not back.startswith("/")
+            or back.startswith("//")
         ):
-            return redirect(back)
-        return redirect(url_for("index"))
+            back = url_for("index")
+        return redirect(back)
 
     @app.errorhandler(500)
     def internal_error(e: Exception) -> ResponseReturnValue:
