@@ -372,6 +372,14 @@ def _build_airframe_fields(
         else:  # nature_of_flight, notes — free text
             val = str(raw).strip() if raw is not None else None
             fields[target] = val or None
+    # The flight counters are the authoritative airborne figure, as on the
+    # flight form (flights/form_parsing.py): a logged duration is often the
+    # block time (departure to arrival) instead — on paper logs typically
+    # by exactly the aircraft's block-to-airborne offset.
+    ctr_start = fields.get("flight_counter_start")
+    ctr_end = fields.get("flight_counter_end")
+    if ctr_start is not None and ctr_end is not None and ctr_end >= ctr_start:
+        fields["flight_time"] = round(ctr_end - ctr_start, 1)
     return fields, crew_name, parse_warnings
 
 

@@ -167,6 +167,34 @@ class TestHelpers:
         assert mapping["from"] == "departure_icao"
         assert mapping["departure"] == "ignore"
 
+    def test_flight_counters_override_logged_block_duration(self):
+        """A paper log's Duration is often the block time; the flight
+        counters are the authoritative airborne figure (as on the flight
+        form). An implausible counter pair (end before start) is ignored."""
+        from flights.airframe_import import _build_airframe_fields
+
+        mapping = {
+            "date": "date",
+            "duration": "flight_time",
+            "fs": "flight_counter_start",
+            "fe": "flight_counter_end",
+        }
+        col_index = {"date": 0, "duration": 1, "fs": 2, "fe": 3}
+        day = date(2023, 8, 24)
+        fields, _crew, _w = _build_airframe_fields(
+            ["2023-08-24", "1.5", "1147.7", "1148.9"], mapping, col_index, day
+        )
+        assert fields["flight_time"] == 1.2
+        fields, _crew, _w = _build_airframe_fields(
+            ["2023-08-24", "1.5", "1148.9", "1147.7"], mapping, col_index, day
+        )
+        assert fields["flight_time"] == 1.5
+
+    def test_trailing_blank_rows_are_not_reported_as_subtotals(self):
+        csv = _CSV + ",,,,,,,,\n,,,,,,,,\n"
+        parsed = parse_file(csv.encode(), "airframe.csv")
+        assert len(parsed.data_rows) == 3
+
     def test_saved_fingerprint_proposal_filters_invalid_fields(self, app):
         parsed = parse_file(_CSV.encode(), "airframe.csv")
         stored = {col: "ignore" for col in parsed.norm_cols}
