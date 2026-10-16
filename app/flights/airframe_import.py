@@ -97,6 +97,8 @@ _AIRFRAME_ALIASES: dict[str, str] = {
     "tach end": "engine_counter_end",
     "flight counter start": "flight_counter_start",
     "flight counter end": "flight_counter_end",
+    "flight start": "flight_counter_start",
+    "flight end": "flight_counter_end",
     "counter start": "flight_counter_start",
     "counter end": "flight_counter_end",
 }
@@ -210,8 +212,37 @@ def propose_airframe_mapping(
                 for col in parsed.norm_cols
             }
             return mapping, "exact"
-    mapping = {col: _AIRFRAME_ALIASES.get(col, "ignore") for col in parsed.norm_cols}
+    mapping = {}
+    taken: set[str] = set()
+    for idx, col in enumerate(parsed.norm_cols):
+        target = _AIRFRAME_ALIASES.get(col, "ignore")
+        if target in _PLACE_TO_TIME and _column_holds_times(parsed, idx):
+            # "Dep"/"Arr" are as often the departure/arrival *times* as the
+            # places — let the data decide.
+            target = _PLACE_TO_TIME[target]
+        if target in taken:
+            # Never propose two columns for one field: the second would
+            # silently overwrite the first on every row.
+            target = "ignore"
+        if target != "ignore":
+            taken.add(target)
+        mapping[col] = target
     return mapping, "alias"
+
+
+_PLACE_TO_TIME = {"departure_icao": "takeoff_time", "arrival_icao": "landing_time"}
+
+
+def _column_holds_times(parsed: ParsedFile, idx: int) -> bool:
+    """True when most sampled non-blank cells of column *idx* parse as a
+    time of day (an airfield code never does)."""
+    sample = [
+        row[idx]
+        for row in parsed.data_rows[:_HINT_SAMPLE_ROWS]
+        if idx < len(row) and not _is_blank_cell(row[idx])
+    ]
+    times = sum(1 for v in sample if parse_time_value(v) is not None)
+    return bool(sample) and times * 2 > len(sample)
 
 
 _HINT_SAMPLE_ROWS = 25

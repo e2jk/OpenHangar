@@ -134,6 +134,39 @@ class TestHelpers:
         assert mapping["pilot"] == "crew_name"
         assert mapping["hobbs start"] == "engine_counter_start"
 
+    def test_alias_proposal_dep_arr_holding_times(self):
+        """A real airframe log with From/To places *and* Dep/Arr clock
+        times: "Dep"/"Arr" must become takeoff/landing time, not a second
+        departure/arrival place column that would overwrite the airfield
+        code with "09:4" on every row."""
+        csv = (
+            "Date,From,To,Dep,Arr,Duration,Flight Start,Flight End\n"
+            "2020-07-30,LFGI,EBST,09:45,12:15,2.5,100.0,102.5\n"
+            "2020-10-10,EBST,EBST,14:19,,1.6,102.5,104.1\n"
+        )
+        mapping, _mt = propose_airframe_mapping(parse_file(csv.encode(), "a.csv"), [])
+        assert mapping["from"] == "departure_icao"
+        assert mapping["to"] == "arrival_icao"
+        assert mapping["dep"] == "takeoff_time"
+        assert mapping["arr"] == "landing_time"
+        assert mapping["flight start"] == "flight_counter_start"
+        assert mapping["flight end"] == "flight_counter_end"
+
+    def test_alias_proposal_dep_arr_holding_places(self):
+        csv = "Date,Pilot,Dep,Arr,Duration\n2020-07-30,Jean,LFGI,EBST,2.5\n"
+        mapping, _mt = propose_airframe_mapping(parse_file(csv.encode(), "a.csv"), [])
+        assert mapping["dep"] == "departure_icao"
+        assert mapping["arr"] == "arrival_icao"
+
+    def test_alias_proposal_never_maps_two_columns_to_one_field(self):
+        csv = (
+            "Date,Pilot,From,Departure,To,Duration\n"
+            "2020-07-30,Jean,LFGI,LFGI,EBST,2.5\n"
+        )
+        mapping, _mt = propose_airframe_mapping(parse_file(csv.encode(), "a.csv"), [])
+        assert mapping["from"] == "departure_icao"
+        assert mapping["departure"] == "ignore"
+
     def test_saved_fingerprint_proposal_filters_invalid_fields(self, app):
         parsed = parse_file(_CSV.encode(), "airframe.csv")
         stored = {col: "ignore" for col in parsed.norm_cols}
