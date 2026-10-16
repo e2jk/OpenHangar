@@ -418,6 +418,30 @@ def _standalone_suggest_form(**overrides):
 
 
 class TestCorrectionSuggestions:
+    def test_accepted_flight_time_keeps_block_based_pilot_time(self, app, client):
+        """With an engine-side (block) duration known, a corrected airborne
+        flight_time must not overwrite the pilot's own block-based figures."""
+        _tid, kris, jan, _els = _world(app)
+        fid = _shared(
+            app,
+            kris,
+            jan,
+            flight_time=Decimal("1.5"),
+            engine_time=Decimal("1.7"),
+            single_pilot_se=Decimal("1.7"),
+        )
+        _login(client, jan)
+        with patch(DISPATCH):
+            _suggest(client, fid, **_standalone_suggest_form(flight_time="1.4"))
+        with app.app_context():
+            sid = FlightCorrectionSuggestion.query.one().id
+        _login(client, kris)
+        with patch(DISPATCH):
+            client.post(f"/flights/corrections/{sid}/accept", data={})
+        fe = _flight(app, fid)
+        assert fe.flight_time == Decimal("1.4")
+        assert fe.single_pilot_se == Decimal("1.7")
+
     def test_suggest_then_accept(self, app, client):
         _tid, kris, jan, _els = _world(app)
         fid = _shared(

@@ -6,6 +6,7 @@ Tests for Phase 3 + Phase 7: Flight logging routes (CRUD + auth guard + validati
 import os
 import sys
 from datetime import UTC, date
+from decimal import Decimal
 from io import BytesIO
 from textwrap import dedent
 from unittest.mock import patch
@@ -1327,6 +1328,37 @@ class TestEditFlight:
             assert fe.aircraft_id is None
             assert fe.other_aircraft_registration == "OO-TEST"
             assert fe.other_aircraft_type == "Cessna 172"
+
+    def test_pilot_time_is_block_time_not_airborne_time(self, app, client):
+        """EASA pilot time is block-to-block (departure/arrival = engine
+        side), never the shorter airborne flight_time the airframe log
+        tracks — filling in the takeoff/landing times must not shrink it."""
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        fid = _add_flight(app, acid, pilot="Original Pilot")
+        _login(app, client)
+        resp = client.post(
+            f"/flights/{fid}/edit",
+            data={
+                "date": "2024-06-02",
+                "departure_icao": "EBAW",
+                "arrival_icao": "EBNM",
+                "departure_time": "08:48",
+                "arrival_time": "09:36",
+                "takeoff_time": "08:54",
+                "landing_time": "09:30",
+                "pilot_role": "pic",
+                "crew_name_0": "Original Pilot",
+            },
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            fe = db.session.get(Flight, fid)
+            assert fe.flight_time == Decimal("0.6")
+            assert fe.engine_time == Decimal("0.8")
+            assert fe.single_pilot_se == Decimal("0.8")
+            assert fe.function_pic == Decimal("0.8")
 
     def test_post_reassigns_standalone_flight_to_managed_aircraft(self, app, client):
         uid, tid = _create_user_and_tenant(app)
