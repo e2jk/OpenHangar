@@ -574,7 +574,8 @@ def _score_airframe_candidate(
     """
     from services.time_band_matching import (  # pyright: ignore[reportMissingImports]
         offset_ring_step_minutes,
-        shift_time,
+        taxi_in_score,
+        taxi_out_score,
         time_band_score,
     )
 
@@ -587,25 +588,22 @@ def _score_airframe_candidate(
     # to a fixed precision (0.1h/6min at the 0.3h default) — a flat few-
     # minutes tolerance would put an ordinary rounding difference in the
     # wrong ring, so the same offset-derived step is used for both instead
-    # of a separate hardcoded constant. Cross-pair additionally shifts the
-    # centre by that offset, the closest estimate available of the
-    # block-to-airborne time gap.
+    # of a separate hardcoded constant. Cross-pair instead checks the time
+    # falls within the taxi window the offset allows — see
+    # services.time_band_matching.taxi_out_score.
     offset_step = offset_ring_step_minutes(offset_hours)
-    offset_minutes = round(offset_hours * 60)
 
     takeoff_new = fields.get("takeoff_time")
     if existing.takeoff_time is not None:
         score += time_band_score(takeoff_new, (existing.takeoff_time,), offset_step)
-    elif existing.departure_time is not None:
-        center = shift_time(existing.departure_time, offset_minutes)
-        score += time_band_score(takeoff_new, (center,), offset_step)
+    else:
+        score += taxi_out_score(existing.departure_time, takeoff_new, offset_hours)
 
     landing_new = fields.get("landing_time")
     if existing.landing_time is not None:
         score += time_band_score(landing_new, (existing.landing_time,), offset_step)
-    elif existing.arrival_time is not None:
-        center = shift_time(existing.arrival_time, -offset_minutes)
-        score += time_band_score(landing_new, (center,), offset_step)
+    else:
+        score += taxi_in_score(landing_new, existing.arrival_time, offset_hours)
 
     return score
 
@@ -673,3 +671,117 @@ def find_conflicting_airframe_rows(
             )
 
     return conflicts
+
+
+# ── Merging a row into an existing flight ────────────────────────────────────
+
+# Fields a merge never takes from the parsed row: the date and route are
+# what matched it to the existing flight in the first place.
+_MERGE_SKIP_FIELDS = frozenset({"date", "departure_icao", "arrival_icao"})
+
+
+def merge_airframe_into_existing(
+    existing: Any, fields: dict[str, Any], crew_name: str | None, *, fill_only: bool
+) -> None:
+    """Apply a parsed airframe-log row onto *existing* (a Flight), as the
+    same real-world flight. Caller must commit.
+
+    *fill_only* (an automatic merge with a flight logged from the pilot
+    side) only fills fields that are still empty. Otherwise (the review
+    step's "overwrite") the row's values replace the existing ones. Either
+    way an empty or unmapped cell never clears data already on the flight
+    — e.g. the engine counters, or the pilot's departure/arrival times and
+    remarks, which an airframe log row typically doesn't carry.
+    """
+    for field_name, value in _fields_to_flight_entry_kwargs(fields).items():
+        if value is None or field_name in _MERGE_SKIP_FIELDS:
+            continue
+        current = getattr(existing, field_name)
+        if field_name == "notes" and current and current != value:
+            if fill_only and value not in current:
+                existing.notes = f"{current}\n{value}"
+            elif not fill_only:
+                existing.notes = value
+            continue
+        if not fill_only or current is None:
+            setattr(existing, field_name, value)
+    if crew_name and not existing.pic_name:
+        existing.pic_name = crew_name
+
+
+def _is_pilot_only(existing: Any) -> bool:
+    """A flight logged only from the pilot side (e.g. promoted from a
+    personal logbook import): nothing airframe-facing recorded yet."""
+    return (
+        existing.takeoff_time is None
+        and existing.landing_time is None
+        and existing.flight_time is None
+        and existing.flight_time_counter_start is None
+        and existing.flight_time_counter_end is None
+    )
+
+
+# Combined score of the two cross-pair time checks (takeoff vs block-off,
+# landing vs block-on, each 0–1) needed to merge automatically: both inside
+# their offset band, or one inside and the other within the first ring.
+_AUTO_MERGE_MIN_TIME_SCORE = 1.75
+
+
+def _is_strong_cross_match(
+    fields: dict[str, Any], existing: Any, offset_hours: float
+) -> bool:
+    """Same known route, and both takeoff/landing times within the taxi
+    window (the aircraft's block-to-airborne offset) of the pilot-side
+    departure/arrival times — strong enough to merge without asking."""
+    from services.time_band_matching import (  # pyright: ignore[reportMissingImports]
+        taxi_in_score,
+        taxi_out_score,
+    )
+
+    dep = (fields.get("departure_icao") or "ZZZZ").upper()
+    arr = (fields.get("arrival_icao") or "ZZZZ").upper()
+    if "ZZZZ" in (dep, arr):
+        return False
+    if (dep, arr) != (
+        (existing.departure_icao or "").upper(),
+        (existing.arrival_icao or "").upper(),
+    ):
+        return False
+    score = taxi_out_score(
+        existing.departure_time, fields.get("takeoff_time"), offset_hours
+    ) + taxi_in_score(fields.get("landing_time"), existing.arrival_time, offset_hours)
+    return score >= _AUTO_MERGE_MIN_TIME_SCORE
+
+
+def split_airframe_auto_merges(
+    conflicts: list[AirframeConflictRow], aircraft: Any
+) -> tuple[list[tuple[AirframeConflictRow, int]], list[AirframeConflictRow]]:
+    """Split near-match *conflicts* into (auto_merges, needs_review).
+
+    A row merges automatically — no human decision needed — when exactly
+    one of its candidates is a flight logged only from the pilot side (see
+    _is_pilot_only) and that candidate is a strong match (see
+    _is_strong_cross_match): the two sides then simply complement each
+    other, there's nothing to choose between. Each existing flight is
+    claimed by at most one row; anything else goes to review.
+    """
+    from models import Flight, db  # pyright: ignore[reportMissingImports]
+
+    offset_hours = float(aircraft.flight_counter_offset)
+    auto: list[tuple[AirframeConflictRow, int]] = []
+    review: list[AirframeConflictRow] = []
+    claimed: set[int] = set()
+    for conflict in conflicts:
+        strong = [
+            cid
+            for _score, cid in conflict.candidates
+            if (existing := db.session.get(Flight, cid)) is not None
+            and _is_pilot_only(existing)
+            and _is_strong_cross_match(conflict.fields, existing, offset_hours)
+        ]
+        if len(strong) == 1 and strong[0] not in claimed:
+            claimed.add(strong[0])
+            auto.append((conflict, strong[0]))
+        else:
+            review.append(conflict)
+    return auto, review

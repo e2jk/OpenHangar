@@ -37,6 +37,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
 )
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+from flask_babel import ngettext  # pyright: ignore[reportMissingImports]
 from models import (
     Aircraft,
     AppSetting,
@@ -2074,6 +2075,8 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
         AIRFRAME_TARGET_FIELDS,
         execute_airframe_import,
         find_conflicting_airframe_rows,
+        merge_airframe_into_existing,
+        split_airframe_auto_merges,
     )
 
     ac = _get_aircraft_or_404(aircraft_id)
@@ -2170,7 +2173,18 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
     # guess — carve them out of this pass and route them through the
     # interactive review step below instead of silently importing or
     # skipping them.
-    conflicts = find_conflicting_airframe_rows(parsed, mapping, ac.id)
+    all_conflicts = find_conflicting_airframe_rows(parsed, mapping, ac.id)
+    # A row whose only match is the same flight logged from the pilot side
+    # (e.g. a personal-logbook import) just completes it — merged straight
+    # away, no decision needed.
+    auto_merges, conflicts = split_airframe_auto_merges(all_conflicts, ac)
+    for auto_conflict, existing_id in auto_merges:
+        merge_airframe_into_existing(
+            db.session.get(Flight, existing_id),
+            auto_conflict.fields,
+            auto_conflict.crew_name,
+            fill_only=True,
+        )
 
     result = execute_airframe_import(
         parsed=parsed,
@@ -2178,7 +2192,7 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
         aircraft=ac,
         batch_id=batch.id,
         opening_counters=resolved_opening_counters,
-        skip_row_nums={c.row_num for c in conflicts},
+        skip_row_nums={c.row_num for c in all_conflicts},
     )
     batch.row_count = result.imported
     batch.subtotal_count = result.subtotals
@@ -2186,6 +2200,19 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
     batch.warning_count = len(result.continuity_warnings)
     batch.has_opening_counters = result.has_opening_counters
     db.session.commit()
+
+    if auto_merges:
+        flash(
+            ngettext(
+                "One row matched a flight already in a pilot logbook and was "
+                "merged into it.",
+                "%(n)d rows matched a flight already in a pilot logbook and "
+                "were merged into it.",
+                len(auto_merges),
+                n=len(auto_merges),
+            ),
+            "info",
+        )
 
     if conflicts:
         # Defer activity logging and tmp-file cleanup until every conflict
@@ -2198,6 +2225,7 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
             "mapping": mapping,
             "batch_id": batch.id,
             "resolved": {},
+            "auto_merged": [c.row_num for c, _eid in auto_merges],
         }
         session.pop(_AIRFRAME_IMPORT_SESSION_KEY, None)
         session.modified = True
@@ -2312,6 +2340,14 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
     return redirect(url_for("flights.list_flights", aircraft_id=ac.id))
 
 
+def _airframe_review_excluded_rows(state: dict[str, Any]) -> set[int]:
+    """Rows the review step no longer offers: already resolved, or merged
+    automatically when the import ran."""
+    return {int(k) for k in state.get("resolved", {})} | set(
+        state.get("auto_merged", [])
+    )
+
+
 def _finalize_airframe_import_review(
     ac: Aircraft, state: dict[str, Any]
 ) -> ResponseReturnValue:
@@ -2389,7 +2425,7 @@ def airframe_import_review(aircraft_id: int) -> ResponseReturnValue:
         session.pop(_AIRFRAME_IMPORT_REVIEW_SESSION_KEY, None)
         return redirect(url_for("flights.airframe_import_upload", aircraft_id=ac.id))
 
-    exclude_row_nums = {int(k) for k in resolved}
+    exclude_row_nums = _airframe_review_excluded_rows(state)
     conflicts = find_conflicting_airframe_rows(
         parsed, mapping, ac.id, exclude_row_nums=exclude_row_nums
     )
@@ -2441,6 +2477,7 @@ def airframe_import_review_resolve(aircraft_id: int) -> ResponseReturnValue:
         AirframeConflictRow,
         _fields_to_flight_entry_kwargs,
         find_conflicting_airframe_rows,
+        merge_airframe_into_existing,
     )
 
     ac = _get_aircraft_or_404(aircraft_id)
@@ -2476,7 +2513,7 @@ def airframe_import_review_resolve(aircraft_id: int) -> ResponseReturnValue:
         session.pop(_AIRFRAME_IMPORT_REVIEW_SESSION_KEY, None)
         return redirect(url_for("flights.airframe_import_upload", aircraft_id=ac.id))
 
-    exclude_row_nums = {int(k) for k in resolved}
+    exclude_row_nums = _airframe_review_excluded_rows(state)
     conflicts = find_conflicting_airframe_rows(
         parsed, mapping, ac.id, exclude_row_nums=exclude_row_nums
     )
@@ -2507,16 +2544,13 @@ def airframe_import_review_resolve(aircraft_id: int) -> ResponseReturnValue:
             # candidate_ids just came from a live query for this aircraft in
             # the same request — only a concurrent delete reaches this.
             abort(404)  # pragma: no cover
-        # Full replace of every field this row provides — id and
-        # airframe_import_batch_id are deliberately left untouched, so this
-        # entry stays outside the *current* batch's rollback (it wasn't
-        # created by it).
-        for field_name, value in _fields_to_flight_entry_kwargs(
-            conflict.fields
-        ).items():
-            setattr(existing, field_name, value)
-        if conflict.crew_name and not existing.pic_name:
-            existing.pic_name = conflict.crew_name
+        # Replace with the row's values — see merge_airframe_into_existing
+        # for what's deliberately left alone. id and
+        # airframe_import_batch_id are never touched, so this entry stays
+        # outside the *current* batch's rollback (it wasn't created by it).
+        merge_airframe_into_existing(
+            existing, conflict.fields, conflict.crew_name, fill_only=False
+        )
         db.session.commit()
     elif decision == "new":
         from models import AirframeImportBatch  # pyright: ignore[reportMissingImports]
@@ -2550,7 +2584,7 @@ def airframe_import_review_resolve(aircraft_id: int) -> ResponseReturnValue:
     session.modified = True
 
     remaining = find_conflicting_airframe_rows(
-        parsed, mapping, ac.id, exclude_row_nums={int(k) for k in resolved}
+        parsed, mapping, ac.id, exclude_row_nums=_airframe_review_excluded_rows(state)
     )
     if not remaining:
         return _finalize_airframe_import_review(ac, state)

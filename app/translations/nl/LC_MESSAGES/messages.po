@@ -12157,3 +12157,13 @@ msgstr "Eigenaren en beheerders hebben altijd volledige toegang tot de vloot —
 msgid "Permissions updated."
 msgstr "Machtigingen bijgewerkt."
 
+
+msgid "One row matched a flight already in the aircraft log and was merged into it."
+msgid_plural "%(n)d rows matched a flight already in the aircraft log and were merged into it."
+msgstr[0] "Eén rij kwam overeen met een vlucht die al in het logboek van het toestel stond en is ermee samengevoegd."
+msgstr[1] "%(n)d rijen kwamen overeen met vluchten die al in het logboek van het toestel stonden en zijn ermee samengevoegd."
+
+msgid "One row matched a flight already in a pilot logbook and was merged into it."
+msgid_plural "%(n)d rows matched a flight already in a pilot logbook and were merged into it."
+msgstr[0] "Eén rij kwam overeen met een vlucht die al in een pilotenlogboek stond en is ermee samengevoegd."
+msgstr[1] "%(n)d rijen kwamen overeen met vluchten die al in een pilotenlogboek stonden en zijn ermee samengevoegd."

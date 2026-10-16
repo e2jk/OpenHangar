@@ -1238,7 +1238,8 @@ def _score_candidate(kwargs: dict[str, Any], existing: Any) -> float:
     from services.time_band_matching import (  # pyright: ignore[reportMissingImports]
         DEFAULT_OFFSET_HOURS,
         offset_ring_step_minutes,
-        shift_time,
+        taxi_in_score,
+        taxi_out_score,
         time_band_score,
     )
 
@@ -1268,9 +1269,10 @@ def _score_candidate(kwargs: dict[str, Any], existing: Any) -> float:
     # has no managed aircraft to read a real offset from. Cross-pair
     # (existing only has takeoff_time/landing_time — an airframe-import
     # placeholder, e.g. a hand-entered row from before this pilot ever ran
-    # a logbook import) is scored against that time shifted by this same
-    # offset, the closest estimate available of the block-to-airborne time
-    # gap — this needs a *real* managed-aircraft offset, so a standalone
+    # a logbook import) is scored by whether this time falls within the
+    # taxi window that offset allows (see
+    # services.time_band_matching.taxi_out_score) — this needs a *real*
+    # managed-aircraft offset, so a standalone
     # existing row (no aircraft_id, e.g. a rental logged nowhere else) has
     # this comparison skipped entirely rather than guessing one.
     offset_hours = (
@@ -1285,22 +1287,14 @@ def _score_candidate(kwargs: dict[str, Any], existing: Any) -> float:
         score += time_band_score(
             dep_time_new, (existing.departure_time,), same_pair_step
         )
-    elif existing.takeoff_time is not None and offset_hours is not None:
-        offset_minutes = round(offset_hours * 60)
-        center = shift_time(existing.takeoff_time, -offset_minutes)
-        score += time_band_score(
-            dep_time_new, (center,), offset_ring_step_minutes(offset_hours)
-        )
+    elif offset_hours is not None:
+        score += taxi_out_score(dep_time_new, existing.takeoff_time, offset_hours)
 
     arr_time_new = kwargs.get("arrival_time")
     if existing.arrival_time is not None:
         score += time_band_score(arr_time_new, (existing.arrival_time,), same_pair_step)
-    elif existing.landing_time is not None and offset_hours is not None:
-        offset_minutes = round(offset_hours * 60)
-        center = shift_time(existing.landing_time, offset_minutes)
-        score += time_band_score(
-            arr_time_new, (center,), offset_ring_step_minutes(offset_hours)
-        )
+    elif offset_hours is not None:
+        score += taxi_in_score(existing.landing_time, arr_time_new, offset_hours)
 
     dur_new = _kwargs_duration(kwargs)
     dur_old = existing.total_flight_time
@@ -1420,6 +1414,152 @@ def find_conflicting_rows(
     return conflicts
 
 
+# ── Merging a row into an existing entry ─────────────────────────────────────
+
+# Fields a merge never takes from the parsed row: the date and route are
+# what matched it to the existing entry in the first place.
+_MERGE_SKIP_FIELDS = frozenset({"date", "departure_icao", "arrival_icao"})
+_OTHER_AIRCRAFT_FIELDS = frozenset(
+    {"other_aircraft_type", "other_aircraft_type_icao", "other_aircraft_registration"}
+)
+
+
+def merge_into_existing(
+    existing: Any, kwargs: dict[str, Any], pilot_user_id: int, *, fill_only: bool
+) -> None:
+    """Apply a parsed row's *kwargs* onto *existing* (a Flight), as the same
+    real-world flight. Caller must commit.
+
+    *fill_only* (an automatic merge with an entry logged from the airframe
+    side) only fills fields that are still empty. Otherwise (the review
+    step's "overwrite") the row's values replace the existing ones. Either
+    way an empty cell in the file never clears data already on the entry —
+    it means "not recorded here", e.g. the pilot logbook has no column for
+    the airframe log's remarks — and a managed-aircraft row never gets the
+    free-text other_aircraft_* fields (its aircraft comes from the Aircraft
+    join, see link_entries_to_aircraft).
+    """
+    for field_name, value in kwargs.items():
+        if value is None or field_name in _MERGE_SKIP_FIELDS:
+            continue
+        if existing.aircraft_id is not None and field_name in _OTHER_AIRCRAFT_FIELDS:
+            continue
+        current = getattr(existing, field_name)
+        if field_name == "notes" and current and current != value:
+            if fill_only and value not in current:
+                existing.notes = f"{current}\n{value}"
+            elif not fill_only:
+                existing.notes = value
+            continue
+        if not fill_only or current is None:
+            setattr(existing, field_name, value)
+
+    ident: dict[str, Any] = dict(kwargs)
+    _assign_pilot_identity(ident, pilot_user_id)
+    existing.pic_user_id = ident.get("pic_user_id")
+    existing.second_crew_user_id = ident.get("second_crew_user_id")
+    existing.second_crew_role = ident.get("second_crew_role")
+    _fill_engine_time(existing)
+
+
+def _fill_engine_time(entry: Any) -> None:
+    """A managed aircraft's engine_time (engine-run hours, summed for
+    engine/propeller TBO) from the pilot's logged block time, when nothing
+    better is known yet. Block time is engine time — the engine runs from
+    block-off to block-on — whereas the airborne flight_time side is never
+    derived from a personal logbook (see link_entries_to_aircraft)."""
+    if entry.aircraft_id is None or entry.engine_time is not None:
+        return
+    parts = [entry.single_pilot_se, entry.single_pilot_me, entry.multi_pilot]
+    vals = [float(p) for p in parts if p is not None]
+    if vals:
+        entry.engine_time = round(sum(vals), 1)
+
+
+def _is_airframe_only(existing: Any) -> bool:
+    """An entry logged only from the airframe side: on a managed aircraft,
+    no pilot claimed it and no pilot figures recorded yet."""
+    return (
+        existing.aircraft_id is not None
+        and existing.pic_user_id is None
+        and existing.second_crew_user_id is None
+        and existing.single_pilot_se is None
+        and existing.single_pilot_me is None
+        and existing.multi_pilot is None
+    )
+
+
+# Combined score of the two cross-pair time checks (block-off vs takeoff,
+# block-on vs landing, each 0–1) needed to merge automatically: both inside
+# their offset band, or one inside and the other within the first ring.
+_AUTO_MERGE_MIN_TIME_SCORE = 1.75
+
+
+def _is_strong_cross_match(kwargs: dict[str, Any], existing: Any) -> bool:
+    """Same aircraft, same known route, and both clock times within the
+    taxi window (the aircraft's block-to-airborne offset) of the airframe
+    row's takeoff/landing times — strong enough to merge without asking."""
+    from services.time_band_matching import (  # pyright: ignore[reportMissingImports]
+        taxi_in_score,
+        taxi_out_score,
+    )
+
+    reg_new = (kwargs.get("other_aircraft_registration") or "").strip().upper()
+    if reg_new.replace("-", "") != (
+        existing.display_registration or ""
+    ).upper().replace("-", ""):
+        return False
+    dep, arr = (
+        _place_key(kwargs.get("departure_icao")),
+        _place_key(kwargs.get("arrival_icao")),
+    )
+    if not dep or not arr:
+        return False
+    if (dep, arr) != (
+        _place_key(existing.departure_icao),
+        _place_key(existing.arrival_icao),
+    ):
+        return False
+    offset_hours = float(existing.aircraft.flight_counter_offset)
+    score = taxi_out_score(
+        kwargs.get("departure_time"), existing.takeoff_time, offset_hours
+    ) + taxi_in_score(existing.landing_time, kwargs.get("arrival_time"), offset_hours)
+    return score >= _AUTO_MERGE_MIN_TIME_SCORE
+
+
+def split_auto_merges(
+    conflicts: list[ConflictRow],
+) -> tuple[list[tuple[ConflictRow, int]], list[ConflictRow]]:
+    """Split near-match *conflicts* into (auto_merges, needs_review).
+
+    A row merges automatically — no human decision needed — when exactly
+    one of its candidates is an entry logged only from the airframe side
+    (see _is_airframe_only) and that candidate is a strong match (see
+    _is_strong_cross_match): the two sides then simply complement each
+    other, there's nothing to choose between. Each existing entry is
+    claimed by at most one row; anything else goes to review.
+    """
+    from models import Flight, db  # pyright: ignore[reportMissingImports]
+
+    auto: list[tuple[ConflictRow, int]] = []
+    review: list[ConflictRow] = []
+    claimed: set[int] = set()
+    for conflict in conflicts:
+        strong = [
+            cid
+            for _score, cid in conflict.candidates
+            if (existing := db.session.get(Flight, cid)) is not None
+            and _is_airframe_only(existing)
+            and _is_strong_cross_match(conflict.kwargs, existing)
+        ]
+        if len(strong) == 1 and strong[0] not in claimed:
+            claimed.add(strong[0])
+            auto.append((conflict, strong[0]))
+        else:
+            review.append(conflict)
+    return auto, review
+
+
 def link_entries_to_aircraft(entries: list[Any]) -> int:
     """Promote each standalone Flight row (aircraft_id NULL,
     other_aircraft_registration set) in *entries* to a managed aircraft, for
@@ -1488,20 +1628,18 @@ def link_entries_to_aircraft(entries: list[Any]) -> int:
         entry.other_aircraft_registration = None
         entry.source = "logbook_import"
 
-        # Step 2 (docs/backlog.md "reconcile imports from either side"): the
-        # true airframe-side fields (flight_time_counter_*/flight_time,
-        # engine_time_counter_*/engine_time — the maintenance-relevant hour
-        # figures) aren't known from a personal logbook and stay NULL, same
-        # as everywhere else in this app "if a field is not filled, it's not
-        # filled" — no supposition, interpolation, or guessed value gets
-        # invented here. That's also what keeps the flight list's
+        # The airframe-side figures (flight_time_counter_*/flight_time —
+        # airborne time) and the engine counter readings aren't known from
+        # a personal logbook and stay NULL: no supposition, interpolation,
+        # or guessed counter value gets invented here (a previous version
+        # seeded a rough engine_time_counter estimate, which
+        # services/component_limits.py would then have summed for TBO).
+        # flight_time staying NULL is also what keeps the flight list's
         # needs-attention icon (source == "logbook_import" and flight_time
-        # is None) lit until a human fills these in from a real airframe
-        # source. (A previous version of this function seeded a rough
-        # engine_time_counter estimate here, on the assumption that nothing
-        # read it for maintenance tracking — services/component_limits.py
-        # now sums engine_time_counter for engine/propeller TBO, so that
-        # assumption no longer holds and the guess was removed.)
+        # is None) lit until a human, or an airframe-log import, fills it
+        # in. The pilot's block time is a real engine-run figure, though,
+        # so it does go to engine_time.
+        _fill_engine_time(entry)
 
         if not entry.pic_name:
             pilot_user = db.session.get(User, pilot_user_id)
