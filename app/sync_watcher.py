@@ -29,6 +29,10 @@ import time
 from datetime import date as _date
 from typing import Any
 
+from services.upload_layout import (  # pyright: ignore[reportMissingImports]
+    is_app_managed,
+)
+
 log = logging.getLogger("openhangar.sync_watcher")
 
 _CATEGORY_VALUES: set[str] | None = None
@@ -119,6 +123,8 @@ def _scan_once(app: Any) -> None:
 
                     if relpath in known_filenames or relpath in pending_filepaths:
                         continue
+                    if is_app_managed(relpath):
+                        continue  # photos, original GPS logs — not documents
 
                     _process_file(
                         app,

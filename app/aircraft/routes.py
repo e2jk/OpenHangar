@@ -50,6 +50,7 @@ from models import (
     ReservationStatus,
     Role,
     Snag,
+    Tenant,
     TenantProfile,
     TenantUser,
     User,
@@ -58,6 +59,13 @@ from models import (
     WeightBalanceStation,
     db,
 )  # pyright: ignore[reportMissingImports]
+from services.gps_archive import (  # pyright: ignore[reportMissingImports]
+    archive_gps_file,
+    pilot_archive_parts,
+)
+from services.upload_layout import (  # pyright: ignore[reportMissingImports]
+    GPS_ARCHIVE_DIRNAME,
+)
 from utils import (
     accessible_aircraft,
     activity,
@@ -1754,6 +1762,26 @@ _GPS_ALLOWED_EXTS = {".gpx", ".kml", ".csv"}
 _GPS_MAX_BYTES = 20 * 1024 * 1024  # 20 MB per file
 
 
+def _gps_archive_dir(ac: Aircraft, other_aircraft: bool) -> str:
+    """Where this upload's original files are kept (services.gps_archive):
+    with the aircraft's own files, or — for an upload recorded on an
+    aircraft not managed here — in the uploading pilot's own archive."""
+    from documents.routes import (  # pyright: ignore[reportMissingImports]
+        _ensure_tenant_slug,
+        _safe_join,
+    )
+
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    if other_aircraft:
+        return _safe_join(folder, *pilot_archive_parts(int(session["user_id"])))
+    tenant = db.session.get(Tenant, ac.tenant_id)
+    assert tenant is not None, "every aircraft belongs to a tenant"
+    slug = _ensure_tenant_slug(tenant)
+    db.session.commit()  # a freshly generated slug must outlive this request
+    safe_reg = ac.registration.replace("/", "-").replace(" ", "-").upper()
+    return _safe_join(folder, slug, safe_reg, GPS_ARCHIVE_DIRNAME)
+
+
 def _gps_tmp_dir() -> str:
     """Return (and create if needed) the tmp directory for GPS uploads."""
     upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
@@ -1915,6 +1943,7 @@ def gps_import_upload(aircraft_id: int) -> ResponseReturnValue:
         return render_template("aircraft/gps_import_upload.html", aircraft=ac)
 
     tmp_dir = _gps_tmp_dir()
+    archive_dir = _gps_archive_dir(ac, request.form.get("other_aircraft") == "1")
     parsed_meta: list[dict[str, Any]] = []
     errors: list[str] = []
     skipped_empty = 0
@@ -1937,6 +1966,9 @@ def gps_import_upload(aircraft_id: int) -> ResponseReturnValue:
         if len(data) > _GPS_MAX_BYTES:
             errors.append(_("%(fn)s: file too large (20 MB limit).", fn=f.filename))
             continue
+
+        # Kept whatever the parser makes of it — see services.gps_archive.
+        archive_gps_file(data, f.filename, archive_dir)
 
         try:
             parsed = parse_gps_file(data, f.filename)

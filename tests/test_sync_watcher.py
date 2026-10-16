@@ -112,6 +112,29 @@ class TestAutoImport:
             assert doc.category == DocCategory.MAINTENANCE
             assert doc.aircraft_id == acid
 
+    def test_app_managed_folders_are_not_documents(
+        self, app, upload_dir, tenant_and_aircraft
+    ):
+        """Aircraft photos and the original GPS log files the app keeps are
+        never imported or queued as documents."""
+        tid, _acid = tenant_and_aircraft
+        _make_file(upload_dir, "test-hangar/OO-TST/photos/01-abc.jpg")
+        _make_file(upload_dir, "test-hangar/OO-TST/gps_logs/log_250304_164150_EBST.csv")
+
+        _scan_once(app)
+
+        with app.app_context():
+            assert (
+                Document.query.filter(Document.filename.like("test-hangar/OO-TST/%"))
+                .filter(
+                    Document.filename.like("%/photos/%")
+                    | Document.filename.like("%/gps_logs/%")
+                )
+                .count()
+                == 0
+            )
+            assert PendingReconcile.query.filter_by(tenant_id=tid).count() == 0
+
     def test_canonical_file_is_idempotent(self, app, upload_dir, tenant_and_aircraft):
         _make_file(
             upload_dir,
