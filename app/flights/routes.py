@@ -422,6 +422,20 @@ def _ac_category(ac: Aircraft) -> str:
     return getattr(ac, "category", "SEP") or "SEP"
 
 
+def pilot_time(fe: Flight) -> Any:
+    """The duration that goes into the pilot logbook's EASA figures.
+
+    EASA FCL.050 flight time is block-to-block — the engine-side track
+    (`engine_time`: engine counters, else departure/arrival clock times) —
+    not the airborne segment `flight_time` measures for the airframe log.
+    Filling in an aircraft's flight counters must never shrink the pilot's
+    own logged time to the airborne figure. `flight_time` is only the
+    fallback when nothing engine-side is known (e.g. a GPS import, which
+    stores its block-to-block duration there).
+    """
+    return fe.engine_time if fe.engine_time is not None else fe.flight_time
+
+
 def apply_pilot_identity(
     fe: Flight,
     ac: Aircraft | None,
@@ -431,7 +445,7 @@ def apply_pilot_identity(
     """Resolve the current user's own EASA figures onto whichever crew slot
     matches their `pilot_role` ("pic" -> `pic_user_id`, "dual" ->
     `second_crew_user_id`), and (re)compute the single_pilot_se/me split
-    from `fe.flight_time` and `ac`'s category.
+    from the flight's pilot time (see `pilot_time`) and `ac`'s category.
 
     Call only when `pilot_role` is "pic" or "dual". The caller is
     responsible for assigning `fe`'s other shared EASA fields (night_time,
@@ -448,7 +462,7 @@ def apply_pilot_identity(
     two-table design, not a feature; this unified row makes it structurally
     impossible, since there's only one set of EASA figures per flight.
     """
-    ft_decimal = fe.flight_time
+    ft_decimal = pilot_time(fe)
     cat = _ac_category(ac) if ac is not None else "SEP"
     fe.single_pilot_se = ft_decimal if cat in ("SEP", "SET", "") else None
     fe.single_pilot_me = ft_decimal if cat in ("MEP", "MET") else None

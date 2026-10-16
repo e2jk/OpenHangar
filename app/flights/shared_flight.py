@@ -340,7 +340,9 @@ def apply_suggestion(
         kind, label = FIELD_SPECS[field]
         value, _err = _parse(kind, new, str(label))
         setattr(fe, field, value)
-    if "flight_time" in changed:
+    # Pilot figures follow flight_time only while there's no engine-side
+    # (block) duration — see flights.routes.pilot_time.
+    if "flight_time" in changed and fe.engine_time is None:
         if fe.single_pilot_me is not None:
             fe.single_pilot_me = fe.flight_time
         else:
