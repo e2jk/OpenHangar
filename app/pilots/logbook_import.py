@@ -532,6 +532,11 @@ def _build_parsed_file(
     norm_raw = [_norm(c) for c in raw_header]
     norm_cols = _disambiguate(norm_raw)
     data_rows = all_rows[header_idx + 1 :]
+    # Spreadsheets often carry a tail of formatted-but-empty rows; they'd
+    # otherwise each be reported as an ignored "subtotal" row. Only the
+    # trailing run is dropped, so row numbers stay those of the file.
+    while data_rows and not any(_is_nonempty(v) for v in data_rows[-1]):
+        data_rows.pop()
 
     return ParsedFile(
         norm_cols=norm_cols,
