@@ -5,6 +5,7 @@ import json
 import os
 import tempfile
 from datetime import UTC, date, time, timedelta
+from typing import ClassVar
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest
@@ -878,6 +879,117 @@ class TestExecuteImport:
             assert result2.imported == 0
             assert len(result2.duplicates) == 1
             assert Flight.query.filter_by(pic_user_id=uid).count() == 1
+
+    def _batch(self, uid):
+        from datetime import datetime
+
+        batch = LogbookImportBatch(
+            pilot_user_id=uid,
+            source_filename="log.csv",
+            imported_at=datetime.now(UTC),
+        )
+        db.session.add(batch)
+        db.session.flush()
+        return batch.id
+
+    _ROUTE_TIME_MAPPING: ClassVar[dict[str, str]] = {
+        "date": "date",
+        "from": "departure_place",
+        "dep": "departure_time",
+        "to": "arrival_place",
+        "se": "single_pilot_se",
+        "ldg": "landings_day",
+    }
+    _ROUTE_TIME_COLS: ClassVar[list[str]] = ["date", "from", "dep", "to", "se", "ldg"]
+
+    def test_out_and_back_legs_with_same_figures_both_imported(self, app):
+        """Two different flights on one day sharing duration and landings
+        (an out-and-back pair of 0.5 h legs) are not duplicates of each
+        other — reproduces a real logbook where one leg was silently dropped."""
+        with app.app_context():
+            uid = _make_user("exec_dup_outback@example.com")
+            rows = [
+                ["07/09/26", "EBNM", "07:54", "EBST", "0.5", "1"],
+                ["07/09/26", "EBST", "08:30", "EBNM", "0.5", "1"],
+            ]
+            parsed = self._make_parsed(rows, cols=self._ROUTE_TIME_COLS)
+            result = execute_import(
+                parsed, self._ROUTE_TIME_MAPPING, uid, self._batch(uid)
+            )
+            db.session.commit()
+
+            assert result.imported == 2
+            assert result.duplicates == []
+
+    def test_same_route_different_departure_time_not_duplicate(self, app):
+        with app.app_context():
+            uid = _make_user("exec_dup_twolocal@example.com")
+            rows = [
+                ["07/09/26", "EBAW", "10:00", "EBAW", "0.5", "1"],
+                ["07/09/26", "EBAW", "14:00", "EBAW", "0.5", "1"],
+            ]
+            parsed = self._make_parsed(rows, cols=self._ROUTE_TIME_COLS)
+            result = execute_import(
+                parsed, self._ROUTE_TIME_MAPPING, uid, self._batch(uid)
+            )
+            db.session.commit()
+
+            assert result.imported == 2
+
+    def test_reimport_never_matches_another_flight_of_the_same_day(self, app):
+        """A re-imported row whose figures happen to equal a *different*
+        flight of that day (here: the morning leg, opposite direction) is not
+        a duplicate of it — reproduces a real logbook where the afternoon leg
+        was skipped as an "exact duplicate" of the morning one."""
+        with app.app_context():
+            uid = _make_user("exec_dup_wrongleg@example.com")
+            first = [["21/06/26", "EBAW", "08:48", "EBNM", "0.6", "1"]]
+            execute_import(
+                self._make_parsed(first, cols=self._ROUTE_TIME_COLS),
+                self._ROUTE_TIME_MAPPING,
+                uid,
+                self._batch(uid),
+            )
+            db.session.commit()
+
+            second = [["21/06/26", "EBNM", "11:06", "EBAW", "0.6", "1"]]
+            result = execute_import(
+                self._make_parsed(second, cols=self._ROUTE_TIME_COLS),
+                self._ROUTE_TIME_MAPPING,
+                uid,
+                self._batch(uid),
+            )
+            db.session.commit()
+
+            assert result.imported == 1
+            assert result.duplicates == []
+
+    def test_reimport_matches_promoted_row_with_cleaned_places(self, app):
+        """A row promoted to a managed aircraft has its places cleaned to
+        4-char codes (link_entries_to_aircraft) — "EBAW (Antwerp)" becomes
+        "EBAW". Re-importing the raw source row must still be a duplicate."""
+        with app.app_context():
+            uid = _make_user("exec_dup_cleaned@example.com")
+            rows = [["21/06/26", "EBAW (Antwerp)", "08:48", "EBNM", "0.6", "1"]]
+            execute_import(
+                self._make_parsed(rows, cols=self._ROUTE_TIME_COLS),
+                self._ROUTE_TIME_MAPPING,
+                uid,
+                self._batch(uid),
+            )
+            db.session.commit()
+            entry = Flight.query.filter_by(pic_user_id=uid).one()
+            entry.departure_icao = "EBAW"
+            db.session.commit()
+
+            result = execute_import(
+                self._make_parsed(rows, cols=self._ROUTE_TIME_COLS),
+                self._ROUTE_TIME_MAPPING,
+                uid,
+                self._batch(uid),
+            )
+            assert result.imported == 0
+            assert len(result.duplicates) == 1
 
     def test_opening_balance_not_duplicated_on_second_import(self, app):
         with app.app_context():
