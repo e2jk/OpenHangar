@@ -1956,6 +1956,26 @@ class TestGpsReviewAndConfirm:
         assert resp.status_code in (302, 303)
         assert "review" in resp.headers["Location"]
 
+    def test_final_summary_counts_skipped_segments_separately(self, client, app):
+        """Skipping one segment then confirming the last one must not report
+        the skipped segment as an imported flight."""
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        seg0 = self._make_segment_dict()
+        seg1 = {
+            **self._make_segment_dict(),
+            "block_off_utc": "2024-06-01T12:00:00+00:00",
+            "block_on_utc": "2024-06-01T13:00:00+00:00",
+        }
+        self._set_confirm_session(client, uid, ac_id, segments=[seg0, seg1])
+        url = f"/aircraft/{ac_id}/gps-import/confirm-one"
+        client.post(url, data={"seg_idx": "0", "skip": "1"})
+        client.post(url, data={"seg_idx": "1", "pilot_role": "none"})
+        with client.session_transaction() as sess:
+            messages = [msg for _cat, msg in sess.get("_flashes", [])]
+        assert "one flight imported successfully." in messages
+        assert "one segment skipped." in messages
+
 
 # ── Route integration: prefill-segment ───────────────────────────────────────
 
