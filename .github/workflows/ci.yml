@@ -557,7 +557,12 @@ jobs:
 
             for attempt in 1 2 3 4 5; do
               LAST_TAG=$(git tag --list 'v[0-9]*' --sort=-version:refname | head -1)
-              if [ -n "$LAST_TAG" ] && [ -z "$(git log "${LAST_TAG}..HEAD" --oneline -- app/)" ]; then
+              # Compared by content, not commit history: a tag is its
+              # release PR's own commit, which the rebase merge re-creates
+              # on main under a new SHA — so "${LAST_TAG}..HEAD" would list
+              # that already-released commit again, and any app/ change it
+              # carried made the next dependency-only release a minor bump.
+              if [ -n "$LAST_TAG" ] && git diff --quiet "${LAST_TAG}" HEAD -- app/; then
                 BUMP="patch"
               else
                 BUMP="minor"
