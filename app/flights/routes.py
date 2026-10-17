@@ -147,6 +147,32 @@ _FLIGHTS_VALID_PER_PAGE = (10, 20, 50, 100)
 _FLIGHTS_DEFAULT_PER_PAGE = 20
 
 
+def _skipped_rows_summary(result: Any) -> list[str]:
+    """The sentences of a logbook import summary (airframe or pilot) about
+    rows left out — only those with something to report, each pluralised
+    on its own count."""
+    parts = []
+    if result.subtotals:
+        parts.append(
+            ngettext(
+                "One subtotal row skipped.",
+                "%(n)d subtotal rows skipped.",
+                result.subtotals,
+                n=result.subtotals,
+            )
+        )
+    if result.skipped:
+        parts.append(
+            ngettext(
+                "One row could not be parsed.",
+                "%(n)d rows could not be parsed.",
+                len(result.skipped),
+                n=len(result.skipped),
+            )
+        )
+    return parts
+
+
 def _openaip_key() -> str | None:
     s = db.session.get(AppSetting, "openaip_api_key")
     return s.value if s and s.value else None
@@ -2280,31 +2306,35 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
             ),
             "success",
         )
-    elif result.duplicates:
-        flash(
-            _(
-                "Import complete: %(imported)d new flights imported, "
-                "%(duplicates)d rows were already in this aircraft's log and "
-                "were skipped, %(subtotals)d subtotal rows skipped, "
-                "%(skipped)d rows could not be parsed.",
-                imported=result.imported,
-                duplicates=len(result.duplicates),
-                subtotals=result.subtotals,
-                skipped=len(result.skipped),
-            ),
-            "success",
-        )
     else:
-        flash(
-            _(
-                "Import complete: %(imported)d flights imported, %(subtotals)d "
-                "subtotal rows skipped, %(skipped)d rows could not be parsed.",
-                imported=result.imported,
-                subtotals=result.subtotals,
-                skipped=len(result.skipped),
-            ),
-            "success",
-        )
+        n_dup = len(result.duplicates)
+        if result.duplicates:
+            parts = [
+                ngettext(
+                    "Import complete: one new flight imported.",
+                    "Import complete: %(n)d new flights imported.",
+                    result.imported,
+                    n=result.imported,
+                ),
+                ngettext(
+                    "One row was already in this aircraft's log and was skipped.",
+                    "%(n)d rows were already in this aircraft's log and were skipped.",
+                    n_dup,
+                    n=n_dup,
+                ),
+            ]
+        elif result.imported:
+            parts = [
+                ngettext(
+                    "Import complete: one flight imported.",
+                    "Import complete: %(n)d flights imported.",
+                    result.imported,
+                    n=result.imported,
+                )
+            ]
+        else:
+            parts = [_("Import complete: no flights imported.")]
+        flash(" ".join(parts + _skipped_rows_summary(result)), "success")
     if result.duplicates:
         detail = "; ".join(f"row {r}: {reason}" for r, reason in result.duplicates[:5])
         if len(result.duplicates) > 5:

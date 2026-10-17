@@ -1461,6 +1461,59 @@ class TestGpsReviewAndConfirm:
             assert fe.engine_time == decimal.Decimal("1.0")
             assert fe.single_pilot_se == decimal.Decimal("1.0")
 
+    def test_confirm_matched_flight_without_pilot_role_fills_empty_times(
+        self, client, app
+    ):
+        """A matched flight gets the GPS block / airborne times for whichever
+        it lacks even with no pilot role (e.g. a previous owner's flights),
+        and keeps the ones its logbook recorded."""
+        from models import Flight  # pyright: ignore[reportMissingImports]
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        with app.app_context():
+            airframe_only = Flight(
+                aircraft_id=ac_id,
+                date=date(2024, 6, 1),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("0.7"),
+            )
+            pilot_only = Flight(
+                aircraft_id=ac_id,
+                date=date(2024, 6, 1),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                engine_time=decimal.Decimal("1.2"),
+            )
+            db.session.add_all([airframe_only, pilot_only])
+            db.session.commit()
+            ids = [airframe_only.id, pilot_only.id]
+        segs = []
+        for fid in ids:
+            seg = self._make_segment_dict()
+            seg["takeoff_utc"] = "2024-06-01T10:06:00+00:00"
+            seg["landing_utc"] = "2024-06-01T10:54:00+00:00"
+            seg["matched_flight_id"] = fid
+            segs.append(seg)
+        self._set_confirm_session(client, uid, ac_id, segments=segs)
+        for i in range(2):
+            client.post(
+                f"/aircraft/{ac_id}/gps-import/confirm-one",
+                data={"seg_idx": str(i), "pilot_role": "none"},
+            )
+        with app.app_context():
+            a, p = (db.session.get(Flight, i) for i in ids)
+            assert (a.flight_time, a.engine_time) == (
+                decimal.Decimal("0.7"),
+                decimal.Decimal("1.0"),
+            )
+            assert (p.flight_time, p.engine_time) == (
+                decimal.Decimal("0.8"),
+                decimal.Decimal("1.2"),
+            )
+            assert a.pic_user_id is None and p.pic_user_id is None
+
     def test_confirm_with_pilot_entries(self, client, app):
         from models import Flight  # pyright: ignore[reportMissingImports]
 

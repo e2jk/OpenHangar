@@ -1486,16 +1486,6 @@ msgstr "Lignes ignorées : %(detail)s"
 msgid "All flights in this file were already in this aircraft's log — nothing new was imported."
 msgstr "Tous les vols de ce fichier étaient déjà présents dans le carnet de cet appareil — rien de nouveau n'a été importé."
 
-#: app/flights/routes.py:2244
-#, python-format
-msgid "Import complete: %(imported)d new flights imported, %(duplicates)d rows were already in this aircraft's log and were skipped, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
-msgstr "Import terminé : %(imported)d nouveaux vols importés, %(duplicates)d lignes étaient déjà présentes dans le carnet de cet appareil et ont été ignorées, %(subtotals)d lignes de sous-totaux ignorées, %(skipped)d lignes n'ont pas pu être lues."
-
-#: app/flights/routes.py:2258
-#, python-format
-msgid "Import complete: %(imported)d flights imported, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
-msgstr "Import terminé : %(imported)d vols importés, %(subtotals)d lignes de sous-totaux ignorées, %(skipped)d lignes n'ont pas pu être lues."
-
 #: app/flights/routes.py:2280
 #, python-format
 msgid "row %(row)d: %(kind)s counter starts at %(got).1f but the previous entry ended at %(prev).1f"
@@ -2241,16 +2231,6 @@ msgstr "Lignes déjà présentes dans votre carnet de vol, ignorées : %(detail)
 #: app/pilots/routes.py:1546
 msgid "All entries in this file were already in your logbook — nothing new was imported."
 msgstr "Toutes les entrées de ce fichier étaient déjà présentes dans votre carnet de vol — rien de nouveau n'a été importé."
-
-#: app/pilots/routes.py:1554
-#, python-format
-msgid "Import complete: %(imported)d new entries imported, %(duplicates)d rows were already in your logbook and were skipped, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
-msgstr "Import terminé : %(imported)d nouvelles entrées importées, %(duplicates)d lignes étaient déjà présentes dans votre carnet de vol et ont été ignorées, %(subtotals)d lignes de sous-total ignorées, %(skipped)d lignes non analysées."
-
-#: app/pilots/routes.py:1567
-#, python-format
-msgid "Import complete: %(imported)d entries imported, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
-msgstr "Import terminé : %(imported)d entrées importées, %(subtotals)d lignes de sous-total ignorées, %(skipped)d lignes non analysées."
 
 #: app/pilots/routes.py:1578 app/pilots/routes.py:1694
 #, python-format
@@ -5492,8 +5472,8 @@ msgstr "Ignorées"
 
 #: app/templates/aircraft/gps_import_review.html:122
 #, python-format
-msgid "Matches existing flight %(info)s — GPS track will be linked (existing flight data is kept as-is)."
-msgstr "Correspond au vol existant %(info)s — la trace GPS sera liée (les données du vol existant sont conservées)."
+msgid "Matches existing flight %(info)s — GPS track will be linked (existing flight data is kept; only missing flight or engine times are filled in)."
+msgstr "Correspond au vol existant %(info)s — la trace GPS sera liée (les données du vol existant sont conservées ; seuls les temps de vol ou moteur manquants sont complétés)."
 
 #: app/templates/aircraft/gps_import_review.html:126
 #: app/templates/pilots/gps_import_review.html:106
@@ -12173,3 +12153,61 @@ msgstr "Cet envoi est trop volumineux (maximum %(mb)s Mo au total). Veuillez e
 
 msgid "A copy of each original file is kept unchanged and included in backups."
 msgstr "Une copie de chaque fichier original est conservée telle quelle et incluse dans les sauvegardes."
+
+#, python-format
+msgid "Nothing is logged on this date, but a flight on the same route is logged within two days of it — possibly a date typo in the logbook. Linking it corrects its date to %(date)s."
+msgstr "Aucun vol n'est enregistré à cette date, mais un vol sur le même trajet l'est à deux jours près — peut-être une faute de frappe dans la date du carnet. Le lier corrige sa date au %(date)s."
+
+#, python-format
+msgid "Import complete: one new flight imported."
+msgid_plural "Import complete: %(n)d new flights imported."
+msgstr[0] "Import terminé : un nouveau vol importé."
+msgstr[1] "Import terminé : %(n)d nouveaux vols importés."
+
+#, python-format
+msgid "One row was already in this aircraft's log and was skipped."
+msgid_plural "%(n)d rows were already in this aircraft's log and were skipped."
+msgstr[0] "Une ligne figurait déjà dans le carnet de cet appareil et a été ignorée."
+msgstr[1] "%(n)d lignes figuraient déjà dans le carnet de cet appareil et ont été ignorées."
+
+#, python-format
+msgid "Import complete: one flight imported."
+msgid_plural "Import complete: %(n)d flights imported."
+msgstr[0] "Import terminé : un vol importé."
+msgstr[1] "Import terminé : %(n)d vols importés."
+
+msgid "Import complete: no flights imported."
+msgstr "Import terminé : aucun vol importé."
+
+#, python-format
+msgid "Import complete: one new entry imported."
+msgid_plural "Import complete: %(n)d new entries imported."
+msgstr[0] "Import terminé : une nouvelle entrée importée."
+msgstr[1] "Import terminé : %(n)d nouvelles entrées importées."
+
+#, python-format
+msgid "One row was already in your logbook and was skipped."
+msgid_plural "%(n)d rows were already in your logbook and were skipped."
+msgstr[0] "Une ligne figurait déjà dans votre carnet et a été ignorée."
+msgstr[1] "%(n)d lignes figuraient déjà dans votre carnet et ont été ignorées."
+
+#, python-format
+msgid "Import complete: one entry imported."
+msgid_plural "Import complete: %(n)d entries imported."
+msgstr[0] "Import terminé : une entrée importée."
+msgstr[1] "Import terminé : %(n)d entrées importées."
+
+msgid "Import complete: no entries imported."
+msgstr "Import terminé : aucune entrée importée."
+
+#, python-format
+msgid "One subtotal row skipped."
+msgid_plural "%(n)d subtotal rows skipped."
+msgstr[0] "Une ligne de sous-total ignorée."
+msgstr[1] "%(n)d lignes de sous-totaux ignorées."
+
+#, python-format
+msgid "One row could not be parsed."
+msgid_plural "%(n)d rows could not be parsed."
+msgstr[0] "Une ligne n'a pas pu être lue."
+msgstr[1] "%(n)d lignes n'ont pas pu être lues."

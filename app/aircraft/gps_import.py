@@ -8,6 +8,7 @@ Supported formats:
 
 from __future__ import annotations
 
+import bisect
 import csv
 import functools
 import io
@@ -17,7 +18,7 @@ import os
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import UTC, datetime, time
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from typing import Any
 from xml.etree.ElementTree import ParseError as _ETParseError
@@ -36,6 +37,12 @@ _FLIGHT_SUSTAIN_S = 30.0  # seconds above 30kt required to classify as "flight"
 _SEGMENT_GAP_S = 300.0  # 5 min of slow speed or time gap → segment break
 _MAX_ICAO_DIST_KM = 5.0  # max distance for nearest-airport match
 _MAX_TRACK_POINTS = 500  # downsample threshold for GeoJSON storage
+# How many days from a GPS segment's date a hand-entered logbook date may be
+# off (a typo) and the flight still be offered as its possible match.
+NEAR_DATE_DAYS = 2
+# How far a GPS segment may start before / end after a logbook flight's
+# block times and still be part of what that flight records.
+_LOGGED_WINDOW_TOLERANCE = timedelta(minutes=15)
 
 # ── Data structures ───────────────────────────────────────────────────────────
 
@@ -65,6 +72,21 @@ class FlightSegment:
     is_ground_only: bool  # True when no airborne portion detected
     hint_departure_icao: str | None
     hint_arrival_icao: str | None
+    # Set when the segment joins several flights logged as one (see
+    # merge_segments_logged_as_one): their summed airborne time, which the
+    # takeoff-to-landing span would overstate by the time on the ground.
+    airborne_raw_h: float | None = None
+
+
+@dataclass
+class LoggedFlightWindow:
+    """A logbook flight's block span and route (UTC), used to recognise GPS
+    segments that it records as a single flight."""
+
+    start_utc: datetime
+    end_utc: datetime
+    departure_icao: str | None
+    arrival_icao: str | None
 
 
 @dataclass
@@ -632,6 +654,145 @@ def detect_segments(
     return segments
 
 
+def logged_flight_windows(flights: list[Any]) -> list[LoggedFlightWindow]:
+    """LoggedFlightWindow for each Flight-like object whose block times
+    (departure/arrival, else takeoff/landing — all UTC times of day) are
+    both known; flights without them can't vouch for anything."""
+    windows: list[LoggedFlightWindow] = []
+    for f in flights:
+        start_t = f.departure_time or f.takeoff_time
+        end_t = f.arrival_time or f.landing_time
+        if f.date is None or start_t is None or end_t is None:
+            continue
+        start = datetime.combine(f.date, start_t, tzinfo=UTC)
+        end = datetime.combine(f.date, end_t, tzinfo=UTC)
+        if end < start:  # past midnight UTC
+            end += timedelta(days=1)
+        windows.append(LoggedFlightWindow(start, end, f.departure_icao, f.arrival_icao))
+    return windows
+
+
+def _same_place(a: str | None, b: str | None) -> bool:
+    """Equal, or unknown on either side (nothing to contradict)."""
+    return not a or not b or a == b
+
+
+def _recorded_throughout(times: list[datetime], start: datetime, end: datetime) -> bool:
+    """True when the recording has no gap of _SEGMENT_GAP_S or more between
+    *start* and *end* — the avionics stayed on (one data-log file), so the
+    engine most likely kept running too."""
+    lo = bisect.bisect_left(times, start)
+    hi = bisect.bisect_right(times, end)
+    return all(
+        (times[k + 1] - times[k]).total_seconds() < _SEGMENT_GAP_S
+        for k in range(lo, hi - 1)
+    )
+
+
+def _logged_run_end(
+    segments: list[FlightSegment],
+    times: list[datetime],
+    windows: list[LoggedFlightWindow],
+    i: int,
+) -> int:
+    """Index of the last segment of the longest run starting at *i* that a
+    single logbook flight records as one, or *i* when there is none."""
+    best = i
+    for w in windows:
+        lo = w.start_utc - _LOGGED_WINDOW_TOLERANCE
+        hi = w.end_utc + _LOGGED_WINDOW_TOLERANCE
+        first = segments[i]
+        if (
+            first.is_ground_only
+            or first.block_off_utc < lo
+            or not _same_place(first.departure_icao, w.departure_icao)
+        ):
+            continue
+        k = i
+        while k + 1 < len(segments):
+            prev, nxt = segments[k], segments[k + 1]
+            if (
+                nxt.is_ground_only
+                or nxt.block_on_utc > hi
+                or not _same_place(prev.arrival_icao, nxt.departure_icao)
+                or not _recorded_throughout(times, prev.block_on_utc, nxt.block_off_utc)
+            ):
+                break
+            k += 1
+            if k > best and _same_place(nxt.arrival_icao, w.arrival_icao):
+                best = k
+    return best
+
+
+def _merge_run(
+    run: list[FlightSegment], trackpoints: list[TrackPoint], precision: str
+) -> FlightSegment:
+    """One FlightSegment spanning *run*, including the ground stops between
+    its legs."""
+    times = [tp.utc_dt for tp in trackpoints]
+    lo = bisect.bisect_left(times, run[0].trackpoints[0].utc_dt)
+    hi = bisect.bisect_right(times, run[-1].trackpoints[-1].utc_dt)
+    pts = trackpoints[lo:hi]
+    block_off = run[0].block_off_utc
+    block_on = run[-1].block_on_utc
+    raw_h = (block_on - block_off).total_seconds() / 3600.0
+    airborne_h = sum(
+        (s.landing_utc - s.takeoff_utc).total_seconds() / 3600.0
+        for s in run
+        if s.takeoff_utc and s.landing_utc
+    )
+    return FlightSegment(
+        trackpoints=pts,
+        block_off_utc=block_off,
+        takeoff_utc=run[0].takeoff_utc,
+        landing_utc=run[-1].landing_utc,
+        block_on_utc=block_on,
+        departure_icao=run[0].departure_icao,
+        arrival_icao=run[-1].arrival_icao,
+        flight_time_raw_h=raw_h,
+        flight_time_rounded_h=round_flight_time(raw_h, precision),
+        track_geojson=build_geojson(downsample_track(pts)),
+        landing_count=sum(s.landing_count for s in run),
+        is_ground_only=False,
+        hint_departure_icao=run[0].hint_departure_icao,
+        hint_arrival_icao=run[-1].hint_arrival_icao,
+        airborne_raw_h=airborne_h,
+    )
+
+
+def merge_segments_logged_as_one(
+    segments: list[FlightSegment],
+    trackpoints: list[TrackPoint],
+    windows: list[LoggedFlightWindow],
+    precision: str = "tenth_hour",
+) -> list[FlightSegment]:
+    """Join consecutive segments that one logbook flight records as a single
+    flight — e.g. a landing to check something with the engine running,
+    then on to the destination, logged as one flight with two landings.
+
+    Segment detection alone splits at any 5-minute stop; only the logbook
+    can say the pilot counted it as one flight. Segments are joined when
+    they all fall within that flight's block times, chain from its
+    departure to its arrival, and the recording never stopped in between
+    (a gap means the avionics, and most likely the engine, were switched
+    off — a separate flight whatever the logbook says).
+    """
+    if len(segments) < 2 or not windows:
+        return segments
+    times = [tp.utc_dt for tp in trackpoints]
+    out: list[FlightSegment] = []
+    i = 0
+    while i < len(segments):
+        k = _logged_run_end(segments, times, windows, i)
+        out.append(
+            segments[i]
+            if k == i
+            else _merge_run(segments[i : k + 1], trackpoints, precision)
+        )
+        i = k + 1
+    return out
+
+
 # ── ICAO resolution ───────────────────────────────────────────────────────────
 
 
@@ -700,7 +861,9 @@ def segment_times(seg: dict[str, Any], precision: str) -> SegmentTimes:
         datetime.fromisoformat(seg["landing_utc"]) if seg.get("landing_utc") else None
     )
     airborne: Decimal | None = None
-    if takeoff is not None and landing is not None:
+    if seg.get("airborne_raw_h") is not None:
+        airborne = Decimal(str(round_flight_time(seg["airborne_raw_h"], precision)))
+    elif takeoff is not None and landing is not None:
         hours = (landing - takeoff).total_seconds() / 3600.0
         airborne = Decimal(str(round_flight_time(hours, precision)))
     return SegmentTimes(
@@ -778,6 +941,51 @@ def score_gps_candidates(
     ]
     scored.sort(key=lambda t: -t[0])
     return [c for _score, c in scored]
+
+
+def near_date_range(gps_date: date) -> tuple[date, date]:
+    """First and last logbook date a near-date match may carry."""
+    span = timedelta(days=NEAR_DATE_DAYS)
+    return gps_date - span, gps_date + span
+
+
+def rank_near_date_candidates(
+    fields: dict[str, Any],
+    gps_date: date,
+    candidates: list[Any],
+    scorer: Callable[[dict[str, Any], Any], float],
+    min_score: int,
+) -> list[Any]:
+    """Flights logged on another date close to a GPS segment's — a typo in
+    a hand-entered logbook date — ranked closest date first, then by score.
+
+    The GPS date is the reliable one, so this is only a fallback for a
+    segment nothing matched on its own date, and stricter than a same-day
+    match: the route must be known and identical at both ends, and the
+    date at most NEAR_DATE_DAYS days off. A flight years away never
+    qualifies, whatever else it shares.
+    """
+    dep = fields.get("departure_icao")
+    arr = fields.get("arrival_icao")
+    if not dep or not arr:
+        return []
+    pool = [
+        c
+        for c in candidates
+        if c.date != gps_date
+        and abs((c.date - gps_date).days) <= NEAR_DATE_DAYS
+        and c.departure_icao == dep
+        and c.arrival_icao == arr
+    ]
+    ranked = score_gps_candidates(fields, pool, scorer, min_score)
+    return sorted(ranked, key=lambda c: abs((c.date - gps_date).days))
+
+
+def apply_gps_date(flight: Any, seg: dict[str, Any], block_off: datetime) -> None:
+    """Confirming a near-date match: the logbook date was the typo — take
+    the GPS one."""
+    if seg.get("matched_near_date"):
+        flight.date = block_off.date()
 
 
 def _score_gps_candidate(

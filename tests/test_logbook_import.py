@@ -1827,7 +1827,7 @@ class TestImportExecuteRoute:
             flashes = sess.get("_flashes", [])
         assert not any(cat == "warning" for cat, _msg in flashes)
         success_messages = [msg for cat, msg in flashes if cat == "success"]
-        assert any("1 new entries imported" in msg for msg in success_messages)
+        assert any("one new entry imported" in msg for msg in success_messages)
 
         with app.app_context():
             assert Flight.query.filter_by(pic_user_id=uid).count() == 2
