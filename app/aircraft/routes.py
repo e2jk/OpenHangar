@@ -83,7 +83,9 @@ from aircraft.co_owner_form_parsing import (  # pyright: ignore[reportMissingImp
 )
 from aircraft.gps_import import (  # pyright: ignore[reportMissingImports]
     detect_segments,
+    logged_flight_windows,
     merge_and_sort,
+    merge_segments_logged_as_one,
     parse_gps_file,
     segment_times,
 )
@@ -1804,6 +1806,7 @@ def _segment_to_dict(seg: Any, idx: int) -> dict[str, Any]:
         "flight_time_rounded_h": seg.flight_time_rounded_h,
         "landing_count": seg.landing_count,
         "is_ground_only": seg.is_ground_only,
+        "airborne_raw_h": seg.airborne_raw_h,
         "track_geojson": seg.track_geojson,
     }
 
@@ -2090,6 +2093,17 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
         aircraft_precision=ac.logbook_time_precision,
         hint_dep=hint_dep,
         hint_arr=hint_arr,
+    )
+    seg_dates = {seg.block_off_utc.date() for seg in segments}
+    segments = merge_segments_logged_as_one(
+        segments,
+        merged,
+        logged_flight_windows(
+            Flight.query.filter(
+                Flight.aircraft_id == aircraft_id, Flight.date.in_(seg_dates)
+            ).all()
+        ),
+        ac.logbook_time_precision,
     )
 
     # Build full dicts (with track_geojson) for template rendering.
