@@ -2239,7 +2239,9 @@ def pilot_gps_import_review() -> ResponseReturnValue:
 
     from aircraft.gps_import import (
         detect_segments,
+        logged_flight_windows,
         merge_and_sort,
+        merge_segments_logged_as_one,
         parse_gps_file,
     )
     from aircraft.routes import (
@@ -2248,6 +2250,7 @@ def pilot_gps_import_review() -> ResponseReturnValue:
         _segment_for_session,
         _segment_to_dict,
     )
+    from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
 
     file_metas = state["files"]
     all_parsed = []
@@ -2277,6 +2280,17 @@ def pilot_gps_import_review() -> ResponseReturnValue:
         (p.hint_arrival_icao for p in all_parsed if p.hint_arrival_icao), None
     )
     segments = detect_segments(merged, hint_dep=hint_dep, hint_arr=hint_arr)
+    seg_dates = {seg.block_off_utc.date() for seg in segments}
+    segments = merge_segments_logged_as_one(
+        segments,
+        merged,
+        logged_flight_windows(
+            Flight.query.filter(
+                or_(Flight.pic_user_id == uid, Flight.second_crew_user_id == uid),
+                Flight.date.in_(seg_dates),
+            ).all()
+        ),
+    )
     full_segs = [_segment_to_dict(seg, i) for i, seg in enumerate(segments)]
 
     for seg in full_segs:
