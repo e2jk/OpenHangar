@@ -1574,30 +1574,37 @@ def import_execute() -> ResponseReturnValue:
             ),
             "success",
         )
-    elif result.duplicates:
-        flash(
-            _(
-                "Import complete: %(imported)d new entries imported, %(duplicates)d "
-                "rows were already in your logbook and were skipped, %(subtotals)d "
-                "subtotal rows skipped, %(skipped)d rows could not be parsed.",
-                imported=result.imported,
-                duplicates=len(result.duplicates),
-                subtotals=result.subtotals,
-                skipped=len(result.skipped),
-            ),
-            "success",
-        )
     else:
-        flash(
-            _(
-                "Import complete: %(imported)d entries imported, %(subtotals)d "
-                "subtotal rows skipped, %(skipped)d rows could not be parsed.",
-                imported=result.imported,
-                subtotals=result.subtotals,
-                skipped=len(result.skipped),
-            ),
-            "success",
-        )
+        from flights.routes import _skipped_rows_summary
+
+        n_dup = len(result.duplicates)
+        if result.duplicates:
+            parts = [
+                ngettext(
+                    "Import complete: one new entry imported.",
+                    "Import complete: %(n)d new entries imported.",
+                    result.imported,
+                    n=result.imported,
+                ),
+                ngettext(
+                    "One row was already in your logbook and was skipped.",
+                    "%(n)d rows were already in your logbook and were skipped.",
+                    n_dup,
+                    n=n_dup,
+                ),
+            ]
+        elif result.imported:
+            parts = [
+                ngettext(
+                    "Import complete: one entry imported.",
+                    "Import complete: %(n)d entries imported.",
+                    result.imported,
+                    n=result.imported,
+                )
+            ]
+        else:
+            parts = [_("Import complete: no entries imported.")]
+        flash(" ".join(parts + _skipped_rows_summary(result)), "success")
     if ac_created > 0:
         flash(
             ngettext(
