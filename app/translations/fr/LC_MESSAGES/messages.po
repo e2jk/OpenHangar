@@ -5492,8 +5492,8 @@ msgstr "Ignorées"
 
 #: app/templates/aircraft/gps_import_review.html:122
 #, python-format
-msgid "Matches existing flight %(info)s — GPS track will be linked (existing flight data is kept as-is)."
-msgstr "Correspond au vol existant %(info)s — la trace GPS sera liée (les données du vol existant sont conservées)."
+msgid "Matches existing flight %(info)s — GPS track will be linked (existing flight data is kept; only missing flight or engine times are filled in)."
+msgstr "Correspond au vol existant %(info)s — la trace GPS sera liée (les données du vol existant sont conservées ; seuls les temps de vol ou moteur manquants sont complétés)."
 
 #: app/templates/aircraft/gps_import_review.html:126
 #: app/templates/pilots/gps_import_review.html:106

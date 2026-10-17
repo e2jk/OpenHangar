@@ -5492,8 +5492,8 @@ msgstr "Overgeslagen"
 
 #: app/templates/aircraft/gps_import_review.html:122
 #, python-format
-msgid "Matches existing flight %(info)s — GPS track will be linked (existing flight data is kept as-is)."
-msgstr "Komt overeen met bestaande vlucht %(info)s — GPS-spoor wordt gekoppeld (bestaande vluchtgegevens worden bewaard)."
+msgid "Matches existing flight %(info)s — GPS track will be linked (existing flight data is kept; only missing flight or engine times are filled in)."
+msgstr "Komt overeen met bestaande vlucht %(info)s — GPS-spoor wordt gekoppeld (bestaande vluchtgegevens worden bewaard; enkel ontbrekende vlucht- of motortijden worden aangevuld)."
 
 #: app/templates/aircraft/gps_import_review.html:126
 #: app/templates/pilots/gps_import_review.html:106
