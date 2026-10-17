@@ -143,6 +143,9 @@
     <div class="alert alert-warning py-2 mt-2 mb-2 small">
       <i class="bi bi-question-circle me-1"></i>
       {{ ngettext('Possible match found — please confirm below or choose "none of these".', 'Possible matches found — please choose the right one below, or "none of these".', cand_count, n=cand_count) }}
+      {% if seg.matched_near_date %}
+      <div class="mt-1">{{ _('Nothing is logged on this date, but a flight on the same route is logged within two days of it — possibly a date typo in the logbook. Linking it corrects its date to %(date)s.', date=seg.block_off_utc[:10]) }}</div>
+      {% endif %}
     </div>
     {% endif %}
 
