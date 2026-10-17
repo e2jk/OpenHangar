@@ -213,10 +213,11 @@ Every image CI publishes to `ghcr.io/e2jk/openhangar` is signed (keyless,
 via [Sigstore](https://www.sigstore.dev/)/cosign) and carries a
 [SLSA](https://slsa.dev/) build-provenance attestation, both tied to this
 repository's own `ci.yml` workflow publishing from a version-tag push,
-from the `ship`/Renovate pull request that builds and tests the
-exact image before it's published, or from a manual/automatic
-`workflow_dispatch` rebuild of `main` (e.g. the daily scan that rebuilds
-the published image to pick up a newly fixed OS package CVE) — a
+from the `ship` or Renovate security-fix pull request that builds and
+tests the exact image before it's published, or from a manual/automatic
+`workflow_dispatch` rebuild of `main` (the daily release of routine
+dependency updates, or the daily scan that rebuilds the published image to
+pick up a newly fixed OS package CVE) — a
 signature from anywhere else (a
 fork, a different workflow, a compromised registry credential) will not
 verify.

@@ -1,0 +1,60 @@
+name: Daily release
+
+# Routine Renovate updates no longer publish one release each (several land
+# every day): ci.yml fully tests each one on its own PR, but only a ship
+# PR, a Renovate security-fix PR or a workflow_dispatch rebuild of main
+# publishes (see the version job's publish_now in ci.yml). Once a day this
+# releases whatever has accumulated on main since the latest release, by
+# dispatching that same rebuild — it builds and tests main with all of the
+# day's updates together, then publishes it. Nothing new, nothing
+# dispatched.
+#
+# Renovate still opens its PRs as updates come out rather than in a batch
+# window: trickling in, each one merges onto a main that already has the
+# previous ones, instead of several open at once each needing a rebase
+# and a CI re-run after the others merge.
+
+on:
+  schedule:
+    - cron: '20 23 * * *'   # daily 23:20 UTC
+  workflow_dispatch: {}     # allow manual runs for testing
+
+permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, the job below opts into exactly the write scopes it needs
+
+concurrency:
+  group: daily-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release main if it changed since the latest release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read  # read the latest release and compare it with main
+      actions: write  # dispatch ci.yml's workflow_dispatch against main
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0  # all tags, for the latest release's commit
+
+      # Compared by content, not commit history: a release is published
+      # from its PR's own commit, which a rebase merge then re-creates on
+      # main under a new SHA — main never contains the release tag's commit
+      # itself, only the same tree. GITHUB_TOKEN can dispatch
+      # workflow_dispatch events (see image-scan.yml's own dispatch).
+      - name: Dispatch a release if main changed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          LAST_RELEASE=$(gh release view --json tagName --jq .tagName)
+          if git diff --quiet "${LAST_RELEASE}" HEAD; then
+            echo "::notice::main is unchanged since ${LAST_RELEASE} — nothing to release."
+            exit 0
+          fi
+          git diff --stat "${LAST_RELEASE}" HEAD | tail -1
+          gh workflow run ci.yml --ref main \
+            -f reason="Daily release of the changes on main since ${LAST_RELEASE}"
+          echo "::notice::main changed since ${LAST_RELEASE} — release build dispatched."
