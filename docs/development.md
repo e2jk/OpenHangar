@@ -725,6 +725,19 @@ at 3 attempts per PR so a PR that's stale for a real reason — an actual
 conflict, not just the ruleset cascade — surfaces for a human instead of
 being retried forever.
 
+Renovate PRs are fully tested like a `ship` PR, but a routine update
+doesn't publish a release of its own — several land every day.
+[`daily-release.yml`](../.github/workflows/daily-release.yml) releases
+them together at 23:20 UTC: if `main` differs from the latest release, it
+dispatches `ci.yml`'s rebuild of `main`, which tests the day's updates
+together and publishes them as one release. A `ship` push still releases
+straight away (taking along any updates merged since the last release),
+and so does Renovate's security-fix PR (labelled `security`), so a CVE
+fix never waits for the daily batch. Renovate still opens its PRs as
+updates come out, not in a batch window: trickling in, each merges onto a
+`main` that already has the previous ones, rather than several open at
+once each needing a rebase and a fresh CI run.
+
 If a bot PR can't be fixed by rebasing at all — e.g. a version bump that
 conflicts with another package's pin until *that* package releases a
 compatible version — add the `no-auto-rebase` label. The workflow skips

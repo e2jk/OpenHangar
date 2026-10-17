@@ -420,18 +420,22 @@ jobs:
     # so the version logic lives in exactly one place. Also decides whether
     # this run should assign a *real* version and publish on success
     # (publish_now) rather than a "development" placeholder:
-    #   publish_now = true  — a pull_request for ship/a bot branch (the one
-    #                         and only place that content gets tested — see
-    #                         this job's own if: below), a push to a
-    #                         version tag, or a manual workflow_dispatch
-    #                         targeting main (see the on: block above —
-    #                         rebuilds unchanged source, e.g. to pick up an
-    #                         upstream OS package fix). The exact image this
-    #                         run builds and tests is the one that gets
+    #   publish_now = true  — a pull_request for ship or a Renovate
+    #                         security-fix branch (see this job's own if:
+    #                         below), a push to a version tag, or a
+    #                         workflow_dispatch targeting main (see the on:
+    #                         block above — daily-release.yml's daily
+    #                         release of routine dependency updates, or a
+    #                         rebuild of unchanged source, e.g. to pick up
+    #                         an upstream OS package fix). The exact image
+    #                         this run builds and tests is the one that gets
     #                         tagged :latest and released — there's no
     #                         separate rebuild.
-    #   publish_now = false — any other pull_request (external contribution,
-    #                         validated but never published), a push to
+    #   publish_now = false — any other pull_request (an external
+    #                         contribution, or a routine Renovate update —
+    #                         fully tested here, then released with the
+    #                         day's other updates by daily-release.yml
+    #                         rather than one release each), a push to
     #                         some other branch (e.g. a WIP branch pushed
     #                         directly for its own CI feedback), or a manual
     #                         workflow_dispatch against anything but main.
@@ -506,11 +510,21 @@ jobs:
                   # next one. A false positive -- publishing content that
                   # never merges -- is the failure mode this exists to rule
                   # out, and is far worse.
-                  AUTO_MERGE_ARMED=$(gh pr view "${PR_NUMBER}" --json autoMergeRequest --jq '.autoMergeRequest != null')
-                  if [ "${AUTO_MERGE_ARMED}" = "true" ]; then
-                    PUBLISH_NOW=true
-                  else
+                  #
+                  # A routine Renovate update doesn't publish at all: several
+                  # land every day, and daily-release.yml releases them
+                  # together once a day instead of one release each. Only
+                  # Renovate's security-fix PR (labelled "security", see
+                  # vulnerabilityAlerts in renovate.json) still publishes
+                  # straight away — a CVE fix shouldn't wait for the batch.
+                  read -r AUTO_MERGE_ARMED IS_SECURITY < <(gh pr view "${PR_NUMBER}" --json autoMergeRequest,labels \
+                    --jq '"\(.autoMergeRequest != null) \([.labels[].name] | index("security") != null)"')
+                  if [ "${AUTO_MERGE_ARMED}" != "true" ]; then
                     echo "Auto-merge is not armed on this PR — not publishing."
+                  elif [ "${HEAD_REF}" != "ship" ] && [ "${IS_SECURITY}" != "true" ]; then
+                    echo "Routine dependency update — released with the next daily release, not on its own."
+                  else
+                    PUBLISH_NOW=true
                   fi
                   ;;
               esac
@@ -543,7 +557,12 @@ jobs:
 
             for attempt in 1 2 3 4 5; do
               LAST_TAG=$(git tag --list 'v[0-9]*' --sort=-version:refname | head -1)
-              if [ -n "$LAST_TAG" ] && [ -z "$(git log "${LAST_TAG}..HEAD" --oneline -- app/)" ]; then
+              # Compared by content, not commit history: a tag is its
+              # release PR's own commit, which the rebase merge re-creates
+              # on main under a new SHA — so "${LAST_TAG}..HEAD" would list
+              # that already-released commit again, and any app/ change it
+              # carried made the next dependency-only release a minor bump.
+              if [ -n "$LAST_TAG" ] && git diff --quiet "${LAST_TAG}" HEAD -- app/; then
                 BUMP="patch"
               else
                 BUMP="minor"
