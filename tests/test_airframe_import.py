@@ -190,6 +190,33 @@ class TestHelpers:
         )
         assert fields["flight_time"] == 1.5
 
+    def test_engine_counters_give_engine_time(self):
+        """The log has no engine start/stop times — the engine counters give
+        the engine time, stored alongside them. An implausible pair (end
+        before start) gives none."""
+        from flights.airframe_import import (
+            _build_airframe_fields,
+            _fields_to_flight_entry_kwargs,
+        )
+
+        mapping = {
+            "date": "date",
+            "es": "engine_counter_start",
+            "ee": "engine_counter_end",
+        }
+        col_index = {"date": 0, "es": 1, "ee": 2}
+        day = date(2025, 12, 22)
+        fields, _crew, _w = _build_airframe_fields(
+            ["2025-12-22", "1891.1", "1891.9"], mapping, col_index, day
+        )
+        kwargs = _fields_to_flight_entry_kwargs(fields)
+        assert kwargs["engine_time"] == 0.8
+        assert kwargs["engine_time_counter_start"] == 1891.1
+        fields, _crew, _w = _build_airframe_fields(
+            ["2025-12-22", "1891.9", "1891.1"], mapping, col_index, day
+        )
+        assert _fields_to_flight_entry_kwargs(fields)["engine_time"] is None
+
     def test_trailing_blank_rows_are_not_reported_as_subtotals(self):
         csv = _CSV + ",,,,,,,,\n,,,,,,,,\n"
         parsed = parse_file(csv.encode(), "airframe.csv")
