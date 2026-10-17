@@ -380,6 +380,12 @@ def _build_airframe_fields(
     ctr_end = fields.get("flight_counter_end")
     if ctr_start is not None and ctr_end is not None and ctr_end >= ctr_start:
         fields["flight_time"] = round(ctr_end - ctr_start, 1)
+    # Likewise the engine counters give the engine time — the log has no
+    # engine start/stop times to take it from.
+    eng_start = fields.get("engine_counter_start")
+    eng_end = fields.get("engine_counter_end")
+    if eng_start is not None and eng_end is not None and eng_end >= eng_start:
+        fields["engine_time"] = round(eng_end - eng_start, 1)
     return fields, crew_name, parse_warnings
 
 
@@ -404,6 +410,7 @@ def _fields_to_flight_entry_kwargs(fields: dict[str, Any]) -> dict[str, Any]:
         "flight_time_counter_end": fields.get("flight_counter_end"),
         "engine_time_counter_start": fields.get("engine_counter_start"),
         "engine_time_counter_end": fields.get("engine_counter_end"),
+        "engine_time": fields.get("engine_time"),
         "landing_count": fields.get("landing_count"),
         "passenger_count": fields.get("passenger_count"),
         "nature_of_flight": fields.get("nature_of_flight"),
