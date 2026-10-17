@@ -1294,6 +1294,7 @@ jobs:
       pages: write          # deploy-pages
       id-token: write       # OIDC token for cosign keyless signing, attestations, and deploy-pages
       attestations: write   # attest-build-provenance (image + SBOM)
+      pull-requests: read   # this run's own PR title and commits, for the release notes
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
@@ -1415,7 +1416,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
@@ -1458,14 +1459,30 @@ jobs:
           # skip condition) — so it's never included on its own, on any
           # release. Add its own line manually, in the same style as the
           # rest of the list, right before the "Full Changelog" footer.
+          # A ship PR usually batches several commits under one title (see
+          # auto-pr-merge.yml), so each commit gets its own sub-bullet. The
+          # title is read now rather than from the event payload: that
+          # workflow may have updated it since this run started.
           if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
-            SELF_LINE="* ${PR_TITLE} by @${PR_AUTHOR} in ${PR_URL}"
-            awk -v line="$SELF_LINE" '
-              /^\*\*Full Changelog\*\*/ && !inserted { print line; inserted=1 }
-              { print }
-              END { if (!inserted) print line }
-            ' /tmp/auto-notes.md > /tmp/auto-notes-with-self.md
-            mv /tmp/auto-notes-with-self.md /tmp/auto-notes.md
+            PR_TITLE=$(gh pr view "${PR_NUMBER}" --repo "${REPO}" --json title --jq .title)
+            {
+              echo "* ${PR_TITLE} by @${PR_AUTHOR} in ${PR_URL}"
+              SUBJECTS=$(gh pr view "${PR_NUMBER}" --repo "${REPO}" --json commits --jq '.commits[].messageHeadline')
+              if [ "$(printf '%s\n' "${SUBJECTS}" | grep -c .)" -gt 1 ]; then
+                printf '%s\n' "${SUBJECTS}" | sed 's/^/  * /'
+              fi
+            } > /tmp/self-lines.md
+            # Into the "What's Changed" list (created if no merged PR
+            # started one), not after the blank lines that end it.
+            python3 - <<'PY'
+          notes = open("/tmp/auto-notes.md").read()
+          lines = open("/tmp/self-lines.md").read().rstrip("\n")
+          head, footer, tail = notes.partition("**Full Changelog**")
+          head = head.rstrip("\n")
+          if "## What's Changed" not in head:
+              head = (head + "\n\n" if head else "") + "## What's Changed"
+          open("/tmp/auto-notes.md", "w").write(f"{head}\n{lines}\n\n{footer}{tail}")
+          PY
           fi
           {
             # shellcheck disable=SC2016  # backticks are literal markdown code-fences, not command substitution
