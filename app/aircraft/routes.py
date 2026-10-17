@@ -2244,6 +2244,14 @@ def _gps_import_create_segment(
                 old_track_id = existing.gps_track_id
                 existing.block_off_utc = block_off
                 existing.block_on_utc = block_on
+                # Block and airborne times are facts about the aircraft,
+                # whoever flew it (e.g. a previous owner's flights, confirmed
+                # with no pilot role) — fill whichever the logbook left
+                # empty, never replacing what it recorded.
+                if existing.engine_time is None:
+                    existing.engine_time = times.block_time
+                if existing.flight_time is None:
+                    existing.flight_time = times.airborne_time
                 gps_track = GpsTrack(
                     source_filename=file_metas[0]["original_filename"]
                     if len(file_metas) == 1
