@@ -12173,3 +12173,7 @@ msgstr "Cet envoi est trop volumineux (maximum %(mb)s Mo au total). Veuillez e
 
 msgid "A copy of each original file is kept unchanged and included in backups."
 msgstr "Une copie de chaque fichier original est conservée telle quelle et incluse dans les sauvegardes."
+
+#, python-format
+msgid "Nothing is logged on this date, but a flight on the same route is logged within two days of it — possibly a date typo in the logbook. Linking it corrects its date to %(date)s."
+msgstr "Aucun vol n'est enregistré à cette date, mais un vol sur le même trajet l'est à deux jours près — peut-être une faute de frappe dans la date du carnet. Le lier corrige sa date au %(date)s."

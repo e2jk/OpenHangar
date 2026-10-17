@@ -82,6 +82,7 @@ from aircraft.co_owner_form_parsing import (  # pyright: ignore[reportMissingImp
     parse_reserve_fields,
 )
 from aircraft.gps_import import (  # pyright: ignore[reportMissingImports]
+    apply_gps_date,
     detect_segments,
     logged_flight_windows,
     merge_and_sort,
@@ -2118,9 +2119,16 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
 
     from flights.airframe_import import _CANDIDATE_MIN_SCORE
 
-    from aircraft.gps_import import _score_gps_candidate, score_gps_candidates
+    from aircraft.gps_import import (
+        _score_gps_candidate,
+        near_date_range,
+        rank_near_date_candidates,
+        score_gps_candidates,
+    )
 
     _BLOCK_TOLERANCE = _td(minutes=15)
+    scorer = partial(_score_gps_candidate, offset_hours=float(ac.flight_counter_offset))
+    unmatched: list[tuple[dict[str, Any], dict[str, Any], Any]] = []
 
     for seg in full_segs:
         block_off = _dt.fromisoformat(seg["block_off_utc"])
@@ -2175,11 +2183,9 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
             Flight.block_off_utc.is_(None),
         ).all()
         candidates = score_gps_candidates(
-            fields,
-            same_day,
-            partial(_score_gps_candidate, offset_hours=float(ac.flight_counter_offset)),
-            _CANDIDATE_MIN_SCORE,
+            fields, same_day, scorer, _CANDIDATE_MIN_SCORE
         )
+        seg["matched_near_date"] = False
         if candidates:
             seg["matched_flight_id"] = candidates[0].id
             seg["matched_flight_str"] = None
@@ -2192,6 +2198,32 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
             seg["matched_flight_str"] = None
             seg["matched_has_existing_track"] = False
             seg["linked_pilot_entries"] = []
+            if not seg["is_ground_only"]:
+                unmatched.append((seg, fields, block_off.date()))
+
+    # Nothing on the GPS date: a flight on the same route logged a day or
+    # two off may carry a date typo — offered for an explicit choice, never
+    # matched on its own, and not one another segment already matches.
+    claimed = {s["matched_flight_id"] for s in full_segs if s["matched_flight_id"]}
+    for seg, fields, gps_date in unmatched:
+        first_day, last_day = near_date_range(gps_date)
+        near = rank_near_date_candidates(
+            fields,
+            gps_date,
+            Flight.query.filter(
+                Flight.aircraft_id == aircraft_id,
+                Flight.date.between(first_day, last_day),
+                Flight.block_off_utc.is_(None),
+                Flight.id.notin_(claimed),
+            ).all(),
+            scorer,
+            _CANDIDATE_MIN_SCORE,
+        )
+        if near:
+            seg["matched_flight_id"] = near[0].id
+            seg["matched_ambiguous"] = True
+            seg["matched_near_date"] = True
+            seg["matched_candidates"] = [_gps_candidate_dict(c) for c in near]
 
     tmp_dir = _gps_tmp_dir()
     state["segments"] = [_segment_for_session(s, tmp_dir) for s in full_segs]
@@ -2258,6 +2290,7 @@ def _gps_import_create_segment(
                 old_track_id = existing.gps_track_id
                 existing.block_off_utc = block_off
                 existing.block_on_utc = block_on
+                apply_gps_date(existing, seg, block_off)
                 # Block and airborne times are facts about the aircraft,
                 # whoever flew it (e.g. a previous owner's flights, confirmed
                 # with no pilot role) — fill whichever the logbook left

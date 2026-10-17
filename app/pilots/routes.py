@@ -2056,6 +2056,42 @@ def _pilot_fuzzy_match_segment(
     )
 
 
+def _pilot_near_date_match_segment(
+    user_id: int, seg: dict[str, Any], block_off: "_datetime", claimed: set[int]
+) -> list["Flight"]:
+    """Last resort when nothing matched on the GPS date: the pilot's flights
+    on the same route logged a day or two off — a typo in a hand-entered
+    logbook date (see aircraft.gps_import.rank_near_date_candidates)."""
+    from aircraft.gps_import import near_date_range, rank_near_date_candidates
+    from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
+
+    from pilots.logbook_import import (
+        _CANDIDATE_MIN_SCORE,
+        _score_candidate,
+    )
+
+    gps_date = block_off.date()
+    first_day, last_day = near_date_range(gps_date)
+    kwargs = {
+        "departure_icao": seg.get("departure_icao"),
+        "arrival_icao": seg.get("arrival_icao"),
+        "departure_time": block_off.time(),
+        "single_pilot_se": seg.get("flight_time_rounded_h"),
+    }
+    return rank_near_date_candidates(
+        kwargs,
+        gps_date,
+        Flight.query.filter(
+            or_(Flight.pic_user_id == user_id, Flight.second_crew_user_id == user_id),
+            Flight.date.between(first_day, last_day),
+            Flight.block_off_utc.is_(None),
+            Flight.id.notin_(claimed),
+        ).all(),
+        _score_candidate,
+        _CANDIDATE_MIN_SCORE,
+    )
+
+
 def _pilot_seg_match_dict(
     matches: list[Any], force_ambiguous: bool = False
 ) -> dict[str, Any]:
@@ -2302,12 +2338,25 @@ def pilot_gps_import_review() -> ResponseReturnValue:
             matches = _pilot_fuzzy_match_segment(uid, seg, block_off, block_on)
             is_fuzzy = bool(matches)
         seg.update(_pilot_seg_match_dict(matches, force_ambiguous=is_fuzzy))
+        seg["matched_near_date"] = False
         if seg.get("matched_flight_id") and not seg.get("matched_ambiguous"):
             seg["linked_pilot_entries"] = _linked_pilot_entries(
                 seg["matched_flight_id"], uid
             )
         else:
             seg["linked_pilot_entries"] = []
+
+    # Nothing on the GPS date: offer a same-route flight logged a day or two
+    # off (a date typo), never one another segment already matches.
+    claimed = {s["matched_flight_id"] for s in full_segs if s["matched_flight_id"]}
+    for seg in full_segs:
+        if seg["matched_flight_id"] or seg["is_ground_only"]:
+            continue
+        block_off = _datetime.fromisoformat(seg["block_off_utc"])
+        near = _pilot_near_date_match_segment(uid, seg, block_off, claimed)
+        if near:
+            seg.update(_pilot_seg_match_dict(near, force_ambiguous=True))
+            seg["matched_near_date"] = True
 
     tmp_dir = _gps_tmp_dir()
     state["segments"] = [_segment_for_session(s, tmp_dir) for s in full_segs]
@@ -2345,7 +2394,7 @@ def pilot_gps_import_review() -> ResponseReturnValue:
 @require_pilot_access
 def pilot_gps_import_confirm_one() -> ResponseReturnValue:
 
-    from aircraft.gps_import import segment_times
+    from aircraft.gps_import import apply_gps_date, segment_times
     from aircraft.routes import _gps_cleanup, _load_segment_geojson
 
     uid = _current_user_id()
@@ -2469,6 +2518,7 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
             existing.gps_track_id = gps_track.id
             existing.block_off_utc = block_off
             existing.block_on_utc = block_on
+            apply_gps_date(existing, seg, block_off)
             if old_track_id and old_track_id != gps_track.id:
                 # Re-confirming an already-linked match (the review page
                 # warns this replaces the track) — drop the superseded

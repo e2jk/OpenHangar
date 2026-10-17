@@ -18,7 +18,7 @@ import os
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import UTC, datetime, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from typing import Any
 from xml.etree.ElementTree import ParseError as _ETParseError
@@ -37,6 +37,9 @@ _FLIGHT_SUSTAIN_S = 30.0  # seconds above 30kt required to classify as "flight"
 _SEGMENT_GAP_S = 300.0  # 5 min of slow speed or time gap → segment break
 _MAX_ICAO_DIST_KM = 5.0  # max distance for nearest-airport match
 _MAX_TRACK_POINTS = 500  # downsample threshold for GeoJSON storage
+# How many days from a GPS segment's date a hand-entered logbook date may be
+# off (a typo) and the flight still be offered as its possible match.
+NEAR_DATE_DAYS = 2
 # How far a GPS segment may start before / end after a logbook flight's
 # block times and still be part of what that flight records.
 _LOGGED_WINDOW_TOLERANCE = timedelta(minutes=15)
@@ -938,6 +941,51 @@ def score_gps_candidates(
     ]
     scored.sort(key=lambda t: -t[0])
     return [c for _score, c in scored]
+
+
+def near_date_range(gps_date: date) -> tuple[date, date]:
+    """First and last logbook date a near-date match may carry."""
+    span = timedelta(days=NEAR_DATE_DAYS)
+    return gps_date - span, gps_date + span
+
+
+def rank_near_date_candidates(
+    fields: dict[str, Any],
+    gps_date: date,
+    candidates: list[Any],
+    scorer: Callable[[dict[str, Any], Any], float],
+    min_score: int,
+) -> list[Any]:
+    """Flights logged on another date close to a GPS segment's — a typo in
+    a hand-entered logbook date — ranked closest date first, then by score.
+
+    The GPS date is the reliable one, so this is only a fallback for a
+    segment nothing matched on its own date, and stricter than a same-day
+    match: the route must be known and identical at both ends, and the
+    date at most NEAR_DATE_DAYS days off. A flight years away never
+    qualifies, whatever else it shares.
+    """
+    dep = fields.get("departure_icao")
+    arr = fields.get("arrival_icao")
+    if not dep or not arr:
+        return []
+    pool = [
+        c
+        for c in candidates
+        if c.date != gps_date
+        and abs((c.date - gps_date).days) <= NEAR_DATE_DAYS
+        and c.departure_icao == dep
+        and c.arrival_icao == arr
+    ]
+    ranked = score_gps_candidates(fields, pool, scorer, min_score)
+    return sorted(ranked, key=lambda c: abs((c.date - gps_date).days))
+
+
+def apply_gps_date(flight: Any, seg: dict[str, Any], block_off: datetime) -> None:
+    """Confirming a near-date match: the logbook date was the typo — take
+    the GPS one."""
+    if seg.get("matched_near_date"):
+        flight.date = block_off.date()
 
 
 def _score_gps_candidate(

@@ -12173,3 +12173,7 @@ msgstr "Deze upload is te groot (maximaal %(mb)s MB in totaal). Upload de bestan
 
 msgid "A copy of each original file is kept unchanged and included in backups."
 msgstr "Een kopie van elk origineel bestand wordt ongewijzigd bewaard en meegenomen in de back-ups."
+
+#, python-format
+msgid "Nothing is logged on this date, but a flight on the same route is logged within two days of it — possibly a date typo in the logbook. Linking it corrects its date to %(date)s."
+msgstr "Op deze datum is niets gelogd, maar een vlucht op hetzelfde traject wel binnen twee dagen ervan — mogelijk een tikfout in de datum van het logboek. Door ze te koppelen wordt de datum gecorrigeerd naar %(date)s."
