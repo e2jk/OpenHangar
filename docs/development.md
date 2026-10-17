@@ -676,6 +676,11 @@ a change:
   recorded, which is a no-op as far as `main` is concerned: the content it
   receives has already been fully tested and already published.
 
+  The PR is named after the batch rather than its newest commit: the
+  oldest `feat:` commit, else the oldest commit, plus "(+N more)". Its
+  description and the release notes list every commit in it, so the notes
+  show everything the release contains.
+
   Since a rebase merge gives `main` new commit SHAs for the same content, a
   local branch that still holds the pre-rebase commits is stale the moment
   the merge lands — pushing it again as-is would re-submit already-merged

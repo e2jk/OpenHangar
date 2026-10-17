@@ -111,14 +111,34 @@ jobs:
           GH_REPO: ${{ github.repository }}
           HEAD_SHA: ${{ github.sha }}
         run: |
+          # The title names the whole batch, not just its newest commit
+          # (often a small follow-up fix): the oldest feat: commit if there
+          # is one, else the oldest commit, plus how many more there are.
+          # The body lists every commit. Recomputed on every push to ship,
+          # so shipping again while the PR is still open keeps both
+          # current. The release notes list the commits too (see ci.yml's
+          # "Create GitHub Release" step).
+          subjects=$(gh api "repos/$GH_REPO/compare/main...$HEAD_SHA" \
+            --jq '.commits[].commit.message | split("\n")[0]')
+          count=$(printf '%s\n' "$subjects" | grep -c .)
+          title=$(printf '%s\n' "$subjects" | grep -m1 -E '^feat(\([^)]*\))?!?:' \
+            || printf '%s\n' "$subjects" | head -1)
+          title=${title:-ship}
+          if [ "$count" -gt 1 ]; then
+            title="$title (+$((count - 1)) more)"
+          fi
+          # shellcheck disable=SC2016  # backticks are literal markdown code formatting, not command substitution
+          body=$(printf 'Auto-opened from `ship` — will merge once CI passes.\n\n## Commits\n\n'
+                 printf '%s\n' "$subjects" | sed 's/^/- /')
+
           pr_number=$(gh pr list --head ship --base main --state open --json number --jq '.[0].number // empty')
           if [ -z "$pr_number" ]; then
-            title=$(gh api "repos/$GH_REPO/commits/$HEAD_SHA" --jq '.commit.message' | head -1)
-            gh pr create --base main --head ship --title "${title:-ship}" \
-              --body "Auto-opened from \`ship\` — will merge once CI passes."
+            gh pr create --base main --head ship --title "$title" --body "$body"
             pr_number=$(gh pr list --head ship --base main --state open --json number --jq '.[0].number')
+          else
+            gh pr edit "$pr_number" --title "$title" --body "$body"
           fi
-          echo "PR #$pr_number"
+          echo "PR #$pr_number: $title"
 
           # Right after creation, GitHub hasn't always finished computing the
           # PR's mergeability yet — `gh pr merge --auto` can transiently fail
