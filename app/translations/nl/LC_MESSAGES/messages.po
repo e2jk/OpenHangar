@@ -1486,16 +1486,6 @@ msgstr "Overgeslagen rijen: %(detail)s"
 msgid "All flights in this file were already in this aircraft's log — nothing new was imported."
 msgstr "Alle vluchten in dit bestand stonden al in het logboek van dit toestel — er is niets nieuws geïmporteerd."
 
-#: app/flights/routes.py:2244
-#, python-format
-msgid "Import complete: %(imported)d new flights imported, %(duplicates)d rows were already in this aircraft's log and were skipped, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
-msgstr "Import voltooid: %(imported)d nieuwe vluchten geïmporteerd, %(duplicates)d rijen stonden al in het logboek van dit toestel en zijn overgeslagen, %(subtotals)d subtotaalregels overgeslagen, %(skipped)d regels konden niet worden gelezen."
-
-#: app/flights/routes.py:2258
-#, python-format
-msgid "Import complete: %(imported)d flights imported, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
-msgstr "Import voltooid: %(imported)d vluchten geïmporteerd, %(subtotals)d subtotaalregels overgeslagen, %(skipped)d regels konden niet worden gelezen."
-
 #: app/flights/routes.py:2280
 #, python-format
 msgid "row %(row)d: %(kind)s counter starts at %(got).1f but the previous entry ended at %(prev).1f"
@@ -2241,16 +2231,6 @@ msgstr "Rijen die al in uw logboek staan, overgeslagen: %(detail)s"
 #: app/pilots/routes.py:1546
 msgid "All entries in this file were already in your logbook — nothing new was imported."
 msgstr "Alle vermeldingen in dit bestand stonden al in uw logboek — er is niets nieuws geïmporteerd."
-
-#: app/pilots/routes.py:1554
-#, python-format
-msgid "Import complete: %(imported)d new entries imported, %(duplicates)d rows were already in your logbook and were skipped, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
-msgstr "Import voltooid: %(imported)d nieuwe vermeldingen geïmporteerd, %(duplicates)d rijen stonden al in uw logboek en zijn overgeslagen, %(subtotals)d subtotaalrijen overgeslagen, %(skipped)d rijen konden niet worden gelezen."
-
-#: app/pilots/routes.py:1567
-#, python-format
-msgid "Import complete: %(imported)d entries imported, %(subtotals)d subtotal rows skipped, %(skipped)d rows could not be parsed."
-msgstr "Import voltooid: %(imported)d vermeldingen geïmporteerd, %(subtotals)d subtotaalrijen overgeslagen, %(skipped)d rijen konden niet worden gelezen."
 
 #: app/pilots/routes.py:1578 app/pilots/routes.py:1694
 #, python-format
@@ -12177,3 +12157,57 @@ msgstr "Een kopie van elk origineel bestand wordt ongewijzigd bewaard en meegeno
 #, python-format
 msgid "Nothing is logged on this date, but a flight on the same route is logged within two days of it — possibly a date typo in the logbook. Linking it corrects its date to %(date)s."
 msgstr "Op deze datum is niets gelogd, maar een vlucht op hetzelfde traject wel binnen twee dagen ervan — mogelijk een tikfout in de datum van het logboek. Door ze te koppelen wordt de datum gecorrigeerd naar %(date)s."
+
+#, python-format
+msgid "Import complete: one new flight imported."
+msgid_plural "Import complete: %(n)d new flights imported."
+msgstr[0] "Import voltooid: één nieuwe vlucht geïmporteerd."
+msgstr[1] "Import voltooid: %(n)d nieuwe vluchten geïmporteerd."
+
+#, python-format
+msgid "One row was already in this aircraft's log and was skipped."
+msgid_plural "%(n)d rows were already in this aircraft's log and were skipped."
+msgstr[0] "Eén rij stond al in het logboek van dit toestel en werd overgeslagen."
+msgstr[1] "%(n)d rijen stonden al in het logboek van dit toestel en werden overgeslagen."
+
+#, python-format
+msgid "Import complete: one flight imported."
+msgid_plural "Import complete: %(n)d flights imported."
+msgstr[0] "Import voltooid: één vlucht geïmporteerd."
+msgstr[1] "Import voltooid: %(n)d vluchten geïmporteerd."
+
+msgid "Import complete: no flights imported."
+msgstr "Import voltooid: geen vluchten geïmporteerd."
+
+#, python-format
+msgid "Import complete: one new entry imported."
+msgid_plural "Import complete: %(n)d new entries imported."
+msgstr[0] "Import voltooid: één nieuwe vermelding geïmporteerd."
+msgstr[1] "Import voltooid: %(n)d nieuwe vermeldingen geïmporteerd."
+
+#, python-format
+msgid "One row was already in your logbook and was skipped."
+msgid_plural "%(n)d rows were already in your logbook and were skipped."
+msgstr[0] "Eén rij stond al in uw logboek en werd overgeslagen."
+msgstr[1] "%(n)d rijen stonden al in uw logboek en werden overgeslagen."
+
+#, python-format
+msgid "Import complete: one entry imported."
+msgid_plural "Import complete: %(n)d entries imported."
+msgstr[0] "Import voltooid: één vermelding geïmporteerd."
+msgstr[1] "Import voltooid: %(n)d vermeldingen geïmporteerd."
+
+msgid "Import complete: no entries imported."
+msgstr "Import voltooid: geen vermeldingen geïmporteerd."
+
+#, python-format
+msgid "One subtotal row skipped."
+msgid_plural "%(n)d subtotal rows skipped."
+msgstr[0] "Eén subtotaalrij overgeslagen."
+msgstr[1] "%(n)d subtotaalrijen overgeslagen."
+
+#, python-format
+msgid "One row could not be parsed."
+msgid_plural "%(n)d rows could not be parsed."
+msgstr[0] "Eén rij kon niet worden gelezen."
+msgstr[1] "%(n)d rijen konden niet worden gelezen."

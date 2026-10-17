@@ -704,7 +704,7 @@ class TestDuplicateDetection:
             flashes = sess.get("_flashes", [])
         assert not any(cat == "warning" for cat, _msg in flashes)
         success_messages = [msg for cat, msg in flashes if cat == "success"]
-        assert any("1 new flights imported" in msg for msg in success_messages)
+        assert any("one new flight imported" in msg for msg in success_messages)
 
     def test_identical_same_day_circuits_all_imported_once(self, app, client):
         """A day of identical training circuits (same date, route, duration
@@ -1992,3 +1992,22 @@ class TestColonNotationCounters:
             entry = Flight.query.filter_by(aircraft_id=acid).one()
             assert float(entry.engine_time_counter_start) == 972.2
             assert float(entry.engine_time_counter_end) == 972.6
+
+
+class TestImportSummaryWording:
+    """The logbook import summaries pluralise each count on its own ("One
+    row could not be parsed.", not "1 rows …") and leave out what's zero."""
+
+    def test_skipped_rows_summary(self, app):
+        from types import SimpleNamespace
+
+        from flights.routes import _skipped_rows_summary
+
+        with app.test_request_context():
+            assert _skipped_rows_summary(SimpleNamespace(subtotals=0, skipped=[])) == []
+            assert _skipped_rows_summary(
+                SimpleNamespace(subtotals=1, skipped=[("619", "date")])
+            ) == ["One subtotal row skipped.", "One row could not be parsed."]
+            assert _skipped_rows_summary(
+                SimpleNamespace(subtotals=3, skipped=[1, 2])
+            ) == ["3 subtotal rows skipped.", "2 rows could not be parsed."]
