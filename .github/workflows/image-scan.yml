@@ -20,7 +20,16 @@ name: Published image vulnerability scan
 on:
   schedule:
     - cron: '37 4 * * *'   # daily 04:37 UTC — off-peak, distinct from the other scheduled scans
-  workflow_dispatch: {}     # allow manual runs for testing
+  # Also dispatched by ci.yml's publish job right after every release, so
+  # the Security tab (which only tracks refs/heads/main) reflects the new
+  # :latest within minutes — most releases are published from a
+  # pull_request run, whose own scan results never land on main.
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'Release tag that was just published (set by ci.yml publish; leave empty for a manual scan)'
+        required: false
+        default: ''
 
 permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, the job below opts into exactly the write scopes it needs
 
@@ -36,6 +45,7 @@ jobs:
     permissions:
       security-events: write  # Trivy SARIF upload
       actions: write          # dispatch ci.yml's workflow_dispatch on failure, see below
+      contents: write         # dependency snapshot submission (Dependabot alerts), see below
     steps:
       # JSON, not SARIF, is the primary output now — it's the one format that
       # gives each finding a structured PkgName (SARIF buries it in a
@@ -92,17 +102,39 @@ jobs:
         uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4
         with:
           sarif_file: trivy-latest-results.sarif
-          # Same category as ci.yml's own "docker-validate" Trivy scan (of
-          # openhangar:ci, the about-to-be-published candidate). Both scans
-          # track vulnerabilities in effectively the same image over time —
-          # a distinct category here would keep two parallel, never-merged
-          # alert histories for the same CVEs, doubling every entry in the
-          # Security tab. Sharing one category lets whichever scan (this
-          # daily one, or the next push's docker-validate) ran most
-          # recently keep the alert set in sync, so a CVE fixed by either
-          # path gets marked "fixed" instead of lingering "open" forever
-          # in the other path's own separate history.
+          # This job is the only Trivy writer for refs/heads/main: ci.yml's
+          # docker-validate uploads (same category) only for PR/branch refs.
+          # Code scanning tracks alerts per (workflow, job, category), so a
+          # second writer on main would keep its own last results open
+          # until it happened to run again — which is exactly how fixed
+          # CVEs used to linger after a release.
           category: trivy
+
+      # Dependabot alerts for the image come from this dependency snapshot,
+      # and Dependabot only reads snapshots filed under the default branch.
+      # ci.yml's publish job submits one too, but under its own run's ref —
+      # refs/pull/N/merge for a release published from a PR — so it never
+      # replaced main's. Submitting from here (a main-ref run) after every
+      # release and daily keeps the alerts in step with :latest.
+      #
+      # The correlator must stay "CI_publish" — the value sbom-action
+      # derives (<workflow name>_<job id>) for ci.yml's publish job: a new
+      # snapshot only supersedes earlier ones with the same correlator, so
+      # a different value here would leave publish's older main snapshots
+      # (and every alert they raised) in place forever. The input isn't
+      # declared in sbom-action's action.yml (the runner logs an
+      # "Unexpected input" warning), but its code reads it via getInput.
+      - name: Submit dependency snapshot of the published image
+        if: always()
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          image: ghcr.io/e2jk/openhangar:latest
+          format: cyclonedx-json
+          output-file: sbom-latest.cyclonedx.json
+          upload-artifact: false
+          upload-release-assets: false
+          dependency-snapshot: true
+          dependency-snapshot-correlator: CI_publish
 
       # "ignore-unfixed: true" above means every finding here has a fix
       # published upstream *somewhere* — but "somewhere" isn't always this
@@ -144,8 +176,11 @@ jobs:
       # dispatch itself fails (e.g. API error), that's the one case this
       # job should still surface as a failure — a human is needed, since
       # neither today's nor tomorrow's run will retry it on their own.
+      # Not after a release (inputs.release set): that :latest was built
+      # minutes ago, so a rebuild would pick up nothing new — and since
+      # every release dispatches this scan again, it could only loop.
       - name: Trigger a rebuild to pick up the fix
-        if: always() && steps.trivy.outcome == 'failure' && steps.pinned-check.outputs.matched == ''
+        if: always() && steps.trivy.outcome == 'failure' && steps.pinned-check.outputs.matched == '' && inputs.release == ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
