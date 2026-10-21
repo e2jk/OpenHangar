@@ -72,9 +72,20 @@ jobs:
       # network. The severity/ignore-unfixed filters were already applied
       # when that report was produced, so the SARIF this emits matches
       # exactly what a direct SARIF-format scan would have produced.
+      #
+      # Only OS-package results go into the SARIF (Result.Class ==
+      # "os-pkgs"), matching ci.yml's docker-validate upload into the same
+      # category: Python packages are hash-pinned in requirements/
+      # runtime.txt and already reported by pip-audit and OSV-Scanner, so
+      # a Trivy copy of each CVE only tripled every alert. The full JSON
+      # (library findings included) still drives the pinned-package check
+      # below.
       - name: Convert the JSON report to SARIF
         if: always() && hashFiles('trivy-latest-results.json') != ''
-        run: trivy convert --format sarif --output trivy-latest-results.sarif trivy-latest-results.json
+        run: |
+          jq '.Results |= ((. // []) | map(select(.Class == "os-pkgs")))' \
+            trivy-latest-results.json > trivy-latest-os-results.json
+          trivy convert --format sarif --output trivy-latest-results.sarif trivy-latest-os-results.json
 
       - name: Upload Trivy results to GitHub Security tab
         if: always() && hashFiles('trivy-latest-results.sarif') != ''
