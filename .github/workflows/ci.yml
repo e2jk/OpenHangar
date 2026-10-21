@@ -792,7 +792,7 @@ jobs:
           persist-credentials: false
 
       - name: Download image artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: openhangar-ci
 
@@ -1053,7 +1053,7 @@ jobs:
         run: .venv/bin/playwright install chromium --with-deps
 
       - name: Download image artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: openhangar-ci
 
@@ -1195,7 +1195,7 @@ jobs:
         run: .venv/bin/playwright install chromium --with-deps
 
       - name: Download image artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: openhangar-ci
 
@@ -1311,7 +1311,7 @@ jobs:
           persist-credentials: false
 
       - name: Download version artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: version
 
@@ -1504,7 +1504,7 @@ jobs:
             "sbom-${GIT_SHA}.cyclonedx.json.intoto.jsonl#SBOM provenance (SLSA)"
 
       - name: Download site content artifact
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           name: pages-content
           path: _site
