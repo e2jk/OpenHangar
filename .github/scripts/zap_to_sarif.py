@@ -6,7 +6,8 @@ semantically appropriate source file:
   - /static/...  →  app/static/... (the actual static file)
   - everything else  →  app/init.py (where _security_headers() configures CSP/headers)
 
-The scanned URL is preserved in logicalLocations for context.
+Instances are grouped into one result per (rule, mapped file); the scanned
+URLs are listed in the message and preserved in logicalLocations.
 
 Rules marked IGNORE in .zap/rules.tsv are excluded from the SARIF output so
 they do not clutter the GitHub Security tab.
@@ -24,15 +25,20 @@ code scanning treat them as one tool with an incomplete config on every PR
 ("1 configuration not found"), not two independently-tracked tools.
 """
 
+import hashlib
 import json
 import os
 import re
 import sys
+from typing import Any
 from urllib.parse import urlparse
 
 _RISK_TO_LEVEL = {0: "note", 1: "note", 2: "warning", 3: "error"}
 
 _FALLBACK_FILE = "app/init.py"
+
+_MAX_MESSAGE = 1000
+_MAX_URLS_LISTED = 10
 
 
 def _first_url(html_text: str) -> str:
@@ -76,6 +82,8 @@ def convert(
     rules: list[dict] = []
     results: list[dict] = []
     seen_rules: set[str] = set()
+    groups: dict[tuple[str, str], dict[str, Any]] = {}
+    instances = 0
     skipped = 0
 
     for site in zap.get("site", []):
@@ -103,34 +111,66 @@ def convert(
 
             for inst in alert.get("instances", []):
                 url = inst.get("uri", site.get("@name", ""))
-                evidence = inst.get("evidence", "")
-                msg = alert.get("desc", "")
-                if evidence:
-                    msg = f"{msg}\n\nEvidence: {evidence}"
-                results.append(
+                group = groups.setdefault(
+                    (rule_id, _url_to_file(url)),
                     {
-                        "ruleId": rule_id,
                         "level": level,
-                        "message": {"text": msg[:1000]},
-                        "locations": [
-                            {
-                                # physicalLocation required by GitHub Code Scanning.
-                                # Map URL to nearest source file; see _url_to_file().
-                                "physicalLocation": {
-                                    "artifactLocation": {
-                                        "uri": _url_to_file(url),
-                                        "uriBaseId": "%SRCROOT%",
-                                    },
-                                    "region": {"startLine": 1},
-                                },
-                                # logicalLocations preserves the actual scanned URL.
-                                "logicalLocations": [
-                                    {"fullyQualifiedName": url, "kind": "url"}
-                                ],
-                            }
+                        "desc": alert.get("desc", ""),
+                        "urls": set(),
+                        "evidence": "",
+                    },
+                )
+                group["urls"].add(url)
+                instances += 1
+                if not group["evidence"]:
+                    group["evidence"] = inst.get("evidence", "")
+
+    # One result per (rule, mapped file), not one per scanned URL. Every
+    # non-static URL maps to the same _FALLBACK_FILE line, so per-URL
+    # results all shared one primaryLocationLineHash, and upload-sarif
+    # disambiguates identical hashes with a running ":N" suffix — one ZAP
+    # rule seen on 30 URLs became 30 alerts, renumbered (closed and
+    # reopened) whenever crawl order changed. The stable, explicit
+    # partialFingerprints below also keep distinct rules on that same line
+    # from being numbered against each other.
+    for (rule_id, path), group in sorted(groups.items()):
+        urls = sorted(group["urls"])
+        shown = "\n".join(f"- {u}" for u in urls[:_MAX_URLS_LISTED])
+        more = len(urls) - _MAX_URLS_LISTED
+        if more > 0:
+            shown += f"\n- … and {more} more"
+        msg = group["desc"]
+        if group["evidence"]:
+            msg += f"\n\nEvidence: {group['evidence']}"
+        # Truncate the description part only, so the URL list always survives.
+        msg = msg[: max(200, _MAX_MESSAGE - len(shown) - 40)]
+        msg += f"\n\nAffected URLs ({len(urls)}):\n{shown}"
+        fingerprint = hashlib.sha256(f"{rule_id}:{path}".encode()).hexdigest()[:32]
+        results.append(
+            {
+                "ruleId": rule_id,
+                "level": group["level"],
+                "message": {"text": msg},
+                "partialFingerprints": {"primaryLocationLineHash": fingerprint},
+                "locations": [
+                    {
+                        # physicalLocation required by GitHub Code Scanning.
+                        # Map URL to nearest source file; see _url_to_file().
+                        "physicalLocation": {
+                            "artifactLocation": {
+                                "uri": path,
+                                "uriBaseId": "%SRCROOT%",
+                            },
+                            "region": {"startLine": 1},
+                        },
+                        # logicalLocations preserves the actual scanned URLs.
+                        "logicalLocations": [
+                            {"fullyQualifiedName": u, "kind": "url"} for u in urls
                         ],
                     }
-                )
+                ],
+            }
+        )
 
     sarif = {
         "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
@@ -154,7 +194,8 @@ def convert(
         json.dump(sarif, f, indent=2)
 
     print(
-        f"Converted {len(results)} ZAP instance(s) across {len(rules)} rule(s) → {sarif_path}"
+        f"Converted {instances} ZAP instance(s) into {len(results)} result(s)"
+        f" across {len(rules)} rule(s) → {sarif_path}"
         + (f"  ({skipped} suppressed by rules.tsv)" if skipped else "")
     )
 
