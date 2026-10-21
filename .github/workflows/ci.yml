@@ -958,6 +958,13 @@ jobs:
           image-ref: openhangar:ci
           format: sarif
           output: trivy-results.sarif
+          # OS packages only in the Security tab: every Python package in
+          # the image is hash-pinned in requirements/runtime.txt, which
+          # pip-audit and OSV-Scanner already report on — uploading Trivy's
+          # own copy of the same CVEs turned each one into three alerts.
+          # The "newly introduced vulnerabilities" gate below still runs
+          # its own full (os + library) scan, so coverage is unchanged.
+          vuln-type: os
           severity: HIGH,CRITICAL
           ignore-unfixed: 'true'
           exit-code: '0'
