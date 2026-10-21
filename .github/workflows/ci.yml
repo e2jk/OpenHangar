@@ -970,7 +970,14 @@ jobs:
           exit-code: '0'
 
       - name: Upload Trivy results to GitHub Security tab
-        if: always() && hashFiles('trivy-results.sarif') != ''
+        # Never for refs/heads/main (a workflow_dispatch release build):
+        # main's Trivy state is owned by image-scan.yml, which scans the
+        # actually-published :latest — daily, and right after every
+        # release via publish's "Refresh the Security tab" step. Alerts
+        # are tracked per (workflow, job, category), so a second writer on
+        # main kept its own last results open until it happened to run
+        # again, even after a release from a PR run had fixed them.
+        if: always() && hashFiles('trivy-results.sarif') != '' && github.ref != 'refs/heads/main'
         uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4
         with:
           sarif_file: trivy-results.sarif
@@ -1302,6 +1309,7 @@ jobs:
       id-token: write       # OIDC token for cosign keyless signing, attestations, and deploy-pages
       attestations: write   # attest-build-provenance (image + SBOM)
       pull-requests: read   # this run's own PR title and commits, for the release notes
+      actions: write        # dispatch image-scan.yml to refresh the Security tab after release
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
@@ -1502,6 +1510,32 @@ jobs:
             "sbom-${GIT_SHA}.cyclonedx.json#SBOM (CycloneDX JSON)" \
             "sbom-${GIT_SHA}.cyclonedx.json.sigstore.json#SBOM signature (Sigstore)" \
             "sbom-${GIT_SHA}.cyclonedx.json.intoto.jsonl#SBOM provenance (SLSA)"
+
+      # Bring the Security tab in sync with the release just published.
+      # Code-scanning and Dependabot alerts are tracked per git ref, and
+      # only refs/heads/main counts for the Security tab — but most
+      # releases are published from a pull_request run (ship, or a
+      # Renovate security fix), whose Trivy SARIF and dependency snapshot
+      # are filed under refs/pull/N/merge. Without this, a CVE fixed by a
+      # release stayed "open" on main until the next workflow_dispatch
+      # build happened to run there (the daily release — and only if main
+      # had changed since). image-scan.yml runs on main, scans the new
+      # :latest and refreshes both main-scoped results; release= tells it
+      # not to dispatch a rebuild (it's reporting on a build that just
+      # happened, so a rebuild could only loop).
+      #
+      # Best-effort: the release already exists by now, and failing here
+      # would red-X a ship PR (blocking its auto-merge) over a Security-tab
+      # refresh the daily scan catches up on anyway. --ref main also means
+      # main's copy of image-scan.yml runs, so a PR that changes that file
+      # (e.g. the one introducing release=) gets the previous version's
+      # behaviour for its own release.
+      - name: Refresh the Security tab for this release
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: gh workflow run image-scan.yml --ref main -f release="v${VERSION}"
 
       - name: Download site content artifact
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
