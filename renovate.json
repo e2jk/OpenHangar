@@ -9,10 +9,10 @@
   "rebaseWhen": "conflicted",
   "dependencyDashboard": false,
   "pip_requirements": {
-    "fileMatch": ["(^|/)requirements/.+\\.txt$"]
+    "managerFilePatterns": ["/(^|/)requirements/.+\\.txt$/"]
   },
   "npm": {
-    "fileMatch": ["requirements/package\\.json"]
+    "managerFilePatterns": ["/requirements/package\\.json/"]
   },
   "packageRules": [
     {
@@ -32,6 +32,7 @@
       "description": "init/analyze/upload-sarif share on-disk state and must move together -- a version mismatch between them fails the job outright."
     }
   ],
+  "osvVulnerabilityAlerts": true,
   "vulnerabilityAlerts": {
     "labels": ["security"],
     "schedule": ["at any time"],
