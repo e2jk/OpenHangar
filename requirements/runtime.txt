@@ -723,9 +723,9 @@ psycopg-binary==3.3.6 \
     --hash=sha256:f87dbdc42e78ee0f7ea180c03f8c78e80a949e373066629bd90fefff10552dff \
     --hash=sha256:fa34eb47969297471db7b7f193622c7e3ee839ec05abd05f1fe104d5b1b1dcf4 \
     --hash=sha256:fdccb3a0e184b03e9baa673b15a809cf36c339c85dbda0ebc25a698846dfbee8
-pycparser==3.1 \
-    --hash=sha256:b3fc6dec06a8b2fefa0ed4ff92285306a5e3be9987bc5603c9edbdc4e492418f \
-    --hash=sha256:f09d358c840bd147b79e55f2bc494f18ea869dc897f5852a8f5766b74f787882
+pycparser==3.11 \
+    --hash=sha256:51d5a8ba2be0bbe440b99d2112604c95bbbc3c2748a64260186c541e1729cd80 \
+    --hash=sha256:d875f09c3507d00e1aba0eecc6dcadc1352f30fff09dc6bff2f1c2935e97c2bc
 PyOTP==2.10.0 \
     --hash=sha256:1df2f6a1bcc3bb0716172a5215ddc2f8c7c7fd26a13df9927d52e1746934836c \
     --hash=sha256:d01e9703443616b03c57c700b5cbffd56a1f929c1b0f8f03131bc78c1fca9d3f
