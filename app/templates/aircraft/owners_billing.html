@@ -43,7 +43,7 @@
 
   <form method="get" class="d-flex align-items-center gap-2 mb-4">
     <label for="period" class="form-label mb-0">{{ _('Period') }}</label>
-    <select name="period" id="period" class="form-select form-select-sm oh-mw-8rem" onchange="this.form.submit()">
+    <select name="period" id="period" class="form-select form-select-sm oh-mw-8rem" data-auto-submit>
       <option value="1" {% if period == '1' %}selected{% endif %}>{{ _('Last month') }}</option>
       <option value="3" {% if period == '3' %}selected{% endif %}>{{ _('Last 3 months') }}</option>
       <option value="12" {% if period == '12' %}selected{% endif %}>{{ _('Last 12 months') }}</option>
