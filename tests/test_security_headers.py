@@ -17,6 +17,7 @@ Also verifies the session cookie flags and upload size limit set in create_app()
 
 Static template hygiene (no server required):
   No inline style= attributes — violates style-src-attr 'none' CSP directive.
+  No inline on*= event handlers — blocked by the nonce-based script-src.
 """
 
 import re
@@ -124,6 +125,8 @@ _TEMPLATES_DIR = Path(__file__).parent.parent / "app" / "templates"
 # Matches style= as an HTML attribute.  Jinja comment lines ({# ... #}) are
 # excluded — they are never rendered and cannot violate CSP.
 _INLINE_STYLE_RE = re.compile(r"\bstyle\s*=\s*[\"']")
+# Leading whitespace keeps data-on*/hx-on* attributes out of the match.
+_INLINE_HANDLER_RE = re.compile(r"\son[a-z]+\s*=\s*[\"']")
 
 
 class TestTemplateCSPHygiene:
@@ -143,6 +146,23 @@ class TestTemplateCSPHygiene:
         assert not violations, (
             "Inline style= attributes violate the style-src-attr 'none' CSP directive.\n"
             "Replace with a CSS class in aircraft.css or base.css.\n\n"
+            + "\n".join(violations)
+        )
+
+    def test_no_inline_event_handlers(self):
+        violations = []
+        for path in sorted(_TEMPLATES_DIR.rglob("*.html")):
+            for lineno, line in enumerate(path.read_text().splitlines(), start=1):
+                stripped = line.strip()
+                if stripped.startswith("{#"):
+                    continue  # Jinja comment — never rendered
+                if _INLINE_HANDLER_RE.search(line):
+                    rel = path.relative_to(_TEMPLATES_DIR)
+                    violations.append(f"{rel}:{lineno}: {stripped[:120]}")
+        assert not violations, (
+            "Inline on*= event handlers are blocked by the nonce-based script-src "
+            "CSP directive and never run.\n"
+            "Use a data-* hook handled in app/static/js/ (e.g. data-auto-submit).\n\n"
             + "\n".join(violations)
         )
 
