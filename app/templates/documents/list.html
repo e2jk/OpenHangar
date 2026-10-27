@@ -60,7 +60,7 @@
     {% endif %}
     <label for="doc_type" class="form-label mb-0">{{ _('Type') }}</label>
     <select name="doc_type" id="doc_type" class="form-select form-select-sm oh-mw-260"
-            onchange="this.form.submit()">
+            data-auto-submit>
       <option value="">{{ _('All types') }}</option>
       {% for value, label in doc_type_filter_options %}
       <option value="{{ value }}" {% if filter_doc_type == value %}selected{% endif %}>{{ label }}</option>
