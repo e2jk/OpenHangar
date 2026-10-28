@@ -3,7 +3,7 @@
 # scripts/install_vendor_assets.py to copy the needed files into /tmp/vendor/.
 # No node, npm, or node_modules survive into the runtime image.
 # Layer order: npm ci is cached independently of script changes.
-FROM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS vendor
+FROM node:26-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797 AS vendor
 WORKDIR /tmp/vendor-build
 COPY requirements/package.json requirements/package-lock.json ./
 # hadolint ignore=DL3018
