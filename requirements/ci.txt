@@ -729,8 +729,9 @@ playwright==1.64.1 \
     --hash=sha256:983ccd085453ea5a7588193657fc349a6ffbf7bf7ba663fd58dc81e4aa3af9d9 \
     --hash=sha256:a29fda44725e11b0b625c4bff6458a1f6dbee97b88c9788d12e18a8344458c2d \
     --hash=sha256:d3c48b31da426c2f3562d0919cb9ea4e5415f6dbd29d7211fa4d66cca24fbd2f
-pyee==14.0.0 \
-    --hash=sha256:3ac2d3229a9677f7de2c33d7f52fe25b638a46b19c413fea2edc8c6d0a644e4d
+pyee==15.0.0 \
+    --hash=sha256:48be57d58b2db456a779590c88f7e50b2a33c88e59a6bfdc9a8ab25b13a5576b \
+    --hash=sha256:ea2264fe4b47e0b2edc5badcd5d1bffcef68b70f9c0224ffb08f76992491da9b
 pyparsing==3.3.3 \
     --hash=sha256:928ae7e20211f3b6f3915a72f06a0cfd29ab9d24279dd6346b6b1a7146397d36 \
     --hash=sha256:ece8c00a69cf01b45d0b1dedabb469c90d8caf996d4fda40f147627a122849a4
