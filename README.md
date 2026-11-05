@@ -34,7 +34,23 @@ Self-hosted, open-source platform for pilots, owner-operators, and clubs to mana
 
 ## Getting started
 
-OpenHangar is deployed as a Docker container. See the **[self-hosting guide](docs/self-hosting.md)** for a Docker Compose example, configuration reference, and upgrade procedure.
+### 🤖 Install with your AI assistant (easiest)
+
+Using ChatGPT, Claude, Codex, Gemini or another AI assistant? Copy this into it:
+
+```text
+Install OpenHangar for me by following
+https://raw.githubusercontent.com/e2jk/OpenHangar/main/docs/agent-install.md
+```
+
+It asks you a few questions (home network only, or reachable from the internet with HTTPS? quick setup, or go through the settings?), downloads the images while you answer, then installs and checks that everything works. Assistants that can run commands do it for you; chat-only ones walk you through one command at a time. Your passwords and keys are generated on your machine and never go through the chat.
+
+### Install by hand
+
+OpenHangar is deployed as a Docker Compose stack:
+
+- **[Raspberry Pi / home network guide](docs/raspberry-pi.md)**: step by step, no prior Docker knowledge needed. Works on any 64-bit Linux machine.
+- **[Self-hosting guide](docs/self-hosting.md)**: internet-facing setup with HTTPS (Traefik + Let's Encrypt), configuration reference, and upgrade procedure.
 
 ## Documentation
 
@@ -43,6 +59,8 @@ OpenHangar is deployed as a Docker container. See the **[self-hosting guide](doc
 | [docs/user-guide.md](docs/user-guide.md) | End users | Feature overview, key flows, glossary, contributing translations |
 | [docs/logbook_airplane.md](docs/logbook_airplane.md) | End users | Aircraft logbook fields, EASA/FAA columns, counter types |
 | [docs/logbook_pilot.md](docs/logbook_pilot.md) | End users | Pilot personal logbook, EASA FCL.050 mapping, currency rules |
+| [docs/agent-install.md](docs/agent-install.md) | AI assistants | Guided install for an AI assistant to follow on the user's behalf |
+| [docs/raspberry-pi.md](docs/raspberry-pi.md) | Administrators | Step-by-step home-network install (Raspberry Pi or any Linux box) |
 | [docs/self-hosting.md](docs/self-hosting.md) | Administrators | Docker deployment, configuration, upgrade procedure |
 | [docs/configuration.md](docs/configuration.md) | Administrators | All environment variables — core, email, demo mode |
 | [docs/backup_restore.md](docs/backup_restore.md) | Administrators | Backup scheduling, restore procedure, file format |
