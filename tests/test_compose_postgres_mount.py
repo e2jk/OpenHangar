@@ -7,9 +7,11 @@ database container exit on first boot, which is exactly what broke every
 fresh Raspberry Pi install until this was caught. Guard the shipped compose
 files and the compose snippets in the docs against regressing.
 
-demo/docker-compose.yml is deliberately excluded: it backs a live
-deployment whose own .env may pin an older image tag, so changing its
-mount must be a deliberate migration, not a lint fix.
+The image only enforces this when it initialises an empty database. An
+existing container whose anonymous /var/lib/postgresql volume already holds
+data keeps starting with the wrong mount, as the public demo did, until
+that volume is lost. So a passing smoke test on a long-lived instance
+proves nothing here.
 """
 
 import re
@@ -17,7 +19,11 @@ from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent.parent
 _FILES = sorted(
-    [*(_ROOT / "docker").glob("docker-compose*.yml"), *(_ROOT / "docs").glob("*.md")]
+    [
+        *(_ROOT / "docker").glob("docker-compose*.yml"),
+        *(_ROOT / "demo").glob("docker-compose*.yml"),
+        *(_ROOT / "docs").glob("*.md"),
+    ]
 )
 _PG18_IMAGE = re.compile(r"postgres:(1[89]|[2-9]\d)")
 _OLD_MOUNT = re.compile(r"^\s*-\s*\S+:/var/lib/postgresql/data\b", re.MULTILINE)
