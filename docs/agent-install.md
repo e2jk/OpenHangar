@@ -26,10 +26,15 @@ OpenHangar.
 
 - **If you can run shell commands** (you're a coding agent with a terminal),
   run them yourself, show the user what you ran, and read the output.
-- **If you can't** (you're a chat assistant), give the user **one command at
-  a time**, say what it does in one sentence, ask them to paste back the
-  output, and only then continue. Never hand over a long script to run
-  blind.
+- **If you can't** (you're a chat assistant), the user is your hands, and
+  every round trip costs them a copy and a paste. Each step below has **one
+  code block** meant to be pasted as a whole into a terminal. It prints a
+  labelled summary of everything you need. For each step: say in a sentence
+  or two what the block does, give it to the user **unchanged** (apart from
+  filling in placeholders like `<domain>`), ask them to paste back the
+  **whole** output, and only then continue. Don't split a block into single
+  commands, and don't merge several steps into one paste: there's a
+  question or a decision between them.
 - Keep the user informed in plain language. Most users are pilots, not
   sysadmins.
 
@@ -53,16 +58,26 @@ OpenHangar.
 
 ## Step 1 — Preflight (no questions yet)
 
-Run these checks first. They are read-only, apart from the image download.
+Run this block first. It only reads information, apart from the last two
+lines, which **start downloading the images in the background**. Both images
+are needed whatever the user answers, so by the time the questions are done
+the download usually is too. It returns immediately. Tell the user the
+download has started.
 
 ```bash
-uname -m                      # must be x86_64 or aarch64
-docker --version
-docker compose version        # Compose v2 or later ("docker compose", not the old "docker-compose")
-id -u; id -nG                 # is the user root, or in the "docker" group?
-df -h ~                       # want at least 5 GB free
-ls ~/openhangar 2>/dev/null   # existing install directory?
-docker ps --format '{{.Names}}\t{{.Ports}}'   # existing OpenHangar or a proxy on 80/443?
+echo "arch:       $(uname -m)"
+echo "os:         $(. /etc/os-release 2>/dev/null; echo "${PRETTY_NAME:-unknown}")"
+echo "docker:     $(docker --version 2>&1)"
+echo "compose:    $(docker compose version 2>&1)"
+echo "user:       $(id -un) (uid $(id -u)), groups: $(id -nG)"
+echo "disk free:  $(df -h ~ | awk 'NR==2 {print $4}')"
+echo "hostname:   $(hostname)"
+echo "lan ip:     $(hostname -I 2>/dev/null | awk '{print $1}' | grep . || ip -4 route get 1.1.1.1 2>/dev/null | grep -o 'src [0-9.]*' | cut -d' ' -f2)"
+echo "existing:   $(ls -d ~/openhangar 2>/dev/null || echo none)"
+echo "listening:  $(ss -ltnH 2>/dev/null | awk '{print $4}' | grep -oE ':(80|443|8087)$' | sort -u | tr '\n' ' ')"
+echo "containers:"; docker ps --format '  {{.Names}}  {{.Ports}}' 2>&1
+( (docker pull -q ghcr.io/e2jk/openhangar:latest && docker pull -q postgres:18-alpine) > /tmp/openhangar-pull.log 2>&1 & )
+echo "image download: started in the background"
 ```
 
 Interpret the results:
@@ -71,40 +86,35 @@ Interpret the results:
   `armhf` (32-bit Raspberry Pi OS), stop: the user needs to reinstall with
   **Raspberry Pi OS Lite (64-bit)**, see the
   [Raspberry Pi guide](raspberry-pi.md).
-- **No Docker or no Compose v2**: install it with Docker's official
-  convenience script (`curl -fsSL https://get.docker.com | sudo sh`, which
-  is the one exception to rule 4: ask first, it needs `sudo`), then add the
-  user to the `docker` group (`sudo usermod -aG docker "$USER"`, then log
-  out and back in).
-- **`id -u` prints `1000`**: the user already has the same ID as the app
-  inside the container, so the `chown` commands below work without `sudo`.
-  Drop the `sudo` and save the user a password prompt.
+- **`docker:` or `compose:` shows "command not found"** (Compose must be v2
+  or later: `docker compose`, not the old `docker-compose`): install Docker
+  with its official convenience script
+  (`curl -fsSL https://get.docker.com | sudo sh`, which is the one exception
+  to rule 4: ask first, it needs `sudo`). Then add the user to the `docker`
+  group (`sudo usermod -aG docker "$USER"`, then log out and back in), and
+  run the preflight block again.
+- **`containers:` shows "permission denied"**: Docker is installed, but the
+  user isn't in the `docker` group yet. Same `usermod` fix as above. The
+  background image download will have failed for the same reason, which is
+  harmless: Step 4 downloads whatever is missing.
+- **`uid` is `1000`**: the user has the same ID as the app inside the
+  container. The `chown` in Step 3 then works without `sudo`, so there's no
+  password prompt. (The Step 3 blocks try without `sudo` first anyway.)
+- **`existing:` isn't `none`**: go to [Existing install](#existing-install).
 - **Containers named `openhangar-web` or `openhangar-db` already exist**:
   there's already an OpenHangar stack on this host, maybe a development
   copy. Go to [Existing install](#existing-install). The internet setup's
   compose file uses those exact container names and would fail to start
   next to it.
-- **Something already listens on ports 80/443** (another Traefik, Nginx,
+- **`listening:` shows `:80` or `:443`** (another Traefik, Nginx,
   Caddy…): note it. The internet setup below brings its own Traefik, which
   would conflict. Tell the user, and offer the home-network setup, or adding
   OpenHangar behind their existing proxy by hand (see the
-  [self-hosting guide](self-hosting.md)).
-
-**Start the image download now**, in the background, while you ask the
-questions. Both images are needed whatever the user answers. Tell the user
-you've started it:
-
-```bash
-(docker pull ghcr.io/e2jk/openhangar:latest && docker pull postgres:18-alpine) > /tmp/openhangar-pull.log 2>&1 &
-```
-
-If your tool has its own "run in background" option, use that instead of
-the trailing `&`. Run this line on its own: chaining more commands after
-the `&` on the same line is easy to get wrong.
-
-(Chat assistants: skip the background part. Ask the user to run
-`docker pull ghcr.io/e2jk/openhangar:latest` in a second terminal window
-while you talk.)
+  [self-hosting guide](self-hosting.md)). **`:8087`** in use means the
+  home-network setup's port is taken: change the left side of `"8087:5000"`
+  in its compose file to a free port.
+- Keep `hostname` and `lan ip` for later: they give the address to open in
+  the browser for the home-network setup.
 
 ---
 
@@ -151,17 +161,17 @@ Help the user choose for question 1:
 
 ## Step 3a — Home network setup
 
-```bash
-mkdir -p ~/openhangar && cd ~/openhangar
-curl -fsSL https://raw.githubusercontent.com/e2jk/OpenHangar/main/docker/docker-compose.raspberry-pi.yml -o docker-compose.yml
-mkdir -p uploads backups
-sudo chown 1000:1000 uploads backups   # the app runs as uid 1000 inside the container
-```
-
-Generate the secrets and write them into the compose file, without printing
-them:
+This block downloads the compose file and creates the data folders. It
+hands the folders to uid 1000, the user the app runs as inside the
+container, trying without `sudo` first. Then it generates the secrets and
+writes them into the compose file without printing them. If the user picked
+another install directory, replace `~/openhangar` in the first line.
 
 ```bash
+mkdir -p ~/openhangar && cd ~/openhangar && \
+curl -fsSL https://raw.githubusercontent.com/e2jk/OpenHangar/main/docker/docker-compose.raspberry-pi.yml -o docker-compose.yml && \
+mkdir -p uploads backups && \
+{ chown 1000:1000 uploads backups 2>/dev/null || sudo chown 1000:1000 uploads backups; } && \
 umask 077 && \
 DB_PASS=$(openssl rand -hex 20) && \
 SECRET_KEY=$(openssl rand -hex 32) && \
@@ -173,59 +183,57 @@ sed -i \
   docker-compose.yml && \
 chmod 600 docker-compose.yml && \
 printf 'Backup encryption key: %s\n' "$BACKUP_KEY" > BACKUP_KEY.txt && \
-echo "Secrets written."
+echo "placeholders left: $(grep -c CHANGE_THIS docker-compose.yml)" ; \
+echo "cookie setting:    $(grep -o 'OPENHANGAR_SESSION_COOKIE_SECURE=[a-z]*' docker-compose.yml)" ; \
+ls -ld "$PWD" uploads backups docker-compose.yml BACKUP_KEY.txt
 ```
 
-The compose file already sets `OPENHANGAR_SESSION_COOKIE_SECURE=false`,
-which plain HTTP needs. Without it, login loops back with a 400 error. Leave
-that line in.
+Expect `placeholders left: 0`, `cookie setting: OPENHANGAR_SESSION_COOKIE_SECURE=false`,
+`uploads` and `backups` owned by uid 1000 (shown as the user's name if
+their uid is 1000), and the two files readable only by their owner
+(`-rw-------`). The cookie setting is what plain HTTP needs. Without it,
+login loops back with a 400 error.
 
 Service name for later commands: **`web`**. App URL:
-`http://<host>:8087`, where `<host>` is the machine's hostname
-(`hostname`, try `http://<hostname>.local:8087`) or LAN IP. To find the
-LAN IP, use `hostname -I` on Debian and Raspberry Pi OS. It doesn't exist
-on every distro; this works everywhere:
-`ip -4 route get 1.1.1.1 | grep -o 'src [0-9.]*' | cut -d' ' -f2`.
+`http://<host>:8087`, where `<host>` is the `hostname` from the preflight
+(try `http://<hostname>.local:8087` first) or its `lan ip`.
 
 Continue to [Step 4](#step-4--start-and-verify) (or Step 5 first in guided
 mode).
 
 ## Step 3b — Internet setup (HTTPS)
 
-Before anything else, check that the domain resolves to this network's
-public IP:
+**First, a DNS check** (replace `<domain>`):
 
 ```bash
-getent hosts <domain>      # the domain's IP
-curl -fsS https://api.ipify.org; echo   # this network's public IP
+echo "domain resolves to: $(getent hosts <domain> | awk '{print $1}' | head -1 | grep . || echo '(does not resolve)')"
+echo "this network's IP:  $(curl -fsS https://api.ipify.org)"
+docker network ls --format '{{.Name}}' | grep -xE 'frontend|backend|socket-proxy-network' | sed 's/^/network already exists: /'
 ```
 
-If they differ, stop and help the user fix their DNS record (an `A` record
-pointing at the public IP). Let's Encrypt will fail otherwise. Also confirm
-with the user that ports **80 and 443** are forwarded from their router to
-this machine. You can't test that from inside the network.
+- If the two IPs differ, stop and help the user fix their DNS record (an
+  `A` record pointing at the public IP). Let's Encrypt fails otherwise.
+- If any `network already exists:` line shows up, stop: another stack on
+  this host already uses one of the fixed network names this compose file
+  needs.
+- Also confirm with the user that ports **80 and 443** are forwarded from
+  their router to this machine. You can't test that from inside the
+  network.
+
+**Then the install block** (replace `<domain>` and `<email>` with the
+user's answers, and `~/openhangar` if they picked another directory). It
+downloads the files and creates the data folders, generates the secrets
+into `.env` without printing them, enables `OPENHANGAR_INSTANCE_URL` so
+email links point to the right address, and pulls Traefik:
 
 ```bash
-mkdir -p ~/openhangar/traefik && cd ~/openhangar
-BASE=https://raw.githubusercontent.com/e2jk/OpenHangar/main/docker
-curl -fsSL "$BASE/docker-compose.yml"      -o docker-compose.yml
-curl -fsSL "$BASE/.env.example"            -o .env
-curl -fsSL "$BASE/traefik/dynamic.yml"     -o traefik/dynamic.yml
-mkdir -p openhangar/data/uploads openhangar/data/backups
-sudo chown -R 1000:1000 openhangar/data/uploads openhangar/data/backups
-docker network ls --format '{{.Name}}' | grep -xE 'frontend|backend|socket-proxy-network'
-```
-
-If that last command prints anything, a network with the same name already
-exists on this host (probably from another stack). Stop and tell the user:
-the compose file uses fixed network names and would join the other stack's
-network.
-
-Pull Traefik too: `docker pull traefik:v3.7`.
-
-Fill in `.env` (replace `<domain>` and `<email>` with the user's answers):
-
-```bash
+mkdir -p ~/openhangar/traefik && cd ~/openhangar && \
+BASE=https://raw.githubusercontent.com/e2jk/OpenHangar/main/docker && \
+curl -fsSL "$BASE/docker-compose.yml"  -o docker-compose.yml && \
+curl -fsSL "$BASE/.env.example"        -o .env && \
+curl -fsSL "$BASE/traefik/dynamic.yml" -o traefik/dynamic.yml && \
+mkdir -p openhangar/data/uploads openhangar/data/backups && \
+{ chown 1000:1000 openhangar/data/uploads openhangar/data/backups 2>/dev/null || sudo chown 1000:1000 openhangar/data/uploads openhangar/data/backups; } && \
 umask 077 && \
 DB_PASS=$(openssl rand -hex 20) && \
 SECRET_KEY=$(openssl rand -hex 32) && \
@@ -240,13 +248,19 @@ sed -i \
   -e "s/^TRAEFIK_ACME_EMAIL=.*/TRAEFIK_ACME_EMAIL=<email>/" \
   .env && \
 chmod 600 .env && \
+sed -i 's|^      # - OPENHANGAR_INSTANCE_URL=|      - OPENHANGAR_INSTANCE_URL=|' docker-compose.yml && \
 printf 'Backup encryption key: %s\n' "$BACKUP_KEY" > BACKUP_KEY.txt && \
-echo "Secrets written."
+docker pull -q traefik:v3.7 >/dev/null ; \
+echo "placeholders left: $(grep -v '^#' .env | grep -c 'change-me\|example\.com')" ; \
+grep -E '^(OPENHANGAR_HOSTNAME|TRAEFIK_ACME_EMAIL|SOCKET_PROXY_DOCKER_GID)=' .env ; \
+echo "instance url: $(grep -c '^      - OPENHANGAR_INSTANCE_URL=' docker-compose.yml) line enabled" ; \
+docker compose config -q && echo "compose config: OK" ; \
+ls -ld openhangar/data/uploads openhangar/data/backups .env BACKUP_KEY.txt
 ```
 
-Also uncomment the `OPENHANGAR_INSTANCE_URL` line in the `environment:` list
-of the `openhangar-web` service in `docker-compose.yml`, so email links
-point to the right address.
+Expect `placeholders left: 0`, the user's domain and email, a numeric
+docker group ID, `instance url: 1 line enabled`, `compose config: OK`, and
+the data folders owned by uid 1000.
 
 Do **not** set `OPENHANGAR_SESSION_COOKIE_SECURE` here: the default
 (`true`) is correct over HTTPS.
@@ -266,46 +280,55 @@ Service name for later commands: **`openhangar-web`**. App URL:
 
 ## Step 4 — Start and verify
 
-From the install directory:
+One block per setup. Each one downloads whatever is still missing (almost
+instant if the Step 1 download finished), starts the stack, and waits up to
+two minutes for the web service to report `(healthy)`. The image's built-in
+health check confirms the app is up **and** can reach the database. Then it
+runs every check and prints the results. (There's no `curl` inside the
+image, so don't `exec` one; these checks run from the host.)
+
+**3a, home network:**
 
 ```bash
-docker compose pull      # near-instant if the Step 1 download finished; otherwise completes it
-docker compose up -d
-docker compose ps        # repeat until the web service shows "(healthy)", usually within ~1 minute
+cd ~/openhangar && docker compose pull -q && docker compose up -d && \
+echo "waiting for OpenHangar to start (up to 2 minutes)..." && \
+for i in $(seq 1 40); do docker compose ps web | grep -q '(healthy)' && break; sleep 3; done ; \
+docker compose ps --format '{{.Service}}: {{.Status}}' ; \
+echo "health: $(curl -fsS http://localhost:8087/health 2>&1)" ; \
+echo "cookie: $(curl -sL -o /dev/null -D - http://localhost:8087/login | grep -i '^set-cookie' | sed 's/session=[^;]*/session=(hidden)/')" ; \
+echo "--- problems in the logs (empty is good):" ; \
+docker compose logs --no-color --tail 100 2>&1 | grep -iE 'error|traceback|permission denied' | grep -v Fontconfig | tail -8
 ```
 
-The web image has a built-in health check that confirms the app is up
-**and** can reach the database, so `(healthy)` on the web service is the
-readiness signal. (There's no `curl` inside the image, so don't try to
-`exec` one.) Then, replacing `<service>` with `web` (3a) or
-`openhangar-web` (3b):
+**3b, internet** (replace `<domain>`; the first HTTPS request can take
+~30 seconds while Traefik obtains the certificate):
 
 ```bash
-curl -fsS http://localhost:8087/health   # 3a only, from the host; expect {"status":"ok"}
-docker compose logs --tail 50 <service>
-# look for "Running in production mode with gunicorn" and no tracebacks
+cd ~/openhangar && docker compose pull -q && docker compose up -d && \
+echo "waiting for OpenHangar to start (up to 2 minutes)..." && \
+for i in $(seq 1 40); do docker compose ps openhangar-web | grep -q '(healthy)' && break; sleep 3; done ; \
+docker compose ps --format '{{.Service}}: {{.Status}}' ; sleep 20 ; \
+echo "health: $(curl -fsS https://<domain>/health 2>&1)" ; \
+echo "cookie: $(curl -sL -o /dev/null -D - https://<domain>/login | grep -i '^set-cookie' | sed 's/session=[^;]*/session=(hidden)/')" ; \
+echo "--- certificate errors (empty is good):" ; \
+docker compose logs --no-color traefik 2>&1 | grep -i acme | tail -3 ; \
+echo "--- problems in the logs (empty is good):" ; \
+docker compose logs --no-color --tail 100 openhangar-web openhangar-db 2>&1 | grep -iE 'error|traceback|permission denied' | grep -v Fontconfig | tail -8
 ```
 
-If the **database** service never gets healthy, read
-`docker compose logs db` (3a) or `docker compose logs openhangar-db` (3b).
+Read the output:
 
-**Cookie/scheme check.** This catches the most common "login just reloads"
-problem:
-
-```bash
-# -L: on a fresh install /login redirects to /setup, which sets the cookie
-curl -sL -o /dev/null -D - http://localhost:8087/login | grep -i '^set-cookie'   # 3a
-curl -sL -o /dev/null -D - https://<domain>/login      | grep -i '^set-cookie'   # 3b
-```
-
-- 3a must **not** contain `Secure`. If it does,
-  `OPENHANGAR_SESSION_COOKIE_SECURE=false` is missing.
-- 3b **must** contain `Secure`.
-
-For 3b, the first HTTPS request can take ~30 seconds while Traefik obtains
-the certificate. If `curl` reports a certificate error after a minute, check
-`docker compose logs traefik` for ACME errors (usually DNS or port
-forwarding).
+- Every service should be `Up`, with `(healthy)` on web and database. If
+  the **database** isn't healthy, ask for
+  `docker compose logs --tail 30 db` (3a) or
+  `docker compose logs --tail 30 openhangar-db` (3b).
+- `health:` should be `{"status":"ok"}`.
+- **Cookie** (the check that catches "login just reloads"): 3a must **not**
+  contain `Secure`; if it does, `OPENHANGAR_SESSION_COOKIE_SECURE=false` is
+  missing. 3b **must** contain `Secure`.
+- 3b: a certificate error in `health:` along with ACME lines in the logs
+  almost always means DNS or port forwarding. Re-check those with the user,
+  then rerun the block.
 
 Common failures:
 
