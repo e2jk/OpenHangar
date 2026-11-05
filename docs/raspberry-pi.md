@@ -162,6 +162,21 @@ mkdir ~/openhangar
 cd ~/openhangar
 ```
 
+### Create the data folders
+
+OpenHangar runs inside its container as an unprivileged user with ID `1000`,
+not as root. It needs to own the folders where it stores uploads and backups.
+If you skip this step, Docker creates them owned by `root` on first start,
+and the `web` container keeps restarting with a *Permission denied* error.
+
+```bash
+mkdir -p uploads backups
+sudo chown 1000:1000 uploads backups
+```
+
+(The database folder, `db_data`, is handled automatically by the database
+container. You don't need to create it.)
+
 ### Download the Compose file
 
 ```bash
@@ -271,12 +286,47 @@ docker compose logs -f web
 
 ---
 
-## Optional — Remove `:8087` from the URL
+## Plain HTTP: what it means, and when to switch to HTTPS
 
-If you'd rather type `http://openhangar.local` without a port number, you
-can add Traefik as a router in front of OpenHangar. The
-[self-hosting guide](self-hosting.md) covers the full Traefik setup,
-including the relevant `docker-compose.yml` changes.
+This guide sets OpenHangar up over plain `http://`. That keeps things
+simple, with no certificates to manage, and it's fine for a home network
+only you and your family use. Your browser will show a *Not secure* label
+in the address bar, which is expected here.
+
+There are two trade-offs to know about:
+
+- **No app install, no offline mode.** Browsers only allow installing
+  OpenHangar as an app on your phone's home screen, and editing your
+  logbook offline, when the site is served over HTTPS. Over plain HTTP,
+  OpenHangar works normally in the browser, but only while you're
+  connected.
+- **Passwords travel unencrypted on your network.** At home that's a small
+  risk. If the Pi sits on a **network other people share**, such as club,
+  hangar or airfield Wi-Fi, anyone on that network could read the
+  passwords. In that case, set up HTTPS.
+
+> **Don't use a self-signed certificate.** Every device shows a full-page
+> security warning, and browsers still won't turn on app install or
+> offline mode, so you'd get the warnings without the benefits.
+
+### Switching to HTTPS
+
+The [self-hosting guide](self-hosting.md) covers the full setup with
+Traefik as a reverse proxy, which gets a free certificate automatically
+from Let's Encrypt and also removes the `:8087` from the URL. Be aware
+that this setup needs:
+
+- a **domain name** you control (for example `hangar.example.com`), pointed
+  at your home's public IP address, and
+- **port 443 forwarded** from your router to the Pi.
+
+That makes OpenHangar reachable from the internet. It's useful if you want
+to log flights from the airfield, but it also means your instance is
+exposed, so keep TOTP two-factor authentication on for every account.
+
+Once OpenHangar is served over HTTPS, remove the
+`OPENHANGAR_SESSION_COOKIE_SECURE=false` line from your compose file (or
+set it to `true`) and run `docker compose up -d`.
 
 ---
 
@@ -291,6 +341,19 @@ including the relevant `docker-compose.yml` changes.
 - Check `docker compose logs web` for details.
 - If you see a database connection error, the secrets command above may not
   have run completely — try running it again, then `docker compose up -d`.
+- If you see *Permission denied* on `/data/uploads` or `/data/backups`, the
+  data folders are owned by the wrong user. Fix them with
+  `sudo chown -R 1000:1000 ~/openhangar/uploads ~/openhangar/backups`, then
+  `docker compose up -d`.
+
+**The setup wizard or login page just reloads (or shows "400 Bad Request")**
+- Your `docker-compose.yml` is probably missing the line
+  `- OPENHANGAR_SESSION_COOKIE_SECURE=false` in the `web` service's
+  `environment:` block. Older copies of the Raspberry Pi compose file didn't
+  have it. Without it, the browser won't send the login cookie back over
+  plain `http://`. Add the line, run `docker compose up -d`, and reload the
+  page. See
+  [`OPENHANGAR_SESSION_COOKIE_SECURE`](configuration.md#openhangar_session_cookie_secure).
 
 **Start completely fresh** *(deletes all data)*
 

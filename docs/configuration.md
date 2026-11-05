@@ -22,6 +22,7 @@ documented inline in [`docker/.env.example`](../docker/.env.example).
 | [`OPENHANGAR_SW_ENABLED`](#openhangar_sw_enabled) | No | `false` (in dev) | [Core](#core) |
 | [`OPENHANGAR_RATELIMIT_ENABLED`](#openhangar_ratelimit_enabled) | No | `true` | [Core](#core) |
 | [`OPENHANGAR_SESSION_LIFETIME_DAYS`](#openhangar_session_lifetime_days) | No | `30` | [Core](#core) |
+| [`OPENHANGAR_SESSION_COOKIE_SECURE`](#openhangar_session_cookie_secure) | No | `true` | [Core](#core) |
 | [`OPENHANGAR_WEB_WORKERS`](#openhangar_web_workers) | No | `1` | [Core](#core) |
 | [`OPENHANGAR_WEB_THREADS`](#openhangar_web_threads) | No | `4` | [Core](#core) |
 | [`OPENHANGAR_ACCESS_LOG`](#openhangar_access_log) | No | *(log file in `/data/logs/`)* | [Core](#core) |
@@ -106,9 +107,27 @@ How long a logged-in session remains valid, in days.
 - **Example**: `OPENHANGAR_SESSION_LIFETIME_DAYS=90`
 
 Increase this if users (especially PWA users on mobile) find themselves logged
-out too frequently. The session cookie is `HttpOnly`, `Secure`, and
-`SameSite=Lax`; with TOTP enforced, a longer lifetime is a reasonable
-trade-off against the re-authentication burden.
+out too frequently. The session cookie is `HttpOnly`, `Secure` (unless
+[disabled](#openhangar_session_cookie_secure)), and `SameSite=Lax`; with TOTP
+enforced, a longer lifetime is a reasonable trade-off against the
+re-authentication burden.
+
+### `OPENHANGAR_SESSION_COOKIE_SECURE`
+
+Whether the session cookie carries the `Secure` attribute.
+
+- **Allowed values**: `false`, `0` or `no` to disable; anything else
+  (including a typo) keeps it enabled.
+- **Default**: `true`
+- **Effect**: browsers only send a `Secure` cookie back over HTTPS (or to
+  `localhost`). If you reach OpenHangar over plain `http://` on another
+  hostname or IP, the browser drops the session cookie. CSRF validation then
+  fails, and the setup wizard or login page just reloads (HTTP 400).
+- **Use case**: set to `false` only for a LAN-only install reached over plain
+  HTTP, such as the [Raspberry Pi setup](raspberry-pi.md), whose compose
+  file already sets it. Leave it at the default for any install served over
+  HTTPS, and never disable it on an internet-facing instance: without
+  HTTPS, anyone on the network path can read session cookies anyway.
 
 ### `OPENHANGAR_SECRET_KEY`
 

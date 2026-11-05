@@ -84,6 +84,18 @@ docker compose up -d
 The application runs on port 5000. Put a reverse proxy in front for HTTPS
 in production.
 
+> **Before the first `up`:** create the bind-mount folders and hand them to
+> the container's unprivileged user (uid `1000`). Otherwise Docker creates
+> them owned by root and the web container crash-loops with *Permission
+> denied*:
+> `mkdir -p openhangar/uploads openhangar/backups && sudo chown -R 1000:1000 openhangar`
+>
+> **Testing over plain `http://`** from another machine (not `localhost`)?
+> The session cookie is `Secure` by default, so the browser won't send it
+> back over HTTP, and login or setup just reloads with a 400 error. Use HTTPS,
+> or for a LAN-only test set
+> [`OPENHANGAR_SESSION_COOKIE_SECURE=false`](configuration.md#openhangar_session_cookie_secure).
+
 ---
 
 ## Configuration

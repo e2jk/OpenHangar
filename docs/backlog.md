@@ -1185,3 +1185,43 @@ prioritised; recorded here as raw inspiration.
   flight logging + GPS import; this is a reporting view on top,
   no new data model needed beyond what `Flight` already has.
 
+
+## Raspberry Pi: local-only HTTPS option (no internet exposure)
+
+The [Raspberry Pi guide](raspberry-pi.md) serves OpenHangar over plain HTTP
+(with `OPENHANGAR_SESSION_COOKIE_SECURE=false`). Its only HTTPS path points
+to the Traefik + Let's Encrypt setup in the self-hosting guide, which uses
+the TLS-ALPN challenge. That needs a domain and port 443 forwarded, so it
+exposes the Pi to the internet. Some users will want HTTPS at home *without*
+that, mainly to get PWA install and offline logbook editing, which browsers
+only enable in a secure context. It also matters for clubs running the Pi on
+shared Wi-Fi, where plain HTTP sends passwords unencrypted.
+
+Candidate approaches (pick one as the primary path, maybe mention a second):
+
+- **Caddy with its built-in local CA (`tls internal`)**: an optional `caddy`
+  service in front of `web` in `docker/docker-compose.raspberry-pi.yml` (or a
+  separate override file). It issues certificates for `openhangar.local` (and
+  optionally the Pi's IP) with no domain and no internet access. The catch:
+  each device must trust Caddy's root certificate once. That's fiddly on iOS
+  (install the profile, then enable full trust under Settings → General →
+  About → Certificate Trust Settings). Chrome on Android accepts
+  user-installed certificates. Have the container export the root cert into
+  `~/openhangar/` so it's easy to grab, and document the per-device steps.
+- **Tailscale (`tailscale serve`)**: a publicly trusted certificate on a
+  `*.ts.net` name, with no ports opened and nothing to trust per device. It
+  also gives remote access (log flights from the airfield). Downside:
+  depends on a third-party account.
+- **Let's Encrypt DNS challenge with Traefik**: for users who own a domain.
+  The name can resolve to a private IP (`192.168.x.x`) and the certificate is
+  proven through DNS, so nothing is exposed. Needs a DNS-provider API token,
+  so it's for the more technical crowd.
+
+Explicitly **not** a self-signed certificate: full-page warnings on every
+device, and Chrome still refuses to register the service worker on an
+untrusted certificate, so it gives no PWA or offline benefit.
+
+Done means: a tested compose variant, a "Local HTTPS" section in
+`docs/raspberry-pi.md` (replacing or complementing the current pointer to
+the self-hosting guide), and a reminder to drop
+`OPENHANGAR_SESSION_COOKIE_SECURE=false` once on HTTPS.

@@ -457,7 +457,13 @@ def create_app() -> Flask:
     app.config["MAX_CONTENT_LENGTH"] = (
         50 * 1024 * 1024
     )  # overridden by _validate_config
-    app.config["SESSION_COOKIE_SECURE"] = True
+    # Secure by default. Browsers silently refuse to send a Secure cookie back
+    # over plain HTTP (localhost excepted), which breaks login/setup with a
+    # CSRF 400 on a LAN-only install reached at http://<pi-ip>:8087 — so allow
+    # an explicit opt-out. Only an explicit false/0/no disables it (fail-safe).
+    app.config["SESSION_COOKIE_SECURE"] = os.environ.get(
+        "OPENHANGAR_SESSION_COOKIE_SECURE", "true"
+    ).strip().lower() not in ("0", "false", "no")
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
     _session_days = int(os.environ.get("OPENHANGAR_SESSION_LIFETIME_DAYS", "30"))
