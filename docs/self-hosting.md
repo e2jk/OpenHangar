@@ -58,7 +58,8 @@ services:
       POSTGRES_USER: openhangar
       POSTGRES_PASSWORD: changeme
     volumes:
-      - db_data:/var/lib/postgresql/data
+      # PostgreSQL 18+ images: mount /var/lib/postgresql, not .../data
+      - db_data:/var/lib/postgresql
 
   openhangar-web:
     image: ghcr.io/e2jk/openhangar:latest

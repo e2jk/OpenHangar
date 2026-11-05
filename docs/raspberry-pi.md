@@ -359,7 +359,7 @@ set it to `true`) and run `docker compose up -d`.
 
 ```bash
 docker compose down
-rm -rf ~/openhangar/db_data ~/openhangar/uploads
+sudo rm -rf ~/openhangar/db_data ~/openhangar/uploads   # owned by the containers' users, so sudo is needed
 docker compose up -d
 ```
 
