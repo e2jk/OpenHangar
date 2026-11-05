@@ -40,7 +40,10 @@ services:
       POSTGRES_USER: openhangar
       POSTGRES_PASSWORD: "CHANGE_THIS_db_password"        # ← CHANGE THIS
     volumes:
-      - ./db_data:/var/lib/postgresql/data
+      # PostgreSQL 18+ images expect a single mount at /var/lib/postgresql
+      # (data lives in a version-specific subfolder, e.g. 18/docker) and
+      # refuse to start with the pre-18 /var/lib/postgresql/data mount.
+      - ./db_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U openhangar"]
       interval: 10s
