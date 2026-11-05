@@ -13,7 +13,8 @@ services:
       POSTGRES_USER: ${OPENHANGAR_DEMO_POSTGRES_USER}
       POSTGRES_PASSWORD: ${OPENHANGAR_DEMO_POSTGRES_PASSWORD}
     volumes:
-      - ./openhangar-demo/postgres_data:/var/lib/postgresql/data
+      # PostgreSQL 18+ images: mount /var/lib/postgresql, not .../data
+      - ./openhangar-demo/postgres_data:/var/lib/postgresql
     networks:
       - traefik-network
     healthcheck:
