@@ -162,6 +162,21 @@ mkdir ~/openhangar
 cd ~/openhangar
 ```
 
+### Create the data folders
+
+OpenHangar runs inside its container as an unprivileged user with ID `1000`,
+not as root. It needs to own the folders where it stores uploads and backups.
+If you skip this step, Docker creates them owned by `root` on first start,
+and the `web` container keeps restarting with a *Permission denied* error.
+
+```bash
+mkdir -p uploads backups
+sudo chown 1000:1000 uploads backups
+```
+
+(The database folder, `db_data`, is handled automatically by the database
+container. You don't need to create it.)
+
 ### Download the Compose file
 
 ```bash
@@ -291,6 +306,19 @@ including the relevant `docker-compose.yml` changes.
 - Check `docker compose logs web` for details.
 - If you see a database connection error, the secrets command above may not
   have run completely — try running it again, then `docker compose up -d`.
+- If you see *Permission denied* on `/data/uploads` or `/data/backups`, the
+  data folders are owned by the wrong user. Fix them with
+  `sudo chown -R 1000:1000 ~/openhangar/uploads ~/openhangar/backups`, then
+  `docker compose up -d`.
+
+**The setup wizard or login page just reloads (or shows "400 Bad Request")**
+- Your `docker-compose.yml` is probably missing the line
+  `- OPENHANGAR_SESSION_COOKIE_SECURE=false` in the `web` service's
+  `environment:` block. Older copies of the Raspberry Pi compose file didn't
+  have it. Without it, the browser won't send the login cookie back over
+  plain `http://`. Add the line, run `docker compose up -d`, and reload the
+  page. See
+  [`OPENHANGAR_SESSION_COOKIE_SECURE`](configuration.md#openhangar_session_cookie_secure).
 
 **Start completely fresh** *(deletes all data)*
 

@@ -188,6 +188,22 @@ class TestSessionCookieConfig:
     def test_session_cookie_secure(self, app):
         assert app.config["SESSION_COOKIE_SECURE"] is True
 
+    def test_session_cookie_secure_opt_out(self, monkeypatch):
+        """Plain-HTTP LAN installs (e.g. Raspberry Pi guide) need Secure off."""
+        from init import create_app  # pyright: ignore[reportMissingImports]
+
+        for value in ("false", "0", "no", " FALSE "):
+            monkeypatch.setenv("OPENHANGAR_SESSION_COOKIE_SECURE", value)
+            assert create_app().config["SESSION_COOKIE_SECURE"] is False
+
+    def test_session_cookie_secure_unrecognised_value_stays_secure(self, monkeypatch):
+        """A typo must never silently weaken the cookie."""
+        from init import create_app  # pyright: ignore[reportMissingImports]
+
+        for value in ("true", "1", "flase", ""):
+            monkeypatch.setenv("OPENHANGAR_SESSION_COOKIE_SECURE", value)
+            assert create_app().config["SESSION_COOKIE_SECURE"] is True
+
     def test_session_cookie_httponly(self, app):
         assert app.config["SESSION_COOKIE_HTTPONLY"] is True
 

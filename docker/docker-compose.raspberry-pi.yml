@@ -59,6 +59,12 @@ services:
       - OPENHANGAR_ENV=production
       - OPENHANGAR_SECRET_KEY=CHANGE_THIS_secret_key_min_32_chars     # ← CHANGE THIS
       - OPENHANGAR_BACKUP_ENCRYPTION_KEY=CHANGE_THIS_backup_enc_key  # ← CHANGE THIS
+      # This setup is reached over plain http:// on your home network.
+      # Browsers refuse to send a "Secure" session cookie over plain HTTP, so
+      # without this line login and the setup wizard loop back with a 400
+      # error. Remove it (or set it to true) if you later put OpenHangar
+      # behind HTTPS — see docs/configuration.md#openhangar_session_cookie_secure.
+      - OPENHANGAR_SESSION_COOKIE_SECURE=false
       # No worker/thread override needed here: the default (1 worker process
       # × 4 threads, see docs/configuration.md#openhangar_web_workers) is
       # already a single-process footprint, which fits a 1-2 GB Raspberry Pi
