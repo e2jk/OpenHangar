@@ -1424,11 +1424,16 @@ def find_conflicting_rows(
             or_(*same_day_filters),
             Flight.date == date_val,
         ).all()
-        scored = [
-            (score, existing.id)
-            for existing in same_day
-            if (score := _score_candidate(kwargs, existing)) >= _CANDIDATE_MIN_SCORE
-        ]
+        scored = []
+        for candidate in same_day:
+            score = _score_candidate(kwargs, candidate)
+            # A cancelled-before-takeoff engine run may have nothing but
+            # the route to score on — still offer it (and let
+            # split_auto_merges merge it).
+            if _is_no_takeoff_match(kwargs, candidate):
+                score = max(score, float(_CANDIDATE_MIN_SCORE))
+            if score >= _CANDIDATE_MIN_SCORE:
+                scored.append((score, candidate.id))
         if scored:
             scored.sort(key=lambda t: -t[0])
             conflicts.append(
@@ -1551,6 +1556,34 @@ def _is_strong_cross_match(kwargs: dict[str, Any], existing: Any) -> bool:
     return score >= _AUTO_MERGE_MIN_TIME_SCORE
 
 
+def _is_no_takeoff_match(kwargs: dict[str, Any], existing: Any) -> bool:
+    """*kwargs* (a parsed pilot-log row) and *existing* (a flight logged only
+    from the airframe side, on the same registration) are the same engine
+    run that never took off — see services.no_takeoff_matching."""
+    from services.no_takeoff_matching import (  # pyright: ignore[reportMissingImports]
+        PilotSide,
+        airframe_side_of_flight,
+        is_no_takeoff_pair,
+    )
+
+    if not _is_airframe_only(existing):
+        return False
+    reg_new = (kwargs.get("other_aircraft_registration") or "").upper()
+    reg_old = (existing.display_registration or "").upper()
+    if not reg_new or reg_new.replace("-", "") != reg_old.replace("-", ""):
+        return False
+    pilot = PilotSide(
+        departure_icao=kwargs.get("departure_icao"),
+        arrival_icao=kwargs.get("arrival_icao"),
+        departure_time=kwargs.get("departure_time"),
+        arrival_time=kwargs.get("arrival_time"),
+        block_time=_kwargs_duration(kwargs),
+        landings_day=kwargs.get("landings_day"),
+        landings_night=kwargs.get("landings_night"),
+    )
+    return is_no_takeoff_pair(airframe_side_of_flight(existing), pilot)
+
+
 def split_auto_merges(
     conflicts: list[ConflictRow],
 ) -> tuple[list[tuple[ConflictRow, int]], list[ConflictRow]]:
@@ -1559,7 +1592,8 @@ def split_auto_merges(
     A row merges automatically — no human decision needed — when exactly
     one of its candidates is an entry logged only from the airframe side
     (see _is_airframe_only) and that candidate is a strong match (see
-    _is_strong_cross_match): the two sides then simply complement each
+    _is_strong_cross_match, or _is_no_takeoff_match for an engine run that
+    never took off): the two sides then simply complement each
     other, there's nothing to choose between. Each existing entry is
     claimed by at most one row; anything else goes to review.
     """
@@ -1574,7 +1608,10 @@ def split_auto_merges(
             for _score, cid in conflict.candidates
             if (existing := db.session.get(Flight, cid)) is not None
             and _is_airframe_only(existing)
-            and _is_strong_cross_match(conflict.kwargs, existing)
+            and (
+                _is_strong_cross_match(conflict.kwargs, existing)
+                or _is_no_takeoff_match(conflict.kwargs, existing)
+            )
         ]
         if len(strong) == 1 and strong[0] not in claimed:
             claimed.add(strong[0])
