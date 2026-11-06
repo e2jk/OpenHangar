@@ -346,6 +346,8 @@ def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | Non
     expense.description = description
     expense.amount = values["amount"]
     expense.currency = values["currency"]
+    expense.paid_amount = values["paid_amount"]
+    expense.paid_currency = values["paid_currency"]
     expense.quantity = quantity
     expense.unit = values["unit"] if quantity else None
     expense.coverage_start = values["coverage_start"]

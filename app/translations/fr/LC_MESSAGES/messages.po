@@ -121,27 +121,27 @@ msgstr "Assurance"
 msgid "Other"
 msgstr "Autre"
 
-#: app/models.py:3009
+#: app/models.py:3015
 msgid "AD"
 msgstr "AD"
 
-#: app/models.py:3010
+#: app/models.py:3016
 msgid "Mandatory SB"
 msgstr "SB obligatoire"
 
-#: app/models.py:3011
+#: app/models.py:3017
 msgid "SB"
 msgstr "SB"
 
-#: app/models.py:3012
+#: app/models.py:3018
 msgid "SIB"
 msgstr "SIB"
 
-#: app/models.py:3013 app/templates/dashboard.html:425
+#: app/models.py:3019 app/templates/dashboard.html:425
 msgid "ARC"
 msgstr "ARC"
 
-#: app/models.py:3014
+#: app/models.py:3020
 msgid "Manual"
 msgstr "Manuel"
 
@@ -961,60 +961,68 @@ msgstr "Document importé."
 msgid "File ignored."
 msgstr "Fichier ignoré."
 
-#: app/expenses/form_parsing.py:52 app/flights/form_parsing.py:105
+#: app/expenses/form_parsing.py:54 app/flights/form_parsing.py:105
 #: app/flights/shared_flight.py:182 app/pilots/form_parsing.py:110
 msgid "Date is required."
 msgstr "La date est obligatoire."
 
-#: app/expenses/form_parsing.py:56
+#: app/expenses/form_parsing.py:58
 msgid "Invalid date format."
 msgstr "Format de date invalide."
 
-#: app/expenses/form_parsing.py:59
+#: app/expenses/form_parsing.py:61
 msgid "Invalid expense type."
 msgstr "Type de dépense invalide."
 
-#: app/expenses/form_parsing.py:66
+#: app/expenses/form_parsing.py:68
 msgid "Invalid expense category."
 msgstr "Catégorie de dépense invalide."
 
-#: app/expenses/form_parsing.py:69
+#: app/expenses/form_parsing.py:71
 msgid "Amount is required."
 msgstr "Le montant est obligatoire."
 
-#: app/expenses/form_parsing.py:75
+#: app/expenses/form_parsing.py:77
 msgid "Amount must be a non-negative number."
 msgstr "Le montant doit être un nombre positif ou nul."
 
-#: app/expenses/form_parsing.py:84
+#: app/expenses/form_parsing.py:88
+msgid "The amount paid must be a positive number."
+msgstr "Le montant payé doit être un nombre positif."
+
+#: app/expenses/form_parsing.py:92
+msgid "Choose the currency the amount was paid in."
+msgstr "Choisissez la devise dans laquelle le montant a été payé."
+
+#: app/expenses/form_parsing.py:103
 msgid "Quantity must be a non-negative number."
 msgstr "La quantité doit être un nombre positif ou nul."
 
-#: app/expenses/form_parsing.py:91
+#: app/expenses/form_parsing.py:110
 msgid "Coverage start and end dates must both be set, or both left blank."
 msgstr "Les dates de début et de fin de couverture doivent être toutes les deux renseignées, ou toutes les deux laissées vides."
 
-#: app/expenses/form_parsing.py:97
+#: app/expenses/form_parsing.py:116
 msgid "Invalid coverage date format."
 msgstr "Format de date de couverture invalide."
 
-#: app/expenses/form_parsing.py:99
+#: app/expenses/form_parsing.py:118
 msgid "Coverage end date must not be before the start date."
 msgstr "La date de fin de couverture ne doit pas être antérieure à la date de début."
 
-#: app/expenses/form_parsing.py:102
+#: app/expenses/form_parsing.py:121
 msgid "Invalid recurrence."
 msgstr "Récurrence invalide."
 
-#: app/expenses/form_parsing.py:106
+#: app/expenses/form_parsing.py:125
 msgid "A recurrence end date requires a recurrence."
 msgstr "Une date de fin de récurrence nécessite une récurrence."
 
-#: app/expenses/form_parsing.py:110
+#: app/expenses/form_parsing.py:129
 msgid "Invalid recurrence end date format."
 msgstr "Format de date de fin de récurrence invalide."
 
-#: app/expenses/form_parsing.py:113
+#: app/expenses/form_parsing.py:132
 msgid "The recurrence end date must not be before the expense date."
 msgstr "La date de fin de récurrence ne doit pas être antérieure à la date de la dépense."
 
@@ -1034,7 +1042,7 @@ msgstr "Dépense supprimée."
 msgid "This file type is not allowed for receipts."
 msgstr "Ce type de fichier n'est pas autorisé pour les justificatifs."
 
-#: app/expenses/routes.py:373
+#: app/expenses/routes.py:375
 #, python-format
 msgid "Expense receipt %(date)s"
 msgstr "Justificatif de dépense %(date)s"
@@ -3536,7 +3544,7 @@ msgstr "Statut"
 #: app/templates/documents/upload_form.html:22
 #: app/templates/documents/upload_form.html:107
 #: app/templates/expenses/expense_form.html:19
-#: app/templates/expenses/expense_form.html:203
+#: app/templates/expenses/expense_form.html:231
 #: app/templates/flights/airframe_import_map.html:160
 #: app/templates/flights/flight_form.html:45
 #: app/templates/flights/flight_form.html:49
@@ -4498,8 +4506,8 @@ msgstr "Réservoirs de carburant"
 #: app/templates/expenses/expense_form.html:95
 #: app/templates/expenses/expense_form.html:119
 #: app/templates/expenses/expense_form.html:128
-#: app/templates/expenses/expense_form.html:160
-#: app/templates/expenses/expense_form.html:183
+#: app/templates/expenses/expense_form.html:188
+#: app/templates/expenses/expense_form.html:211
 #: app/templates/flights/flight_form.html:165
 #: app/templates/flights/flight_form.html:376
 #: app/templates/flights/flight_form.html:513
@@ -4612,7 +4620,7 @@ msgstr "Détermine comment les temps de vol importés via GPS sont arrondis dans
 #: app/templates/config/settings.html:204
 #: app/templates/config/settings.html:449
 #: app/templates/documents/edit_form.html:100
-#: app/templates/expenses/expense_form.html:200
+#: app/templates/expenses/expense_form.html:228
 #: app/templates/flights/flight_form.html:862
 #: app/templates/maintenance/amp_declaration_form.html:174
 #: app/templates/maintenance/trigger_form.html:217
@@ -4816,7 +4824,7 @@ msgstr "ARCHIVÉ"
 #: app/templates/aircraft/wb_list.html:97
 #: app/templates/config/renters_list.html:61
 #: app/templates/pilots/entry_detail.html:41
-#: app/templates/pilots/logbook.html:290 app/templates/refuels/list.html:173
+#: app/templates/pilots/logbook.html:290 app/templates/refuels/list.html:175
 #: app/templates/reservations/calendar.html:152
 #: app/templates/snags/list.html:148
 msgid "Edit"
@@ -5114,7 +5122,7 @@ msgid "Refuels"
 msgstr "Pleins"
 
 #: app/templates/aircraft/detail.html:728 app/templates/refuels/list.html:20
-#: app/templates/refuels/list.html:199 app/templates/refuels/refuel_form.html:3
+#: app/templates/refuels/list.html:201 app/templates/refuels/refuel_form.html:3
 #: app/templates/refuels/refuel_form.html:12
 msgid "Log a refuel"
 msgstr "Enregistrer un plein"
@@ -8578,12 +8586,28 @@ msgid "Currency"
 msgstr "Devise"
 
 #: app/templates/expenses/expense_form.html:160
+msgid "Paid in another currency?"
+msgstr "Payé dans une autre devise ?"
+
+#: app/templates/expenses/expense_form.html:163
+msgid "Amount paid"
+msgstr "Montant payé"
+
+#: app/templates/expenses/expense_form.html:169
+msgid "Currency paid"
+msgstr "Devise payée"
+
+#: app/templates/expenses/expense_form.html:181
+msgid "For your records only: costs are always calculated with the amount above, as charged to you."
+msgstr "Pour information uniquement : les coûts sont toujours calculés avec le montant ci-dessus, tel qu'il vous a été facturé."
+
+#: app/templates/expenses/expense_form.html:188
 #: app/templates/expenses/list.html:90 app/templates/refuels/list.html:127
 #: app/templates/refuels/refuel_form.html:30
 msgid "Quantity"
 msgstr "Quantité"
 
-#: app/templates/expenses/expense_form.html:167
+#: app/templates/expenses/expense_form.html:195
 #: app/templates/flights/flight_form.html:698
 #: app/templates/flights/flight_form.html:725
 #: app/templates/offline/workbench.html:105
@@ -8592,11 +8616,11 @@ msgstr "Quantité"
 msgid "Unit"
 msgstr "Unité"
 
-#: app/templates/expenses/expense_form.html:183
+#: app/templates/expenses/expense_form.html:211
 msgid "Receipt / invoice"
 msgstr "Justificatif / facture"
 
-#: app/templates/expenses/expense_form.html:191
+#: app/templates/expenses/expense_form.html:219
 msgid "uploading a new file replaces it"
 msgstr "téléverser un nouveau fichier le remplace"
 
@@ -8625,33 +8649,38 @@ msgstr "Générée automatiquement — cliquez pour ouvrir la dépense récurren
 msgid "Generated automatically from a repeating expense"
 msgstr "Générée automatiquement à partir d'une dépense récurrente"
 
-#: app/templates/expenses/list.html:149
+#: app/templates/expenses/list.html:134 app/templates/refuels/list.html:148
+#, python-format
+msgid "paid %(amount)s %(currency)s"
+msgstr "payé %(amount)s %(currency)s"
+
+#: app/templates/expenses/list.html:150
 msgid "View receipt"
 msgstr "Voir le justificatif"
 
-#: app/templates/expenses/list.html:154 app/templates/expenses/list.html:160
+#: app/templates/expenses/list.html:155 app/templates/expenses/list.html:161
 msgid "Download receipt"
 msgstr "Télécharger le justificatif"
 
-#: app/templates/expenses/list.html:173
+#: app/templates/expenses/list.html:174
 msgid "Delete this expense?"
 msgstr "Supprimer cette dépense ?"
 
-#: app/templates/expenses/list.html:185 app/templates/pilots/logbook.html:219
+#: app/templates/expenses/list.html:186 app/templates/pilots/logbook.html:219
 #: app/templates/reservations/charge.html:46
 #: app/templates/reservations/detail.html:152
 msgid "Total"
 msgstr "Total"
 
-#: app/templates/expenses/list.html:197
+#: app/templates/expenses/list.html:198
 msgid "No expenses recorded for the selected filters."
 msgstr "Aucune dépense enregistrée pour les filtres sélectionnés."
 
-#: app/templates/expenses/list.html:197
+#: app/templates/expenses/list.html:198
 msgid "No expenses recorded."
 msgstr "Aucune dépense enregistrée."
 
-#: app/templates/expenses/list.html:201
+#: app/templates/expenses/list.html:202
 msgid "Add first expense"
 msgstr "Ajouter la première dépense"
 
@@ -11564,19 +11593,19 @@ msgstr "après le vol"
 msgid "Refuel without a flight"
 msgstr "Avitaillement hors vol"
 
-#: app/templates/refuels/list.html:156
+#: app/templates/refuels/list.html:158
 msgid "Edit the cost"
 msgstr "Modifier le coût"
 
-#: app/templates/refuels/list.html:162 app/templates/refuels/list.html:167
+#: app/templates/refuels/list.html:164 app/templates/refuels/list.html:169
 msgid "Add cost"
 msgstr "Ajouter le coût"
 
-#: app/templates/refuels/list.html:179
+#: app/templates/refuels/list.html:181
 msgid "Delete this refuel?"
 msgstr "Supprimer ce plein ?"
 
-#: app/templates/refuels/list.html:195
+#: app/templates/refuels/list.html:197
 msgid "No refuels in this period."
 msgstr "Aucun avitaillement sur cette période."
 

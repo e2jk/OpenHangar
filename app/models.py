@@ -2156,6 +2156,12 @@ class Expense(db.Model):
     description = db.Column(db.String(255), nullable=True)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
     currency = db.Column(db.String(4), nullable=False, default="EUR")
+    # What was actually paid when that was in another currency (e.g. fuel
+    # bought abroad in GBP, settled in EUR on the bank statement — `amount`
+    # / `currency` above). Informative only: every cost figure uses
+    # `amount`; this is never converted or summed.
+    paid_amount = db.Column(db.Numeric(10, 2), nullable=True)
+    paid_currency = db.Column(db.String(4), nullable=True)
     quantity = db.Column(db.Numeric(8, 2), nullable=True)  # litres or gallons of fuel
     unit = db.Column(db.String(8), nullable=True)  # L, gal
     # Phase 36: optional coverage span for fixed costs (e.g. an annual insurance
