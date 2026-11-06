@@ -27,7 +27,7 @@
         {{ _('Edit / New Logbook Entry') }}
       </h1>
     </div>
-    <a href="{{ url_for('pilots.logbook') }}" class="btn btn-ac-ghost">
+    <a href="{{ logbook_list_url() }}" class="btn btn-ac-ghost">
       <i class="bi bi-arrow-left me-1"></i>{{ _('Logbook') }}
     </a>
   </div>
@@ -290,7 +290,7 @@
         <button type="submit" class="btn btn-ac-primary">
           <i class="bi bi-floppy me-1"></i>{% if action == 'edit' %}{{ _('Save Changes') }}{% else %}{{ _('Add Entry') }}{% endif %}
         </button>
-        <a href="{{ url_for('pilots.logbook') }}" class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
+        <a href="{{ logbook_list_url() }}" class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
       </div>
 
     </form>

@@ -875,6 +875,35 @@ def view_entry(entry_id: int) -> ResponseReturnValue:
 # ── Logbook list ──────────────────────────────────────────────────────────────
 
 
+# The logbook list's view (page, sort order, page size), remembered so that
+# going from the list to a flight and back — via the flight page's back
+# button, the edit form's back/cancel, or after saving/deleting the flight —
+# returns to the same page of the list instead of the first one.
+_LOGBOOK_VIEW_SESSION_KEY = "pilot_logbook_view"
+
+
+def _remember_logbook_view(page: int, order: str, per_page: str) -> None:
+    view: dict[str, Any] = {}
+    if page > 1:
+        view["page"] = page
+    if order == "asc":
+        view["order"] = order
+    if per_page != str(_DEFAULT_PER_PAGE):
+        view["per_page"] = per_page
+    session[_LOGBOOK_VIEW_SESSION_KEY] = view
+
+
+def logbook_list_url() -> str:
+    """URL of the logbook list as last viewed (see _remember_logbook_view)."""
+    view = session.get(_LOGBOOK_VIEW_SESSION_KEY) or {}
+    return url_for("pilots.logbook", **view)
+
+
+@pilots_bp.app_context_processor
+def _inject_logbook_list_url() -> dict[str, Any]:
+    return {"logbook_list_url": logbook_list_url}
+
+
 @pilots_bp.route("/pilot/logbook")
 @login_required
 @require_pilot_access
@@ -893,6 +922,8 @@ def logbook() -> ResponseReturnValue:
             else _DEFAULT_PER_PAGE
         )
     )
+
+    _remember_logbook_view(page, order, "all" if show_all else str(per_page))
 
     q = _my_entries_query(uid)
     if order == "asc":
@@ -1100,7 +1131,7 @@ def edit_entry(entry_id: int) -> ResponseReturnValue:
         db.session.commit()
         notify_shared_changes(entry, uid, shared_before)
         flash(_("Logbook entry updated."), "success")
-        return redirect(url_for("pilots.logbook"))
+        return redirect(logbook_list_url())
 
     return render_template(
         "pilots/entry_form.html",
@@ -1150,7 +1181,7 @@ def delete_entry(entry_id: int) -> ResponseReturnValue:
             ),
             "success",
         )
-        return redirect(url_for("pilots.logbook"))
+        return redirect(logbook_list_url())
 
     # Unified model: there's only one row now, so deleting it removes both
     # the pilot's own record and the airframe log entry at once (no more
@@ -1167,7 +1198,7 @@ def delete_entry(entry_id: int) -> ResponseReturnValue:
     db.session.delete(entry)
     db.session.commit()
     flash(_("Logbook entry deleted."), "success")
-    return redirect(url_for("pilots.logbook"))
+    return redirect(logbook_list_url())
 
 
 # ── GPS track helper ──────────────────────────────────────────────────────────
