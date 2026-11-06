@@ -1499,7 +1499,27 @@ jobs:
           open("/tmp/auto-notes.md", "w").write(f"{head}\n{lines}\n\n{footer}{tail}")
           PY
           fi
+          # The hand-written release summary (docs/release-notes/next.md)
+          # goes on top — only when it changed since the previous version
+          # tag, so a summary written for an earlier release is never
+          # reused. If that can't be checked (e.g. history not fetched),
+          # it's left out rather than risk a stale one.
+          SUMMARY_FILE=docs/release-notes/next.md
+          PREV_TAG=$(git tag --list 'v[0-9]*' --sort=-version:refname | awk -v me="v${VERSION}" '
+            found { print; exit }
+            $0 == me { found=1 }
+          ')
+          : > /tmp/summary.md
+          if [ -n "$PREV_TAG" ] && [ -s "$SUMMARY_FILE" ] \
+              && git cat-file -e "${PREV_TAG}^{commit}" 2>/dev/null \
+              && ! git diff --quiet "$PREV_TAG" "${GIT_SHA}" -- "$SUMMARY_FILE" 2>/dev/null; then
+            { echo "## Summary"; echo; cat "$SUMMARY_FILE"; echo; } > /tmp/summary.md
+            echo "Release summary included (changed since ${PREV_TAG})."
+          else
+            echo "No release summary (unchanged since ${PREV_TAG:-<none>}, or empty)."
+          fi
           {
+            cat /tmp/summary.md
             # shellcheck disable=SC2016  # backticks are literal markdown code-fences, not command substitution
             printf '## Docker Image\n\n```\ndocker pull ghcr.io/e2jk/openhangar:%s\n```\n\n' "${VERSION}"
             cat /tmp/auto-notes.md
