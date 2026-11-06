@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import copy
 import csv
 import hashlib
 import io
 import json
 import math
 import re
+import threading
+from collections import OrderedDict
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
@@ -378,12 +381,43 @@ def parse_file(data: bytes, filename: str) -> ParsedFile:
     """
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     if ext in ("xlsx", "xls"):
-        return _parse_excel(data, filename)
+        return _parse_excel_cached(data, filename)
     if ext == "csv":
         return _parse_csv(data, filename)
     raise ValueError(
         f"Unsupported file format: .{ext} — please upload a .csv or .xlsx file."
     )
+
+
+# The import flow re-parses the same uploaded workbook on every step — the
+# mapping page, execute, and twice per resolved row on the review page (the
+# resolve POST, then the review page it redirects to). openpyxl needs ~1 s
+# for a few hundred logbook rows (it loads the workbook twice, see
+# _parse_excel), so each review click used to cost seconds of server time.
+# A small per-process cache keyed on the file's content hash makes the
+# repeats free. Keyed on the active locale's preferred sheet names too,
+# since they decide which sheet gets picked. Entries are deep-copied in
+# and out so a caller mutating its ParsedFile can never affect another's.
+_EXCEL_PARSE_CACHE_SIZE = 4
+_excel_parse_cache: OrderedDict[tuple[str, str, frozenset[str]], ParsedFile] = (
+    OrderedDict()
+)
+_excel_parse_cache_lock = threading.Lock()
+
+
+def _parse_excel_cached(data: bytes, filename: str) -> ParsedFile:
+    key = (hashlib.sha256(data).hexdigest(), filename, _preferred_sheet_names())
+    with _excel_parse_cache_lock:
+        cached = _excel_parse_cache.get(key)
+        if cached is not None:
+            _excel_parse_cache.move_to_end(key)
+            return copy.deepcopy(cached)
+    parsed = _parse_excel(data, filename)
+    with _excel_parse_cache_lock:
+        _excel_parse_cache[key] = copy.deepcopy(parsed)
+        while len(_excel_parse_cache) > _EXCEL_PARSE_CACHE_SIZE:
+            _excel_parse_cache.popitem(last=False)
+    return parsed
 
 
 # English-only Excel tab names used to identify the logbook sheet.

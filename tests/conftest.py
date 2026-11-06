@@ -102,6 +102,17 @@ def client(app):
 
 
 @pytest.fixture(autouse=True)
+def _clear_excel_parse_cache():
+    """pilots.logbook_import caches Excel parses per process by content hash;
+    clear it per test so one test's parse never short-circuits another's
+    (e.g. a test that makes openpyxl fail on purpose)."""
+    from pilots import logbook_import  # pyright: ignore[reportMissingImports]
+
+    logbook_import._excel_parse_cache.clear()
+    yield
+
+
+@pytest.fixture(autouse=True)
 def _block_tile_fetches():
     """Prevent real HTTP tile fetches in every test.
 
