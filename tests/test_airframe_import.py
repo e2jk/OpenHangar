@@ -1149,6 +1149,28 @@ class TestAirframeImportReviewRoute:
         assert rv.status_code == 302
         assert "/import/review" in rv.headers["Location"]
 
+    def test_review_preselects_top_candidate_even_when_ambiguous(self, app, client):
+        """With several candidates, the highest-scoring one's "overwrite" is
+        pre-selected (not "keep"), same as with a single candidate."""
+        import re
+
+        _uid, tid = _create_user_and_tenant(app, email="arv-multi@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARVM")
+        self._seed_near_match(app, acid)
+        self._seed_near_match(app, acid)
+        _login(app, client, email="arv-multi@example.com")
+
+        _upload(client, acid, csv_text=self._conflict_csv())
+        self._execute_conflict(client, acid)
+        page = client.get(f"/aircraft/{acid}/flights/import/review").data.decode()
+
+        radios = re.findall(r'<input[^>]*name="decision"[^>]*>', page)
+        overwrite = [r for r in radios if 'value="overwrite:' in r]
+        assert len(overwrite) == 2
+        assert "checked" in overwrite[0]
+        assert "checked" not in overwrite[1]
+        assert all("checked" not in r for r in radios if 'value="keep"' in r)
+
     def test_review_get_no_session_redirects(self, app, client):
         _uid, tid = _create_user_and_tenant(app, email="arv2@example.com")
         acid = _add_aircraft(app, tid, registration="OO-ARV2")

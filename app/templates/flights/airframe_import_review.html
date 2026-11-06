@@ -101,7 +101,7 @@
           <div class="form-check">
             <input class="form-check-input" type="radio" name="decision"
                    id="ow_{{ row.row_num }}_{{ cand.id }}" value="overwrite:{{ cand.id }}"
-                   {% if row.candidates|length == 1 and loop.first %}checked{% endif %}>
+                   {% if loop.first %}checked{% endif %}>
             <label class="form-check-label" for="ow_{{ row.row_num }}_{{ cand.id }}">
               {{ _('Overwrite this flight with the data from this file') }}
             </label>
@@ -111,8 +111,7 @@
 
         <div class="form-check">
           <input class="form-check-input" type="radio" name="decision"
-                 id="keep_{{ row.row_num }}" value="keep"
-                 {% if row.candidates|length > 1 %}checked{% endif %}>
+                 id="keep_{{ row.row_num }}" value="keep">
           <label class="form-check-label" for="keep_{{ row.row_num }}">
             {{ _('Keep this aircraft\'s log as it is — do not import this row') }}
           </label>
