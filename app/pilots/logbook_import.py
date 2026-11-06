@@ -1644,6 +1644,37 @@ def _is_no_takeoff_match(kwargs: dict[str, Any], existing: Any) -> bool:
     return is_no_takeoff_pair(airframe_side_of_flight(existing), pilot)
 
 
+def plan_bulk_overwrites(
+    conflicts: list[Any], resolved: dict[str, str]
+) -> tuple[list[tuple[Any, int]], list[Any]]:
+    """For the review page's "overwrite all remaining" action: pair each
+    remaining conflict row (a ConflictRow or AirframeConflictRow — anything
+    with .candidates sorted best match first) with its best-scoring
+    candidate. Returns (planned, left_for_review).
+
+    Two rows never overwrite the same existing flight: a candidate already
+    overwritten during this review (a decision in *resolved*) or claimed by
+    an earlier row in this pass is off limits, and a row whose best match
+    is taken is left for a manual decision rather than falling back to a
+    weaker candidate that may well be the wrong flight.
+    """
+    claimed = {
+        int(decision.split(":", 1)[1])
+        for decision in resolved.values()
+        if decision.startswith("overwrite:")
+    }
+    planned: list[tuple[Any, int]] = []
+    left: list[Any] = []
+    for conflict in conflicts:
+        best_id = conflict.candidates[0][1]
+        if best_id in claimed:
+            left.append(conflict)
+            continue
+        claimed.add(best_id)
+        planned.append((conflict, best_id))
+    return planned, left
+
+
 def split_auto_merges(
     conflicts: list[ConflictRow],
 ) -> tuple[list[tuple[ConflictRow, int]], list[ConflictRow]]:

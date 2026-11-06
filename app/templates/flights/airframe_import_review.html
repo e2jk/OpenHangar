@@ -20,6 +20,28 @@
     </span>
   </div>
 
+  {% if rows|length > 1 %}
+  <div class="ac-form-card p-3 mb-4 d-flex flex-wrap align-items-center gap-2">
+    <span class="me-auto">
+      <i class="bi bi-lightning-charge me-1"></i>{{ ngettext('Decide the remaining row at once:', 'Decide all %(n)d remaining rows at once:', rows|length, n=rows|length) }}
+    </span>
+    <form method="POST" action="{{ url_for('flights.airframe_import_review_resolve_all', aircraft_id=aircraft.id) }}"
+          data-confirm="{{ ngettext('Overwrite one entry with the data from this file, using its best match?', 'Overwrite %(n)d entries with the data from this file, each with its best match?', rows|length, n=rows|length) }}">
+      <input type="hidden" name="decision" value="overwrite">
+      <button type="submit" class="btn btn-ac-primary btn-sm">
+        <i class="bi bi-pencil-square me-1"></i>{{ _('Overwrite all with their best match') }}
+      </button>
+    </form>
+    <form method="POST" action="{{ url_for('flights.airframe_import_review_resolve_all', aircraft_id=aircraft.id) }}"
+          data-confirm="{{ ngettext('Skip the remaining row and keep this aircraft\'s log as it is?', 'Skip all %(n)d remaining rows and keep this aircraft\'s log as it is?', rows|length, n=rows|length) }}">
+      <input type="hidden" name="decision" value="keep">
+      <button type="submit" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-x-circle me-1"></i>{{ _('Keep this aircraft\'s log as it is for all') }}
+      </button>
+    </form>
+  </div>
+  {% endif %}
+
   {% set field_labels = [
     ('departure_icao', 'departure_icao', _('Departure')),
     ('arrival_icao', 'arrival_icao', _('Arrival')),

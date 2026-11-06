@@ -7,6 +7,7 @@ Tests for bulk import of a historical airframe logbook (CSV/Excel):
 """
 
 import json
+import os
 from datetime import date, time
 from io import BytesIO
 
@@ -2033,3 +2034,115 @@ class TestImportSummaryWording:
             assert _skipped_rows_summary(
                 SimpleNamespace(subtotals=3, skipped=[1, 2])
             ) == ["3 subtotal rows skipped.", "2 rows could not be parsed."]
+
+
+class TestAirframeImportReviewResolveAll:
+    """The review page's "decide all remaining rows at once" action."""
+
+    def _start_review(self, app, client, email: str, csv_rows: str) -> tuple[int, int]:
+        _uid, tid = _create_user_and_tenant(app, email=email)
+        acid = _add_aircraft(app, tid, registration="OO-" + email[:3].upper())
+        with app.app_context():
+            existing = Flight(
+                aircraft_id=acid,
+                date=date(2020, 5, 1),
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+                flight_time=1.0,
+                landing_count=2,
+            )
+            db.session.add(existing)
+            db.session.commit()
+            existing_id = existing.id
+        _login(app, client, email=email)
+        _upload(client, acid, csv_text="Date,From,To,Flight time,Landings\n" + csv_rows)
+        rv = client.post(
+            f"/aircraft/{acid}/flights/import/execute",
+            data={
+                "mapping_date": "date",
+                "mapping_from": "departure_icao",
+                "mapping_to": "arrival_icao",
+                "mapping_flight time": "flight_time",
+                "mapping_landings": "landing_count",
+            },
+        )
+        assert "/import/review" in rv.headers["Location"]
+        return acid, existing_id
+
+    def _url(self, acid: int) -> str:
+        return f"/aircraft/{acid}/flights/import/review/resolve-all"
+
+    _TWO_ROWS = "2020-05-01,EBOS,EBBR,1.4,2\n2020-05-01,EBOS,EBBR,1.3,2\n"
+
+    def test_review_page_offers_bulk_actions_for_several_rows(self, app, client):
+        acid, _eid = self._start_review(app, client, "rb0@example.com", self._TWO_ROWS)
+        page = client.get(f"/aircraft/{acid}/flights/import/review").data.decode()
+        assert page.count("/flights/import/review/resolve-all") == 2
+
+    def test_overwrite_all_completes_review(self, app, client):
+        acid, existing_id = self._start_review(
+            app, client, "rb1@example.com", "2020-05-01,EBOS,EBBR,1.4,2\n"
+        )
+        rv = client.post(self._url(acid), data={"decision": "overwrite"})
+        assert "review" not in rv.headers["Location"]
+        with app.app_context():
+            assert float(db.session.get(Flight, existing_id).flight_time) == 1.4
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 1
+
+    def test_overwrite_all_never_overwrites_one_flight_twice(self, app, client):
+        acid, existing_id = self._start_review(
+            app, client, "rb2@example.com", self._TWO_ROWS
+        )
+        rv = client.post(self._url(acid), data={"decision": "overwrite"})
+        assert rv.headers["Location"].endswith("/flights/import/review")
+        with client.session_transaction() as sess:
+            flashes = [m for _c, m in sess.pop("_flashes", [])]
+        assert any("already used by another row" in m for m in flashes)
+        with app.app_context():
+            assert float(db.session.get(Flight, existing_id).flight_time) == 1.4
+        page = client.get(f"/aircraft/{acid}/flights/import/review").data.decode()
+        assert page.count('name="row_num"') == 1
+
+    def test_keep_all_leaves_log_unchanged(self, app, client):
+        acid, existing_id = self._start_review(
+            app, client, "rb3@example.com", self._TWO_ROWS
+        )
+        rv = client.post(self._url(acid), data={"decision": "keep"})
+        assert "review" not in rv.headers["Location"]
+        with app.app_context():
+            assert float(db.session.get(Flight, existing_id).flight_time) == 1.0
+            assert Flight.query.filter_by(aircraft_id=acid).count() == 1
+
+    def test_invalid_decision_rejected(self, app, client):
+        acid, _eid = self._start_review(
+            app, client, "rb4@example.com", "2020-05-01,EBOS,EBBR,1.4,2\n"
+        )
+        rv = client.post(self._url(acid), data={"decision": "new"})
+        assert rv.headers["Location"].endswith("/flights/import/review")
+
+    def test_no_session_redirects_to_upload(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="rb5@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-RB5")
+        _login(app, client, email="rb5@example.com")
+        rv = client.post(self._url(acid), data={"decision": "keep"})
+        assert rv.headers["Location"].endswith("/flights/import")
+
+    def test_tmp_file_missing_redirects_to_upload(self, app, client):
+        acid, _eid = self._start_review(
+            app, client, "rb6@example.com", "2020-05-01,EBOS,EBBR,1.4,2\n"
+        )
+        with client.session_transaction() as sess:
+            os.remove(sess["airframe_import_review"]["tmp_path"])
+        rv = client.post(self._url(acid), data={"decision": "keep"})
+        assert rv.headers["Location"].endswith("/flights/import")
+
+    def test_unreadable_file_redirects_to_upload(self, app, client):
+        acid, _eid = self._start_review(
+            app, client, "rb7@example.com", "2020-05-01,EBOS,EBBR,1.4,2\n"
+        )
+        with client.session_transaction() as sess:
+            state = sess["airframe_import_review"]
+            state["original_filename"] = "log.pdf"
+            sess["airframe_import_review"] = state
+        rv = client.post(self._url(acid), data={"decision": "keep"})
+        assert rv.headers["Location"].endswith("/flights/import")
