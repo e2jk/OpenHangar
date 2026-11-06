@@ -825,6 +825,32 @@ def preview_rows(
     return result
 
 
+def format_preview_cell(val: Any) -> str:
+    """A raw spreadsheet cell as the mapping-page preview shows it — the way
+    the spreadsheet displays it rather than Python's repr: an Excel date
+    cell (read back as a midnight datetime) as just the date, a time
+    without its ":00" seconds, a duration as hours:minutes. Display only;
+    the import itself parses the raw value (see _FIELD_TYPE)."""
+    if val is None:
+        return ""
+    if isinstance(val, datetime):
+        if val.time() == time(0, 0):
+            return val.date().isoformat()
+        return val.strftime(
+            "%Y-%m-%d %H:%M" if val.second == 0 else "%Y-%m-%d %H:%M:%S"
+        )
+    if isinstance(val, date):
+        return val.isoformat()
+    if isinstance(val, time):
+        return val.strftime("%H:%M" if val.second == 0 else "%H:%M:%S")
+    if isinstance(val, timedelta):
+        total_minutes = round(val.total_seconds() / 60)
+        sign = "-" if total_minutes < 0 else ""
+        hours, minutes = divmod(abs(total_minutes), 60)
+        return f"{sign}{hours}:{minutes:02d}"
+    return str(val)
+
+
 def _date_col_index(norm_cols: list[str], mapping: dict[str, str]) -> int | None:
     for i, col in enumerate(norm_cols):
         if mapping.get(col) == "date":

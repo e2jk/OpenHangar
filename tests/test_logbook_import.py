@@ -4,7 +4,7 @@ import io
 import json
 import os
 import tempfile
-from datetime import UTC, date, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from typing import ClassVar
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
@@ -38,6 +38,7 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     _score_candidate,
     execute_import,
     find_conflicting_rows,
+    format_preview_cell,
     parse_date_value,
     parse_duration_value,
     parse_file,
@@ -1256,6 +1257,64 @@ class TestBlankCellMarker:
         parsed = _make_parsed_file(["date", "dep"], [[date(2024, 1, 1), "[empty]"]])
         rows = preview_rows(parsed, {"date": "date", "dep": "departure_time"})
         assert rows == [{"date": date(2024, 1, 1), "departure_time": None}]
+
+
+class TestPreviewCellFormatting:
+    """The mapping page's preview shows cells as the spreadsheet does, not
+    as Python reprs — e.g. an Excel date cell is read back as a midnight
+    datetime, which used to render as "2026-11-02 00:00:00"."""
+
+    @pytest.mark.parametrize(
+        ("val", "shown"),
+        [
+            (None, ""),
+            (datetime(2026, 11, 2), "2026-11-02"),
+            (datetime(2026, 11, 2, 9, 54), "2026-11-02 09:54"),
+            (datetime(2026, 11, 2, 9, 54, 30), "2026-11-02 09:54:30"),
+            (date(2026, 11, 2), "2026-11-02"),
+            (time(18, 42), "18:42"),
+            (time(18, 42, 5), "18:42:05"),
+            (timedelta(hours=1, minutes=48), "1:48"),
+            (timedelta(days=8, seconds=76680), "213:18"),
+            (timedelta(minutes=-30), "-0:30"),
+            ("02/11/26", "02/11/26"),
+            (1972.8, "1972.8"),
+            (3, "3"),
+        ],
+    )
+    def test_formats(self, val, shown):
+        assert format_preview_cell(val) == shown
+
+    def test_mapping_page_preview_shows_plain_dates(self, app, client):
+        import openpyxl  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            uid = _make_user("preview-dates@example.com")
+        _login(client, uid)
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(["Date", "From", "Dep", "To", "Arr", "SE"])
+        ws.append(
+            [
+                datetime(2026, 11, 2),
+                "EGMC",
+                time(9, 54),
+                "EGHF",
+                time(11, 12),
+                time(1, 18),
+            ]
+        )
+        buf = io.BytesIO()
+        wb.save(buf)
+        rv = client.post(
+            "/pilot/logbook/import",
+            data={"logbook_file": (io.BytesIO(buf.getvalue()), "log.xlsx")},
+            content_type="multipart/form-data",
+        )
+        page = rv.data.decode()
+        assert "<td>2026-11-02</td>" in page
+        assert "<td>09:54</td>" in page
+        assert "00:00:00" not in page
 
 
 class TestTypeHints:
