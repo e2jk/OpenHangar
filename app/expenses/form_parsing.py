@@ -43,6 +43,8 @@ def parse_expense_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], str | No
     currency = (f.get("currency") or "EUR").strip()
     quantity_str = (f.get("quantity") or "").strip()
     unit = (f.get("unit") or "").strip() or None
+    paid_amount_str = (f.get("paid_amount") or "").strip()
+    paid_currency = (f.get("paid_currency") or "").strip().upper() or None
     coverage_start_str = (f.get("coverage_start") or "").strip()
     coverage_end_str = (f.get("coverage_end") or "").strip()
     recurrence = (f.get("recurrence") or "").strip() or None
@@ -73,6 +75,23 @@ def parse_expense_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], str | No
             raise ValueError
     except ValueError:
         return {}, str(_("Amount must be a non-negative number."))
+
+    # Optional amount actually paid in another currency — informative only
+    # (see Expense.paid_amount). Left blank, any currency choice is ignored.
+    paid_amount = None
+    if paid_amount_str:
+        try:
+            paid_amount = float(paid_amount_str)
+            if not math.isfinite(paid_amount) or paid_amount <= 0:
+                raise ValueError
+        except ValueError:
+            return {}, str(_("The amount paid must be a positive number."))
+        if paid_currency is None or not (
+            len(paid_currency) == 3 and paid_currency.isalpha()
+        ):
+            return {}, str(_("Choose the currency the amount was paid in."))
+    else:
+        paid_currency = None
 
     quantity = None
     if quantity_str:
@@ -120,6 +139,8 @@ def parse_expense_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], str | No
         "description": description,
         "amount": amount,
         "currency": currency,
+        "paid_amount": paid_amount,
+        "paid_currency": paid_currency,
         "quantity": quantity,
         "unit": unit,
         "coverage_start": coverage_start,

@@ -344,3 +344,22 @@ class TestExpenseFormRecurrence:
         assert resp.status_code == 200
         assert b"bi-arrow-repeat" in resp.data
         assert f"/expenses/{tpl_id}/edit".encode() in resp.data
+
+
+class TestPaidInAnotherCurrencyCopied:
+    def test_generated_rows_keep_the_paid_amount(self, app):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        tpl_id = _add_template(
+            app,
+            acid,
+            date(2026, 1, 15),
+            "monthly",
+            paid_amount=210,
+            paid_currency="GBP",
+        )
+        with app.app_context():
+            materialize_recurring_expenses(today=date(2026, 2, 20))
+            row = Expense.query.filter_by(recurring_template_id=tpl_id).one()
+            assert float(row.paid_amount) == 210.0
+            assert row.paid_currency == "GBP"

@@ -128,3 +128,31 @@ class TestParseExpenseFields:
         )
         assert error is None
         assert values["recurrence_end"] == date(2026, 12, 1)
+
+
+class TestPaidInAnotherCurrency:
+    def test_amount_and_currency_kept(self):
+        values, error = parse_expense_fields(
+            _valid_form(paid_amount="79.50", paid_currency="gbp")
+        )
+        assert error is None
+        assert (values["paid_amount"], values["paid_currency"]) == (79.5, "GBP")
+
+    def test_blank_amount_ignores_currency(self):
+        values, error = parse_expense_fields(_valid_form(paid_currency="GBP"))
+        assert error is None
+        assert (values["paid_amount"], values["paid_currency"]) == (None, None)
+
+    def test_amount_must_be_positive_number(self):
+        for bad in ("0", "-5", "abc", "nan"):
+            _values, error = parse_expense_fields(
+                _valid_form(paid_amount=bad, paid_currency="GBP")
+            )
+            assert error is not None and "amount paid" in error
+
+    def test_currency_required_and_well_formed(self):
+        for bad in ("", "POUNDS", "G1P"):
+            _values, error = parse_expense_fields(
+                _valid_form(paid_amount="10", paid_currency=bad)
+            )
+            assert error is not None and "currency" in error

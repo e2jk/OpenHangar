@@ -121,27 +121,27 @@ msgstr "Verzekering"
 msgid "Other"
 msgstr "Overig"
 
-#: app/models.py:3009
+#: app/models.py:3015
 msgid "AD"
 msgstr "AD"
 
-#: app/models.py:3010
+#: app/models.py:3016
 msgid "Mandatory SB"
 msgstr "Verplichte SB"
 
-#: app/models.py:3011
+#: app/models.py:3017
 msgid "SB"
 msgstr "SB"
 
-#: app/models.py:3012
+#: app/models.py:3018
 msgid "SIB"
 msgstr "SIB"
 
-#: app/models.py:3013 app/templates/dashboard.html:425
+#: app/models.py:3019 app/templates/dashboard.html:425
 msgid "ARC"
 msgstr "ARC"
 
-#: app/models.py:3014
+#: app/models.py:3020
 msgid "Manual"
 msgstr "Handleiding"
 
@@ -961,60 +961,68 @@ msgstr "Document geïmporteerd."
 msgid "File ignored."
 msgstr "Bestand genegeerd."
 
-#: app/expenses/form_parsing.py:52 app/flights/form_parsing.py:105
+#: app/expenses/form_parsing.py:54 app/flights/form_parsing.py:105
 #: app/flights/shared_flight.py:182 app/pilots/form_parsing.py:110
 msgid "Date is required."
 msgstr "Datum is verplicht."
 
-#: app/expenses/form_parsing.py:56
+#: app/expenses/form_parsing.py:58
 msgid "Invalid date format."
 msgstr "Ongeldig datumformaat."
 
-#: app/expenses/form_parsing.py:59
+#: app/expenses/form_parsing.py:61
 msgid "Invalid expense type."
 msgstr "Ongeldig uitgavetype."
 
-#: app/expenses/form_parsing.py:66
+#: app/expenses/form_parsing.py:68
 msgid "Invalid expense category."
 msgstr "Ongeldige uitgavencategorie."
 
-#: app/expenses/form_parsing.py:69
+#: app/expenses/form_parsing.py:71
 msgid "Amount is required."
 msgstr "Bedrag is verplicht."
 
-#: app/expenses/form_parsing.py:75
+#: app/expenses/form_parsing.py:77
 msgid "Amount must be a non-negative number."
 msgstr "Bedrag moet een niet-negatief getal zijn."
 
-#: app/expenses/form_parsing.py:84
+#: app/expenses/form_parsing.py:88
+msgid "The amount paid must be a positive number."
+msgstr "Het betaalde bedrag moet een positief getal zijn."
+
+#: app/expenses/form_parsing.py:92
+msgid "Choose the currency the amount was paid in."
+msgstr "Kies de munt waarin het bedrag werd betaald."
+
+#: app/expenses/form_parsing.py:103
 msgid "Quantity must be a non-negative number."
 msgstr "Hoeveelheid moet een niet-negatief getal zijn."
 
-#: app/expenses/form_parsing.py:91
+#: app/expenses/form_parsing.py:110
 msgid "Coverage start and end dates must both be set, or both left blank."
 msgstr "De begin- en einddatum van de dekkingsperiode moeten beide zijn ingevuld, of beide leeg gelaten."
 
-#: app/expenses/form_parsing.py:97
+#: app/expenses/form_parsing.py:116
 msgid "Invalid coverage date format."
 msgstr "Ongeldige datumnotatie voor de dekkingsperiode."
 
-#: app/expenses/form_parsing.py:99
+#: app/expenses/form_parsing.py:118
 msgid "Coverage end date must not be before the start date."
 msgstr "De einddatum van de dekkingsperiode mag niet vóór de begindatum liggen."
 
-#: app/expenses/form_parsing.py:102
+#: app/expenses/form_parsing.py:121
 msgid "Invalid recurrence."
 msgstr "Ongeldige herhaling."
 
-#: app/expenses/form_parsing.py:106
+#: app/expenses/form_parsing.py:125
 msgid "A recurrence end date requires a recurrence."
 msgstr "Een einddatum voor herhaling vereist een herhaling."
 
-#: app/expenses/form_parsing.py:110
+#: app/expenses/form_parsing.py:129
 msgid "Invalid recurrence end date format."
 msgstr "Ongeldig formaat voor de einddatum van de herhaling."
 
-#: app/expenses/form_parsing.py:113
+#: app/expenses/form_parsing.py:132
 msgid "The recurrence end date must not be before the expense date."
 msgstr "De einddatum van de herhaling mag niet vóór de datum van de uitgave liggen."
 
@@ -1034,7 +1042,7 @@ msgstr "Uitgave verwijderd."
 msgid "This file type is not allowed for receipts."
 msgstr "Dit bestandstype is niet toegestaan voor bewijsstukken."
 
-#: app/expenses/routes.py:373
+#: app/expenses/routes.py:375
 #, python-format
 msgid "Expense receipt %(date)s"
 msgstr "Bewijsstuk uitgave %(date)s"
@@ -3536,7 +3544,7 @@ msgstr "Status"
 #: app/templates/documents/upload_form.html:22
 #: app/templates/documents/upload_form.html:107
 #: app/templates/expenses/expense_form.html:19
-#: app/templates/expenses/expense_form.html:203
+#: app/templates/expenses/expense_form.html:231
 #: app/templates/flights/airframe_import_map.html:160
 #: app/templates/flights/flight_form.html:45
 #: app/templates/flights/flight_form.html:49
@@ -4498,8 +4506,8 @@ msgstr "Brandstoftanks"
 #: app/templates/expenses/expense_form.html:95
 #: app/templates/expenses/expense_form.html:119
 #: app/templates/expenses/expense_form.html:128
-#: app/templates/expenses/expense_form.html:160
-#: app/templates/expenses/expense_form.html:183
+#: app/templates/expenses/expense_form.html:188
+#: app/templates/expenses/expense_form.html:211
 #: app/templates/flights/flight_form.html:165
 #: app/templates/flights/flight_form.html:376
 #: app/templates/flights/flight_form.html:513
@@ -4612,7 +4620,7 @@ msgstr "Bepaalt hoe GPS-geïmporteerde vluchttijden worden afgerond in het logbo
 #: app/templates/config/settings.html:204
 #: app/templates/config/settings.html:449
 #: app/templates/documents/edit_form.html:100
-#: app/templates/expenses/expense_form.html:200
+#: app/templates/expenses/expense_form.html:228
 #: app/templates/flights/flight_form.html:862
 #: app/templates/maintenance/amp_declaration_form.html:174
 #: app/templates/maintenance/trigger_form.html:217
@@ -4816,7 +4824,7 @@ msgstr "GEARCHIVEERD"
 #: app/templates/aircraft/wb_list.html:97
 #: app/templates/config/renters_list.html:61
 #: app/templates/pilots/entry_detail.html:41
-#: app/templates/pilots/logbook.html:290 app/templates/refuels/list.html:173
+#: app/templates/pilots/logbook.html:290 app/templates/refuels/list.html:175
 #: app/templates/reservations/calendar.html:152
 #: app/templates/snags/list.html:148
 msgid "Edit"
@@ -5114,7 +5122,7 @@ msgid "Refuels"
 msgstr "Tankbeurten"
 
 #: app/templates/aircraft/detail.html:728 app/templates/refuels/list.html:20
-#: app/templates/refuels/list.html:199 app/templates/refuels/refuel_form.html:3
+#: app/templates/refuels/list.html:201 app/templates/refuels/refuel_form.html:3
 #: app/templates/refuels/refuel_form.html:12
 msgid "Log a refuel"
 msgstr "Tankbeurt registreren"
@@ -8578,12 +8586,28 @@ msgid "Currency"
 msgstr "Valuta"
 
 #: app/templates/expenses/expense_form.html:160
+msgid "Paid in another currency?"
+msgstr "Betaald in een andere munt?"
+
+#: app/templates/expenses/expense_form.html:163
+msgid "Amount paid"
+msgstr "Betaald bedrag"
+
+#: app/templates/expenses/expense_form.html:169
+msgid "Currency paid"
+msgstr "Betaalde munt"
+
+#: app/templates/expenses/expense_form.html:181
+msgid "For your records only: costs are always calculated with the amount above, as charged to you."
+msgstr "Alleen ter informatie: kosten worden altijd berekend met het bedrag hierboven, zoals het je werd aangerekend."
+
+#: app/templates/expenses/expense_form.html:188
 #: app/templates/expenses/list.html:90 app/templates/refuels/list.html:127
 #: app/templates/refuels/refuel_form.html:30
 msgid "Quantity"
 msgstr "Hoeveelheid"
 
-#: app/templates/expenses/expense_form.html:167
+#: app/templates/expenses/expense_form.html:195
 #: app/templates/flights/flight_form.html:698
 #: app/templates/flights/flight_form.html:725
 #: app/templates/offline/workbench.html:105
@@ -8592,11 +8616,11 @@ msgstr "Hoeveelheid"
 msgid "Unit"
 msgstr "Eenheid"
 
-#: app/templates/expenses/expense_form.html:183
+#: app/templates/expenses/expense_form.html:211
 msgid "Receipt / invoice"
 msgstr "Bewijsstuk / factuur"
 
-#: app/templates/expenses/expense_form.html:191
+#: app/templates/expenses/expense_form.html:219
 msgid "uploading a new file replaces it"
 msgstr "een nieuw bestand uploaden vervangt het"
 
@@ -8625,33 +8649,38 @@ msgstr "Automatisch gegenereerd — klik om de terugkerende uitgave te openen wa
 msgid "Generated automatically from a repeating expense"
 msgstr "Automatisch gegenereerd uit een terugkerende uitgave"
 
-#: app/templates/expenses/list.html:149
+#: app/templates/expenses/list.html:134 app/templates/refuels/list.html:148
+#, python-format
+msgid "paid %(amount)s %(currency)s"
+msgstr "betaald %(amount)s %(currency)s"
+
+#: app/templates/expenses/list.html:150
 msgid "View receipt"
 msgstr "Bewijsstuk bekijken"
 
-#: app/templates/expenses/list.html:154 app/templates/expenses/list.html:160
+#: app/templates/expenses/list.html:155 app/templates/expenses/list.html:161
 msgid "Download receipt"
 msgstr "Bewijsstuk downloaden"
 
-#: app/templates/expenses/list.html:173
+#: app/templates/expenses/list.html:174
 msgid "Delete this expense?"
 msgstr "Deze uitgave verwijderen?"
 
-#: app/templates/expenses/list.html:185 app/templates/pilots/logbook.html:219
+#: app/templates/expenses/list.html:186 app/templates/pilots/logbook.html:219
 #: app/templates/reservations/charge.html:46
 #: app/templates/reservations/detail.html:152
 msgid "Total"
 msgstr "Totaal"
 
-#: app/templates/expenses/list.html:197
+#: app/templates/expenses/list.html:198
 msgid "No expenses recorded for the selected filters."
 msgstr "Geen uitgaven geregistreerd voor de geselecteerde filters."
 
-#: app/templates/expenses/list.html:197
+#: app/templates/expenses/list.html:198
 msgid "No expenses recorded."
 msgstr "Geen uitgaven geregistreerd."
 
-#: app/templates/expenses/list.html:201
+#: app/templates/expenses/list.html:202
 msgid "Add first expense"
 msgstr "Eerste uitgave toevoegen"
 
@@ -11564,19 +11593,19 @@ msgstr "na de vlucht"
 msgid "Refuel without a flight"
 msgstr "Tankbeurt zonder vlucht"
 
-#: app/templates/refuels/list.html:156
+#: app/templates/refuels/list.html:158
 msgid "Edit the cost"
 msgstr "Kosten bewerken"
 
-#: app/templates/refuels/list.html:162 app/templates/refuels/list.html:167
+#: app/templates/refuels/list.html:164 app/templates/refuels/list.html:169
 msgid "Add cost"
 msgstr "Kosten toevoegen"
 
-#: app/templates/refuels/list.html:179
+#: app/templates/refuels/list.html:181
 msgid "Delete this refuel?"
 msgstr "Deze tankbeurt verwijderen?"
 
-#: app/templates/refuels/list.html:195
+#: app/templates/refuels/list.html:197
 msgid "No refuels in this period."
 msgstr "Geen tankbeurten in deze periode."
 

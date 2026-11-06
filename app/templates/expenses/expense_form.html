@@ -153,6 +153,34 @@
             </div>
           </div>
 
+          {# Optional, informative only: what was actually paid when that was
+             in another currency (e.g. fuel abroad in GBP, settled in EUR —
+             the amount above). Collapsed unless this expense already has it. #}
+          <details class="mb-3" {% if expense and expense.paid_amount is not none %}open{% endif %}>
+            <summary class="text-muted small">{{ _('Paid in another currency?') }}</summary>
+            <div class="row mt-2">
+              <div class="col-8">
+                <label for="paid_amount" class="form-label">{{ _('Amount paid') }}</label>
+                <input type="number" class="form-control" id="paid_amount" name="paid_amount"
+                       value="{{ '%.2f'|format(expense.paid_amount|float) if expense and expense.paid_amount is not none else '' }}"
+                       step="0.01" min="0" placeholder="0.00">
+              </div>
+              <div class="col-4">
+                <label for="paid_currency" class="form-label">{{ _('Currency paid') }}</label>
+                <select class="form-select" id="paid_currency" name="paid_currency">
+                  {% for c in currencies %}
+                  <option value="{{ c }}"
+                    {% if expense and expense.paid_currency == c %}selected
+                    {% elif not (expense and expense.paid_currency) and c == 'GBP' %}selected{% endif %}>
+                    {{ c }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="form-text">{{ _('For your records only: costs are always calculated with the amount above, as charged to you.') }}</div>
+          </details>
+
           <!-- Fuel quantity — shown only for fuel type -->
           <div id="fuel-fields" class="row mb-3">
             <div class="col-8">

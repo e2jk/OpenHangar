@@ -246,6 +246,8 @@ The **Cost dashboard** (linked from the aircraft's Expenses section) splits expe
 
 ![Cost dashboard](screenshots/cost_dashboard.png)
 
+Paid abroad in another currency? Record the expense in the amount actually charged to you (for example the euros on your bank statement), and open **Paid in another currency?** on the expense form to note what you paid at the counter (for example in GBP). That second amount is for your records only — it's shown next to the expense but never used in any calculation.
+
 ### Booking an aircraft
 
 When rental is enabled in your usage profile, each aircraft has a **booking calendar**.  Pilots request a slot; the owner confirms or declines, with automatic conflict detection and a cost estimate based on the aircraft's hourly rate.
