@@ -227,6 +227,70 @@ class TestFileParsing:
 # ── Service: subtotal row detection ──────────────────────────────────────────
 
 
+class TestExcelParseCache:
+    """parse_file caches Excel parses by content hash: the review step
+    re-parses the same upload on every click."""
+
+    @staticmethod
+    def _xlsx(rows: list[list]) -> bytes:
+        import openpyxl  # pyright: ignore[reportMissingImports]
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.append(["Date", "From", "To", "SE"])
+        for row in rows:
+            ws.append(row)
+        buf = io.BytesIO()
+        wb.save(buf)
+        return buf.getvalue()
+
+    @pytest.fixture(autouse=True)
+    def _empty_cache(self):
+        import pilots.logbook_import as li  # pyright: ignore[reportMissingImports]
+
+        li._excel_parse_cache.clear()
+        yield
+        li._excel_parse_cache.clear()
+
+    def test_same_content_parsed_once(self, app, monkeypatch):
+        import pilots.logbook_import as li  # pyright: ignore[reportMissingImports]
+
+        calls = []
+        real = li._parse_excel
+        monkeypatch.setattr(
+            li, "_parse_excel", lambda d, f: calls.append(f) or real(d, f)
+        )
+        data = self._xlsx([["01/01/24", "EBAW", "EBNM", "1:00"]])
+        with app.test_request_context():
+            first = parse_file(data, "log.xlsx")
+            second = parse_file(data, "log.xlsx")
+            assert calls == ["log.xlsx"]
+            assert second.data_rows == first.data_rows
+            # Independent copies: mutating one never leaks into the cache.
+            second.data_rows.clear()
+            assert parse_file(data, "log.xlsx").data_rows == first.data_rows
+            # Different content is parsed afresh.
+            parse_file(self._xlsx([["02/01/24", "EBAW", "EBNM", "1:00"]]), "log.xlsx")
+            assert len(calls) == 2
+
+    def test_least_recently_used_entry_evicted(self, app):
+        import pilots.logbook_import as li  # pyright: ignore[reportMissingImports]
+
+        with app.test_request_context():
+            files = [
+                self._xlsx([[f"0{d}/01/24", "EBAW", "EBNM", "1:00"]])
+                for d in range(1, li._EXCEL_PARSE_CACHE_SIZE + 2)
+            ]
+            for data in files:
+                parse_file(data, "log.xlsx")
+        assert len(li._excel_parse_cache) == li._EXCEL_PARSE_CACHE_SIZE
+        hashes = {key[0] for key in li._excel_parse_cache}
+        import hashlib
+
+        assert hashlib.sha256(files[0]).hexdigest() not in hashes
+        assert hashlib.sha256(files[-1]).hexdigest() in hashes
+
+
 class TestSubtotalDetection:
     def test_timedelta_date_is_subtotal(self):
         row = [timedelta(hours=10), "EBNM", "EBAW"]
