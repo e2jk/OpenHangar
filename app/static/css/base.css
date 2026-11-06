@@ -138,6 +138,36 @@ html:not([data-js-ok]) #js-warn-banner { display: block; }
   color: #fff;
 }
 
+/* Inline navbar (lg+) on a window too narrow for everything on one row —
+   e.g. a browser tiled to half a screen. Without this, every nav label
+   wrapped word by word ("Log / a / flight") and stretched the profile and
+   logout buttons to three lines tall. Instead: no label ever wraps, and
+   when the row is full the whole link list moves to a second row while
+   the profile/logout buttons and the theme/language switcher stay on the
+   first row, at the right.
+   How: the row is laid out right to left (row-reverse + wrap), with the
+   orders below reproducing the normal left-to-right sequence. Wrapping
+   happens at the end of a flex line — here its left end — so the item
+   that drops to the next line is the link list, and its margin-right:auto
+   (.me-auto) keeps it left-aligned on whichever row it's on. */
+@media (min-width: 992px) {
+  #navMenu { flex: 1 1 auto; min-width: 0; }
+  #navMenu .offcanvas-body {
+    flex-direction: row-reverse;
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: .25rem;
+    width: 100%;
+  }
+  #navMenu .offcanvas-body > .dropdown { order: 1; }
+  #navMenu .offcanvas-body > .theme-toggle-btn { order: 2; }
+  #navMenu .offcanvas-body > #oh-logout-link { order: 3; }
+  #navMenu .offcanvas-body > .btn-nav-login:not(#oh-logout-link) { order: 4; }
+  #navMenu .offcanvas-body > .navbar-nav { order: 5; }
+  #navMenu .nav-link,
+  #navMenu .btn-nav-login { white-space: nowrap; }
+}
+
 /* ── Hero sections (landing + welcome share the same background) ── */
 .hero, .welcome-hero {
   background: linear-gradient(135deg, var(--oh-ink) 0%, #2c6c90 60%, var(--oh-instrument) 100%);
