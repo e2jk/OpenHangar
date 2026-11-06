@@ -714,12 +714,12 @@
   </div>
   {% endmacro %}
 
-  {# ── Refuels (standalone, not tied to a flight) ──────────────────────────── #}
+  {# ── Fuel log: the latest refuels, on a flight or standalone ─────────────── #}
   {% macro refuels_section() %}
   <div class="d-flex align-items-center justify-content-between mb-3">
     <h2 class="section-title mb-0">
       <a href="{{ url_for('refuels.list_refuels', aircraft_id=aircraft.id) }}" class="section-title-link">
-        <span class="ac-section-icon icon-amber"><i class="bi bi-fuel-pump"></i></span>{{ _('Refuels') }}
+        <span class="ac-section-icon icon-amber"><i class="bi bi-fuel-pump"></i></span>{{ _('Fuel log') }}
       </a>
     </h2>
     {% if is_crew %}
@@ -734,11 +734,17 @@
     <div class="table-responsive">
       <table class="table table-hover mb-0 oh-fs-09">
       <tbody>
-        {% for r in recent_refuels %}
+        {% for ev in recent_refuels %}
         <tr>
-          <td class="ps-3 text-muted text-nowrap">{{ r.date.strftime('%Y-%m-%d') }}</td>
-          <td class="oh-text-navy fw-semibold">{{ '%.1f'|format(r.quantity|float) }} {{ r.unit }}</td>
-          <td class="text-end pe-3 text-muted">{{ r.note or '' }}</td>
+          <td class="ps-3 text-muted text-nowrap">{{ ev.date.strftime('%Y-%m-%d') }}</td>
+          <td class="text-muted">
+            {% if ev.flight %}{{ ev.flight.departure_icao }} → {{ ev.flight.arrival_icao }}
+            {% else %}{{ _('Refuel without a flight') }}{% if ev.refuel.note %} · {{ ev.refuel.note }}{% endif %}{% endif %}
+          </td>
+          <td class="oh-text-navy fw-semibold text-nowrap">{{ '%.1f'|format(ev.quantity) }} {{ ev.unit }}</td>
+          <td class="text-end pe-3 text-nowrap">
+            {% if ev.expense %}{{ '%.2f'|format(ev.expense.amount|float) }} {{ ev.expense.currency }}{% else %}<span class="text-muted">—</span>{% endif %}
+          </td>
         </tr>
         {% endfor %}
       </tbody>

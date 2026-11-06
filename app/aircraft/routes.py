@@ -45,7 +45,6 @@ from models import (
     GpsTrack,
     MaintenanceTrigger,
     OperatingModel,
-    Refuel,
     Reservation,
     ReservationStatus,
     Role,
@@ -294,12 +293,15 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         .limit(3)
         .all()
     )
-    recent_refuels = (
-        Refuel.query.filter_by(aircraft_id=ac.id)
-        .order_by(Refuel.date.desc(), Refuel.id.desc())
-        .limit(3)
-        .all()
+    # The latest refuels of any kind — on a flight or standalone — with
+    # their cost, as on the fuel log page (refuels/fuel_log.py).
+    from datetime import date as _date
+
+    from refuels.fuel_log import (  # pyright: ignore[reportMissingImports]
+        build_fuel_log,
     )
+
+    recent_refuels = build_fuel_log(ac.id, None, _date.today())[:3]
     recent_documents = (
         Document.query.filter_by(aircraft_id=ac.id, is_sensitive=False)
         .order_by(Document.uploaded_at.desc())
