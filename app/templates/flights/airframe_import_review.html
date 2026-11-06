@@ -43,7 +43,7 @@
       </h2>
     </div>
     <div class="p-3">
-      <form method="POST" action="{{ url_for('flights.airframe_import_review_resolve', aircraft_id=aircraft.id) }}">
+      <form method="POST" action="{{ url_for('flights.airframe_import_review_resolve', aircraft_id=aircraft.id) }}" data-keep-scroll>
         <input type="hidden" name="row_num" value="{{ row.row_num }}">
 
         {% if row.crew_name %}

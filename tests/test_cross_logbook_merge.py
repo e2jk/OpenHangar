@@ -416,6 +416,8 @@ class TestPilotImportRoute:
 
         page = client.get("/pilot/logbook/import/review").data.decode()
         assert page.count('name="row_num"') == 1
+        # Resolving a card keeps the scroll position (ui.js data-keep-scroll).
+        assert page.count("data-keep-scroll") == 1
         assert 'name="row_num" value="2"' in page
 
         rv = client.post(
@@ -488,6 +490,7 @@ class TestAirframeImportRoute:
 
         page = client.get(f"/aircraft/{acid}/flights/import/review").data.decode()
         assert page.count('name="row_num"') == 1
+        assert page.count("data-keep-scroll") == 1
         assert 'name="row_num" value="2"' in page
 
         rv = client.post(

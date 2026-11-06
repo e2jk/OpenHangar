@@ -41,7 +41,7 @@
       </h2>
     </div>
     <div class="p-3">
-      <form method="POST" action="{{ url_for('pilots.import_review_resolve') }}">
+      <form method="POST" action="{{ url_for('pilots.import_review_resolve') }}" data-keep-scroll>
         <input type="hidden" name="row_num" value="{{ row.row_num }}">
 
         {# row.kwargs only has keys for columns actually mapped this import —

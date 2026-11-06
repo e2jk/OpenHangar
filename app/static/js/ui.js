@@ -18,6 +18,10 @@
  *                                    back to after the resulting page (re)loads —
  *                                    for actions on long pages that would
  *                                    otherwise land back at the top
+ *   data-keep-scroll                 boosted form whose response is the same
+ *                                    page (e.g. a review list one card shorter)
+ *                                    keeps the scroll position instead of
+ *                                    HTMX's smooth scroll back to the top
  *
  * HTMX compatibility: _ohInit() is called on both DOMContentLoaded and
  * htmx:afterSettle so that elements injected by HTMX body-swaps are wired up.
@@ -497,6 +501,26 @@ document.addEventListener('click', function (e) {
     window.location.href = el.dataset.href;
     return;
   }
+});
+
+/* ── data-keep-scroll: stay in place when a form re-renders the same page ──
+   hx-boost gives every boosted request "show:top" (htmx's
+   scrollIntoViewOnBoost), which with this app's smooth scrollBehavior plays
+   a visible scroll-to-top animation after the swap. On pages worked through
+   in place — like the import review list, where resolving a card re-renders
+   the list without it and the next card moves up into its spot — that's
+   wrong: keep the position (show:none). Only when the response is the page
+   we're already on, though: when it lands somewhere else (the last card
+   resolved redirects to the import history), the normal scroll-to-top is
+   what's wanted. Registered once here (ui.js isn't re-run on body swaps),
+   delegated to whatever form triggered the request. */
+document.addEventListener('htmx:beforeSwap', function (evt) {
+  var elt = evt.detail.requestConfig && evt.detail.requestConfig.elt;
+  if (!elt || !elt.closest || !elt.closest('form[data-keep-scroll]')) return;
+  var xhr = evt.detail.xhr;
+  if (!xhr || !xhr.responseURL) return;
+  if (new URL(xhr.responseURL).pathname !== window.location.pathname) return;
+  evt.detail.swapOverride = 'innerHTML show:none';
 });
 
 /* ── Bootstrap component re-init after HTMX body swap ──────────────────── */
