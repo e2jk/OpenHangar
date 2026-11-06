@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ _('Refuels') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+{% block title %}{{ _('Fuel log') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
 
 
 {% block content %}
@@ -9,7 +9,7 @@
   <div class="page-header mb-4">
     <div>
       <h1 class="page-title">
-        <i class="bi bi-fuel-pump me-2"></i>{{ _('Refuels') }}
+        <i class="bi bi-fuel-pump me-2"></i>{{ _('Fuel log') }}
       </h1>
       <p class="page-sub"><span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ aircraft.make }} {{ aircraft.model }}</p>
     </div>
@@ -27,38 +27,154 @@
     </div>
   </div>
 
-  {% if refuels %}
+  <p class="text-muted oh-fs-09">
+    {{ _('Every refuel of this aircraft: fuel added before or after a flight, and refuels logged on their own. Add the cost of each refuel to follow the fuel price and the fuel cost per hour.') }}
+  </p>
+
+  <form method="get" class="d-flex flex-wrap gap-2 align-items-end mb-3">
+    <div>
+      <label class="form-label small mb-1" for="fuel-period">{{ _('Period') }}</label>
+      <select name="period" id="fuel-period" class="form-select form-select-sm" data-auto-submit>
+        {% for months in period_options %}
+        <option value="{{ months }}" {% if period_months == months %}selected{% endif %}>
+          {% if months == 3 %}{{ _('Last 3 months') }}
+          {% elif months == 6 %}{{ _('Last 6 months') }}
+          {% elif months == 12 %}{{ _('Last 12 months') }}
+          {% elif months == 24 %}{{ _('Last 24 months') }}
+          {% else %}{{ _('All time') }}{% endif %}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+
+  {% set s = summary %}
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+      <div class="ac-stat-card">
+        <div class="ac-stat-value">{{ '%.0f'|format(s.litres_added) }} L</div>
+        <div class="ac-stat-label">{{ _('Fuel added') }}</div>
+        <div class="text-muted oh-fs-08">{{ ngettext('one refuel', '%(n)d refuels', s.refuel_count, n=s.refuel_count) }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="ac-stat-card">
+        <div class="ac-stat-value">
+          {% if s.cost is not none %}{{ '%.2f'|format(s.cost) }} {{ s.currency }}
+          {% elif s.cost_by_currency %}{% for cur, amount in s.cost_by_currency|dictsort %}<div>{{ '%.2f'|format(amount) }} {{ cur }}</div>{% endfor %}
+          {% else %}—{% endif %}
+        </div>
+        <div class="ac-stat-label">{{ _('Fuel cost') }}</div>
+        <div class="text-muted oh-fs-08">{{ _('%(costed)d of %(total)d refuels costed', costed=s.costed_count, total=s.refuel_count) }}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="ac-stat-card">
+        <div class="ac-stat-value">{% if s.price_per_litre is not none %}{{ '%.2f'|format(s.price_per_litre) }}{% else %}—{% endif %}</div>
+        <div class="ac-stat-label">{{ _('Average price per litre') }}</div>
+        <div class="text-muted oh-fs-08">{% if s.price_per_litre is not none %}{{ s.currency }}/L{% else %}{{ _('No costed fuel quantities yet') }}{% endif %}</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="ac-stat-card">
+        <div class="ac-stat-value">{% if s.litres_per_engine_hour is not none %}{{ '%.1f'|format(s.litres_per_engine_hour) }}{% else %}—{% endif %}</div>
+        <div class="ac-stat-label">{{ _('Fuel per engine hour') }}</div>
+        <div class="text-muted oh-fs-08" title="{{ _('Fuel added divided by engine hours: an estimate of fuel burn, meaningful over several months.') }}">
+          {{ _('L/h') }} · {{ _('%(h)s engine hours', h='%.1f'|format(s.engine_hours)) }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ac-form-card mb-4">
+    <div class="text-muted oh-fs-09 mb-2">{{ _('Fuel cost') }}</div>
+    <div class="row g-3">
+      <div class="col-sm-4">
+        <div class="text-muted oh-fs-09">{{ _('Per engine hour') }}</div>
+        <div class="fw-semibold fs-5">{% if s.cost_per_engine_hour is not none %}{{ '%.2f'|format(s.cost_per_engine_hour) }} {{ s.currency }}/h{% else %}—{% endif %}</div>
+      </div>
+      <div class="col-sm-4">
+        <div class="text-muted oh-fs-09">{{ _('Per flight hour') }}</div>
+        <div class="fw-semibold fs-5">{% if s.cost_per_flight_hour is not none %}{{ '%.2f'|format(s.cost_per_flight_hour) }} {{ s.currency }}/h{% else %}—{% endif %}</div>
+        <div class="text-muted oh-fs-08">{{ _('%(h)s flight hours', h='%.1f'|format(s.flight_hours)) }}</div>
+      </div>
+      <div class="col-sm-4">
+        <div class="text-muted oh-fs-09">{{ _('Per flight') }}</div>
+        <div class="fw-semibold fs-5">{% if s.cost_per_flight is not none %}{{ '%.2f'|format(s.cost_per_flight) }} {{ s.currency }}{% else %}—{% endif %}</div>
+        <div class="text-muted oh-fs-08">{{ ngettext('one flight', '%(n)d flights', s.flight_count, n=s.flight_count) }}</div>
+      </div>
+    </div>
+    {% if s.costed_count < s.refuel_count %}
+    <p class="text-muted oh-fs-08 mb-0 mt-2">
+      <i class="bi bi-info-circle me-1"></i>{{ _('Cost figures only include refuels whose cost has been added — add the missing costs below for complete figures.') }}
+    </p>
+    {% endif %}
+    {% if s.cost_by_currency|length > 1 %}
+    <p class="text-muted oh-fs-08 mb-0 mt-2">
+      <i class="bi bi-info-circle me-1"></i>{{ _('Fuel was paid in several currencies in this period, so per-hour and per-litre figures are not computed.') }}
+    </p>
+    {% endif %}
+  </div>
+
+  {% if events %}
   <div class="ac-form-card p-0 mb-4">
     <div class="table-responsive">
       <table class="table table-hover mb-0 oh-fs-09">
       <thead class="oh-bg-light">
         <tr>
           <th class="ps-3">{{ _('Date') }}</th>
-          <th>{{ _('Quantity') }}</th>
-          <th>{{ _('Note') }}</th>
+          <th>{{ _('Refuel') }}</th>
+          <th class="text-end">{{ _('Quantity') }}</th>
+          <th class="text-end">{{ _('Cost') }}</th>
+          <th class="text-end">{{ _('Price per litre') }}</th>
           <th class="pe-3"></th>
         </tr>
       </thead>
       <tbody>
-        {% for r in refuels %}
+        {% for ev in events %}
         <tr>
-          <td class="ps-3 align-middle text-nowrap">{{ r.date.strftime('%Y-%m-%d') }}</td>
-          <td class="align-middle fw-semibold oh-text-navy">{{ '%.1f'|format(r.quantity|float) }} {{ r.unit }}</td>
-          <td class="align-middle text-muted">{{ r.note or '—' }}</td>
+          <td class="ps-3 align-middle text-nowrap">{{ ev.date.strftime('%Y-%m-%d') }}</td>
+          <td class="align-middle">
+            {% if ev.flight %}
+              <a href="{{ url_for('aircraft.flight_detail', aircraft_id=aircraft.id, flight_id=ev.flight.id) }}">{{ ev.flight.departure_icao }} → {{ ev.flight.arrival_icao }}</a>
+              <span class="text-muted">· {% if ev.kind == 'before' %}{{ _('before the flight') }}{% else %}{{ _('after the flight') }}{% endif %}</span>
+            {% else %}
+              {{ _('Refuel without a flight') }}{% if ev.refuel.note %} <span class="text-muted">· {{ ev.refuel.note }}</span>{% endif %}
+            {% endif %}
+          </td>
+          <td class="align-middle text-end fw-semibold oh-text-navy text-nowrap">{{ '%.1f'|format(ev.quantity) }} {{ ev.unit }}</td>
+          <td class="align-middle text-end text-nowrap">
+            {% if ev.expense %}{{ '%.2f'|format(ev.expense.amount|float) }} {{ ev.expense.currency }}{% else %}<span class="text-muted">—</span>{% endif %}
+          </td>
+          <td class="align-middle text-end text-nowrap">
+            {% if ev.price_per_litre is not none %}{{ '%.2f'|format(ev.price_per_litre) }} {{ ev.expense.currency }}/L{% else %}<span class="text-muted">—</span>{% endif %}
+          </td>
           <td class="pe-3 text-end align-middle text-nowrap">
             {% if is_owner %}
-            <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id, date=r.date.isoformat(), quantity=r.quantity, unit=r.unit) }}"
-               class="btn btn-ac-secondary btn-xs me-1" title="{{ _('Log as expense') }}">
-              <i class="bi bi-receipt"></i>
-            </a>
+              {% if ev.expense %}
+              <a href="{{ url_for('expenses.edit_expense', aircraft_id=aircraft.id, expense_id=ev.expense.id) }}"
+                 class="btn btn-ac-secondary btn-xs me-1" title="{{ _('Edit the cost') }}">
+                <i class="bi bi-receipt"></i>
+              </a>
+              {% elif ev.flight %}
+              <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id, flight_entry_id=ev.flight.id, quantity=ev.quantity, unit=ev.unit, return_to='fuel') }}"
+                 class="btn btn-ac-primary btn-xs me-1">
+                <i class="bi bi-plus-lg me-1"></i>{{ _('Add cost') }}
+              </a>
+              {% else %}
+              <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id, date=ev.date.isoformat(), quantity=ev.quantity, unit=ev.unit, return_to='fuel') }}"
+                 class="btn btn-ac-primary btn-xs me-1">
+                <i class="bi bi-plus-lg me-1"></i>{{ _('Add cost') }}
+              </a>
+              {% endif %}
             {% endif %}
-            {% if is_crew %}
-            <a href="{{ url_for('refuels.edit_refuel', aircraft_id=aircraft.id, refuel_id=r.id) }}"
+            {% if ev.refuel and is_crew %}
+            <a href="{{ url_for('refuels.edit_refuel', aircraft_id=aircraft.id, refuel_id=ev.refuel.id) }}"
                class="btn btn-ac-secondary btn-xs me-1" title="{{ _('Edit') }}">
               <i class="bi bi-pencil"></i>
             </a>
             <form method="post"
-                  action="{{ url_for('refuels.delete_refuel', aircraft_id=aircraft.id, refuel_id=r.id) }}"
+                  action="{{ url_for('refuels.delete_refuel', aircraft_id=aircraft.id, refuel_id=ev.refuel.id) }}"
                   class="d-inline"
                   data-confirm="{{ _('Delete this refuel?') }}">
               <button type="submit" class="btn btn-ac-danger btn-xs">
@@ -76,7 +192,7 @@
   {% else %}
   <div class="ac-empty mb-4">
     <i class="bi bi-fuel-pump ac-empty-icon"></i>
-    <p>{{ _('No refuels logged yet.') }}</p>
+    <p>{{ _('No refuels in this period.') }}</p>
     {% if is_crew %}
     <a href="{{ url_for('refuels.new_refuel', aircraft_id=aircraft.id) }}"
        class="btn btn-ac-primary">
