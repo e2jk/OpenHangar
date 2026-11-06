@@ -12,6 +12,7 @@ from datetime import date, time
 from io import BytesIO
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
+import pytest
 from flights.airframe_import import (  # pyright: ignore[reportMissingImports]
     _clean_icao,
     _is_blank_cell,
@@ -158,6 +159,15 @@ class TestHelpers:
         mapping, _mt = propose_airframe_mapping(parse_file(csv.encode(), "a.csv"), [])
         assert mapping["dep"] == "departure_icao"
         assert mapping["arr"] == "arrival_icao"
+
+    @pytest.mark.parametrize(
+        "header",
+        ["Incidents/Obs", "Observations", "Incidents", "Incidents / Observations"],
+    )
+    def test_alias_proposal_observations_go_to_notes(self, header):
+        csv = f"Date,From,To,{header}\n2026-04-08,EBAW,EBAW,FADEC warning\n"
+        mapping, _mt = propose_airframe_mapping(parse_file(csv.encode(), "a.csv"), [])
+        assert mapping[header.lower()] == "notes"
 
     def test_alias_proposal_never_maps_two_columns_to_one_field(self):
         csv = (
