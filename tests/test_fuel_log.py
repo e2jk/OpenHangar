@@ -127,7 +127,7 @@ class TestApplyFuelFields:
         _apply_fuel_fields(fields, {}, None)
         assert fields == {}
         fields = {"fuel_remaining_fraction": 0.375}
-        _apply_fuel_fields(fields, {}, 110.0)
+        _apply_fuel_fields(fields, {}, [("Main", 110.0)])
         assert fields == {"fuel_remaining_qty": 41.2}
 
     def test_tank_capacity_sums_all_tanks(self, app):

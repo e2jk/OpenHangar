@@ -206,11 +206,13 @@ but useful for tracking consumption and cost.
 | **Fuel remaining** | Fuel left in the tanks at the end of the flight, in litres |
 | **Fuel photo** | Optional photo of the fuel receipt or gauge |
 
-Quantities are per aircraft, not per tank: when several tanks are filled
-together (e.g. both wing tanks of a PA-28 brought to the same level), record
-the total added in one figure; fuel remaining is likewise the total across all
-tanks. The flight form can work fuel remaining out from a gauge fraction
-using the tank capacities set on the aircraft.
+Fuel added is one figure for the whole aircraft: when several tanks are
+filled together (e.g. both wing tanks of a PA-28 brought to the same level),
+record the total added. Fuel remaining is a total too, but on an aircraft with
+several tanks configured it can also be recorded per tank (e.g. left 9 L,
+right 13 L) — the total is then their sum, and the flight page shows both.
+The flight form can work fuel remaining out from a gauge fraction, for all
+tanks or for one tank, using the tank capacities set on the aircraft.
 
 Refuels not tied to a flight (topping off during maintenance, for example)
 are logged separately from the aircraft page.
@@ -297,6 +299,7 @@ Fuel can be imported too, from three optional columns:
 | `fuel_added` | Quantity added on that line, in litres (or US gallons when the column header says *gal*) |
 | `fuel_timing` | Whether that was before or after the flight, e.g. *FFBF* / *FFAF* (full fuel before / after flight), *before* / *after*. When it doesn't say — or says both, with only the total known — the fuel is recorded as added after the flight. |
 | `fuel_remaining_fraction` | Fuel left at the end of the flight as a fraction of the tanks: *0.25*, *2/8*, or a count of eighths (*2*). Converted to litres with the aircraft's tank capacity, so the aircraft's tanks must be set up first. |
+| `fuel_remaining_by_tank` | Fuel left at the end of the flight in litres per tank, in the order of the aircraft's tanks: *9/13* = 9 L in the first tank (e.g. left), 13 L in the second (*9;13* or *9 \| 13* work too). A line whose number of values doesn't match the number of tanks is reported and left blank. Format this column as text in the spreadsheet — otherwise *9/12* may be turned into a date. |
 
 A row matching a flight already in the log (for example, a re-import after
 adding these columns, or after setting up the tanks) still brings its fuel to

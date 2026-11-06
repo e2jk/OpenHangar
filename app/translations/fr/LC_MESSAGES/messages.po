@@ -99,7 +99,7 @@ msgstr "Copilote"
 msgid "Student"
 msgstr "Élève"
 
-#: app/models.py:2101 app/pilots/personal_minimums.py:55
+#: app/models.py:2107 app/pilots/personal_minimums.py:55
 #: app/templates/aircraft/wb_config.html:163
 #: app/templates/aircraft/wb_config.html:195
 #: app/templates/aircraft/wb_config.html:244
@@ -107,41 +107,41 @@ msgstr "Élève"
 msgid "Fuel"
 msgstr "Carburant"
 
-#: app/models.py:2102
+#: app/models.py:2108
 msgid "Parts & Maintenance"
 msgstr "Pièces et entretien"
 
-#: app/models.py:2103 app/pwa/routes.py:101 app/templates/dashboard.html:414
+#: app/models.py:2109 app/pwa/routes.py:101 app/templates/dashboard.html:414
 msgid "Insurance"
 msgstr "Assurance"
 
-#: app/models.py:2104 app/pwa/routes.py:106 app/templates/dashboard.html:164
+#: app/models.py:2110 app/pwa/routes.py:106 app/templates/dashboard.html:164
 #: app/templates/maintenance/list.html:77
 #: app/templates/maintenance/trigger_form.html:69
 msgid "Other"
 msgstr "Autre"
 
-#: app/models.py:3015
+#: app/models.py:3021
 msgid "AD"
 msgstr "AD"
 
-#: app/models.py:3016
+#: app/models.py:3022
 msgid "Mandatory SB"
 msgstr "SB obligatoire"
 
-#: app/models.py:3017
+#: app/models.py:3023
 msgid "SB"
 msgstr "SB"
 
-#: app/models.py:3018
+#: app/models.py:3024
 msgid "SIB"
 msgstr "SIB"
 
-#: app/models.py:3019 app/templates/dashboard.html:425
+#: app/models.py:3025 app/templates/dashboard.html:425
 msgid "ARC"
 msgstr "ARC"
 
-#: app/models.py:3020
+#: app/models.py:3026
 msgid "Manual"
 msgstr "Manuel"
 
@@ -1047,7 +1047,7 @@ msgstr "Ce type de fichier n'est pas autorisé pour les justificatifs."
 msgid "Expense receipt %(date)s"
 msgstr "Justificatif de dépense %(date)s"
 
-#: app/flights/airframe_import.py:640
+#: app/flights/airframe_import.py:704
 msgid "matches a flight already in this aircraft's log (same date, route, duration and landings)"
 msgstr "correspond à un vol déjà présent dans le carnet de cet appareil (même date, même trajet, même durée et mêmes atterrissages)"
 
@@ -1307,11 +1307,16 @@ msgstr "La quantité de carburant ajoutée après le vol doit être un nombre po
 msgid "Fuel remaining must be a non-negative number."
 msgstr "Le carburant restant doit être un nombre positif ou nul."
 
-#: app/flights/form_parsing.py:365
+#: app/flights/form_parsing.py:374
+#, python-format
+msgid "Fuel remaining in tank %(tank)s must be a non-negative number."
+msgstr "Le carburant restant dans le réservoir %(tank)s doit être un nombre positif ou nul."
+
+#: app/flights/form_parsing.py:394
 msgid "Oil added before the flight must be a non-negative number."
 msgstr "L'huile ajoutée avant le vol doit être un nombre positif ou nul."
 
-#: app/flights/form_parsing.py:378
+#: app/flights/form_parsing.py:407
 msgid "Oil added after the flight must be a non-negative number."
 msgstr "L'huile ajoutée après le vol doit être un nombre positif ou nul."
 
@@ -1476,16 +1481,16 @@ msgstr "Format non pris en charge. Veuillez envoyer un fichier .csv ou .xlsx."
 msgid "File too large (maximum 10 MB)."
 msgstr "Fichier trop volumineux (maximum 10 Mo)."
 
-#: app/flights/routes.py:2112 app/flights/routes.py:2461
-#: app/flights/routes.py:2539 app/flights/routes.py:2675
+#: app/flights/routes.py:2112 app/flights/routes.py:2489
+#: app/flights/routes.py:2567 app/flights/routes.py:2703
 #: app/maintenance/routes.py:916 app/pilots/routes.py:1379
 #: app/pilots/routes.py:1785 app/pilots/routes.py:1847
 #: app/pilots/routes.py:1966
 msgid "Import session expired. Please upload the file again."
 msgstr "Session d'import expirée. Veuillez renvoyer le fichier."
 
-#: app/flights/routes.py:2121 app/flights/routes.py:2466
-#: app/flights/routes.py:2557 app/flights/routes.py:2685
+#: app/flights/routes.py:2121 app/flights/routes.py:2494
+#: app/flights/routes.py:2585 app/flights/routes.py:2713
 #: app/maintenance/routes.py:922 app/pilots/routes.py:1388
 #: app/pilots/routes.py:1790 app/pilots/routes.py:1865
 #: app/pilots/routes.py:1976
@@ -1503,117 +1508,128 @@ msgid_plural "Fuel figures were added to %(n)d flights already in the log."
 msgstr[0] "Des quantités de carburant ont été ajoutées à un vol déjà présent dans le carnet."
 msgstr[1] "Des quantités de carburant ont été ajoutées à %(n)d vols déjà présents dans le carnet."
 
-#: app/flights/routes.py:2246
+#: app/flights/routes.py:2252 app/pilots/routes.py:1677
+#, python-format
+msgid "One cell value could not be parsed and was imported as blank: %(examples)s"
+msgid_plural "%(n)d cell values could not be parsed and were imported as blank: %(examples)s"
+msgstr[0] "Une valeur de cellule n'a pas pu être analysée et a été importée comme vide : %(examples)s"
+msgstr[1] "%(n)d valeurs de cellule n'ont pas pu être analysées et ont été importées comme vides : %(examples)s"
+
+#: app/flights/routes.py:2263
+msgid "Fuel left per tank was not imported: this aircraft has no fuel tanks configured. Add its tanks on the aircraft's edit page, in the same order as in the log, then import the file again."
+msgstr "Le carburant restant par réservoir n'a pas été importé : aucun réservoir n'est configuré pour cet appareil. Ajoutez ses réservoirs sur la page de modification de l'appareil, dans le même ordre que dans le carnet, puis importez à nouveau le fichier."
+
+#: app/flights/routes.py:2274
 msgid "Fuel left was not imported: this aircraft has no fuel tank capacity configured to convert it into litres. Add its tanks on the aircraft's edit page, then import the file again."
 msgstr "Le carburant restant n'a pas été importé : aucune capacité de réservoir n'est configurée pour cet appareil, impossible de la convertir en litres. Ajoutez ses réservoirs sur la page de modification de l'appareil, puis importez à nouveau le fichier."
 
-#: app/flights/routes.py:2256
+#: app/flights/routes.py:2284
 #, python-format
 msgid "One row matched a flight already in a pilot logbook and was merged into it."
 msgid_plural "%(n)d rows matched a flight already in a pilot logbook and were merged into it."
 msgstr[0] "Une ligne correspondait à un vol déjà présent dans un carnet de vol de pilote et y a été fusionnée."
 msgstr[1] "%(n)d lignes correspondaient à des vols déjà présents dans un carnet de vol de pilote et y ont été fusionnées."
 
-#: app/flights/routes.py:2284
+#: app/flights/routes.py:2312
 #, python-format
 msgid "%(imported)d flights imported so far. %(n)d rows look like they might already be in this aircraft's log with different data — please review them below."
 msgstr "%(imported)d vols importés jusqu'à présent. %(n)d lignes semblent déjà présentes dans le carnet de cet appareil avec des données différentes — veuillez les examiner ci-dessous."
 
-#: app/flights/routes.py:2300 app/flights/routes.py:2367
+#: app/flights/routes.py:2328 app/flights/routes.py:2395
 #, python-format
 msgid "Rows already in this aircraft's log, skipped: %(detail)s"
 msgstr "Lignes déjà présentes dans le carnet de cet appareil, ignorées : %(detail)s"
 
-#: app/flights/routes.py:2309 app/flights/routes.py:2391
+#: app/flights/routes.py:2337 app/flights/routes.py:2419
 #: app/pilots/routes.py:1572 app/pilots/routes.py:1665
 #, python-format
 msgid "Skipped rows: %(detail)s"
 msgstr "Lignes ignorées : %(detail)s"
 
-#: app/flights/routes.py:2327
+#: app/flights/routes.py:2355
 msgid "All flights in this file were already in this aircraft's log — nothing new was imported."
 msgstr "Tous les vols de ce fichier étaient déjà présents dans le carnet de cet appareil — rien de nouveau n'a été importé."
 
-#: app/flights/routes.py:2337
+#: app/flights/routes.py:2365
 #, python-format
 msgid "Import complete: one new flight imported."
 msgid_plural "Import complete: %(n)d new flights imported."
 msgstr[0] "Import terminé : un nouveau vol importé."
 msgstr[1] "Import terminé : %(n)d nouveaux vols importés."
 
-#: app/flights/routes.py:2343
+#: app/flights/routes.py:2371
 #, python-format
 msgid "One row was already in this aircraft's log and was skipped."
 msgid_plural "%(n)d rows were already in this aircraft's log and were skipped."
 msgstr[0] "Une ligne figurait déjà dans le carnet de cet appareil et a été ignorée."
 msgstr[1] "%(n)d lignes figuraient déjà dans le carnet de cet appareil et ont été ignorées."
 
-#: app/flights/routes.py:2352
+#: app/flights/routes.py:2380
 #, python-format
 msgid "Import complete: one flight imported."
 msgid_plural "Import complete: %(n)d flights imported."
 msgstr[0] "Import terminé : un vol importé."
 msgstr[1] "Import terminé : %(n)d vols importés."
 
-#: app/flights/routes.py:2359
+#: app/flights/routes.py:2387
 msgid "Import complete: no flights imported."
 msgstr "Import terminé : aucun vol importé."
 
-#: app/flights/routes.py:2375
+#: app/flights/routes.py:2403
 #, python-format
 msgid "row %(row)d: %(kind)s counter starts at %(got).1f but the previous entry ended at %(prev).1f"
 msgstr "ligne %(row)d : le compteur %(kind)s commence à %(got).1f alors que l'entrée précédente se terminait à %(prev).1f"
 
-#: app/flights/routes.py:2385
+#: app/flights/routes.py:2413
 #, python-format
 msgid " … and %(n)d more"
 msgstr " … et %(n)d de plus"
 
-#: app/flights/routes.py:2386
+#: app/flights/routes.py:2414
 #, python-format
 msgid "Counter continuity warnings: %(detail)s"
 msgstr "Avertissements de continuité des compteurs : %(detail)s"
 
-#: app/flights/routes.py:2434
+#: app/flights/routes.py:2462
 #, python-format
 msgid "Review complete: %(overwritten)d flights updated, %(new)d imported as new, %(kept)d left unchanged."
 msgstr "Révision terminée : %(overwritten)d vols mis à jour, %(new)d importés comme nouveaux, %(kept)d laissés inchangés."
 
-#: app/flights/routes.py:2549 app/flights/routes.py:2577
+#: app/flights/routes.py:2577 app/flights/routes.py:2605
 #: app/pilots/routes.py:1857 app/pilots/routes.py:1885
 msgid "Invalid row number."
 msgstr "Numéro de ligne invalide."
 
-#: app/flights/routes.py:2553 app/pilots/routes.py:1861
+#: app/flights/routes.py:2581 app/pilots/routes.py:1861
 msgid "This row has already been resolved."
 msgstr "Cette ligne a déjà été traitée."
 
-#: app/flights/routes.py:2591 app/pilots/routes.py:1899
+#: app/flights/routes.py:2619 app/pilots/routes.py:1899
 msgid "Invalid selection."
 msgstr "Sélection invalide."
 
-#: app/flights/routes.py:2631 app/flights/routes.py:2680
+#: app/flights/routes.py:2659 app/flights/routes.py:2708
 #: app/pilots/routes.py:1938 app/pilots/routes.py:1971
 msgid "Invalid decision."
 msgstr "Choix invalide."
 
-#: app/flights/routes.py:2729 app/pilots/routes.py:2018
+#: app/flights/routes.py:2757 app/pilots/routes.py:2018
 #, python-format
 msgid "One row's best match was already used by another row — please decide on it below."
 msgid_plural "%(n)d rows' best matches were already used by other rows — please decide on them below."
 msgstr[0] "La meilleure correspondance d'une ligne était déjà utilisée par une autre ligne — veuillez trancher ci-dessous."
 msgstr[1] "Les meilleures correspondances de %(n)d lignes étaient déjà utilisées par d'autres lignes — veuillez trancher ci-dessous."
 
-#: app/flights/routes.py:2771
+#: app/flights/routes.py:2799
 #, python-format
 msgid "Import deleted: %(n)d flight entries removed."
 msgstr "Import supprimé : %(n)d entrées de vol retirées."
 
-#: app/flights/routes.py:2802
+#: app/flights/routes.py:2830
 msgid "Import marked as historical: edits to its flights will no longer be blocked by validation on old, imprecise values."
 msgstr "Import marqué comme historique : les modifications de ses vols ne seront plus bloquées par la validation de valeurs anciennes et imprécises."
 
-#: app/flights/routes.py:2810
+#: app/flights/routes.py:2838
 msgid "Import no longer marked as historical: edits to its flights are now subject to the normal validation rules."
 msgstr "Import non marqué comme historique : les modifications de ses vols sont désormais soumises aux règles de validation normales."
 
@@ -1697,20 +1713,20 @@ msgstr "Temps multimoteur"
 msgid "Day landings"
 msgstr "Atterrissages jour"
 
-#: app/flights/shared_flight.py:157 app/templates/flights/flight_form.html:830
+#: app/flights/shared_flight.py:157 app/templates/flights/flight_form.html:847
 #: app/templates/offline/workbench.html:180
 #: app/templates/pilots/entry_detail.html:150
 msgid "Night landings"
 msgstr "Atterrissages nuit"
 
-#: app/flights/shared_flight.py:158 app/templates/flights/flight_form.html:806
+#: app/flights/shared_flight.py:158 app/templates/flights/flight_form.html:823
 #: app/templates/offline/pilot_workbench.html:109
 #: app/templates/offline/workbench.html:168
 #: app/templates/pilots/import_map.html:146
 msgid "Night time"
 msgstr "Temps de nuit"
 
-#: app/flights/shared_flight.py:159 app/templates/flights/flight_form.html:814
+#: app/flights/shared_flight.py:159 app/templates/flights/flight_form.html:831
 #: app/templates/offline/pilot_workbench.html:113
 #: app/templates/offline/workbench.html:172
 msgid "Instrument time"
@@ -2351,13 +2367,6 @@ msgid "%(n)d aircraft log entry was also created for your managed aircraft."
 msgid_plural "%(n)d aircraft log entries were also created for your managed aircraft."
 msgstr[0] "%(n)d entrée du carnet avion a été créée pour votre avion géré."
 msgstr[1] "%(n)d entrées du carnet avion ont été créées pour votre avion géré."
-
-#: app/pilots/routes.py:1677
-#, python-format
-msgid "One cell value could not be parsed and was imported as blank: %(examples)s"
-msgid_plural "%(n)d cell values could not be parsed and were imported as blank: %(examples)s"
-msgstr[0] "Une valeur de cellule n'a pas pu être analysée et a été importée comme vide : %(examples)s"
-msgstr[1] "%(n)d valeurs de cellule n'ont pas pu être analysées et ont été importées comme vides : %(examples)s"
 
 #: app/pilots/routes.py:1690
 #, python-format
@@ -3548,8 +3557,8 @@ msgstr "Statut"
 #: app/templates/flights/airframe_import_map.html:160
 #: app/templates/flights/flight_form.html:45
 #: app/templates/flights/flight_form.html:49
-#: app/templates/flights/flight_form.html:866
-#: app/templates/flights/flight_form.html:868
+#: app/templates/flights/flight_form.html:883
+#: app/templates/flights/flight_form.html:885
 #: app/templates/maintenance/amp_declaration_form.html:177
 #: app/templates/maintenance/amp_import_review.html:106
 #: app/templates/maintenance/service_form.html:20
@@ -4037,7 +4046,7 @@ msgstr "Réservations en attente"
 #: app/templates/airworthiness/wishlist_form.html:38
 #: app/templates/config/renter_form.html:83 app/templates/dashboard.html:764
 #: app/templates/flights/airframe_import_review.html:57
-#: app/templates/flights/flight_form.html:853
+#: app/templates/flights/flight_form.html:870
 #: app/templates/maintenance/_amp_export_body.html:285
 #: app/templates/maintenance/service_form.html:109
 #: app/templates/maintenance/trigger_form.html:210
@@ -4516,7 +4525,7 @@ msgstr "Réservoirs de carburant"
 #: app/templates/flights/flight_form.html:596
 #: app/templates/flights/flight_form.html:607
 #: app/templates/flights/flight_form.html:685
-#: app/templates/flights/flight_form.html:853
+#: app/templates/flights/flight_form.html:870
 #: app/templates/maintenance/amp_declaration_form.html:64
 #: app/templates/maintenance/amp_declaration_form.html:124
 #: app/templates/maintenance/amp_declaration_form.html:168
@@ -4621,7 +4630,7 @@ msgstr "Détermine comment les temps de vol importés via GPS sont arrondis dans
 #: app/templates/config/settings.html:449
 #: app/templates/documents/edit_form.html:100
 #: app/templates/expenses/expense_form.html:228
-#: app/templates/flights/flight_form.html:862
+#: app/templates/flights/flight_form.html:879
 #: app/templates/maintenance/amp_declaration_form.html:174
 #: app/templates/maintenance/trigger_form.html:217
 #: app/templates/pwa/share_target.html:116
@@ -5384,7 +5393,7 @@ msgid "Block on (UTC)"
 msgstr "Bloc arrivée (UTC)"
 
 #: app/templates/aircraft/flight_detail.html:110
-#: app/templates/flights/flight_form.html:799
+#: app/templates/flights/flight_form.html:816
 #: app/templates/offline/workbench.html:165
 #: app/templates/pilots/logbook.html:16
 msgid "Pilot logbook"
@@ -5406,7 +5415,7 @@ msgid "Instrument"
 msgstr "Instruments"
 
 #: app/templates/aircraft/flight_detail.html:127
-#: app/templates/flights/flight_form.html:837
+#: app/templates/flights/flight_form.html:854
 #: app/templates/pilots/entry_detail.html:112
 #: app/templates/pilots/entry_form.html:236
 #: app/templates/pilots/logbook.html:217
@@ -5434,11 +5443,16 @@ msgstr "Enregistrer comme dépense"
 msgid "Fuel added after flight"
 msgstr "Carburant ajouté après le vol"
 
-#: app/templates/aircraft/flight_detail.html:192
+#: app/templates/aircraft/flight_detail.html:186
+#: app/templates/flights/flight_form.html:747
+msgid "Fuel remaining at end of flight"
+msgstr "Carburant restant en fin de vol"
+
+#: app/templates/aircraft/flight_detail.html:205
 msgid "Imported from GPS:"
 msgstr "Importé depuis GPS :"
 
-#: app/templates/aircraft/flight_detail.html:198
+#: app/templates/aircraft/flight_detail.html:211
 #: app/templates/flights/list.html:37 app/templates/flights/list.html:59
 #: app/templates/maintenance/amp_import_history.html:3
 #: app/templates/maintenance/amp_import_history.html:12
@@ -9326,48 +9340,48 @@ msgstr "Huile ajoutée avant le vol"
 msgid "Oil added after flight"
 msgstr "Huile ajoutée après le vol"
 
-#: app/templates/flights/flight_form.html:747
-msgid "Fuel remaining at end of flight"
-msgstr "Carburant restant en fin de vol"
-
 #: app/templates/flights/flight_form.html:751
 msgid "estimated"
 msgstr "estimé"
 
-#: app/templates/flights/flight_form.html:756
+#: app/templates/flights/flight_form.html:771
+msgid "Fill in each tank, or only the total above."
+msgstr "Remplissez chaque réservoir, ou seulement le total ci-dessus."
+
+#: app/templates/flights/flight_form.html:773
 msgid "Tank"
 msgstr "Réservoir"
 
-#: app/templates/flights/flight_form.html:758
+#: app/templates/flights/flight_form.html:775
 msgid "All tanks"
 msgstr "Tous les réservoirs"
 
-#: app/templates/flights/flight_form.html:770
+#: app/templates/flights/flight_form.html:787
 msgid "Quick-fill from tank fraction"
 msgstr "Remplissage rapide par fraction de réservoir"
 
-#: app/templates/flights/flight_form.html:775
+#: app/templates/flights/flight_form.html:792
 msgid "Estimated liters for the selected fraction of the selected tank, rounded to the nearest 5 L."
 msgstr "Litres estimés pour la fraction sélectionnée du réservoir choisi, arrondis au 5 L le plus proche."
 
-#: app/templates/flights/flight_form.html:778
+#: app/templates/flights/flight_form.html:795
 msgid "Define a fuel tank on the aircraft page to get quick fraction-of-tank buttons here."
 msgstr "Définissez un réservoir de carburant sur la page de l'appareil pour obtenir ici des boutons rapides de fraction de réservoir."
 
-#: app/templates/flights/flight_form.html:779
+#: app/templates/flights/flight_form.html:796
 msgid "Aircraft settings"
 msgstr "Paramètres de l'avion"
 
-#: app/templates/flights/flight_form.html:784
+#: app/templates/flights/flight_form.html:801
 #, python-format
 msgid "Estimated consumption: ~%(est)s L based on engine time"
 msgstr "Consommation estimée : ~%(est)s L basée sur le temps moteur"
 
-#: app/templates/flights/flight_form.html:824
+#: app/templates/flights/flight_form.html:841
 msgid "Landings day"
 msgstr "Atterrissages de jour"
 
-#: app/templates/flights/flight_form.html:856
+#: app/templates/flights/flight_form.html:873
 msgid "Remarks, weather…"
 msgstr "Remarques, météo…"
 

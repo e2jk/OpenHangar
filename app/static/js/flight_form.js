@@ -151,12 +151,40 @@
     var fuelFractionGroup = document.getElementById('fuel-fraction-buttons');
     var fuelRemainingInput = document.getElementById('fuel_remaining_qty');
     var fuelTankPicker = document.getElementById('fuel-tank-picker');
+    // Multi-tank aircraft: one input per tank; the total follows their sum
+    // (the server recomputes it the same way). Typing a total directly is
+    // still allowed — then the per-tank inputs are simply left empty.
+    var fuelTankInputs = document.querySelectorAll('.fuel-tank-input');
+    function updateFuelTotalFromTanks() {
+      if (!fuelRemainingInput) return;
+      var sum = 0;
+      var any = false;
+      fuelTankInputs.forEach(function (input) {
+        var v = parseFloat(input.value);
+        if (!isNaN(v)) { sum += v; any = true; }
+      });
+      if (any) fuelRemainingInput.value = sum.toFixed(1);
+    }
+    fuelTankInputs.forEach(function (input) {
+      input.addEventListener('input', updateFuelTotalFromTanks);
+    });
+    if (fuelRemainingInput && fuelTankInputs.length) {
+      // Typing a total by hand replaces any per-tank split (which would
+      // otherwise override it on save). Only real typing — the sum above
+      // and the fraction buttons set the value programmatically.
+      fuelRemainingInput.addEventListener('input', function (e) {
+        if (!e.isTrusted) return;
+        fuelTankInputs.forEach(function (input) { input.value = ''; });
+      });
+    }
     if (fuelTankPicker && fuelFractionGroup) {
-      // Switching tanks just changes which capacity the fraction buttons
-      // below compute against — fuel_remaining_qty stays a single total,
-      // no per-tank remaining-quantity tracking on the Flight row.
+      // Switching tanks changes which capacity the fraction buttons below
+      // compute against, and which input they fill: the total for "All
+      // tanks", that tank's own input otherwise.
       fuelTankPicker.addEventListener('change', function () {
         fuelFractionGroup.dataset.capacity = fuelTankPicker.value;
+        var opt = fuelTankPicker.options[fuelTankPicker.selectedIndex];
+        fuelFractionGroup.dataset.target = (opt && opt.dataset.target) || '';
       });
     }
     if (fuelFractionGroup && fuelRemainingInput) {
@@ -168,8 +196,13 @@
           var denominator = parseFloat(btn.dataset.denominator);
           var raw = (numerator / denominator) * capacity;
           var rounded = Math.round(raw / 5) * 5;
-          fuelRemainingInput.value = rounded.toFixed(1);
-          fuelRemainingInput.dispatchEvent(new Event('input'));
+          var target = document.getElementById(fuelFractionGroup.dataset.target || '') || fuelRemainingInput;
+          if (target === fuelRemainingInput) {
+            // A total for all tanks: a per-tank split no longer applies.
+            fuelTankInputs.forEach(function (input) { input.value = ''; });
+          }
+          target.value = rounded.toFixed(1);
+          target.dispatchEvent(new Event('input'));
           fuelFractionGroup.querySelectorAll('.fuel-fraction-btn').forEach(function (b) {
             b.classList.toggle('active', b === btn);
           });
