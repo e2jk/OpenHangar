@@ -96,6 +96,13 @@ jobs:
       contents: write       # gh pr merge
       pull-requests: write  # gh pr create / gh pr merge
     steps:
+      # Only for scripts/release_notes.py and the release summary file —
+      # nothing from the checkout is executed with the PAT except that
+      # repo-owned script, on the owner's own pushed commit.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          fetch-depth: 1
       - name: Open PR (if none exists) and enable auto-merge
         env:
           # A PR authored by github-actions[bot] (i.e. opened with the
@@ -111,25 +118,21 @@ jobs:
           GH_REPO: ${{ github.repository }}
           HEAD_SHA: ${{ github.sha }}
         run: |
-          # The title names the whole batch, not just its newest commit
-          # (often a small follow-up fix): the oldest feat: commit if there
-          # is one, else the oldest commit, plus how many more there are.
-          # The body lists every commit. Recomputed on every push to ship,
-          # so shipping again while the PR is still open keeps both
-          # current. The release notes list the commits too (see ci.yml's
-          # "Create GitHub Release" step).
-          subjects=$(gh api "repos/$GH_REPO/compare/main...$HEAD_SHA" \
-            --jq '.commits[].commit.message | split("\n")[0]')
-          count=$(printf '%s\n' "$subjects" | grep -c .)
-          title=$(printf '%s\n' "$subjects" | grep -m1 -E '^feat(\([^)]*\))?!?:' \
-            || printf '%s\n' "$subjects" | head -1)
-          title=${title:-ship}
-          if [ "$count" -gt 1 ]; then
-            title="$title (+$((count - 1)) more)"
+          # The title counts the whole batch by kind ("Release: 7 features,
+          # 9 fixes"), the body groups every commit by kind — see
+          # scripts/release_notes.py. Recomputed on every push to ship, so
+          # shipping again while the PR is still open keeps both current.
+          # docs/release-notes/next.md, the hand-written release summary,
+          # goes on top only when it changed in this batch: a summary left
+          # over from an earlier release is never reused.
+          compare=$(gh api "repos/$GH_REPO/compare/main...$HEAD_SHA")
+          subjects=$(printf '%s' "$compare" | jq -r '.commits[].commit.message | split("\n")[0]')
+          summary_args=()
+          if printf '%s' "$compare" | jq -e '[.files[]?.filename] | index("docs/release-notes/next.md")' >/dev/null; then
+            summary_args=(--summary-file docs/release-notes/next.md)
           fi
-          # shellcheck disable=SC2016  # backticks are literal markdown code formatting, not command substitution
-          body=$(printf 'Auto-opened from `ship` — will merge once CI passes.\n\n## Commits\n\n'
-                 printf '%s\n' "$subjects" | sed 's/^/- /')
+          title=$(printf '%s\n' "$subjects" | python3 scripts/release_notes.py title)
+          body=$(printf '%s\n' "$subjects" | python3 scripts/release_notes.py body "${summary_args[@]}")
 
           pr_number=$(gh pr list --head ship --base main --state open --json number --jq '.[0].number // empty')
           if [ -z "$pr_number" ]; then
