@@ -2238,6 +2238,34 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
             ),
             "info",
         )
+    if result.parse_warnings:
+        # Same message as the pilot logbook import (pilots/routes.py).
+        n_warn = len(result.parse_warnings)
+        examples = "; ".join(
+            f"row {r}, {target}: {raw}"
+            for r, _col, target, raw in result.parse_warnings[:3]
+        )
+        if n_warn > 3:
+            examples += f" … +{n_warn - 3}"
+        flash(
+            ngettext(
+                "One cell value could not be parsed and was imported as blank: %(examples)s",
+                "%(n)d cell values could not be parsed and were imported as blank: %(examples)s",
+                n_warn,
+                n=n_warn,
+                examples=examples,
+            ),
+            "warning",
+        )
+    if "fuel_remaining_by_tank" in mapping.values() and not ac.fuel_tanks:
+        flash(
+            _(
+                "Fuel left per tank was not imported: this aircraft has no fuel "
+                "tanks configured. Add its tanks on the aircraft's edit page, in "
+                "the same order as in the log, then import the file again."
+            ),
+            "warning",
+        )
     if "fuel_remaining_fraction" in mapping.values() and not aircraft_tank_capacity_l(
         ac
     ):

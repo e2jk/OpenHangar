@@ -752,13 +752,30 @@
                 {% if aircraft and aircraft.fuel_tanks %}
                 {% set total_tank_capacity = aircraft.fuel_tanks | sum(attribute='capacity_liters') %}
                 {% if aircraft.fuel_tanks | length > 1 %}
+                {# Per tank: each tank's litres, the total above becomes their
+                   sum (fuel_remaining_tank_<i>, in the aircraft's tank order;
+                   prefilled from the flight's snapshot by tank name). #}
+                {% set _by_tank = {} %}
+                {% if flight and flight.fuel_remaining_by_tank %}{% for e in flight.fuel_remaining_by_tank %}{% set _discard = _by_tank.update({e.tank: e.liters}) %}{% endfor %}{% endif %}
+                <div class="row g-2 mt-1" id="fuel-tank-inputs">
+                  {% for tank in aircraft.fuel_tanks %}
+                  <div class="col-6 col-sm-4">
+                    <label for="fuel_remaining_tank_{{ loop.index0 }}" class="form-label small mb-0">{{ tank.name }} <span class="text-muted">(L)</span></label>
+                    <input type="number" class="form-control form-control-sm fuel-tank-input"
+                           id="fuel_remaining_tank_{{ loop.index0 }}" name="fuel_remaining_tank_{{ loop.index0 }}"
+                           value="{{ '%.1f'|format(_by_tank[tank.name]|float) if tank.name in _by_tank else '' }}"
+                           step="0.1" min="0" max="{{ tank.capacity_liters|float }}">
+                  </div>
+                  {% endfor %}
+                </div>
+                <div class="form-text">{{ _('Fill in each tank, or only the total above.') }}</div>
                 <select class="form-select form-select-sm mt-2" id="fuel-tank-picker"
                         aria-label="{{ _('Tank') }}">
-                  <option value="{{ total_tank_capacity | float }}">
+                  <option value="{{ total_tank_capacity | float }}" data-target="fuel_remaining_qty">
                     {{ _('All tanks') }} ({{ '%.0f'|format(total_tank_capacity|float) }} L)
                   </option>
                   {% for tank in aircraft.fuel_tanks %}
-                  <option value="{{ tank.capacity_liters | float }}">
+                  <option value="{{ tank.capacity_liters | float }}" data-target="fuel_remaining_tank_{{ loop.index0 }}">
                     {{ tank.name }} ({{ '%.0f'|format(tank.capacity_liters|float) }} L)
                   </option>
                   {% endfor %}

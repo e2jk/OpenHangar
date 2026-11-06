@@ -11,6 +11,7 @@ counters" baseline supports importing from a cutover date forward.
 from __future__ import annotations
 
 import json
+import math
 import re
 from dataclasses import dataclass, field
 from datetime import date, timedelta
@@ -49,6 +50,7 @@ AIRFRAME_TARGET_FIELDS: list[str] = [
     "fuel_added",
     "fuel_timing",
     "fuel_remaining_fraction",
+    "fuel_remaining_by_tank",
 ]
 
 # Normalised source column name → airframe target field.
@@ -121,6 +123,9 @@ _AIRFRAME_ALIASES: dict[str, str] = {
     "fuel left": "fuel_remaining_fraction",
     "fuel left (8ths)": "fuel_remaining_fraction",
     "fuel remaining": "fuel_remaining_fraction",
+    "fuel left per tank": "fuel_remaining_by_tank",
+    "fuel left (l per tank)": "fuel_remaining_by_tank",
+    "fuel remaining per tank": "fuel_remaining_by_tank",
 }
 
 # Target field → parser (None = keep trimmed string)
@@ -136,6 +141,7 @@ _AIRFRAME_PARSERS: dict[str, Any] = {
     "passenger_count": parse_int_value,
     "fuel_added": lambda raw: _parse_fuel_quantity(raw),
     "fuel_remaining_fraction": lambda raw: _parse_tank_fraction(raw),
+    "fuel_remaining_by_tank": lambda raw: _parse_litres_per_tank(raw),
 }
 
 
@@ -186,6 +192,30 @@ def _parse_tank_fraction(raw: Any) -> float | None:
         if 1 < value <= 8:
             value /= 8  # a count of eighths
     return value if 0 <= value <= 1 else None
+
+
+# fuel_remaining_by_tank: litres left in each tank, in the aircraft's tank
+# order, e.g. "9/13" = 9 L left tank, 13 L right tank ("9;13" or "9 | 13"
+# too). A single number is a single-tank aircraft's litres.
+_TANK_SPLIT_RE = re.compile(r"\s*[/;|]\s*")
+
+
+def _parse_litres_per_tank(raw: Any) -> list[float] | None:
+    if raw is None or isinstance(raw, bool):
+        return None
+    if isinstance(raw, int | float):
+        values = [float(raw)]
+    else:
+        try:
+            values = [
+                float(part.replace(",", "."))
+                for part in _TANK_SPLIT_RE.split(str(raw).strip())
+            ]
+        except ValueError:
+            return None
+    if all(math.isfinite(v) and v >= 0 for v in values):
+        return values
+    return None
 
 
 # Two-letter markers count at the end of a word ("FFBF", "6/8 AF"), never
@@ -346,6 +376,7 @@ _TYPE_NAMES: dict[str, str] = {
     "passenger_count": "whole number",
     "fuel_added": "fuel quantity",
     "fuel_remaining_fraction": "tank fraction",
+    "fuel_remaining_by_tank": "litres per tank",
 }
 
 
@@ -411,7 +442,7 @@ def _build_airframe_fields(
     mapping: dict[str, str],
     col_index: dict[str, int],
     date_val: date,
-    tank_capacity_l: float | None = None,
+    tanks: list[tuple[str, float]] | None = None,
 ) -> tuple[dict[str, Any], str | None, list[tuple[str, str, str]]]:
     """Build Flight field values (+ crew name) for one data row.
 
@@ -458,17 +489,31 @@ def _build_airframe_fields(
     eng_end = fields.get("engine_counter_end")
     if eng_start is not None and eng_end is not None and eng_end >= eng_start:
         fields["engine_time"] = round(eng_end - eng_start, 1)
-    _apply_fuel_fields(fields, mapping, tank_capacity_l)
+    unmatched = _apply_fuel_fields(fields, mapping, tanks)
+    if unmatched is not None:
+        col = next(c for c, t in mapping.items() if t == "fuel_remaining_by_tank")
+        parse_warnings.append(
+            (
+                col,
+                "fuel_remaining_by_tank",
+                repr(str(_row_get(row, col_index, col))[:40]),
+            )
+        )
     return fields, crew_name, parse_warnings
 
 
 def _apply_fuel_fields(
-    fields: dict[str, Any], mapping: dict[str, str], tank_capacity_l: float | None
-) -> None:
+    fields: dict[str, Any],
+    mapping: dict[str, str],
+    tanks: list[tuple[str, float]] | None,
+) -> list[float] | None:
     """Turn the fuel mapping targets into Flight fuel fields (see the "Fuel
     columns" note above): the quantity goes to fuel added before or after
-    the flight, the tank fraction to litres remaining at the end of it —
-    only when the aircraft's tank capacity is known, never guessed."""
+    the flight; the tank fraction, or the litres per tank, to the fuel
+    remaining at the end of it — only with the aircraft's tanks known,
+    never guessed. *tanks* is the aircraft's (name, capacity) list in tank
+    order. Returns the per-tank litres when they couldn't be matched to the
+    tanks (a different number of values than tanks), else None."""
     qty = fields.pop("fuel_added", None)
     timing = fields.pop("fuel_timing", None)
     if qty is not None:
@@ -478,8 +523,25 @@ def _apply_fuel_fields(
         fields[f"fuel_added_{side}_qty"] = qty
         fields[f"fuel_added_{side}_unit"] = unit
     fraction = fields.pop("fuel_remaining_fraction", None)
-    if fraction is not None and tank_capacity_l:
-        fields["fuel_remaining_qty"] = round(fraction * tank_capacity_l, 1)
+    capacity = sum(cap for _name, cap in tanks or [])
+    if fraction is not None and capacity:
+        fields["fuel_remaining_qty"] = round(fraction * capacity, 1)
+    per_tank: list[float] | None = fields.pop("fuel_remaining_by_tank", None)
+    if per_tank is None or not tanks:
+        return None
+    if len(per_tank) != len(tanks):
+        return per_tank
+    fields["fuel_remaining_by_tank"] = [
+        {"tank": name, "liters": liters}
+        for (name, _cap), liters in zip(tanks, per_tank, strict=True)
+    ]
+    fields["fuel_remaining_qty"] = round(sum(per_tank), 2)
+    return None
+
+
+def aircraft_tanks(aircraft: Any) -> list[tuple[str, float]]:
+    """The aircraft's fuel tanks as (name, capacity in litres), in order."""
+    return [(t.name, float(t.capacity_liters or 0)) for t in aircraft.fuel_tanks]
 
 
 def aircraft_tank_capacity_l(aircraft: Any) -> float | None:
@@ -519,6 +581,7 @@ def _fields_to_flight_entry_kwargs(fields: dict[str, Any]) -> dict[str, Any]:
         "fuel_added_after_qty": fields.get("fuel_added_after_qty"),
         "fuel_added_after_unit": fields.get("fuel_added_after_unit"),
         "fuel_remaining_qty": fields.get("fuel_remaining_qty"),
+        "fuel_remaining_by_tank": fields.get("fuel_remaining_by_tank"),
     }
 
 
@@ -571,6 +634,7 @@ def _fill_fuel_on_duplicate(aircraft_id: int, fields: dict[str, Any]) -> bool:
                     filled = True
         if flight.fuel_remaining_qty is None and "fuel_remaining_qty" in new_fuel:
             flight.fuel_remaining_qty = new_fuel["fuel_remaining_qty"]
+            flight.fuel_remaining_by_tank = fields.get("fuel_remaining_by_tank")
             filled = True
         return filled
     return False
@@ -605,7 +669,7 @@ def execute_airframe_import(
     skip_row_nums = skip_row_nums or set()
 
     existing = _fetch_existing_dedup_index(aircraft.id)
-    tank_capacity_l = aircraft_tank_capacity_l(aircraft)
+    tanks = aircraft_tanks(aircraft)
     rows: list[tuple[int, dict[str, Any], str | None]] = []
     for row_num, row in enumerate(parsed.data_rows, start=1):
         if row_num in skip_row_nums:
@@ -623,7 +687,7 @@ def execute_airframe_import(
             continue
 
         fields, crew_name, parse_warnings = _build_airframe_fields(
-            row, mapping, col_index, date_val, tank_capacity_l
+            row, mapping, col_index, date_val, tanks
         )
         for col, target, raw_repr in parse_warnings:
             result.parse_warnings.append((row_num, col, target, raw_repr))
@@ -841,7 +905,7 @@ def find_conflicting_airframe_rows(
     )
     aircraft = db.session.get(Aircraft, aircraft_id)
     offset_hours = float(aircraft.flight_counter_offset) if aircraft else 0.0
-    tank_capacity_l = aircraft_tank_capacity_l(aircraft) if aircraft else None
+    tanks = aircraft_tanks(aircraft) if aircraft else None
     existing = _fetch_existing_dedup_index(aircraft_id)
     conflicts: list[AirframeConflictRow] = []
 
@@ -855,7 +919,7 @@ def find_conflicting_airframe_rows(
             continue
 
         fields, crew_name, _parse_warnings = _build_airframe_fields(
-            row, mapping, col_index, date_val, tank_capacity_l
+            row, mapping, col_index, date_val, tanks
         )
         if existing.contains(_dup_key(fields), _fields_dup_detail(fields)):
             continue  # exact duplicate — execute_airframe_import's own dedup handles this
