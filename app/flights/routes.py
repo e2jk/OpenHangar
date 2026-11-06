@@ -2099,6 +2099,7 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
 
     from flights.airframe_import import (  # pyright: ignore[reportMissingImports]
         AIRFRAME_TARGET_FIELDS,
+        aircraft_tank_capacity_l,
         execute_airframe_import,
         find_conflicting_airframe_rows,
         merge_airframe_into_existing,
@@ -2226,6 +2227,28 @@ def airframe_import_execute(aircraft_id: int) -> ResponseReturnValue:
     batch.warning_count = len(result.continuity_warnings)
     batch.has_opening_counters = result.has_opening_counters
     db.session.commit()
+
+    if result.fuel_filled:
+        flash(
+            ngettext(
+                "Fuel figures were added to one flight already in the log.",
+                "Fuel figures were added to %(n)d flights already in the log.",
+                result.fuel_filled,
+                n=result.fuel_filled,
+            ),
+            "info",
+        )
+    if "fuel_remaining_fraction" in mapping.values() and not aircraft_tank_capacity_l(
+        ac
+    ):
+        flash(
+            _(
+                "Fuel left was not imported: this aircraft has no fuel tank "
+                "capacity configured to convert it into litres. Add its tanks "
+                "on the aircraft's edit page, then import the file again."
+            ),
+            "warning",
+        )
 
     if auto_merges:
         flash(

@@ -203,11 +203,30 @@ but useful for tracking consumption and cost.
 |-------|-------------|
 | **Fuel event** | Whether fuelling happened *before* or *after* the flight (or not at all) |
 | **Fuel added** | Volume added, with unit (litres or US gallons) |
-| **Fuel remaining** | Gauge reading after fuelling |
+| **Fuel remaining** | Fuel left in the tanks at the end of the flight, in litres |
 | **Fuel photo** | Optional photo of the fuel receipt or gauge |
 
-Fuel costs, if recorded, appear in the cost tracking module and roll up into
-the per-aircraft expense summary.
+Quantities are per aircraft, not per tank: when several tanks are filled
+together (e.g. both wing tanks of a PA-28 brought to the same level), record
+the total added in one figure; fuel remaining is likewise the total across all
+tanks. The flight form can work fuel remaining out from a gauge fraction
+using the tank capacities set on the aircraft.
+
+Refuels not tied to a flight (topping off during maintenance, for example)
+are logged separately from the aircraft page.
+
+### Fuel log
+
+The aircraft's **Fuel log** (the *Refuels* link on the aircraft page) lists
+every refuel over a selectable period — before or after a flight, or logged on
+its own — with its cost. A refuel without a cost has an **Add cost** button
+that opens a fuel expense pre-filled with the date, quantity and flight; once
+saved it shows on the refuel's line with its price per litre. The figures at
+the top cover the period: fuel added, fuel cost, average price per litre, fuel
+per engine hour (an estimate of fuel burn, meaningful over several months), and
+fuel cost per engine hour, per flight hour and per flight. Cost figures only
+include refuels whose cost has been added, and ratios are left out if fuel was
+paid in more than one currency within the period.
 
 ---
 
@@ -270,6 +289,20 @@ date order (per-row warnings, never hard errors). Free-text pilot names are
 stored as crew records, so flights flown by previous owners or visiting
 pilots are preserved even though they never pass through any pilot's personal
 logbook. Each import can be rolled back as a batch.
+
+Fuel can be imported too, from three optional columns:
+
+| Mapping field | Column contents |
+|---------------|-----------------|
+| `fuel_added` | Quantity added on that line, in litres (or US gallons when the column header says *gal*) |
+| `fuel_timing` | Whether that was before or after the flight, e.g. *FFBF* / *FFAF* (full fuel before / after flight), *before* / *after*. When it doesn't say — or says both, with only the total known — the fuel is recorded as added after the flight. |
+| `fuel_remaining_fraction` | Fuel left at the end of the flight as a fraction of the tanks: *0.25*, *2/8*, or a count of eighths (*2*). Converted to litres with the aircraft's tank capacity, so the aircraft's tanks must be set up first. |
+
+A row matching a flight already in the log (for example, a re-import after
+adding these columns, or after setting up the tanks) still brings its fuel to
+that flight where it's missing: fuel added only when the flight has none
+recorded yet — so nothing is ever counted twice — and fuel remaining when it's
+empty. Nothing else on the flight changes.
 
 ---
 

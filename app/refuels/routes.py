@@ -14,6 +14,8 @@ from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImp
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
+    Expense,
+    ExpenseType,
     Refuel,
     Role,
     TenantUser,
@@ -76,13 +78,50 @@ def _parse_required_date(raw: str, label: str) -> tuple[date | None, str | None]
 @refuels_bp.route("/aircraft/<aircraft_ref:aircraft_id>/refuels")
 @login_required
 def list_refuels(aircraft_id: int) -> ResponseReturnValue:
-    ac = _get_aircraft_or_404(aircraft_id)
-    refuels = (
-        Refuel.query.filter_by(aircraft_id=ac.id)
-        .order_by(Refuel.date.desc(), Refuel.id.desc())
-        .all()
+    """The aircraft's fuel log: every refuel in the period — on a flight or
+    standalone — with its cost, and the fuel figures for the period (see
+    refuels/fuel_log.py)."""
+    from expenses.cost_dashboard import (  # pyright: ignore[reportMissingImports]
+        resolve_period,
     )
-    return render_template("refuels/list.html", aircraft=ac, refuels=refuels)
+    from reports.utilization import (  # pyright: ignore[reportMissingImports]
+        DEFAULT_PERIOD_MONTHS,
+        PERIOD_OPTIONS,
+        flights_in_period,
+    )
+
+    from refuels.fuel_log import build_fuel_log, summarize
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    try:
+        period_months = int(request.args.get("period", DEFAULT_PERIOD_MONTHS))
+    except ValueError:
+        period_months = DEFAULT_PERIOD_MONTHS
+    if period_months not in PERIOD_OPTIONS:
+        period_months = DEFAULT_PERIOD_MONTHS
+    period_start, period_end = resolve_period(period_months, date.today())
+
+    events = build_fuel_log(ac.id, period_start, period_end)
+    expense_query = Expense.query.filter(
+        Expense.aircraft_id == ac.id,
+        Expense.expense_type == ExpenseType.FUEL,
+        Expense.date <= period_end,
+    )
+    if period_start is not None:
+        expense_query = expense_query.filter(Expense.date >= period_start)
+    summary = summarize(
+        events,
+        expense_query.all(),
+        flights_in_period(ac.id, period_start, period_end),
+    )
+    return render_template(
+        "refuels/list.html",
+        aircraft=ac,
+        events=events,
+        summary=summary,
+        period_months=period_months,
+        period_options=PERIOD_OPTIONS,
+    )
 
 
 # ── Add refuel ────────────────────────────────────────────────────────────────
