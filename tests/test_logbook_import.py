@@ -1172,6 +1172,92 @@ class TestParseWarnings:
             assert result.total_mismatch_warnings == []
 
 
+class TestBlankCellMarker:
+    """ "[empty]" (a transcriber's explicit "left blank on paper") reads as a
+    blank cell in the pilot import too, exactly as in the airframe import —
+    e.g. the block times of a flight cancelled before takeoff."""
+
+    def _make_batch(self, uid: int) -> int:
+        from datetime import datetime
+
+        batch = LogbookImportBatch(
+            pilot_user_id=uid,
+            source_filename="x.csv",
+            imported_at=datetime.now(UTC),
+            row_count=0,
+            subtotal_count=0,
+            skipped_count=0,
+        )
+        db.session.add(batch)
+        db.session.flush()
+        return batch.id
+
+    _COLS: ClassVar[list[str]] = ["date", "from", "dep", "to", "arr", "pic", "se"]
+    _MAPPING: ClassVar[dict[str, str]] = {
+        "date": "date",
+        "from": "departure_place",
+        "dep": "departure_time",
+        "to": "arrival_place",
+        "arr": "arrival_time",
+        "pic": "pic_name",
+        "se": "single_pilot_se",
+    }
+
+    def test_marker_imported_as_blank_without_parse_warning(self, app):
+        with app.app_context():
+            uid = _make_user("blank@example.com")
+            bid = self._make_batch(uid)
+            parsed = _make_parsed_file(
+                self._COLS,
+                [
+                    [
+                        date(2026, 10, 24),
+                        "EBAW",
+                        "[empty]",
+                        "EBAW",
+                        "[EMPTY]",
+                        " [empty] ",
+                        "0:42",
+                    ]
+                ],
+            )
+            result = execute_import(parsed, self._MAPPING, uid, bid)
+            assert result.imported == 1
+            assert result.parse_warnings == []
+            entry = Flight.query.filter_by(import_batch_id=bid).one()
+            assert entry.departure_time is None
+            assert entry.arrival_time is None
+            assert entry.pic_name is None
+            assert float(entry.single_pilot_se) == 0.7
+
+    def test_marker_in_date_still_reported_as_unparseable(self, app):
+        """Not silently dropped as a subtotal line: a row with real data but
+        an "[empty]" date needs the user's attention."""
+        with app.app_context():
+            uid = _make_user("blankdate@example.com")
+            bid = self._make_batch(uid)
+            parsed = _make_parsed_file(
+                self._COLS,
+                [["[empty]", "EBAW", "10:00", "EBAW", "11:00", "Klein", "1:00"]],
+            )
+            result = execute_import(parsed, self._MAPPING, uid, bid)
+            assert result.imported == 0
+            assert result.subtotals == 0
+            assert result.skipped and "[empty]" in result.skipped[0][1]
+
+    def test_marker_gives_no_type_hint(self):
+        parsed = _make_parsed_file(
+            ["date", "dep"],
+            [["01/01/2024", "[empty]"], ["02/01/2024", "10:30"]],
+        )
+        assert type_hints(parsed, {"date": "date", "dep": "departure_time"}) == {}
+
+    def test_marker_shown_blank_in_preview(self):
+        parsed = _make_parsed_file(["date", "dep"], [[date(2024, 1, 1), "[empty]"]])
+        rows = preview_rows(parsed, {"date": "date", "dep": "departure_time"})
+        assert rows == [{"date": date(2024, 1, 1), "departure_time": None}]
+
+
 class TestTypeHints:
     def test_bad_duration_column_flagged(self):
         parsed = _make_parsed_file(
