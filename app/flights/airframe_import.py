@@ -24,6 +24,9 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     parse_int_value,
     parse_time_value,
 )
+from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
+    is_blank_cell as _is_blank_cell,  # "[empty]" marker — see its definition
+)
 
 AIRFRAME_TARGET_FIELDS: list[str] = [
     "date",
@@ -300,24 +303,6 @@ def _is_subtotal(row: list[Any], date_idx: int | None) -> bool:
     )
 
     return _is_subtotal_row(row, date_idx)
-
-
-# Paper airframe logbooks routinely leave a counter blank — e.g. flying a
-# leg and back on one continuous engine run only has one landing counter
-# reading in between, so the arrival counter of the first leg and the
-# departure counter of the return leg were never written down. When such a
-# gap is transcribed, it's marked with this literal placeholder rather than
-# left as a truly blank cell (to distinguish "known blank" from "OCR missed
-# it") — treated identically to a blank cell everywhere a cell is read: no
-# value, no parse warning.
-_BLANK_CELL_MARKER = "[empty]"
-
-
-def _is_blank_cell(raw: Any) -> bool:
-    if raw is None:
-        return True
-    s = str(raw).strip()
-    return not s or s.casefold() == _BLANK_CELL_MARKER
 
 
 def _row_get(row: list[Any], col_index: dict[str, int], col: str) -> Any:
@@ -699,12 +684,16 @@ def find_conflicting_airframe_rows(
             continue  # exact duplicate — execute_airframe_import's own dedup handles this
 
         same_day = Flight.query.filter_by(aircraft_id=aircraft_id, date=date_val).all()
-        scored = [
-            (score, existing.id)
-            for existing in same_day
-            if (score := _score_airframe_candidate(fields, existing, offset_hours))
-            >= _CANDIDATE_MIN_SCORE
-        ]
+        scored = []
+        for candidate in same_day:
+            score = _score_airframe_candidate(fields, candidate, offset_hours)
+            # A cancelled-before-takeoff engine run has no clock times on
+            # either side, so it can't reach the usual score — still offer
+            # it (and let split_airframe_auto_merges merge it).
+            if _is_no_takeoff_match(fields, candidate):
+                score = max(score, float(_CANDIDATE_MIN_SCORE))
+            if score >= _CANDIDATE_MIN_SCORE:
+                scored.append((score, candidate.id))
         if scored:
             scored.sort(key=lambda t: -t[0])
             conflicts.append(
@@ -773,6 +762,30 @@ def _is_pilot_only(existing: Any) -> bool:
 _AUTO_MERGE_MIN_TIME_SCORE = 1.75
 
 
+def _is_no_takeoff_match(fields: dict[str, Any], existing: Any) -> bool:
+    """*fields* (a parsed airframe-log row) and *existing* (a flight logged
+    only from the pilot side) are the same engine run that never took off —
+    see services.no_takeoff_matching."""
+    from services.no_takeoff_matching import (  # pyright: ignore[reportMissingImports]
+        AirframeSide,
+        is_no_takeoff_pair,
+        pilot_side_of_flight,
+    )
+
+    if not _is_pilot_only(existing):
+        return False
+    airframe = AirframeSide(
+        departure_icao=fields.get("departure_icao"),
+        arrival_icao=fields.get("arrival_icao"),
+        takeoff_time=fields.get("takeoff_time"),
+        landing_time=fields.get("landing_time"),
+        flight_time=fields.get("flight_time"),
+        landing_count=fields.get("landing_count"),
+        engine_time=fields.get("engine_time"),
+    )
+    return is_no_takeoff_pair(airframe, pilot_side_of_flight(existing))
+
+
 def _is_strong_cross_match(
     fields: dict[str, Any], existing: Any, offset_hours: float
 ) -> bool:
@@ -807,7 +820,8 @@ def split_airframe_auto_merges(
     A row merges automatically — no human decision needed — when exactly
     one of its candidates is a flight logged only from the pilot side (see
     _is_pilot_only) and that candidate is a strong match (see
-    _is_strong_cross_match): the two sides then simply complement each
+    _is_strong_cross_match, or _is_no_takeoff_match for an engine run that
+    never took off): the two sides then simply complement each
     other, there's nothing to choose between. Each existing flight is
     claimed by at most one row; anything else goes to review.
     """
@@ -823,7 +837,10 @@ def split_airframe_auto_merges(
             for _score, cid in conflict.candidates
             if (existing := db.session.get(Flight, cid)) is not None
             and _is_pilot_only(existing)
-            and _is_strong_cross_match(conflict.fields, existing, offset_hours)
+            and (
+                _is_strong_cross_match(conflict.fields, existing, offset_hours)
+                or _is_no_takeoff_match(conflict.fields, existing)
+            )
         ]
         if len(strong) == 1 and strong[0] not in claimed:
             claimed.add(strong[0])

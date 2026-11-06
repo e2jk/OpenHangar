@@ -718,13 +718,30 @@ def parse_int_value(val: Any) -> int | None:
     return None
 
 
+# Transcribed logbooks (paper → spreadsheet) mark a cell deliberately left
+# blank on paper with this literal placeholder rather than a truly empty
+# cell, to tell "known blank" apart from "the transcription missed it" —
+# e.g. an airframe log's intermediate counter on a two-leg engine run, or a
+# pilot log's block times on a flight cancelled before takeoff. It is read
+# as a blank cell everywhere a mapped cell is read, by both the pilot and
+# the airframe import: no value, no parse warning, no "[empty]" text stored.
+# (The subtotal check on the date column deliberately sees the raw marker,
+# so a row whose date is "[empty]" is reported as an unparseable date
+# rather than silently dropped as a subtotal line.)
+BLANK_CELL_MARKER = "[empty]"
+
+
+def is_blank_cell(raw: Any) -> bool:
+    """True for None, a whitespace-only string, or the BLANK_CELL_MARKER."""
+    if raw is None:
+        return True
+    s = str(raw).strip()
+    return not s or s.casefold() == BLANK_CELL_MARKER
+
+
 def _is_nonempty(val: Any) -> bool:
-    """Return True when val carries a real value (not None, not blank string)."""
-    if val is None:
-        return False
-    if isinstance(val, str):
-        return bool(val.strip())
-    return True
+    """Return True when val carries a real value (not blank, see is_blank_cell)."""
+    return not is_blank_cell(val)
 
 
 # Map target field → (human-readable type name, parser function)
@@ -800,7 +817,8 @@ def preview_rows(
             target = mapping.get(col, "ignore")
             if target == "ignore":
                 continue
-            mapped[target] = row[i] if i < len(row) else None
+            val = row[i] if i < len(row) else None
+            mapped[target] = None if is_blank_cell(val) else val
         result.append(mapped)
         if len(result) >= n:
             break
@@ -819,7 +837,8 @@ def _date_col_index(norm_cols: list[str], mapping: dict[str, str]) -> int | None
 
 def _row_get(row: list[Any], col_index: dict[str, int], col: str) -> Any:
     i = col_index.get(col)
-    return row[i] if i is not None and i < len(row) else None
+    val = row[i] if i is not None and i < len(row) else None
+    return None if is_blank_cell(val) else val
 
 
 def _parse_row_date(
@@ -1405,11 +1424,16 @@ def find_conflicting_rows(
             or_(*same_day_filters),
             Flight.date == date_val,
         ).all()
-        scored = [
-            (score, existing.id)
-            for existing in same_day
-            if (score := _score_candidate(kwargs, existing)) >= _CANDIDATE_MIN_SCORE
-        ]
+        scored = []
+        for candidate in same_day:
+            score = _score_candidate(kwargs, candidate)
+            # A cancelled-before-takeoff engine run may have nothing but
+            # the route to score on — still offer it (and let
+            # split_auto_merges merge it).
+            if _is_no_takeoff_match(kwargs, candidate):
+                score = max(score, float(_CANDIDATE_MIN_SCORE))
+            if score >= _CANDIDATE_MIN_SCORE:
+                scored.append((score, candidate.id))
         if scored:
             scored.sort(key=lambda t: -t[0])
             conflicts.append(
@@ -1532,6 +1556,34 @@ def _is_strong_cross_match(kwargs: dict[str, Any], existing: Any) -> bool:
     return score >= _AUTO_MERGE_MIN_TIME_SCORE
 
 
+def _is_no_takeoff_match(kwargs: dict[str, Any], existing: Any) -> bool:
+    """*kwargs* (a parsed pilot-log row) and *existing* (a flight logged only
+    from the airframe side, on the same registration) are the same engine
+    run that never took off — see services.no_takeoff_matching."""
+    from services.no_takeoff_matching import (  # pyright: ignore[reportMissingImports]
+        PilotSide,
+        airframe_side_of_flight,
+        is_no_takeoff_pair,
+    )
+
+    if not _is_airframe_only(existing):
+        return False
+    reg_new = (kwargs.get("other_aircraft_registration") or "").upper()
+    reg_old = (existing.display_registration or "").upper()
+    if not reg_new or reg_new.replace("-", "") != reg_old.replace("-", ""):
+        return False
+    pilot = PilotSide(
+        departure_icao=kwargs.get("departure_icao"),
+        arrival_icao=kwargs.get("arrival_icao"),
+        departure_time=kwargs.get("departure_time"),
+        arrival_time=kwargs.get("arrival_time"),
+        block_time=_kwargs_duration(kwargs),
+        landings_day=kwargs.get("landings_day"),
+        landings_night=kwargs.get("landings_night"),
+    )
+    return is_no_takeoff_pair(airframe_side_of_flight(existing), pilot)
+
+
 def split_auto_merges(
     conflicts: list[ConflictRow],
 ) -> tuple[list[tuple[ConflictRow, int]], list[ConflictRow]]:
@@ -1540,7 +1592,8 @@ def split_auto_merges(
     A row merges automatically — no human decision needed — when exactly
     one of its candidates is an entry logged only from the airframe side
     (see _is_airframe_only) and that candidate is a strong match (see
-    _is_strong_cross_match): the two sides then simply complement each
+    _is_strong_cross_match, or _is_no_takeoff_match for an engine run that
+    never took off): the two sides then simply complement each
     other, there's nothing to choose between. Each existing entry is
     claimed by at most one row; anything else goes to review.
     """
@@ -1555,7 +1608,10 @@ def split_auto_merges(
             for _score, cid in conflict.candidates
             if (existing := db.session.get(Flight, cid)) is not None
             and _is_airframe_only(existing)
-            and _is_strong_cross_match(conflict.kwargs, existing)
+            and (
+                _is_strong_cross_match(conflict.kwargs, existing)
+                or _is_no_takeoff_match(conflict.kwargs, existing)
+            )
         ]
         if len(strong) == 1 and strong[0] not in claimed:
             claimed.add(strong[0])
