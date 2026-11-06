@@ -65,7 +65,7 @@ the download usually is too. It returns immediately. Tell the user the
 download has started.
 
 ```bash
-echo "arch:       $(uname -m)"
+echo "arch:       $(uname -m), userland $(getconf LONG_BIT)-bit"
 echo "os:         $(. /etc/os-release 2>/dev/null; echo "${PRETTY_NAME:-unknown}")"
 echo "docker:     $(docker --version 2>&1)"
 echo "compose:    $(docker compose version 2>&1)"
@@ -82,9 +82,12 @@ echo "image download: started in the background"
 
 Interpret the results:
 
-- **Architecture**: images exist for `amd64` and `arm64` only. On `armv7l` /
-  `armhf` (32-bit Raspberry Pi OS), stop: the user needs to reinstall with
-  **Raspberry Pi OS Lite (64-bit)**, see the
+- **Architecture**: images exist for `amd64` and `arm64` only, so `arch:`
+  must read `x86_64` or `aarch64` **and** `userland 64-bit`. Stop if it shows
+  `armv7l` / `armv6l`, or `aarch64, userland 32-bit`. The second case is a
+  64-bit kernel running a 32-bit OS, as some 32-bit Raspberry Pi OS installs
+  do on a Pi 4 or 5. It can't run `arm64` images either. Either way the user
+  needs to reinstall with **Raspberry Pi OS Lite (64-bit)**, see the
   [Raspberry Pi guide](raspberry-pi.md).
 - **`docker:` or `compose:` shows "command not found"** (Compose must be v2
   or later: `docker compose`, not the old `docker-compose`): install Docker
@@ -337,7 +340,7 @@ Common failures:
 | Web container restarting, `Permission denied` on `/data/uploads` or `/data/backups` | Data folders owned by root | `sudo chown -R 1000:1000` the uploads/backups folders, `docker compose up -d` |
 | Login/setup page reloads, or `400 Bad Request` | `Secure` cookie over plain HTTP | Add `OPENHANGAR_SESSION_COOKIE_SECURE=false` (3a only), `docker compose up -d` |
 | `OPENHANGAR_SECRET_KEY appears to be a placeholder` | Secret step didn't run | Re-run the secrets command |
-| `exec format error` | 32-bit OS | Reinstall a 64-bit OS |
+| `exec format error` | 32-bit OS (even if `uname -m` says `aarch64`) | Reinstall a 64-bit OS |
 | Database unhealthy, log says *"in 18+, these Docker images are configured to store database data in a format which is compatible with pg_ctlcluster"* | Compose file from before 2026-11 mounts `/var/lib/postgresql/data` | Change the database volume to `./db_data:/var/lib/postgresql` (3a), then `docker compose up -d` |
 | `Conflict. The container name "/openhangar-web" is already in use` | Another OpenHangar stack on this host | See [Existing install](#existing-install) |
 
