@@ -1342,6 +1342,19 @@ class TestPreviewCellFormatting:
     def test_formats(self, val, shown):
         assert format_preview_cell(val) == shown
 
+    @pytest.mark.parametrize(
+        ("target", "shown"),
+        [
+            ("single_pilot_se", "2:54"),  # a duration typed into a time cell
+            ("function_pic", "2:54"),
+            ("flight_time", "2:54"),  # airframe import
+            ("departure_time", "02:54"),  # a real clock time
+            (None, "02:54"),
+        ],
+    )
+    def test_time_cell_shown_as_duration_when_mapped_to_one(self, target, shown):
+        assert format_preview_cell(time(2, 54), target) == shown
+
     def test_mapping_page_preview_shows_plain_dates(self, app, client):
         import openpyxl  # pyright: ignore[reportMissingImports]
 
@@ -1371,6 +1384,7 @@ class TestPreviewCellFormatting:
         page = rv.data.decode()
         assert "<td>2026-11-02</td>" in page
         assert "<td>09:54</td>" in page
+        assert "<td>1:18</td>" in page  # SE duration typed into a time cell
         assert "00:00:00" not in page
 
 

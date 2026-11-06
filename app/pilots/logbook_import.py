@@ -859,14 +859,28 @@ def preview_rows(
     return result
 
 
-def format_preview_cell(val: Any) -> str:
+# Mapped fields holding a duration (pilot import, plus the airframe
+# import's flight_time): a time-of-day cell mapped to one is a duration
+# typed into an Excel time cell (e.g. 2:54 of SE time), so the preview
+# shows it as hours:minutes ("2:54"), not as a clock time ("02:54").
+_PREVIEW_DURATION_TARGETS = frozenset(
+    {t for t, (type_name, _parser) in _FIELD_TYPE.items() if type_name == "duration"}
+    | {"flight_time"}
+)
+
+
+def format_preview_cell(val: Any, target: str | None = None) -> str:
     """A raw spreadsheet cell as the mapping-page preview shows it — the way
     the spreadsheet displays it rather than Python's repr: an Excel date
     cell (read back as a midnight datetime) as just the date, a time
-    without its ":00" seconds, a duration as hours:minutes. Display only;
-    the import itself parses the raw value (see _FIELD_TYPE)."""
+    without its ":00" seconds, a duration as hours:minutes — including a
+    duration typed into a time cell, when *target* (the field the column
+    is mapped to) is a duration. Display only; the import itself parses
+    the raw value (see _FIELD_TYPE)."""
     if val is None:
         return ""
+    if isinstance(val, time) and target in _PREVIEW_DURATION_TARGETS:
+        return f"{val.hour}:{val.minute:02d}"
     if isinstance(val, datetime):
         if val.time() == time(0, 0):
             return val.date().isoformat()
