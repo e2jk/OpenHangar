@@ -2910,3 +2910,46 @@ class TestFlightListLogbookImportIndicator:
         rv = client.get(f"/aircraft/{ac_id}/flights")
         assert rv.status_code == 200
         assert b"bi-clock-history" not in rv.data
+
+
+class TestLogbookViewRemembered:
+    """Going from a page of the logbook list to a flight and back returns to
+    that page, with its sort order and page size — not to the first page."""
+
+    def _setup(self, app, client, email):
+        uid, _tid = _create_user_and_tenant(app, email=email)
+        _login(app, client, email=email)
+        return uid, _add_logbook_entry(app, uid)
+
+    def test_flight_page_back_link_returns_to_list_view(self, app, client):
+        _uid, eid = self._setup(app, client, "view1@example.com")
+        client.get("/pilot/logbook?page=2&order=asc&per_page=50")
+        page = client.get(f"/pilot/logbook/{eid}/view").data.decode()
+        assert 'href="/pilot/logbook?order=asc&amp;page=2&amp;per_page=50"' in page
+
+    def test_edit_form_back_and_cancel_return_to_list_view(self, app, client):
+        _uid, eid = self._setup(app, client, "view2@example.com")
+        client.get("/pilot/logbook?page=3")
+        page = client.get(f"/pilot/logbook/{eid}/edit").data.decode()
+        assert page.count('href="/pilot/logbook?page=3"') == 2
+
+    def test_defaults_are_left_out_and_reset(self, app, client):
+        _uid, eid = self._setup(app, client, "view3@example.com")
+        client.get("/pilot/logbook?page=2")
+        # Back on the first page with default settings: the remembered view
+        # resets too, and invalid values are never remembered.
+        client.get("/pilot/logbook?page=1&order=desc&per_page=999")
+        page = client.get(f"/pilot/logbook/{eid}/view").data.decode()
+        assert 'href="/pilot/logbook"' in page
+
+    def test_show_all_remembered(self, app, client):
+        _uid, eid = self._setup(app, client, "view4@example.com")
+        client.get("/pilot/logbook?per_page=all")
+        page = client.get(f"/pilot/logbook/{eid}/view").data.decode()
+        assert 'href="/pilot/logbook?per_page=all"' in page
+
+    def test_delete_returns_to_list_view(self, app, client):
+        _uid, eid = self._setup(app, client, "view5@example.com")
+        client.get("/pilot/logbook?page=2&per_page=50")
+        rv = client.post(f"/pilot/logbook/{eid}/delete")
+        assert rv.headers["Location"].endswith("/pilot/logbook?page=2&per_page=50")
