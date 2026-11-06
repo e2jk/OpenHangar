@@ -107,7 +107,7 @@
             {% for row in preview %}
             <tr>
               {% for f in preview_fields %}
-              <td>{{ row[f]|import_preview_cell }}</td>
+              <td>{{ row[f]|import_preview_cell(f) }}</td>
               {% endfor %}
             </tr>
             {% endfor %}
