@@ -131,6 +131,7 @@
           </td>
           <td class="text-end fw-semibold text-nowrap">
             {{ "%.2f"|format(exp.amount|float) }} {{ exp.currency }}
+            {% if exp.paid_amount is not none %}<div class="text-muted oh-fs-08">{{ _('paid %(amount)s %(currency)s', amount='%.2f'|format(exp.paid_amount|float), currency=exp.paid_currency) }}</div>{% endif %}
           </td>
           <td class="text-muted text-nowrap">
             {% if exp.quantity is not none %}

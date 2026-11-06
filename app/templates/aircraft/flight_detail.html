@@ -180,6 +180,19 @@
   </div>
   {% endif %}
 
+  {# Fuel left at the end of the flight — the total, and per tank when known. #}
+  {% if entry.fuel_remaining_qty is not none %}
+  <div class="ac-form-card p-4 mb-4">
+    <div class="text-muted small mb-1">{{ _('Fuel remaining at end of flight') }}</div>
+    <div class="fw-semibold">{{ '%.1f'|format(entry.fuel_remaining_qty|float) }} L</div>
+    {% if entry.fuel_remaining_by_tank %}
+    <div class="text-muted oh-fs-09">
+      {% for e in entry.fuel_remaining_by_tank %}{{ e.tank }} {{ '%.1f'|format(e.liters|float) }} L{% if not loop.last %} · {% endif %}{% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
   {# GPS track map #}
   {% set _detail_track = entry.gps_track %}
   {% set _detail_dep   = entry.departure_icao %}

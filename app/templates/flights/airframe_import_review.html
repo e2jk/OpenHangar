@@ -20,6 +20,28 @@
     </span>
   </div>
 
+  {% if rows|length > 1 %}
+  <div class="ac-form-card p-3 mb-4 d-flex flex-wrap align-items-center gap-2">
+    <span class="me-auto">
+      <i class="bi bi-lightning-charge me-1"></i>{{ ngettext('Decide the remaining row at once:', 'Decide all %(n)d remaining rows at once:', rows|length, n=rows|length) }}
+    </span>
+    <form method="POST" action="{{ url_for('flights.airframe_import_review_resolve_all', aircraft_id=aircraft.id) }}"
+          data-confirm="{{ ngettext('Overwrite one entry with the data from this file, using its best match?', 'Overwrite %(n)d entries with the data from this file, each with its best match?', rows|length, n=rows|length) }}">
+      <input type="hidden" name="decision" value="overwrite">
+      <button type="submit" class="btn btn-ac-primary btn-sm">
+        <i class="bi bi-pencil-square me-1"></i>{{ _('Overwrite all with their best match') }}
+      </button>
+    </form>
+    <form method="POST" action="{{ url_for('flights.airframe_import_review_resolve_all', aircraft_id=aircraft.id) }}"
+          data-confirm="{{ ngettext('Skip the remaining row and keep this aircraft\'s log as it is?', 'Skip all %(n)d remaining rows and keep this aircraft\'s log as it is?', rows|length, n=rows|length) }}">
+      <input type="hidden" name="decision" value="keep">
+      <button type="submit" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-x-circle me-1"></i>{{ _('Keep this aircraft\'s log as it is for all') }}
+      </button>
+    </form>
+  </div>
+  {% endif %}
+
   {% set field_labels = [
     ('departure_icao', 'departure_icao', _('Departure')),
     ('arrival_icao', 'arrival_icao', _('Arrival')),
@@ -43,7 +65,7 @@
       </h2>
     </div>
     <div class="p-3">
-      <form method="POST" action="{{ url_for('flights.airframe_import_review_resolve', aircraft_id=aircraft.id) }}">
+      <form method="POST" action="{{ url_for('flights.airframe_import_review_resolve', aircraft_id=aircraft.id) }}" data-keep-scroll>
         <input type="hidden" name="row_num" value="{{ row.row_num }}">
 
         {% if row.crew_name %}
@@ -101,7 +123,7 @@
           <div class="form-check">
             <input class="form-check-input" type="radio" name="decision"
                    id="ow_{{ row.row_num }}_{{ cand.id }}" value="overwrite:{{ cand.id }}"
-                   {% if row.candidates|length == 1 and loop.first %}checked{% endif %}>
+                   {% if loop.first %}checked{% endif %}>
             <label class="form-check-label" for="ow_{{ row.row_num }}_{{ cand.id }}">
               {{ _('Overwrite this flight with the data from this file') }}
             </label>
@@ -111,8 +133,7 @@
 
         <div class="form-check">
           <input class="form-check-input" type="radio" name="decision"
-                 id="keep_{{ row.row_num }}" value="keep"
-                 {% if row.candidates|length > 1 %}checked{% endif %}>
+                 id="keep_{{ row.row_num }}" value="keep">
           <label class="form-check-label" for="keep_{{ row.row_num }}">
             {{ _('Keep this aircraft\'s log as it is — do not import this row') }}
           </label>

@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import copy
 import csv
 import hashlib
 import io
 import json
 import math
 import re
+import threading
+from collections import OrderedDict
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
@@ -378,12 +381,43 @@ def parse_file(data: bytes, filename: str) -> ParsedFile:
     """
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
     if ext in ("xlsx", "xls"):
-        return _parse_excel(data, filename)
+        return _parse_excel_cached(data, filename)
     if ext == "csv":
         return _parse_csv(data, filename)
     raise ValueError(
         f"Unsupported file format: .{ext} — please upload a .csv or .xlsx file."
     )
+
+
+# The import flow re-parses the same uploaded workbook on every step — the
+# mapping page, execute, and twice per resolved row on the review page (the
+# resolve POST, then the review page it redirects to). openpyxl needs ~1 s
+# for a few hundred logbook rows (it loads the workbook twice, see
+# _parse_excel), so each review click used to cost seconds of server time.
+# A small per-process cache keyed on the file's content hash makes the
+# repeats free. Keyed on the active locale's preferred sheet names too,
+# since they decide which sheet gets picked. Entries are deep-copied in
+# and out so a caller mutating its ParsedFile can never affect another's.
+_EXCEL_PARSE_CACHE_SIZE = 4
+_excel_parse_cache: OrderedDict[tuple[str, str, frozenset[str]], ParsedFile] = (
+    OrderedDict()
+)
+_excel_parse_cache_lock = threading.Lock()
+
+
+def _parse_excel_cached(data: bytes, filename: str) -> ParsedFile:
+    key = (hashlib.sha256(data).hexdigest(), filename, _preferred_sheet_names())
+    with _excel_parse_cache_lock:
+        cached = _excel_parse_cache.get(key)
+        if cached is not None:
+            _excel_parse_cache.move_to_end(key)
+            return copy.deepcopy(cached)
+    parsed = _parse_excel(data, filename)
+    with _excel_parse_cache_lock:
+        _excel_parse_cache[key] = copy.deepcopy(parsed)
+        while len(_excel_parse_cache) > _EXCEL_PARSE_CACHE_SIZE:
+            _excel_parse_cache.popitem(last=False)
+    return parsed
 
 
 # English-only Excel tab names used to identify the logbook sheet.
@@ -823,6 +857,46 @@ def preview_rows(
         if len(result) >= n:
             break
     return result
+
+
+# Mapped fields holding a duration (pilot import, plus the airframe
+# import's flight_time): a time-of-day cell mapped to one is a duration
+# typed into an Excel time cell (e.g. 2:54 of SE time), so the preview
+# shows it as hours:minutes ("2:54"), not as a clock time ("02:54").
+_PREVIEW_DURATION_TARGETS = frozenset(
+    {t for t, (type_name, _parser) in _FIELD_TYPE.items() if type_name == "duration"}
+    | {"flight_time"}
+)
+
+
+def format_preview_cell(val: Any, target: str | None = None) -> str:
+    """A raw spreadsheet cell as the mapping-page preview shows it — the way
+    the spreadsheet displays it rather than Python's repr: an Excel date
+    cell (read back as a midnight datetime) as just the date, a time
+    without its ":00" seconds, a duration as hours:minutes — including a
+    duration typed into a time cell, when *target* (the field the column
+    is mapped to) is a duration. Display only; the import itself parses
+    the raw value (see _FIELD_TYPE)."""
+    if val is None:
+        return ""
+    if isinstance(val, time) and target in _PREVIEW_DURATION_TARGETS:
+        return f"{val.hour}:{val.minute:02d}"
+    if isinstance(val, datetime):
+        if val.time() == time(0, 0):
+            return val.date().isoformat()
+        return val.strftime(
+            "%Y-%m-%d %H:%M" if val.second == 0 else "%Y-%m-%d %H:%M:%S"
+        )
+    if isinstance(val, date):
+        return val.isoformat()
+    if isinstance(val, time):
+        return val.strftime("%H:%M" if val.second == 0 else "%H:%M:%S")
+    if isinstance(val, timedelta):
+        total_minutes = round(val.total_seconds() / 60)
+        sign = "-" if total_minutes < 0 else ""
+        hours, minutes = divmod(abs(total_minutes), 60)
+        return f"{sign}{hours}:{minutes:02d}"
+    return str(val)
 
 
 def _date_col_index(norm_cols: list[str], mapping: dict[str, str]) -> int | None:
@@ -1582,6 +1656,37 @@ def _is_no_takeoff_match(kwargs: dict[str, Any], existing: Any) -> bool:
         landings_night=kwargs.get("landings_night"),
     )
     return is_no_takeoff_pair(airframe_side_of_flight(existing), pilot)
+
+
+def plan_bulk_overwrites(
+    conflicts: list[Any], resolved: dict[str, str]
+) -> tuple[list[tuple[Any, int]], list[Any]]:
+    """For the review page's "overwrite all remaining" action: pair each
+    remaining conflict row (a ConflictRow or AirframeConflictRow — anything
+    with .candidates sorted best match first) with its best-scoring
+    candidate. Returns (planned, left_for_review).
+
+    Two rows never overwrite the same existing flight: a candidate already
+    overwritten during this review (a decision in *resolved*) or claimed by
+    an earlier row in this pass is off limits, and a row whose best match
+    is taken is left for a manual decision rather than falling back to a
+    weaker candidate that may well be the wrong flight.
+    """
+    claimed = {
+        int(decision.split(":", 1)[1])
+        for decision in resolved.values()
+        if decision.startswith("overwrite:")
+    }
+    planned: list[tuple[Any, int]] = []
+    left: list[Any] = []
+    for conflict in conflicts:
+        best_id = conflict.candidates[0][1]
+        if best_id in claimed:
+            left.append(conflict)
+            continue
+        claimed.add(best_id)
+        planned.append((conflict, best_id))
+    return planned, left
 
 
 def split_auto_merges(

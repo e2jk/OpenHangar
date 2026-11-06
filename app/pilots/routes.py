@@ -94,6 +94,7 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     merge_into_existing,
     parse_duration_value,
     parse_file,
+    plan_bulk_overwrites,
     preview_rows,
     propose_mapping,
     split_auto_merges,
@@ -874,6 +875,35 @@ def view_entry(entry_id: int) -> ResponseReturnValue:
 # ── Logbook list ──────────────────────────────────────────────────────────────
 
 
+# The logbook list's view (page, sort order, page size), remembered so that
+# going from the list to a flight and back — via the flight page's back
+# button, the edit form's back/cancel, or after saving/deleting the flight —
+# returns to the same page of the list instead of the first one.
+_LOGBOOK_VIEW_SESSION_KEY = "pilot_logbook_view"
+
+
+def _remember_logbook_view(page: int, order: str, per_page: str) -> None:
+    view: dict[str, Any] = {}
+    if page > 1:
+        view["page"] = page
+    if order == "asc":
+        view["order"] = order
+    if per_page != str(_DEFAULT_PER_PAGE):
+        view["per_page"] = per_page
+    session[_LOGBOOK_VIEW_SESSION_KEY] = view
+
+
+def logbook_list_url() -> str:
+    """URL of the logbook list as last viewed (see _remember_logbook_view)."""
+    view = session.get(_LOGBOOK_VIEW_SESSION_KEY) or {}
+    return url_for("pilots.logbook", **view)
+
+
+@pilots_bp.app_context_processor
+def _inject_logbook_list_url() -> dict[str, Any]:
+    return {"logbook_list_url": logbook_list_url}
+
+
 @pilots_bp.route("/pilot/logbook")
 @login_required
 @require_pilot_access
@@ -892,6 +922,8 @@ def logbook() -> ResponseReturnValue:
             else _DEFAULT_PER_PAGE
         )
     )
+
+    _remember_logbook_view(page, order, "all" if show_all else str(per_page))
 
     q = _my_entries_query(uid)
     if order == "asc":
@@ -1099,7 +1131,7 @@ def edit_entry(entry_id: int) -> ResponseReturnValue:
         db.session.commit()
         notify_shared_changes(entry, uid, shared_before)
         flash(_("Logbook entry updated."), "success")
-        return redirect(url_for("pilots.logbook"))
+        return redirect(logbook_list_url())
 
     return render_template(
         "pilots/entry_form.html",
@@ -1149,7 +1181,7 @@ def delete_entry(entry_id: int) -> ResponseReturnValue:
             ),
             "success",
         )
-        return redirect(url_for("pilots.logbook"))
+        return redirect(logbook_list_url())
 
     # Unified model: there's only one row now, so deleting it removes both
     # the pilot's own record and the airframe log entry at once (no more
@@ -1166,7 +1198,7 @@ def delete_entry(entry_id: int) -> ResponseReturnValue:
     db.session.delete(entry)
     db.session.commit()
     flash(_("Logbook entry deleted."), "success")
-    return redirect(url_for("pilots.logbook"))
+    return redirect(logbook_list_url())
 
 
 # ── GPS track helper ──────────────────────────────────────────────────────────
@@ -1917,6 +1949,87 @@ def import_review_resolve() -> ResponseReturnValue:
     if not remaining:
         return _finalize_import_review(state)
 
+    return redirect(url_for("pilots.import_review"))
+
+
+@pilots_bp.route("/pilot/logbook/import/review/resolve-all", methods=["POST"])
+@login_required
+@require_pilot_access
+def import_review_resolve_all() -> ResponseReturnValue:
+    """Apply one decision to every row still on the review page: overwrite
+    each with its best match (see plan_bulk_overwrites), or keep the
+    logbook as it is for all of them. Rows already decided one by one are
+    untouched — they're no longer on the page."""
+    uid = _current_user_id()
+    state = session.get(_IMPORT_REVIEW_SESSION_KEY)
+    if not state or state.get("uid") != uid:
+        flash(_("Import session expired. Please upload the file again."), "warning")
+        return redirect(url_for("pilots.import_upload"))
+
+    decision = request.form.get("decision", "")
+    if decision not in ("overwrite", "keep"):
+        flash(_("Invalid decision."), "danger")
+        return redirect(url_for("pilots.import_review"))
+
+    tmp_path: str = state["tmp_path"]
+    if not os.path.isfile(tmp_path):
+        flash(_("Temporary file not found. Please upload the file again."), "warning")
+        session.pop(_IMPORT_REVIEW_SESSION_KEY, None)
+        return redirect(url_for("pilots.import_upload"))
+
+    with open(tmp_path, "rb") as fh:
+        data = fh.read()
+    try:
+        parsed = parse_file(data, state["original_filename"])
+    except ValueError:
+        session.pop(_IMPORT_REVIEW_SESSION_KEY, None)
+        return redirect(url_for("pilots.import_upload"))
+
+    mapping: dict[str, str] = state["mapping"]
+    resolved: dict[str, str] = state.get("resolved", {})
+    conflicts = find_conflicting_rows(
+        parsed, mapping, uid, exclude_row_nums=_review_excluded_rows(state)
+    )
+
+    if decision == "keep":
+        for conflict in conflicts:
+            resolved[str(conflict.row_num)] = "keep"
+        left: list[ConflictRow] = []
+    else:
+        planned, left = plan_bulk_overwrites(conflicts, resolved)
+        for conflict, existing_id in planned:
+            existing = db.session.get(Flight, existing_id)
+            if existing is None:
+                # Candidates come from a live query in this same request —
+                # only a concurrent delete from elsewhere reaches this.
+                abort(404)  # pragma: no cover
+            # Same as the per-row "overwrite" (see import_review_resolve).
+            merge_into_existing(existing, conflict.kwargs, uid, fill_only=False)
+            resolved[str(conflict.row_num)] = f"overwrite:{existing_id}"
+        db.session.commit()
+
+    state["resolved"] = resolved
+    session[_IMPORT_REVIEW_SESSION_KEY] = state
+    session.modified = True
+
+    if left:
+        flash(
+            ngettext(
+                "One row's best match was already used by another row — please "
+                "decide on it below.",
+                "%(n)d rows' best matches were already used by other rows — "
+                "please decide on them below.",
+                len(left),
+                n=len(left),
+            ),
+            "warning",
+        )
+
+    remaining = find_conflicting_rows(
+        parsed, mapping, uid, exclude_row_nums=_review_excluded_rows(state)
+    )
+    if not remaining:
+        return _finalize_import_review(state)
     return redirect(url_for("pilots.import_review"))
 
 

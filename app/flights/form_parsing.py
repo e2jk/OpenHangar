@@ -352,6 +352,35 @@ def parse_flight_fields(
             fuel_remaining_qty = None
             errors.append(_("Fuel remaining must be a non-negative number."))
 
+    # Per tank, on an aircraft with several tanks (fields fuel_remaining_tank_<i>,
+    # in the aircraft's tank order): when any is given, the total becomes
+    # their sum. Paths that don't send them (e.g. the offline workbench)
+    # leave this None — see apply_flight_fields for how that's reconciled.
+    fuel_remaining_by_tank: list[dict[str, Any]] | None = None
+    tanks = list(getattr(ac, "fuel_tanks", None) or [])
+    if len(tanks) > 1:
+        entries: list[dict[str, Any]] = []
+        for i, tank in enumerate(tanks):
+            raw = (f.get(f"fuel_remaining_tank_{i}") or "").strip()
+            if not raw:
+                continue
+            try:
+                liters = float(raw)
+                if not math.isfinite(liters) or liters < 0:
+                    raise ValueError
+            except ValueError:
+                errors.append(
+                    _(
+                        "Fuel remaining in tank %(tank)s must be a non-negative number.",
+                        tank=tank.name,
+                    )
+                )
+                continue
+            entries.append({"tank": tank.name, "liters": liters})
+        if entries:
+            fuel_remaining_by_tank = entries
+            fuel_remaining_qty = round(sum(e["liters"] for e in entries), 2)
+
     oil_added_before_l_raw = (f.get("oil_added_before_l") or "").strip()
     oil_added_before_l: float | None = None
     if oil_added_before_l_raw:
@@ -404,6 +433,7 @@ def parse_flight_fields(
         if fuel_added_after_qty is not None
         else None,
         "fuel_remaining_qty": fuel_remaining_qty,
+        "fuel_remaining_by_tank": fuel_remaining_by_tank,
         "oil_added_before_l": oil_added_before_l,
         "oil_added_after_l": oil_added_after_l,
         "passenger_count": passenger_count,
@@ -420,6 +450,24 @@ def parse_flight_fields(
         else CrewRole.COPILOT,
     }
     return values, errors
+
+
+def reconcile_fuel_remaining_by_tank(
+    existing: list[dict[str, Any]] | None,
+    total: float | None,
+    submitted: list[dict[str, Any]] | None,
+) -> list[dict[str, Any]] | None:
+    """The per-tank fuel remaining to keep once a flight is saved: what was
+    submitted per tank if anything; otherwise the existing breakdown while
+    it still adds up to the saved total (a save that didn't touch the fuel,
+    e.g. from the offline workbench, which only edits the total), else none
+    — a breakdown that no longer matches its total would be misleading."""
+    if submitted:
+        return submitted
+    if not existing or total is None:
+        return None
+    existing_sum = sum(float(e.get("liters") or 0) for e in existing)
+    return existing if abs(existing_sum - float(total)) < 0.01 else None
 
 
 def apply_flight_fields(fe: Flight, values: dict[str, Any]) -> None:
@@ -456,6 +504,11 @@ def apply_flight_fields(fe: Flight, values: dict[str, Any]) -> None:
     fe.fuel_added_after_qty = values["fuel_added_after_qty"]
     fe.fuel_added_after_unit = values["fuel_added_after_unit"]
     fe.fuel_remaining_qty = values["fuel_remaining_qty"]
+    fe.fuel_remaining_by_tank = reconcile_fuel_remaining_by_tank(
+        fe.fuel_remaining_by_tank,
+        values["fuel_remaining_qty"],
+        values.get("fuel_remaining_by_tank"),
+    )
     fe.oil_added_before_l = values["oil_added_before_l"]
     fe.oil_added_after_l = values["oil_added_after_l"]
 

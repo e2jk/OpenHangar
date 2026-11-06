@@ -595,6 +595,14 @@ def create_app() -> Flask:
         _load_airport_names,
     )
 
+    @app.template_filter("import_preview_cell")
+    def _import_preview_cell_filter(val: Any, target: str | None = None) -> str:
+        from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
+            format_preview_cell,
+        )
+
+        return format_preview_cell(val, target)
+
     @app.template_filter("airport_name")
     def _airport_name_filter(code: str | None) -> str:
         if not code:

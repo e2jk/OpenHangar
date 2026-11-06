@@ -3,6 +3,7 @@ Tests for Phase 8: Cost tracking (Expense model, expenses blueprint, fuel on fli
 """
 
 from datetime import date, timedelta
+from typing import ClassVar
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
@@ -1065,3 +1066,52 @@ class TestFuelOnFlightForm:
             fe = db.session.get(Flight, flight_id)
             assert fe.fuel_added_before_qty is None
             assert fe.fuel_added_before_unit is None
+
+
+class TestPaidInAnotherCurrency:
+    _FORM: ClassVar[dict[str, str]] = {
+        "date": "2026-10-29",
+        "expense_type": "fuel",
+        "amount": "92.40",
+        "currency": "EUR",
+        "paid_amount": "79.50",
+        "paid_currency": "GBP",
+    }
+
+    def test_saved_and_shown_but_not_counted(self, client, app):
+        from models import Expense  # pyright: ignore[reportMissingImports]
+
+        _uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        client.post(f"/aircraft/{ac_id}/expenses/add", data=self._FORM)
+        with app.app_context():
+            exp = Expense.query.filter_by(aircraft_id=ac_id).one()
+            assert float(exp.paid_amount) == 79.5
+            assert exp.paid_currency == "GBP"
+            exp_id = exp.id
+        page = client.get(f"/aircraft/{ac_id}/expenses?period=0").data.decode()
+        assert "paid 79.50 GBP" in page
+        assert "92.40" in page and "79.50 EUR" not in page
+
+        # The edit form opens the section with the stored values…
+        page = client.get(f"/aircraft/{ac_id}/expenses/{exp_id}/edit").data.decode()
+        details = page.split("<details", 1)[1].split("</details>", 1)[0]
+        assert details.lstrip().startswith('class="mb-3" open')
+        assert 'value="79.50"' in details
+        # …and clearing the amount removes it.
+        client.post(
+            f"/aircraft/{ac_id}/expenses/{exp_id}/edit",
+            data={**self._FORM, "paid_amount": ""},
+        )
+        with app.app_context():
+            exp = Expense.query.filter_by(aircraft_id=ac_id).one()
+            assert exp.paid_amount is None and exp.paid_currency is None
+
+    def test_new_expense_form_keeps_section_closed(self, client, app):
+        _uid, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        _login(app, client)
+        page = client.get(f"/aircraft/{ac_id}/expenses/add").data.decode()
+        details = page.split("<details", 1)[1].split(">", 1)[0]
+        assert "open" not in details

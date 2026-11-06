@@ -226,6 +226,10 @@ def add_expense(aircraft_id: int) -> ResponseReturnValue:
         err = _validate_and_save(ac, expense=None)
         if err is None:
             flash(_("Expense recorded."), "success")
+            # Opened from the fuel log's "Add cost" (the form posts back to
+            # its own URL, so the query string is still there): go back to it.
+            if request.args.get("return_to") == "fuel":
+                return redirect(url_for("refuels.list_refuels", aircraft_id=ac.id))
             return redirect(url_for("expenses.list_expenses", aircraft_id=ac.id))
         flash(err, "danger")
 
@@ -342,6 +346,8 @@ def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | Non
     expense.description = description
     expense.amount = values["amount"]
     expense.currency = values["currency"]
+    expense.paid_amount = values["paid_amount"]
+    expense.paid_currency = values["paid_currency"]
     expense.quantity = quantity
     expense.unit = values["unit"] if quantity else None
     expense.coverage_start = values["coverage_start"]

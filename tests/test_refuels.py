@@ -121,17 +121,17 @@ class TestListRefuels:
         ac_id = _add_aircraft(app, tenant_id)
         _login(app, client)
         resp = client.get(f"/aircraft/{ac_id}/refuels")
-        assert b"No refuels logged yet" in resp.data
+        assert b"No refuels in this period." in resp.data
 
-    def test_log_as_expense_link_shown_for_owner(self, app, client):
+    def test_add_cost_link_shown_for_owner(self, app, client):
         _, tenant_id = _create_user_and_tenant(app, role=Role.OWNER)
         ac_id = _add_aircraft(app, tenant_id)
         _add_refuel(app, ac_id)
         _login(app, client)
         resp = client.get(f"/aircraft/{ac_id}/refuels")
-        assert b"Log as expense" in resp.data
+        assert b"Add cost" in resp.data
 
-    def test_log_as_expense_link_hidden_for_non_owner(self, app, client):
+    def test_add_cost_link_hidden_for_non_owner(self, app, client):
         from models import UserAircraftAccess  # pyright: ignore[reportMissingImports]
 
         _, tenant_id = _create_user_and_tenant(app, role=Role.PILOT)
@@ -143,7 +143,7 @@ class TestListRefuels:
         _add_refuel(app, ac_id)
         _login(app, client)
         resp = client.get(f"/aircraft/{ac_id}/refuels")
-        assert b"Log as expense" not in resp.data
+        assert b"Add cost" not in resp.data
 
 
 # ── New refuel ────────────────────────────────────────────────────────────────
@@ -371,3 +371,44 @@ class TestAircraftDetailRefuelsSection:
         resp = client.get(f"/aircraft/{ac_id}")
         assert resp.status_code == 200
         assert b"No refuels logged yet" in resp.data
+
+    def test_detail_fuel_log_box_includes_flight_refuels_and_costs(self, app, client):
+        from decimal import Decimal
+
+        from models import (  # pyright: ignore[reportMissingImports]
+            Expense,
+            ExpenseType,
+            Flight,
+        )
+
+        _, tenant_id = _create_user_and_tenant(app, role=Role.OWNER)
+        ac_id = _add_aircraft(app, tenant_id)
+        with app.app_context():
+            flight = Flight(
+                aircraft_id=ac_id,
+                date=date.today(),
+                departure_icao="EBAW",
+                arrival_icao="EGMC",
+                fuel_added_after_qty=Decimal(42),
+                fuel_added_after_unit="L",
+            )
+            db.session.add(flight)
+            db.session.flush()
+            db.session.add(
+                Expense(
+                    aircraft_id=ac_id,
+                    date=date.today(),
+                    expense_type=ExpenseType.FUEL,
+                    amount=Decimal("92.40"),
+                    currency="EUR",
+                    quantity=Decimal(42),
+                    unit="L",
+                    flight_entry_id=flight.id,
+                )
+            )
+            db.session.commit()
+        _login(app, client)
+        page = client.get(f"/aircraft/{ac_id}").data.decode()
+        assert "Fuel log" in page
+        assert "EBAW → EGMC" in page
+        assert "42.0 L" in page and "92.40 EUR" in page

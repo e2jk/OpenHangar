@@ -179,6 +179,14 @@ service worker in dev mode; see `docs/development.md`).
   immediately before starting work that depends on them; don't implement from an earlier
   paraphrase in conversation, it may already be stale.
 
+### Release notes
+`docs/release-notes/next.md` is the hand-written summary of the release being
+prepared — a few plain-language lines per user-visible change. Update it as
+you complete changes. It's only used when it changed in the shipped batch, so
+an old summary is never reused; at the start of a new round of work, copy it
+to `docs/release-notes/vX.Y.Z.md` (the version it shipped in) and empty it.
+See `docs/release-notes/README.md`.
+
 ### No hardcoded personal or machine-specific paths
 Tracked files (docs, this file, code comments, `.claude/` config) must never contain a
 contributor's home directory, hostname, or other local-machine detail. Use generic
