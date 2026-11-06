@@ -718,13 +718,30 @@ def parse_int_value(val: Any) -> int | None:
     return None
 
 
+# Transcribed logbooks (paper → spreadsheet) mark a cell deliberately left
+# blank on paper with this literal placeholder rather than a truly empty
+# cell, to tell "known blank" apart from "the transcription missed it" —
+# e.g. an airframe log's intermediate counter on a two-leg engine run, or a
+# pilot log's block times on a flight cancelled before takeoff. It is read
+# as a blank cell everywhere a mapped cell is read, by both the pilot and
+# the airframe import: no value, no parse warning, no "[empty]" text stored.
+# (The subtotal check on the date column deliberately sees the raw marker,
+# so a row whose date is "[empty]" is reported as an unparseable date
+# rather than silently dropped as a subtotal line.)
+BLANK_CELL_MARKER = "[empty]"
+
+
+def is_blank_cell(raw: Any) -> bool:
+    """True for None, a whitespace-only string, or the BLANK_CELL_MARKER."""
+    if raw is None:
+        return True
+    s = str(raw).strip()
+    return not s or s.casefold() == BLANK_CELL_MARKER
+
+
 def _is_nonempty(val: Any) -> bool:
-    """Return True when val carries a real value (not None, not blank string)."""
-    if val is None:
-        return False
-    if isinstance(val, str):
-        return bool(val.strip())
-    return True
+    """Return True when val carries a real value (not blank, see is_blank_cell)."""
+    return not is_blank_cell(val)
 
 
 # Map target field → (human-readable type name, parser function)
@@ -800,7 +817,8 @@ def preview_rows(
             target = mapping.get(col, "ignore")
             if target == "ignore":
                 continue
-            mapped[target] = row[i] if i < len(row) else None
+            val = row[i] if i < len(row) else None
+            mapped[target] = None if is_blank_cell(val) else val
         result.append(mapped)
         if len(result) >= n:
             break
@@ -819,7 +837,8 @@ def _date_col_index(norm_cols: list[str], mapping: dict[str, str]) -> int | None
 
 def _row_get(row: list[Any], col_index: dict[str, int], col: str) -> Any:
     i = col_index.get(col)
-    return row[i] if i is not None and i < len(row) else None
+    val = row[i] if i is not None and i < len(row) else None
+    return None if is_blank_cell(val) else val
 
 
 def _parse_row_date(

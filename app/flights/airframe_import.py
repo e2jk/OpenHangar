@@ -24,6 +24,9 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     parse_int_value,
     parse_time_value,
 )
+from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
+    is_blank_cell as _is_blank_cell,  # "[empty]" marker — see its definition
+)
 
 AIRFRAME_TARGET_FIELDS: list[str] = [
     "date",
@@ -300,24 +303,6 @@ def _is_subtotal(row: list[Any], date_idx: int | None) -> bool:
     )
 
     return _is_subtotal_row(row, date_idx)
-
-
-# Paper airframe logbooks routinely leave a counter blank — e.g. flying a
-# leg and back on one continuous engine run only has one landing counter
-# reading in between, so the arrival counter of the first leg and the
-# departure counter of the return leg were never written down. When such a
-# gap is transcribed, it's marked with this literal placeholder rather than
-# left as a truly blank cell (to distinguish "known blank" from "OCR missed
-# it") — treated identically to a blank cell everywhere a cell is read: no
-# value, no parse warning.
-_BLANK_CELL_MARKER = "[empty]"
-
-
-def _is_blank_cell(raw: Any) -> bool:
-    if raw is None:
-        return True
-    s = str(raw).strip()
-    return not s or s.casefold() == _BLANK_CELL_MARKER
 
 
 def _row_get(row: list[Any], col_index: dict[str, int], col: str) -> Any:
