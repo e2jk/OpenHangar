@@ -94,6 +94,7 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     merge_into_existing,
     parse_duration_value,
     parse_file,
+    plan_bulk_overwrites,
     preview_rows,
     propose_mapping,
     split_auto_merges,
@@ -1917,6 +1918,87 @@ def import_review_resolve() -> ResponseReturnValue:
     if not remaining:
         return _finalize_import_review(state)
 
+    return redirect(url_for("pilots.import_review"))
+
+
+@pilots_bp.route("/pilot/logbook/import/review/resolve-all", methods=["POST"])
+@login_required
+@require_pilot_access
+def import_review_resolve_all() -> ResponseReturnValue:
+    """Apply one decision to every row still on the review page: overwrite
+    each with its best match (see plan_bulk_overwrites), or keep the
+    logbook as it is for all of them. Rows already decided one by one are
+    untouched — they're no longer on the page."""
+    uid = _current_user_id()
+    state = session.get(_IMPORT_REVIEW_SESSION_KEY)
+    if not state or state.get("uid") != uid:
+        flash(_("Import session expired. Please upload the file again."), "warning")
+        return redirect(url_for("pilots.import_upload"))
+
+    decision = request.form.get("decision", "")
+    if decision not in ("overwrite", "keep"):
+        flash(_("Invalid decision."), "danger")
+        return redirect(url_for("pilots.import_review"))
+
+    tmp_path: str = state["tmp_path"]
+    if not os.path.isfile(tmp_path):
+        flash(_("Temporary file not found. Please upload the file again."), "warning")
+        session.pop(_IMPORT_REVIEW_SESSION_KEY, None)
+        return redirect(url_for("pilots.import_upload"))
+
+    with open(tmp_path, "rb") as fh:
+        data = fh.read()
+    try:
+        parsed = parse_file(data, state["original_filename"])
+    except ValueError:
+        session.pop(_IMPORT_REVIEW_SESSION_KEY, None)
+        return redirect(url_for("pilots.import_upload"))
+
+    mapping: dict[str, str] = state["mapping"]
+    resolved: dict[str, str] = state.get("resolved", {})
+    conflicts = find_conflicting_rows(
+        parsed, mapping, uid, exclude_row_nums=_review_excluded_rows(state)
+    )
+
+    if decision == "keep":
+        for conflict in conflicts:
+            resolved[str(conflict.row_num)] = "keep"
+        left: list[ConflictRow] = []
+    else:
+        planned, left = plan_bulk_overwrites(conflicts, resolved)
+        for conflict, existing_id in planned:
+            existing = db.session.get(Flight, existing_id)
+            if existing is None:
+                # Candidates come from a live query in this same request —
+                # only a concurrent delete from elsewhere reaches this.
+                abort(404)  # pragma: no cover
+            # Same as the per-row "overwrite" (see import_review_resolve).
+            merge_into_existing(existing, conflict.kwargs, uid, fill_only=False)
+            resolved[str(conflict.row_num)] = f"overwrite:{existing_id}"
+        db.session.commit()
+
+    state["resolved"] = resolved
+    session[_IMPORT_REVIEW_SESSION_KEY] = state
+    session.modified = True
+
+    if left:
+        flash(
+            ngettext(
+                "One row's best match was already used by another row — please "
+                "decide on it below.",
+                "%(n)d rows' best matches were already used by other rows — "
+                "please decide on them below.",
+                len(left),
+                n=len(left),
+            ),
+            "warning",
+        )
+
+    remaining = find_conflicting_rows(
+        parsed, mapping, uid, exclude_row_nums=_review_excluded_rows(state)
+    )
+    if not remaining:
+        return _finalize_import_review(state)
     return redirect(url_for("pilots.import_review"))
 
 

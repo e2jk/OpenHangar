@@ -43,6 +43,7 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     parse_duration_value,
     parse_file,
     parse_time_value,
+    plan_bulk_overwrites,
     preview_rows,
     propose_mapping,
     type_hints,
@@ -243,14 +244,6 @@ class TestExcelParseCache:
         buf = io.BytesIO()
         wb.save(buf)
         return buf.getvalue()
-
-    @pytest.fixture(autouse=True)
-    def _empty_cache(self):
-        import pilots.logbook_import as li  # pyright: ignore[reportMissingImports]
-
-        li._excel_parse_cache.clear()
-        yield
-        li._excel_parse_cache.clear()
 
     def test_same_content_parsed_once(self, app, monkeypatch):
         import pilots.logbook_import as li  # pyright: ignore[reportMissingImports]
@@ -4198,3 +4191,152 @@ class TestImportReviewRoute:
 
         if os.path.isfile(tmp):
             os.remove(tmp)
+
+
+# ── Review: "decide all remaining rows at once" ──────────────────────────────
+
+
+class TestPlanBulkOverwrites:
+    class _Row:
+        def __init__(self, row_num, *candidate_ids):
+            self.row_num = row_num
+            self.candidates = [(5.0 - i, cid) for i, cid in enumerate(candidate_ids)]
+
+    def test_each_row_takes_its_best_match(self):
+        a, b = self._Row(1, 10, 11), self._Row(2, 11, 10)
+        planned, left = plan_bulk_overwrites([a, b], {})
+        assert planned == [(a, 10), (b, 11)]
+        assert left == []
+
+    def test_best_match_already_taken_is_left_for_review(self):
+        a, b, c = self._Row(1, 10), self._Row(2, 10, 12), self._Row(3, 11)
+        # 11 was overwritten one by one earlier in this review.
+        planned, left = plan_bulk_overwrites(
+            [a, b, c], {"7": "overwrite:11", "8": "keep"}
+        )
+        assert planned == [(a, 10)]
+        assert left == [b, c]
+
+
+class TestImportReviewResolveAll:
+    URL = "/pilot/logbook/import/review/resolve-all"
+
+    def _start_review(self, app, client, email: str, csv_rows: str) -> tuple[int, int]:
+        with app.app_context():
+            uid = _make_user(email)
+            existing = Flight(
+                pic_user_id=uid,
+                date=date(2024, 3, 15),
+                other_aircraft_registration="OO-ABC",
+                single_pilot_se=1.0,
+                landings_day=1,
+                landings_night=0,
+            )
+            db.session.add(existing)
+            db.session.commit()
+            existing_id = existing.id
+        _login(client, uid)
+        client.post(
+            "/pilot/logbook/import",
+            data={
+                "logbook_file": (
+                    io.BytesIO(("Date,Reg,SE,Day,Night\n" + csv_rows).encode()),
+                    "log.csv",
+                )
+            },
+            content_type="multipart/form-data",
+        )
+        rv = client.post(
+            "/pilot/logbook/import/execute",
+            data={
+                "mapping_date": "date",
+                "mapping_reg": "aircraft_registration",
+                "mapping_se": "single_pilot_se",
+                "mapping_day": "landings_day",
+                "mapping_night": "landings_night",
+            },
+        )
+        assert rv.headers["Location"].endswith("/pilot/logbook/import/review")
+        return uid, existing_id
+
+    def test_review_page_offers_bulk_actions_for_several_rows(self, app, client):
+        self._start_review(
+            app,
+            client,
+            "ra0@example.com",
+            "15/03/24,OO-ABC,1.4,1,0\n15/03/24,OO-ABC,1.3,1,0\n",
+        )
+        page = client.get("/pilot/logbook/import/review").data.decode()
+        assert page.count(f'action="{self.URL}"') == 2
+        assert "Decide all 2 remaining rows at once" in page
+
+    def test_overwrite_all_completes_review(self, app, client):
+        uid, existing_id = self._start_review(
+            app, client, "ra1@example.com", "15/03/24,OO-ABC,1.4,1,0\n"
+        )
+        rv = client.post(self.URL, data={"decision": "overwrite"})
+        assert rv.headers["Location"].endswith("/pilot/logbook/import/history")
+        with app.app_context():
+            assert float(db.session.get(Flight, existing_id).single_pilot_se) == 1.4
+            assert Flight.query.filter_by(pic_user_id=uid).count() == 1
+
+    def test_overwrite_all_never_overwrites_one_flight_twice(self, app, client):
+        _uid, existing_id = self._start_review(
+            app,
+            client,
+            "ra2@example.com",
+            "15/03/24,OO-ABC,1.4,1,0\n15/03/24,OO-ABC,1.3,1,0\n",
+        )
+        rv = client.post(self.URL, data={"decision": "overwrite"})
+        assert rv.headers["Location"].endswith("/pilot/logbook/import/review")
+        with client.session_transaction() as sess:
+            flashes = [m for _c, m in sess.pop("_flashes", [])]
+            assert sess["logbook_import_review"]["resolved"] == {
+                "1": f"overwrite:{existing_id}"
+            }
+        assert any("already used by another row" in m for m in flashes)
+        with app.app_context():
+            assert float(db.session.get(Flight, existing_id).single_pilot_se) == 1.4
+        page = client.get("/pilot/logbook/import/review").data.decode()
+        assert page.count('name="row_num"') == 1
+
+    def test_keep_all_leaves_logbook_unchanged(self, app, client):
+        uid, existing_id = self._start_review(
+            app,
+            client,
+            "ra3@example.com",
+            "15/03/24,OO-ABC,1.4,1,0\n15/03/24,OO-ABC,1.3,1,0\n",
+        )
+        rv = client.post(self.URL, data={"decision": "keep"})
+        assert rv.headers["Location"].endswith("/pilot/logbook/import/history")
+        with app.app_context():
+            assert float(db.session.get(Flight, existing_id).single_pilot_se) == 1.0
+            assert Flight.query.filter_by(pic_user_id=uid).count() == 1
+
+    def test_invalid_decision_rejected(self, app, client):
+        self._start_review(app, client, "ra4@example.com", "15/03/24,OO-ABC,1.4,1,0\n")
+        rv = client.post(self.URL, data={"decision": "new"})
+        assert rv.headers["Location"].endswith("/pilot/logbook/import/review")
+
+    def test_no_session_redirects_to_upload(self, app, client):
+        with app.app_context():
+            uid = _make_user("ra5@example.com")
+        _login(client, uid)
+        rv = client.post(self.URL, data={"decision": "keep"})
+        assert rv.headers["Location"].endswith("/pilot/logbook/import")
+
+    def test_tmp_file_missing_redirects_to_upload(self, app, client):
+        self._start_review(app, client, "ra6@example.com", "15/03/24,OO-ABC,1.4,1,0\n")
+        with client.session_transaction() as sess:
+            os.remove(sess["logbook_import_review"]["tmp_path"])
+        rv = client.post(self.URL, data={"decision": "keep"})
+        assert rv.headers["Location"].endswith("/pilot/logbook/import")
+
+    def test_unreadable_file_redirects_to_upload(self, app, client):
+        self._start_review(app, client, "ra7@example.com", "15/03/24,OO-ABC,1.4,1,0\n")
+        with client.session_transaction() as sess:
+            state = sess["logbook_import_review"]
+            state["original_filename"] = "log.pdf"
+            sess["logbook_import_review"] = state
+        rv = client.post(self.URL, data={"decision": "keep"})
+        assert rv.headers["Location"].endswith("/pilot/logbook/import")

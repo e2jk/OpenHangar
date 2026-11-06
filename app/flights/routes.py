@@ -2623,6 +2623,105 @@ def airframe_import_review_resolve(aircraft_id: int) -> ResponseReturnValue:
 
 
 @flights_bp.route(
+    "/aircraft/<aircraft_ref:aircraft_id>/flights/import/review/resolve-all",
+    methods=["POST"],
+)
+@login_required
+@require_role(Role.ADMIN, Role.OWNER)
+def airframe_import_review_resolve_all(aircraft_id: int) -> ResponseReturnValue:
+    """Apply one decision to every row still on the review page: overwrite
+    each with its best match (see plan_bulk_overwrites), or keep the
+    aircraft's log as it is for all of them. Rows already decided one by
+    one are untouched — they're no longer on the page."""
+    from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
+        parse_file,
+        plan_bulk_overwrites,
+    )
+
+    from flights.airframe_import import (  # pyright: ignore[reportMissingImports]
+        AirframeConflictRow,
+        find_conflicting_airframe_rows,
+        merge_airframe_into_existing,
+    )
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    review_url = url_for("flights.airframe_import_review", aircraft_id=ac.id)
+    upload_url = url_for("flights.airframe_import_upload", aircraft_id=ac.id)
+    state = session.get(_AIRFRAME_IMPORT_REVIEW_SESSION_KEY)
+    if not state or state.get("aircraft_id") != ac.id:
+        flash(_("Import session expired. Please upload the file again."), "warning")
+        return redirect(upload_url)
+
+    decision = request.form.get("decision", "")
+    if decision not in ("overwrite", "keep"):
+        flash(_("Invalid decision."), "danger")
+        return redirect(review_url)
+
+    tmp_path: str = state["tmp_path"]
+    if not os.path.isfile(tmp_path):
+        flash(_("Temporary file not found. Please upload the file again."), "warning")
+        session.pop(_AIRFRAME_IMPORT_REVIEW_SESSION_KEY, None)
+        return redirect(upload_url)
+
+    with open(tmp_path, "rb") as fh:
+        data = fh.read()
+    try:
+        parsed = parse_file(data, state["original_filename"])
+    except ValueError:
+        session.pop(_AIRFRAME_IMPORT_REVIEW_SESSION_KEY, None)
+        return redirect(upload_url)
+
+    mapping: dict[str, str] = state["mapping"]
+    resolved: dict[str, str] = state.get("resolved", {})
+    conflicts = find_conflicting_airframe_rows(
+        parsed, mapping, ac.id, exclude_row_nums=_airframe_review_excluded_rows(state)
+    )
+
+    if decision == "keep":
+        for conflict in conflicts:
+            resolved[str(conflict.row_num)] = "keep"
+        left: list[AirframeConflictRow] = []
+    else:
+        planned, left = plan_bulk_overwrites(conflicts, resolved)
+        for conflict, existing_id in planned:
+            existing = Flight.query.filter_by(id=existing_id, aircraft_id=ac.id).first()
+            if existing is None:
+                # Candidates come from a live query for this aircraft in this
+                # same request — only a concurrent delete reaches this.
+                abort(404)  # pragma: no cover
+            # Same as the per-row "overwrite" (see airframe_import_review_resolve).
+            merge_airframe_into_existing(
+                existing, conflict.fields, conflict.crew_name, fill_only=False
+            )
+            resolved[str(conflict.row_num)] = f"overwrite:{existing_id}"
+        db.session.commit()
+
+    state["resolved"] = resolved
+    session[_AIRFRAME_IMPORT_REVIEW_SESSION_KEY] = state
+    session.modified = True
+
+    if left:
+        flash(
+            ngettext(
+                "One row's best match was already used by another row — please "
+                "decide on it below.",
+                "%(n)d rows' best matches were already used by other rows — "
+                "please decide on them below.",
+                len(left),
+                n=len(left),
+            ),
+            "warning",
+        )
+
+    remaining = find_conflicting_airframe_rows(
+        parsed, mapping, ac.id, exclude_row_nums=_airframe_review_excluded_rows(state)
+    )
+    if not remaining:
+        return _finalize_airframe_import_review(ac, state)
+    return redirect(review_url)
+
+
+@flights_bp.route(
     "/aircraft/<aircraft_ref:aircraft_id>/flights/import/<int:batch_id>/rollback",
     methods=["POST"],
 )
