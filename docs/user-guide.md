@@ -175,6 +175,10 @@ If you have a previous logbook in a spreadsheet (CSV or Excel), OpenHangar can i
 
 Sub-total rows (rows where the date cell contains "TOTAL", is blank, or contains a running sum) are detected and skipped automatically — they do not need to be removed from the file beforehand.
 
+A cell containing the literal text `[empty]` (a common transcription convention for "deliberately left blank on paper") is read as a blank cell, in both the pilot and the aircraft logbook import.
+
+When a flight in your file is already in a managed aircraft's logbook (for example from an aircraft logbook import), the two are merged into one flight instead of being logged twice — matched on the route and the block/takeoff times. A flight cancelled after engine start, with no takeoff, is matched too: same day and airfield, no landings, zero airborne time in the aircraft log, and your logged block time equal (±0.1 h) to the engine counter difference. Re-importing either file afterwards adds nothing.
+
 #### Import history and rollback
 
 Every import is recorded on the **Pilot → Import history** page.  If you imported incorrect data, click **Delete this import** to remove all entries that belong to that batch in one operation — your manually-entered entries are never affected. An imported flight that another pilot has since confirmed in their own logbook stays there; it is only removed from yours.
