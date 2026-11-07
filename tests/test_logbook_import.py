@@ -22,11 +22,13 @@ from models import (  # pyright: ignore[reportMissingImports]
     db,
 )
 from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
+    _EXCEL_PARSE_CACHE_SIZE,
     ParsedFile,
     _alias_mapping,
     _apply_group_labels,
     _assign_pilot_identity,
     _disambiguate,
+    _excel_parse_cache,
     _fingerprint,
     _group_labels_from_map,
     _group_labels_heuristic,
@@ -34,6 +36,7 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     _kwargs_duration,
     _merge_label_map,
     _norm,
+    _parse_excel,
     _parse_row_date,
     _score_candidate,
     execute_import,
@@ -246,12 +249,11 @@ class TestExcelParseCache:
         return buf.getvalue()
 
     def test_same_content_parsed_once(self, app, monkeypatch):
-        import pilots.logbook_import as li  # pyright: ignore[reportMissingImports]
-
         calls = []
-        real = li._parse_excel
+        real = _parse_excel
         monkeypatch.setattr(
-            li, "_parse_excel", lambda d, f: calls.append(f) or real(d, f)
+            "pilots.logbook_import._parse_excel",
+            lambda d, f: calls.append(f) or real(d, f),
         )
         data = self._xlsx([["01/01/24", "EBAW", "EBNM", "1:00"]])
         with app.test_request_context():
@@ -267,17 +269,15 @@ class TestExcelParseCache:
             assert len(calls) == 2
 
     def test_least_recently_used_entry_evicted(self, app):
-        import pilots.logbook_import as li  # pyright: ignore[reportMissingImports]
-
         with app.test_request_context():
             files = [
                 self._xlsx([[f"0{d}/01/24", "EBAW", "EBNM", "1:00"]])
-                for d in range(1, li._EXCEL_PARSE_CACHE_SIZE + 2)
+                for d in range(1, _EXCEL_PARSE_CACHE_SIZE + 2)
             ]
             for data in files:
                 parse_file(data, "log.xlsx")
-        assert len(li._excel_parse_cache) == li._EXCEL_PARSE_CACHE_SIZE
-        hashes = {key[0] for key in li._excel_parse_cache}
+        assert len(_excel_parse_cache) == _EXCEL_PARSE_CACHE_SIZE
+        hashes = {key[0] for key in _excel_parse_cache}
         import hashlib
 
         assert hashlib.sha256(files[0]).hexdigest() not in hashes
