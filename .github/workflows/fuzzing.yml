@@ -32,7 +32,7 @@ concurrency:
 jobs:
   fuzz:
     name: Fuzz (${{ matrix.harness }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     permissions:
       security-events: write # crash SARIF upload to the Security tab

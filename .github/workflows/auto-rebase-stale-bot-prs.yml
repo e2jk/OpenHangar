@@ -50,7 +50,7 @@ concurrency:
 jobs:
   rebase:
     name: Trigger rebase on stale Renovate PRs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read        # actions/checkout, to fetch the script file

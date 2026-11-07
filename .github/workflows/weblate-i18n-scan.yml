@@ -26,7 +26,7 @@ concurrency:
 jobs:
   weblate-scan:
     name: Weblate quality checks -> SARIF
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     permissions:
       security-events: write  # SARIF upload
