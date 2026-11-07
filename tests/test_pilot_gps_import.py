@@ -774,7 +774,8 @@ class TestPilotGpsConfirmOne:
         self, client, app
     ):
         """Re-confirming a matched flight (e.g. re-uploading the same GPS
-        file) must delete the superseded GpsTrack and update the existing
+        file) must replace the track's data in place — no orphan GpsTrack
+        left behind — and update the existing
         Flight row in place, not create a second one — there's only one
         unified row per real-world flight, so "not duplicating the pilot's
         own entry" and "not duplicating the flight" are the same guarantee
@@ -827,8 +828,9 @@ class TestPilotGpsConfirmOne:
             assert Flight.query.filter_by(pic_user_id=uid).count() == 1
             updated = db.session.get(Flight, entry_id)
             assert updated is not None  # updated in place, not replaced
-            assert db.session.get(GpsTrack, old_track_id) is None  # superseded, deleted
-            assert updated.gps_track_id != old_track_id
+            # The same track row, its data replaced — none left orphaned.
+            assert GpsTrack.query.count() == 1
+            assert updated.gps_track_id == old_track_id
 
     def test_confirm_matched_flight_preserves_other_crew_slot(self, client, app):
         """Confirming a matched flight where the current pilot occupies the

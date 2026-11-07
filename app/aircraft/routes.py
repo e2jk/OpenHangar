@@ -68,6 +68,7 @@ from services.gps_link import (  # pyright: ignore[reportMissingImports]
     adds_to_track,
     block_match,
     continuation_candidates,
+    ground_run_target,
     link_track,
 )
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
@@ -2320,6 +2321,57 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
                 seg["matched_ambiguous"] = True
                 seg["matched_candidates"] = [_gps_candidate_dict(c) for c in parts]
 
+    # Ground-only recordings (engine on, never airborne): a logged ground
+    # entry's track, or the taxi before/after a flight that day at that
+    # airfield (to the fuel station, customs…) — services.gps_link.
+    gps_spans: dict[int, tuple[Any, Any]] = {}
+    for s in full_segs:
+        if s["matched_flight_id"] and not s["is_ground_only"]:
+            off = _dt.fromisoformat(s["block_off_utc"])
+            on = _dt.fromisoformat(s["block_on_utc"])
+            prev = gps_spans.get(s["matched_flight_id"])
+            gps_spans[s["matched_flight_id"]] = (
+                (min(prev[0], off), max(prev[1], on)) if prev else (off, on)
+            )
+    claimed = set(gps_spans)
+    for seg in full_segs:
+        seg["matched_ground_role"] = ""
+        seg["matched_ground_when"] = ""
+        if not seg["is_ground_only"]:
+            continue
+        seg["matched_flight_id"] = None
+        seg["matched_flight_str"] = None
+        seg["matched_ambiguous"] = False
+        seg["matched_candidates"] = []
+        seg["linked_pilot_entries"] = []
+        if state.get("other_aircraft"):
+            continue
+        off = _dt.fromisoformat(seg["block_off_utc"])
+        target = ground_run_target(
+            off,
+            _dt.fromisoformat(seg["block_on_utc"]),
+            seg["departure_icao"],
+            Flight.query.filter(
+                Flight.aircraft_id == aircraft_id, Flight.date == off.date()
+            )
+            .order_by(Flight.departure_time, Flight.id)
+            .all(),
+            gps_spans,
+            claimed,
+        )
+        if target is None:
+            continue
+        flight, role, when = target
+        if role == "entry":
+            claimed.add(flight.id)
+        seg["matched_flight_id"] = flight.id
+        seg["matched_flight_str"] = (
+            f"#{flight.id} — {flight.date} "
+            f"{flight.departure_icao} → {flight.arrival_icao}"
+        )
+        seg["matched_ground_role"] = role
+        seg["matched_ground_when"] = when
+
     for seg in full_segs:
         matched_flight = (
             db.session.get(Flight, seg["matched_flight_id"])
@@ -2402,10 +2454,12 @@ def _gps_import_create_segment(
             if existing and existing.aircraft_id == aircraft_id:
                 # The recorded flight is authoritative (it's the paper
                 # logbook): GPS only fills times it lacks, never changes
-                # its times or date — see services.gps_link.
-                if existing.engine_time is None:
+                # its times or date — see services.gps_link. A taxi before
+                # or after the flight fills nothing: it isn't the flight.
+                taxi = seg.get("matched_ground_role") == "taxi"
+                if existing.engine_time is None and not taxi:
                     existing.engine_time = times.block_time
-                if existing.flight_time is None:
+                if existing.flight_time is None and not taxi:
                     existing.flight_time = times.airborne_time
                 gps_track = link_track(
                     existing,
@@ -2419,6 +2473,7 @@ def _gps_import_create_segment(
                     device_id=batch_device_id,
                     departure_icao=dep_icao,
                     arrival_icao=arr_icao,
+                    taxi=taxi,
                 )
                 linked_ids.append(existing.id)
                 # Unified model: this Flight row already covers both crew
@@ -2779,9 +2834,11 @@ def gps_import_confirm_one(aircraft_id: int) -> ResponseReturnValue:
 @require_role(*_PILOT_ROLES)
 def gps_import_confirm_all(aircraft_id: int) -> ResponseReturnValue:
     """Confirm every segment still on the review page that has a matching
-    flight — the best candidate where several were offered — as is.
-    Ground-only segments are skipped; segments without any match (they'd
-    become new flights) are left for a decision one by one."""
+    flight — the best candidate where several were offered — as is,
+    flights first, then the ground runs that go with them (a logged ground
+    entry, or a taxi before/after a flight). Other ground-only segments are
+    skipped; segments without any match (they'd become new flights) are
+    left for a decision one by one."""
     ac = _get_aircraft_or_404(aircraft_id)
     state = _gps_state_load()
     if not state or state.get("aircraft_id") != aircraft_id:
@@ -2790,11 +2847,17 @@ def gps_import_confirm_all(aircraft_id: int) -> ResponseReturnValue:
 
     segments_data: list[dict[str, Any]] = state.get("segments", [])
     accepted = 0
-    for seg_idx, seg in enumerate(segments_data):
+    # Flights first, then the ground runs that go with them.
+    order = sorted(
+        range(len(segments_data)),
+        key=lambda k: bool(segments_data[k].get("is_ground_only")),
+    )
+    for seg_idx in order:
+        seg = segments_data[seg_idx]
         confirmed = state.setdefault("confirmed_segments", {})
         if str(seg_idx) in confirmed:
             continue
-        if seg.get("is_ground_only"):
+        if seg.get("is_ground_only") and not seg.get("matched_ground_role"):
             confirmed[str(seg_idx)] = "skip"
             _gps_state_save(state)
             continue

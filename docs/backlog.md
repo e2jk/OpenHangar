@@ -347,6 +347,14 @@ for later:
 - **Email digest** of new findings, for admins who rarely open the
   configuration page.
 
+## GPS import: ground runs in the pilot GPS import
+
+The aircraft GPS import links ground-only recordings to a logged ground
+entry or, as a taxi part, to the flight departing/arriving within 45 min at
+that airfield (`services.gps_link.ground_run_target`, `link_track(taxi=True)`).
+The pilot GPS import (any aircraft) still skips them; it could use the same
+two helpers on the pilot's flights of that day.
+
 ---
 
 ## Email notifications: airworthiness digest (`AIRWORTHINESS_DIGEST`)

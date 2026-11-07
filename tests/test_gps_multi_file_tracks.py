@@ -15,7 +15,6 @@ from datetime import UTC, date, datetime, time
 
 from models import Flight, GpsTrack, db  # pyright: ignore[reportMissingImports]
 from services.gps_link import (  # pyright: ignore[reportMissingImports]
-    combine_geojson,
     link_track,
 )
 
@@ -39,25 +38,6 @@ def _t(h, m=0):
     return datetime(2024, 6, 1, h, m, tzinfo=UTC)
 
 
-class TestCombineGeojson:
-    def test_joins_lines_in_order(self):
-        out = combine_geojson(_line((1, 1)), _line((2, 2), (3, 3)))
-        assert out["geometry"]["coordinates"] == [[1, 1], [2, 2], [3, 3]]
-        assert out["properties"] == {"k": 1}
-        bare = combine_geojson(
-            {"type": "LineString", "coordinates": [[0, 0]]}, _line((9, 9))
-        )
-        assert bare["geometry"]["coordinates"] == [[0, 0], [9, 9]]
-        assert bare["properties"] == {}
-
-    def test_non_lines_keep_the_second(self):
-        point = {"type": "Point", "coordinates": [0, 0]}
-        assert combine_geojson(point, _line((1, 1))) == _line((1, 1))
-        assert combine_geojson(None, "x") == "x"
-        bad = {"type": "LineString", "coordinates": "nope"}
-        assert combine_geojson(bad, _line((1, 1))) == _line((1, 1))
-
-
 def _flight(app):
     _uid, _tid, ac_id = _make_user_and_aircraft(app)
     f = Flight(
@@ -71,6 +51,10 @@ def _flight(app):
     db.session.add(f)
     db.session.flush()
     return f
+
+
+def _coords(track):
+    return [c[:2] for c in track.geojson["geometry"]["coordinates"]]
 
 
 class TestLinkTrack:
@@ -87,6 +71,7 @@ class TestLinkTrack:
             )
             assert f.gps_track_id == first.id
             assert first.source_files == ["a.csv"]
+            assert f.block_off_utc == _t(10)
 
             # The same file again: nothing changes.
             again = link_track(
@@ -97,9 +82,9 @@ class TestLinkTrack:
                 block_on=_t(10, 30),
             )
             assert again.id == first.id
-            assert again.geojson == _line((1, 1))
+            assert _coords(again) == [[1, 1]]
 
-            # Later part of the flight, from another file: combined.
+            # Later part of the flight, from another file: added after it.
             first.cached_png = b"old"
             later = link_track(
                 f,
@@ -110,10 +95,9 @@ class TestLinkTrack:
             )
             assert later.id == first.id
             assert later.source_files == ["a.csv", "b.csv"]
-            assert later.geojson["geometry"]["coordinates"] == [[1, 1], [2, 2]]
+            assert _coords(later) == [[1, 1], [2, 2]]
             assert later.cached_png is None
-            # Earlier part (stored naive, as SQLite returns it): put in front.
-            later.block_off_utc = later.block_off_utc.replace(tzinfo=None)
+            # An earlier part: put in front.
             earlier = link_track(
                 f,
                 geojson=_line((0, 0)),
@@ -122,31 +106,116 @@ class TestLinkTrack:
                 block_on=_t(9, 30),
             )
             assert earlier.source_files == ["z.csv", "a.csv", "b.csv"]
-            assert earlier.geojson["geometry"]["coordinates"][0] == [0, 0]
+            assert _coords(earlier) == [[0, 0], [1, 1], [2, 2]]
             assert f.block_off_utc == _t(9) and f.block_on_utc == _t(12)
             # The recorded times are the logbook's — untouched.
             assert (f.departure_time, f.arrival_time) == (time(10, 0), time(13, 0))
 
-            # Same time again from a re-processed log: replaces the track.
-            old_id = earlier.id
+            # Same time as two parts, from a re-processed log: replaces them.
             replaced = link_track(
                 f,
                 geojson=_line((7, 7)),
                 files=["c.csv"],
                 block_off=_t(9, 10),
-                block_on=_t(11, 30),
+                block_on=_t(10, 15),
+                source_filename="c.csv",
             )
-            db.session.flush()
-            assert replaced.id != old_id
-            assert db.session.get(GpsTrack, old_id) is None
-            assert replaced.source_files == ["c.csv"]
+            assert replaced.id == first.id
+            assert replaced.source_files == ["c.csv", "b.csv"]
+            assert _coords(replaced) == [[7, 7], [2, 2]]
+            assert replaced.source_filename is None  # a flight part remains
 
-            # Unknown times can't be told apart: replaced too.
+            # Unknown times can't be told apart: every flight part replaced.
             nofiles = link_track(
-                f, geojson=None, files=[], block_off=None, block_on=None
+                f,
+                geojson=None,
+                files=[],
+                block_off=None,
+                block_on=None,
+                source_filename="x.gpx",
             )
-            assert nofiles.source_files is None
-            assert f.gps_track_id == nofiles.id
+            assert nofiles.source_files is None and _coords(nofiles) == []
+            assert nofiles.source_filename == "x.gpx"
+            assert nofiles.block_off_utc is None
+
+    def test_taxi_parts_never_change_the_times(self, app):
+        with app.app_context():
+            f = _flight(app)
+            # A taxi to the fuel station first, before the flight's own log.
+            taxi = link_track(
+                f,
+                geojson=_line((0, 0)),
+                files=["fuel.csv"],
+                block_off=_t(9, 30),
+                block_on=_t(9, 40),
+                taxi=True,
+            )
+            assert taxi.block_off_utc is None and f.block_off_utc is None
+            flight = link_track(
+                f,
+                geojson=_line((1, 1), (2, 2)),
+                files=["flight.csv"],
+                block_off=_t(10),
+                block_on=_t(11),
+            )
+            after = link_track(
+                f,
+                geojson=_line((3, 3)),
+                files=["hangar.csv"],
+                block_off=_t(11, 20),
+                block_on=_t(11, 25),
+                taxi=True,
+            )
+            assert flight.id == taxi.id == after.id
+            assert _coords(after) == [[0, 0], [1, 1], [2, 2], [3, 3]]
+            assert after.source_files == ["fuel.csv", "flight.csv", "hangar.csv"]
+            assert (after.block_off_utc, after.block_on_utc) == (_t(10), _t(11))
+            assert (f.block_off_utc, f.block_on_utc) == (_t(10), _t(11))
+            parts = after.geojson["properties"]["parts"]
+            assert [p["taxi"] for p in parts] == [True, False, True]
+            # A re-processed flight log replaces the flight part only.
+            link_track(
+                f,
+                geojson=_line((9, 9)),
+                files=["flight2.csv"],
+                block_off=_t(10, 1),
+                block_on=_t(11),
+            )
+            assert after.source_files == ["fuel.csv", "flight2.csv", "hangar.csv"]
+
+    def test_tracks_stored_without_parts(self, app):
+        with app.app_context():
+            f = _flight(app)
+            track = GpsTrack(
+                geojson=_line((1, 1)),
+                source_files=["old.csv"],
+                block_off_utc=_t(10),
+                block_on_utc=_t(10, 30),
+            )
+            db.session.add(track)
+            db.session.flush()
+            f.gps_track_id = track.id
+            # Parts that no longer add up count as one flight part too.
+            track.geojson["properties"] = {"parts": [{"n": 5}]}
+            link_track(
+                f,
+                geojson=_line((2, 2)),
+                files=["new.csv"],
+                block_off=_t(11),
+                block_on=_t(12),
+            )
+            assert _coords(track) == [[1, 1], [2, 2]]
+            assert track.source_files == ["old.csv", "new.csv"]
+            track.geojson["properties"]["parts"][0]["n"] = "x"
+            track.geojson["properties"]["parts"][0]["start"] = "not a date"
+            link_track(
+                f,
+                geojson="not geojson",
+                files=["third.csv"],
+                block_off=_t(14),
+                block_on=_t(15),
+            )
+            assert track.source_files[-1] == "third.csv"
 
 
 def _upload(client, ac_id):
@@ -459,3 +528,195 @@ class TestLaterFileOfATrackedFlight:
         assert seg["matched_flight_id"] == fid
         assert seg["matched_adds_to_track"] is True
         assert "this segment will be added to it" in page
+
+
+class TestGroundRuns:
+    """A ground-only recording: a logged ground entry's track, or the taxi
+    before/after a flight that day at that airfield."""
+
+    def test_ground_run_target(self):
+        from types import SimpleNamespace
+
+        from services.gps_link import (  # pyright: ignore[reportMissingImports]
+            ground_run_target,
+        )
+
+        def flight(fid, dep, arr, t0=None, t1=None, **kw):
+            base = {
+                "id": fid,
+                "date": date(2024, 6, 1),
+                "departure_icao": dep,
+                "arrival_icao": arr,
+                "departure_time": t0,
+                "arrival_time": t1,
+                "takeoff_time": None,
+                "landing_time": None,
+                "gps_track_id": None,
+                "flight_time": None,
+                "block_off_utc": None,
+                "block_on_utc": None,
+            }
+            base.update(kw)
+            return SimpleNamespace(**base)
+
+        out = flight(1, "EBAW", "LFGI", time(10, 30), time(12, 0))
+        back = flight(2, "LFGI", "EBAW", time(14, 0), time(15, 0))
+        # Taxi before the departure from EBAW (logged times), after the
+        # arrival back (GPS times from this import win over logged ones).
+        assert ground_run_target(
+            _t(10), _t(10, 10), "EBAW", [out, back], {}, set()
+        ) == (
+            out,
+            "taxi",
+            "before",
+        )
+        spans = {2: (_t(14, 5), _t(15, 10))}
+        assert ground_run_target(
+            _t(15, 30), _t(15, 35), "EBAW", [out, back], spans, set()
+        ) == (back, "taxi", "after")
+        # Too far, other airfield, or no times to go by: nothing.
+        assert (
+            ground_run_target(_t(8), _t(8, 10), "EBAW", [out, back], {}, set()) is None
+        )
+        assert ground_run_target(_t(10), _t(10, 10), "EBNM", [out], {}, set()) is None
+        assert (
+            ground_run_target(
+                _t(10), _t(10, 10), "EBAW", [flight(3, "EBAW", "X")], {}, set()
+            )
+            is None
+        )
+        # A tracked flight's own block times; the closest flight wins.
+        tracked = flight(
+            4,
+            "EBAW",
+            "EBAW",
+            block_off_utc=_t(10, 20),
+            block_on_utc=_t(11),
+            gps_track_id=9,
+        )
+        assert (
+            ground_run_target(_t(10), _t(10, 10), "EBAW", [out, tracked], {}, set())[0]
+            is tracked
+        )
+
+        # A logged ground entry (no flight time) at that airfield: its track.
+        entry = flight(5, "ZZZZ", "EBAW", flight_time=decimal.Decimal("0.2"))
+        assert ground_run_target(
+            _t(10), _t(10, 10), "EBAW", [out, entry], {}, set()
+        ) == (
+            entry,
+            "entry",
+            "",
+        )
+        # …unless it logged more flight time than the recording lasted, or
+        # another segment claimed it.
+        longer = flight(6, "EBAW", "EBAW", flight_time=decimal.Decimal("1.0"))
+        assert (
+            ground_run_target(_t(10), _t(10, 10), "EBAW", [longer], {}, set()) is None
+        )
+        assert ground_run_target(_t(10), _t(10, 10), "EBAW", [entry], {}, {5}) is None
+
+    def _upload_ground_run(self, client, ac_id):
+        gpx = _gpx_bytes(speeds_ms=[0.0, 3.0, 4.0, 3.0, 0.0])
+        client.post(
+            f"/aircraft/{ac_id}/gps-import",
+            data={"gps_files": (io.BytesIO(gpx), "taxi.gpx")},
+            content_type="multipart/form-data",
+        )
+        page = client.get(f"/aircraft/{ac_id}/gps-import/review").data.decode()
+        with client.session_transaction() as sess:
+            return _session_segments(sess), page
+
+    def _logged(self, app, ac_id, dep, arr, t0, t1, **kw):
+        with app.app_context():
+            f = Flight(
+                aircraft_id=ac_id,
+                date=date(2024, 6, 1),
+                departure_icao=dep,
+                arrival_icao=arr,
+                departure_time=t0,
+                arrival_time=t1,
+                source="logbook_import",
+                **kw,
+            )
+            db.session.add(f)
+            db.session.commit()
+            return f.id
+
+    def test_taxi_before_a_flight_joins_its_track(self, client, app):
+        uid, _tid, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        fid = self._logged(app, ac_id, "EBNM", "EBAW", time(10, 30), time(11, 30))
+        (seg,), page = self._upload_ground_run(client, ac_id)
+        assert (seg["matched_flight_id"], seg["matched_ground_role"]) == (fid, "taxi")
+        assert seg["matched_ground_when"] == "before"
+        assert "Ground movement shortly before flight" in page
+        assert "Accept all best matches" in page
+        client.post(f"/aircraft/{ac_id}/gps-import/confirm-all")
+        with app.app_context():
+            f = db.session.get(Flight, fid)
+            assert f.gps_track is not None
+            assert f.gps_track.geojson["properties"]["parts"][0]["taxi"] is True
+            # Nothing of the flight changes — not even times it lacked.
+            assert (f.departure_time, f.arrival_time) == (time(10, 30), time(11, 30))
+            assert f.block_off_utc is None and f.engine_time is None
+
+    def test_after_a_flight_and_ground_entry_wording(self, client, app):
+        uid, _tid, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._logged(app, ac_id, "EBAW", "EBNM", time(9, 0), time(9, 40))
+        (seg,), page = self._upload_ground_run(client, ac_id)
+        assert seg["matched_ground_when"] == "after"
+        assert "Ground movement shortly after flight" in page
+        entry = self._logged(
+            app, ac_id, "EBNM", "EBNM", None, None, flight_time=decimal.Decimal(0)
+        )
+        (seg,), page = self._upload_ground_run(client, ac_id)
+        assert (seg["matched_flight_id"], seg["matched_ground_role"]) == (
+            entry,
+            "entry",
+        )
+        assert "Matches the logged ground entry" in page
+        client.post(f"/aircraft/{ac_id}/gps-import/confirm-all")
+        with app.app_context():
+            assert db.session.get(Flight, entry).gps_track_id is not None
+
+    def test_nothing_near_is_skipped_by_accept_all(self, client, app):
+        uid, _tid, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        (seg,), _page = self._upload_ground_run(client, ac_id)
+        assert seg["matched_flight_id"] is None
+        rv = client.post(f"/aircraft/{ac_id}/gps-import/confirm-all")
+        assert rv.headers["Location"].endswith("/flights")
+        with app.app_context():
+            assert Flight.query.filter_by(aircraft_id=ac_id).count() == 0
+
+    def test_other_aircraft_mode_leaves_ground_runs_alone(self, client, app):
+        uid, _tid, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._logged(app, ac_id, "EBNM", "EBAW", time(10, 30), time(11, 30))
+        gpx = _gpx_bytes(speeds_ms=[0.0, 3.0, 4.0, 3.0, 0.0])
+        client.post(
+            f"/aircraft/{ac_id}/gps-import",
+            data={
+                "gps_files": (io.BytesIO(gpx), "taxi.gpx"),
+                "other_aircraft": "1",
+                "other_ac_make_model": "Piper PA-28",
+                "other_ac_reg": "G-ABCD",
+            },
+            content_type="multipart/form-data",
+        )
+        client.get(f"/aircraft/{ac_id}/gps-import/review")
+        with client.session_transaction() as sess:
+            (seg,) = _session_segments(sess)
+        assert seg["matched_flight_id"] is None
+
+
+def test_unreadable_geometry_and_part_times():
+    from services.gps_link import _line_coords, _when  # pyright: ignore[reportMissingImports]
+
+    assert _line_coords({"type": "Point", "coordinates": [0, 0]}) is None
+    assert _line_coords({"type": "LineString", "coordinates": "x"}) is None
+    assert _when({"start": "not a date"}, "start") is None
+    assert _when({"start": 5}, "start") is None
+    assert _when({}, "start") is None

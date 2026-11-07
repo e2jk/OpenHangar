@@ -12,6 +12,7 @@
 - GPS imports no longer attach a quick turnaround's next leg to the previous flight, nor glue a ground-only recording from another day onto a flight.
 - Uploading a flight's GPS files one at a time now works like uploading them together: a later file is offered as another part of the flight that already has a track (within its logged times), instead of as a new flight. The review page says whether a segment adds to a flight's track or replaces it.
 - The pilot GPS import, too, treats a single close candidate as the match.
+- Ground-only recordings (engine on, never airborne) are no longer just skipped: one logged as its own ground entry gets it as its track, and a taxi at the same airfield within 45 minutes before a departure or after an arrival (to the fuel station, customs, back to the hangar) is added to that flight's track as a taxi part — shown and downloadable with it, without changing the flight's times. Accept all best matches includes them. A recording between two flights' files in one upload (a taxi, an engine run) used to be dropped silently; it's now one of these ground-only segments, so uploading files together or one by one gives the same result.
 
 **Logbook imports**
 - Review page: rows whose values differ are now readable in dark mode, and identical numbers (e.g. counters) are no longer flagged as different.
