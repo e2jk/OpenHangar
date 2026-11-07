@@ -2543,21 +2543,23 @@ def pilot_gps_import_review() -> ResponseReturnValue:
             continue
         # Still nothing: another part of a flight that already has a track
         # (a later file of it uploaded on its own — see services.gps_link).
+        from aircraft.routes import _matched_gps_spans
         from services.gps_link import (  # pyright: ignore[reportMissingImports]
             continuation_candidates,
         )
         from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
 
+        batch_spans = _matched_gps_spans(full_segs)
         parts = continuation_candidates(
             Flight.query.filter(
                 or_(Flight.pic_user_id == uid, Flight.second_crew_user_id == uid),
                 Flight.date == block_off.date(),
-                Flight.gps_track_id.isnot(None),
             ).all(),
             block_off,
             _datetime.fromisoformat(seg["block_on_utc"]),
             seg.get("departure_icao"),
             seg.get("arrival_icao"),
+            batch_spans,
         )
         seg.update(_pilot_seg_match_dict(parts))
 

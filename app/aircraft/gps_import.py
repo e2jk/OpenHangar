@@ -103,12 +103,19 @@ class ParsedGpsFile:
 # ── Airport database ──────────────────────────────────────────────────────────
 
 
+_NOT_FOR_AEROPLANES = {"heliport", "closed", "balloonport"}
+
+
 @functools.lru_cache(maxsize=1)
 def _load_airports() -> dict[str, tuple[float, float]]:
     """Load app/data/airports.csv once. Returns {icao: (lat, lon)}.
 
-    Only 4-letter ICAO codes are included. Returns an empty dict if the
-    data file is missing (ICAO lookup will return None for all queries).
+    Only 4-letter ICAO codes are included, and only places an aeroplane
+    lands: not heliports, closed fields or balloon ports — a heliport's
+    reference point can be closer to an airport's runway than the airport's
+    own (Oostende Heliport EBNH, 1.6 km from EBOS), so it would name the
+    wrong field. Returns an empty dict if the data file is missing (ICAO
+    lookup will return None for all queries).
     """
     data_path = os.path.join(os.path.dirname(__file__), "..", "data", "airports.csv")
     airports: dict[str, tuple[float, float]] = {}
@@ -119,6 +126,8 @@ def _load_airports() -> dict[str, tuple[float, float]]:
             for row in reader:
                 ident = row.get("ident", "").strip()
                 if not re.match(r"^[A-Z]{4}$", ident):
+                    continue
+                if row.get("type", "") in _NOT_FOR_AEROPLANES:
                     continue
                 try:
                     lat = float(row["latitude_deg"])
@@ -197,8 +206,6 @@ def classify_track(trackpoints: list[TrackPoint]) -> str:
 
 # ── GPX parser ────────────────────────────────────────────────────────────────
 
-_GPX_NS = "http://www.topografix.com/GPX/1/1"
-
 
 def _extract_icao_hints(text: str) -> tuple[str | None, str | None]:
     """Extract departure and arrival ICAO codes from a track name string."""
@@ -208,38 +215,147 @@ def _extract_icao_hints(text: str) -> tuple[str | None, str | None]:
     return dep, arr
 
 
-def _parse_gpx(data: bytes, filename: str) -> ParsedGpsFile:
-    """Parse GPX 1.1 track. Speed field is in m/s; converted to kt."""
+def _parse_xml_up_to_error(text: str) -> Any:
+    """The XML document's root element — or, when the document breaks off
+    (seen on real GPX exports missing their closing </gpx> tag), what was
+    read of it before the error. Raises the parse error when nothing was."""
     try:
-        root = ET.fromstring(data.decode("utf-8-sig", errors="replace"))
+        return ET.fromstring(text)
+    except _ETParseError as exc:
+        root = None
+        try:
+            for _event, element in ET.iterparse(
+                io.BytesIO(text.encode("utf-8")), events=("start",)
+            ):
+                if root is None:
+                    root = element
+        except _ETParseError:
+            pass
+        if root is None:
+            raise exc from None
+        return root
+
+
+# A jump between two consecutive points implying more than this is a bad
+# fix, not flight — no light aircraft flies it, even across a recording gap.
+_MAX_PLAUSIBLE_KT = 600.0
+# …and covering at least this distance (a stale fix jumps tens of km).
+_MIN_JUMP_NM = 0.5
+# What's left between two such jumps, if shorter than this, is the bad fix.
+_MIN_FIX_RUN_S = 60.0
+
+
+def _drop_bad_fixes(
+    points: list[tuple[float, float, float, float | None, datetime]],
+) -> list[tuple[float, float, float, float | None, datetime]]:
+    """Points (lat, lon, alt, speed, time) in time order, without the bad
+    fixes cameras and phones record while acquiring the GPS signal: no fix
+    at all (0°, 0° — often with an unset clock, e.g. a date in another
+    month), or a stale last-known position the track then jumps away from
+    (seen on GoPro exports: 41 km in one second). The track is cut at every
+    implausible jump; pieces under _MIN_FIX_RUN_S are then dropped."""
+    ordered = sorted(
+        (p for p in points if not (p[0] == 0.0 and p[1] == 0.0)),
+        key=lambda p: p[4],
+    )
+    runs: list[list[tuple[float, float, float, float | None, datetime]]] = []
+    for point in ordered:
+        if runs:
+            prev = runs[-1][-1]
+            dt_s = (point[4] - prev[4]).total_seconds()
+            dist_nm = _haversine_km(prev[0], prev[1], point[0], point[1]) / _KM_PER_NM
+            # Both far and fast: a few metres of jitter between two
+            # timestamps a fraction of a second apart (GoPro exports have
+            # those) computes as hundreds of knots too.
+            jump = dist_nm > _MIN_JUMP_NM and (
+                dt_s <= 0 or dist_nm * 3600.0 / dt_s > _MAX_PLAUSIBLE_KT
+            )
+            if not jump:
+                runs[-1].append(point)
+                continue
+        runs.append([point])
+    if len(runs) <= 1:  # no implausible jump: nothing to tell apart
+        return ordered
+    return [
+        p
+        for run in runs
+        if (run[-1][4] - run[0][4]).total_seconds() >= _MIN_FIX_RUN_S
+        for p in run
+    ]
+
+
+# Speed from positions is measured over at least this long: GPS positions
+# jitter by a few metres, so point-to-point at 1 Hz turns a parked aircraft's
+# noise — or one bad fix — into spurious knots.
+_DERIVED_SPEED_SPAN_S = 5.0
+
+
+def _speeds_from_positions(points: list[tuple[float, float, datetime]]) -> list[float]:
+    """Ground speed in knots at each (lat, lon, time) point, from the
+    distance covered since the latest point at least _DERIVED_SPEED_SPAN_S
+    earlier (the previous point when none is that old yet)."""
+    speeds: list[float] = []
+    j = 0
+    for i, (lat, lon, when) in enumerate(points):
+        if i == 0:
+            speeds.append(0.0)
+            continue
+        while (
+            j + 1 < i
+            and (when - points[j + 1][2]).total_seconds() >= _DERIVED_SPEED_SPAN_S
+        ):
+            j += 1
+        k = (
+            j
+            if (when - points[j][2]).total_seconds() >= _DERIVED_SPEED_SPAN_S
+            else i - 1
+        )
+        dt_s = (when - points[k][2]).total_seconds()
+        dist_km = _haversine_km(points[k][0], points[k][1], lat, lon)
+        speeds.append(dist_km / _KM_PER_NM * 3600.0 / dt_s if dt_s > 0 else 0.0)
+    return speeds
+
+
+def _parse_gpx(data: bytes, filename: str) -> ParsedGpsFile:
+    """Parse GPX 1.1 track. Speed field is in m/s; converted to kt — or,
+    when the file has none, derived from the positions."""
+    try:
+        root = _parse_xml_up_to_error(data.decode("utf-8-sig", errors="replace"))
     except _ETParseError as exc:
         raise ValueError(f"Invalid GPX XML in {filename!r}: {exc}") from exc
 
+    # The namespace the file declares: GPX 1.1, GPX 1.0 (same structure, e.g.
+    # ExifTool exports) — or none at all.
+    ns = root.tag[1 : root.tag.index("}")] if root.tag.startswith("{") else ""
+
+    def q(name: str) -> str:
+        return f"{{{ns}}}{name}" if ns else name
+
     hint_dep: str | None = None
     hint_arr: str | None = None
-    name_el = root.find(f".//{{{_GPX_NS}}}name")
+    name_el = root.find(f".//{q('name')}")
     if name_el is not None and name_el.text:
         hint_dep, hint_arr = _extract_icao_hints(name_el.text)
 
-    trackpoints: list[TrackPoint] = []
-    for trkpt in root.findall(f".//{{{_GPX_NS}}}trkpt"):
+    points: list[tuple[float, float, float, float | None, datetime]] = []
+    for trkpt in root.findall(f".//{q('trkpt')}"):
         try:
             lat = float(trkpt.get("lat", ""))
             lon = float(trkpt.get("lon", ""))
         except (ValueError, TypeError):
             continue
 
-        ele_el = trkpt.find(f"{{{_GPX_NS}}}ele")
+        ele_el = trkpt.find(q("ele"))
         alt_m = float(ele_el.text) if ele_el is not None and ele_el.text else 0.0
 
-        speed_el = trkpt.find(f"{{{_GPX_NS}}}speed")
+        speed_el = trkpt.find(q("speed"))
         speed_kt = (
             float(speed_el.text) * _MS_TO_KT
             if speed_el is not None and speed_el.text
-            else 0.0
+            else None
         )
 
-        time_el = trkpt.find(f"{{{_GPX_NS}}}time")
+        time_el = trkpt.find(q("time"))
         if time_el is None or not time_el.text:
             continue
         try:
@@ -247,9 +363,19 @@ def _parse_gpx(data: bytes, filename: str) -> ParsedGpsFile:
         except ValueError:
             continue
 
-        trackpoints.append(
-            TrackPoint(lat=lat, lon=lon, alt_m=alt_m, speed_kt=speed_kt, utc_dt=utc_dt)
-        )
+        points.append((lat, lon, alt_m, speed_kt, utc_dt))
+
+    points = _drop_bad_fixes(points)
+    # GPX 1.1 has no speed element: many writers (e.g. ExifTool exporting
+    # a GoPro's GPS) leave it out — derive it from the positions then.
+    if points and all(p[3] is None for p in points):
+        speeds = _speeds_from_positions([(p[0], p[1], p[4]) for p in points])
+    else:
+        speeds = [p[3] or 0.0 for p in points]
+    trackpoints = [
+        TrackPoint(lat=lat, lon=lon, alt_m=alt_m, speed_kt=kt, utc_dt=when)
+        for (lat, lon, alt_m, _speed, when), kt in zip(points, speeds, strict=True)
+    ]
 
     return ParsedGpsFile(
         trackpoints=trackpoints,
@@ -484,7 +610,15 @@ def _split_into_raw_groups(trackpoints: list[TrackPoint]) -> list[list[TrackPoin
         i for i, tp in enumerate(trackpoints) if tp.speed_kt >= _FLIGHT_SPEED_KT
     ]
     if not fast_indices:
-        return [trackpoints]
+        # Ground runs only: still one group per recording session.
+        sessions: list[list[TrackPoint]] = []
+        start = 0
+        for k in range(n - 1):
+            if _recording_gap(trackpoints, k):
+                sessions.append(trackpoints[start : k + 1])
+                start = k + 1
+        sessions.append(trackpoints[start:])
+        return sessions
 
     first_fast = fast_indices[0]
     last_fast = fast_indices[-1]
@@ -604,16 +738,49 @@ def _break_points(
     return last_fast, next_fast
 
 
+# A segment whose flying starts (ends) this close to its first (last)
+# point was recorded from (until) the air, not from (until) the ground.
+_IN_FLIGHT_EDGE_S = 10.0
+
+# Above _FLIGHT_SPEED_KT for at least this long is flying, below it for at
+# least this long after flying is a landing: a noisy GPS (a camera's, a
+# phone's) briefly crosses the threshold while taxiing or in flight.
+_SUSTAIN_S = 30.0
+
+
+def _airborne_periods(pts: list[TrackPoint]) -> list[tuple[int, int]]:
+    """(first, last) point indices of each stretch flown above
+    _FLIGHT_SPEED_KT for at least _SUSTAIN_S, merging stretches separated
+    by less than _SUSTAIN_S below it (noise, not a landing)."""
+    runs: list[tuple[int, int]] = []
+    i = 0
+    while i < len(pts):
+        if pts[i].speed_kt < _FLIGHT_SPEED_KT:
+            i += 1
+            continue
+        j = i
+        while j + 1 < len(pts) and pts[j + 1].speed_kt >= _FLIGHT_SPEED_KT:
+            j += 1
+        if (pts[j].utc_dt - pts[i].utc_dt).total_seconds() >= _SUSTAIN_S:
+            runs.append((i, j))
+        i = j + 1
+    periods: list[tuple[int, int]] = []
+    for first, last in runs:
+        if (
+            periods
+            and (pts[first].utc_dt - pts[periods[-1][1]].utc_dt).total_seconds()
+            < _SUSTAIN_S
+        ):
+            periods[-1] = (periods[-1][0], last)
+        else:
+            periods.append((first, last))
+    return periods
+
+
 def _count_landings(pts: list[TrackPoint]) -> int:
-    """Count transitions from airborne (≥30kt) to ground (<30kt)."""
-    count = 0
-    was_fast = False
-    for tp in pts:
-        is_fast = tp.speed_kt >= _FLIGHT_SPEED_KT
-        if was_fast and not is_fast:
-            count += 1
-        was_fast = is_fast
-    return count
+    """Full-stop landings: airborne periods (see _airborne_periods) the
+    recording carries on after — i.e. followed by slow points."""
+    return sum(1 for _first, last in _airborne_periods(pts) if last + 1 < len(pts))
 
 
 def detect_segments(
@@ -635,13 +802,9 @@ def detect_segments(
         block_off = pts[0].utc_dt
         block_on = pts[-1].utc_dt
 
-        takeoff_utc: datetime | None = None
-        landing_utc: datetime | None = None
-        for tp in pts:
-            if tp.speed_kt >= _FLIGHT_SPEED_KT:
-                if takeoff_utc is None:
-                    takeoff_utc = tp.utc_dt
-                landing_utc = tp.utc_dt
+        periods = _airborne_periods(pts)
+        takeoff_utc: datetime | None = pts[periods[0][0]].utc_dt if periods else None
+        landing_utc: datetime | None = pts[periods[-1][1]].utc_dt if periods else None
 
         is_ground_only = takeoff_utc is None
         landing_count = _count_landings(pts)
@@ -649,12 +812,27 @@ def detect_segments(
         raw_h = (block_on - block_off).total_seconds() / 3600.0
         rounded_h = round_flight_time(raw_h, aircraft_precision)
 
-        dep_icao = resolve_icao(pts[0].lat, pts[0].lon, airports) or (
-            hint_dep if idx == 0 else None
+        # A recording that starts (or ends) already flying — the camera or
+        # logger switched on in flight — has no departure (arrival) airfield
+        # to tell: whatever it's flying over isn't one.
+        started_flying = bool(
+            periods
+            and (pts[periods[0][0]].utc_dt - pts[0].utc_dt).total_seconds()
+            < _IN_FLIGHT_EDGE_S
         )
-        arr_icao = resolve_icao(pts[-1].lat, pts[-1].lon, airports) or (
-            hint_arr if idx == len(raw_groups) - 1 else None
+        ended_flying = bool(
+            periods
+            and (pts[-1].utc_dt - pts[periods[-1][1]].utc_dt).total_seconds()
+            < _IN_FLIGHT_EDGE_S
         )
+        # (The file's own hint — a Garmin file name, a GPX track name —
+        # still counts: it's the recorder's own record of the field.)
+        dep_icao = (
+            None if started_flying else resolve_icao(pts[0].lat, pts[0].lon, airports)
+        ) or (hint_dep if idx == 0 else None)
+        arr_icao = (
+            None if ended_flying else resolve_icao(pts[-1].lat, pts[-1].lon, airports)
+        ) or (hint_arr if idx == len(raw_groups) - 1 else None)
 
         downsampled = downsample_track(pts)
         geojson = build_geojson(downsampled)

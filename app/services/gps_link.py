@@ -53,7 +53,20 @@ def _utc(value: datetime) -> datetime:
 def _overlaps(
     a_start: datetime, a_end: datetime, b_start: datetime, b_end: datetime
 ) -> bool:
-    return bool(_utc(a_start) < _utc(b_end) and _utc(b_start) < _utc(a_end))
+    """The same time, for GPS data: overlapping by at least half of the
+    shorter span. Two recordings sharing a few minutes at their edges — a
+    camera left running across a dual flight and the solo straight after
+    it — are two flights, not the same one twice."""
+    overlap = (
+        min(_utc(a_end), _utc(b_end)) - max(_utc(a_start), _utc(b_start))
+    ).total_seconds()
+    if overlap <= 0:
+        return False
+    shorter = min(
+        (_utc(a_end) - _utc(a_start)).total_seconds(),
+        (_utc(b_end) - _utc(b_start)).total_seconds(),
+    )
+    return bool(overlap >= shorter / 2)
 
 
 # Codes that say "unknown": blank, the import placeholder, and ZZZZ (ICAO's
@@ -82,11 +95,15 @@ def block_match(
     their block times are within the matching tolerance of each other:
     overlapping times are; times merely close (the next leg, minutes after
     landing) only when the route agrees too — otherwise a quick turnaround's
-    second leg would land on the first leg's flight."""
+    second leg would land on the first leg's flight — and the segment lies
+    within the flight's logged times (when it has any): a dual flight and
+    the solo flown straight after it share a route, but each its own times."""
     if _overlaps(flight.block_off_utc, flight.block_on_utc, block_off, block_on):
         return True
-    return _same_icao(flight.departure_icao, departure_icao) and _same_icao(
-        flight.arrival_icao, arrival_icao
+    return (
+        _same_icao(flight.departure_icao, departure_icao)
+        and _same_icao(flight.arrival_icao, arrival_icao)
+        and _within_logged_times(flight, block_off, block_on)
     )
 
 
@@ -125,24 +142,35 @@ def continuation_candidates(
     block_on: datetime,
     departure_icao: str | None,
     arrival_icao: str | None,
+    gps_spans: dict[int, tuple[datetime, datetime]] | None = None,
 ) -> list[Any]:
-    """Among *flights* (already-tracked ones, on the segment's date), those
-    this segment could be another part of — a later file of the same flight
-    uploaded on its own: its track covers another time, the segment starts
-    where the flight did or ends where it did, and it lies within the
-    flight's logged times. Fallback when nothing else matches."""
-    return [
-        f
-        for f in flights
-        if f.block_off_utc is not None
-        and f.block_on_utc is not None
-        and not _overlaps(f.block_off_utc, f.block_on_utc, block_off, block_on)
-        and (
+    """Among *flights* (on the segment's date), those this segment could be
+    (another part of): a later file of the same flight, a piece of it after
+    the recording stopped and restarted in flight, or a recording that
+    covers only part of it. The segment starts where the flight did or ends
+    where it did (or the airfield isn't known), lies within the flight's
+    logged times, and — when the flight has GPS times (its track's, or —
+    *gps_spans* — another segment's of this same import) — covers another
+    time than those. Fallback when nothing else matches."""
+    found = []
+    for f in flights:
+        span = (gps_spans or {}).get(f.id) or (
+            (f.block_off_utc, f.block_on_utc) if f.gps_track_id else (None, None)
+        )
+        if span[0] is None or span[1] is None:
+            # No GPS times yet: only by its logged times — a recording that
+            # stopped before landing (or started after takeoff) lacks the
+            # signals the fuzzy match needs, but lies within them.
+            if _logged_span(f) is None:
+                continue
+        elif _overlaps(span[0], span[1], block_off, block_on):
+            continue
+        if (
             _same_icao(f.departure_icao, departure_icao)
             or _same_icao(f.arrival_icao, arrival_icao)
-        )
-        and _within_logged_times(f, block_off, block_on)
-    ]
+        ) and _within_logged_times(f, block_off, block_on):
+            found.append(f)
+    return found
 
 
 # A ground run this close before a departure or after an arrival, at that
