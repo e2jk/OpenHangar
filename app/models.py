@@ -933,6 +933,14 @@ class Flight(db.Model):
         nullable=False,
         default=lambda: datetime.now(UTC),
     )
+    # Last change through the ORM — lets services.data_checks tell which
+    # aircraft's flights changed since their consistency checks last ran.
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=True,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
     # ── EASA FCL.050 pilot-log figures (shared, once per row) ─────────────────
     night_time = db.Column(db.Numeric(4, 1), nullable=True)
@@ -2966,6 +2974,32 @@ class WeightBalanceEntry(db.Model):
     )
 
     config = db.relationship("WeightBalanceConfig", back_populates="entries")
+
+
+class DataCheckDismissal(db.Model):
+    """A data-check finding (services.data_checks) someone looked at and
+    decided to leave as it is. Keyed by the finding's key, which includes
+    the GPS-side value: if the track changes, the finding comes back."""
+
+    __tablename__ = "data_check_dismissals"
+    __table_args__ = (db.UniqueConstraint("flight_id", "key"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    flight_id = db.Column(
+        db.Integer,
+        db.ForeignKey("flights.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    key = db.Column(db.String(96), nullable=False)
+    dismissed_by_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
 
 
 class AppSetting(db.Model):

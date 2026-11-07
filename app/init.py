@@ -962,9 +962,11 @@ def create_app() -> Flask:
         # Phase 26: adaptive UI based on TenantProfile
         _tenant_profile = None
         _has_renter_account = False
+        _nav_tenant_id: int | None = None
         if uid:
             tu = TenantUser.query.filter_by(user_id=uid).first()
             if tu:
+                _nav_tenant_id = tu.tenant_id
                 _tenant_profile = TenantProfile.query.filter_by(
                     tenant_id=tu.tenant_id
                 ).first()
@@ -1007,6 +1009,14 @@ def create_app() -> Flask:
         _legacy_logbook_data_present = (
             check_legacy_logbook_data() if _is_owner and _in_request else False
         )
+        if _is_owner and _in_request:
+            from services.data_checks import (  # pyright: ignore[reportMissingImports]
+                open_count as _data_checks_open_count,
+            )
+
+            _nav_data_checks_open = _data_checks_open_count(_nav_tenant_id)
+        else:
+            _nav_data_checks_open = 0
         if uid:
             from flights.crew_invites import (
                 pending_claims_to_review,
@@ -1056,6 +1066,7 @@ def create_app() -> Flask:
             "today": _date.today(),
             "current_theme": _current_theme(_user_flags, _in_request, session, is_demo),
             "nav_update_available": _nav_update_available,
+            "nav_data_checks_open": _nav_data_checks_open,
             "nav_crew_invite_count": _nav_crew_invite_count,
             "legacy_logbook_data_present": _legacy_logbook_data_present,
             "oh_debug": app.debug

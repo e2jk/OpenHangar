@@ -245,6 +245,8 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
     "config.update_tenant_slug": _OWNER_ROLES,
     "config.update_map_tiles": _OWNER_ROLES,
     "config.update_profile": _OWNER_ROLES,
+    "config.data_check_fix": _OWNER_ROLES,
+    "config.data_check_dismiss": _OWNER_ROLES,
     "config.notification_preferences": _ANY_ROLE,
     "config.renter_add": _OWNER_ROLES,
     "config.renter_edit": _OWNER_ROLES,
