@@ -20,7 +20,6 @@ from pathlib import Path
 from models import (  # pyright: ignore[reportMissingImports]
     Flight,
     GpsTrack,
-    db,
 )
 
 from tests.functional.conftest import submit
@@ -85,9 +84,9 @@ def test_gps_import_round_trip_no_duplicates(owner_env, app):
             Flight.query.filter_by(aircraft_id=aircraft_id).one().gps_track_id
         )
 
-    # Confirm as-is (not skip) — the matched-flight path must update the
-    # existing Flight/GpsTrack in place rather than creating a second copy
-    # of either.
+    # Confirm as-is (not skip) — the matched-flight path must neither
+    # create a second Flight nor a second GpsTrack: the same original file
+    # again leaves the flight's track as it is (services.gps_link).
     submit(
         client,
         f"/aircraft/{aircraft_id}/gps-import/confirm-one",
@@ -103,10 +102,7 @@ def test_gps_import_round_trip_no_duplicates(owner_env, app):
         flight = Flight.query.filter_by(aircraft_id=aircraft_id).one()
         assert flight.pic_user_id is not None
         assert GpsTrack.query.count() == 1
-        # The superseded track was deleted, not left orphaned.
-        assert db.session.get(GpsTrack, old_track_id) is None
-        new_track_id = flight.gps_track_id
-        assert new_track_id != old_track_id
+        assert flight.gps_track_id == old_track_id
 
     logbook_after = client.get("/pilot/logbook")
     assert b"bi-geo-alt" in logbook_after.data

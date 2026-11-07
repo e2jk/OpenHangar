@@ -1,7 +1,7 @@
 """
 Tests for the kept original GPS files beyond storing them
 (tests/test_gps_archive.py covers that):
-  - each imported track links to the file it came from (GpsTrack.source_file),
+  - each imported track links to the file it came from (GpsTrack.source_files),
     including the flight form's own GPS upload
   - downloading one flight's file, or zips per aircraft and per pilot
   - the configuration page's count/size of kept files
@@ -25,7 +25,7 @@ from services.gps_archive import (  # pyright: ignore[reportMissingImports]
     archive_stats,
     iter_archive_files,
     resolve_pilot_archive_name,
-    source_for_window,
+    sources_for_window,
     write_zip,
 )
 from services.temp_cleanup import (  # pyright: ignore[reportMissingImports]
@@ -76,22 +76,25 @@ class TestHelpers:
         for name in (None, "", "missing.gpx", "../8/gps_logs/other.gpx", "other.gpx"):
             assert resolve_pilot_archive_name(str(tmp_path), 7, name) is None
 
-    def test_source_for_window_picks_the_covering_file(self):
+    def test_sources_for_window_lists_the_covering_files(self):
         a = _meta("a.csv", "2024-06-01T09:00:00+00:00", "2024-06-01T10:30:00+00:00")
         b = _meta("b.csv", "2024-06-01T11:00:00+00:00", "2024-06-01T13:00:00+00:00")
-        assert source_for_window([a, b], _dt(11, 10), _dt(12, 0)) == "b.csv"
-        assert source_for_window([a, b], _dt(9, 10), _dt(10, 0)) == "a.csv"
-        # Outside every file, or no usable span: no guess.
-        assert source_for_window([a, b], _dt(14), _dt(15)) is None
+        assert sources_for_window([a, b], _dt(11, 10), _dt(12, 0)) == ["b.csv"]
+        assert sources_for_window([b, a], _dt(9, 10), _dt(10, 0)) == ["a.csv"]
+        # A flight spanning both files (logger restarted in flight): both,
+        # in time order.
+        assert sources_for_window([b, a], _dt(10), _dt(11, 30)) == ["a.csv", "b.csv"]
+        # Outside every file, or no usable span: nothing guessed.
+        assert sources_for_window([a, b], _dt(14), _dt(15)) == []
         bad = {"archive_path": "c.csv", "t_start": None, "t_end": None}
         assert (
-            source_for_window([bad, {"archive_path": "d.csv"}], _dt(9), _dt(10)) is None
+            sources_for_window([bad, {"archive_path": "d.csv"}], _dt(9), _dt(10)) == []
         )
         # A single file is the source whatever its span.
-        assert source_for_window([bad], _dt(9), _dt(10)) == "c.csv"
+        assert sources_for_window([bad], _dt(9), _dt(10)) == ["c.csv"]
         assert (
-            source_for_window([{"original_filename": "old.gpx"}], _dt(9), _dt(10))
-            is None
+            sources_for_window([{"original_filename": "old.gpx"}], _dt(9), _dt(10))
+            == []
         )
 
     def test_iter_write_zip_and_stats(self, tmp_path):
@@ -230,7 +233,7 @@ class TestTracksLinkToTheirFile:
         client.post(f"/aircraft/{ac_id}/gps-import/confirm-one", data={"seg_idx": "0"})
         with app.app_context():
             fe = Flight.query.filter_by(aircraft_id=ac_id).one()
-            assert fe.gps_track.source_file == f"{slug}/OO-ARC/gps_logs/b.csv"
+            assert fe.gps_track.source_files == [f"{slug}/OO-ARC/gps_logs/b.csv"]
 
     def test_pilot_upload_and_confirm(self, app, client, uploads):
         uid, slug, _ac_id = _world(app, "gof3@example.com")
@@ -268,7 +271,7 @@ class TestTracksLinkToTheirFile:
         )
         with app.app_context():
             fe = Flight.query.filter_by(pic_user_id=uid).one()
-            assert fe.gps_track.source_file == f"{slug}/OO-ARC/gps_logs/b.csv"
+            assert fe.gps_track.source_files == [f"{slug}/OO-ARC/gps_logs/b.csv"]
 
 
 class TestFlightFormUpload:
@@ -302,15 +305,15 @@ class TestFlightFormUpload:
         client.post("/flights/new", data=self._form(ac_id, gps_archive="flight.gpx"))
         with app.app_context():
             fe = Flight.query.filter_by(aircraft_id=ac_id).one()
-            assert fe.gps_track.source_file == f"_pilots/{uid}/gps_logs/flight.gpx"
+            assert fe.gps_track.source_files == [f"_pilots/{uid}/gps_logs/flight.gpx"]
             fid = fe.id
 
-        resp = client.get(f"/flights/{fid}/gps-file")
+        resp = client.get(f"/flights/{fid}/gps-file/0")
         assert resp.status_code == 200
         assert resp.data == _gpx_bytes()
         assert "attachment" in resp.headers["Content-Disposition"]
         page = client.get(f"/aircraft/{ac_id}/flights/{fid}").data.decode()
-        assert f'href="/flights/{fid}/gps-file" hx-boost="false"' in page
+        assert f'href="/flights/{fid}/gps-file/0" hx-boost="false"' in page
 
     def test_unparseable_upload_is_still_kept(self, app, client, uploads):
         uid, _slug, _ac_id = _world(app, "gof5@example.com")
@@ -332,7 +335,7 @@ class TestFlightFormUpload:
         with app.app_context():
             fe = Flight.query.filter_by(aircraft_id=ac_id).one()
             assert fe.gps_track is not None
-            assert fe.gps_track.source_file is None
+            assert fe.gps_track.source_files is None
 
     def test_existing_track_gets_linked_on_edit(self, app, client, uploads):
         uid, _slug, ac_id = _world(app, "gof7@example.com")
@@ -345,9 +348,9 @@ class TestFlightFormUpload:
             f"/flights/{fid}/edit", data=self._form(ac_id, gps_archive="later.gpx")
         )
         with app.app_context():
-            assert db.session.get(Flight, fid).gps_track.source_file == (
+            assert db.session.get(Flight, fid).gps_track.source_files == [
                 f"_pilots/{uid}/gps_logs/later.gpx"
-            )
+            ]
 
     def test_pilot_entry_form_links_too(self, app, client, uploads):
         uid, _slug, _ac_id = _world(app, "gof8@example.com")
@@ -371,7 +374,7 @@ class TestFlightFormUpload:
         )
         with app.app_context():
             fe = Flight.query.filter_by(pic_user_id=uid).one()
-            assert fe.gps_track.source_file == f"_pilots/{uid}/gps_logs/rental.gpx"
+            assert fe.gps_track.source_files == [f"_pilots/{uid}/gps_logs/rental.gpx"]
             fid = fe.id
 
         # Editing the entry with another kept file relinks its track.
@@ -392,9 +395,9 @@ class TestFlightFormUpload:
             },
         )
         with app.app_context():
-            assert db.session.get(Flight, fid).gps_track.source_file == (
+            assert db.session.get(Flight, fid).gps_track.source_files == [
                 f"_pilots/{uid}/gps_logs/better.gpx"
-            )
+            ]
 
 
 # ── Downloads ─────────────────────────────────────────────────────────────────
@@ -403,7 +406,7 @@ class TestFlightFormUpload:
 def _flight_with_file(app, uploads, ac_id, rel, **flight):
     _put(uploads, rel, b"log-" + rel.encode())
     with app.app_context():
-        track = GpsTrack(source_filename=rel.rsplit("/", 1)[-1], source_file=rel)
+        track = GpsTrack(source_filename=rel.rsplit("/", 1)[-1], source_files=[rel])
         db.session.add(track)
         db.session.flush()
         fe = Flight(
@@ -425,11 +428,11 @@ class TestDownloads:
         other_uid, _s, _a = _world(app, "gof9b@example.com")
         fid = _flight_with_file(app, uploads, ac_id, f"{slug}/OO-ARC/gps_logs/x.csv")
         _login(client, uid)
-        assert client.get(f"/flights/{fid}/gps-file").status_code == 200
+        assert client.get(f"/flights/{fid}/gps-file/0").status_code == 200
         # Someone from another club can't.
         _login(client, other_uid)
-        assert client.get(f"/flights/{fid}/gps-file").status_code == 404
-        assert client.get("/flights/999999/gps-file").status_code == 404
+        assert client.get(f"/flights/{fid}/gps-file/0").status_code == 404
+        assert client.get("/flights/999999/gps-file/0").status_code == 404
 
     def test_single_file_for_the_flights_own_pilot_and_missing_cases(
         self, app, client, uploads
@@ -439,10 +442,10 @@ class TestDownloads:
         rel = f"_pilots/{uid}/gps_logs/own.gpx"
         _put(uploads, rel)
         with app.app_context():
-            track = GpsTrack(source_file=rel)
-            no_file = GpsTrack(source_file=None)
-            gone = GpsTrack(source_file=f"_pilots/{uid}/gps_logs/gone.gpx")
-            escape = GpsTrack(source_file="../outside.gpx")
+            track = GpsTrack(source_files=[rel])
+            no_file = GpsTrack(source_files=None)
+            gone = GpsTrack(source_files=[f"_pilots/{uid}/gps_logs/gone.gpx"])
+            escape = GpsTrack(source_files=["../outside.gpx"])
             db.session.add_all([track, no_file, gone, escape])
             db.session.flush()
             ids = []
@@ -462,12 +465,12 @@ class TestDownloads:
             ids.append(plain.id)
         _login(client, uid)
         own, no_file_id, gone_id, escape_id, plain_id = ids
-        assert client.get(f"/flights/{own}/gps-file").status_code == 200
+        assert client.get(f"/flights/{own}/gps-file/0").status_code == 200
         for fid in (no_file_id, gone_id, escape_id, plain_id):
-            assert client.get(f"/flights/{fid}/gps-file").status_code == 404
+            assert client.get(f"/flights/{fid}/gps-file/0").status_code == 404
         # A standalone flight is only the pilot's own.
         _login(client, other_uid)
-        assert client.get(f"/flights/{own}/gps-file").status_code == 404
+        assert client.get(f"/flights/{own}/gps-file/0").status_code == 404
 
     def test_aircraft_zip(self, app, client, uploads):
         uid, slug, ac_id = _world(app, "gof11@example.com")

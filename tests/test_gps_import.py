@@ -2429,11 +2429,11 @@ class TestFuzzyGpsMatchAircraftSide:
 
         segs = self._upload_and_get_session_segs(client, app, ac_id)
         seg = segs[0]
-        assert seg["matched_ambiguous"] is True
+        # The only candidate, at nearly the same time: a match, not a doubt
+        # (a logbook records 0.1 h, a GPS log the second).
+        assert seg["matched_ambiguous"] is False
         assert seg["matched_flight_id"] == imported_id
-        assert any(c["id"] == imported_id for c in seg["matched_candidates"])
-        # No auto-apply banner text — this needs the human's confirmation.
-        assert seg["matched_flight_str"] is None
+        assert seg["matched_flight_str"].startswith(f"#{imported_id} — ")
 
     def test_fuzzy_match_below_threshold_is_not_surfaced(self, client, app):
         """A same-day flight with a different route never reaches
@@ -2535,20 +2535,25 @@ class TestFuzzyGpsMatchAircraftSide:
         seg0 = segs_before[0]
 
         with app.app_context():
-            imported = Flight(
-                aircraft_id=ac_id,
-                date=_dt.fromisoformat(seg0["block_off_utc"]).date(),
-                departure_icao="EBNM",
-                arrival_icao="EBAW",
-                flight_time=decimal.Decimal(str(seg0["flight_time_rounded_h"])),
-                landing_count=seg0["landing_count"],
-                source="logbook_import",
-            )
-            db.session.add(imported)
+            # Two equally likely candidates: the picker is shown.
+            twins = [
+                Flight(
+                    aircraft_id=ac_id,
+                    date=_dt.fromisoformat(seg0["block_off_utc"]).date(),
+                    departure_icao="EBNM",
+                    arrival_icao="EBAW",
+                    flight_time=decimal.Decimal(str(seg0["flight_time_rounded_h"])),
+                    landing_count=seg0["landing_count"],
+                    source="logbook_import",
+                )
+                for _ in range(2)
+            ]
+            db.session.add_all(twins)
             db.session.commit()
-            imported_id = imported.id
+            imported_id = twins[0].id
 
-        self._upload_and_get_session_segs(client, app, ac_id)
+        segs = self._upload_and_get_session_segs(client, app, ac_id)
+        assert segs[0]["matched_ambiguous"] is True
         resp = client.post(
             f"/aircraft/{ac_id}/gps-import/confirm-one",
             data={"seg_idx": "0", "pilot_role": "pic", "matched_flight_id": ""},
@@ -2557,7 +2562,7 @@ class TestFuzzyGpsMatchAircraftSide:
         assert resp.status_code == 200
 
         with app.app_context():
-            assert Flight.query.filter_by(aircraft_id=ac_id).count() == 2
+            assert Flight.query.filter_by(aircraft_id=ac_id).count() == 3
             fe = db.session.get(Flight, imported_id)
             assert fe.gps_track_id is None  # untouched
 

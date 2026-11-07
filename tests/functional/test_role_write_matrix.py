@@ -107,6 +107,7 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
     "aircraft.wb_entry_delete": _PILOT_ROLES_STRICT,
     "aircraft.gps_import_upload": _PILOT_ROLES_STRICT,
     "aircraft.gps_import_confirm_one": _PILOT_ROLES_STRICT,
+    "aircraft.gps_import_confirm_all": _PILOT_ROLES_STRICT,
     "aircraft.gps_import_rollback": _OWNER_ROLES,
     "aircraft.upload_photo": _OWNER_ROLES,
     "aircraft.delete_photo": _OWNER_ROLES,

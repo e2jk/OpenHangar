@@ -790,10 +790,12 @@ class GpsTrack(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     source_filename = db.Column(db.String(256), nullable=True)
-    # The kept original file this track was extracted from, relative to the
-    # uploads folder (services.gps_archive), for downloading it from the
-    # flight. None for tracks imported before originals were linked.
-    source_file = db.Column(db.String(512), nullable=True)
+    # The kept original file(s) this track was extracted from, relative to
+    # the uploads folder (services.gps_archive), in time order — several
+    # when one flight's log is split over files (e.g. the logger lost power
+    # in flight) or segments were combined (services.gps_link). None for
+    # tracks imported before originals were linked.
+    source_files = db.Column(db.JSON, nullable=True)
     device_id = db.Column(db.String(64), nullable=True, index=True)
     block_off_utc = db.Column(db.DateTime(timezone=True), nullable=True)
     block_on_utc = db.Column(db.DateTime(timezone=True), nullable=True)

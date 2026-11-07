@@ -18,12 +18,12 @@
        data-openaip-key="{{ openaip_key or '' }}"
        data-dep="{{ _detail_dep }}"
        data-arr="{{ _detail_arr }}"></div>
-  {% if _detail_track.source_file %}
+  {% if _detail_track.source_files %}
   <div class="small mt-2">
-    <a href="{{ url_for('flights.download_gps_file', flight_id=entry.id) }}" hx-boost="false">
-      <i class="bi bi-download me-1"></i>{{ _('Download the original GPS file') }}
-    </a>
-    <span class="text-muted">({{ _detail_track.source_file.rsplit('/', 1)[-1] }})</span>
+    <i class="bi bi-download me-1"></i>{{ ngettext('Original GPS file:', 'Original GPS files:', _detail_track.source_files|length) }}
+    {% for f in _detail_track.source_files %}
+    <a href="{{ url_for('flights.download_gps_file', flight_id=entry.id, index=loop.index0) }}" hx-boost="false" class="ms-1">{{ f.rsplit('/', 1)[-1] }}</a>{% if not loop.last %} ·{% endif %}
+    {% endfor %}
   </div>
   {% endif %}
   {% if not openaip_key %}

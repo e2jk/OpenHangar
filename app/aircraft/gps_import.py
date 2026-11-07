@@ -981,13 +981,6 @@ def rank_near_date_candidates(
     return sorted(ranked, key=lambda c: abs((c.date - gps_date).days))
 
 
-def apply_gps_date(flight: Any, seg: dict[str, Any], block_off: datetime) -> None:
-    """Confirming a near-date match: the logbook date was the typo — take
-    the GPS one."""
-    if seg.get("matched_near_date"):
-        flight.date = block_off.date()
-
-
 def _score_gps_candidate(
     fields: dict[str, Any], existing: Any, offset_hours: float
 ) -> float:

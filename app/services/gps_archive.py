@@ -94,7 +94,7 @@ def archive_gps_file(data: bytes, original_filename: str, dest_dir: str) -> str:
 
 def archive_relpath(path: str, upload_folder: str) -> str:
     """*path* (as returned by archive_gps_file) relative to the uploads
-    folder, "/"-separated — what GpsTrack.source_file stores."""
+    folder, "/"-separated — what GpsTrack.source_files lists."""
     return os.path.relpath(path, upload_folder).replace(os.sep, "/")
 
 
@@ -112,27 +112,28 @@ def resolve_pilot_archive_name(
     return rel if os.path.isfile(os.path.join(upload_folder, *rel.split("/"))) else None
 
 
-def source_for_window(
+def sources_for_window(
     file_metas: list[dict[str, object]], start: datetime, end: datetime
-) -> str | None:
-    """Which uploaded file a flight [start, end] came from, among a batch
+) -> list[str]:
+    """Which uploaded file(s) a flight [start, end] came from, among a batch
     of uploaded files (each meta with "archive_path" and its recorded time
-    span "t_start"/"t_end" as ISO strings): the one whose span overlaps it
-    most — or the only file of a single-file upload."""
-    paths = [m for m in file_metas if m.get("archive_path")]
-    if len(paths) == 1:
-        return str(paths[0]["archive_path"])
-    best: tuple[float, str] | None = None
-    for meta in paths:
+    span "t_start"/"t_end" as ISO strings): every file whose span overlaps
+    it, in time order — usually one, two when the logger was cut off in
+    flight and started a new file — or the only file of a single-file
+    upload."""
+    with_path = [m for m in file_metas if m.get("archive_path")]
+    if len(with_path) == 1:
+        return [str(with_path[0]["archive_path"])]
+    found: list[tuple[datetime, str]] = []
+    for meta in with_path:
         try:
             t0 = datetime.fromisoformat(str(meta["t_start"]))
             t1 = datetime.fromisoformat(str(meta["t_end"]))
         except (KeyError, ValueError):
             continue
-        overlap = (min(t1, end) - max(t0, start)).total_seconds()
-        if overlap >= 0 and (best is None or overlap > best[0]):
-            best = (overlap, str(meta["archive_path"]))
-    return best[1] if best else None
+        if min(t1, end) > max(t0, start):
+            found.append((t0, str(meta["archive_path"])))
+    return [path for _t0, path in sorted(found)]
 
 
 def iter_archive_files(upload_folder: str, rel_dir: str) -> list[str]:
@@ -188,7 +189,7 @@ def archive_stats(upload_folder: str) -> tuple[int, int]:
 
 def send_archived_file(upload_folder: str, relpath: str) -> Response:
     """Flask response downloading one kept file (404 if it's gone). The
-    path comes from the database (GpsTrack.source_file), never a request,
+    path comes from the database (GpsTrack.source_files), never a request,
     and is still confined to the uploads folder."""
     from flask import abort, send_from_directory  # pyright: ignore[reportMissingImports]
 

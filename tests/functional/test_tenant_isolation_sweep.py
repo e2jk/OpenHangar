@@ -42,6 +42,7 @@ import pytest  # pyright: ignore[reportMissingImports]
 _EXCLUDED_CONVERTERS = {
     "code": "a hardcoded squawk-code whitelist (7700/7600/7500/7000/1200), not a DB id",
     "seg_idx": "a session-scoped list index into a GPS-import review, not a DB id",
+    "index": "a position in a flight's list of GPS files, not a DB id (the flight id is checked)",
     "tenant_id": "instance-admin routes that legitimately span all tenants by design",
     "filename": "a static filename, not a DB id",
     "lang": "a locale code, not a DB id",
