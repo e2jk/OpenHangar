@@ -64,6 +64,31 @@ def _overlaps(
     return bool(_utc(a_start) < _utc(b_end) and _utc(b_start) < _utc(a_end))
 
 
+def _same_icao(a: str | None, b: str | None) -> bool:
+    """Same airfield — or unknown on either side (nothing says otherwise)."""
+    known = [x.strip().upper() for x in (a, b) if x and x.strip() not in ("", "????")]
+    return len(known) < 2 or known[0] == known[1]
+
+
+def block_match(
+    flight: Any,
+    block_off: datetime,
+    block_on: datetime,
+    departure_icao: str | None,
+    arrival_icao: str | None,
+) -> bool:
+    """Whether a GPS segment is *flight*'s own GPS data again, given that
+    their block times are within the matching tolerance of each other:
+    overlapping times are; times merely close (the next leg, minutes after
+    landing) only when the route agrees too — otherwise a quick turnaround's
+    second leg would land on the first leg's flight."""
+    if _overlaps(flight.block_off_utc, flight.block_on_utc, block_off, block_on):
+        return True
+    return _same_icao(flight.departure_icao, departure_icao) and _same_icao(
+        flight.arrival_icao, arrival_icao
+    )
+
+
 def link_track(
     flight: Any,
     *,

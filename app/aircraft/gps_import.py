@@ -491,6 +491,13 @@ def _split_into_raw_groups(trackpoints: list[TrackPoint]) -> list[list[TrackPoin
 
     groups: list[list[TrackPoint]] = []
     current_start = 0
+    # Before the first flight and after the last one, a recording gap still
+    # separates sessions — a ground-only file from days earlier or later
+    # (e.g. engine run at the parking spot) isn't that flight's taxi.
+    for k in range(first_fast):
+        if _recording_gap(trackpoints, k):
+            groups.append(trackpoints[current_start : k + 1])
+            current_start = k + 1
     i = first_fast
 
     while i < last_fast:
@@ -522,8 +529,18 @@ def _split_into_raw_groups(trackpoints: list[TrackPoint]) -> list[list[TrackPoin
         else:
             i += 1
 
+    for k in range(last_fast, n - 1):
+        if _recording_gap(trackpoints, k):
+            groups.append(trackpoints[current_start : k + 1])
+            current_start = k + 1
     groups.append(trackpoints[current_start:])
     return [g for g in groups if g]
+
+
+def _recording_gap(trackpoints: list[TrackPoint], k: int) -> bool:
+    """Whether the recording stopped for _SEGMENT_GAP_S or more after point k."""
+    gap = (trackpoints[k + 1].utc_dt - trackpoints[k].utc_dt).total_seconds()
+    return gap >= _SEGMENT_GAP_S
 
 
 def _break_points(

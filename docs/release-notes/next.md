@@ -9,6 +9,7 @@
 - Linking a GPS track to a flight already in the logbook no longer changes its recorded times or date — the logbook stays authoritative; only flights created from GPS take their times from it.
 - A GPS segment a few minutes off the logbook's times (which are only to the 0.1 h) is now recognised as the same flight when it's the only or clearly best candidate, instead of being flagged as uncertain.
 - New **Accept all best matches** button on the GPS import review page links every matching segment at once.
+- GPS imports no longer attach a quick turnaround's next leg to the previous flight, nor glue a ground-only recording from another day onto a flight.
 
 **Logbook imports**
 - Review page: rows whose values differ are now readable in dark mode, and identical numbers (e.g. counters) are no longer flagged as different.

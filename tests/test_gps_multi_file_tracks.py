@@ -270,3 +270,77 @@ class TestDownloadSecondFile:
         resp = client.get(f"/flights/{fid}/gps-file/1")
         assert resp.status_code == 200 and resp.data == rels[1].encode()
         assert client.get(f"/flights/{fid}/gps-file/2").status_code == 404
+
+
+class TestQuickTurnaroundLegs:
+    """The next leg, minutes after a flight that already has GPS times, is
+    not that flight's data again — unless the route agrees."""
+
+    def test_block_match(self):
+        from types import SimpleNamespace
+
+        from services.gps_link import block_match  # pyright: ignore[reportMissingImports]
+
+        first_leg = SimpleNamespace(
+            block_off_utc=_t(7, 56),
+            block_on_utc=_t(8, 20),
+            departure_icao="EBNM",
+            arrival_icao="EBST",
+        )
+        # Overlapping: the same flight whatever the route says.
+        assert block_match(first_leg, _t(8, 0), _t(8, 30), "EBST", "EBNM")
+        # Just after it: only on the same route (or an unknown one).
+        assert not block_match(first_leg, _t(8, 27), _t(8, 56), "EBST", "EBNM")
+        assert block_match(first_leg, _t(8, 27), _t(8, 56), "EBNM", "EBST")
+        assert block_match(first_leg, _t(8, 27), _t(8, 56), "????", None)
+
+    def test_next_leg_goes_to_its_own_flight(self, client, app):
+        from datetime import timedelta
+
+        uid, _tid, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        (seg0,), _ = _upload(client, ac_id)
+        seg_off = datetime.fromisoformat(seg0["block_off_utc"])
+        with app.app_context():
+            # The previous leg, GPS-linked, ending 7 minutes before.
+            prev = Flight(
+                aircraft_id=ac_id,
+                date=seg_off.date(),
+                departure_icao="EBAW",
+                arrival_icao="EBNM",
+                block_off_utc=seg_off - timedelta(minutes=40),
+                block_on_utc=seg_off - timedelta(minutes=7),
+            )
+            db.session.add(prev)
+            db.session.commit()
+            prev_id = prev.id
+        fid = _logged_flight(app, ac_id, seg0)
+        segs, _ = _upload(client, ac_id)
+        assert segs[0]["matched_flight_id"] == fid != prev_id
+
+
+class TestGroundSessionsDaysApart:
+    """A ground-only recording days before or after a flight (an engine
+    run at the parking spot) is its own session, not that flight's taxi."""
+
+    def test_split_at_recording_gaps_outside_the_flight(self):
+        from datetime import timedelta
+
+        from aircraft.gps_import import (  # pyright: ignore[reportMissingImports]
+            TrackPoint,
+            _split_into_raw_groups,
+        )
+
+        def run(start, speeds):
+            return [
+                TrackPoint(0.0, 0.0, 0.0, kt, start + timedelta(minutes=i))
+                for i, kt in enumerate(speeds)
+            ]
+
+        before = run(_t(8) - timedelta(days=2), [0, 5, 0])
+        flight = run(_t(8), [5, 10, 90, 100, 90, 10, 5])
+        taxi_in = run(_t(8, 9), [5, 3])  # same session: 3 min later
+        after = run(_t(8) + timedelta(days=3), [0, 8, 0])
+        groups = _split_into_raw_groups(before + flight + taxi_in + after)
+        assert [len(g) for g in groups] == [3, 9, 3]
+        assert groups[1] == flight + taxi_in
