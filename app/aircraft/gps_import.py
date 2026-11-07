@@ -222,18 +222,20 @@ def _parse_xml_up_to_error(text: str) -> Any:
     try:
         return ET.fromstring(text)
     except _ETParseError as exc:
-        root = None
-        try:
-            for _event, element in ET.iterparse(
-                io.BytesIO(text.encode("utf-8")), events=("start",)
-            ):
-                if root is None:
-                    root = element
-        except _ETParseError:
-            pass
-        if root is None:
-            raise exc from None
-        return root
+        error = exc
+    # Read again incrementally, keeping the root element as soon as it's
+    # seen; the same error then ends the reading where the document breaks.
+    root = None
+    try:
+        for _event, element in ET.iterparse(
+            io.BytesIO(text.encode("utf-8")), events=("start",)
+        ):
+            if root is None:
+                root = element
+    except _ETParseError:
+        if root is not None:
+            return root
+    raise error from None
 
 
 # A jump between two consecutive points implying more than this is a bad

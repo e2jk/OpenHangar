@@ -124,7 +124,9 @@ def _run_npm_ci_via_docker(requirements_dir: Path) -> int:
             "local npm install instead.",
             file=sys.stderr,
         )
-        sys.exit(1)
+        # raise, not sys.exit(): every path of this int function then ends
+        # explicitly (CodeQL py/mixed-returns).
+        raise SystemExit(1) from None
 
 
 def main() -> None:
