@@ -104,6 +104,8 @@
               if (el && val !== undefined && val !== null && String(val) !== '') el.value = val;
             });
             document.getElementById(pfx + '-inp-filename').value = d.filename || '';
+            var archiveInp = document.getElementById(pfx + '-inp-archive');
+            if (archiveInp) archiveInp.value = d.archive_name || '';
             document.getElementById(pfx + '-inp-device-id').value = d.device_id || '';
             document.getElementById(pfx + '-inp-block-off').value = d.block_off_utc || '';
             document.getElementById(pfx + '-inp-block-on').value = d.block_on_utc || '';

@@ -225,6 +225,7 @@
           {% set _gps_status_id  = 'gps-status' %}
           {% set _gps_help_id    = 'gps-help-text' %}
           {% set _gps_field_map  = {'date': 'date', 'departure_icao': 'departure_icao', 'arrival_icao': 'arrival_icao', 'departure_time': 'departure_time', 'arrival_time': 'arrival_time', 'flight_time_h': 'flight_time', 'landing_count': 'landings_day'} %}
+          {% set _gps_f_archive = gps_prefill.archive_name if gps_prefill and gps_prefill.archive_name else request.form.get('gps_archive', '') %}
           {% include 'partials/_gps_upload.html' %}
 
           {# ── Aircraft selection ───────────────────────────────────────────────

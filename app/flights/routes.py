@@ -63,6 +63,9 @@ from pilots.personal_minimums import (  # pyright: ignore[reportMissingImports]
     get_active_revision,
     recency_breaches,
 )
+from services.upload_layout import (  # pyright: ignore[reportMissingImports]
+    IMPORT_TMP_DIRNAME,
+)
 from sqlalchemy import case, func, or_  # pyright: ignore[reportMissingImports]
 from utils import (
     accessible_aircraft,
@@ -282,6 +285,33 @@ def _nature_suggestions(aircraft_id: int) -> list[str]:
     return _NATURE_SUGGESTIONS + [n for n in used if n not in _NATURE_SUGGESTIONS]
 
 
+def _archive_flight_form_upload(data: bytes, filename: str) -> str:
+    """Keep a flight form's GPS upload in the current user's own archive;
+    returns the stored file's name (unique within that folder)."""
+    from services.gps_archive import (  # pyright: ignore[reportMissingImports]
+        archive_gps_file,
+        pilot_archive_parts,
+    )
+
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    dest = os.path.join(folder, *pilot_archive_parts(int(session["user_id"])))
+    return os.path.basename(archive_gps_file(data, filename, dest))
+
+
+def _gps_source_file(archive_name: str | None) -> str | None:
+    """The kept file a flight form's GPS track links to: *archive_name*
+    (from the form) only if it's a file in the current user's own archive."""
+    from services.gps_archive import (  # pyright: ignore[reportMissingImports]
+        resolve_pilot_archive_name,
+    )
+
+    return resolve_pilot_archive_name(
+        current_app.config.get("UPLOAD_FOLDER", "/data/uploads"),
+        int(session["user_id"]),
+        archive_name,
+    )
+
+
 def _parse_gps_upload(file: Any) -> dict[str, Any] | None:
     """Parse a single GPS file. Returns autofill dict or None."""
     try:
@@ -297,6 +327,10 @@ def _parse_gps_upload(file: Any) -> dict[str, Any] | None:
     if ext not in _ALLOWED_GPS_EXTS:
         return None
     data = file.read()
+    # Kept whatever the parser makes of it (services.gps_archive), in the
+    # uploader's own archive — no aircraft is known yet at this point; the
+    # flight links to it on save (see _gps_source_file).
+    archive_name = _archive_flight_form_upload(data, filename)
     try:
         parsed = parse_gps_file(data, filename)
         all_points = merge_and_sort([parsed])
@@ -308,6 +342,7 @@ def _parse_gps_upload(file: Any) -> dict[str, Any] | None:
     seg = segments[0]
     return {
         "filename": filename,
+        "archive_name": archive_name,
         "device_id": parsed.device_id,
         "block_off_utc": seg.block_off_utc,
         "block_on_utc": seg.block_on_utc,
@@ -1282,6 +1317,41 @@ def registration_lookup() -> ResponseReturnValue:
     return jsonify({"result": None})
 
 
+@flights_bp.route("/flights/<int:flight_id>/gps-file")
+@login_required
+def download_gps_file(flight_id: int) -> ResponseReturnValue:
+    """The original GPS file a flight's track was extracted from (kept by
+    services.gps_archive). For the flight's own pilots, and anyone who can
+    see the aircraft it was flown on."""
+    from services.gps_archive import (  # pyright: ignore[reportMissingImports]
+        send_archived_file,
+    )
+
+    fe = db.session.get(Flight, flight_id)
+    if fe is None or not _can_view_flight(fe):
+        abort(404)
+    track = fe.gps_track
+    if track is None or not track.source_file:
+        abort(404)
+    return send_archived_file(
+        current_app.config.get("UPLOAD_FOLDER", "/data/uploads"), track.source_file
+    )
+
+
+def _can_view_flight(fe: Flight) -> bool:
+    uid = session.get("user_id")
+    if uid is not None and uid in (fe.pic_user_id, fe.second_crew_user_id):
+        return True
+    if fe.aircraft_id is None:
+        return False
+    ac = db.session.get(Aircraft, fe.aircraft_id)
+    return (
+        ac is not None
+        and ac.tenant_id == _tenant_id()
+        and user_can_access_aircraft(ac.id)
+    )
+
+
 @flights_bp.route("/flights/parse-gps", methods=["POST"])
 @_limiter.limit("30 per minute", exempt_when=_rate_limiting_disabled)
 @login_required
@@ -1319,6 +1389,7 @@ def parse_gps_api() -> ResponseReturnValue:
             ),
             "data": {
                 "filename": gps_data["filename"],
+                "archive_name": gps_data["archive_name"],
                 "date": gps_data["date"].isoformat(),
                 "departure_icao": gps_data["departure_icao"],
                 "arrival_icao": gps_data["arrival_icao"],
@@ -1410,6 +1481,7 @@ def _handle_log_flight_post(
         if gps_data:
             session["gps_prefill"] = {
                 "filename": gps_data["filename"],
+                "archive_name": gps_data["archive_name"],
                 "date": gps_data["date"].isoformat(),
                 "departure_icao": gps_data["departure_icao"],
                 "arrival_icao": gps_data["arrival_icao"],
@@ -1485,6 +1557,7 @@ def _handle_log_flight_post(
 
     # GPS hidden fields (carried from parse step or re-render)
     gps_filename = f.get("gps_filename", "").strip() or None
+    gps_source_file = _gps_source_file(f.get("gps_archive", "").strip() or None)
     gps_device_id = f.get("gps_device_id", "").strip() or None
     gps_block_off_raw = f.get("gps_block_off_utc", "").strip()
     gps_block_on_raw = f.get("gps_block_on_utc", "").strip()
@@ -1644,6 +1717,7 @@ def _handle_log_flight_post(
         if dup and (gps_geojson or gps_filename):
             link_track = GpsTrack(
                 source_filename=gps_filename,
+                source_file=gps_source_file,
                 device_id=gps_device_id,
                 block_off_utc=gps_block_off,
                 block_on_utc=gps_block_on,
@@ -1674,6 +1748,8 @@ def _handle_log_flight_post(
                     gps_track.geojson = gps_geojson
                 if gps_filename:
                     gps_track.source_filename = gps_filename
+                if gps_source_file:
+                    gps_track.source_file = gps_source_file
                 if gps_block_off:
                     gps_track.block_off_utc = gps_block_off
                 if gps_block_on:
@@ -1683,6 +1759,7 @@ def _handle_log_flight_post(
         if not gps_track:
             gps_track = GpsTrack(
                 source_filename=gps_filename,
+                source_file=gps_source_file,
                 device_id=gps_device_id,
                 block_off_utc=gps_block_off,
                 block_on_utc=gps_block_on,
@@ -1942,7 +2019,7 @@ _AIRFRAME_IMPORT_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
 
 def _airframe_tmp_dir() -> str:
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
-    d = os.path.join(folder, "import_tmp")
+    d = os.path.join(folder, IMPORT_TMP_DIRNAME)
     os.makedirs(d, exist_ok=True)
     return d
 

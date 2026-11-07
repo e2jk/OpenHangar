@@ -18,6 +18,10 @@
          class="btn btn-ac-primary">
         <i class="bi bi-plus-circle me-1"></i>{{ _('New import') }}
       </a>
+      <a href="{{ url_for('aircraft.download_gps_logs', aircraft_id=aircraft.id) }}"
+         class="btn btn-ac-secondary" hx-boost="false">
+        <i class="bi bi-file-zip me-1"></i>{{ _('Download all original GPS files (zip)') }}
+      </a>
       <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-ghost">
         <i class="bi bi-arrow-left me-1"></i>{{ _('Back') }}

@@ -184,10 +184,21 @@ def run_backup() -> BackupRecord:
 
 
 def _add_uploads_to_zip(zf: zipfile.ZipFile, upload_folder: str) -> None:
-    """Add every file in *upload_folder* into the ZIP under ``uploads/``, preserving subdirs."""
+    """Add every file in *upload_folder* into the ZIP under ``uploads/``, preserving subdirs.
+
+    Except the working folders of imports in progress (upload_layout's
+    TEMP_DIRNAMES): a temporary copy of an uploaded spreadsheet or GPS log,
+    left there by an import abandoned halfway, isn't data worth restoring.
+    """
+    from services.upload_layout import (  # pyright: ignore[reportMissingImports]
+        TEMP_DIRNAMES,
+    )
+
     if not os.path.isdir(upload_folder):
         return
-    for dirpath, _dirs, filenames in os.walk(upload_folder):
+    for dirpath, dirs, filenames in os.walk(upload_folder):
+        if dirpath == upload_folder:
+            dirs[:] = [d for d in dirs if d not in TEMP_DIRNAMES]
         for fname in filenames:
             full_path = os.path.join(dirpath, fname)
             rel_path = os.path.relpath(full_path, upload_folder)
@@ -389,6 +400,18 @@ def index() -> ResponseReturnValue:
             )
     except Exception as exc:  # noqa: BLE001 -- best-effort dashboard stat, page must still render
         log.debug("Could not retrieve upload folder size: %s", exc)
+    from services.gps_archive import (  # pyright: ignore[reportMissingImports]
+        archive_stats,
+    )
+
+    gps_log_count: int | None = None
+    gps_log_size_bytes: int = 0
+    try:
+        gps_log_count, gps_log_size_bytes = archive_stats(
+            current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+        )
+    except OSError as exc:  # best-effort figure — the page must still render
+        log.debug("Could not count kept GPS files: %s", exc)
     backup_total_size_bytes: int | None = None
     backup_file_count: int = 0
     try:
@@ -460,6 +483,8 @@ def index() -> ResponseReturnValue:
         last_upgrade_at=last_upgrade_at,
         db_size=db_size,
         upload_size_bytes=upload_size_bytes,
+        gps_log_count=gps_log_count,
+        gps_log_size_bytes=gps_log_size_bytes,
         backup_total_size_bytes=backup_total_size_bytes,
         backup_file_count=backup_file_count,
         current_user=current_user,
