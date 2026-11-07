@@ -22,7 +22,7 @@ from models import (
     db,
 )  # pyright: ignore[reportMissingImports]
 from services.recurring_expense_service import (  # pyright: ignore[reportMissingImports]
-    _add_months,
+    add_months,
     materialize_recurring_expenses,
 )
 
@@ -84,19 +84,19 @@ def _add_template(app, aircraft_id, on, recurrence="monthly", **kwargs):
 
 class TestAddMonths:
     def test_simple_advance(self):
-        assert _add_months(date(2026, 1, 15), 1) == date(2026, 2, 15)
-        assert _add_months(date(2026, 1, 15), 12) == date(2027, 1, 15)
+        assert add_months(date(2026, 1, 15), 1) == date(2026, 2, 15)
+        assert add_months(date(2026, 1, 15), 12) == date(2027, 1, 15)
 
     def test_end_of_month_clamped(self):
-        assert _add_months(date(2026, 1, 31), 1) == date(2026, 2, 28)
-        assert _add_months(date(2024, 1, 31), 1) == date(2024, 2, 29)  # leap year
+        assert add_months(date(2026, 1, 31), 1) == date(2026, 2, 28)
+        assert add_months(date(2024, 1, 31), 1) == date(2024, 2, 29)  # leap year
 
     def test_index_based_no_drift(self):
         # Jan 31 + 2 months is Mar 31, not Feb 28 + 1 month = Mar 28
-        assert _add_months(date(2026, 1, 31), 2) == date(2026, 3, 31)
+        assert add_months(date(2026, 1, 31), 2) == date(2026, 3, 31)
 
     def test_year_rollover(self):
-        assert _add_months(date(2026, 11, 30), 3) == date(2027, 2, 28)
+        assert add_months(date(2026, 11, 30), 3) == date(2027, 2, 28)
 
 
 class TestMaterialisation:

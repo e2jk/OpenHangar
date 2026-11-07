@@ -331,6 +331,32 @@ class TestDashboardStats:
         r = client.get("/")
         assert b"2.0" in r.data  # only this month's 2.0 h
 
+    def test_past_month_is_a_rolling_month(self, app, client):
+        """The cards cover the last rolling month, not the calendar month:
+        a flight 20 days ago counts even when it's in the previous calendar
+        month; one 40 days ago doesn't."""
+        _uid, tid = _setup(app)
+        acid = _add_aircraft(app, tid)
+        _add_flight(
+            app,
+            acid,
+            hobbs_start=100.0,
+            hobbs_end=103.4,
+            flight_date=date.today() - timedelta(days=20),
+        )
+        _add_flight(
+            app,
+            acid,
+            hobbs_start=90.0,
+            hobbs_end=95.0,
+            flight_date=date.today() - timedelta(days=40),
+        )
+        _login(app, client)
+        page = client.get("/").data.decode()
+        # 3.4 h, not 8.4 h: the 40-day-old flight is outside the window.
+        assert '<div class="stat-value">3.4</div>' in page
+        assert '<div class="stat-value">8.4</div>' not in page
+
     def test_flights_this_month_shows_count(self, app, client):
         _uid, tid = _setup(app)
         acid = _add_aircraft(app, tid)
@@ -341,7 +367,7 @@ class TestDashboardStats:
         _login(app, client)
         r = client.get("/")
         assert b"Flights" in r.data
-        assert b"This month" in r.data
+        assert b"Past month" in r.data
 
     def test_hours_this_month_zero_when_no_flights(self, app, client):
         _uid, tid = _setup(app)
@@ -476,7 +502,7 @@ class TestStatCardPluralization:
         _login(app, client, "pl_hr1@example.com")
         r = client.get("/")
         assert b"Hours" in r.data
-        assert b"This month" in r.data
+        assert b"Past month" in r.data
 
     # ── Maintenance alerts ───────────────────────────────────────────────
 
@@ -525,7 +551,7 @@ class TestStatCardPluralization:
         _login(app, client, "pl_fl1@example.com")
         r = client.get("/")
         assert b"Flights" in r.data
-        assert b"This month" in r.data
+        assert b"Past month" in r.data
 
 
 class TestDashboardStatusBadges:

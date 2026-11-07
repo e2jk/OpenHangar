@@ -3760,8 +3760,8 @@ msgid "Hours"
 msgstr "Uren"
 
 #: app/templates/dashboard.html:186
-msgid "This month"
-msgstr "Deze maand"
+msgid "Past month"
+msgstr "Afgelopen maand"
 
 #: app/templates/aircraft/detail.html:561 app/templates/dashboard.html:198
 #: app/templates/offline/changes.html:35

@@ -1178,13 +1178,20 @@ def create_app() -> Flask:
                 else []
             )
 
+            # The past rolling month (e.g. 8 Oct – 7 Nov), not the calendar
+            # month — which read near zero for the first days of each month.
+            from services.recurring_expense_service import (  # pyright: ignore[reportMissingImports]
+                add_months,
+            )
+
             today = _date.today()
-            month_start = today.replace(day=1)
+            month_ago = add_months(today, -1)
             month_flights = (
                 (
                     Flight.query.filter(
                         Flight.aircraft_id.in_(aircraft_ids),
-                        Flight.date >= month_start,
+                        Flight.date > month_ago,
+                        Flight.date <= today,
                     ).all()
                 )
                 if aircraft_ids
