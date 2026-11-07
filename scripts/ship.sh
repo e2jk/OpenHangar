@@ -107,6 +107,21 @@ if [ -n "${SHIP_SHA}" ] && [ "${SHIP_SHA}" = "$(git rev-parse HEAD)" ]; then
   exit 0
 fi
 
+# The PR's title (and the release's name) comes from next.md's `# <title>`
+# first line when there is one (scripts/release_notes.py): too long a title
+# is cut off in GitHub's lists, so stop here rather than after pushing.
+# Only when next.md changed in this batch — otherwise the PR doesn't use it.
+SUMMARY_FILE=docs/release-notes/next.md
+if [ -f "${SUMMARY_FILE}" ] && ! git diff --quiet origin/main HEAD -- "${SUMMARY_FILE}"; then
+  if ! HEADING="$(python3 scripts/release_notes.py heading "${SUMMARY_FILE}" --check)"; then
+    echo "Not pushing — shorten the title line, commit, and run this again."
+    exit 1
+  fi
+  if [ -n "${HEADING}" ]; then
+    echo "Title (from ${SUMMARY_FILE}): ${HEADING}"
+  fi
+fi
+
 # One PR in flight at a time: both branches carry the same local history,
 # so two open PRs would overlap. A pending ship PR (released on merge)
 # takes precedence — --later would only hold back what it's releasing

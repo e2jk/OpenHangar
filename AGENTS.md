@@ -186,8 +186,12 @@ internal ones (CI, refactoring, dependencies worth a mention) under a short
 **Maintenance** heading, so everything a release contains is mentioned.
 Update it with each commit. It's only used when it changed in the shipped batch, so
 an old summary is never reused; once a release is out, empty it to start the
-next one (the published GitHub release keeps the text). See
-`docs/release-notes/README.md`.
+next one (the published GitHub release keeps the text) — but **not** after a
+`scripts/ship.sh --later` push merges (no release yet): keep adding to it, so
+it covers everything since the previous release, including commits made on
+GitHub (`scripts/ship.sh --upstream` lists them). An optional first line
+`# <title>` (≤ 72 characters) names the PR and the release — what the release
+is mostly about. See `docs/release-notes/README.md`.
 
 ### No hardcoded personal or machine-specific paths
 Tracked files (docs, this file, code comments, `.claude/` config) must never contain a
