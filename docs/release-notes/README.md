@@ -11,3 +11,15 @@ It's only used when it **changed** in the batch being shipped (PR) /
 since the previous version tag (release notes) — a summary left over from an
 earlier release is never reused. Once a release is out, empty `next.md` to
 start the next one — the published GitHub release keeps the text.
+
+## Commits made on GitHub
+
+Changes can also land on `main` straight from GitHub — mostly dependency
+updates merged there — between two releases. They're part of the next
+release along with the local work: its commit list includes them on its own
+(routine dependency updates folded into one line), but `next.md` only says
+what was written into it. So, before finalising `next.md`, run
+`scripts/ship.sh --upstream` (fetches, prints, pushes nothing) and add a line
+for any that's worth mentioning. `scripts/ship.sh` itself lists them again
+before pushing and, if any isn't a dependency update, asks to confirm
+they're covered.

@@ -23,3 +23,4 @@
 - Backups no longer include the temporary copies of files from imports in progress, and those older than a day are deleted daily (an abandoned import used to leave its file behind for good).
 - CI runs on Ubuntu 26.04, named explicitly instead of the floating `ubuntu-latest` (which GitHub moved to 26.04).
 - Fixed the code-scanning notes reported on v3.34.0 by changing the code (no suppressions).
+- `scripts/ship.sh` lists the commits made on GitHub since the last release (e.g. dependency updates) that ship along, and asks before pushing when one that isn't a dependency update may be missing from this summary; `--upstream` just lists them.
