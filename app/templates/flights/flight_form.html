@@ -41,7 +41,7 @@
       {% endif %}
     </div>
     {% if flight and aircraft %}
-      <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">
+      <a href="{{ flights_list_url(aircraft.id) }}" class="btn btn-ac-ghost">
         <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
       </a>
     {% else %}
@@ -880,7 +880,7 @@
               <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}
             </button>
             {% if flight and aircraft %}
-            <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}"
+            <a href="{{ flights_list_url(aircraft.id) }}"
                class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
             {% else %}
             <a href="{{ url_for('pilots.logbook') }}" class="btn btn-ac-ghost">{{ _('Cancel') }}</a>

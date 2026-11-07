@@ -19,6 +19,9 @@
 **Dashboard**
 - The flights and hours card now covers the past month (rolling), instead of starting over on the 1st of each month.
 
+**Aircraft logbook**
+- After saving or deleting a flight, or cancelling its edit, you're back on the page of the aircraft's logbook you came from, with the same page size — not the first page. The flight page's back button now returns there too (it went to the aircraft page).
+
 **Maintenance**
 - Backups no longer include the temporary copies of files from imports in progress, and those older than a day are deleted daily (an abandoned import used to leave its file behind for good).
 - CI runs on Ubuntu 26.04, named explicitly instead of the floating `ubuntu-latest` (which GitHub moved to 26.04).

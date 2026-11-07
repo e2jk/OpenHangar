@@ -4475,3 +4475,58 @@ class TestFlightTrackGifRoute:
     def test_requires_login(self, app, client):
         resp = client.get("/flights/1/track/animation.gif")
         assert resp.status_code in (302, 401)
+
+
+class TestAircraftLogbookViewRemembered:
+    """Going from a page of an aircraft's logbook to a flight and back —
+    the flight page, the edit form's cancel, saving or deleting — returns to
+    that page with its page size, not to the first page."""
+
+    def _setup(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        fid = _add_flight(app, acid)
+        _login(app, client)
+        return acid, fid
+
+    def test_flight_page_and_edit_form_links(self, app, client):
+        acid, fid = self._setup(app, client)
+        client.get(f"/aircraft/{acid}/flights?page=2&per_page=50")
+        want = 'href="/aircraft/OO-PNH/flights?page=2&amp;per_page=50"'
+        assert want in client.get(f"/aircraft/{acid}/flights/{fid}").data.decode()
+        assert client.get(f"/flights/{fid}/edit").data.decode().count(want) == 2
+
+    def test_save_and_delete_return_to_list_view(self, app, client):
+        acid, fid = self._setup(app, client)
+        client.get(f"/aircraft/{acid}/flights?page=3&per_page=all")
+        rv = client.post(
+            f"/flights/{fid}/edit",
+            data={
+                "date": "2024-06-01",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "crew_name_0": "Test Pilot",
+                "crew_role_0": "PIC",
+            },
+        )
+        assert rv.headers["Location"].endswith(
+            "/aircraft/OO-PNH/flights?page=3&per_page=all"
+        )
+        rv = client.post(f"/aircraft/{acid}/flights/{fid}/delete")
+        assert rv.headers["Location"].endswith(
+            "/aircraft/OO-PNH/flights?page=3&per_page=all"
+        )
+
+    def test_defaults_and_other_aircraft_get_the_plain_list(self, app, client):
+        acid, fid = self._setup(app, client)
+        client.get(f"/aircraft/{acid}/flights?page=2")
+        client.get(f"/aircraft/{acid}/flights?page=1&per_page=999")
+        page = client.get(f"/aircraft/{acid}/flights/{fid}").data.decode()
+        assert 'href="/aircraft/OO-PNH/flights"' in page
+        # A view remembered for another aircraft doesn't apply.
+        with client.session_transaction() as sess:
+            sess["aircraft_flights_view"] = {"aircraft_id": acid + 1, "page": 4}
+        page = client.get(f"/aircraft/{acid}/flights/{fid}").data.decode()
+        assert 'href="/aircraft/OO-PNH/flights"' in page
