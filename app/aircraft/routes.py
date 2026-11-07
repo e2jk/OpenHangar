@@ -64,7 +64,10 @@ from services.gps_archive import (  # pyright: ignore[reportMissingImports]
     pilot_archive_parts,
     sources_for_window,
 )
-from services.gps_link import link_track  # pyright: ignore[reportMissingImports]
+from services.gps_link import (  # pyright: ignore[reportMissingImports]
+    block_match,
+    link_track,
+)
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
     GPS_ARCHIVE_DIRNAME,
     GPS_IMPORT_TMP_DIRNAME,
@@ -2170,13 +2173,22 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
     for seg in full_segs:
         block_off = _dt.fromisoformat(seg["block_off_utc"])
         block_on = _dt.fromisoformat(seg["block_on_utc"])
-        matched = Flight.query.filter(
-            Flight.aircraft_id == aircraft_id,
-            Flight.block_off_utc.isnot(None),
-            Flight.block_on_utc.isnot(None),
-            Flight.block_off_utc < block_on + _BLOCK_TOLERANCE,
-            Flight.block_on_utc > block_off - _BLOCK_TOLERANCE,
-        ).first()
+        matched = next(
+            (
+                f
+                for f in Flight.query.filter(
+                    Flight.aircraft_id == aircraft_id,
+                    Flight.block_off_utc.isnot(None),
+                    Flight.block_on_utc.isnot(None),
+                    Flight.block_off_utc < block_on + _BLOCK_TOLERANCE,
+                    Flight.block_on_utc > block_off - _BLOCK_TOLERANCE,
+                ).all()
+                if block_match(
+                    f, block_off, block_on, seg["departure_icao"], seg["arrival_icao"]
+                )
+            ),
+            None,
+        )
         seg["matched_ambiguous"] = False
         seg["matched_candidates"] = []
         if matched:

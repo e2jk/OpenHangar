@@ -2136,20 +2136,28 @@ def _crew_name_suggestions(user_id: int) -> list[str]:
 
 
 def _pilot_match_segment(
-    user_id: int, block_off: "_datetime", block_on: "_datetime"
+    user_id: int, seg: dict[str, Any], block_off: "_datetime", block_on: "_datetime"
 ) -> list["Flight"]:
-    """Find Flight records the pilot is associated with that overlap block times."""
+    """Find Flight records the pilot is associated with whose GPS block
+    times are this segment's (services.gps_link.block_match)."""
+    from services.gps_link import block_match  # pyright: ignore[reportMissingImports]
     from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
 
     tol = _BLOCK_TOLERANCE_PILOT
 
-    return Flight.query.filter(  # type: ignore[no-any-return]
-        or_(Flight.pic_user_id == user_id, Flight.second_crew_user_id == user_id),
-        Flight.block_off_utc.isnot(None),
-        Flight.block_on_utc.isnot(None),
-        Flight.block_off_utc < block_on + tol,
-        Flight.block_on_utc > block_off - tol,
-    ).all()
+    return [
+        f
+        for f in Flight.query.filter(
+            or_(Flight.pic_user_id == user_id, Flight.second_crew_user_id == user_id),
+            Flight.block_off_utc.isnot(None),
+            Flight.block_on_utc.isnot(None),
+            Flight.block_off_utc < block_on + tol,
+            Flight.block_on_utc > block_off - tol,
+        ).all()
+        if block_match(
+            f, block_off, block_on, seg.get("departure_icao"), seg.get("arrival_icao")
+        )
+    ]
 
 
 def _pilot_fuzzy_match_segment(
@@ -2508,7 +2516,7 @@ def pilot_gps_import_review() -> ResponseReturnValue:
     for seg in full_segs:
         block_off = _datetime.fromisoformat(seg["block_off_utc"])
         block_on = _datetime.fromisoformat(seg["block_on_utc"])
-        matches = _pilot_match_segment(uid, block_off, block_on)
+        matches = _pilot_match_segment(uid, seg, block_off, block_on)
         is_fuzzy = False
         if not matches:
             matches = _pilot_fuzzy_match_segment(uid, seg, block_off, block_on)
