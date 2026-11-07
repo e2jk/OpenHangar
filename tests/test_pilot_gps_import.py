@@ -1372,7 +1372,8 @@ class TestPilotFuzzyMatchEndToEnd:
 
             with client.session_transaction() as sess:
                 segs = sess["pilot_gps_import"]["segments"]
-            assert segs[0]["matched_ambiguous"] is True
+            # The only close candidate: a match, not a doubt.
+            assert segs[0]["matched_ambiguous"] is False
             assert segs[0]["matched_flight_id"] == imported_id
 
             confirm = client.post(

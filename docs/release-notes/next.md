@@ -10,6 +10,8 @@
 - A GPS segment a few minutes off the logbook's times (which are only to the 0.1 h) is now recognised as the same flight when it's the only or clearly best candidate, instead of being flagged as uncertain.
 - New **Accept all best matches** button on the GPS import review page links every matching segment at once.
 - GPS imports no longer attach a quick turnaround's next leg to the previous flight, nor glue a ground-only recording from another day onto a flight.
+- Uploading a flight's GPS files one at a time now works like uploading them together: a later file is offered as another part of the flight that already has a track (within its logged times), instead of as a new flight. The review page says whether a segment adds to a flight's track or replaces it.
+- The pilot GPS import, too, treats a single close candidate as the match.
 
 **Logbook imports**
 - Review page: rows whose values differ are now readable in dark mode, and identical numbers (e.g. counters) are no longer flagged as different.

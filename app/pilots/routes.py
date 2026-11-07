@@ -2241,9 +2241,8 @@ def _pilot_seg_match_dict(
 ) -> dict[str, Any]:
     """Summarise match results into fields stored on the segment dict.
 
-    force_ambiguous marks a fuzzy (non-exact) match as always needing an
-    explicit human choice, even with just one candidate — unlike an exact
-    GPS-block overlap, a fuzzy match is a guess and must not auto-apply.
+    force_ambiguous marks a match as always needing an explicit human
+    choice, even with just one candidate (a possible date typo).
     """
     if not matches:
         return {
@@ -2517,11 +2516,11 @@ def pilot_gps_import_review() -> ResponseReturnValue:
         block_off = _datetime.fromisoformat(seg["block_off_utc"])
         block_on = _datetime.fromisoformat(seg["block_on_utc"])
         matches = _pilot_match_segment(uid, seg, block_off, block_on)
-        is_fuzzy = False
         if not matches:
+            # A logbook records times to 0.1 h: one close candidate is the
+            # match; several are left to choose from (len > 1 → ambiguous).
             matches = _pilot_fuzzy_match_segment(uid, seg, block_off, block_on)
-            is_fuzzy = bool(matches)
-        seg.update(_pilot_seg_match_dict(matches, force_ambiguous=is_fuzzy))
+        seg.update(_pilot_seg_match_dict(matches))
         seg["matched_near_date"] = False
         if seg.get("matched_flight_id") and not seg.get("matched_ambiguous"):
             seg["linked_pilot_entries"] = _linked_pilot_entries(
@@ -2541,6 +2540,43 @@ def pilot_gps_import_review() -> ResponseReturnValue:
         if near:
             seg.update(_pilot_seg_match_dict(near, force_ambiguous=True))
             seg["matched_near_date"] = True
+            continue
+        # Still nothing: another part of a flight that already has a track
+        # (a later file of it uploaded on its own — see services.gps_link).
+        from services.gps_link import (  # pyright: ignore[reportMissingImports]
+            continuation_candidates,
+        )
+        from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
+
+        parts = continuation_candidates(
+            Flight.query.filter(
+                or_(Flight.pic_user_id == uid, Flight.second_crew_user_id == uid),
+                Flight.date == block_off.date(),
+                Flight.gps_track_id.isnot(None),
+            ).all(),
+            block_off,
+            _datetime.fromisoformat(seg["block_on_utc"]),
+            seg.get("departure_icao"),
+            seg.get("arrival_icao"),
+        )
+        seg.update(_pilot_seg_match_dict(parts))
+
+    from services.gps_link import adds_to_track  # pyright: ignore[reportMissingImports]
+
+    for seg in full_segs:
+        matched_flight = (
+            db.session.get(Flight, seg["matched_flight_id"])
+            if seg["matched_flight_id"]
+            else None
+        )
+        seg["matched_adds_to_track"] = bool(
+            matched_flight
+            and adds_to_track(
+                matched_flight,
+                _datetime.fromisoformat(seg["block_off_utc"]),
+                _datetime.fromisoformat(seg["block_on_utc"]),
+            )
+        )
 
     tmp_dir = _gps_tmp_dir()
     state["segments"] = [_segment_for_session(s, tmp_dir) for s in full_segs]

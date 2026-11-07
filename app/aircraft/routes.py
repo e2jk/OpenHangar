@@ -65,7 +65,9 @@ from services.gps_archive import (  # pyright: ignore[reportMissingImports]
     sources_for_window,
 )
 from services.gps_link import (  # pyright: ignore[reportMissingImports]
+    adds_to_track,
     block_match,
+    continuation_candidates,
     link_track,
 )
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
@@ -2286,6 +2288,55 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
             seg["matched_ambiguous"] = True
             seg["matched_near_date"] = True
             seg["matched_candidates"] = [_gps_candidate_dict(c) for c in near]
+
+    # Still nothing: another part of a flight that already has a track (a
+    # later file of it uploaded on its own — see services.gps_link).
+    for seg, _fields, gps_date in unmatched:
+        if seg["matched_flight_id"]:
+            continue
+        off = _dt.fromisoformat(seg["block_off_utc"])
+        on = _dt.fromisoformat(seg["block_on_utc"])
+        parts = continuation_candidates(
+            Flight.query.filter(
+                Flight.aircraft_id == aircraft_id,
+                Flight.date == gps_date,
+                Flight.gps_track_id.isnot(None),
+            ).all(),
+            off,
+            on,
+            seg["departure_icao"],
+            seg["arrival_icao"],
+        )
+        if parts:
+            seg["matched_flight_id"] = parts[0].id
+            seg["matched_flight_str"] = (
+                f"#{parts[0].id} — {parts[0].date} "
+                f"{parts[0].departure_icao} → {parts[0].arrival_icao}"
+            )
+            seg["linked_pilot_entries"] = _linked_pilot_entries(
+                parts[0].id, int(session["user_id"])
+            )
+            if len(parts) > 1:
+                seg["matched_ambiguous"] = True
+                seg["matched_candidates"] = [_gps_candidate_dict(c) for c in parts]
+
+    for seg in full_segs:
+        matched_flight = (
+            db.session.get(Flight, seg["matched_flight_id"])
+            if seg["matched_flight_id"]
+            else None
+        )
+        seg["matched_has_existing_track"] = bool(
+            matched_flight and matched_flight.gps_track_id
+        )
+        seg["matched_adds_to_track"] = bool(
+            matched_flight
+            and adds_to_track(
+                matched_flight,
+                _dt.fromisoformat(seg["block_off_utc"]),
+                _dt.fromisoformat(seg["block_on_utc"]),
+            )
+        )
 
     tmp_dir = _gps_tmp_dir()
     state["segments"] = [_segment_for_session(s, tmp_dir) for s in full_segs]

@@ -138,7 +138,12 @@
     <div class="alert alert-info py-2 mt-2 mb-2 small">
       <i class="bi bi-link-45deg me-1"></i>
       {{ _('Matches existing flight %(info)s — GPS track will be linked (existing flight data is kept; only missing flight or engine times are filled in).', info=seg.matched_flight_str) }}
-      {% if seg.matched_has_existing_track %}
+      {% if seg.matched_adds_to_track %}
+      <div class="mt-1">
+        <i class="bi bi-plus-circle text-info me-1"></i>
+        {{ _('This flight already has a GPS track for another part of it — this segment will be added to it.') }}
+      </div>
+      {% elif seg.matched_has_existing_track %}
       <div class="mt-1">
         <i class="bi bi-exclamation-triangle text-warning me-1"></i>
         <strong>{{ _('This flight already has a GPS track — confirming will replace it.') }}</strong>
