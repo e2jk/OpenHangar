@@ -684,8 +684,12 @@ class TestGroundRuns:
     def test_nothing_near_is_skipped_by_accept_all(self, client, app):
         uid, _tid, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
-        (seg,), _page = self._upload_ground_run(client, ac_id)
+        (seg,), page = self._upload_ground_run(client, ac_id)
         assert seg["matched_flight_id"] is None
+        # Nothing to link: no bulk button, no ground-movement message.
+        assert "Accept all best matches" not in page
+        assert "Ground movement shortly" not in page
+        assert "Matches the logged ground entry" not in page
         rv = client.post(f"/aircraft/{ac_id}/gps-import/confirm-all")
         assert rv.headers["Location"].endswith("/flights")
         with app.app_context():
