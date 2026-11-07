@@ -1139,10 +1139,12 @@ class TestBreakBetweenFlightsKeepsTaxi:
         assert groups[0][-1].utc_dt == _tp_at(12.0, 11).utc_dt
         assert groups[1][0].utc_dt == _tp_at(12.0, 38).utc_dt
 
-    def test_ground_only_session_between_flights_is_dropped(self):
+    def test_ground_only_session_between_flights_is_its_own_group(self):
         """Months between two flights, with an engine ground run recorded
         in between: the second flight must start after the *last* gap, not
-        swallow the ground run (a real import produced a 42.9 h segment)."""
+        swallow the ground run (a real import produced a 42.9 h segment) —
+        and the ground run is a group of its own (a ground-only segment the
+        review can link to a logged ground entry or a flight's taxi)."""
         middle = (
             [_tp_at(12.0, m) for m in (10, 11)]  # flight 1 taxi in
             + [_tp_at(3.0, m) for m in range(100, 110)]  # ground run
@@ -1154,9 +1156,12 @@ class TestBreakBetweenFlightsKeepsTaxi:
             + [_tp_at(80.0, m) for m in range(240, 250)]
         )
         groups = _split_into_raw_groups(pts)
-        assert len(groups) == 2
+        assert len(groups) == 3
         assert groups[0][-1].utc_dt == _tp_at(12.0, 11).utc_dt
-        assert groups[1][0].utc_dt == _tp_at(12.0, 238).utc_dt
+        assert [p.utc_dt for p in groups[1]] == [
+            _tp_at(3.0, m).utc_dt for m in range(100, 110)
+        ]
+        assert groups[2][0].utc_dt == _tp_at(12.0, 238).utc_dt
 
     def test_no_stop_leaves_slow_stretch_out(self):
         middle = [_tp_at(12.0, m) for m in range(10, 40)]

@@ -1,21 +1,28 @@
 """Linking a GPS track to a flight — including a flight that already has one.
 
-A flight usually gets one track from one file. Two real situations give a
-flight more than one: the logger lost power in flight and started a new file
-(e.g. the battery switched off), or the flight was logged as one logbook
-entry although the aircraft landed in between (e.g. returned to the field
-after a transponder failure and departed again). The recorded flight is
-authoritative — it's what the paper logbook says — so GPS data never changes
-its times or date; it only adds the track.
+A flight usually gets one track from one file. Real situations give a flight
+more than one: the logger lost power in flight and started a new file (e.g.
+the battery switched off), the flight was logged as one logbook entry
+although the aircraft landed in between (e.g. returned to the field after a
+transponder failure and departed again), or the aircraft taxied with the
+engine stopped in between — to the fuel station or customs before departure,
+back to the hangar after arrival — each engine start a recording of its own.
+The recorded flight is authoritative — it's what the paper logbook says — so
+GPS data never changes its times or date; it only adds the track.
 
-link_track() decides, for a flight and a new GPS segment:
+A track is kept as parts in time order (GeoJSON properties "parts": start,
+end, number of points, files, and whether it's a taxi part), its coordinates
+those of all parts joined. link_track() decides, for a flight and a new GPS
+segment:
   - no track yet → the segment's track becomes the flight's;
   - the segment's files are all already linked to the flight's track → no
     change (re-importing the same logs adds nothing);
-  - the segment covers the same time as the existing track → it replaces it
-    (a re-processed or corrected log of the same flight);
-  - otherwise → the two are combined into one track: coordinates joined in
-    time order, files listed together, block times spanning both.
+  - the segment covers the same time as a part of the existing track → it
+    replaces that part (a re-processed or corrected log of the same flight);
+  - otherwise → it's added as another part, in time order.
+The track's — and the flight's — GPS block times span its flight parts
+only: a taxi part (taxi=True) is shown with the flight and its file listed,
+but never stretches the flight's times.
 """
 
 from __future__ import annotations
@@ -37,21 +44,6 @@ def _line_coords(geojson: Any) -> list[Any] | None:
     return coords if isinstance(coords, list) else None
 
 
-def combine_geojson(first: Any, second: Any) -> Any:
-    """One LineString Feature with *first*'s coordinates then *second*'s;
-    when either isn't a LineString, *second* alone (nothing sensible to join)."""
-    a, b = _line_coords(first), _line_coords(second)
-    if a is None or b is None:
-        return second
-    return {
-        "type": "Feature",
-        "geometry": {"type": "LineString", "coordinates": a + b},
-        "properties": dict(first.get("properties") or {})
-        if isinstance(first, dict)
-        else {},
-    }
-
-
 def _utc(value: datetime) -> datetime:
     """Comparable UTC datetime: stored values may come back naive (SQLite),
     GPS ones are always aware."""
@@ -64,9 +56,18 @@ def _overlaps(
     return bool(_utc(a_start) < _utc(b_end) and _utc(b_start) < _utc(a_end))
 
 
+# Codes that say "unknown": blank, the import placeholder, and ZZZZ (ICAO's
+# "no code for this place").
+_UNKNOWN_ICAO = ("", "????", "ZZZZ")
+
+
 def _same_icao(a: str | None, b: str | None) -> bool:
     """Same airfield — or unknown on either side (nothing says otherwise)."""
-    known = [x.strip().upper() for x in (a, b) if x and x.strip() not in ("", "????")]
+    known = [
+        x.strip().upper()
+        for x in (a, b)
+        if x and x.strip().upper() not in _UNKNOWN_ICAO
+    ]
     return len(known) < 2 or known[0] == known[1]
 
 
@@ -92,17 +93,26 @@ def block_match(
 _LOGGED_WINDOW_TOLERANCE = timedelta(minutes=15)
 
 
-def _within_logged_times(flight: Any, block_off: datetime, block_on: datetime) -> bool:
-    """Whether a segment lies within the flight's logged departure→arrival
-    times (UTC, 15 min either side) — or the flight has no logged times."""
+def _logged_span(flight: Any) -> tuple[datetime, datetime] | None:
+    """The flight's logged departure→arrival times as UTC datetimes."""
     start_t = flight.departure_time or flight.takeoff_time
     end_t = flight.arrival_time or flight.landing_time
     if flight.date is None or start_t is None or end_t is None:
-        return True
+        return None
     start = datetime.combine(flight.date, start_t, tzinfo=UTC)
     end = datetime.combine(flight.date, end_t, tzinfo=UTC)
     if end < start:  # past midnight UTC
         end += timedelta(days=1)
+    return start, end
+
+
+def _within_logged_times(flight: Any, block_off: datetime, block_on: datetime) -> bool:
+    """Whether a segment lies within the flight's logged departure→arrival
+    times (UTC, 15 min either side) — or the flight has no logged times."""
+    span = _logged_span(flight)
+    if span is None:
+        return True
+    start, end = span
     return bool(
         start - _LOGGED_WINDOW_TOLERANCE <= _utc(block_off)
         and _utc(block_on) <= end + _LOGGED_WINDOW_TOLERANCE
@@ -135,6 +145,70 @@ def continuation_candidates(
     ]
 
 
+# A ground run this close before a departure or after an arrival, at that
+# airfield, is the flight's taxi (to the fuel station, customs, the hangar).
+TAXI_WINDOW = timedelta(minutes=45)
+
+
+def ground_run_target(
+    block_off: datetime,
+    block_on: datetime,
+    airfield: str | None,
+    flights: list[Any],
+    gps_spans: dict[int, tuple[datetime, datetime]],
+    claimed: set[int],
+) -> tuple[Any, str, str] | None:
+    """Where a ground-only GPS recording (engine running, never airborne)
+    belongs among *flights* (the aircraft's flights that day), as
+    (flight, role, when):
+      - ("entry", ""): a logged ground entry (an engine run, a taxi logged
+        on its own) at that airfield with no more logged flight time than
+        the recording lasted, not yet tracked nor claimed by another
+        segment — the recording is its track;
+      - ("taxi", "before"/"after"): the flight departing from that airfield
+        within TAXI_WINDOW after the recording ends, or arriving there
+        within TAXI_WINDOW before it starts — the closest one; its times are
+        its GPS block times (*gps_spans*: from this import, else its track)
+        or else its logged times.
+    None: nothing near — the recording stays unlinked."""
+    hours = (_utc(block_on) - _utc(block_off)).total_seconds() / 3600
+    entries = [
+        f
+        for f in flights
+        if f.gps_track_id is None
+        and f.id not in claimed
+        and _same_icao(f.departure_icao, airfield)
+        and _same_icao(f.arrival_icao, airfield)
+        and float(f.flight_time or 0) <= hours + 0.1
+        and _within_logged_times(f, block_off, block_on)
+    ]
+    if entries:
+        return entries[0], "entry", ""
+
+    best: tuple[timedelta, Any, str] | None = None
+    for f in flights:
+        if f.id in gps_spans:
+            span: tuple[datetime, datetime] | None = gps_spans[f.id]
+        elif f.block_off_utc is not None and f.block_on_utc is not None:
+            span = (f.block_off_utc, f.block_on_utc)
+        else:
+            span = _logged_span(f)
+        if span is None:
+            continue
+        start, end = _utc(span[0]), _utc(span[1])
+        options = []
+        if _utc(block_on) <= start and _same_icao(f.departure_icao, airfield):
+            options.append((start - _utc(block_on), "before"))
+        if _utc(block_off) >= end and _same_icao(f.arrival_icao, airfield):
+            options.append((_utc(block_off) - end, "after"))
+        for gap, when in options:
+            if gap <= TAXI_WINDOW and (best is None or gap < best[0]):
+                best = (gap, f, when)
+    if best is None:
+        return None
+    return best[1], "taxi", best[2]
+
+
 def adds_to_track(flight: Any, block_off: datetime, block_on: datetime) -> bool:
     """Whether linking a segment to *flight* adds to its existing track (it
     covers another time) rather than replacing it — for the review page."""
@@ -148,6 +222,85 @@ def adds_to_track(flight: Any, block_off: datetime, block_on: datetime) -> bool:
     )
 
 
+def _iso(value: datetime | None) -> str | None:
+    return _utc(value).isoformat() if value is not None else None
+
+
+def _when(part: dict[str, Any], key: str) -> datetime | None:
+    raw = part.get(key)
+    try:
+        return datetime.fromisoformat(raw) if raw else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _parts_of(track: Any) -> list[dict[str, Any]]:
+    """The track's parts, each with its own coordinates. A track stored
+    before parts were recorded (or whose parts no longer add up) is one
+    flight part."""
+    coords = _line_coords(track.geojson) or []
+    props = track.geojson.get("properties") if isinstance(track.geojson, dict) else None
+    stored = props.get("parts") if isinstance(props, dict) else None
+    if isinstance(stored, list) and stored:
+        try:
+            counts = [int(p["n"]) for p in stored]
+        except (TypeError, KeyError, ValueError):
+            counts = []
+        if counts and sum(counts) == len(coords):
+            parts, at = [], 0
+            for p, n in zip(stored, counts, strict=True):
+                parts.append({**p, "coords": coords[at : at + n]})
+                at += n
+            return parts
+    return [
+        {
+            "start": _iso(track.block_off_utc),
+            "end": _iso(track.block_on_utc),
+            "files": list(track.source_files or []),
+            "taxi": False,
+            "coords": coords,
+        }
+    ]
+
+
+def _store(flight: Any, track: Any, parts: list[dict[str, Any]]) -> None:
+    """Write *parts* (in time order) back to *track*, and the GPS block
+    times its flight parts span to the track and the flight."""
+    parts.sort(key=lambda p: _when(p, "start") or datetime.min.replace(tzinfo=UTC))
+    coords = [c for p in parts for c in p["coords"]]
+    track.geojson = {
+        "type": "Feature",
+        "geometry": {"type": "LineString", "coordinates": coords},
+        "properties": {
+            "parts": [
+                {
+                    "start": p.get("start"),
+                    "end": p.get("end"),
+                    "n": len(p["coords"]),
+                    "files": p.get("files") or [],
+                    "taxi": bool(p.get("taxi")),
+                }
+                for p in parts
+            ]
+        },
+    }
+    files: list[str] = []
+    for p in parts:
+        files += [f for f in p.get("files") or [] if f not in files]
+    track.source_files = files or None
+    flight_parts = [p for p in parts if not p.get("taxi")]
+    starts = [t for p in flight_parts if (t := _when(p, "start"))]
+    ends = [t for p in flight_parts if (t := _when(p, "end"))]
+    track.block_off_utc = min(starts) if starts else None
+    track.block_on_utc = max(ends) if ends else None
+    if flight_parts:
+        flight.block_off_utc = track.block_off_utc
+        flight.block_on_utc = track.block_on_utc
+    # The cached renders show the old track — rebuilt on next request.
+    track.cached_png = None
+    track.cached_gif = None
+
+
 def link_track(
     flight: Any,
     *,
@@ -159,70 +312,54 @@ def link_track(
     device_id: str | None = None,
     departure_icao: str | None = None,
     arrival_icao: str | None = None,
+    taxi: bool = False,
 ) -> Any:
     """Give *flight* the track of a GPS segment (see the module docstring)
-    and return the track it now has. Caller commits."""
-    existing = (
+    and return the track it now has. *taxi*: a ground movement before or
+    after the flight, shown with it but never changing its times. Caller
+    commits."""
+    new_part = {
+        "start": _iso(block_off),
+        "end": _iso(block_on),
+        "files": list(files),
+        "taxi": taxi,
+        "coords": _line_coords(geojson) or [],
+    }
+    track = (
         db.session.get(GpsTrack, flight.gps_track_id) if flight.gps_track_id else None
     )
-    if existing is not None:
-        known = set(existing.source_files or [])
-        if files and set(files) <= known:
-            return existing
-        # Combined only when both spans are known and apart; anything else
-        # (overlapping, or a time missing) is the same flight's data again.
-        if (
-            block_off is not None
-            and block_on is not None
-            and existing.block_off_utc is not None
-            and existing.block_on_utc is not None
-            and not _overlaps(
-                existing.block_off_utc, existing.block_on_utc, block_off, block_on
-            )
-        ):
-            return _combine(flight, existing, geojson, files, block_off, block_on)
-    track = GpsTrack(
-        source_filename=source_filename,
-        source_files=files or None,
-        device_id=device_id,
-        block_off_utc=block_off,
-        block_on_utc=block_on,
-        departure_icao=departure_icao,
-        arrival_icao=arrival_icao,
-        geojson=geojson,
-    )
-    db.session.add(track)
-    db.session.flush()
-    flight.gps_track_id = track.id
-    flight.block_off_utc = block_off
-    flight.block_on_utc = block_on
-    if existing is not None:
-        db.session.delete(existing)
-    return track
+    if track is None:
+        track = GpsTrack(
+            source_filename=source_filename,
+            device_id=device_id,
+            departure_icao=departure_icao,
+            arrival_icao=arrival_icao,
+        )
+        db.session.add(track)
+        db.session.flush()
+        flight.gps_track_id = track.id
+        _store(flight, track, [new_part])
+        return track
+    if files and set(files) <= set(track.source_files or []):
+        return track
 
+    def same_time(part: dict[str, Any]) -> bool:
+        # Overlapping the new segment — or a time unknown on either side,
+        # which can't be told apart: the same data again.
+        start, end = _when(part, "start"), _when(part, "end")
+        if start is None or end is None or block_off is None or block_on is None:
+            return True
+        return _overlaps(start, end, block_off, block_on)
 
-def _combine(
-    flight: Any,
-    track: Any,
-    geojson: Any,
-    files: list[str],
-    block_off: datetime,
-    block_on: datetime,
-) -> Any:
-    new_first = _utc(block_off) < _utc(track.block_off_utc)
-    track.geojson = (
-        combine_geojson(geojson, track.geojson)
-        if new_first
-        else combine_geojson(track.geojson, geojson)
-    )
-    old_files = list(track.source_files or [])
-    added = [f for f in files if f not in old_files]
-    track.source_files = (added + old_files if new_first else old_files + added) or None
-    track.block_off_utc = min(_utc(track.block_off_utc), _utc(block_off))
-    track.block_on_utc = max(_utc(track.block_on_utc), _utc(block_on))
-    # The cached renders show the old track — rebuilt on next request.
-    track.cached_png = None
-    track.cached_gif = None
-    flight.block_off_utc = track.block_off_utc
-    flight.block_on_utc = track.block_on_utc
+    kept = [
+        p for p in _parts_of(track) if bool(p.get("taxi")) != taxi or not same_time(p)
+    ]
+    if not taxi:
+        if not [p for p in kept if not p.get("taxi")]:
+            # Every flight part replaced: the new log's details take over.
+            track.source_filename = source_filename
+            track.device_id = device_id or track.device_id
+        track.departure_icao = track.departure_icao or departure_icao
+        track.arrival_icao = arrival_icao or track.arrival_icao
+    _store(flight, track, [*kept, new_part])
     return track

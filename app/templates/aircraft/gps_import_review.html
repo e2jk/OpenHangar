@@ -28,7 +28,7 @@
 
   {# Accept all best matches: every unconfirmed segment that matched a flight. #}
   {% set _pending_matched = [] %}
-  {% for seg in segments %}{% if seg.matched_flight_id and not seg.is_ground_only and not (confirmed_segments and (loop.index0|string) in confirmed_segments) %}{% set _discard = _pending_matched.append(seg) %}{% endif %}{% endfor %}
+  {% for seg in segments %}{% if seg.matched_flight_id and (not seg.is_ground_only or seg.matched_ground_role) and not (confirmed_segments and (loop.index0|string) in confirmed_segments) %}{% set _discard = _pending_matched.append(seg) %}{% endif %}{% endfor %}
   {% if _pending_matched %}
   <div class="ac-form-card p-3 mb-4 d-flex flex-wrap align-items-center gap-2">
     <span class="me-auto">
@@ -134,7 +134,21 @@
     <div class="seg-map" id="map_{{ i }}"></div>
     {% endif %}
 
-    {% if seg.matched_flight_id and not seg.matched_ambiguous and not other_aircraft %}
+    {% if seg.matched_ground_role == 'taxi' %}
+    <div class="alert alert-info py-2 mt-2 mb-2 small">
+      <i class="bi bi-signpost-split me-1"></i>
+      {% if seg.matched_ground_when == 'before' %}
+      {{ _("Ground movement shortly before flight %(info)s, at the same airfield (e.g. to the fuel station or customs) — it will be added to that flight's track as a taxi part. The flight's times and other data don't change.", info=seg.matched_flight_str) }}
+      {% else %}
+      {{ _("Ground movement shortly after flight %(info)s, at the same airfield (e.g. back to the hangar) — it will be added to that flight's track as a taxi part. The flight's times and other data don't change.", info=seg.matched_flight_str) }}
+      {% endif %}
+    </div>
+    {% elif seg.matched_ground_role == 'entry' %}
+    <div class="alert alert-info py-2 mt-2 mb-2 small">
+      <i class="bi bi-link-45deg me-1"></i>
+      {{ _('Matches the logged ground entry %(info)s (no flight time) — this recording will be linked as its GPS track. Its logged data is kept.', info=seg.matched_flight_str) }}
+    </div>
+    {% elif seg.matched_flight_id and not seg.matched_ambiguous and not other_aircraft %}
     <div class="alert alert-info py-2 mt-2 mb-2 small">
       <i class="bi bi-link-45deg me-1"></i>
       {{ _('Matches existing flight %(info)s — GPS track will be linked (existing flight data is kept; only missing flight or engine times are filled in).', info=seg.matched_flight_str) }}

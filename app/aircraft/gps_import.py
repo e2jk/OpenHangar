@@ -522,6 +522,15 @@ def _split_into_raw_groups(trackpoints: list[TrackPoint]) -> list[list[TrackPoin
                 # stays with the first, the taxi-out with the second.
                 end_prev, start_next = _break_points(trackpoints, i, j)
                 groups.append(trackpoints[current_start : end_prev + 1])
+                # Recording sessions in between, with no flight in them (a
+                # taxi to the fuel station, an engine run on another day):
+                # each its own ground-only group.
+                if _recording_gap(trackpoints, end_prev):
+                    session_start = end_prev + 1
+                    for k in range(end_prev + 1, start_next):
+                        if _recording_gap(trackpoints, k):
+                            groups.append(trackpoints[session_start : k + 1])
+                            session_start = k + 1
                 current_start = start_next
                 i = j
             else:
@@ -571,7 +580,8 @@ def _break_points(
     ]
     if gaps:
         # Anything between the first and last gap is recording sessions
-        # with no flight in them (e.g. an engine ground run on another day).
+        # with no flight in them (e.g. an engine ground run on another day)
+        # — _split_into_raw_groups keeps each as a ground-only group.
         return gaps[0], gaps[-1] + 1
 
     best: tuple[float, int, int] | None = None
