@@ -1182,6 +1182,53 @@ class TestAirframeImportReviewRoute:
         assert "checked" not in overwrite[1]
         assert all("checked" not in r for r in radios if 'value="keep"' in r)
 
+    def test_review_highlights_only_real_differences(self, app, client):
+        """Equal values never highlight just because one side is a database
+        Decimal and the other a float from the file."""
+        import re
+        from decimal import Decimal
+
+        _uid, tid = _create_user_and_tenant(app, email="arv-diff@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-ARVD")
+        with app.app_context():
+            db.session.add(
+                Flight(
+                    aircraft_id=acid,
+                    date=date(2020, 5, 1),
+                    departure_icao="EBOS",
+                    arrival_icao="EBBR",
+                    flight_time=Decimal("1.0"),
+                    landing_count=2,
+                    flight_time_counter_start=Decimal("1493.3"),
+                    flight_time_counter_end=Decimal("1494.3"),
+                )
+            )
+            db.session.commit()
+        _login(app, client, email="arv-diff@example.com")
+        _upload(
+            client,
+            acid,
+            csv_text="Date,From,To,Landings,Fstart,Fend\n2020-05-01,EBOS,EBBR,3,1493.3,1494.3\n",
+        )
+        client.post(
+            f"/aircraft/{acid}/flights/import/execute",
+            data={
+                "mapping_date": "date",
+                "mapping_from": "departure_icao",
+                "mapping_to": "arrival_icao",
+                "mapping_landings": "landing_count",
+                "mapping_fstart": "flight_counter_start",
+                "mapping_fend": "flight_counter_end",
+            },
+        )
+        page = client.get(f"/aircraft/{acid}/flights/import/review").data.decode()
+        rows = re.findall(
+            r'<tr( class="oh-diff-row")?>\s*<td class="text-muted">([^<]+)</td>', page
+        )
+        highlighted = {label.strip() for cls, label in rows if cls}
+        assert highlighted == {"Landings"}
+        assert "table-warning" not in page
+
     def test_review_get_no_session_redirects(self, app, client):
         _uid, tid = _create_user_and_tenant(app, email="arv2@example.com")
         acid = _add_aircraft(app, tid, registration="OO-ARV2")

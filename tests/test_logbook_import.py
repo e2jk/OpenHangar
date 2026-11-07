@@ -5,6 +5,7 @@ import json
 import os
 import tempfile
 from datetime import UTC, date, datetime, time, timedelta
+from decimal import Decimal
 from typing import ClassVar
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
@@ -49,6 +50,7 @@ from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     plan_bulk_overwrites,
     preview_rows,
     propose_mapping,
+    review_values_differ,
     type_hints,
 )
 
@@ -1386,6 +1388,25 @@ class TestPreviewCellFormatting:
         assert "<td>09:54</td>" in page
         assert "<td>1:18</td>" in page  # SE duration typed into a time cell
         assert "00:00:00" not in page
+
+
+class TestReviewValuesDiffer:
+    @pytest.mark.parametrize(
+        ("old", "new", "places", "differ"),
+        [
+            (Decimal("1493.3"), 1493.3, 2, False),
+            (Decimal("0.80"), 0.8, 1, False),
+            (Decimal("0.6"), 0.8, 1, True),
+            (2, 2.0, 2, False),
+            (0, None, 2, True),
+            (None, None, 2, False),
+            (" EBAW", "EBAW ", 2, False),
+            ("EBAW", "EBNM", 2, True),
+            (date(2026, 1, 1), date(2026, 1, 1), 2, False),
+        ],
+    )
+    def test_values(self, old, new, places, differ):
+        assert review_values_differ(old, new, places) is differ
 
 
 class TestTypeHints:

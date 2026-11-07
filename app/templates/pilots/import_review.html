@@ -110,7 +110,7 @@
                   {% set new_val = new_val.strftime('%H:%M') if new_val else none %}
                 {% endif %}
                 {% if old_val is not none or new_val is not none %}
-                <tr{% if old_val != new_val %} class="table-warning"{% endif %}>
+                <tr{% if review_values_differ(old_val, new_val) %} class="oh-diff-row"{% endif %}>
                   <td class="text-muted">{{ label }}</td>
                   <td>{{ old_val if old_val is not none else '—' }}</td>
                   <td>{{ new_val if new_val is not none else '—' }}</td>
@@ -118,7 +118,7 @@
                 {% endif %}
                 {% endfor %}
                 {% if entry.total_flight_time is not none or new_duration is not none %}
-                <tr{% if entry.total_flight_time != new_duration %} class="table-warning"{% endif %}>
+                <tr{% if review_values_differ(entry.total_flight_time, new_duration, 1) %} class="oh-diff-row"{% endif %}>
                   <td class="text-muted">{{ _('Duration') }}</td>
                   <td>{{ '%.1f h'|format(entry.total_flight_time) if entry.total_flight_time is not none else '—' }}</td>
                   <td>{{ '%.1f h'|format(new_duration) if new_duration is not none else '—' }}</td>
