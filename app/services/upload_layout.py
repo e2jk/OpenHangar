@@ -26,3 +26,17 @@ def is_app_managed(relpath: str) -> bool:
     one of an aircraft's app-managed folders — never a document."""
     parts = relpath.split("/")
     return len(parts) >= 4 and parts[2] in _APP_MANAGED_AIRCRAFT_DIRS
+
+
+# Top-level working folders for imports in progress: the uploaded file is
+# kept there between the upload/mapping step and the import itself, and
+# removed when the import finishes. Never part of a backup, and cleared of
+# anything older than TEMP_MAX_AGE_HOURS by the daily job
+# (services.temp_cleanup) — an import abandoned halfway leaves its file.
+IMPORT_TMP_DIRNAME = "import_tmp"  # pilot + airframe logbook imports
+GPS_IMPORT_TMP_DIRNAME = "gps_import_tmp"  # aircraft + pilot GPS imports
+AMP_IMPORT_TMP_DIRNAME = "amp_import_tmp"  # maintenance programme import
+TEMP_DIRNAMES = frozenset(
+    {IMPORT_TMP_DIRNAME, GPS_IMPORT_TMP_DIRNAME, AMP_IMPORT_TMP_DIRNAME}
+)
+TEMP_MAX_AGE_HOURS = 24

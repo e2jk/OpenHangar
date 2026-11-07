@@ -1002,6 +1002,10 @@ class TestSWRRouteCoverage:
         "/aircraft/<aircraft_ref:aircraft_id>/share/<int:token_id>/qr",
         "/aircraft/<aircraft_ref:aircraft_id>/documents/download-all",
         "/config/gatus-badge/<path:badge_path>",
+        # Original GPS file downloads (services.gps_archive).
+        "/flights/<int:flight_id>/gps-file",
+        "/aircraft/<aircraft_ref:aircraft_id>/gps-logs.zip",
+        "/pilot/gps-logs.zip",
     }
 
     @staticmethod

@@ -31,6 +31,7 @@
 {% endif %}
 
 <input type="hidden" id="{{ _gps_pfx }}-inp-filename"  name="gps_filename"      value="{{ _gps_f_filename }}">
+<input type="hidden" id="{{ _gps_pfx }}-inp-archive"   name="gps_archive"       value="{{ _gps_f_archive | default('') }}">
 <input type="hidden" id="{{ _gps_pfx }}-inp-device-id" name="gps_device_id"     value="">
 <input type="hidden" id="{{ _gps_pfx }}-inp-block-off" name="gps_block_off_utc" value="{{ _gps_f_block_off }}">
 <input type="hidden" id="{{ _gps_pfx }}-inp-block-on"  name="gps_block_on_utc"  value="{{ _gps_f_block_on }}">

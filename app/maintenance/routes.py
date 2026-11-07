@@ -46,6 +46,9 @@ from models import (
 from services.authorization import (
     AuthorizationService,  # pyright: ignore[reportMissingImports]
 )
+from services.upload_layout import (  # pyright: ignore[reportMissingImports]
+    AMP_IMPORT_TMP_DIRNAME,
+)
 from utils import (
     accessible_aircraft,
     activity,
@@ -785,7 +788,7 @@ _MAX_AMP_IMPORT_BYTES = 10 * 1024 * 1024  # 10 MB
 
 def _amp_import_tmp_dir() -> str:
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
-    d = os.path.join(folder, "amp_import_tmp")
+    d = os.path.join(folder, AMP_IMPORT_TMP_DIRNAME)
     os.makedirs(d, exist_ok=True)
     return d
 

@@ -5,6 +5,7 @@
     _detail_track  -- GpsTrack object (or none); renders nothing if absent/no geojson
     _detail_dep    -- departure ICAO / place string (for start marker tooltip)
     _detail_arr    -- arrival ICAO / place string (for end marker tooltip)
+    entry          -- the Flight (for the original-file download link)
 
   Parent template must also load Leaflet CSS/JS in its {% block head %}.
 #}
@@ -17,6 +18,14 @@
        data-openaip-key="{{ openaip_key or '' }}"
        data-dep="{{ _detail_dep }}"
        data-arr="{{ _detail_arr }}"></div>
+  {% if _detail_track.source_file %}
+  <div class="small mt-2">
+    <a href="{{ url_for('flights.download_gps_file', flight_id=entry.id) }}" hx-boost="false">
+      <i class="bi bi-download me-1"></i>{{ _('Download the original GPS file') }}
+    </a>
+    <span class="text-muted">({{ _detail_track.source_file.rsplit('/', 1)[-1] }})</span>
+  </div>
+  {% endif %}
   {% if not openaip_key %}
   <div class="text-muted small mt-2">
     <i class="bi bi-info-circle me-1"></i>

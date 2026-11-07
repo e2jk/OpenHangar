@@ -60,10 +60,13 @@ from models import (
 )  # pyright: ignore[reportMissingImports]
 from services.gps_archive import (  # pyright: ignore[reportMissingImports]
     archive_gps_file,
+    archive_relpath,
     pilot_archive_parts,
+    source_for_window,
 )
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
     GPS_ARCHIVE_DIRNAME,
+    GPS_IMPORT_TMP_DIRNAME,
 )
 from utils import (
     accessible_aircraft,
@@ -1790,10 +1793,23 @@ def _gps_archive_dir(ac: Aircraft, other_aircraft: bool) -> str:
     return _safe_join(folder, slug, safe_reg, GPS_ARCHIVE_DIRNAME)
 
 
+def _upload_folder() -> str:
+    return str(current_app.config.get("UPLOAD_FOLDER", "/data/uploads"))
+
+
+def _track_span(parsed: Any) -> dict[str, str | None]:
+    """The time span a parsed GPS file covers, as ISO strings."""
+    times = [p.utc_dt for p in parsed.trackpoints]
+    return {
+        "t_start": min(times).isoformat() if times else None,
+        "t_end": max(times).isoformat() if times else None,
+    }
+
+
 def _gps_tmp_dir() -> str:
     """Return (and create if needed) the tmp directory for GPS uploads."""
     upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
-    d = os.path.join(upload_folder, "gps_import_tmp")
+    d = os.path.join(upload_folder, GPS_IMPORT_TMP_DIRNAME)
     os.makedirs(d, exist_ok=True)
     return d
 
@@ -1977,7 +1993,9 @@ def gps_import_upload(aircraft_id: int) -> ResponseReturnValue:
             continue
 
         # Kept whatever the parser makes of it — see services.gps_archive.
-        archive_gps_file(data, f.filename, archive_dir)
+        archive_path = archive_relpath(
+            archive_gps_file(data, f.filename, archive_dir), _upload_folder()
+        )
 
         try:
             parsed = parse_gps_file(data, f.filename)
@@ -2006,6 +2024,10 @@ def gps_import_upload(aircraft_id: int) -> ResponseReturnValue:
                 "hint_dep": parsed.hint_departure_icao,
                 "hint_arr": parsed.hint_arrival_icao,
                 "device_id": getattr(parsed, "device_id", None),
+                # Which kept file each imported flight comes from — see
+                # services.gps_archive.source_for_window.
+                "archive_path": archive_path,
+                **_track_span(parsed),
             }
         )
         formats.append(parsed.format)
@@ -2305,6 +2327,7 @@ def _gps_import_create_segment(
                 if existing.flight_time is None:
                     existing.flight_time = times.airborne_time
                 gps_track = GpsTrack(
+                    source_file=source_for_window(file_metas, block_off, block_on),
                     source_filename=file_metas[0]["original_filename"]
                     if len(file_metas) == 1
                     else None,
@@ -2337,6 +2360,7 @@ def _gps_import_create_segment(
 
         if not matched_id:
             gps_track = GpsTrack(
+                source_file=source_for_window(file_metas, block_off, block_on),
                 source_filename=file_metas[0]["original_filename"]
                 if len(file_metas) == 1
                 else None,
@@ -2377,6 +2401,7 @@ def _gps_import_create_segment(
             # Other/external aircraft — standalone row (no airframe side).
             if gps_track is None:
                 gps_track = GpsTrack(
+                    source_file=source_for_window(file_metas, block_off, block_on),
                     source_filename=file_metas[0]["original_filename"]
                     if len(file_metas) == 1
                     else None,
@@ -2701,6 +2726,36 @@ def gps_import_prefill_segment(aircraft_id: int, seg_idx: int) -> ResponseReturn
             gps_seg=seg_idx,
         )
     )
+
+
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/gps-logs.zip")
+@login_required
+def download_gps_logs(aircraft_id: int) -> ResponseReturnValue:
+    """Every original GPS file kept for this aircraft, as one zip: its own
+    archive folder plus the files its flights' tracks link to (e.g. ones
+    attached from a pilot's flight form, kept in that pilot's folder)."""
+    from services.gps_archive import (  # pyright: ignore[reportMissingImports]
+        iter_archive_files,
+        send_archive_zip,
+    )
+
+    ac = _get_aircraft_or_404(aircraft_id)
+    folder = _upload_folder()
+    files = iter_archive_files(
+        folder, archive_relpath(_gps_archive_dir(ac, False), folder)
+    )
+    files += [
+        t.source_file
+        for t in GpsTrack.query.join(Flight, Flight.gps_track_id == GpsTrack.id)
+        .filter(Flight.aircraft_id == ac.id, GpsTrack.source_file.isnot(None))
+        .all()
+    ]
+    safe_reg = ac.registration.replace("/", "-").replace(" ", "-").upper()
+    response = send_archive_zip(folder, files, f"{safe_reg}-gps-logs.zip")
+    if response is None:
+        flash(_("No original GPS files are kept for this aircraft yet."), "info")
+        return redirect(url_for("aircraft.gps_import_history", aircraft_id=ac.id))
+    return response
 
 
 @aircraft_bp.route("/<aircraft_ref:aircraft_id>/gps-import/history", methods=["GET"])

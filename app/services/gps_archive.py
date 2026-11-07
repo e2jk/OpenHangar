@@ -18,7 +18,11 @@ from __future__ import annotations
 
 import hashlib
 import os
+import zipfile
+from datetime import datetime
+from typing import IO
 
+from flask import Response  # pyright: ignore[reportMissingImports]
 from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
 
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
@@ -86,3 +90,139 @@ def archive_gps_file(data: bytes, original_filename: str, dest_dir: str) -> str:
         fh.write(data)
     os.replace(tmp_path, path)
     return path
+
+
+def archive_relpath(path: str, upload_folder: str) -> str:
+    """*path* (as returned by archive_gps_file) relative to the uploads
+    folder, "/"-separated — what GpsTrack.source_file stores."""
+    return os.path.relpath(path, upload_folder).replace(os.sep, "/")
+
+
+def resolve_pilot_archive_name(
+    upload_folder: str, user_id: int, name: str | None
+) -> str | None:
+    """The relative path of file *name* in *user_id*'s own GPS archive, if
+    it exists there. *name* comes back from a form (the flight form's
+    upload is archived when parsed, then saved with the flight), so it's
+    only ever looked up as a plain file name inside the user's own folder —
+    never a path the form could point elsewhere."""
+    if not name or secure_filename(name) != name:
+        return None
+    rel = "/".join((*pilot_archive_parts(user_id), name))
+    return rel if os.path.isfile(os.path.join(upload_folder, *rel.split("/"))) else None
+
+
+def source_for_window(
+    file_metas: list[dict[str, object]], start: datetime, end: datetime
+) -> str | None:
+    """Which uploaded file a flight [start, end] came from, among a batch
+    of uploaded files (each meta with "archive_path" and its recorded time
+    span "t_start"/"t_end" as ISO strings): the one whose span overlaps it
+    most — or the only file of a single-file upload."""
+    paths = [m for m in file_metas if m.get("archive_path")]
+    if len(paths) == 1:
+        return str(paths[0]["archive_path"])
+    best: tuple[float, str] | None = None
+    for meta in paths:
+        try:
+            t0 = datetime.fromisoformat(str(meta["t_start"]))
+            t1 = datetime.fromisoformat(str(meta["t_end"]))
+        except (KeyError, ValueError):
+            continue
+        overlap = (min(t1, end) - max(t0, start)).total_seconds()
+        if overlap >= 0 and (best is None or overlap > best[0]):
+            best = (overlap, str(meta["archive_path"]))
+    return best[1] if best else None
+
+
+def iter_archive_files(upload_folder: str, rel_dir: str) -> list[str]:
+    """Relative paths of the files kept in archive folder *rel_dir*."""
+    root = os.path.join(upload_folder, *rel_dir.split("/"))
+    if not os.path.isdir(root):
+        return []
+    return sorted(
+        f"{rel_dir}/{entry.name}"
+        for entry in os.scandir(root)
+        if entry.is_file() and not entry.name.startswith(".")
+    )
+
+
+def write_zip(upload_folder: str, relpaths: list[str], fileobj: IO[bytes]) -> int:
+    """Write the given archived files (relative paths) into a zip in
+    *fileobj*, each under its own file name (made unique if two folders
+    hold the same name). Returns the number of files written; missing
+    files are skipped. GPS logs compress well, so deflate."""
+    written = 0
+    names: set[str] = set()
+    with zipfile.ZipFile(fileobj, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for rel in dict.fromkeys(relpaths):  # de-duplicated, order kept
+            full = os.path.join(upload_folder, *rel.split("/"))
+            if not os.path.isfile(full):
+                continue
+            name = os.path.basename(full)
+            if name in names:
+                stem, ext = os.path.splitext(name)
+                name = f"{stem}-{written}{ext}"
+            names.add(name)
+            zf.write(full, arcname=name)
+            written += 1
+    return written
+
+
+def archive_stats(upload_folder: str) -> tuple[int, int]:
+    """(file count, total bytes) of every kept GPS log, aircraft and pilot
+    archives together — for the configuration page."""
+    count = size = 0
+    if not os.path.isdir(upload_folder):
+        return 0, 0
+    for dirpath, _dirs, files in os.walk(upload_folder):
+        if os.path.basename(dirpath) != GPS_ARCHIVE_DIRNAME:
+            continue
+        for name in files:
+            if name.startswith("."):
+                continue
+            count += 1
+            size += os.path.getsize(os.path.join(dirpath, name))
+    return count, size
+
+
+def send_archived_file(upload_folder: str, relpath: str) -> Response:
+    """Flask response downloading one kept file (404 if it's gone). The
+    path comes from the database (GpsTrack.source_file), never a request,
+    and is still confined to the uploads folder."""
+    from flask import abort, send_from_directory  # pyright: ignore[reportMissingImports]
+
+    directory, _sep, name = relpath.rpartition("/")
+    full_dir = os.path.realpath(os.path.join(upload_folder, *directory.split("/")))
+    if not full_dir.startswith(os.path.realpath(upload_folder) + os.sep):
+        abort(404)
+    if not os.path.isfile(os.path.join(full_dir, name)):
+        abort(404)
+    return send_from_directory(full_dir, name, as_attachment=True)
+
+
+def send_archive_zip(
+    upload_folder: str, relpaths: list[str], download_name: str
+) -> Response | None:
+    """Flask response downloading the given kept files as one zip, built in
+    a temporary file (a pilot's or aircraft's logs can be large) that's
+    deleted once the response has been sent. None when none of the files
+    exist."""
+    import tempfile
+
+    from flask import send_file  # pyright: ignore[reportMissingImports]
+
+    fd, tmp_path = tempfile.mkstemp(suffix=".zip")
+    with os.fdopen(fd, "wb") as fh:
+        written = write_zip(upload_folder, relpaths, fh)
+    if not written:
+        os.remove(tmp_path)
+        return None
+    response = send_file(
+        tmp_path,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=download_name,
+    )
+    response.call_on_close(lambda: os.remove(tmp_path))
+    return response
