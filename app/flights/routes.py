@@ -1317,12 +1317,13 @@ def registration_lookup() -> ResponseReturnValue:
     return jsonify({"result": None})
 
 
-@flights_bp.route("/flights/<int:flight_id>/gps-file")
+@flights_bp.route("/flights/<int:flight_id>/gps-file/<int:index>")
 @login_required
-def download_gps_file(flight_id: int) -> ResponseReturnValue:
-    """The original GPS file a flight's track was extracted from (kept by
-    services.gps_archive). For the flight's own pilots, and anyone who can
-    see the aircraft it was flown on."""
+def download_gps_file(flight_id: int, index: int) -> ResponseReturnValue:
+    """One of the original GPS files a flight's track was extracted from
+    (kept by services.gps_archive) — usually one, several when the log was
+    split over files. For the flight's own pilots, and anyone who can see
+    the aircraft it was flown on."""
     from services.gps_archive import (  # pyright: ignore[reportMissingImports]
         send_archived_file,
     )
@@ -1330,11 +1331,11 @@ def download_gps_file(flight_id: int) -> ResponseReturnValue:
     fe = db.session.get(Flight, flight_id)
     if fe is None or not _can_view_flight(fe):
         abort(404)
-    track = fe.gps_track
-    if track is None or not track.source_file:
+    files = (fe.gps_track.source_files if fe.gps_track else None) or []
+    if not 0 <= index < len(files):
         abort(404)
     return send_archived_file(
-        current_app.config.get("UPLOAD_FOLDER", "/data/uploads"), track.source_file
+        current_app.config.get("UPLOAD_FOLDER", "/data/uploads"), files[index]
     )
 
 
@@ -1717,7 +1718,7 @@ def _handle_log_flight_post(
         if dup and (gps_geojson or gps_filename):
             link_track = GpsTrack(
                 source_filename=gps_filename,
-                source_file=gps_source_file,
+                source_files=[gps_source_file] if gps_source_file else None,
                 device_id=gps_device_id,
                 block_off_utc=gps_block_off,
                 block_on_utc=gps_block_on,
@@ -1749,7 +1750,8 @@ def _handle_log_flight_post(
                 if gps_filename:
                     gps_track.source_filename = gps_filename
                 if gps_source_file:
-                    gps_track.source_file = gps_source_file
+                    # A new upload replaces the track (geojson above).
+                    gps_track.source_files = [gps_source_file]
                 if gps_block_off:
                     gps_track.block_off_utc = gps_block_off
                 if gps_block_on:
@@ -1759,7 +1761,7 @@ def _handle_log_flight_post(
         if not gps_track:
             gps_track = GpsTrack(
                 source_filename=gps_filename,
-                source_file=gps_source_file,
+                source_files=[gps_source_file] if gps_source_file else None,
                 device_id=gps_device_id,
                 block_off_utc=gps_block_off,
                 block_on_utc=gps_block_on,

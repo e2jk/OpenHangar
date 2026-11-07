@@ -62,8 +62,9 @@ from services.gps_archive import (  # pyright: ignore[reportMissingImports]
     archive_gps_file,
     archive_relpath,
     pilot_archive_parts,
-    source_for_window,
+    sources_for_window,
 )
+from services.gps_link import link_track  # pyright: ignore[reportMissingImports]
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
     GPS_ARCHIVE_DIRNAME,
     GPS_IMPORT_TMP_DIRNAME,
@@ -84,7 +85,6 @@ from aircraft.co_owner_form_parsing import (  # pyright: ignore[reportMissingImp
     parse_reserve_fields,
 )
 from aircraft.gps_import import (  # pyright: ignore[reportMissingImports]
-    apply_gps_date,
     detect_segments,
     logged_flight_windows,
     merge_and_sort,
@@ -1793,6 +1793,16 @@ def _gps_archive_dir(ac: Aircraft, other_aircraft: bool) -> str:
     return _safe_join(folder, slug, safe_reg, GPS_ARCHIVE_DIRNAME)
 
 
+def _clear_best_match(
+    candidates: list[Any], fields: dict[str, Any], scorer: Any
+) -> bool:
+    """Whether the best-ranked candidate is unambiguously the GPS segment's
+    flight: the only candidate, or scoring strictly higher than the next."""
+    if len(candidates) == 1:
+        return True
+    return bool(scorer(fields, candidates[0]) > scorer(fields, candidates[1]))
+
+
 def _upload_folder() -> str:
     return str(current_app.config.get("UPLOAD_FOLDER", "/data/uploads"))
 
@@ -2025,7 +2035,7 @@ def gps_import_upload(aircraft_id: int) -> ResponseReturnValue:
                 "hint_arr": parsed.hint_arrival_icao,
                 "device_id": getattr(parsed, "device_id", None),
                 # Which kept file each imported flight comes from — see
-                # services.gps_archive.source_for_window.
+                # services.gps_archive.sources_for_window.
                 "archive_path": archive_path,
                 **_track_span(parsed),
             }
@@ -2213,7 +2223,20 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
             fields, same_day, scorer, _CANDIDATE_MIN_SCORE
         )
         seg["matched_near_date"] = False
-        if candidates:
+        if candidates and _clear_best_match(candidates, fields, scorer):
+            # A logbook records times to 0.1 h, a GPS log to the second: a
+            # few minutes apart is the same flight, not a doubt. One
+            # candidate — or one clearly ahead of the rest — is the match.
+            best = candidates[0]
+            seg["matched_flight_id"] = best.id
+            seg["matched_flight_str"] = (
+                f"#{best.id} — {best.date} {best.departure_icao} → {best.arrival_icao}"
+            )
+            seg["matched_has_existing_track"] = best.gps_track_id is not None
+            seg["linked_pilot_entries"] = _linked_pilot_entries(
+                best.id, int(session["user_id"])
+            )
+        elif candidates:
             seg["matched_flight_id"] = candidates[0].id
             seg["matched_flight_str"] = None
             seg["matched_has_existing_track"] = False
@@ -2314,40 +2337,26 @@ def _gps_import_create_segment(
         if matched_id:
             existing = db.session.get(Flight, matched_id)
             if existing and existing.aircraft_id == aircraft_id:
-                old_track_id = existing.gps_track_id
-                existing.block_off_utc = block_off
-                existing.block_on_utc = block_on
-                apply_gps_date(existing, seg, block_off)
-                # Block and airborne times are facts about the aircraft,
-                # whoever flew it (e.g. a previous owner's flights, confirmed
-                # with no pilot role) — fill whichever the logbook left
-                # empty, never replacing what it recorded.
+                # The recorded flight is authoritative (it's the paper
+                # logbook): GPS only fills times it lacks, never changes
+                # its times or date — see services.gps_link.
                 if existing.engine_time is None:
                     existing.engine_time = times.block_time
                 if existing.flight_time is None:
                     existing.flight_time = times.airborne_time
-                gps_track = GpsTrack(
-                    source_file=source_for_window(file_metas, block_off, block_on),
+                gps_track = link_track(
+                    existing,
+                    geojson=_load_segment_geojson(seg),
+                    files=sources_for_window(file_metas, block_off, block_on),
+                    block_off=block_off,
+                    block_on=block_on,
                     source_filename=file_metas[0]["original_filename"]
                     if len(file_metas) == 1
                     else None,
                     device_id=batch_device_id,
-                    block_off_utc=block_off,
-                    block_on_utc=block_on,
                     departure_icao=dep_icao,
                     arrival_icao=arr_icao,
-                    geojson=_load_segment_geojson(seg),
                 )
-                db.session.add(gps_track)
-                db.session.flush()
-                existing.gps_track_id = gps_track.id
-                if old_track_id and old_track_id != gps_track.id:
-                    # Re-confirming an already-linked match (the review page
-                    # warns this replaces the track) — drop the superseded
-                    # row instead of leaving it as a permanent orphan.
-                    old_track = db.session.get(GpsTrack, old_track_id)
-                    if old_track is not None:
-                        db.session.delete(old_track)
                 linked_ids.append(existing.id)
                 # Unified model: this Flight row already covers both crew
                 # slots, so setting gps_track_id above already applies to
@@ -2360,7 +2369,8 @@ def _gps_import_create_segment(
 
         if not matched_id:
             gps_track = GpsTrack(
-                source_file=source_for_window(file_metas, block_off, block_on),
+                source_files=sources_for_window(file_metas, block_off, block_on)
+                or None,
                 source_filename=file_metas[0]["original_filename"]
                 if len(file_metas) == 1
                 else None,
@@ -2401,7 +2411,8 @@ def _gps_import_create_segment(
             # Other/external aircraft — standalone row (no airframe side).
             if gps_track is None:
                 gps_track = GpsTrack(
-                    source_file=source_for_window(file_metas, block_off, block_on),
+                    source_files=sources_for_window(file_metas, block_off, block_on)
+                    or None,
                     source_filename=file_metas[0]["original_filename"]
                     if len(file_metas) == 1
                     else None,
@@ -2470,6 +2481,102 @@ def _gps_cleanup(state: dict[str, Any]) -> None:
                 os.unlink(gj_path)
             except OSError as exc:
                 current_app.logger.debug("cleanup GPS geojson tmp: %s", exc)
+
+
+def _gps_confirm_segment(
+    ac: Any,
+    aircraft_id: int,
+    state: dict[str, Any],
+    seg_idx: int,
+    *,
+    pilot_role: str,
+    dep_override: str | None,
+    arr_override: str | None,
+    nature: str | None,
+    remarks: str | None,
+) -> tuple[Any, str]:
+    """Import one GPS segment of the review (onto its matched flight, or as
+    a new one) and record it as confirmed in *state*. Shared by the
+    one-by-one confirmation and "accept all best matches". Returns
+    (flight or None, the pilot role actually applied)."""
+    segments_data: list[dict[str, Any]] = state["segments"]
+    seg = segments_data[seg_idx]
+    confirmed = state.get("confirmed_segments", {})
+    other_aircraft: bool = state.get("other_aircraft", False)
+    other_ac_make_model: str = state.get("other_ac_make_model", "")
+    other_ac_reg: str = state.get("other_ac_reg", "")
+
+    if other_aircraft and pilot_role == "none":
+        pilot_role = "pic"
+
+    _pilot_user = db.session.get(User, int(session["user_id"]))
+    pilot_display_name = _pilot_user.display_name if _pilot_user else ""
+    file_metas = state["files"]
+
+    dep_icao = (dep_override or seg["departure_icao"] or "").strip().upper()[:4]
+    arr_icao = (arr_override or seg["arrival_icao"] or "").strip().upper()[:4]
+    if not dep_icao:
+        dep_icao = "????"
+    if not arr_icao:
+        arr_icao = "????"
+
+    batch_device_id: str | None = next(
+        (m.get("device_id") for m in file_metas if m.get("device_id")), None
+    )
+
+    # Get or create the shared batch record for this session
+    batch_id = state.get("batch_id")
+    batch: AircraftGpsImportBatch | None = (
+        db.session.get(AircraftGpsImportBatch, batch_id) if batch_id else None
+    )
+    if batch is None:
+        formats = {m["format"] for m in file_metas}
+        format_label = formats.pop() if len(formats) == 1 else "mixed"
+        batch = AircraftGpsImportBatch(
+            aircraft_id=aircraft_id,
+            pilot_user_id=int(session["user_id"]) if pilot_role != "none" else None,
+            source_filenames=[m["original_filename"] for m in file_metas],
+            format_detected=format_label,
+            segments_found=len(segments_data),
+            linked_flight_entry_ids=[],
+            pilot_role=pilot_role,
+            other_aircraft_make_model=other_ac_make_model or None,
+            other_aircraft_registration=other_ac_reg or None,
+        )
+        db.session.add(batch)
+        db.session.flush()
+        state["batch_id"] = batch.id
+
+    linked_ids: list[int] = list(batch.linked_flight_entry_ids or [])
+
+    entry, linked_ids = _gps_import_create_segment(
+        ac=ac,
+        aircraft_id=aircraft_id,
+        seg=seg,
+        seg_idx=seg_idx,
+        pilot_role=pilot_role,
+        dep_icao=dep_icao,
+        arr_icao=arr_icao,
+        nature=nature,
+        remarks=remarks,
+        batch=batch,
+        file_metas=file_metas,
+        linked_ids=linked_ids,
+        pilot_display_name=pilot_display_name,
+        other_aircraft=other_aircraft,
+        other_ac_make_model=other_ac_make_model,
+        other_ac_reg=other_ac_reg,
+        batch_device_id=batch_device_id,
+    )
+
+    batch.linked_flight_entry_ids = linked_ids
+    batch.segments_imported = (batch.segments_imported or 0) + 1
+    db.session.commit()
+
+    confirmed[str(seg_idx)] = entry.id if entry else 0
+    state["confirmed_segments"] = confirmed
+    _gps_state_save(state)
+    return entry, pilot_role
 
 
 @aircraft_bp.route(
@@ -2555,89 +2662,18 @@ def gps_import_confirm_one(aircraft_id: int) -> ResponseReturnValue:
         picked = request.form.get("matched_flight_id", "")
         seg["matched_flight_id"] = int(picked) if picked.strip().isdigit() else None
 
-    other_aircraft: bool = state.get("other_aircraft", False)
-    other_ac_make_model: str = state.get("other_ac_make_model", "")
-    other_ac_reg: str = state.get("other_ac_reg", "")
-
-    if other_aircraft and pilot_role == "none":
-        pilot_role = "pic"
-
-    _pilot_user = db.session.get(User, int(session["user_id"]))
-    pilot_display_name = _pilot_user.display_name if _pilot_user else ""
-    file_metas = state["files"]
-
-    dep_icao = (
-        (request.form.get("dep_icao") or seg["departure_icao"] or "")
-        .strip()
-        .upper()[:4]
-    )
-    arr_icao = (
-        (request.form.get("arr_icao") or seg["arrival_icao"] or "").strip().upper()[:4]
-    )
-    if not dep_icao:
-        dep_icao = "????"
-    if not arr_icao:
-        arr_icao = "????"
-
-    nature = (request.form.get("nature") or "").strip()[:100] or None
-    remarks = (request.form.get("remarks") or "").strip() or None
-
-    batch_device_id: str | None = next(
-        (m.get("device_id") for m in file_metas if m.get("device_id")), None
-    )
-
-    # Get or create the shared batch record for this session
-    batch_id = state.get("batch_id")
-    batch: AircraftGpsImportBatch | None = (
-        db.session.get(AircraftGpsImportBatch, batch_id) if batch_id else None
-    )
-    if batch is None:
-        formats = {m["format"] for m in file_metas}
-        format_label = formats.pop() if len(formats) == 1 else "mixed"
-        batch = AircraftGpsImportBatch(
-            aircraft_id=aircraft_id,
-            pilot_user_id=int(session["user_id"]) if pilot_role != "none" else None,
-            source_filenames=[m["original_filename"] for m in file_metas],
-            format_detected=format_label,
-            segments_found=len(segments_data),
-            linked_flight_entry_ids=[],
-            pilot_role=pilot_role,
-            other_aircraft_make_model=other_ac_make_model or None,
-            other_aircraft_registration=other_ac_reg or None,
-        )
-        db.session.add(batch)
-        db.session.flush()
-        state["batch_id"] = batch.id
-
-    linked_ids: list[int] = list(batch.linked_flight_entry_ids or [])
-
-    entry, linked_ids = _gps_import_create_segment(
-        ac=ac,
-        aircraft_id=aircraft_id,
-        seg=seg,
-        seg_idx=seg_idx,
+    _entry, pilot_role = _gps_confirm_segment(
+        ac,
+        aircraft_id,
+        state,
+        seg_idx,
         pilot_role=pilot_role,
-        dep_icao=dep_icao,
-        arr_icao=arr_icao,
-        nature=nature,
-        remarks=remarks,
-        batch=batch,
-        file_metas=file_metas,
-        linked_ids=linked_ids,
-        pilot_display_name=pilot_display_name,
-        other_aircraft=other_aircraft,
-        other_ac_make_model=other_ac_make_model,
-        other_ac_reg=other_ac_reg,
-        batch_device_id=batch_device_id,
+        dep_override=request.form.get("dep_icao"),
+        arr_override=request.form.get("arr_icao"),
+        nature=(request.form.get("nature") or "").strip()[:100] or None,
+        remarks=(request.form.get("remarks") or "").strip() or None,
     )
-
-    batch.linked_flight_entry_ids = linked_ids
-    batch.segments_imported = (batch.segments_imported or 0) + 1
-    db.session.commit()
-
-    confirmed[str(seg_idx)] = entry.id if entry else 0
-    state["confirmed_segments"] = confirmed
-    _gps_state_save(state)
+    confirmed = state["confirmed_segments"]
 
     all_confirmed = len(confirmed) == len(segments_data)
 
@@ -2670,6 +2706,64 @@ def gps_import_confirm_one(aircraft_id: int) -> ResponseReturnValue:
         return redirect(url_for("flights.list_flights", aircraft_id=aircraft_id))
 
     flash(_("Flight confirmed."), "success")
+    return redirect(url_for("aircraft.gps_import_review", aircraft_id=aircraft_id))
+
+
+@aircraft_bp.route(
+    "/<aircraft_ref:aircraft_id>/gps-import/confirm-all", methods=["POST"]
+)
+@login_required
+@require_role(*_PILOT_ROLES)
+def gps_import_confirm_all(aircraft_id: int) -> ResponseReturnValue:
+    """Confirm every segment still on the review page that has a matching
+    flight — the best candidate where several were offered — as is.
+    Ground-only segments are skipped; segments without any match (they'd
+    become new flights) are left for a decision one by one."""
+    ac = _get_aircraft_or_404(aircraft_id)
+    state = _gps_state_load()
+    if not state or state.get("aircraft_id") != aircraft_id:
+        flash(_("Session expired — please upload your GPS files again."), "warning")
+        return redirect(url_for("aircraft.gps_import_upload", aircraft_id=aircraft_id))
+
+    segments_data: list[dict[str, Any]] = state.get("segments", [])
+    accepted = 0
+    for seg_idx, seg in enumerate(segments_data):
+        confirmed = state.setdefault("confirmed_segments", {})
+        if str(seg_idx) in confirmed:
+            continue
+        if seg.get("is_ground_only"):
+            confirmed[str(seg_idx)] = "skip"
+            _gps_state_save(state)
+            continue
+        if not seg.get("matched_flight_id"):
+            continue
+        _gps_confirm_segment(
+            ac,
+            aircraft_id,
+            state,
+            seg_idx,
+            pilot_role="none",
+            dep_override=None,
+            arr_override=None,
+            nature=None,
+            remarks=None,
+        )
+        accepted += 1
+
+    confirmed = state.get("confirmed_segments", {})
+    flash(
+        ngettext(
+            "One flight linked to its GPS track.",
+            "%(n)d flights linked to their GPS tracks.",
+            accepted,
+            n=accepted,
+        ),
+        "success",
+    )
+    if len(confirmed) == len(segments_data):
+        _gps_cleanup(state)
+        session.pop("gps_import", None)
+        return redirect(url_for("flights.list_flights", aircraft_id=aircraft_id))
     return redirect(url_for("aircraft.gps_import_review", aircraft_id=aircraft_id))
 
 
@@ -2745,10 +2839,11 @@ def download_gps_logs(aircraft_id: int) -> ResponseReturnValue:
         folder, archive_relpath(_gps_archive_dir(ac, False), folder)
     )
     files += [
-        t.source_file
+        f
         for t in GpsTrack.query.join(Flight, Flight.gps_track_id == GpsTrack.id)
-        .filter(Flight.aircraft_id == ac.id, GpsTrack.source_file.isnot(None))
+        .filter(Flight.aircraft_id == ac.id, GpsTrack.source_files.isnot(None))
         .all()
+        for f in t.source_files or []
     ]
     safe_reg = ac.registration.replace("/", "-").replace(" ", "-").upper()
     response = send_archive_zip(folder, files, f"{safe_reg}-gps-logs.zip")

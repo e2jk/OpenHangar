@@ -166,7 +166,7 @@ def _aircraft_review(client, ac_id):
 
 
 class TestAircraftGpsImport:
-    def test_date_typo_offered_and_corrected_on_confirm(self, client, app):
+    def test_date_typo_offered_and_linked_keeping_logged_date(self, client, app):
         uid, ac_id, (typo_id,) = _world(
             app, "nd1@example.com", [(date(2024, 5, 31), "EGSU", "EGSC")]
         )
@@ -186,7 +186,9 @@ class TestAircraftGpsImport:
         )
         with app.app_context():
             f = db.session.get(Flight, typo_id)
-            assert f.date == _GPS_DAY
+            # The logbook is authoritative: the track is linked, the logged
+            # date stays (services.gps_link).
+            assert f.date == date(2024, 5, 31)
             assert f.gps_track_id is not None
             assert Flight.query.filter_by(aircraft_id=ac_id).count() == 1
 
@@ -212,7 +214,8 @@ class TestAircraftGpsImport:
         _login(client, uid)
         seg, _page = _aircraft_review(client, ac_id)
         assert seg["matched_near_date"] is False
-        assert [c["id"] for c in seg["matched_candidates"]] == [same_day]
+        assert seg["matched_ambiguous"] is False
+        assert seg["matched_flight_id"] == same_day
 
     def test_far_or_other_route_never_offered(self, client, app):
         uid, ac_id, _ids = _world(
@@ -231,7 +234,7 @@ class TestAircraftGpsImport:
 
 
 class TestPilotGpsImport:
-    def test_date_typo_offered_and_corrected_on_confirm(self, client, app):
+    def test_date_typo_offered_and_linked_keeping_logged_date(self, client, app):
         uid, _ac_id, (typo_id,) = _world(
             app, "nd5@example.com", [(date(2024, 6, 2), "EGSU", "EGSC")], pilot=True
         )
@@ -257,5 +260,5 @@ class TestPilotGpsImport:
         )
         with app.app_context():
             f = db.session.get(Flight, typo_id)
-            assert f.date == _GPS_DAY
+            assert f.date == date(2024, 6, 2)
             assert db.session.get(GpsTrack, f.gps_track_id) is not None

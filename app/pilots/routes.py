@@ -70,7 +70,7 @@ from models import (  # pyright: ignore[reportMissingImports]
 )
 from services.gps_archive import (  # pyright: ignore[reportMissingImports]
     resolve_pilot_archive_name,
-    source_for_window,
+    sources_for_window,
 )
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
     IMPORT_TMP_DIRNAME,
@@ -1250,7 +1250,8 @@ def _apply_gps_to_pilot_entry(entry: Flight) -> None:
             if gps_filename:
                 gt.source_filename = gps_filename
             if gps_source_file:
-                gt.source_file = gps_source_file
+                # A new upload replaces the track (see geojson above).
+                gt.source_files = [gps_source_file]
             if block_off:
                 gt.block_off_utc = block_off
             if block_on:
@@ -1259,7 +1260,7 @@ def _apply_gps_to_pilot_entry(entry: Flight) -> None:
 
     gt = GpsTrack(
         source_filename=gps_filename,
-        source_file=gps_source_file,
+        source_files=[gps_source_file] if gps_source_file else None,
         block_off_utc=block_off,
         block_on_utc=block_on,
         departure_icao=dep,
@@ -2278,13 +2279,14 @@ def download_gps_logs() -> ResponseReturnValue:
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
     files = iter_archive_files(folder, "/".join(pilot_archive_parts(uid)))
     files += [
-        t.source_file
+        f
         for t in GpsTrack.query.join(Flight, Flight.gps_track_id == GpsTrack.id)
         .filter(
             or_(Flight.pic_user_id == uid, Flight.second_crew_user_id == uid),
-            GpsTrack.source_file.isnot(None),
+            GpsTrack.source_files.isnot(None),
         )
         .all()
+        for f in t.source_files or []
     ]
     response = send_archive_zip(folder, files, "my-gps-logs.zip")
     if response is None:
@@ -2568,7 +2570,7 @@ def pilot_gps_import_review() -> ResponseReturnValue:
 @require_pilot_access
 def pilot_gps_import_confirm_one() -> ResponseReturnValue:
 
-    from aircraft.gps_import import apply_gps_date, segment_times
+    from aircraft.gps_import import segment_times
     from aircraft.routes import _gps_cleanup, _load_segment_geojson
 
     uid = _current_user_id()
@@ -2656,8 +2658,11 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
     source_filename = (
         file_metas[0]["original_filename"] if len(file_metas) == 1 else None
     )
-    source_file = source_for_window(
-        file_metas, block_off, _datetime.fromisoformat(seg["block_on_utc"])
+    source_files = (
+        sources_for_window(
+            file_metas, block_off, _datetime.fromisoformat(seg["block_on_utc"])
+        )
+        or None
     )
     device_id = next(
         (m.get("device_id") for m in file_metas if m.get("device_id")), None
@@ -2680,30 +2685,24 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
         # Link GPS track to the existing matched Flight
         existing = db.session.get(Flight, matched_flight_id)
         if existing:
-            old_track_id = existing.gps_track_id
-            gps_track = GpsTrack(
+            # The recorded flight is authoritative: GPS adds its track (or
+            # combines with one already there) without changing its times
+            # or date — see services.gps_link.
+            from services.gps_link import (  # pyright: ignore[reportMissingImports]
+                link_track,
+            )
+
+            gps_track = link_track(
+                existing,
+                geojson=geojson,
+                files=source_files or [],
+                block_off=block_off,
+                block_on=block_on,
                 source_filename=source_filename,
-                source_file=source_file,
                 device_id=device_id,
-                block_off_utc=block_off,
-                block_on_utc=block_on,
                 departure_icao=dep_icao,
                 arrival_icao=arr_icao,
-                geojson=geojson,
             )
-            db.session.add(gps_track)
-            db.session.flush()
-            existing.gps_track_id = gps_track.id
-            existing.block_off_utc = block_off
-            existing.block_on_utc = block_on
-            apply_gps_date(existing, seg, block_off)
-            if old_track_id and old_track_id != gps_track.id:
-                # Re-confirming an already-linked match (the review page
-                # warns this replaces the track) — drop the superseded
-                # row instead of leaving it as a permanent orphan.
-                old_track = db.session.get(GpsTrack, old_track_id)
-                if old_track is not None:
-                    db.session.delete(old_track)
             # Unified model: this Flight row already covers both crew slots
             # (pic_user_id/second_crew_user_id), so setting gps_track_id
             # above already applies to whichever other pilot occupies the
@@ -2732,7 +2731,7 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
             # Create a new Flight for the managed aircraft
             gps_track = GpsTrack(
                 source_filename=source_filename,
-                source_file=source_file,
+                source_files=source_files,
                 device_id=device_id,
                 block_off_utc=block_off,
                 block_on_utc=block_on,
@@ -2770,7 +2769,7 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
             if geojson:
                 gps_track = GpsTrack(
                     source_filename=source_filename,
-                    source_file=source_file,
+                    source_files=source_files,
                     device_id=device_id,
                     block_off_utc=block_off,
                     block_on_utc=block_on,

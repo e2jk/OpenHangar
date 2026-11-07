@@ -5,6 +5,10 @@
 - GPS files attached in the flight form are now kept unchanged too, like those from the GPS imports.
 - Download a flight's original GPS file from its page, or all of an aircraft's (GPS import history) or all of your own (My Flight Tracks) as one zip.
 - The configuration page shows how many original GPS files are kept and their total size.
+- One flight can now have several GPS logs — e.g. when the logger lost power in flight and started a new file, or a flight logged as one entry landed and departed again: the tracks are combined into one, and each file can be downloaded.
+- Linking a GPS track to a flight already in the logbook no longer changes its recorded times or date — the logbook stays authoritative; only flights created from GPS take their times from it.
+- A GPS segment a few minutes off the logbook's times (which are only to the 0.1 h) is now recognised as the same flight when it's the only or clearly best candidate, instead of being flagged as uncertain.
+- New **Accept all best matches** button on the GPS import review page links every matching segment at once.
 
 **Logbook imports**
 - Review page: rows whose values differ are now readable in dark mode, and identical numbers (e.g. counters) are no longer flagged as different.
