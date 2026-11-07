@@ -101,7 +101,7 @@ fi
 # not-yet-merged PR, and rerunning the script right now has nothing new to
 # add. Checked before rebasing (and against pre-rebase HEAD) since nothing
 # about that conclusion depends on rebasing onto origin/main first.
-SHIP_SHA="$(git rev-parse "origin/${BRANCH}" 2>/dev/null || echo "")"
+SHIP_SHA="$(git rev-parse --verify --quiet "refs/remotes/origin/${BRANCH}" || true)"
 if [ -n "${SHIP_SHA}" ] && [ "${SHIP_SHA}" = "$(git rev-parse HEAD)" ]; then
   echo "Nothing to ship — origin/${BRANCH} already has this exact commit (still pending merge?). Not pushing."
   exit 0
@@ -127,7 +127,9 @@ fi
 # takes precedence — --later would only hold back what it's releasing
 # anyway. A pending ship-later PR is superseded by a plain ship of the same
 # commits: it's closed (its branch deleted) once ship has them all.
-OTHER_SHA="$(git rev-parse "origin/${OTHER_BRANCH}" 2>/dev/null || echo "")"
+# --verify --quiet: a plain rev-parse of a missing ref still prints its
+# argument before failing, which would read as "the branch exists".
+OTHER_SHA="$(git rev-parse --verify --quiet "refs/remotes/origin/${OTHER_BRANCH}" || true)"
 if [ -n "${OTHER_SHA}" ] && [ "${BRANCH}" = "ship-later" ]; then
   echo "A ship PR (released when it merges) is still open on origin/ship."
   echo "Run scripts/ship.sh without --later to add these commits to it, or wait until it lands. Not pushing."
