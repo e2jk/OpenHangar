@@ -58,3 +58,20 @@ def test_cli(monkeypatch, capsys, tmp_path):
     monkeypatch.setattr(sys, "stdin", io.StringIO("feat: a\nfix: b\n"))
     release_notes.main(["title"])
     assert capsys.readouterr().out == "Release: 1 feature, 1 fix\n"
+
+
+def test_later_title_and_body(monkeypatch, capsys):
+    assert release_notes.title(SUBJECTS, later=True).startswith(
+        "For the next release: 1 feature, 2 fixes"
+    )
+    assert release_notes.title(["fix: one"], later=True) == "[next release] fix: one"
+    assert release_notes.title([], later=True) == "ship-later"
+    body = release_notes.body(["feat: x"], None, later=True)
+    assert body.startswith("Auto-opened from `ship-later`")
+    assert "without a release of its own" in body
+    monkeypatch.setattr(sys, "stdin", io.StringIO("feat: a\nfix: b\n"))
+    release_notes.main(["title", "--later"])
+    assert capsys.readouterr().out == "For the next release: 1 feature, 1 fix\n"
+    monkeypatch.setattr(sys, "stdin", io.StringIO("feat: a\n"))
+    release_notes.main(["body", "--later"])
+    assert "ship-later" in capsys.readouterr().out

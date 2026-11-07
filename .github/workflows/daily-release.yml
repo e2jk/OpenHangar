@@ -1,13 +1,16 @@
 name: Daily release
 
 # Routine Renovate updates no longer publish one release each (several land
-# every day): ci.yml fully tests each one on its own PR, but only a ship
-# PR, a Renovate security-fix PR or a workflow_dispatch rebuild of main
-# publishes (see the version job's publish_now in ci.yml). Once a day this
-# releases whatever has accumulated on main since the latest release, by
-# dispatching that same rebuild — it builds and tests main with all of the
-# day's updates together, then publishes it. Nothing new, nothing
-# dispatched.
+# every day), nor do small changes the repo owner ships with
+# `scripts/ship.sh --later` (the `ship-later` branch): ci.yml fully tests
+# each one on its own PR, but only a ship PR, a Renovate security-fix PR
+# or a workflow_dispatch rebuild of main publishes (see the version job's
+# publish_now in ci.yml). Once a day this releases whatever has
+# accumulated on main since the latest release, by dispatching that same
+# rebuild — it builds and tests main with all of the day's changes
+# together, then publishes it (with docs/release-notes/next.md as its
+# summary when that changed since the latest release). Nothing new,
+# nothing dispatched.
 #
 # Renovate still opens its PRs as updates come out rather than in a batch
 # window: trickling in, each one merges onto a main that already has the
