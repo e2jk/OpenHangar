@@ -1,0 +1,8 @@
+# actionlint 1.7.12 (the version pinned in ci.yml and .githooks/pre-push)
+# predates GitHub's ubuntu-26.04 hosted runner, so it reports the label as
+# unknown. It's a real GitHub-hosted runner, not a self-hosted one — this
+# list only teaches actionlint the label. Remove once the pinned actionlint
+# knows it.
+self-hosted-runner:
+  labels:
+    - ubuntu-26.04
