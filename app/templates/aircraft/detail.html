@@ -729,6 +729,33 @@
     </a>
     {% endif %}
   </div>
+  {# Fuel on board now: last recorded fuel remaining + what was added since
+     (refuels/fuel_log.py current_fuel_on_board). #}
+  {% set fob = fuel_on_board %}
+  <div class="ac-form-card p-3 mb-2" id="fuel-on-board">
+    <div class="d-flex align-items-baseline gap-2 flex-wrap">
+      <span class="text-muted oh-fs-09">{{ _('Fuel on board') }}</span>
+      {% if fob %}
+      <span class="fw-semibold fs-5 oh-text-navy">{{ '%.0f'|format(fob.liters) }} L</span>
+      {% if fob.capacity %}<span class="text-muted oh-fs-09">/ {{ '%.0f'|format(fob.capacity) }} L</span>{% endif %}
+      {% else %}
+      <span class="text-muted">{{ _('Unknown') }}</span>
+      {% endif %}
+    </div>
+    {% if fob %}
+    <div class="text-muted oh-fs-08">
+      {% if fob.by_tank %}{% for e in fob.by_tank %}{{ e.tank }} {{ '%.0f'|format(e.liters|float) }} L{% if not loop.last %} · {% endif %}{% endfor %} — {% endif %}
+      {{ _('left after the flight of %(date)s (%(route)s)', date=fob.flight.date.strftime('%Y-%m-%d'), route=fob.flight.departure_icao ~ ' → ' ~ fob.flight.arrival_icao) }}{% if fob.added_after %}, {{ _('plus %(liters)s L added since', liters='%.0f'|format(fob.added_after)) }}{% endif %}.
+    </div>
+    {% if not fob.is_current %}
+    <div class="text-warning oh-fs-08">
+      <i class="bi bi-exclamation-triangle me-1"></i>{{ ngettext('One later flight has no fuel remaining recorded — the fuel on board may be lower.', '%(n)d later flights have no fuel remaining recorded — the fuel on board may be lower.', fob.later_flights, n=fob.later_flights) }}
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="text-muted oh-fs-08">{{ _('Record the fuel remaining at the end of each flight to see it here.') }}</div>
+    {% endif %}
+  </div>
   <div class="ac-form-card {% if recent_refuels %}p-0{% else %}p-3{% endif %} mb-3">
   {% if recent_refuels %}
     <div class="table-responsive">
