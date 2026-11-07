@@ -580,3 +580,154 @@ class TestFuelLogPage:
         assert rv.headers["Location"].endswith("/aircraft/OO-FP4/refuels")
         page = client.get(f"/aircraft/{acid}/refuels").data.decode()
         assert "2 of 3 refuels costed" in page
+
+
+# ── Fuel on board ─────────────────────────────────────────────────────────────
+
+
+class TestFuelOnBoard:
+    def _setup(self, app, email, tanks=((110,),)):
+        acid = _aircraft(app, email)
+        with app.app_context():
+            for i, (cap,) in enumerate(tanks):
+                db.session.add(
+                    AircraftFuelTank(
+                        aircraft_id=acid,
+                        name=f"T{i}",
+                        capacity_liters=cap,
+                        sort_order=i,
+                    )
+                )
+            db.session.commit()
+        return acid
+
+    def _fob(self, acid):
+        from refuels.fuel_log import (  # pyright: ignore[reportMissingImports]
+            current_fuel_on_board,
+        )
+
+        return current_fuel_on_board(db.session.get(Aircraft, acid))
+
+    def test_unknown_without_any_fuel_remaining(self, app):
+        acid = self._setup(app, "fob0@example.com")
+        with app.app_context():
+            _flight(acid, date(2026, 11, 1))
+            db.session.commit()
+            assert self._fob(acid) is None
+
+    def test_latest_fuel_remaining_plus_what_was_added_since(self, app):
+        from datetime import UTC, datetime
+
+        acid = self._setup(app, "fob1@example.com")
+        with app.app_context():
+            _flight(acid, date(2026, 10, 1), fuel_remaining_qty=Decimal(90))
+            last = _flight(
+                acid,
+                date(2026, 11, 2),
+                departure_time=time(16, 30),
+                fuel_remaining_qty=Decimal("41.2"),
+                fuel_added_after_qty=Decimal(10),
+                fuel_added_after_unit="L",
+                created_at=datetime(2026, 11, 2, 18, 0, tzinfo=UTC),
+            )
+            # The earlier leg the same day doesn't count as "later".
+            _flight(acid, date(2026, 11, 2), departure_time=time(10, 6))
+            for day, qty, logged in (
+                (date(2026, 11, 3), 5, datetime(2026, 11, 3, 9, 0, tzinfo=UTC)),
+                # Same day, logged after the flight: counted.
+                (date(2026, 11, 2), 2, datetime(2026, 11, 2, 19, 0, tzinfo=UTC)),
+                # Same day, logged before the flight: already in its figure.
+                (date(2026, 11, 2), 7, datetime(2026, 11, 2, 8, 0, tzinfo=UTC)),
+                # Before the flight: not counted.
+                (date(2026, 11, 1), 50, datetime(2026, 11, 1, 9, 0, tzinfo=UTC)),
+            ):
+                db.session.add(
+                    Refuel(
+                        aircraft_id=acid,
+                        date=day,
+                        quantity=Decimal(qty),
+                        unit="L",
+                        created_at=logged,
+                    )
+                )
+            db.session.commit()
+            fob = self._fob(acid)
+            assert fob.flight.id == last.id
+            assert fob.added_after == 17.0  # 10 after the flight + 5 + 2
+            assert fob.liters == 58.2
+            assert fob.capacity == 110.0
+            assert fob.is_current and fob.later_flights == 0
+            assert fob.by_tank is None
+
+    def test_capped_at_tank_capacity_and_gallons_converted(self, app):
+        acid = self._setup(app, "fob2@example.com")
+        with app.app_context():
+            _flight(
+                acid,
+                date(2026, 11, 2),
+                fuel_remaining_qty=Decimal(100),
+                fuel_added_after_qty=Decimal(10),
+                fuel_added_after_unit="gal",
+            )
+            db.session.commit()
+            fob = self._fob(acid)
+            assert fob.added_after == pytest.approx(37.9, abs=0.05)
+            assert fob.liters == 110.0
+
+    def test_per_tank_and_later_flights_without_figure(self, app):
+        acid = self._setup(app, "fob3@example.com", tanks=((40,), (40,)))
+        with app.app_context():
+            _flight(
+                acid,
+                date(2026, 11, 2),
+                fuel_remaining_qty=Decimal(22),
+                fuel_remaining_by_tank=[
+                    {"tank": "T0", "liters": 9.0},
+                    {"tank": "T1", "liters": 13.0},
+                ],
+            )
+            _flight(acid, date(2026, 11, 4))
+            _flight(acid, date(2026, 11, 5))
+            db.session.commit()
+            fob = self._fob(acid)
+            assert fob.liters == 22.0
+            assert fob.by_tank[1] == {"tank": "T1", "liters": 13.0}
+            assert not fob.is_current and fob.later_flights == 2
+
+    def test_same_day_without_clock_times_uses_entry_order(self, app):
+        acid = self._setup(app, "fob6@example.com")
+        with app.app_context():
+            _flight(acid, date(2026, 11, 2), fuel_remaining_qty=Decimal(60))
+            _flight(acid, date(2026, 11, 2))  # entered later, no figure
+            db.session.commit()
+            fob = self._fob(acid)
+            assert fob.liters == 60.0 and fob.later_flights == 1
+
+    def test_no_capacity_configured(self, app):
+        acid = _aircraft(app, "fob4@example.com")
+        with app.app_context():
+            _flight(acid, date(2026, 11, 2), fuel_remaining_qty=Decimal(150))
+            db.session.commit()
+            fob = self._fob(acid)
+            assert fob.liters == 150.0 and fob.capacity is None
+
+    def test_aircraft_page(self, app, client):
+        acid = self._setup(app, "fob5@example.com")
+        _login(app, client, email="fob5@example.com")
+        page = client.get(f"/aircraft/{acid}").data.decode()
+        assert "Record the fuel remaining at the end of each flight" in page
+        with app.app_context():
+            _flight(
+                acid,
+                date(2026, 11, 2),
+                departure_icao="EGHF",
+                fuel_remaining_qty=Decimal("41.2"),
+                fuel_added_after_qty=Decimal(10),
+            )
+            _flight(acid, date(2026, 11, 3))
+            db.session.commit()
+        page = client.get(f"/aircraft/{acid}").data.decode()
+        assert "51 L" in page and "/ 110 L" in page
+        assert "left after the flight of 2026-11-02 (EGHF → EBAW)" in page
+        assert "plus 10 L added since" in page
+        assert "One later flight has no fuel remaining recorded" in page

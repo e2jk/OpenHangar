@@ -299,9 +299,11 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
 
     from refuels.fuel_log import (  # pyright: ignore[reportMissingImports]
         build_fuel_log,
+        current_fuel_on_board,
     )
 
     recent_refuels = build_fuel_log(ac.id, None, _date.today())[:3]
+    fuel_on_board = current_fuel_on_board(ac)
     recent_documents = (
         Document.query.filter_by(aircraft_id=ac.id, is_sensitive=False)
         .order_by(Document.uploaded_at.desc())
@@ -442,6 +444,7 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         recent_expenses=recent_expenses,
         expense_type_labels=ExpenseType.LABELS,
         recent_refuels=recent_refuels,
+        fuel_on_board=fuel_on_board,
         recent_documents=recent_documents,
         document_count=document_count,
         active_insurance_cert=active_insurance_cert,
