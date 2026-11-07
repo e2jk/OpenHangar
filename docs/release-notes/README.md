@@ -1,8 +1,9 @@
 # Release notes
 
 `next.md` is the hand-written summary of the release being prepared: a few
-plain-language lines on what changed for users, kept up to date while the
-work happens. On shipping, it's put on top of the ship PR's description and
+plain-language lines on everything it contains — what changed for users
+first, then internal changes under a short **Maintenance** heading — kept up
+to date with each commit. On shipping, it's put on top of the ship PR's description and
 of the GitHub release notes, above the commit list grouped by kind
 (`scripts/release_notes.py`).
 
