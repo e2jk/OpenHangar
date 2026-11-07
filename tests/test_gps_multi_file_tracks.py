@@ -344,3 +344,118 @@ class TestGroundSessionsDaysApart:
         groups = _split_into_raw_groups(before + flight + taxi_in + after)
         assert [len(g) for g in groups] == [3, 9, 3]
         assert groups[1] == flight + taxi_in
+
+
+class TestLaterFileOfATrackedFlight:
+    """A later file of a flight that already has a track, uploaded on its
+    own, is offered as another part of that flight — not as a new one."""
+
+    def test_continuation_candidates_and_adds_to_track(self):
+        from types import SimpleNamespace
+
+        from services.gps_link import (  # pyright: ignore[reportMissingImports]
+            adds_to_track,
+            continuation_candidates,
+        )
+
+        def flight(dep, arr, t0=None, t1=None, track=True):
+            return SimpleNamespace(
+                date=date(2024, 6, 1),
+                departure_icao=dep,
+                arrival_icao=arr,
+                departure_time=t0,
+                arrival_time=t1,
+                takeoff_time=None,
+                landing_time=None,
+                gps_track_id=1 if track else None,
+                block_off_utc=_t(9) if track else None,
+                block_on_utc=_t(9, 40) if track else None,
+            )
+
+        same_route = flight("EBNM", "EBAW", time(8, 55), time(10, 15))
+        no_times = flight("EBNM", "EBST")
+        night = flight("EBNM", "EBAW", time(23, 0), time(1, 0))  # past midnight
+        other_route = flight("EBST", "EBZW", time(8, 55), time(10, 15))
+        too_early = flight("EBNM", "EBAW", time(8, 0), time(9, 40))
+        untracked = flight("EBNM", "EBAW", track=False)
+        flights = [same_route, no_times, night, other_route, too_early, untracked]
+        got = continuation_candidates(flights, _t(10), _t(10, 5), "EBNM", "EBAW")
+        assert got == [same_route, no_times]
+        # Overlapping its track: that's the same data again, not another part.
+        assert (
+            continuation_candidates([same_route], _t(9, 30), _t(9, 45), "EBNM", "EBAW")
+            == []
+        )
+
+        assert adds_to_track(same_route, _t(10), _t(10, 5))
+        assert not adds_to_track(same_route, _t(9, 30), _t(9, 45))
+        assert not adds_to_track(untracked, _t(10), _t(10, 5))
+
+    def _tracked_flight(self, app, ac_id, uid=None):
+        with app.app_context():
+            track = GpsTrack(
+                block_off_utc=_t(9), block_on_utc=_t(9, 40), source_files=["a.csv"]
+            )
+            db.session.add(track)
+            db.session.flush()
+            f = Flight(
+                aircraft_id=ac_id,
+                date=date(2024, 6, 1),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                departure_time=time(8, 55),
+                arrival_time=time(10, 15),
+                block_off_utc=_t(9),
+                block_on_utc=_t(9, 40),
+                gps_track_id=track.id,
+                pic_user_id=uid,
+            )
+            db.session.add(f)
+            db.session.commit()
+            return f.id
+
+    def test_aircraft_review_offers_it_and_says_it_adds(self, client, app):
+        uid, _tid, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        fid = self._tracked_flight(app, ac_id)
+        segs, _ = _upload(client, ac_id)
+        assert segs[0]["matched_flight_id"] == fid
+        assert segs[0]["matched_ambiguous"] is False
+        assert segs[0]["matched_adds_to_track"] is True
+        page = client.get(f"/aircraft/{ac_id}/gps-import/review").data.decode()
+        assert "this segment will be added to it" in page
+        client.post(f"/aircraft/{ac_id}/gps-import/confirm-all")
+        with app.app_context():
+            track = db.session.get(Flight, fid).gps_track
+            assert track.source_files[0] == "a.csv" and len(track.source_files) == 2
+            assert Flight.query.filter_by(aircraft_id=ac_id).count() == 1
+
+        # Uploaded again: now within its track — the same data, no new flight.
+        segs, _ = _upload(client, ac_id)
+        assert segs[0]["matched_flight_id"] == fid
+        assert segs[0]["matched_adds_to_track"] is False
+
+    def test_two_possible_flights_are_left_to_choose(self, client, app):
+        uid, _tid, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        ids = {self._tracked_flight(app, ac_id), self._tracked_flight(app, ac_id)}
+        segs, _ = _upload(client, ac_id)
+        assert segs[0]["matched_ambiguous"] is True
+        assert {c["id"] for c in segs[0]["matched_candidates"]} == ids
+
+    def test_pilot_review_offers_it(self, client, app):
+        uid, _tid, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        fid = self._tracked_flight(app, ac_id, uid=uid)
+        gpx = _gpx_bytes(speeds_ms=[0.0, 20.0, 20.0, 20.0, 20.0, 0.0])
+        client.post(
+            "/pilot/gps-import",
+            data={"gps_files": (io.BytesIO(gpx), "flight.gpx")},
+            content_type="multipart/form-data",
+        )
+        page = client.get("/pilot/gps-import/review").data.decode()
+        with client.session_transaction() as sess:
+            (seg,) = sess["pilot_gps_import"]["segments"]
+        assert seg["matched_flight_id"] == fid
+        assert seg["matched_adds_to_track"] is True
+        assert "this segment will be added to it" in page

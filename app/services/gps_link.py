@@ -20,7 +20,7 @@ link_track() decides, for a flight and a new GPS segment:
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from models import GpsTrack, db  # pyright: ignore[reportMissingImports]
@@ -86,6 +86,65 @@ def block_match(
         return True
     return _same_icao(flight.departure_icao, departure_icao) and _same_icao(
         flight.arrival_icao, arrival_icao
+    )
+
+
+_LOGGED_WINDOW_TOLERANCE = timedelta(minutes=15)
+
+
+def _within_logged_times(flight: Any, block_off: datetime, block_on: datetime) -> bool:
+    """Whether a segment lies within the flight's logged departure→arrival
+    times (UTC, 15 min either side) — or the flight has no logged times."""
+    start_t = flight.departure_time or flight.takeoff_time
+    end_t = flight.arrival_time or flight.landing_time
+    if flight.date is None or start_t is None or end_t is None:
+        return True
+    start = datetime.combine(flight.date, start_t, tzinfo=UTC)
+    end = datetime.combine(flight.date, end_t, tzinfo=UTC)
+    if end < start:  # past midnight UTC
+        end += timedelta(days=1)
+    return bool(
+        start - _LOGGED_WINDOW_TOLERANCE <= _utc(block_off)
+        and _utc(block_on) <= end + _LOGGED_WINDOW_TOLERANCE
+    )
+
+
+def continuation_candidates(
+    flights: list[Any],
+    block_off: datetime,
+    block_on: datetime,
+    departure_icao: str | None,
+    arrival_icao: str | None,
+) -> list[Any]:
+    """Among *flights* (already-tracked ones, on the segment's date), those
+    this segment could be another part of — a later file of the same flight
+    uploaded on its own: its track covers another time, the segment starts
+    where the flight did or ends where it did, and it lies within the
+    flight's logged times. Fallback when nothing else matches."""
+    return [
+        f
+        for f in flights
+        if f.block_off_utc is not None
+        and f.block_on_utc is not None
+        and not _overlaps(f.block_off_utc, f.block_on_utc, block_off, block_on)
+        and (
+            _same_icao(f.departure_icao, departure_icao)
+            or _same_icao(f.arrival_icao, arrival_icao)
+        )
+        and _within_logged_times(f, block_off, block_on)
+    ]
+
+
+def adds_to_track(flight: Any, block_off: datetime, block_on: datetime) -> bool:
+    """Whether linking a segment to *flight* adds to its existing track (it
+    covers another time) rather than replacing it — for the review page."""
+    return bool(
+        flight.gps_track_id is not None
+        and flight.block_off_utc is not None
+        and flight.block_on_utc is not None
+        and not _overlaps(
+            flight.block_off_utc, flight.block_on_utc, block_off, block_on
+        )
     )
 
 
