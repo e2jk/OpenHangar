@@ -183,9 +183,9 @@ service worker in dev mode; see `docs/development.md`).
 `docs/release-notes/next.md` is the hand-written summary of the release being
 prepared — a few plain-language lines per user-visible change. Update it as
 you complete changes. It's only used when it changed in the shipped batch, so
-an old summary is never reused; at the start of a new round of work, copy it
-to `docs/release-notes/vX.Y.Z.md` (the version it shipped in) and empty it.
-See `docs/release-notes/README.md`.
+an old summary is never reused; once a release is out, empty it to start the
+next one (the published GitHub release keeps the text). See
+`docs/release-notes/README.md`.
 
 ### No hardcoded personal or machine-specific paths
 Tracked files (docs, this file, code comments, `.claude/` config) must never contain a

@@ -8,5 +8,5 @@ of the GitHub release notes, above the commit list grouped by kind
 
 It's only used when it **changed** in the batch being shipped (PR) /
 since the previous version tag (release notes) — a summary left over from an
-earlier release is never reused. At the start of the next round of work,
-copy it to `vX.Y.Z.md` (the version it went out in) and empty `next.md`.
+earlier release is never reused. Once a release is out, empty `next.md` to
+start the next one — the published GitHub release keeps the text.
