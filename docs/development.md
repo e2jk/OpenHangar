@@ -714,6 +714,11 @@ a change:
   the current round to finish landing first. Watch a push land with
   `gh pr status`. `bash scripts/ship.sh --no-verify` skips the pre-push
   hook, same flag and meaning as `git push --no-verify`.
+  Before pushing, it lists the commits made on GitHub since the last release
+  (e.g. dependency updates) that will ship along, and asks to confirm when one
+  that isn't a dependency update may be missing from the release summary;
+  `bash scripts/ship.sh --upstream` only lists them (see
+  `docs/release-notes/README.md`).
 
   `ship` is deleted from the remote automatically after each merge (repo-wide
   `delete_branch_on_merge`) and simply recreated on the next push.
