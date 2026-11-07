@@ -212,10 +212,11 @@ class TestAircraftGpsImport:
             [(_GPS_DAY, "EGSU", "EGSC"), (date(2024, 5, 31), "EGSU", "EGSC")],
         )
         _login(client, uid)
-        seg, _page = _aircraft_review(client, ac_id)
+        seg, page = _aircraft_review(client, ac_id)
         assert seg["matched_near_date"] is False
         assert seg["matched_ambiguous"] is False
         assert seg["matched_flight_id"] == same_day
+        assert "possibly a date typo" not in page
 
     def test_far_or_other_route_never_offered(self, client, app):
         uid, ac_id, _ids = _world(
@@ -228,9 +229,10 @@ class TestAircraftGpsImport:
             ],
         )
         _login(client, uid)
-        seg, _page = _aircraft_review(client, ac_id)
+        seg, page = _aircraft_review(client, ac_id)
         assert seg["matched_flight_id"] is None
         assert seg["matched_near_date"] is False
+        assert "possibly a date typo" not in page
 
 
 class TestPilotGpsImport:
