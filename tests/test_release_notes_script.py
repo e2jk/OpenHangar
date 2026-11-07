@@ -62,16 +62,72 @@ def test_cli(monkeypatch, capsys, tmp_path):
 
 def test_later_title_and_body(monkeypatch, capsys):
     assert release_notes.title(SUBJECTS, later=True).startswith(
-        "For the next release: 1 feature, 2 fixes"
+        "[later] 1 feature, 2 fixes"
     )
-    assert release_notes.title(["fix: one"], later=True) == "[next release] fix: one"
+    assert release_notes.title(["fix: one"], later=True) == "[later] fix: one"
     assert release_notes.title([], later=True) == "ship-later"
     body = release_notes.body(["feat: x"], None, later=True)
     assert body.startswith("Auto-opened from `ship-later`")
     assert "without a release of its own" in body
     monkeypatch.setattr(sys, "stdin", io.StringIO("feat: a\nfix: b\n"))
     release_notes.main(["title", "--later"])
-    assert capsys.readouterr().out == "For the next release: 1 feature, 1 fix\n"
+    assert capsys.readouterr().out == "[later] 1 feature, 1 fix\n"
     monkeypatch.setattr(sys, "stdin", io.StringIO("feat: a\n"))
     release_notes.main(["body", "--later"])
     assert "ship-later" in capsys.readouterr().out
+
+
+SUMMARY = (
+    "# GPS import: several files per flight, ground runs\n\n**GPS**\n- Ground runs.\n"
+)
+
+
+def test_title_from_the_summary_title_line():
+    assert release_notes.title(SUBJECTS, summary=SUMMARY) == (
+        "GPS import: several files per flight, ground runs"
+    )
+    assert release_notes.title(SUBJECTS, later=True, summary=SUMMARY) == (
+        "[later] GPS import: several files per flight, ground runs"
+    )
+    # No title line, or an empty one: the counts, as before.
+    assert release_notes.title(SUBJECTS, summary="**GPS**\n- x").startswith("Release: ")
+    assert release_notes.title(SUBJECTS, summary="# \n- x").startswith("Release: ")
+    # Too long (ship.sh refuses it; capped anyway).
+    long = release_notes.title(["feat: x"], summary="# " + "word " * 30)
+    assert len(long) == release_notes.MAX_TITLE and long.endswith("…")
+
+
+def test_body_with_title_line_and_counts():
+    body = release_notes.body(SUBJECTS, SUMMARY)
+    assert "# GPS import" not in body
+    assert "## Summary\n\n**GPS**\n- Ground runs." in body
+    assert "8 commits: 1 feature, 2 fixes," in body
+    assert "1 commit: 1 feature." in release_notes.body(["feat: x"], None)
+    # Only a title line: no summary section.
+    assert "## Summary" not in release_notes.body(["feat: x"], "# Just a title\n")
+
+
+def test_heading_and_summary_cli(capsys, tmp_path):
+    f = tmp_path / "next.md"
+    f.write_text(SUMMARY)
+    release_notes.main(["heading", str(f)])
+    assert (
+        capsys.readouterr().out == "GPS import: several files per flight, ground runs\n"
+    )
+    release_notes.main(["summary", str(f)])
+    assert capsys.readouterr().out == "**GPS**\n- Ground runs.\n"
+    f.write_text("- no title\n")
+    release_notes.main(["heading", str(f)])
+    assert capsys.readouterr().out == ""
+    f.write_text("")
+    release_notes.main(["summary", str(f)])
+    assert capsys.readouterr().out == ""
+
+
+def test_heading_check(capsys, tmp_path):
+    f = tmp_path / "next.md"
+    f.write_text("# " + "x" * 73 + "\n")
+    assert release_notes.main(["heading", str(f), "--check"]) == 1
+    assert "73 characters long" in capsys.readouterr().err
+    f.write_text("# " + "x" * 72 + "\n")
+    assert release_notes.main(["heading", str(f), "--check"]) == 0

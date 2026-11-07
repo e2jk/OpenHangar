@@ -122,8 +122,9 @@ jobs:
           HEAD_SHA: ${{ github.sha }}
           HEAD_BRANCH: ${{ github.ref_name }}
         run: |
-          # The title counts the whole batch by kind ("Release: 7 features,
-          # 9 fixes"), the body groups every commit by kind — see
+          # The title is next.md's title line, or counts the whole batch by
+          # kind ("Release: 7 features, 9 fixes"); the body groups every
+          # commit by kind — see
           # scripts/release_notes.py. Recomputed on every push to ship, so
           # shipping again while the PR is still open keeps both current.
           # docs/release-notes/next.md, the hand-written release summary,
@@ -141,7 +142,9 @@ jobs:
           if [ "$HEAD_BRANCH" = "ship-later" ]; then
             later_args=(--later)
           fi
-          title=$(printf '%s\n' "$subjects" | python3 scripts/release_notes.py title "${later_args[@]}")
+          # A `# <title>` first line in next.md (when it changed in this
+          # batch) is the PR title; otherwise the count of commits by kind.
+          title=$(printf '%s\n' "$subjects" | python3 scripts/release_notes.py title "${summary_args[@]}" "${later_args[@]}")
           body=$(printf '%s\n' "$subjects" | python3 scripts/release_notes.py body "${summary_args[@]}" "${later_args[@]}")
 
           pr_number=$(gh pr list --head "$HEAD_BRANCH" --base main --state open --json number --jq '.[0].number // empty')

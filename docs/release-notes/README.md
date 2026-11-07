@@ -12,13 +12,34 @@ since the previous version tag (release notes) — a summary left over from an
 earlier release is never reused. Once a release is out, empty `next.md` to
 start the next one — the published GitHub release keeps the text.
 
+## Title line
+
+`next.md` may start with a title line, `# <title>`, naming what the release
+is mostly about — e.g. `# GPS import: several files per flight, ground runs`.
+It becomes the ship PR's title and the GitHub release's name
+(`v3.36.0 — <title>`) instead of the generic count ("Release: 6 features, 5
+fixes, …"), which moves into the PR's description, and isn't repeated in the
+summary. Keep it to **72 characters** or fewer — longer titles are cut off in
+GitHub's lists and notifications; `scripts/ship.sh` refuses to push a longer
+one. No title line: the count is the title, as before. Write the title for the
+whole release, not just the latest batch, and adjust it as the release grows.
+
 ## Shipping without an immediate release
 
 `scripts/ship.sh --later` merges the local work without publishing a release
-(see `docs/development.md`); the next daily release publishes it. Write its
-lines in `next.md` as usual: the daily release takes `next.md` as its summary
-when it changed since the latest release, exactly like a ship's release does,
-and the `ship-later` PR's description shows it too.
+(see `docs/development.md`); the next daily release publishes it — or the next
+plain ship, if that comes first. Either way that release covers **everything
+since the previous release**, so `next.md` must too:
+
+- Keep writing in the same `next.md` across `--later` pushes — **don't empty
+  it after a `ship-later` PR merges**, only once a release is actually out
+  (published by a ship or by the daily release).
+- So when shipping in release mode after one or more `--later` pushes,
+  `next.md` already holds their lines; check it still reads as one summary
+  and that the title line fits the whole release.
+- The daily release takes `next.md` as its summary (and its title line as its
+  name) when it changed since the latest release, exactly like a ship's
+  release does, and the `ship-later` PR's description shows it too.
 
 ## Commits made on GitHub
 
@@ -28,6 +49,7 @@ release along with the local work: its commit list includes them on its own
 (routine dependency updates folded into one line), but `next.md` only says
 what was written into it. So, before finalising `next.md`, run
 `scripts/ship.sh --upstream` (fetches, prints, pushes nothing) and add a line
-for any that's worth mentioning. `scripts/ship.sh` itself lists them again
+for any that's worth mentioning — all of them since the previous release, not
+just since the last push, since a `--later` push doesn't release them either. `scripts/ship.sh` itself lists them again
 before pushing and, if any isn't a dependency update, asks to confirm
 they're covered.

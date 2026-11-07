@@ -1518,10 +1518,20 @@ jobs:
             $0 == me { found=1 }
           ')
           : > /tmp/summary.md
+          # A `# <title>` first line names the release ("v1.2.3 — <title>")
+          # and isn't repeated in its summary (scripts/release_notes.py).
+          RELEASE_TITLE="v${VERSION}"
           if [ -n "$PREV_TAG" ] && [ -s "$SUMMARY_FILE" ] \
               && git cat-file -e "${PREV_TAG}^{commit}" 2>/dev/null \
               && ! git diff --quiet "$PREV_TAG" "${GIT_SHA}" -- "$SUMMARY_FILE" 2>/dev/null; then
-            { echo "## Summary"; echo; cat "$SUMMARY_FILE"; echo; } > /tmp/summary.md
+            HEADING=$(python3 scripts/release_notes.py heading "$SUMMARY_FILE")
+            if [ -n "$HEADING" ]; then
+              RELEASE_TITLE="v${VERSION} — ${HEADING}"
+            fi
+            SUMMARY_TEXT=$(python3 scripts/release_notes.py summary "$SUMMARY_FILE")
+            if [ -n "$SUMMARY_TEXT" ]; then
+              printf '## Summary\n\n%s\n\n' "$SUMMARY_TEXT" > /tmp/summary.md
+            fi
             echo "Release summary included (changed since ${PREV_TAG})."
           else
             echo "No release summary (unchanged since ${PREV_TAG:-<none>}, or empty)."
@@ -1533,7 +1543,7 @@ jobs:
             cat /tmp/auto-notes.md
           } > /tmp/release-notes.md
           gh release create "v${VERSION}" \
-            --title "v${VERSION}" \
+            --title "${RELEASE_TITLE}" \
             --notes-file /tmp/release-notes.md \
             "sbom-${GIT_SHA}.cyclonedx.json#SBOM (CycloneDX JSON)" \
             "sbom-${GIT_SHA}.cyclonedx.json.sigstore.json#SBOM signature (Sigstore)" \
