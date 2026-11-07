@@ -608,3 +608,18 @@ nav.navbar.mayday #oh-mayday-banner {
 .htmx-indicator { opacity: 0; }
 .htmx-request .htmx-indicator { opacity: 1; transition: opacity 200ms ease-in; }
 .htmx-request.htmx-indicator { opacity: 1; transition: opacity 200ms ease-in; }
+
+/* Import review pages: a row whose existing and file values differ. Uses
+   Bootstrap's theme-aware "subtle" warning colours (light yellow / dark
+   amber) on every cell, label included — the fixed light-yellow
+   .table-warning left the muted label grey-on-yellow in dark mode. The
+   label turns bold so the difference doesn't rely on colour alone. */
+.table > tbody > tr.oh-diff-row > * {
+  --bs-table-bg-type: var(--bs-warning-bg-subtle);
+  --bs-table-color-type: var(--bs-warning-text-emphasis);
+  color: var(--bs-warning-text-emphasis);
+}
+.table > tbody > tr.oh-diff-row > td.text-muted {
+  color: var(--bs-warning-text-emphasis) !important;
+  font-weight: 600;
+}

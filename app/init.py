@@ -603,6 +603,14 @@ def create_app() -> Flask:
 
         return format_preview_cell(val, target)
 
+    @app.template_global("review_values_differ")
+    def _review_values_differ_global(old: Any, new: Any, places: int = 2) -> bool:
+        from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
+            review_values_differ,
+        )
+
+        return review_values_differ(old, new, places)
+
     @app.template_filter("airport_name")
     def _airport_name_filter(code: str | None) -> str:
         if not code:
