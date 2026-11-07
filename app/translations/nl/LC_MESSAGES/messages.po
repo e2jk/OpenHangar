@@ -873,10 +873,10 @@ msgstr "Dit verschil is niet meer van toepassing."
 
 #: app/config/routes.py:1773
 #, python-format
-msgid "Flight corrected: %(old)s → %(new)s."
-msgstr "Vlucht gecorrigeerd: %(old)s → %(new)s."
+msgid "Flight corrected: %(old)s → %(new)s. Nothing else was changed; the flight's notes record the paper logbook value."
+msgstr "Vlucht gecorrigeerd: %(old)s → %(new)s. Verder is niets gewijzigd; de notities van de vlucht vermelden de waarde uit het papieren logboek."
 
-#: app/config/routes.py:1808
+#: app/config/routes.py:1809
 msgid "Difference dismissed."
 msgstr "Verschil genegeerd."
 
@@ -7205,8 +7205,8 @@ msgid "Differences between logged flights and their GPS tracks"
 msgstr "Verschillen tussen geregistreerde vluchten en hun GPS-sporen"
 
 #: app/templates/config/data_checks.html:20
-msgid "The logbook is never changed on its own: each difference below is only corrected when you choose to use the GPS value — the flight then gets a note of what the paper logbook says, so the paper logbook can stay as written. Dismiss the ones that are right as logged — they are not listed again unless the GPS track changes. Checked daily, and whenever this page is opened."
-msgstr "Het logboek wordt nooit vanzelf gewijzigd: elk verschil hieronder wordt pas gecorrigeerd als u kiest voor de GPS-waarde — de vlucht krijgt dan een notitie van wat het papieren logboek vermeldt, zodat het papieren logboek kan blijven zoals het geschreven is. Negeer de verschillen die kloppen zoals geregistreerd — ze komen pas terug als het GPS-spoor verandert. Dagelijks gecontroleerd, en telkens deze pagina geopend wordt."
+msgid "The logbook is never changed on its own: each difference below is only corrected when you choose to use the GPS value. That changes only the one field named on its line — the departure airfield, the arrival airfield or the date; times, counters and everything else stay as logged — and adds a note to the flight with what the paper logbook says, so the paper logbook can stay as written. Dismiss the ones that are right as logged — they are not listed again unless the GPS track changes. Checked daily, and whenever this page is opened."
+msgstr "Het logboek wordt nooit vanzelf gewijzigd: elk verschil hieronder wordt pas gecorrigeerd als u kiest voor de GPS-waarde. Dan verandert alleen het veld op die regel — het vertrekvliegveld, het aankomstvliegveld of de datum; tijden, tellers en al het andere blijven zoals geregistreerd — en de vlucht krijgt een notitie met wat het papieren logboek vermeldt, zodat het papieren logboek kan blijven zoals het geschreven is. Negeer de verschillen die kloppen zoals geregistreerd — ze komen pas terug als het GPS-spoor verandert. Dagelijks gecontroleerd, en telkens deze pagina geopend wordt."
 
 #: app/templates/config/data_checks.html:25
 msgid "No differences found between the flights and their GPS tracks."
@@ -7264,16 +7264,42 @@ msgstr "%(km)s km van %(icao)s"
 
 #: app/templates/config/data_checks.html:66
 #, python-format
-msgid "Change the logbook from %(old)s to %(new)s?"
-msgstr "Het logboek wijzigen van %(old)s naar %(new)s?"
+msgid "Change only the departure airfield from %(old)s to %(new)s? The times, date and everything else stay as logged; a note with the paper logbook value is added to the flight."
+msgstr "Alleen het vertrekvliegveld wijzigen van %(old)s naar %(new)s? De tijden, de datum en al het andere blijven zoals geregistreerd; de vlucht krijgt een notitie met de waarde uit het papieren logboek."
 
-#: app/templates/config/data_checks.html:68
+#: app/templates/config/data_checks.html:67
+msgid "Changes only the departure airfield."
+msgstr "Wijzigt alleen het vertrekvliegveld."
+
+#: app/templates/config/data_checks.html:69
+#, python-format
+msgid "Change only the arrival airfield from %(old)s to %(new)s? The times, date and everything else stay as logged; a note with the paper logbook value is added to the flight."
+msgstr "Alleen het aankomstvliegveld wijzigen van %(old)s naar %(new)s? De tijden, de datum en al het andere blijven zoals geregistreerd; de vlucht krijgt een notitie met de waarde uit het papieren logboek."
+
+#: app/templates/config/data_checks.html:70
+msgid "Changes only the arrival airfield."
+msgstr "Wijzigt alleen het aankomstvliegveld."
+
+#: app/templates/config/data_checks.html:72
+#, python-format
+msgid "Change only the date from %(old)s to %(new)s? The times, airfields and everything else stay as logged; a note with the paper logbook value is added to the flight."
+msgstr "Alleen de datum wijzigen van %(old)s naar %(new)s? De tijden, de vliegvelden en al het andere blijven zoals geregistreerd; de vlucht krijgt een notitie met de waarde uit het papieren logboek."
+
+#: app/templates/config/data_checks.html:73
+msgid "Changes only the date."
+msgstr "Wijzigt alleen de datum."
+
+#: app/templates/config/data_checks.html:78
 msgid "Use the GPS value"
 msgstr "GPS-waarde gebruiken"
 
-#: app/templates/config/data_checks.html:73
+#: app/templates/config/data_checks.html:83
 msgid "Dismiss"
 msgstr "Negeren"
+
+#: app/templates/config/data_checks.html:85
+msgid "Nothing to correct automatically — open the flight to check its times."
+msgstr "Niets automatisch te corrigeren — open de vlucht om de tijden na te kijken."
 
 #: app/templates/config/notifications.html:3
 #: app/templates/config/notifications.html:11

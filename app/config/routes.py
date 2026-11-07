@@ -1770,7 +1770,8 @@ def data_check_fix(flight_id: int) -> ResponseReturnValue:
         )
         flash(
             _(
-                "Flight corrected: %(old)s → %(new)s.",
+                "Flight corrected: %(old)s → %(new)s. Nothing else was changed; "
+                "the flight's notes record the paper logbook value.",
                 old=finding.logged or "—",
                 new=finding.suggestion,
             ),

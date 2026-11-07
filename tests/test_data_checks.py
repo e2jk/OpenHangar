@@ -267,6 +267,8 @@ class TestDataChecksPage:
         other = _tracked_flight(app, ac_id, arr="????")
         page = client.get("/config/data-checks").data.decode()
         assert "EDBK" in page and "Use the GPS value" in page
+        assert "Changes only the arrival airfield." in page
+        assert "Change only the arrival airfield from EDBK to EDRK?" in page
         # The page refreshed the count: bell and warning on the config page.
         config = client.get("/config/").data.decode()
         assert "Data checks to review" in config
@@ -277,6 +279,13 @@ class TestDataChecksPage:
         with app.app_context():
             f = db.session.get(Flight, fid)
             assert f.arrival_icao == "EDRK" and "paper logbook says EDBK" in f.notes
+            # Only the airfield: the logged times and date are untouched.
+            assert (f.date, f.departure_time, f.arrival_time) == (
+                date(2025, 3, 18),
+                time(9, 0),
+                time(11, 0),
+            )
+            assert f.departure_icao == "EBAW"
         # Again: no longer applies.
         client.post(f"/config/data-checks/{fid}/fix", data={"key": "arrival:EDRK"})
         with client.session_transaction() as sess:
@@ -361,3 +370,38 @@ class TestDailyRefresh:
         )
         notification_service.run_daily_checks(app)
         assert ran == [1]
+
+
+class TestPageWording:
+    def test_each_kind_says_what_changes(self, client, app):
+        uid, _tid, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        with app.app_context():
+            track = GpsTrack(
+                geojson=_line(EDRK, EBAW),  # departure off as well
+                block_off_utc=_t(6, 0, day=19),
+                block_on_utc=_t(7, 0, day=19),
+            )
+            early = GpsTrack(
+                geojson=_line(EBAW, EBAW), block_off_utc=_t(6, 0), block_on_utc=_t(7, 0)
+            )
+            db.session.add_all([track, early])
+            db.session.flush()
+            for t in (track, early):
+                db.session.add(
+                    Flight(
+                        aircraft_id=ac_id,
+                        date=date(2025, 3, 18),
+                        departure_icao="EBAW",
+                        arrival_icao="EBAW",
+                        departure_time=time(9, 0),
+                        arrival_time=time(11, 0),
+                        gps_track_id=t.id,
+                    )
+                )
+            db.session.commit()
+        page = client.get("/config/data-checks").data.decode()
+        assert "Changes only the departure airfield." in page
+        assert "Changes only the date." in page
+        assert "Change only the date from 2025-03-18 to 2025-03-19?" in page
+        assert "Nothing to correct automatically" in page
