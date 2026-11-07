@@ -584,18 +584,42 @@ class TestDetectSegments:
         assert segs[0].is_ground_only is True
 
     def test_landing_count(self):
-        # fast → slow → fast → slow = 2 landings
+        # flying → stopped → flying → stopped = 2 landings (each stretch
+        # lasting long enough to be real — see _SUSTAIN_S)
         pts = [
             _tp(35.0, h=10, m=0, s=0),
-            _tp(35.0, h=10, m=0, s=10),
-            _tp(5.0, h=10, m=0, s=20),
-            _tp(5.0, h=10, m=0, s=30),
-            _tp(35.0, h=10, m=0, s=40),
-            _tp(35.0, h=10, m=0, s=50),
-            _tp(5.0, h=10, m=1, s=0),
+            _tp(35.0, h=10, m=1, s=0),
+            _tp(5.0, h=10, m=1, s=40),
+            _tp(5.0, h=10, m=2, s=30),
+            _tp(35.0, h=10, m=2, s=40),
+            _tp(35.0, h=10, m=3, s=40),
+            _tp(5.0, h=10, m=4, s=30),
         ]
         segs = detect_segments(pts)
         assert segs[0].landing_count == 2
+
+    def test_noise_is_neither_flight_nor_landing(self):
+        """A noisy GPS (camera, phone) briefly crossing 30 kt: a 10 s spike
+        while taxiing isn't a flight; a 10 s dip in flight isn't a landing."""
+        from aircraft.gps_import import _airborne_periods
+
+        taxi = [
+            _tp(5.0, h=10, m=0, s=0),
+            _tp(36.0, h=10, m=0, s=10),
+            _tp(5.0, h=10, m=0, s=20),
+        ]
+        assert _airborne_periods(taxi) == []
+        flight = [
+            _tp(80.0, h=10, m=0, s=0),
+            _tp(80.0, h=10, m=2, s=0),
+            _tp(25.0, h=10, m=2, s=10),  # one noisy reading
+            _tp(80.0, h=10, m=2, s=20),
+            _tp(80.0, h=10, m=5, s=0),
+            _tp(5.0, h=10, m=6, s=0),
+        ]
+        assert _airborne_periods(flight) == [(0, 4)]
+        segs = detect_segments(flight)
+        assert segs[0].landing_count == 1 and not segs[0].is_ground_only
 
 
 # ── Route integration tests ───────────────────────────────────────────────────

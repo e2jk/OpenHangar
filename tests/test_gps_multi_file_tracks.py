@@ -355,6 +355,11 @@ class TestQuickTurnaroundLegs:
             block_on_utc=_t(8, 20),
             departure_icao="EBNM",
             arrival_icao="EBST",
+            date=date(2024, 6, 1),
+            departure_time=None,
+            arrival_time=None,
+            takeoff_time=None,
+            landing_time=None,
         )
         # Overlapping: the same flight whatever the route says.
         assert block_match(first_leg, _t(8, 0), _t(8, 30), "EBST", "EBNM")
@@ -362,6 +367,43 @@ class TestQuickTurnaroundLegs:
         assert not block_match(first_leg, _t(8, 27), _t(8, 56), "EBST", "EBNM")
         assert block_match(first_leg, _t(8, 27), _t(8, 56), "EBNM", "EBST")
         assert block_match(first_leg, _t(8, 27), _t(8, 56), "????", None)
+        # A solo flown straight after a dual flight, same circuit: the dual
+        # recording isn't more of the solo's data — outside its logged times.
+        solo = SimpleNamespace(
+            block_off_utc=_t(9, 34),
+            block_on_utc=_t(9, 57),
+            departure_icao="EBCI",
+            arrival_icao="EBCI",
+            date=date(2024, 6, 1),
+            departure_time=time(9, 42),
+            arrival_time=time(10, 0),
+            takeoff_time=None,
+            landing_time=None,
+        )
+        assert not block_match(solo, _t(8, 11), _t(9, 34), "EBCI", "EBCI")
+        assert block_match(solo, _t(9, 36), _t(9, 59), "EBCI", "EBCI")  # re-processed
+        # The camera ran on across the handover: the dual recording shares a
+        # few minutes with the solo's — still not the same flight.
+        assert not block_match(solo, _t(8, 11), _t(9, 37), "EBCI", "EBCI")
+
+    def test_edge_overlap_adds_a_part_instead_of_replacing(self, app):
+        with app.app_context():
+            f = _flight(app)
+            link_track(
+                f,
+                geojson=_line((1, 1)),
+                files=["a.gpx"],
+                block_off=_t(10),
+                block_on=_t(11),
+            )
+            track = link_track(
+                f,
+                geojson=_line((2, 2)),
+                files=["b.gpx"],
+                block_off=_t(10, 57),
+                block_on=_t(11, 30),
+            )
+            assert track.source_files == ["a.gpx", "b.gpx"]
 
     def test_next_leg_goes_to_its_own_flight(self, client, app):
         from datetime import timedelta
@@ -427,8 +469,11 @@ class TestLaterFileOfATrackedFlight:
             continuation_candidates,
         )
 
+        ids = iter(range(1, 100))
+
         def flight(dep, arr, t0=None, t1=None, track=True):
             return SimpleNamespace(
+                id=next(ids),
                 date=date(2024, 6, 1),
                 departure_icao=dep,
                 arrival_icao=arr,
@@ -455,6 +500,28 @@ class TestLaterFileOfATrackedFlight:
             continuation_candidates([same_route], _t(9, 30), _t(9, 45), "EBNM", "EBAW")
             == []
         )
+
+        # Not tracked at all: only through logged times containing it (a
+        # recording that stopped before the landing).
+        logged_only = flight("EBNM", "EBAW", time(9, 50), time(10, 30), track=False)
+        assert continuation_candidates(
+            [logged_only], _t(10), _t(10, 5), "EBNM", None
+        ) == [logged_only]
+        assert (
+            continuation_candidates([logged_only], _t(11), _t(11, 5), "EBNM", None)
+            == []
+        )
+
+        # Not tracked yet, but matched by another segment of this import:
+        # its GPS times from there (the recording restarted in flight).
+        assert continuation_candidates(
+            [untracked],
+            _t(10),
+            _t(10, 5),
+            "EBNM",
+            None,
+            {untracked.id: (_t(9), _t(9, 40))},
+        ) == [untracked]
 
         assert adds_to_track(same_route, _t(10), _t(10, 5))
         assert not adds_to_track(same_route, _t(9, 30), _t(9, 45))
@@ -724,3 +791,64 @@ def test_unreadable_geometry_and_part_times():
     assert _when({"start": "not a date"}, "start") is None
     assert _when({"start": 5}, "start") is None
     assert _when({}, "start") is None
+
+
+def _gpx_at(start, minutes, speed_ms=4.0):
+    """A GPX recording of *minutes* one-minute points from *start* (a
+    datetime), slow (a ground run)."""
+    from datetime import timedelta
+
+    pts = "".join(
+        f'<trkpt lat="51.0" lon="4.0"><ele>100</ele><speed>{speed_ms}</speed>'
+        f"<time>{(start + timedelta(minutes=i)).strftime('%Y-%m-%dT%H:%M:%SZ')}</time></trkpt>"
+        for i in range(minutes)
+    )
+    return (
+        '<?xml version="1.0"?><gpx xmlns="http://www.topografix.com/GPX/1/1">'
+        f"<trk><trkseg>{pts}</trkseg></trk></gpx>"
+    ).encode()
+
+
+class TestSeveralGroundRunsOneEntry:
+    def test_longest_is_the_entry_the_other_its_taxi(self, client, app):
+        """A cancelled flight logged as a ground entry: the short taxi to
+        the runway and the long recording with the aborted takeoff run are
+        two ground runs — the longest becomes the entry's track, the other
+        a taxi part of it."""
+        uid, _tid, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        with app.app_context():
+            f = Flight(
+                aircraft_id=ac_id,
+                date=date(2024, 6, 1),
+                departure_icao="EBNM",
+                arrival_icao="EBNM",
+                flight_time=decimal.Decimal(0),
+                source="logbook_import",
+            )
+            db.session.add(f)
+            db.session.commit()
+            fid = f.id
+        short = _gpx_at(datetime(2024, 6, 1, 10, 0, tzinfo=UTC), 4)
+        long = _gpx_at(datetime(2024, 6, 1, 10, 25, tzinfo=UTC), 30)
+        client.post(
+            f"/aircraft/{ac_id}/gps-import",
+            data={
+                "gps_files": [
+                    (io.BytesIO(short), "taxi.gpx"),
+                    (io.BytesIO(long), "aborted.gpx"),
+                ]
+            },
+            content_type="multipart/form-data",
+        )
+        client.get(f"/aircraft/{ac_id}/gps-import/review")
+        with client.session_transaction() as sess:
+            segs = _session_segments(sess)
+        assert len(segs) == 2  # two recordings, not one 54-minute run
+        roles = {s["block_off_utc"][11:16]: s["matched_ground_role"] for s in segs}
+        assert roles == {"10:00": "taxi", "10:25": "entry"}
+        assert all(s["matched_flight_id"] == fid for s in segs)
+        client.post(f"/aircraft/{ac_id}/gps-import/confirm-all")
+        with app.app_context():
+            parts = db.session.get(Flight, fid).gps_track.geojson["properties"]["parts"]
+            assert [p["taxi"] for p in parts] == [True, False]

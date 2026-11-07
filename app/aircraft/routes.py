@@ -1799,6 +1799,25 @@ def _gps_archive_dir(ac: Aircraft, other_aircraft: bool) -> str:
     return _safe_join(folder, slug, safe_reg, GPS_ARCHIVE_DIRNAME)
 
 
+def _matched_gps_spans(segs: list[dict[str, Any]]) -> dict[int, tuple[Any, Any]]:
+    """{flight id: (earliest block-off, latest block-on)} of the flights
+    this import's flying segments are matched to (ambiguous ones aside)."""
+    from datetime import datetime as _dt
+
+    spans: dict[int, tuple[Any, Any]] = {}
+    for s in segs:
+        if s.get("matched_flight_id") and not s.get("is_ground_only"):
+            if s.get("matched_ambiguous"):
+                continue
+            off = _dt.fromisoformat(s["block_off_utc"])
+            on = _dt.fromisoformat(s["block_on_utc"])
+            prev = spans.get(s["matched_flight_id"])
+            spans[s["matched_flight_id"]] = (
+                (min(prev[0], off), max(prev[1], on)) if prev else (off, on)
+            )
+    return spans
+
+
 def _clear_best_match(
     candidates: list[Any], fields: dict[str, Any], scorer: Any
 ) -> bool:
@@ -2291,7 +2310,11 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
             seg["matched_candidates"] = [_gps_candidate_dict(c) for c in near]
 
     # Still nothing: another part of a flight that already has a track (a
-    # later file of it uploaded on its own — see services.gps_link).
+    # later file of it uploaded on its own), or of one another segment of
+    # this import matched (the recording stopped and restarted in flight) —
+    # see services.gps_link.
+
+    batch_spans = _matched_gps_spans(full_segs)
     for seg, _fields, gps_date in unmatched:
         if seg["matched_flight_id"]:
             continue
@@ -2301,12 +2324,12 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
             Flight.query.filter(
                 Flight.aircraft_id == aircraft_id,
                 Flight.date == gps_date,
-                Flight.gps_track_id.isnot(None),
             ).all(),
             off,
             on,
             seg["departure_icao"],
             seg["arrival_icao"],
+            batch_spans,
         )
         if parts:
             seg["matched_flight_id"] = parts[0].id
@@ -2324,19 +2347,20 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
     # Ground-only recordings (engine on, never airborne): a logged ground
     # entry's track, or the taxi before/after a flight that day at that
     # airfield (to the fuel station, customs…) — services.gps_link.
-    gps_spans: dict[int, tuple[Any, Any]] = {}
-    for s in full_segs:
-        if s["matched_flight_id"] and not s["is_ground_only"]:
-            off = _dt.fromisoformat(s["block_off_utc"])
-            on = _dt.fromisoformat(s["block_on_utc"])
-            prev = gps_spans.get(s["matched_flight_id"])
-            gps_spans[s["matched_flight_id"]] = (
-                (min(prev[0], off), max(prev[1], on)) if prev else (off, on)
-            )
+    gps_spans = _matched_gps_spans(full_segs)
     claimed = set(gps_spans)
     for seg in full_segs:
         seg["matched_ground_role"] = ""
         seg["matched_ground_when"] = ""
+    # Longest first: of several ground runs that day, the longest is a
+    # logged ground entry's own recording (e.g. an aborted takeoff run), the
+    # others the taxi before or after it.
+    for seg in sorted(
+        full_segs,
+        key=lambda s: (
+            _dt.fromisoformat(s["block_off_utc"]) - _dt.fromisoformat(s["block_on_utc"])
+        ),
+    ):
         if not seg["is_ground_only"]:
             continue
         seg["matched_flight_id"] = None
@@ -2364,6 +2388,7 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
         flight, role, when = target
         if role == "entry":
             claimed.add(flight.id)
+            gps_spans[flight.id] = (off, _dt.fromisoformat(seg["block_on_utc"]))
         seg["matched_flight_id"] = flight.id
         seg["matched_flight_str"] = (
             f"#{flight.id} — {flight.date} "
