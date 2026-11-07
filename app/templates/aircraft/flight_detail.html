@@ -21,9 +21,9 @@
          class="btn btn-ac-secondary btn-sm">
         <i class="bi bi-pencil me-1"></i>{{ _('Edit') }}
       </a>
-      <a href="{{ url_for('aircraft.detail', aircraft_id=aircraft.id) }}"
+      <a href="{{ flights_list_url(aircraft.id) }}"
          class="btn btn-ac-ghost">
-        <i class="bi bi-arrow-left me-1"></i>{{ _('Back') }}
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Logbook') }}
       </a>
     </div>
   </div>

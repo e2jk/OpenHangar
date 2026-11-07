@@ -637,6 +637,36 @@ def _flights_total_hours(aircraft_id: int) -> float:
     return float(total) if total is not None else 0.0
 
 
+# An aircraft logbook list's view (page, page size), remembered so that
+# going from the list to a flight and back — the edit form's cancel, or
+# after saving or deleting the flight — returns to the same page of the
+# list instead of the first one (like pilots.routes' logbook view).
+_FLIGHTS_VIEW_SESSION_KEY = "aircraft_flights_view"
+
+
+def _remember_flights_view(aircraft_id: int, page: int, per_page: str) -> None:
+    view: dict[str, Any] = {}
+    if page > 1:
+        view["page"] = page
+    if per_page != str(_FLIGHTS_DEFAULT_PER_PAGE):
+        view["per_page"] = per_page
+    session[_FLIGHTS_VIEW_SESSION_KEY] = {"aircraft_id": aircraft_id, **view}
+
+
+def flights_list_url(aircraft_id: int) -> str:
+    """URL of the aircraft's logbook list as last viewed — that view only
+    applies to the aircraft it was recorded for."""
+    view = dict(session.get(_FLIGHTS_VIEW_SESSION_KEY) or {})
+    if view.pop("aircraft_id", None) != aircraft_id:
+        view = {}
+    return url_for("flights.list_flights", aircraft_id=aircraft_id, **view)
+
+
+@flights_bp.app_context_processor
+def _inject_flights_list_url() -> dict[str, Any]:
+    return {"flights_list_url": flights_list_url}
+
+
 @flights_bp.route("/aircraft/<aircraft_ref:aircraft_id>/flights")
 @login_required
 def list_flights(aircraft_id: int) -> ResponseReturnValue:
@@ -654,6 +684,7 @@ def list_flights(aircraft_id: int) -> ResponseReturnValue:
         )
     )
 
+    _remember_flights_view(ac.id, page, "all" if show_all else str(per_page))
     query = Flight.query.filter_by(aircraft_id=ac.id).order_by(
         Flight.date.desc(),
         Flight.departure_time.desc().nullslast(),
@@ -1906,7 +1937,10 @@ def _handle_log_flight_post(
             return redirect(
                 url_for("aircraft.gps_import_review", aircraft_id=return_ac_id)
             )
-        return redirect(url_for("flights.list_flights", aircraft_id=ac.id))
+        if _fe_is_new:
+            # A new flight appears on the first page.
+            return redirect(url_for("flights.list_flights", aircraft_id=ac.id))
+        return redirect(flights_list_url(ac.id))
 
     flash(
         _(
@@ -1996,7 +2030,7 @@ def delete_flight(aircraft_id: int, flight_id: int) -> ResponseReturnValue:
             ),
             "success",
         )
-        return redirect(url_for("flights.list_flights", aircraft_id=ac.id))
+        return redirect(flights_list_url(ac.id))
 
     activity(
         "flight.deleted", flight_id=flight_id, aircraft_id=aircraft_id, label=label
@@ -2008,7 +2042,7 @@ def delete_flight(aircraft_id: int, flight_id: int) -> ResponseReturnValue:
     db.session.delete(fe)
     db.session.commit()
     flash(_("Flight %(label)s deleted.", label=label), "success")
-    return redirect(url_for("flights.list_flights", aircraft_id=ac.id))
+    return redirect(flights_list_url(ac.id))
 
 
 # ── Bulk airframe logbook import (CSV / Excel) ────────────────────────────────
