@@ -33,6 +33,7 @@ from flask_babel import ngettext
 from init import _env_or_file  # pyright: ignore[reportMissingImports]
 from models import AppSetting, BackupRecord, db  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
+    activity,
     login_required,
     require_instance_admin,
     to_libpq_url,
@@ -1699,3 +1700,112 @@ def gatus_badge(badge_path: str) -> ResponseReturnValue:
     except urllib.error.URLError as exc:
         log.warning("Gatus badge fetch failed (%s): %s", badge_url, repr(exc))
         return abort(503)
+
+
+# ── Data checks: flights vs their GPS tracks ─────────────────────────────────
+
+
+def _data_checks_tenant_id() -> int | None:
+    from models import TenantUser  # pyright: ignore[reportMissingImports]
+
+    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    return tu.tenant_id if tu else None
+
+
+@config_bp.route("/data-checks")
+@login_required
+def data_checks() -> ResponseReturnValue:
+    """Differences between logged flights and their GPS tracks
+    (services.data_checks), to correct the logbook or dismiss."""
+    from services.data_checks import (  # pyright: ignore[reportMissingImports]
+        open_findings,
+        refresh_open_count,
+    )
+
+    tid = _data_checks_tenant_id()
+    groups = open_findings(tid) if tid is not None else []
+    if tid is not None:
+        refresh_open_count(tid)
+        db.session.commit()
+    return render_template(
+        "config/data_checks.html",
+        groups=groups,
+        total=sum(len(f) for _ac, f in groups),
+    )
+
+
+def _data_check_flight(flight_id: int) -> tuple[Any, int]:
+    """The flight, on one of the current tenant's aircraft, and that tenant."""
+    from models import Aircraft, Flight  # pyright: ignore[reportMissingImports]
+
+    flight = db.session.get(Flight, flight_id)
+    ac = db.session.get(Aircraft, flight.aircraft_id) if flight else None
+    if ac is None or ac.tenant_id != _data_checks_tenant_id():
+        abort(404)
+    return flight, int(ac.tenant_id)
+
+
+@config_bp.route("/data-checks/<int:flight_id>/fix", methods=["POST"])
+@login_required
+def data_check_fix(flight_id: int) -> ResponseReturnValue:
+    """Correct the logbook with the GPS value of one finding."""
+    from services.data_checks import (  # pyright: ignore[reportMissingImports]
+        apply_suggestion,
+        find,
+        refresh_open_count,
+    )
+
+    flight, tid = _data_check_flight(flight_id)
+    key = request.form.get("key", "")
+    finding = find(flight, key)
+    if finding is None or not apply_suggestion(flight, finding):
+        flash(_("This difference no longer applies."), "info")
+    else:
+        activity(
+            "data_check.fixed",
+            flight_id=flight.id,
+            kind=finding.kind,
+            old=finding.logged,
+            new=finding.suggestion,
+        )
+        flash(
+            _(
+                "Flight corrected: %(old)s → %(new)s.",
+                old=finding.logged or "—",
+                new=finding.suggestion,
+            ),
+            "success",
+        )
+    db.session.flush()
+    refresh_open_count(tid)
+    db.session.commit()
+    return redirect(url_for("config.data_checks"))
+
+
+@config_bp.route("/data-checks/<int:flight_id>/dismiss", methods=["POST"])
+@login_required
+def data_check_dismiss(flight_id: int) -> ResponseReturnValue:
+    """Leave one finding as it is; it's no longer listed or counted."""
+    from models import DataCheckDismissal  # pyright: ignore[reportMissingImports]
+    from services.data_checks import (  # pyright: ignore[reportMissingImports]
+        find,
+        refresh_open_count,
+    )
+
+    flight, tid = _data_check_flight(flight_id)
+    key = request.form.get("key", "")
+    if (
+        find(flight, key) is not None
+        and not DataCheckDismissal.query.filter_by(flight_id=flight.id, key=key).first()
+    ):
+        db.session.add(
+            DataCheckDismissal(
+                flight_id=flight.id, key=key, dismissed_by_user_id=session["user_id"]
+            )
+        )
+        activity("data_check.dismissed", flight_id=flight.id, key=key)
+        db.session.flush()
+    flash(_("Difference dismissed."), "info")
+    refresh_open_count(tid)
+    db.session.commit()
+    return redirect(url_for("config.data_checks"))

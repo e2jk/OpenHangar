@@ -105,6 +105,7 @@ var NOT_CACHED_ROUTES = {
   '/setup': 'first-run auth wizard — same reasoning as /login',
   '/profile': 'account security settings (password/TOTP) — always show current state, never a cached one',
   '/documents/reconcile': 'admin utility, infrequent access',
+  '/config/data-checks': 'admin worklist recomputed on each visit; a cached copy would still list differences just corrected or dismissed',
   '/pilot/minimums/history': 'revision history list, infrequent access',
   '/pilot/minimums/print': 'printable snapshot, no repeat-visit value',
   '/my/account': 'shows live account balance — staleness here is about money, not a badge',

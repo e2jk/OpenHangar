@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Data checks') }} — OpenHangar{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-clipboard-check me-2"></i>{{ _('Data checks') }}</h1>
+      <p class="page-sub">{{ _('Differences between logged flights and their GPS tracks') }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('config.index') }}" class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Configuration') }}
+      </a>
+    </div>
+  </div>
+
+  <p class="text-muted oh-fs-09">
+    {{ _('The logbook is never changed on its own: each difference below is only corrected when you choose to use the GPS value — the flight then gets a note of what the paper logbook says, so the paper logbook can stay as written. Dismiss the ones that are right as logged — they are not listed again unless the GPS track changes. Checked daily, and whenever this page is opened.') }}
+  </p>
+
+  {% if not groups %}
+  <div class="alert alert-success">
+    <i class="bi bi-check-circle me-1"></i>{{ _('No differences found between the flights and their GPS tracks.') }}
+  </div>
+  {% endif %}
+
+  {% for aircraft, findings in groups %}
+  <h2 class="h5 mt-4 mb-2">
+    <span class="oh-reg-plate">{{ aircraft.registration }}</span>
+    <span class="text-muted oh-fs-09 ms-2">{{ ngettext('one difference', '%(n)d differences', findings|length, n=findings|length) }}</span>
+  </h2>
+  <div class="ac-form-card p-0 mb-3">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 oh-fs-09">
+        <thead class="table-group-divider">
+          <tr>
+            <th class="ps-3">{{ _('Flight') }}</th>
+            <th>{{ _('Check') }}</th>
+            <th>{{ _('Logbook') }}</th>
+            <th>{{ _('GPS') }}</th>
+            <th class="pe-3 text-end">{{ _('Action') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in findings %}
+          <tr>
+            <td class="ps-3 align-middle">
+              <a href="{{ url_for('aircraft.flight_detail', aircraft_id=aircraft.id, flight_id=f.flight_id) }}">{{ f.flight_date }}</a>
+            </td>
+            <td class="align-middle">
+              {% if f.kind == 'departure' %}{{ _('Departure airfield') }}
+              {% elif f.kind == 'arrival' %}{{ _('Arrival airfield') }}
+              {% elif f.kind == 'date' %}{{ _('Date') }}
+              {% else %}{{ _('GPS track outside the logged times') }}{% endif %}
+            </td>
+            <td class="align-middle fw-semibold">{{ f.logged or '—' }}</td>
+            <td class="align-middle">
+              {{ f.gps or _('no airfield nearby') }}
+              {% if f.distance_km is not none %}<div class="text-muted small">{{ _('%(km)s km from %(icao)s', km='%.0f'|format(f.distance_km), icao=f.logged) }}</div>{% endif %}
+            </td>
+            <td class="pe-3 align-middle text-end text-nowrap">
+              {% if f.suggestion %}
+              <form method="post" action="{{ url_for('config.data_check_fix', flight_id=f.flight_id) }}" class="d-inline"
+                    data-confirm="{{ _('Change the logbook from %(old)s to %(new)s?', old=f.logged or '—', new=f.suggestion) }}">
+                <input type="hidden" name="key" value="{{ f.key }}">
+                <button type="submit" class="btn btn-ac-primary btn-sm">{{ _('Use the GPS value') }}</button>
+              </form>
+              {% endif %}
+              <form method="post" action="{{ url_for('config.data_check_dismiss', flight_id=f.flight_id) }}" class="d-inline">
+                <input type="hidden" name="key" value="{{ f.key }}">
+                <button type="submit" class="btn btn-ac-ghost btn-sm">{{ _('Dismiss') }}</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

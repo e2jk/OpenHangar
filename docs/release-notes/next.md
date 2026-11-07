@@ -19,6 +19,10 @@
 **Dashboard**
 - The flights and hours card now covers the past month (rolling), instead of starting over on the 1st of each month.
 
+**Data checks**
+- New **Data checks** page (Configuration → Data checks) crossing each logged flight with its GPS track: departure or arrival airfield far from where the GPS took off or landed (e.g. a misread EDBK for EDRK), a different date, or a GPS track well outside the logged times. Each difference can be corrected with the GPS value — the flight then gets a note of what the paper logbook says — or dismissed.
+- Checked daily (only aircraft whose flights changed are checked again); admins and owners see a bell next to Configuration in the menu, and a warning on the configuration page, while differences are open.
+
 **Aircraft logbook**
 - After saving or deleting a flight, or cancelling its edit, you're back on the page of the aircraft's logbook you came from, with the same page size — not the first page. The flight page's back button now returns there too (it went to the aircraft page).
 
