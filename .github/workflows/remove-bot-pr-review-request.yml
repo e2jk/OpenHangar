@@ -21,7 +21,7 @@ concurrency:
 jobs:
   remove-review-request:
     name: Remove auto-requested Codeowner review
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     permissions:
       pull-requests: write  # gh pr edit --remove-reviewer

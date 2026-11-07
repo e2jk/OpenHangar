@@ -68,7 +68,14 @@ from models import (  # pyright: ignore[reportMissingImports]
     TenantUser,
     db,
 )
-from sqlalchemy import func  # pyright: ignore[reportMissingImports]
+from services.gps_archive import (  # pyright: ignore[reportMissingImports]
+    resolve_pilot_archive_name,
+    sources_for_window,
+)
+from services.upload_layout import (  # pyright: ignore[reportMissingImports]
+    IMPORT_TMP_DIRNAME,
+)
+from sqlalchemy import func, or_  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
     current_user_role,
     login_required,
@@ -1209,6 +1216,11 @@ def _apply_gps_to_pilot_entry(entry: Flight) -> None:
     f = request.form
     gps_geojson_raw = f.get("gps_geojson", "").strip()
     gps_filename = f.get("gps_filename", "").strip() or None
+    gps_source_file = resolve_pilot_archive_name(
+        current_app.config.get("UPLOAD_FOLDER", "/data/uploads"),
+        _current_user_id(),
+        f.get("gps_archive", "").strip() or None,
+    )
     if not gps_geojson_raw and not gps_filename:
         return
 
@@ -1237,6 +1249,9 @@ def _apply_gps_to_pilot_entry(entry: Flight) -> None:
                 gt.geojson = geojson
             if gps_filename:
                 gt.source_filename = gps_filename
+            if gps_source_file:
+                # A new upload replaces the track (see geojson above).
+                gt.source_files = [gps_source_file]
             if block_off:
                 gt.block_off_utc = block_off
             if block_on:
@@ -1245,6 +1260,7 @@ def _apply_gps_to_pilot_entry(entry: Flight) -> None:
 
     gt = GpsTrack(
         source_filename=gps_filename,
+        source_files=[gps_source_file] if gps_source_file else None,
         block_off_utc=block_off,
         block_on_utc=block_on,
         departure_icao=dep,
@@ -1266,7 +1282,7 @@ _MAX_IMPORT_BYTES = 10 * 1024 * 1024  # 10 MB
 
 def _import_tmp_dir() -> str:
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
-    d = os.path.join(folder, "import_tmp")
+    d = os.path.join(folder, IMPORT_TMP_DIRNAME)
     os.makedirs(d, exist_ok=True)
     return d
 
@@ -2120,20 +2136,28 @@ def _crew_name_suggestions(user_id: int) -> list[str]:
 
 
 def _pilot_match_segment(
-    user_id: int, block_off: "_datetime", block_on: "_datetime"
+    user_id: int, seg: dict[str, Any], block_off: "_datetime", block_on: "_datetime"
 ) -> list["Flight"]:
-    """Find Flight records the pilot is associated with that overlap block times."""
+    """Find Flight records the pilot is associated with whose GPS block
+    times are this segment's (services.gps_link.block_match)."""
+    from services.gps_link import block_match  # pyright: ignore[reportMissingImports]
     from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
 
     tol = _BLOCK_TOLERANCE_PILOT
 
-    return Flight.query.filter(  # type: ignore[no-any-return]
-        or_(Flight.pic_user_id == user_id, Flight.second_crew_user_id == user_id),
-        Flight.block_off_utc.isnot(None),
-        Flight.block_on_utc.isnot(None),
-        Flight.block_off_utc < block_on + tol,
-        Flight.block_on_utc > block_off - tol,
-    ).all()
+    return [
+        f
+        for f in Flight.query.filter(
+            or_(Flight.pic_user_id == user_id, Flight.second_crew_user_id == user_id),
+            Flight.block_off_utc.isnot(None),
+            Flight.block_on_utc.isnot(None),
+            Flight.block_off_utc < block_on + tol,
+            Flight.block_on_utc > block_off - tol,
+        ).all()
+        if block_match(
+            f, block_off, block_on, seg.get("departure_icao"), seg.get("arrival_icao")
+        )
+    ]
 
 
 def _pilot_fuzzy_match_segment(
@@ -2217,9 +2241,8 @@ def _pilot_seg_match_dict(
 ) -> dict[str, Any]:
     """Summarise match results into fields stored on the segment dict.
 
-    force_ambiguous marks a fuzzy (non-exact) match as always needing an
-    explicit human choice, even with just one candidate — unlike an exact
-    GPS-block overlap, a fuzzy match is a guess and must not auto-apply.
+    force_ambiguous marks a match as always needing an explicit human
+    choice, even with just one candidate (a possible date typo).
     """
     if not matches:
         return {
@@ -2244,6 +2267,39 @@ def _pilot_seg_match_dict(
         "matched_ambiguous": len(matches) > 1 or force_ambiguous,
         "matched_candidates": candidates,
     }
+
+
+@pilots_bp.route("/pilot/gps-logs.zip")
+@login_required
+@require_pilot_access
+def download_gps_logs() -> ResponseReturnValue:
+    """Every original GPS file kept for the current pilot, as one zip: their
+    own archive folder plus the files their flights' tracks link to (e.g.
+    ones from an aircraft's GPS import)."""
+    from services.gps_archive import (  # pyright: ignore[reportMissingImports]
+        iter_archive_files,
+        pilot_archive_parts,
+        send_archive_zip,
+    )
+
+    uid = _current_user_id()
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    files = iter_archive_files(folder, "/".join(pilot_archive_parts(uid)))
+    files += [
+        f
+        for t in GpsTrack.query.join(Flight, Flight.gps_track_id == GpsTrack.id)
+        .filter(
+            or_(Flight.pic_user_id == uid, Flight.second_crew_user_id == uid),
+            GpsTrack.source_files.isnot(None),
+        )
+        .all()
+        for f in t.source_files or []
+    ]
+    response = send_archive_zip(folder, files, "my-gps-logs.zip")
+    if response is None:
+        flash(_("No original GPS files are kept for your logbook yet."), "info")
+        return redirect(url_for("pilots.pilot_tracks"))
+    return response
 
 
 @pilots_bp.route("/pilot/gps-import", methods=["GET", "POST"])
@@ -2277,9 +2333,11 @@ def pilot_gps_import_upload() -> ResponseReturnValue:
         )
 
     from aircraft.gps_import import parse_gps_file
+    from aircraft.routes import _track_span  # pyright: ignore[reportMissingImports]
     from documents.routes import _safe_join  # pyright: ignore[reportMissingImports]
     from services.gps_archive import (  # pyright: ignore[reportMissingImports]
         archive_gps_file,
+        archive_relpath,
         pilot_archive_parts,
     )
 
@@ -2309,7 +2367,10 @@ def pilot_gps_import_upload() -> ResponseReturnValue:
             errors.append(_("%(fn)s: file too large (20 MB limit).", fn=f.filename))
             continue
         # Kept whatever the parser makes of it — see services.gps_archive.
-        archive_gps_file(data, f.filename, archive_dir)
+        archive_path = archive_relpath(
+            archive_gps_file(data, f.filename, archive_dir),
+            current_app.config.get("UPLOAD_FOLDER", "/data/uploads"),
+        )
         try:
             parsed = parse_gps_file(data, f.filename)
         except ValueError as exc:
@@ -2333,6 +2394,8 @@ def pilot_gps_import_upload() -> ResponseReturnValue:
                 "hint_dep": parsed.hint_departure_icao,
                 "hint_arr": parsed.hint_arrival_icao,
                 "device_id": getattr(parsed, "device_id", None),
+                "archive_path": archive_path,
+                **_track_span(parsed),
             }
         )
 
@@ -2452,12 +2515,12 @@ def pilot_gps_import_review() -> ResponseReturnValue:
     for seg in full_segs:
         block_off = _datetime.fromisoformat(seg["block_off_utc"])
         block_on = _datetime.fromisoformat(seg["block_on_utc"])
-        matches = _pilot_match_segment(uid, block_off, block_on)
-        is_fuzzy = False
+        matches = _pilot_match_segment(uid, seg, block_off, block_on)
         if not matches:
+            # A logbook records times to 0.1 h: one close candidate is the
+            # match; several are left to choose from (len > 1 → ambiguous).
             matches = _pilot_fuzzy_match_segment(uid, seg, block_off, block_on)
-            is_fuzzy = bool(matches)
-        seg.update(_pilot_seg_match_dict(matches, force_ambiguous=is_fuzzy))
+        seg.update(_pilot_seg_match_dict(matches))
         seg["matched_near_date"] = False
         if seg.get("matched_flight_id") and not seg.get("matched_ambiguous"):
             seg["linked_pilot_entries"] = _linked_pilot_entries(
@@ -2477,6 +2540,43 @@ def pilot_gps_import_review() -> ResponseReturnValue:
         if near:
             seg.update(_pilot_seg_match_dict(near, force_ambiguous=True))
             seg["matched_near_date"] = True
+            continue
+        # Still nothing: another part of a flight that already has a track
+        # (a later file of it uploaded on its own — see services.gps_link).
+        from services.gps_link import (  # pyright: ignore[reportMissingImports]
+            continuation_candidates,
+        )
+        from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
+
+        parts = continuation_candidates(
+            Flight.query.filter(
+                or_(Flight.pic_user_id == uid, Flight.second_crew_user_id == uid),
+                Flight.date == block_off.date(),
+                Flight.gps_track_id.isnot(None),
+            ).all(),
+            block_off,
+            _datetime.fromisoformat(seg["block_on_utc"]),
+            seg.get("departure_icao"),
+            seg.get("arrival_icao"),
+        )
+        seg.update(_pilot_seg_match_dict(parts))
+
+    from services.gps_link import adds_to_track  # pyright: ignore[reportMissingImports]
+
+    for seg in full_segs:
+        matched_flight = (
+            db.session.get(Flight, seg["matched_flight_id"])
+            if seg["matched_flight_id"]
+            else None
+        )
+        seg["matched_adds_to_track"] = bool(
+            matched_flight
+            and adds_to_track(
+                matched_flight,
+                _datetime.fromisoformat(seg["block_off_utc"]),
+                _datetime.fromisoformat(seg["block_on_utc"]),
+            )
+        )
 
     tmp_dir = _gps_tmp_dir()
     state["segments"] = [_segment_for_session(s, tmp_dir) for s in full_segs]
@@ -2514,7 +2614,7 @@ def pilot_gps_import_review() -> ResponseReturnValue:
 @require_pilot_access
 def pilot_gps_import_confirm_one() -> ResponseReturnValue:
 
-    from aircraft.gps_import import apply_gps_date, segment_times
+    from aircraft.gps_import import segment_times
     from aircraft.routes import _gps_cleanup, _load_segment_geojson
 
     uid = _current_user_id()
@@ -2602,6 +2702,12 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
     source_filename = (
         file_metas[0]["original_filename"] if len(file_metas) == 1 else None
     )
+    source_files = (
+        sources_for_window(
+            file_metas, block_off, _datetime.fromisoformat(seg["block_on_utc"])
+        )
+        or None
+    )
     device_id = next(
         (m.get("device_id") for m in file_metas if m.get("device_id")), None
     )
@@ -2623,29 +2729,24 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
         # Link GPS track to the existing matched Flight
         existing = db.session.get(Flight, matched_flight_id)
         if existing:
-            old_track_id = existing.gps_track_id
-            gps_track = GpsTrack(
+            # The recorded flight is authoritative: GPS adds its track (or
+            # combines with one already there) without changing its times
+            # or date — see services.gps_link.
+            from services.gps_link import (  # pyright: ignore[reportMissingImports]
+                link_track,
+            )
+
+            gps_track = link_track(
+                existing,
+                geojson=geojson,
+                files=source_files or [],
+                block_off=block_off,
+                block_on=block_on,
                 source_filename=source_filename,
                 device_id=device_id,
-                block_off_utc=block_off,
-                block_on_utc=block_on,
                 departure_icao=dep_icao,
                 arrival_icao=arr_icao,
-                geojson=geojson,
             )
-            db.session.add(gps_track)
-            db.session.flush()
-            existing.gps_track_id = gps_track.id
-            existing.block_off_utc = block_off
-            existing.block_on_utc = block_on
-            apply_gps_date(existing, seg, block_off)
-            if old_track_id and old_track_id != gps_track.id:
-                # Re-confirming an already-linked match (the review page
-                # warns this replaces the track) — drop the superseded
-                # row instead of leaving it as a permanent orphan.
-                old_track = db.session.get(GpsTrack, old_track_id)
-                if old_track is not None:
-                    db.session.delete(old_track)
             # Unified model: this Flight row already covers both crew slots
             # (pic_user_id/second_crew_user_id), so setting gps_track_id
             # above already applies to whichever other pilot occupies the
@@ -2674,6 +2775,7 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
             # Create a new Flight for the managed aircraft
             gps_track = GpsTrack(
                 source_filename=source_filename,
+                source_files=source_files,
                 device_id=device_id,
                 block_off_utc=block_off,
                 block_on_utc=block_on,
@@ -2711,6 +2813,7 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
             if geojson:
                 gps_track = GpsTrack(
                     source_filename=source_filename,
+                    source_files=source_files,
                     device_id=device_id,
                     block_off_utc=block_off,
                     block_on_utc=block_on,

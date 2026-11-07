@@ -144,9 +144,7 @@ _AIRFRAME_PARSERS: dict[str, Any] = {
     "engine_counter_end": parse_duration_value,
     "landing_count": parse_int_value,
     "passenger_count": parse_int_value,
-    "fuel_added": lambda raw: _parse_fuel_quantity(raw),
-    "fuel_remaining_fraction": lambda raw: _parse_tank_fraction(raw),
-    "fuel_remaining_by_tank": lambda raw: _parse_litres_per_tank(raw),
+    # The fuel parsers are registered below, after their definitions.
 }
 
 
@@ -221,6 +219,15 @@ def _parse_litres_per_tank(raw: Any) -> list[float] | None:
     if all(math.isfinite(v) and v >= 0 for v in values):
         return values
     return None
+
+
+_AIRFRAME_PARSERS.update(
+    {
+        "fuel_added": _parse_fuel_quantity,
+        "fuel_remaining_fraction": _parse_tank_fraction,
+        "fuel_remaining_by_tank": _parse_litres_per_tank,
+    }
+)
 
 
 # Two-letter markers count at the end of a word ("FFBF", "6/8 AF"), never

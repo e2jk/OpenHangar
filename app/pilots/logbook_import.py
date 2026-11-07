@@ -14,6 +14,7 @@ from collections import OrderedDict
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
+from decimal import Decimal
 from typing import Any
 
 import openpyxl  # pyright: ignore[reportMissingImports]
@@ -867,6 +868,22 @@ _PREVIEW_DURATION_TARGETS = frozenset(
     {t for t, (type_name, _parser) in _FIELD_TYPE.items() if type_name == "duration"}
     | {"flight_time"}
 )
+
+
+def review_values_differ(old: Any, new: Any, places: int = 2) -> bool:
+    """For the import review pages' side-by-side comparison: do an existing
+    value and the file's value differ as shown? Numbers are compared as
+    numbers rounded to *places* — the database gives Decimal('1493.3') and
+    the file 1493.3 (float), which are not == to each other — and text
+    ignoring surrounding whitespace."""
+    if old is None or new is None:
+        return old is not new
+    numbers = (int, float, Decimal)
+    if isinstance(old, numbers) and isinstance(new, numbers):
+        return round(float(old), places) != round(float(new), places)
+    if isinstance(old, str) and isinstance(new, str):
+        return old.strip() != new.strip()
+    return bool(old != new)
 
 
 def format_preview_cell(val: Any, target: str | None = None) -> str:

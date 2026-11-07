@@ -431,6 +431,23 @@ def _recompute_all_expiry_fields() -> None:
     db.session.commit()
 
 
+def _refresh_data_checks() -> None:
+    """Flight ↔ GPS-track consistency checks (services.data_checks): only
+    aircraft whose flights changed are checked again. A failure must not
+    stop the expiry alerts that follow."""
+    from services.data_checks import (  # pyright: ignore[reportMissingImports]
+        refresh_all_open_counts,
+    )
+
+    try:
+        refresh_all_open_counts()
+    except Exception:
+        log.exception("Daily data checks failed")
+        from models import db  # pyright: ignore[reportMissingImports]
+
+        db.session.rollback()
+
+
 def run_daily_checks(app: Any) -> None:
     """Check all expiry-based notification types across all tenants. Runs in background thread.
 
@@ -458,9 +475,14 @@ def run_daily_checks(app: Any) -> None:
                 from services.recurring_expense_service import (  # pyright: ignore[reportMissingImports]
                     materialize_recurring_expenses,
                 )
+                from services.temp_cleanup import (  # pyright: ignore[reportMissingImports]
+                    cleanup_temp_uploads,
+                )
 
                 _recompute_all_expiry_fields()
                 materialize_recurring_expenses()
+                cleanup_temp_uploads(app.config.get("UPLOAD_FOLDER", "/data/uploads"))
+                _refresh_data_checks()
                 run_co_owner_billing_pass_all()
                 _check_maintenance(app)
                 _check_insurance(app)

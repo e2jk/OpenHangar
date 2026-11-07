@@ -1,14 +1,35 @@
+**Fuel**
+- The aircraft page shows the fuel on board: what was left after the latest flight (per tank when known) plus fuel added since, with a warning when later flights recorded no fuel remaining.
+
+**GPS files**
+- GPS files attached in the flight form are now kept unchanged too, like those from the GPS imports.
+- Download a flight's original GPS file from its page, or all of an aircraft's (GPS import history) or all of your own (My Flight Tracks) as one zip.
+- The configuration page shows how many original GPS files are kept and their total size.
+- One flight can now have several GPS logs — e.g. when the logger lost power in flight and started a new file, or a flight logged as one entry landed and departed again: the tracks are combined into one, and each file can be downloaded.
+- Linking a GPS track to a flight already in the logbook no longer changes its recorded times or date — the logbook stays authoritative; only flights created from GPS take their times from it.
+- A GPS segment a few minutes off the logbook's times (which are only to the 0.1 h) is now recognised as the same flight when it's the only or clearly best candidate, instead of being flagged as uncertain.
+- New **Accept all best matches** button on the GPS import review page links every matching segment at once.
+- GPS imports no longer attach a quick turnaround's next leg to the previous flight, nor glue a ground-only recording from another day onto a flight.
+- Uploading a flight's GPS files one at a time now works like uploading them together: a later file is offered as another part of the flight that already has a track (within its logged times), instead of as a new flight. The review page says whether a segment adds to a flight's track or replaces it.
+- The pilot GPS import, too, treats a single close candidate as the match.
+- Ground-only recordings (engine on, never airborne) are no longer just skipped: one logged as its own ground entry gets it as its track, and a taxi at the same airfield within 45 minutes before a departure or after an arrival (to the fuel station, customs, back to the hangar) is added to that flight's track as a taxi part — shown and downloadable with it, without changing the flight's times. Accept all best matches includes them. A recording between two flights' files in one upload (a taxi, an engine run) used to be dropped silently; it's now one of these ground-only segments, so uploading files together or one by one gives the same result.
+
 **Logbook imports**
-- Aircraft logbook import brings in fuel: litres added (before or after the flight), and fuel left — as a fraction of the tanks or in litres per tank (e.g. `9/13`). Rows already in the log get their missing fuel filled in.
-- A flight cancelled before takeoff is matched across the pilot and aircraft logbooks instead of being logged twice.
-- Review page: decide all remaining rows at once, the best match is pre-selected, no more jump back to the top after each row, and about twice as fast.
-- `[empty]` cells are read as blank in the pilot logbook import too; unreadable cells are now reported by the aircraft logbook import; "Incidents/Obs" columns map to notes automatically; the mapping preview shows dates, times and durations as in the spreadsheet.
+- Review page: rows whose values differ are now readable in dark mode, and identical numbers (e.g. counters) are no longer flagged as different.
 
-**Fuel and costs**
-- New fuel log per aircraft: every refuel with its cost, and fuel added, fuel cost, average price per litre, litres per engine hour and fuel cost per engine hour / flight hour / flight over a chosen period.
-- Fuel remaining can be recorded per tank on aircraft with several tanks.
-- An expense can also note the amount paid in another currency (for reference only, e.g. fuel paid in GBP abroad).
+**Dashboard**
+- The flights and hours card now covers the past month (rolling), instead of starting over on the 1st of each month.
 
-**Other**
-- The pilot logbook's back button returns to the page you were on.
-- The navigation bar stays readable on narrow windows (e.g. a half-screen tiled browser).
+**Data checks**
+- New **Data checks** page (Configuration → Data checks) crossing each logged flight with its GPS track: departure or arrival airfield far from where the GPS took off or landed (e.g. a misread EDBK for EDRK), a different date, or a GPS track well outside the logged times. Each difference can be corrected with the GPS value — the flight then gets a note of what the paper logbook says — or dismissed.
+- Checked daily (only aircraft whose flights changed are checked again); admins and owners see a bell next to Configuration in the menu, and a warning on the configuration page, while differences are open.
+
+**Aircraft logbook**
+- After saving or deleting a flight, or cancelling its edit, you're back on the page of the aircraft's logbook you came from, with the same page size — not the first page. The flight page's back button now returns there too (it went to the aircraft page).
+
+**Maintenance**
+- Backups no longer include the temporary copies of files from imports in progress, and those older than a day are deleted daily (an abandoned import used to leave its file behind for good).
+- CI runs on Ubuntu 26.04, named explicitly instead of the floating `ubuntu-latest` (which GitHub moved to 26.04).
+- Fixed the code-scanning notes reported on v3.34.0 by changing the code (no suppressions).
+- `scripts/ship.sh` lists the commits made on GitHub since the last release (e.g. dependency updates) that ship along, and asks before pushing when one that isn't a dependency update may be missing from this summary; `--upstream` just lists them.
+- Dependency update: WTForms 3.3.1 (form handling library, patch release).

@@ -107,6 +107,7 @@
          attribute names — the right-hand values are the *form field* names
          this page's JS writes into, matching parse_pilot_fields' wire
          format (unrelated to the fv_str `attr` override below). #}
+      {% set _gps_f_archive = request.form.get('gps_archive', '') %}
       {% include 'partials/_gps_upload.html' %}
       <hr class="my-3">
       </div>

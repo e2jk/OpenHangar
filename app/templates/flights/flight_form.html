@@ -41,7 +41,7 @@
       {% endif %}
     </div>
     {% if flight and aircraft %}
-      <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">
+      <a href="{{ flights_list_url(aircraft.id) }}" class="btn btn-ac-ghost">
         <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
       </a>
     {% else %}
@@ -225,6 +225,7 @@
           {% set _gps_status_id  = 'gps-status' %}
           {% set _gps_help_id    = 'gps-help-text' %}
           {% set _gps_field_map  = {'date': 'date', 'departure_icao': 'departure_icao', 'arrival_icao': 'arrival_icao', 'departure_time': 'departure_time', 'arrival_time': 'arrival_time', 'flight_time_h': 'flight_time', 'landing_count': 'landings_day'} %}
+          {% set _gps_f_archive = gps_prefill.archive_name if gps_prefill and gps_prefill.archive_name else request.form.get('gps_archive', '') %}
           {% include 'partials/_gps_upload.html' %}
 
           {# ── Aircraft selection ───────────────────────────────────────────────
@@ -879,7 +880,7 @@
               <i class="bi bi-check-lg me-1"></i>{{ _('Save') }}
             </button>
             {% if flight and aircraft %}
-            <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}"
+            <a href="{{ flights_list_url(aircraft.id) }}"
                class="btn btn-ac-ghost">{{ _('Cancel') }}</a>
             {% else %}
             <a href="{{ url_for('pilots.logbook') }}" class="btn btn-ac-ghost">{{ _('Cancel') }}</a>

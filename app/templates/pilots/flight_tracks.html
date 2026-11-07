@@ -12,9 +12,14 @@
         <i class="bi bi-map me-2"></i>{{ _('My Flight Tracks') }}
       </h1>
     </div>
-    <a href="{{ url_for('pilots.logbook') }}" class="btn btn-ac-ghost">
-      <i class="bi bi-arrow-left me-1"></i>{{ _('Logbook') }}
-    </a>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('pilots.download_gps_logs') }}" class="btn btn-ac-secondary" hx-boost="false">
+        <i class="bi bi-file-zip me-1"></i>{{ _('Download all original GPS files (zip)') }}
+      </a>
+      <a href="{{ logbook_list_url() }}" class="btn btn-ac-ghost">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Logbook') }}
+      </a>
+    </div>
   </div>
 
   {% set _gif_url    = url_for('pilots.pilot_tracks_gif') %}

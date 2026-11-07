@@ -491,6 +491,13 @@ def _split_into_raw_groups(trackpoints: list[TrackPoint]) -> list[list[TrackPoin
 
     groups: list[list[TrackPoint]] = []
     current_start = 0
+    # Before the first flight and after the last one, a recording gap still
+    # separates sessions — a ground-only file from days earlier or later
+    # (e.g. engine run at the parking spot) isn't that flight's taxi.
+    for k in range(first_fast):
+        if _recording_gap(trackpoints, k):
+            groups.append(trackpoints[current_start : k + 1])
+            current_start = k + 1
     i = first_fast
 
     while i < last_fast:
@@ -515,6 +522,15 @@ def _split_into_raw_groups(trackpoints: list[TrackPoint]) -> list[list[TrackPoin
                 # stays with the first, the taxi-out with the second.
                 end_prev, start_next = _break_points(trackpoints, i, j)
                 groups.append(trackpoints[current_start : end_prev + 1])
+                # Recording sessions in between, with no flight in them (a
+                # taxi to the fuel station, an engine run on another day):
+                # each its own ground-only group.
+                if _recording_gap(trackpoints, end_prev):
+                    session_start = end_prev + 1
+                    for k in range(end_prev + 1, start_next):
+                        if _recording_gap(trackpoints, k):
+                            groups.append(trackpoints[session_start : k + 1])
+                            session_start = k + 1
                 current_start = start_next
                 i = j
             else:
@@ -522,8 +538,18 @@ def _split_into_raw_groups(trackpoints: list[TrackPoint]) -> list[list[TrackPoin
         else:
             i += 1
 
+    for k in range(last_fast, n - 1):
+        if _recording_gap(trackpoints, k):
+            groups.append(trackpoints[current_start : k + 1])
+            current_start = k + 1
     groups.append(trackpoints[current_start:])
     return [g for g in groups if g]
+
+
+def _recording_gap(trackpoints: list[TrackPoint], k: int) -> bool:
+    """Whether the recording stopped for _SEGMENT_GAP_S or more after point k."""
+    gap = (trackpoints[k + 1].utc_dt - trackpoints[k].utc_dt).total_seconds()
+    return gap >= _SEGMENT_GAP_S
 
 
 def _break_points(
@@ -554,7 +580,8 @@ def _break_points(
     ]
     if gaps:
         # Anything between the first and last gap is recording sessions
-        # with no flight in them (e.g. an engine ground run on another day).
+        # with no flight in them (e.g. an engine ground run on another day)
+        # — _split_into_raw_groups keeps each as a ground-only group.
         return gaps[0], gaps[-1] + 1
 
     best: tuple[float, int, int] | None = None
@@ -979,13 +1006,6 @@ def rank_near_date_candidates(
     ]
     ranked = score_gps_candidates(fields, pool, scorer, min_score)
     return sorted(ranked, key=lambda c: abs((c.date - gps_date).days))
-
-
-def apply_gps_date(flight: Any, seg: dict[str, Any], block_off: datetime) -> None:
-    """Confirming a near-date match: the logbook date was the typo — take
-    the GPS one."""
-    if seg.get("matched_near_date"):
-        flight.date = block_off.date()
 
 
 def _score_gps_candidate(

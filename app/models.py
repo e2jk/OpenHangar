@@ -790,6 +790,12 @@ class GpsTrack(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     source_filename = db.Column(db.String(256), nullable=True)
+    # The kept original file(s) this track was extracted from, relative to
+    # the uploads folder (services.gps_archive), in time order — several
+    # when one flight's log is split over files (e.g. the logger lost power
+    # in flight) or segments were combined (services.gps_link). None for
+    # tracks imported before originals were linked.
+    source_files = db.Column(db.JSON, nullable=True)
     device_id = db.Column(db.String(64), nullable=True, index=True)
     block_off_utc = db.Column(db.DateTime(timezone=True), nullable=True)
     block_on_utc = db.Column(db.DateTime(timezone=True), nullable=True)
@@ -926,6 +932,14 @@ class Flight(db.Model):
         db.DateTime(timezone=True),
         nullable=False,
         default=lambda: datetime.now(UTC),
+    )
+    # Last change through the ORM — lets services.data_checks tell which
+    # aircraft's flights changed since their consistency checks last ran.
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=True,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
     # ── EASA FCL.050 pilot-log figures (shared, once per row) ─────────────────
@@ -2960,6 +2974,32 @@ class WeightBalanceEntry(db.Model):
     )
 
     config = db.relationship("WeightBalanceConfig", back_populates="entries")
+
+
+class DataCheckDismissal(db.Model):
+    """A data-check finding (services.data_checks) someone looked at and
+    decided to leave as it is. Keyed by the finding's key, which includes
+    the GPS-side value: if the track changes, the finding comes back."""
+
+    __tablename__ = "data_check_dismissals"
+    __table_args__ = (db.UniqueConstraint("flight_id", "key"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    flight_id = db.Column(
+        db.Integer,
+        db.ForeignKey("flights.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    key = db.Column(db.String(96), nullable=False)
+    dismissed_by_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
 
 
 class AppSetting(db.Model):

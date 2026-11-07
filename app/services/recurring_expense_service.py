@@ -20,7 +20,7 @@ from datetime import date
 log = logging.getLogger(__name__)
 
 
-def _add_months(d: date, months: int) -> date:
+def add_months(d: date, months: int) -> date:
     """d shifted by `months` whole months, day clamped to the target month."""
     month_index = d.month - 1 + months
     year = d.year + month_index // 12
@@ -70,7 +70,7 @@ def materialize_recurring_expenses(today: date | None = None) -> int:
         )
         while True:
             k += 1
-            next_date = _add_months(tpl.date, k * months)
+            next_date = add_months(tpl.date, k * months)
             if next_date > today:
                 break
             if tpl.recurrence_end is not None and next_date > tpl.recurrence_end:
@@ -88,10 +88,10 @@ def materialize_recurring_expenses(today: date | None = None) -> int:
                     paid_currency=tpl.paid_currency,
                     quantity=tpl.quantity,
                     unit=tpl.unit,
-                    coverage_start=_add_months(tpl.coverage_start, k * months)
+                    coverage_start=add_months(tpl.coverage_start, k * months)
                     if tpl.coverage_start
                     else None,
-                    coverage_end=_add_months(tpl.coverage_end, k * months)
+                    coverage_end=add_months(tpl.coverage_end, k * months)
                     if tpl.coverage_end
                     else None,
                     recurring_template_id=tpl.id,

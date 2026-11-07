@@ -249,3 +249,87 @@ def _hours(logged: Any, start: Any, end: Any) -> float | None:
     if start is not None and end is not None:
         return float(end) - float(start)
     return None
+
+
+@dataclass
+class FuelOnBoard:
+    """The fuel in the aircraft's tanks now, as far as the logs tell."""
+
+    liters: float
+    flight: Any  # the flight whose fuel remaining it starts from
+    added_after: float = 0.0  # added since: after that flight + standalone
+    by_tank: list[dict[str, Any]] | None = None  # only when nothing added since
+    capacity: float | None = None
+    # Later flights exist without a fuel remaining figure: the value is the
+    # last known one, not necessarily what's in the tanks now.
+    later_flights: int = 0
+
+    @property
+    def is_current(self) -> bool:
+        return self.later_flights == 0
+
+
+def current_fuel_on_board(aircraft: Any) -> FuelOnBoard | None:
+    """Fuel on board now: the fuel remaining at the end of the latest flight
+    that recorded it, plus fuel added after that flight and standalone
+    refuels since — capped at the tank capacity. None when no flight has
+    recorded fuel remaining. Fuel added before a flight is already counted
+    in that flight's fuel remaining, so only later additions count."""
+    ordered = (
+        Flight.date.desc(),
+        Flight.departure_time.desc().nullslast(),
+        Flight.takeoff_time.desc().nullslast(),
+        Flight.id.desc(),
+    )
+    flights = Flight.query.filter_by(aircraft_id=aircraft.id)
+    base = (
+        flights.filter(Flight.fuel_remaining_qty.isnot(None)).order_by(*ordered).first()
+    )
+    if base is None:
+        return None
+    later = sum(
+        1
+        for f in flights.filter(Flight.date >= base.date).order_by(*ordered)
+        if (f.date, f.id) != (base.date, base.id) and _is_after(f, base)
+    )
+    added = 0.0
+    if base.fuel_added_after_qty is not None:
+        added += to_litres(base.fuel_added_after_qty, base.fuel_added_after_unit)
+    for refuel in Refuel.query.filter(
+        Refuel.aircraft_id == aircraft.id, Refuel.date >= base.date
+    ):
+        same_day = refuel.date == base.date
+        if not same_day or _created_after(refuel, base):
+            added += to_litres(refuel.quantity, refuel.unit)
+    capacity = sum(float(t.capacity_liters or 0) for t in aircraft.fuel_tanks) or None
+    liters = float(base.fuel_remaining_qty) + added
+    if capacity is not None:
+        liters = min(liters, capacity)
+    return FuelOnBoard(
+        liters=round(liters, 1),
+        flight=base,
+        added_after=round(added, 1),
+        by_tank=base.fuel_remaining_by_tank if not added else None,
+        capacity=capacity,
+        later_flights=later,
+    )
+
+
+def _clock(f: Any) -> Any:
+    return f.departure_time or f.takeoff_time
+
+
+def _is_after(f: Any, base: Any) -> bool:
+    """Whether flight *f* comes after *base* (same order as the query)."""
+    if f.date != base.date:
+        return bool(f.date > base.date)
+    a, b = _clock(f), _clock(base)
+    if a is not None and b is not None and a != b:
+        return bool(a > b)
+    return bool(f.id > base.id)
+
+
+def _created_after(refuel: Any, flight: Any) -> bool:
+    """A standalone refuel on the flight's own day counts as after it when
+    it was logged after the flight was — the day alone can't tell."""
+    return bool(refuel.created_at > flight.created_at)

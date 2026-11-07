@@ -45,11 +45,22 @@
       <p class="page-sub">{{ _('Backups, email, users and system settings') }}</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('config.data_checks') }}" class="btn btn-ac-ghost btn-sm">
+        <i class="bi bi-clipboard-check me-1"></i>{{ _('Data checks') }}
+      </a>
       <a href="{{ url_for('index') }}" class="btn btn-ac-ghost btn-sm">
         <i class="bi bi-arrow-left me-1"></i>{{ _('Dashboard') }}
       </a>
     </div>
   </div>
+
+  {% if nav_data_checks_open %}
+  <div class="alert alert-warning d-flex flex-wrap align-items-center gap-2 mb-4">
+    <i class="bi bi-bell-fill"></i>
+    <span class="me-auto">{{ ngettext('One difference found between a flight and its GPS track.', '%(n)d differences found between flights and their GPS tracks.', nav_data_checks_open, n=nav_data_checks_open) }}</span>
+    <a href="{{ url_for('config.data_checks') }}" class="btn btn-sm btn-warning">{{ _('Review') }}</a>
+  </div>
+  {% endif %}
 
   <!-- Users + Usage profile (side by side) -->
   <hr class="my-4">
@@ -567,6 +578,10 @@
       <div class="col-sm-8 text-muted">{{ oh_filesize(upload_size_bytes) }}</div>
     </div>
     {% endif %}
+    <div class="row mb-2">
+      <div class="col-sm-4 fw-semibold text-muted">{{ _('Original GPS files') }}</div>
+      <div class="col-sm-8 text-muted">{% if gps_log_count is none %}—{% else %}{{ ngettext('%(size)s across one file', '%(size)s across %(n)s files', gps_log_count, size=oh_filesize(gps_log_size_bytes), n=gps_log_count) }}{% endif %}</div>
+    </div>
     {% if gatus_configured %}
     <div id="gatus-badges">
       <div class="row mb-2">

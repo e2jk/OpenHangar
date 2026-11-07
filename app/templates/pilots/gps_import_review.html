@@ -100,7 +100,12 @@
       <i class="bi bi-link-45deg me-1"></i>
       {{ _('Matches existing flight %(info)s (%(reg)s) — GPS track will be linked.',
            info=seg.matched_flight_str, reg=seg.matched_aircraft_reg) }}
-      {% if seg.matched_has_existing_track %}
+      {% if seg.matched_adds_to_track %}
+      <div class="mt-1">
+        <i class="bi bi-plus-circle text-info me-1"></i>
+        {{ _('This flight already has a GPS track for another part of it — this segment will be added to it.') }}
+      </div>
+      {% elif seg.matched_has_existing_track %}
       <div class="mt-1">
         <i class="bi bi-exclamation-triangle text-warning me-1"></i>
         <strong>{{ _('This flight already has a GPS track — confirming will replace it.') }}</strong>
@@ -124,7 +129,7 @@
       <i class="bi bi-question-circle me-1"></i>
       {{ ngettext('Possible match found — please confirm below or choose "none of these".', 'Possible matches found — please choose the right one below, or "none of these".', cand_count, n=cand_count) }}
       {% if seg.matched_near_date %}
-      <div class="mt-1">{{ _('Nothing is logged on this date, but a flight on the same route is logged within two days of it — possibly a date typo in the logbook. Linking it corrects its date to %(date)s.', date=seg.block_off_utc[:10]) }}</div>
+      <div class="mt-1">{{ _('Nothing is logged on this date, but a flight on the same route is logged within two days of it — possibly a date typo in the logbook. Linking it adds the GPS track and keeps the date recorded in the logbook (the GPS says %(date)s) — correct it there if the logbook is wrong.', date=seg.block_off_utc[:10]) }}</div>
       {% endif %}
     </div>
     {% endif %}

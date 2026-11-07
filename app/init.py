@@ -603,6 +603,14 @@ def create_app() -> Flask:
 
         return format_preview_cell(val, target)
 
+    @app.template_global("review_values_differ")
+    def _review_values_differ_global(old: Any, new: Any, places: int = 2) -> bool:
+        from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
+            review_values_differ,
+        )
+
+        return review_values_differ(old, new, places)
+
     @app.template_filter("airport_name")
     def _airport_name_filter(code: str | None) -> str:
         if not code:
@@ -954,9 +962,11 @@ def create_app() -> Flask:
         # Phase 26: adaptive UI based on TenantProfile
         _tenant_profile = None
         _has_renter_account = False
+        _nav_tenant_id: int | None = None
         if uid:
             tu = TenantUser.query.filter_by(user_id=uid).first()
             if tu:
+                _nav_tenant_id = tu.tenant_id
                 _tenant_profile = TenantProfile.query.filter_by(
                     tenant_id=tu.tenant_id
                 ).first()
@@ -999,6 +1009,14 @@ def create_app() -> Flask:
         _legacy_logbook_data_present = (
             check_legacy_logbook_data() if _is_owner and _in_request else False
         )
+        if _is_owner and _in_request:
+            from services.data_checks import (  # pyright: ignore[reportMissingImports]
+                open_count as _data_checks_open_count,
+            )
+
+            _nav_data_checks_open = _data_checks_open_count(_nav_tenant_id)
+        else:
+            _nav_data_checks_open = 0
         if uid:
             from flights.crew_invites import (
                 pending_claims_to_review,
@@ -1048,6 +1066,7 @@ def create_app() -> Flask:
             "today": _date.today(),
             "current_theme": _current_theme(_user_flags, _in_request, session, is_demo),
             "nav_update_available": _nav_update_available,
+            "nav_data_checks_open": _nav_data_checks_open,
             "nav_crew_invite_count": _nav_crew_invite_count,
             "legacy_logbook_data_present": _legacy_logbook_data_present,
             "oh_debug": app.debug
@@ -1170,13 +1189,20 @@ def create_app() -> Flask:
                 else []
             )
 
+            # The past rolling month (e.g. 8 Oct – 7 Nov), not the calendar
+            # month — which read near zero for the first days of each month.
+            from services.recurring_expense_service import (  # pyright: ignore[reportMissingImports]
+                add_months,
+            )
+
             today = _date.today()
-            month_start = today.replace(day=1)
+            month_ago = add_months(today, -1)
             month_flights = (
                 (
                     Flight.query.filter(
                         Flight.aircraft_id.in_(aircraft_ids),
-                        Flight.date >= month_start,
+                        Flight.date > month_ago,
+                        Flight.date <= today,
                     ).all()
                 )
                 if aircraft_ids

@@ -25,7 +25,7 @@ jobs:
     # baseline. The push:main run does rescan content its PR already
     # covered, but GitHub dedups alerts by rule+location per ref, so this
     # doesn't create duplicate alerts — just one extra scan per merge.
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     permissions:
       actions: read           # required by codeql-action to auto-detect languages/workflow context

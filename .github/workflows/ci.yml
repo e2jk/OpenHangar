@@ -75,7 +75,7 @@ jobs:
     # immediate start just to read a value it could evaluate itself.
     if: |
       !(github.event_name == 'push' && (github.ref == 'refs/heads/ship' || startsWith(github.ref, 'refs/heads/renovate/') || github.ref == 'refs/heads/main'))
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     permissions:
       security-events: write  # pip-audit SARIF upload
@@ -308,7 +308,7 @@ jobs:
     # badge honest without touching the real skip logic anywhere else.
     if: |
       github.event_name == 'push' && (github.ref == 'refs/heads/ship' || startsWith(github.ref, 'refs/heads/renovate/') || github.ref == 'refs/heads/main')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 1
     steps:
       - run: echo "No CI work needed for this push — already tested via the PR that merged it."
@@ -331,7 +331,7 @@ jobs:
     # upload, so this marks existing alerts fixed instead of starting a
     # second, never-merged history.
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       security-events: write  # pip-audit SARIF upload
@@ -392,7 +392,7 @@ jobs:
     # (the action doesn't support plain push events); the dependency graph it
     # reads is already populated by publish's dependency-snapshot submission.
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read
@@ -450,7 +450,7 @@ jobs:
     # job with *no* if: falls back to requiring needs to have succeeded).
     if: |
       !(github.event_name == 'push' && (github.ref == 'refs/heads/ship' || startsWith(github.ref, 'refs/heads/renovate/') || github.ref == 'refs/heads/main'))
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: write      # push the version-reservation tag (publish_now only)
@@ -647,7 +647,7 @@ jobs:
     # that needs a pushed image, just the local tarball.
     needs: [version]
     if: needs.version.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     permissions:
       packages: write   # GHCR push (publish_now only)
@@ -726,7 +726,7 @@ jobs:
     # multi-platform manifest — no build happens in publish itself.
     needs: [version]
     if: needs.version.outputs.publish_now == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 45   # QEMU cross-build is slow
     permissions:
       packages: write   # GHCR push
@@ -780,7 +780,7 @@ jobs:
     # separate job — it needs the final, correctly-versioned image.
     needs: [version, docker-build-amd64]
     if: needs.version.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     permissions:
       security-events: write  # ZAP/Trivy SARIF upload
@@ -1014,7 +1014,7 @@ jobs:
     # docker-validate and browser-tests-fresh-db after docker-build completes.
     needs: [version, docker-build-amd64]
     if: needs.version.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -1165,7 +1165,7 @@ jobs:
     # matrix legs) after docker-build completes.
     needs: [version, docker-build-amd64]
     if: needs.version.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -1297,7 +1297,7 @@ jobs:
       needs.docker-build-amd64.result == 'success' &&
       needs.docker-build-arm64.result == 'success' &&
       needs.osv-scan.result == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true

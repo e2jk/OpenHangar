@@ -308,6 +308,53 @@ or correction before the logbook can be considered complete.
 Note: Phase 38 (Offline Logbook Editing) plans a client-side variant of this
 check in its offline workbench; this item remains the server-side/admin view.
 
+**Where to build it now:** the Data checks page (Configuration → Data
+checks, `services/data_checks.py`) exists since the flight ↔ GPS-track
+checks — add this as another kind of finding there (same per-aircraft
+cache, dismissals, navbar bell), rather than a separate page. See "Data
+checks: follow-ups" below.
+
+---
+
+## Data checks: follow-ups
+
+The Data checks page (Configuration → Data checks, `services/data_checks.py`)
+crosses each logged flight with its GPS track — departure/arrival airfield
+(by distance), date, GPS track outside the logged times — with "use the GPS
+value" (noting the paper logbook's value on the flight) or "dismiss". Left
+for later:
+
+- **Hint on the GPS import review page:** run the same `check_flight()` on a
+  segment about to be linked and show "Logbook: EDBK · GPS: EDRK" on its
+  card, with an opt-in correction (never applied by "Accept all best
+  matches"). The daily page already catches it the next day.
+- **Landings:** compare the logged landing count with the landings the GPS
+  track shows — needs the detected count stored on `GpsTrack` (or the points
+  re-analysed), and touch-and-goes counted the same way as the logbook.
+- **Airfields not in the airfield list** (private strips): nothing to measure
+  the GPS end against today, so they're skipped. Could compare with the
+  aircraft's previous/next flight instead, or let a tenant add its own fields.
+- **Times that look like local time** (seen on a real import: a previous
+  owner's flights logged 1–2 h off, matching the CET/CEST offset): a
+  specific finding offering to shift the logged times, ties in with
+  "Pilot logbook: timezone detection from ICAO airfield location" above.
+- **Pilots' own view:** the page is for admins/owners and covers aircraft
+  flights only; standalone pilot-logbook flights with a GPS track (another
+  aircraft) aren't checked, and a pilot can't see findings on their flights.
+- **More kinds of checks** on the same page: counter continuity (item
+  above), overlapping flights of one aircraft, a flight's pilot-logbook
+  figures disagreeing with the aircraft log.
+- **Email digest** of new findings, for admins who rarely open the
+  configuration page.
+
+## GPS import: ground runs in the pilot GPS import
+
+The aircraft GPS import links ground-only recordings to a logged ground
+entry or, as a taxi part, to the flight departing/arriving within 45 min at
+that airfield (`services.gps_link.ground_run_target`, `link_track(taxi=True)`).
+The pilot GPS import (any aircraft) still skips them; it could use the same
+two helpers on the pilot's flights of that day.
+
 ---
 
 ## Email notifications: airworthiness digest (`AIRWORTHINESS_DIGEST`)
