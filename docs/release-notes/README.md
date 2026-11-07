@@ -12,6 +12,14 @@ since the previous version tag (release notes) — a summary left over from an
 earlier release is never reused. Once a release is out, empty `next.md` to
 start the next one — the published GitHub release keeps the text.
 
+## Shipping without an immediate release
+
+`scripts/ship.sh --later` merges the local work without publishing a release
+(see `docs/development.md`); the next daily release publishes it. Write its
+lines in `next.md` as usual: the daily release takes `next.md` as its summary
+when it changed since the latest release, exactly like a ship's release does,
+and the `ship-later` PR's description shows it too.
+
 ## Commits made on GitHub
 
 Changes can also land on `main` straight from GitHub — mostly dependency

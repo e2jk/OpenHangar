@@ -720,8 +720,22 @@ a change:
   `bash scripts/ship.sh --upstream` only lists them (see
   `docs/release-notes/README.md`).
 
-  `ship` is deleted from the remote automatically after each merge (repo-wide
-  `delete_branch_on_merge`) and simply recreated on the next push.
+  **Merging now, releasing tonight:** `bash scripts/ship.sh --later` pushes
+  to `ship-later` instead. Its PR gets the same CI and auto-merge, but merging
+  it publishes no release (`ci.yml`'s version job doesn't publish for that
+  branch): the changes go out with the next daily release
+  (`daily-release.yml`, 23:20 UTC, which releases whatever changed on `main`
+  since the latest release — routine Renovate updates the same way), or with
+  the next plain `ship` before that. Meant for small changes that don't need
+  a release of their own. Keep `docs/release-notes/next.md` up to date as
+  usual — the daily release uses it as its summary when it changed since the
+  latest release. One of the two PRs is in flight at a time: `--later` refuses
+  while a `ship` PR is open (ship without `--later` to add to it), and a plain
+  ship closes a pending `ship-later` PR once its commits are all included.
+
+  `ship` (and `ship-later`) is deleted from the remote automatically after
+  each merge (repo-wide `delete_branch_on_merge`) and simply recreated on the
+  next push.
 
 ### Bot dependency-update PRs (Renovate)
 

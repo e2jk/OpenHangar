@@ -4,14 +4,18 @@
 Used by .github/workflows/auto-pr-merge.yml. Commit subjects (conventional
 commits, one per line) come on stdin, oldest first.
 
-    release_notes.py title < subjects
-    release_notes.py body [--summary-file FILE] < subjects
+    release_notes.py title [--later] < subjects
+    release_notes.py body [--summary-file FILE] [--later] < subjects
 
 The title counts the batch by kind ("Release: 7 features, 9 fixes, 1
 performance") — or is the commit's own subject when there's only one. The
 body is the optional hand-written summary (docs/release-notes/next.md, only
 passed when it changed in this batch — see the workflow), then the commits
 grouped by kind, with routine dependency updates collapsed into one line.
+
+--later: the batch was shipped to `ship-later` (scripts/ship.sh --later) —
+it merges without a release of its own and goes out with the next daily
+release, so the title says "For the next release" instead of "Release".
 """
 
 from __future__ import annotations
@@ -53,11 +57,11 @@ def group(subjects: list[str]) -> tuple[dict[str, list[str]], int]:
     return groups, deps
 
 
-def title(subjects: list[str]) -> str:
+def title(subjects: list[str], later: bool = False) -> str:
     if not subjects:
-        return "ship"
+        return "ship-later" if later else "ship"
     if len(subjects) == 1:
-        return subjects[0]
+        return f"[next release] {subjects[0]}" if later else subjects[0]
     groups, deps = group(subjects)
     parts = []
     for _k, heading, (one, many) in [*_KINDS, (None, *_OTHER)]:
@@ -66,11 +70,21 @@ def title(subjects: list[str]) -> str:
             parts.append(f"{n} {one if n == 1 else many}")
     if deps:
         parts.append(f"{deps} dependency update{'' if deps == 1 else 's'}")
-    return "Release: " + ", ".join(parts)
+    prefix = "For the next release: " if later else "Release: "
+    return prefix + ", ".join(parts)
 
 
-def body(subjects: list[str], summary: str | None) -> str:
-    out = ["Auto-opened from `ship` — will merge once CI passes.", ""]
+def body(subjects: list[str], summary: str | None, later: bool = False) -> str:
+    if later:
+        intro = (
+            "Auto-opened from `ship-later` — will merge once CI passes, "
+            "without a release of its own: it goes out with the next daily "
+            "release (daily-release.yml, 23:20 UTC), or with the next "
+            "`ship` before that."
+        )
+    else:
+        intro = "Auto-opened from `ship` — will merge once CI passes."
+    out = [intro, ""]
     if summary and summary.strip():
         out += ["## Summary", "", summary.strip(), ""]
     groups, deps = group(subjects)
@@ -86,16 +100,17 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("mode", choices=["title", "body"])
     parser.add_argument("--summary-file")
+    parser.add_argument("--later", action="store_true")
     args = parser.parse_args(argv)
     subjects = [line.strip() for line in sys.stdin if line.strip()]
     if args.mode == "title":
-        print(title(subjects))
+        print(title(subjects, args.later))
     else:
         summary = None
         if args.summary_file:
             with open(args.summary_file, encoding="utf-8") as fh:
                 summary = fh.read()
-        sys.stdout.write(body(subjects, summary))
+        sys.stdout.write(body(subjects, summary, args.later))
     return 0
 
 

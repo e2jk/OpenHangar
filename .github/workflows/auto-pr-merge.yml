@@ -2,8 +2,11 @@ name: Auto-PR and auto-merge
 
 # Two independent auto-merge paths, gated very differently on purpose:
 #
-# 1. Push to `ship` (this repo owner's own aggregated local commits, landed
-#    via scripts/ship.sh) lands it on main without a human review — it's
+# 1. Push to `ship` or `ship-later` (this repo owner's own aggregated local
+#    commits, landed via scripts/ship.sh — `ship-later` with --later: the
+#    PR merges without publishing a release, see ci.yml's version job, and
+#    goes out with the next daily release) lands it on main without a
+#    human review — it's
 #    already-tested work by the repo owner, so opening the PR and enabling
 #    auto-merge unconditionally is enough; CI passing (via the branch
 #    ruleset's required status checks) is the only real gate. Renovate's
@@ -67,7 +70,7 @@ name: Auto-PR and auto-merge
 # about the order, only that both end up satisfied).
 on:
   push:
-    branches: [ship]
+    branches: [ship, ship-later]
   workflow_run:  # zizmor: ignore[dangerous-triggers] intentional: no checkout of anything anywhere in this file, only gh api/pr calls by number/SHA -- see the comment above
     workflows: [CI]
     types: [completed]
@@ -117,6 +120,7 @@ jobs:
           GH_TOKEN: ${{ secrets.PAT_AUTO_PR_MERGE }}
           GH_REPO: ${{ github.repository }}
           HEAD_SHA: ${{ github.sha }}
+          HEAD_BRANCH: ${{ github.ref_name }}
         run: |
           # The title counts the whole batch by kind ("Release: 7 features,
           # 9 fixes"), the body groups every commit by kind — see
@@ -131,13 +135,19 @@ jobs:
           if printf '%s' "$compare" | jq -e '[.files[]?.filename] | index("docs/release-notes/next.md")' >/dev/null; then
             summary_args=(--summary-file docs/release-notes/next.md)
           fi
-          title=$(printf '%s\n' "$subjects" | python3 scripts/release_notes.py title)
-          body=$(printf '%s\n' "$subjects" | python3 scripts/release_notes.py body "${summary_args[@]}")
+          # ship-later: merges without its own release (ci.yml's version
+          # job doesn't publish for this branch) — said in title and body.
+          later_args=()
+          if [ "$HEAD_BRANCH" = "ship-later" ]; then
+            later_args=(--later)
+          fi
+          title=$(printf '%s\n' "$subjects" | python3 scripts/release_notes.py title "${later_args[@]}")
+          body=$(printf '%s\n' "$subjects" | python3 scripts/release_notes.py body "${summary_args[@]}" "${later_args[@]}")
 
-          pr_number=$(gh pr list --head ship --base main --state open --json number --jq '.[0].number // empty')
+          pr_number=$(gh pr list --head "$HEAD_BRANCH" --base main --state open --json number --jq '.[0].number // empty')
           if [ -z "$pr_number" ]; then
-            gh pr create --base main --head ship --title "$title" --body "$body"
-            pr_number=$(gh pr list --head ship --base main --state open --json number --jq '.[0].number')
+            gh pr create --base main --head "$HEAD_BRANCH" --title "$title" --body "$body"
+            pr_number=$(gh pr list --head "$HEAD_BRANCH" --base main --state open --json number --jq '.[0].number')
           else
             gh pr edit "$pr_number" --title "$title" --body "$body"
           fi
@@ -208,7 +218,7 @@ jobs:
           for pr in $prs; do
             head_ref=$(gh pr view "$pr" --json headRefName --jq .headRefName 2>/dev/null)
             case "$head_ref" in
-              ""|ship|renovate/*)
+              ""|ship|ship-later|renovate/*)
                 # Empty means the PR lookup itself failed (e.g. a bad
                 # manually-typed pr_number) -- skip either way, ship/renovate
                 # PRs are handled by the other job / Renovate's own automerge.
