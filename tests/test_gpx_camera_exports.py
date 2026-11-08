@@ -251,3 +251,36 @@ class TestSkyDemonExports:
             content_type="multipart/form-data",
         ).data.decode()
         assert "unsupported file type" in page
+
+
+class TestXmlRootName:
+    def test_shapes(self):
+        from aircraft.gps_import import _xml_root_name
+
+        assert _xml_root_name('<?xml version="1.0"?>\n<gpx version="1.1">') == "gpx"
+        assert (
+            _xml_root_name("<!-- a --><!DOCTYPE kml><ns0:kml xmlns:ns0='u'/>")
+            == "ns0:kml"
+        )
+        assert _xml_root_name("  \n <kml>") == "kml"
+        assert _xml_root_name("time,lat,lon") == ""
+        assert _xml_root_name("<?xml never closed") == ""
+        assert _xml_root_name("<!-- never closed") == ""
+        assert _xml_root_name("<!DOCTYPE never closed") == ""
+        assert _xml_root_name("") == ""
+
+    def test_crafted_input_is_linear(self):
+        """The inputs CodeQL flagged for the regular expression this
+        replaced (py/redos) — handled at once, not in exponential time."""
+        import time
+
+        from aircraft.gps_import import _xml_root_name
+
+        for crafted in (
+            "<!--" + "--><!--" * 20000,
+            "<?" + "?><?" * 20000,
+            "<??>" * 20000,
+        ):
+            started = time.perf_counter()
+            assert _xml_root_name(crafted) == ""
+            assert time.perf_counter() - started < 1.0
