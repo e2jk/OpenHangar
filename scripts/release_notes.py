@@ -27,6 +27,7 @@ GitHub release after it the same way (`release_notes.py heading FILE`).
     release_notes.py summary FILE            # the summary without it
     release_notes.py release-name VERSION NOTES [--heading TITLE]
     release_notes.py previous-release VERSION < tags  # the release before
+    release_notes.py versions-json VERSION < tags     # Pages versions.json
     release_notes.py drop-released NOTES URLS
         # remove from GitHub-generated release NOTES (in place) the PRs
         # whose URLs are listed in the URLS file — see drop_released
@@ -38,6 +39,7 @@ MAX_TITLE characters.
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 
@@ -214,6 +216,19 @@ def previous_release(version: str, tags: list[str]) -> str:
     return max(older)[1] if older else ""
 
 
+def versions_list(version: str, tags: list[str]) -> list[str]:
+    """Every released version ("vX.Y.Z" tags, plus *version* being
+    released), newest first, without the "v" — GitHub Pages' versions.json,
+    which instances read for their update check."""
+    found = {version}
+    for tag in tags:
+        if m := _VERSION_TAG_RE.match(tag.strip()):
+            found.add(".".join(m.groups()))
+    return sorted(
+        found, key=lambda v: tuple(int(n) for n in v.split(".")), reverse=True
+    )
+
+
 def drop_released(notes: str, released_urls: set[str]) -> str:
     """GitHub-generated release notes without the PRs in *released_urls*
     (and their sub-bullets), dropping the "What's Changed" heading if no PR
@@ -257,6 +272,7 @@ def main(argv: list[str] | None = None) -> int:
             "drop-released",
             "release-name",
             "previous-release",
+            "versions-json",
         ],
     )
     parser.add_argument("file", nargs="?", help="heading/summary: the summary file")
@@ -268,6 +284,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--later", action="store_true")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args(argv)
+    if args.mode == "versions-json":  # file = version, tags on stdin
+        print(json.dumps(versions_list(args.file, sys.stdin.read().splitlines())))
+        return 0
     if args.mode == "previous-release":  # file = version, tags on stdin
         found = previous_release(args.file, sys.stdin.read().splitlines())
         if found:

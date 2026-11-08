@@ -242,3 +242,19 @@ def test_name_from_titles():
     assert name(["Release: 2 fixes", "chore(deps): a"]) == "Release: 2 fixes (+1 more)"
     long = name(["feat: " + "word " * 30, "fix: x"])
     assert len(long) <= release_notes.MAX_TITLE and long.endswith("… (+1 more)")
+
+
+def test_versions_json(monkeypatch, capsys):
+    tags = ["v3.37.0", "v3.9.9", "v3.36.1", "draft", "v0.5.0", ""]
+    assert release_notes.versions_list("3.38.0", tags) == [
+        "3.38.0",
+        "3.37.0",
+        "3.36.1",
+        "3.9.9",
+        "0.5.0",
+    ]
+    # The version being released already listed: once.
+    assert release_notes.versions_list("3.37.0", ["v3.37.0"]) == ["3.37.0"]
+    monkeypatch.setattr(sys, "stdin", io.StringIO("v1.0.0\nv1.0.1\n"))
+    release_notes.main(["versions-json", "1.1.0"])
+    assert capsys.readouterr().out == '["1.1.0", "1.0.1", "1.0.0"]\n'
