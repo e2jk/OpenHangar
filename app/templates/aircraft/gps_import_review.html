@@ -146,6 +146,11 @@
       {{ _("Ground movement shortly after flight %(info)s, at the same airfield (e.g. back to the hangar) — it will be added to that flight's track as a taxi part. The flight's times and other data don't change.", info=seg.matched_flight_str) }}
       {% endif %}
     </div>
+    {% elif seg.ground_candidates and not other_aircraft %}
+    <div class="alert alert-warning py-2 mt-2 mb-2 small">
+      <i class="bi bi-question-circle me-1"></i>
+      {{ _("Ground movement further from a flight than a usual taxi, but at the same airfield on the same day (e.g. back to the hangar after a long wait at the fuel station). Choose below the flight to add it to as a taxi part — the flight's times and other data don't change — or none of them.") }}
+    </div>
     {% elif seg.matched_ground_role == 'entry' %}
     <div class="alert alert-info py-2 mt-2 mb-2 small">
       <i class="bi bi-link-45deg me-1"></i>
@@ -211,6 +216,30 @@
           action="{{ url_for('aircraft.gps_import_confirm_one', aircraft_id=aircraft.id) }}">
       <input type="hidden" name="seg_idx" value="{{ i }}">
       <input type="hidden" name="pilot_role" class="pilot-role-hidden" value="{{ default_role }}">
+
+      {% if seg.ground_candidates and not other_aircraft %}
+      <div class="mb-3">
+        <label class="form-label form-label-sm mb-1 fw-semibold">{{ _('Add it to a flight as a taxi part') }}</label>
+        {% for cand in seg.ground_candidates %}
+        <div class="form-check">
+          <input class="form-check-input" type="radio" name="ground_flight_id"
+                 id="ground_{{ i }}_{{ loop.index0 }}" value="{{ cand.id }}"
+                 {% if loop.first %}checked{% endif %}>
+          <label class="form-check-label" for="ground_{{ i }}_{{ loop.index0 }}">
+            {{ cand.str }} —
+            {% if cand.when == 'after' %}{{ ngettext('one minute after it landed', '%(n)s minutes after it landed', cand.gap_min, n=cand.gap_min) }}{% else %}{{ ngettext('one minute before it took off', '%(n)s minutes before it took off', cand.gap_min, n=cand.gap_min) }}{% endif %}
+          </label>
+        </div>
+        {% endfor %}
+        <div class="form-check mt-1">
+          <input class="form-check-input" type="radio" name="ground_flight_id"
+                 id="ground_{{ i }}_none" value="">
+          <label class="form-check-label text-muted" for="ground_{{ i }}_none">
+            {{ _('None of these — import it as a ground entry of its own') }}
+          </label>
+        </div>
+      </div>
+      {% endif %}
 
       {% if seg.matched_ambiguous and not other_aircraft %}
       <div class="mb-3">
