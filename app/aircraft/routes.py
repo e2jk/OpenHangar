@@ -1873,6 +1873,61 @@ def _segment_to_dict(seg: Any, idx: int) -> dict[str, Any]:
     }
 
 
+def _same_name(a: str | None, b: str | None) -> bool:
+    return bool(a and b and a.strip().casefold() == b.strip().casefold())
+
+
+def _my_slot(fe: Flight, uid: int) -> str | None:
+    """ "pic" / "dual" when *uid* is already on flight *fe*, else None."""
+    if fe.pic_user_id == uid:
+        return "pic"
+    if fe.second_crew_user_id == uid:
+        return "dual"
+    return None
+
+
+def _role_applies(fe: Flight, uid: int, pilot_role: str) -> bool:
+    """Whether a GPS import may put *uid* on existing flight *fe* in
+    *pilot_role*: the logbook names the crew, GPS data doesn't — so only
+    when that crew slot is free (or already carries the user's own name),
+    and never when the user is on the flight already."""
+    if pilot_role not in ("pic", "dual") or _my_slot(fe, uid):
+        return False
+    user = db.session.get(User, uid)
+    name = user.display_name if user else None
+    if pilot_role == "pic":
+        user_id, logged_name = fe.pic_user_id, fe.pic_name
+    else:
+        user_id, logged_name = fe.second_crew_user_id, fe.second_crew_name
+    return user_id is None and (not logged_name or _same_name(logged_name, name))
+
+
+def _logged_pic(fe: Flight) -> str | None:
+    if fe.pic_user_id:
+        user = db.session.get(User, fe.pic_user_id)
+        if user:
+            return str(user.display_name)
+    return fe.pic_name or None
+
+
+def _default_pilot_role(segments: list[dict[str, Any]], other_aircraft: bool) -> str:
+    """The review page's preselected role: PIC when a segment would create a
+    new flight or the user already flies a matched one as PIC, dual when
+    as dual, otherwise "Not flying" — matched flights already name their
+    crew, e.g. an aircraft's flights from before its current owner."""
+    if other_aircraft:
+        return "pic"
+    if any(
+        not s.get("matched_flight_id") and not s.get("is_ground_only") for s in segments
+    ):
+        return "pic"
+    slots = {s.get("matched_my_slot") for s in segments}
+    for role in ("pic", "dual"):
+        if role in slots:
+            return role
+    return "none"
+
+
 def _linked_pilot_entries(flight_id: int, exclude_user_id: int) -> list[dict[str, Any]]:
     """Return metadata about the *other* crew member (if any) on this Flight
     row, for the GPS-track-replacement notice shown before an upload
@@ -2418,6 +2473,12 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
                 _dt.fromisoformat(seg["block_on_utc"]),
             )
         )
+        seg["matched_pic"] = _logged_pic(matched_flight) if matched_flight else None
+        seg["matched_my_slot"] = (
+            _my_slot(matched_flight, int(session["user_id"]))
+            if matched_flight
+            else None
+        )
 
     tmp_dir = _gps_tmp_dir()
     state["segments"] = [_segment_for_session(s, tmp_dir) for s in full_segs]
@@ -2437,6 +2498,9 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
         other_ac_make_model=state.get("other_ac_make_model", ""),
         other_ac_reg=state.get("other_ac_reg", ""),
         confirmed_segments=state.get("confirmed_segments", {}),
+        default_role=_default_pilot_role(
+            full_segs, bool(state.get("other_aircraft", False))
+        ),
     )
 
 
@@ -2466,6 +2530,7 @@ def _gps_import_create_segment(
     from datetime import datetime as _dt
 
     create_pilot_entries = pilot_role in ("pic", "dual")
+    uid = int(session["user_id"])
 
     block_off = _dt.fromisoformat(seg["block_off_utc"])
     block_on = _dt.fromisoformat(seg["block_on_utc"])
@@ -2506,6 +2571,11 @@ def _gps_import_create_segment(
                     batch_id=batch.id,
                 )
                 linked_ids.append(existing.id)
+                # The logbook names the crew: the user's role is only added
+                # to a free slot, never over the pilot logged on it.
+                create_pilot_entries = create_pilot_entries and _role_applies(
+                    existing, uid, pilot_role
+                )
                 # Unified model: this Flight row already covers both crew
                 # slots, so setting gps_track_id above already applies to
                 # whichever other pilot occupies the other slot too — no
@@ -2599,11 +2669,12 @@ def _gps_import_create_segment(
         # GPS-derived landing count has no day/night split — treat them all
         # as day landings, same simplification the old standalone pilot
         # entry made.
-        entry.landings_day = seg.get("landing_count") or 0
+        if not entry.landings_day:
+            entry.landings_day = seg.get("landing_count") or 0
         if remarks:
             entry.notes = remarks
         entry_ac: Aircraft | None = None if other_aircraft else ac
-        apply_pilot_identity(entry, entry_ac, int(session["user_id"]), pilot_role)
+        apply_pilot_identity(entry, entry_ac, uid, pilot_role)
 
     return entry, linked_ids
 

@@ -370,26 +370,26 @@ msgstr "W&B-berekening opgeslagen."
 msgid "W&B calculation deleted."
 msgstr "W&B-berekening verwijderd."
 
-#: app/aircraft/routes.py:2007 app/pilots/routes.py:2332
+#: app/aircraft/routes.py:2062 app/pilots/routes.py:2332
 msgid "Please select at least one GPS log file."
 msgstr "Selecteer ten minste één GPS-logbestand."
 
-#: app/aircraft/routes.py:2023 app/pilots/routes.py:2361
+#: app/aircraft/routes.py:2078 app/pilots/routes.py:2361
 #, python-format
 msgid "%(fn)s: unsupported file type (use .gpx, .kml or .csv — SkyDemon's .gpx.bin exports work too)."
 msgstr "%(fn)s: niet-ondersteund bestandstype (gebruik .gpx, .kml of .csv — de .gpx.bin-exports van SkyDemon werken ook)."
 
-#: app/aircraft/routes.py:2031 app/pilots/routes.py:2368
+#: app/aircraft/routes.py:2086 app/pilots/routes.py:2368
 #, python-format
 msgid "%(fn)s: file too large (20 MB limit)."
 msgstr "%(fn)s: bestand te groot (limiet 20 MB)."
 
-#: app/aircraft/routes.py:2042 app/pilots/routes.py:2378
+#: app/aircraft/routes.py:2097 app/pilots/routes.py:2378
 #, python-format
 msgid "%(fn)s: %(err)s"
 msgstr "%(fn)s: %(err)s"
 
-#: app/aircraft/routes.py:2080 app/pilots/routes.py:2408
+#: app/aircraft/routes.py:2135 app/pilots/routes.py:2408
 #: app/templates/aircraft/gps_import_review.html:25
 #: app/templates/pilots/gps_import_review.html:24
 #, python-format
@@ -398,36 +398,36 @@ msgid_plural "%(n)s files skipped — no movement detected."
 msgstr[0] "één bestand overgeslagen — geen beweging gedetecteerd."
 msgstr[1] "%(n)s bestanden overgeslagen — geen beweging gedetecteerd."
 
-#: app/aircraft/routes.py:2089 app/pilots/routes.py:2416
+#: app/aircraft/routes.py:2144 app/pilots/routes.py:2416
 msgid "No valid GPS files to import."
 msgstr "Geen geldige GPS-bestanden om te importeren."
 
-#: app/aircraft/routes.py:2117 app/aircraft/routes.py:2740
-#: app/aircraft/routes.py:2875 app/aircraft/routes.py:2940
+#: app/aircraft/routes.py:2172 app/aircraft/routes.py:2811
+#: app/aircraft/routes.py:2946 app/aircraft/routes.py:3011
 #: app/pilots/routes.py:2457 app/pilots/routes.py:2626
 msgid "Session expired — please upload your GPS files again."
 msgstr "Sessie verlopen — upload uw GPS-bestanden opnieuw."
 
-#: app/aircraft/routes.py:2139 app/pilots/routes.py:2488
+#: app/aircraft/routes.py:2194 app/pilots/routes.py:2488
 #, python-format
 msgid "Could not read %(fn)s — please upload again."
 msgstr "Kan %(fn)s niet lezen — upload het bestand opnieuw."
 
-#: app/aircraft/routes.py:2745 app/pilots/routes.py:2631
+#: app/aircraft/routes.py:2816 app/pilots/routes.py:2631
 msgid "No segments to import."
 msgstr "Geen segmenten om te importeren."
 
-#: app/aircraft/routes.py:2751 app/aircraft/routes.py:2755
-#: app/aircraft/routes.py:2945 app/pilots/routes.py:2637
+#: app/aircraft/routes.py:2822 app/aircraft/routes.py:2826
+#: app/aircraft/routes.py:3016 app/pilots/routes.py:2637
 #: app/pilots/routes.py:2641
 msgid "Invalid segment index."
 msgstr "Ongeldig segmentindex."
 
-#: app/aircraft/routes.py:2760 app/pilots/routes.py:2646
+#: app/aircraft/routes.py:2831 app/pilots/routes.py:2646
 msgid "This segment has already been confirmed."
 msgstr "Dit segment is al bevestigd."
 
-#: app/aircraft/routes.py:2779 app/aircraft/routes.py:2834
+#: app/aircraft/routes.py:2850 app/aircraft/routes.py:2905
 #: app/pilots/routes.py:2667 app/pilots/routes.py:2898
 #, python-format
 msgid "one flight imported successfully."
@@ -435,7 +435,7 @@ msgid_plural "%(n)s flights imported successfully."
 msgstr[0] "één vlucht succesvol geïmporteerd."
 msgstr[1] "%(n)s vluchten succesvol geïmporteerd."
 
-#: app/aircraft/routes.py:2788 app/aircraft/routes.py:2845
+#: app/aircraft/routes.py:2859 app/aircraft/routes.py:2916
 #: app/pilots/routes.py:2676
 #, python-format
 msgid "one segment skipped."
@@ -443,49 +443,49 @@ msgid_plural "%(n)s segments skipped."
 msgstr[0] "één segment overgeslagen."
 msgstr[1] "%(n)s segmenten overgeslagen."
 
-#: app/aircraft/routes.py:2801 app/pilots/routes.py:2686
+#: app/aircraft/routes.py:2872 app/pilots/routes.py:2686
 msgid "Segment skipped."
 msgstr "Segment overgeslagen."
 
-#: app/aircraft/routes.py:2856 app/pilots/routes.py:2907
+#: app/aircraft/routes.py:2927 app/pilots/routes.py:2907
 msgid "Flight confirmed."
 msgstr "Vlucht bevestigd."
 
-#: app/aircraft/routes.py:2912
+#: app/aircraft/routes.py:2983
 #, python-format
 msgid "One flight linked to its GPS track."
 msgid_plural "%(n)d flights linked to their GPS tracks."
 msgstr[0] "Eén vlucht gekoppeld aan haar GPS-spoor."
 msgstr[1] "%(n)d vluchten gekoppeld aan hun GPS-sporen."
 
-#: app/aircraft/routes.py:3007
+#: app/aircraft/routes.py:3078
 msgid "No original GPS files are kept for this aircraft yet."
 msgstr "Voor dit vliegtuig zijn nog geen originele gps-bestanden bewaard."
 
-#: app/aircraft/routes.py:3069
+#: app/aircraft/routes.py:3140
 #, python-format
 msgid "Import undone: the flights it created are deleted and the GPS tracks it added removed. Their files are kept for one day in the removed GPS files."
 msgid_plural "Import undone: the flights it created are deleted and the GPS tracks it added removed. Their files are kept for %(n)s days in the removed GPS files."
 msgstr[0] "Import ongedaan gemaakt: de vluchten die hij aanmaakte zijn verwijderd en de GPS-tracks die hij toevoegde weggehaald. Hun bestanden worden één dag bewaard bij de weggehaalde GPS-bestanden."
 msgstr[1] "Import ongedaan gemaakt: de vluchten die hij aanmaakte zijn verwijderd en de GPS-tracks die hij toevoegde weggehaald. Hun bestanden worden %(n)s dagen bewaard bij de weggehaalde GPS-bestanden."
 
-#: app/aircraft/routes.py:3359
+#: app/aircraft/routes.py:3430
 msgid "No files selected."
 msgstr "Geen bestanden geselecteerd."
 
-#: app/aircraft/routes.py:3379
+#: app/aircraft/routes.py:3450
 #, python-format
 msgid "%(name)s: unsupported format (use JPEG, PNG, WEBP or HEIC)."
 msgstr "%(name)s: niet-ondersteund formaat (gebruik JPEG, PNG, WEBP of HEIC)."
 
-#: app/aircraft/routes.py:3401
+#: app/aircraft/routes.py:3472
 #, python-format
 msgid "one photo uploaded."
 msgid_plural "%(n)s photos uploaded."
 msgstr[0] "één foto geüpload."
 msgstr[1] "%(n)s foto's geüpload."
 
-#: app/aircraft/routes.py:3483
+#: app/aircraft/routes.py:3554
 msgid "Photo deleted."
 msgstr "Foto verwijderd."
 
@@ -1791,7 +1791,7 @@ msgid "Multi-pilot time"
 msgstr "Vliegtijd meerpiloot"
 
 #: app/flights/shared_flight.py:161
-#: app/templates/aircraft/gps_import_review.html:258
+#: app/templates/aircraft/gps_import_review.html:263
 #: app/templates/flights/airframe_import_review.html:56
 #: app/templates/flights/flight_form.html:581
 #: app/templates/offline/workbench.html:135
@@ -1799,7 +1799,7 @@ msgid "Nature of flight"
 msgstr "Aard van de vlucht"
 
 #: app/flights/shared_flight.py:162
-#: app/templates/aircraft/gps_import_review.html:264
+#: app/templates/aircraft/gps_import_review.html:269
 #: app/templates/offline/pilot_workbench.html:149
 #: app/templates/pilots/entry_detail.html:163
 #: app/templates/pilots/entry_form.html:286
@@ -4893,7 +4893,7 @@ msgid "Add components"
 msgstr "Componenten toevoegen"
 
 #: app/templates/aircraft/detail.html:75
-#: app/templates/aircraft/gps_import_review.html:289
+#: app/templates/aircraft/gps_import_review.html:294
 #: app/templates/pilots/gps_import_review.html:277
 msgid "Skip"
 msgstr "Overslaan"
@@ -5764,38 +5764,47 @@ msgstr "Deze vlucht heeft al een GPS-spoor voor een ander deel ervan — dit seg
 msgid "This flight already has a GPS track — confirming will replace it."
 msgstr "Deze vlucht heeft al een GPS-track — bevestigen vervangt deze."
 
-#: app/templates/aircraft/gps_import_review.html:170
+#: app/templates/aircraft/gps_import_review.html:167
+msgid "Already in your pilot logbook — your role on it stays as logged."
+msgstr "Staat al in uw pilotenlogboek — uw rol blijft zoals geregistreerd."
+
+#: app/templates/aircraft/gps_import_review.html:169
+#, python-format
+msgid "Logged with %(name)s as PIC."
+msgstr "Geregistreerd met %(name)s als PIC."
+
+#: app/templates/aircraft/gps_import_review.html:175
 #: app/templates/pilots/gps_import_review.html:118
 #, python-format
 msgid "%(name)s already has their own GPS track on this flight — their pilot logbook entry will not be changed."
 msgstr "%(name)s heeft al een eigen GPS-track voor deze vlucht — hun vermelding in het vliegtuigboek wordt niet gewijzigd."
 
-#: app/templates/aircraft/gps_import_review.html:173
+#: app/templates/aircraft/gps_import_review.html:178
 #: app/templates/pilots/gps_import_review.html:121
 #, python-format
 msgid "%(name)s has a pilot logbook entry for this flight — the GPS track will also be linked to their logbook."
 msgstr "%(name)s heeft een vermelding in het vliegtuigboek voor deze vlucht — de GPS-track wordt ook aan hun logboek gekoppeld."
 
-#: app/templates/aircraft/gps_import_review.html:182
+#: app/templates/aircraft/gps_import_review.html:187
 #: app/templates/pilots/gps_import_review.html:130
 msgid "Possible match found — please confirm below or choose \"none of these\"."
 msgid_plural "Possible matches found — please choose the right one below, or \"none of these\"."
 msgstr[0] "Mogelijke overeenkomst gevonden — bevestig hieronder of kies \"geen van deze\"."
 msgstr[1] "Mogelijke overeenkomsten gevonden — kies de juiste hieronder, of \"geen van deze\"."
 
-#: app/templates/aircraft/gps_import_review.html:184
+#: app/templates/aircraft/gps_import_review.html:189
 #: app/templates/pilots/gps_import_review.html:132
 #, python-format
 msgid "Nothing is logged on this date, but a flight on the same route is logged within two days of it — possibly a date typo in the logbook. Linking it adds the GPS track and keeps the date recorded in the logbook (the GPS says %(date)s) — correct it there if the logbook is wrong."
 msgstr "Op deze datum is niets geregistreerd, maar een vlucht op dezelfde route wel binnen twee dagen — mogelijk een datumfout in het logboek. Koppelen voegt het GPS-spoor toe en behoudt de datum uit het logboek (de GPS zegt %(date)s) — corrigeer die daar als het logboek fout is."
 
-#: app/templates/aircraft/gps_import_review.html:192
+#: app/templates/aircraft/gps_import_review.html:197
 #: app/templates/pilots/gps_import_review.html:140
 #, python-format
 msgid "Raw: %(h).2f h — Rounded: %(r).1f h"
 msgstr "Ruw: %(h).2f u — Afgerond: %(r).1f u"
 
-#: app/templates/aircraft/gps_import_review.html:194
+#: app/templates/aircraft/gps_import_review.html:199
 #: app/templates/pilots/gps_import_review.html:142
 #, python-format
 msgid "one landing"
@@ -5803,59 +5812,59 @@ msgid_plural "%(n)s landings"
 msgstr[0] "één landing"
 msgstr[1] "%(n)s landingen"
 
-#: app/templates/aircraft/gps_import_review.html:209
+#: app/templates/aircraft/gps_import_review.html:214
 #: app/templates/pilots/gps_import_review.html:157
 msgid "Select the matching flight"
 msgstr "Selecteer de overeenkomende vlucht"
 
-#: app/templates/aircraft/gps_import_review.html:218
+#: app/templates/aircraft/gps_import_review.html:223
 #: app/templates/pilots/gps_import_review.html:166
 msgid "has track"
 msgstr "heeft track"
 
-#: app/templates/aircraft/gps_import_review.html:227
+#: app/templates/aircraft/gps_import_review.html:232
 msgid "None of these — create a new flight"
 msgstr "Geen van deze — nieuwe vlucht aanmaken"
 
-#: app/templates/aircraft/gps_import_review.html:235
+#: app/templates/aircraft/gps_import_review.html:240
 #: app/templates/pilots/gps_import_review.html:231
 msgid "Departure ICAO"
 msgstr "Vertrek ICAO"
 
-#: app/templates/aircraft/gps_import_review.html:239
+#: app/templates/aircraft/gps_import_review.html:244
 #: app/templates/pilots/gps_import_review.html:235
 msgid "e.g. EBNM"
 msgstr "bijv. EBNM"
 
-#: app/templates/aircraft/gps_import_review.html:242
+#: app/templates/aircraft/gps_import_review.html:247
 #: app/templates/pilots/gps_import_review.html:238
 msgid "Arrival ICAO"
 msgstr "Aankomst ICAO"
 
-#: app/templates/aircraft/gps_import_review.html:246
+#: app/templates/aircraft/gps_import_review.html:251
 #: app/templates/pilots/gps_import_review.html:242
 msgid "e.g. EBAW"
 msgstr "bijv. EBAW"
 
-#: app/templates/aircraft/gps_import_review.html:253
+#: app/templates/aircraft/gps_import_review.html:258
 #: app/templates/pilots/gps_import_review.html:249
 msgid "Add details"
 msgstr "Details toevoegen"
 
-#: app/templates/aircraft/gps_import_review.html:261
+#: app/templates/aircraft/gps_import_review.html:266
 msgid "e.g. Navigation, Training, Local flight"
 msgstr "bijv. Navigatie, Training, Lokale vlucht"
 
-#: app/templates/aircraft/gps_import_review.html:267
+#: app/templates/aircraft/gps_import_review.html:272
 #: app/templates/pilots/gps_import_review.html:257
 msgid "Optional remarks"
 msgstr "Optionele opmerkingen"
 
-#: app/templates/aircraft/gps_import_review.html:275
+#: app/templates/aircraft/gps_import_review.html:280
 msgid "Confirm as-is"
 msgstr "Bevestigen zoals het is"
 
-#: app/templates/aircraft/gps_import_review.html:279
+#: app/templates/aircraft/gps_import_review.html:284
 msgid "Edit & confirm"
 msgstr "Bewerken en bevestigen"
 

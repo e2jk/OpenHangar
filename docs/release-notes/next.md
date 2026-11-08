@@ -1,6 +1,7 @@
 # Removing GPS files from flights, SkyDemon exports
 
 **GPS import**
+- Importing GPS logs onto flights already in the logbook no longer puts you on them as PIC (or dual) over the pilot logged there — e.g. the previous owner's flights: your role is only added where that seat is free. The review page shows who's logged as PIC, and preselects "Not flying" when none of the matched flights are yours. Their logged landings are kept too.
 - A GPS file linked to the wrong flight can be taken off it: the flight's page lists its GPS files with their times, and **Remove file** takes that file's part off the track and map. The file is kept for 7 days in the new **Removed GPS files** page (linked from the flight and the configuration page), where it can be restored with its part of the track; then it's deleted. Removing a file never changes the logged times.
 - **Undo import** only removes what that import added: a flight whose track also had a part from an earlier import keeps it (it used to lose its whole track), and the GPS data and files it removes go to the removed GPS files too instead of staying behind unused.
 - SkyDemon's GPX and KML exports import as they come — its `.gpx.bin` files no longer need renaming: a file's GPX or KML content is recognised whatever its extension. (SkyDemon's own `.flightlog.bin` can't be read; the import says so and suggests exporting GPX or KML.)
