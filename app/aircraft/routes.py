@@ -92,6 +92,7 @@ from aircraft.co_owner_form_parsing import (  # pyright: ignore[reportMissingImp
 )
 from aircraft.gps_import import (  # pyright: ignore[reportMissingImports]
     detect_segments,
+    is_gps_upload_name,
     logged_flight_windows,
     merge_and_sort,
     merge_segments_logged_as_one,
@@ -1775,7 +1776,6 @@ def wb_entry_delete(aircraft_id: int, entry_id: int) -> ResponseReturnValue:
 
 # ── Phase 30: GPS Log Import ──────────────────────────────────────────────────
 
-_GPS_ALLOWED_EXTS = {".gpx", ".kml", ".csv"}
 _GPS_MAX_BYTES = 20 * 1024 * 1024  # 20 MB per file
 
 
@@ -2012,11 +2012,10 @@ def gps_import_upload(aircraft_id: int) -> ResponseReturnValue:
     for f in files:
         if not f.filename:
             continue
-        ext = os.path.splitext(f.filename.lower())[1]
-        if ext not in _GPS_ALLOWED_EXTS:
+        if not is_gps_upload_name(f.filename):
             errors.append(
                 _(
-                    "%(fn)s: unsupported file type (use .gpx, .kml, or .csv).",
+                    "%(fn)s: unsupported file type (use .gpx, .kml or .csv — SkyDemon's .gpx.bin exports work too).",
                     fn=f.filename,
                 )
             )

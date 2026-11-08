@@ -2114,7 +2114,6 @@ def import_rollback(batch_id: int) -> ResponseReturnValue:
 
 # ── Pilot GPS import (airplane-agnostic batch upload) ────────────────────────
 
-_GPS_ALLOWED_EXTS = {".gpx", ".kml", ".csv"}
 _GPS_MAX_BYTES = 20 * 1024 * 1024
 _BLOCK_TOLERANCE_PILOT = _td(minutes=15)
 
@@ -2332,7 +2331,7 @@ def pilot_gps_import_upload() -> ResponseReturnValue:
             "pilots/gps_import_upload.html", tenant_aircraft=tenant_aircraft
         )
 
-    from aircraft.gps_import import parse_gps_file
+    from aircraft.gps_import import is_gps_upload_name, parse_gps_file
     from aircraft.routes import _track_span  # pyright: ignore[reportMissingImports]
     from documents.routes import _safe_join  # pyright: ignore[reportMissingImports]
     from services.gps_archive import (  # pyright: ignore[reportMissingImports]
@@ -2353,11 +2352,10 @@ def pilot_gps_import_upload() -> ResponseReturnValue:
     for f in files:
         if not f.filename:
             continue  # pragma: no cover – Werkzeug never yields empty-filename FileStorage objects
-        ext = os.path.splitext(f.filename.lower())[1]
-        if ext not in _GPS_ALLOWED_EXTS:
+        if not is_gps_upload_name(f.filename):
             errors.append(
                 _(
-                    "%(fn)s: unsupported file type (use .gpx, .kml, or .csv).",
+                    "%(fn)s: unsupported file type (use .gpx, .kml or .csv — SkyDemon's .gpx.bin exports work too).",
                     fn=f.filename,
                 )
             )
