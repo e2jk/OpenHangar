@@ -45,3 +45,10 @@ TEMP_DIRNAMES = frozenset(
     {IMPORT_TMP_DIRNAME, GPS_IMPORT_TMP_DIRNAME, AMP_IMPORT_TMP_DIRNAME}
 )
 TEMP_MAX_AGE_HOURS = 24
+
+# Map tiles downloaded for the server-drawn track images (utils._ensure_tiles),
+# kept for a few weeks so each is fetched once, not on every request.
+# Top-level, so never walked by the document scanners; never backed up.
+TILE_CACHE_DIRNAME = "tile_cache"
+# Top-level folders a backup leaves out: nothing in them is worth restoring.
+NOT_BACKED_UP_DIRNAMES = TEMP_DIRNAMES | {TILE_CACHE_DIRNAME}

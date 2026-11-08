@@ -1141,6 +1141,9 @@ def create_app() -> Flask:
     @app.route("/")
     def index() -> ResponseReturnValue:
         from models import TenantUser, User
+        from services.track_overview import (  # pyright: ignore[reportMissingImports]
+            overview_geojson,
+        )
 
         # Demo mode: unauthenticated visitors always see the landing page
         if flask_env == "demo" and not session.get("user_id"):
@@ -1329,7 +1332,7 @@ def create_app() -> Flask:
                     )
                     if e.aircraft_id
                     else _url_for_dash("pilots.view_entry", entry_id=e.id),
-                    "geojson": e.gps_track.geojson if e.gps_track else None,
+                    "geojson": overview_geojson(e.gps_track),
                 }
                 for e in track_entries
             ]

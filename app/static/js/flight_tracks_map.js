@@ -27,7 +27,9 @@
     pbar.id  = 'anim-pbar';
     if (pbarWrap) pbarWrap.appendChild(pbar);
 
-    var map = L.map(mapEl);
+    // Canvas, not SVG: one drawing surface for every track instead of a DOM
+    // element per track — much lighter with a hundred or more of them.
+    var map = L.map(mapEl, { preferCanvas: true });
 
     window.ohAddBaseLayers(map, opiKey);
 
@@ -65,7 +67,10 @@
 
     var animTimer = null, animRaf = null, animDrawLayer = null;
     var animIdx = 0, animBounds = [], animLayers = [];
-    var STEP_MS = 600, DRAW_MS = 300, PAUSE_MS = STEP_MS - DRAW_MS;
+    // About half a minute in all, however many tracks: 600 ms per track for
+    // a few dozen, down to 150 ms each from 200 tracks on.
+    var STEP_MS = Math.max(150, Math.min(600, Math.round(30000 / Math.max(tracks.length, 1))));
+    var DRAW_MS = Math.round(STEP_MS / 2), PAUSE_MS = STEP_MS - DRAW_MS;
 
     function extractLatLngs(geojson) {
       var pts = [];
@@ -85,6 +90,11 @@
       return pts;
     }
 
+    function pointsOf(t) {
+      if (!t._pts) t._pts = extractLatLngs(t.geojson);
+      return t._pts;
+    }
+
     function animClear() {
       clearTimeout(animTimer);
       if (animRaf !== null) { cancelAnimationFrame(animRaf); animRaf = null; }
@@ -94,13 +104,15 @@
       if (pbar) pbar.style.width = '0%';
     }
 
+    // Only the most recent tracks fade a little more at each step; older
+    // ones are already at the lowest opacity (see trackOpacity).
+    var FADING = 12;
     function applyAnimOpacities() {
       var n = animLayers.length;
-      animLayers.forEach(function (l, i) {
-        var op = trackOpacity(i, n);
-        l.finalOpacity = op;
-        l.setStyle({ opacity: op });
-      });
+      for (var i = Math.max(0, n - FADING); i < n; i++) {
+        var l = animLayers[i], op = trackOpacity(i, n);
+        if (l.finalOpacity !== op) { l.finalOpacity = op; l.setStyle({ opacity: op }); }
+      }
     }
 
     function animStep() {
@@ -118,7 +130,7 @@
 
       if (!t.geojson) { animTimer = setTimeout(animStep, STEP_MS); return; }
 
-      var pts = extractLatLngs(t.geojson);
+      var pts = pointsOf(t);
       var trackBounds = pts.length >= 2 ? L.latLngBounds(pts) : null;
       if (trackBounds && trackBounds.isValid()) { animBounds.push(trackBounds); fitAll(animBounds); }
 
@@ -166,7 +178,7 @@
       var prezoomed = false;
       for (var i = 0; i < tracks.length; i++) {
         if (tracks[i].geojson) {
-          var p0 = extractLatLngs(tracks[i].geojson);
+          var p0 = pointsOf(tracks[i]);
           if (p0.length >= 2) {
             var b0 = L.latLngBounds(p0);
             if (b0.isValid()) { map.fitBounds(b0, { padding: [20, 20] }); prezoomed = true; }

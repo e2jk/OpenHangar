@@ -76,6 +76,9 @@ from services.gps_removal import (  # pyright: ignore[reportMissingImports]
     remove_batch_parts,
     remove_whole_track,
 )
+from services.track_overview import (  # pyright: ignore[reportMissingImports]
+    overview_geojson,
+)
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
     GPS_ARCHIVE_DIRNAME,
     GPS_IMPORT_TMP_DIRNAME,
@@ -426,7 +429,7 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
                 aircraft_id=aircraft_id,
                 flight_id=e.id,
             ),
-            "geojson": e.gps_track.geojson if e.gps_track else None,
+            "geojson": overview_geojson(e.gps_track),
         }
         for e in _gps_entries
     ]
@@ -3204,7 +3207,7 @@ def flight_tracks(aircraft_id: int) -> ResponseReturnValue:
                 aircraft_id=aircraft_id,
                 flight_id=e.id,
             ),
-            "geojson": e.gps_track.geojson if e.gps_track else None,
+            "geojson": overview_geojson(e.gps_track),
         }
         for e in entries_with_tracks
     ]
@@ -3241,7 +3244,7 @@ def flight_tracks_gif(aircraft_id: int) -> ResponseReturnValue:
                 "date": str(e.date),
                 "dep": e.departure_icao or "",
                 "arr": e.arrival_icao or "",
-                "geojson": e.gps_track.geojson if e.gps_track else None,
+                "geojson": overview_geojson(e.gps_track),
             }
             for e in entries
         ]
