@@ -580,7 +580,7 @@
     {% endif %}
     <div class="row mb-2">
       <div class="col-sm-4 fw-semibold text-muted">{{ _('Original GPS files') }}</div>
-      <div class="col-sm-8 text-muted">{% if gps_log_count is none %}—{% else %}{{ ngettext('%(size)s across one file', '%(size)s across %(n)s files', gps_log_count, size=oh_filesize(gps_log_size_bytes), n=gps_log_count) }}{% endif %}</div>
+      <div class="col-sm-8 text-muted">{% if gps_log_count is none %}—{% else %}{{ ngettext('%(size)s across one file', '%(size)s across %(n)s files', gps_log_count, size=oh_filesize(gps_log_size_bytes), n=gps_log_count) }}{% endif %} · <a href="{{ url_for('flights.removed_gps_files') }}">{{ _('Removed GPS files') }}</a></div>
     </div>
     {% if gatus_configured %}
     <div id="gatus-badges">

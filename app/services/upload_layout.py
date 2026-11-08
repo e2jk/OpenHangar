@@ -28,6 +28,11 @@ def is_app_managed(relpath: str) -> bool:
     return len(parts) >= 4 and parts[2] in _APP_MANAGED_AIRCRAFT_DIRS
 
 
+# _trash/gps/<id>/<file> — GPS files taken off a flight (services.gps_removal),
+# purged TRASH_DAYS later. Top-level like _pilots, so never walked by the
+# document scanners; included in backups, like the removals it belongs to.
+TRASH_ROOT = "_trash"
+
 # Top-level working folders for imports in progress: the uploaded file is
 # kept there between the upload/mapping step and the import itself, and
 # removed when the import finishes. Never part of a backup, and cleared of

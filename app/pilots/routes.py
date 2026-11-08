@@ -871,11 +871,14 @@ def view_entry(entry_id: int) -> ResponseReturnValue:
     if not entry or (entry.pic_user_id != uid and entry.second_crew_user_id != uid):
         abort(404)
 
+    from flights.routes import gps_file_context
+
     return render_template(
         "pilots/entry_detail.html",
         entry=entry,
         openaip_key=_openaip_key(),
         LogbookEntryType=LogbookEntryType,
+        **gps_file_context(entry),
     )
 
 

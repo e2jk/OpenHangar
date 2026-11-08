@@ -170,6 +170,8 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
     "flights.edit_flight": _PILOT_ACCESS_ROLES,
     "flights.parse_gps_api": _PILOT_ACCESS_ROLES,
     "flights.delete_flight": _PILOT_ACCESS_ROLES,
+    "flights.remove_gps_part": _PILOT_ACCESS_ROLES,  # plus can-edit-the-flight
+    "flights.restore_gps_file": _PILOT_ACCESS_ROLES,  # plus own-removal-only 404
     "flights.accept_crew_invite": _PILOT_ACCESS_ROLES,  # plus invitee-only 404
     "flights.decline_crew_invite": _PILOT_ACCESS_ROLES,  # plus invitee-only 404
     "flights.crew_entry": _PILOT_ACCESS_ROLES,  # plus linked-crew-only 404
