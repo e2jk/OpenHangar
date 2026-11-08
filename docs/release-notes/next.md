@@ -16,3 +16,4 @@
 - Distinct French and Dutch wordings where two different English texts shared one translation (Weblate checks): the Data checks page's "Check" column and "Dismiss" button, and the dashboard's "Past month".
 - `scripts/weblate_check_report.py` works again: Weblate now blocks scripts from its translate pages (a proof-of-work bot challenge), so the script finds which check failed through Weblate's search API instead.
 - A `ship-later` PR is named after its own commits, not the release's title line (which named every PR of the release alike).
+- The Weblate translation scan uses weblate-checks-action v1.1.0, which names each finding's check again (Weblate's bot challenge had turned them all into "unknown check").

@@ -85,7 +85,7 @@ jobs:
       - name: Run Weblate quality checks
         id: weblate
         if: steps.po-check.outputs.changed == 'true'
-        uses: e2jk/weblate-checks-action@9fe6f9c428168d7a8cfcd81f841c7c6d1880c3d5 # v1.0.5
+        uses: e2jk/weblate-checks-action@a2b028497693266ff3f189c639f1ea0118d5c7e1 # v1.1.0
         continue-on-error: true  # a Weblate hiccup (rate limit, outage) shouldn't turn this job red
         with:
           project: openhangar
