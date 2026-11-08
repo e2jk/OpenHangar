@@ -85,10 +85,11 @@ Unit = dict[str, Any]
 Check = tuple[str, str]
 Entry = tuple[Unit, list[Check]]
 
-# Weblate's quality checks, as named in its search syntax ("check:<name>"), most
-# likely first for a gettext project — with a readable label and explanation for
-# the report. A string can fail several; the search stops once each flagged string
-# has at least one.
+# Weblate's quality checks: (search name, display name, explanation) — the search
+# name and display name from Weblate's own definitions (weblate/checks/*.py:
+# check_id, name), the same list as e2jk/weblate-checks-action's. Most common
+# first for a gettext project; a string can fail several, and the search stops
+# once each flagged string has at least one.
 CHECKS: list[tuple[str, str, str]] = [
     (
         "reused",
@@ -106,7 +107,13 @@ CHECKS: list[tuple[str, str, str]] = [
         "The same string is translated differently elsewhere in the project.",
     ),
     ("same", "Unchanged translation", "The translation is the same as the source."),
-    ("same_plurals", "Same plurals", "Some plural forms are translated the same way."),
+    ("same-plurals", "Same plurals", "Some plural forms are translated the same way."),
+    (
+        "translated",
+        "Has been translated",
+        "This string was translated before (now untranslated or fuzzy).",
+    ),
+    ("plurals", "Missing plurals", "Some plural forms aren't translated."),
     (
         "python_format",
         "Python format",
@@ -117,10 +124,21 @@ CHECKS: list[tuple[str, str, str]] = [
         "Python brace format",
         "The {} placeholders don't match the source.",
     ),
+    ("c_format", "C format", "See this check in Weblate's documentation."),
+    (
+        "percent_placeholders",
+        "Percent placeholders",
+        "See this check in Weblate's documentation.",
+    ),
     (
         "placeholders",
         "Placeholders",
         "Some placeholders are missing from the translation.",
+    ),
+    (
+        "unnamed_format",
+        "Multiple unnamed variables",
+        "See this check in Weblate's documentation.",
     ),
     (
         "end_stop",
@@ -148,6 +166,11 @@ CHECKS: list[tuple[str, str, str]] = [
         "The source and translation don't both end with an ellipsis.",
     ),
     (
+        "end_semicolon",
+        "Mismatched semicolon",
+        "See this check in Weblate's documentation.",
+    ),
+    (
         "end_space",
         "Trailing space",
         "The source and translation don't both end with a space.",
@@ -166,38 +189,179 @@ CHECKS: list[tuple[str, str, str]] = [
     (
         "escaped_newline",
         "Mismatched \\n",
-        "The number of \\n doesn't match the source.",
+        "The number of \\\\n doesn't match the source.",
+    ),
+    (
+        "newline-count",
+        "Mismatching line breaks",
+        "See this check in Weblate's documentation.",
     ),
     (
         "end_newline",
-        "Mismatched trailing newline",
+        "Trailing newline",
         "The source and translation don't both end with a newline.",
     ),
     (
         "begin_newline",
-        "Mismatched starting newline",
+        "Starting newline",
         "The source and translation don't both start with a newline.",
     ),
     ("duplicate", "Consecutive duplicated words", "The translation repeats a word."),
     ("xml-tags", "XML markup", "The XML/HTML tags don't match the source."),
-    (
-        "xml-invalid",
-        "Invalid XML markup",
-        "The translation's XML/HTML markup is invalid.",
-    ),
+    ("xml-invalid", "XML syntax", "The translation's XML/HTML markup is invalid."),
     ("safe-html", "Unsafe HTML", "The translation contains unsafe HTML."),
     ("url", "URL", "The translation should be a valid URL."),
-    ("plurals", "Missing plurals", "Some plural forms aren't translated."),
+    ("ai_accuracy", "AI: Accuracy", "See this check in Weblate's documentation."),
+    ("ai_fluency", "AI: Fluency", "See this check in Weblate's documentation."),
+    ("ai_terminology", "AI: Terminology", "See this check in Weblate's documentation."),
+    ("ai_style", "AI: Style", "See this check in Weblate's documentation."),
+    ("ai_formatting", "AI: Formatting", "See this check in Weblate's documentation."),
     (
-        "translated",
-        "Has been translated",
-        "This string was translated before (now untranslated or fuzzy).",
+        "angularjs_format",
+        "AngularJS interpolation string",
+        "See this check in Weblate's documentation.",
     ),
-    ("max_length", "Maximum length", "The translation is longer than allowed."),
+    ("accelerator", "Accelerator key", "See this check in Weblate's documentation."),
+    (
+        "kabyle-characters",
+        "Non-standard characters in Kabyle",
+        "See this check in Weblate's documentation.",
+    ),
+    (
+        "end_interrobang",
+        "Mismatched interrobang",
+        "See this check in Weblate's documentation.",
+    ),
     (
         "zero-width-space",
         "Zero-width space",
         "The translation contains a zero-width space.",
+    ),
+    (
+        "max-length",
+        "Maximum length of translation",
+        "The translation is longer than allowed.",
+    ),
+    (
+        "max-lines",
+        "Maximum number of lines",
+        "See this check in Weblate's documentation.",
+    ),
+    ("kashida", "Kashida letter used", "See this check in Weblate's documentation."),
+    (
+        "multiple_capital",
+        "Multiple capitals",
+        "See this check in Weblate's documentation.",
+    ),
+    ("php_format", "PHP format", "See this check in Weblate's documentation."),
+    ("objc_format", "Objective-C format", "See this check in Weblate's documentation."),
+    (
+        "perl_brace_format",
+        "Perl brace format",
+        "See this check in Weblate's documentation.",
+    ),
+    ("perl_format", "Perl format", "See this check in Weblate's documentation."),
+    (
+        "javascript_format",
+        "JavaScript format",
+        "See this check in Weblate's documentation.",
+    ),
+    ("lua_format", "Lua format", "See this check in Weblate's documentation."),
+    (
+        "object_pascal_format",
+        "Object Pascal format",
+        "See this check in Weblate's documentation.",
+    ),
+    ("scheme_format", "Scheme format", "See this check in Weblate's documentation."),
+    ("c_sharp_format", "C# format", "See this check in Weblate's documentation."),
+    ("laravel_format", "Laravel format", "See this check in Weblate's documentation."),
+    ("java_printf_format", "Java format", "See this check in Weblate's documentation."),
+    ("java_format", "Java MessageFormat", "See this check in Weblate's documentation."),
+    (
+        "i18next_interpolation",
+        "i18next interpolation",
+        "See this check in Weblate's documentation.",
+    ),
+    (
+        "es_format",
+        "ECMAScript template literals",
+        "See this check in Weblate's documentation.",
+    ),
+    ("vue_format", "Vue I18n formatting", "See this check in Weblate's documentation."),
+    (
+        "automattic_components_format",
+        "Automattic components formatting",
+        "See this check in Weblate's documentation.",
+    ),
+    (
+        "check_glossary",
+        "Does not follow glossary",
+        "See this check in Weblate's documentation.",
+    ),
+    (
+        "prohibited_initial_character",
+        "Prohibited initial character",
+        "See this check in Weblate's documentation.",
+    ),
+    (
+        "icu_message_format_syntax",
+        "ICU MessageFormat syntax",
+        "See this check in Weblate's documentation.",
+    ),
+    (
+        "icu_message_format",
+        "ICU MessageFormat",
+        "See this check in Weblate's documentation.",
+    ),
+    ("bbcode", "BBCode markup", "See this check in Weblate's documentation."),
+    (
+        "xml-chars-around-tags",
+        "Chars around XML tags",
+        "See this check in Weblate's documentation.",
+    ),
+    ("md-reflink", "Markdown references", "See this check in Weblate's documentation."),
+    ("md-link", "Markdown links", "See this check in Weblate's documentation."),
+    ("md-syntax", "Markdown syntax", "See this check in Weblate's documentation."),
+    (
+        "rst-references",
+        "Inconsistent reStructuredText",
+        "See this check in Weblate's documentation.",
+    ),
+    (
+        "rst-syntax",
+        "reStructuredText syntax error",
+        "See this check in Weblate's documentation.",
+    ),
+    (
+        "asciidoc-markup",
+        "AsciiDoc markup",
+        "See this check in Weblate's documentation.",
+    ),
+    ("safe-mdx", "Safe MDX", "See this check in Weblate's documentation."),
+    ("regex", "Regular expression", "See this check in Weblate's documentation."),
+    ("qt_format", "Qt format", "See this check in Weblate's documentation."),
+    (
+        "qt_plural_format",
+        "Qt plural format",
+        "See this check in Weblate's documentation.",
+    ),
+    (
+        "max-size",
+        "Maximum size of translation",
+        "See this check in Weblate's documentation.",
+    ),
+    ("ruby_format", "Ruby format", "See this check in Weblate's documentation."),
+    ("optional_plural", "Unpluralised", "See this check in Weblate's documentation."),
+    ("ellipsis", "Ellipsis", "See this check in Weblate's documentation."),
+    (
+        "source-max-length",
+        "Source string length",
+        "See this check in Weblate's documentation.",
+    ),
+    (
+        "long_untranslated",
+        "Long untranslated",
+        "See this check in Weblate's documentation.",
     ),
 ]
 
