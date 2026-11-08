@@ -51,6 +51,7 @@ from models import (
     Flight,
     FlightCorrectionSuggestion,
     FlightCrewInvite,
+    GpsFileRemoval,
     GpsTrack,
     Reservation,
     ReservationStatus,
@@ -1381,6 +1382,173 @@ def _can_view_flight(fe: Flight) -> bool:
         and ac.tenant_id == _tenant_id()
         and user_can_access_aircraft(ac.id)
     )
+
+
+_PILOT_ACCESS_ROLES = (
+    Role.ADMIN,
+    Role.OWNER,
+    Role.PILOT,
+    Role.STUDENT,
+    Role.INSTRUCTOR,
+)
+
+
+def gps_editable(fe: Flight) -> bool:
+    """Whether the current user may take GPS files off *fe* — whoever may
+    edit the flight (the flight form can replace its track too)."""
+    uid = session.get("user_id")
+    role = current_user_role()
+    if role not in _PILOT_ACCESS_ROLES:
+        user = db.session.get(User, uid) if uid else None
+        if not (user and user.is_pilot):
+            return False
+    return can_edit_shared(fe, uid, role)
+
+
+def gps_file_context(fe: Flight) -> dict[str, Any]:
+    """What a flight page needs to list its GPS files
+    (partials/_entry_detail_map.html)."""
+    from services.gps_removal import (  # pyright: ignore[reportMissingImports]
+        TRASH_DAYS,
+        listed_parts,
+    )
+
+    return {
+        "gps_parts": listed_parts(fe.gps_track),
+        "gps_editable": gps_editable(fe),
+        "gps_trash_days": TRASH_DAYS,
+    }
+
+
+def _local_next(default: str) -> str:
+    target = request.form.get("next") or ""
+    if target.startswith("/") and not target.startswith(("//", "/\\")):
+        return target
+    return default
+
+
+def _flight_page(fe: Flight) -> str:
+    if fe.aircraft_id is not None and user_can_access_aircraft(fe.aircraft_id):
+        return url_for(
+            "aircraft.flight_detail", aircraft_id=fe.aircraft_id, flight_id=fe.id
+        )
+    return url_for("pilots.view_entry", entry_id=fe.id)
+
+
+@flights_bp.route(
+    "/flights/<int:flight_id>/gps-part/<int:index>/remove", methods=["POST"]
+)
+@login_required
+@require_pilot_access
+def remove_gps_part(flight_id: int, index: int) -> ResponseReturnValue:
+    """Take one GPS file (its part of the track) off a flight; the file goes
+    to the trash for a week (services.gps_removal)."""
+    from services.gps_removal import (  # pyright: ignore[reportMissingImports]
+        TRASH_DAYS,
+        listed_parts,
+        remove_part,
+    )
+
+    fe = _get_flight_or_404(flight_id)
+    if not gps_editable(fe):
+        abort(403)
+    back = _local_next(_flight_page(fe))
+    parts = listed_parts(fe.gps_track)
+    if not 0 <= index < len(parts) or parts[index]["key"] != request.form.get(
+        "part_key"
+    ):
+        flash(
+            _(
+                "The flight's GPS track changed meanwhile, so nothing was removed. "
+                "Check it and try again."
+            ),
+            "warning",
+        )
+        return redirect(back)
+    remove_part(
+        fe,
+        index,
+        tenant_id=_tenant_id(),
+        user_id=session.get("user_id"),
+        upload_folder=current_app.config.get("UPLOAD_FOLDER", "/data/uploads"),
+    )
+    db.session.commit()
+    flash(
+        ngettext(
+            "GPS file removed from the flight. It's kept for one day in the "
+            "removed GPS files, where you can restore it.",
+            "GPS file removed from the flight. It's kept for %(n)s days in the "
+            "removed GPS files, where you can restore it.",
+            TRASH_DAYS,
+            n=TRASH_DAYS,
+        ),
+        "success",
+    )
+    return redirect(back)
+
+
+@flights_bp.route("/flights/removed-gps-files")
+@login_required
+@require_pilot_access
+def removed_gps_files() -> ResponseReturnValue:
+    """GPS files taken off flights: restorable for a week, then a record.
+    Your own removals — every one for an admin."""
+    from services.gps_removal import (  # pyright: ignore[reportMissingImports]
+        TRASH_DAYS,
+        purge_date,
+        restorable,
+    )
+
+    query = GpsFileRemoval.query.filter_by(tenant_id=_tenant_id())
+    if current_user_role() != Role.ADMIN:
+        query = query.filter_by(removed_by_user_id=session.get("user_id"))
+    removals = query.order_by(GpsFileRemoval.removed_at.desc()).limit(200).all()
+    return render_template(
+        "flights/removed_gps_files.html",
+        removals=removals,
+        restorable=restorable,
+        purge_date=purge_date,
+        trash_days=TRASH_DAYS,
+    )
+
+
+@flights_bp.route(
+    "/flights/removed-gps-files/<int:removal_id>/restore", methods=["POST"]
+)
+@login_required
+@require_pilot_access
+def restore_gps_file(removal_id: int) -> ResponseReturnValue:
+    from services.gps_removal import (  # pyright: ignore[reportMissingImports]
+        restorable,
+        restore,
+    )
+
+    removal = db.session.get(GpsFileRemoval, removal_id)
+    if (
+        removal is None
+        or removal.tenant_id != _tenant_id()
+        or (
+            current_user_role() != Role.ADMIN
+            and removal.removed_by_user_id != session.get("user_id")
+        )
+    ):
+        abort(404)
+    if not restorable(removal):
+        flash(_("This GPS file can no longer be restored."), "warning")
+        return redirect(url_for("flights.removed_gps_files"))
+    fe = restore(removal, current_app.config.get("UPLOAD_FOLDER", "/data/uploads"))
+    db.session.commit()
+    if fe is not None and removal.part and removal.part.get("coords"):
+        flash(_("GPS file restored, and its track is back on the flight."), "success")
+    else:
+        flash(
+            _(
+                "GPS file restored to the archive. Its flight no longer exists, "
+                "so import it again to link it to a flight."
+            ),
+            "success",
+        )
+    return redirect(url_for("flights.removed_gps_files"))
 
 
 @flights_bp.route("/flights/parse-gps", methods=["POST"])

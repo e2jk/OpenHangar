@@ -355,6 +355,26 @@ that airfield (`services.gps_link.ground_run_target`, `link_track(taxi=True)`).
 The pilot GPS import (any aircraft) still skips them; it could use the same
 two helpers on the pilot's flights of that day.
 
+## GPS files: follow-ups to removing them from flights
+
+A GPS file can be taken off a flight from the flight's page (its part of the
+track comes off, the file goes to the trash for 7 days, restorable from
+"Removed GPS files" — `services/gps_removal.py`). Left for later:
+
+- **Move a file to another flight** (it was linked to the wrong one): today,
+  remove it and import it again. Better: removing it lists the file as an
+  *unlinked recording*, and "re-import from the archive" sends it through
+  the normal review page without uploading it again — the matching picks
+  (or offers) the right flight.
+- **Split one file over two flights:** a single log covering two logged
+  flights (e.g. two legs without an engine stop) is linked to both, so both
+  show the whole track. Cut the file's track at the landing in between and
+  give each flight its own half — and removing it from one flight then only
+  takes that half.
+- **Deleting a flight** (logbook delete, deleting an aircraft) still leaves
+  its GPS track row and original files behind: send them to the trash the
+  same way, like "Undo import" now does.
+
 ---
 
 ## Email notifications: airworthiness digest (`AIRWORTHINESS_DIGEST`)

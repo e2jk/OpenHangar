@@ -71,6 +71,11 @@ from services.gps_link import (  # pyright: ignore[reportMissingImports]
     ground_run_target,
     link_track,
 )
+from services.gps_removal import (  # pyright: ignore[reportMissingImports]
+    TRASH_DAYS,
+    remove_batch_parts,
+    remove_whole_track,
+)
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
     GPS_ARCHIVE_DIRNAME,
     GPS_IMPORT_TMP_DIRNAME,
@@ -2498,6 +2503,7 @@ def _gps_import_create_segment(
                     departure_icao=dep_icao,
                     arrival_icao=arr_icao,
                     taxi=taxi,
+                    batch_id=batch.id,
                 )
                 linked_ids.append(existing.id)
                 # Unified model: this Flight row already covers both crew
@@ -3036,27 +3042,39 @@ def gps_import_rollback(aircraft_id: int, batch_id: int) -> ResponseReturnValue:
     # logbook is detached from the aircraft instead of deleted
     # (flights/crew_removal.py).
     actor_id = session.get("user_id")
-    kept = sum(
-        not remove_from_aircraft_log(fe, actor_id)
-        for fe in Flight.query.filter_by(gps_import_batch_id=batch.id).all()
-    )
+    removal_args = {
+        "tenant_id": _tenant_id(),
+        "user_id": actor_id,
+        "upload_folder": current_app.config.get("UPLOAD_FOLDER", "/data/uploads"),
+        "reason": "import_undone",
+    }
+    kept = 0
+    for fe in Flight.query.filter_by(gps_import_batch_id=batch.id).all():
+        if not fe.other_linked_user_ids(actor_id):
+            # Deleted below: its track's files go to the trash with it.
+            for removal in remove_whole_track(fe, **removal_args):
+                removal.flight_id = None
+        kept += not remove_from_aircraft_log(fe, actor_id)
 
-    # Flights that were pre-existing but got a GPS track linked — unlink only.
+    # Flights that were pre-existing but got a GPS track linked: only the
+    # parts this batch added come off their track (services.gps_removal).
     linked_ids = batch.linked_flight_entry_ids or []
-    if linked_ids:
-        Flight.query.filter(Flight.id.in_(linked_ids)).update(
-            {
-                "gps_track_id": None,
-                "block_off_utc": None,
-                "block_on_utc": None,
-            },
-            synchronize_session="fetch",
-        )
+    for fe in Flight.query.filter(Flight.id.in_(linked_ids)).all():
+        remove_batch_parts(fe, batch.id, **removal_args)
 
     db.session.delete(batch)
     db.session.commit()
     flash(
-        _("GPS import batch rolled back and all linked flight entries removed."),
+        ngettext(
+            "Import undone: the flights it created are deleted and the GPS "
+            "tracks it added removed. Their files are kept for one day in the "
+            "removed GPS files.",
+            "Import undone: the flights it created are deleted and the GPS "
+            "tracks it added removed. Their files are kept for %(n)s days in "
+            "the removed GPS files.",
+            TRASH_DAYS,
+            n=TRASH_DAYS,
+        ),
         "success",
     )
     flash_kept_in_pilot_logbooks(kept)
@@ -3079,12 +3097,15 @@ def flight_detail(aircraft_id: int, flight_id: int) -> ResponseReturnValue:
     tile_setting = db.session.get(AppSetting, "openaip_api_key")
     openaip_key = tile_setting.value if tile_setting and tile_setting.value else None
 
+    from flights.routes import gps_file_context
+
     return render_template(
         "aircraft/flight_detail.html",
         aircraft=ac,
         entry=entry,
         pilot_entry=None,
         openaip_key=openaip_key,
+        **gps_file_context(entry),
     )
 
 

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Removed GPS files') }} — OpenHangar{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-trash me-2"></i>{{ _('Removed GPS files') }}</h1>
+      <p class="page-sub">{{ ngettext('GPS files taken off a flight are kept for one day, and can be restored until then.', 'GPS files taken off a flight are kept for %(n)s days, and can be restored until then.', trash_days, n=trash_days) }}</p>
+    </div>
+  </div>
+
+  {% if not removals %}
+  <div class="alert alert-info">
+    <i class="bi bi-info-circle me-1"></i>{{ _('No GPS file has been removed from a flight.') }}
+  </div>
+  {% else %}
+  <div class="ac-form-card p-0 mb-3">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 oh-fs-09">
+        <thead class="table-group-divider">
+          <tr>
+            <th class="ps-3">{{ _('Flight') }}</th>
+            <th>{{ _('Files') }}</th>
+            <th>{{ _('Removed on') }}</th>
+            <th class="pe-3 text-end">{{ _('Status') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in removals %}
+          <tr>
+            <td class="ps-3 oh-mono">{{ r.flight_label or '—' }}</td>
+            <td>
+              {% for f in r.files %}{{ f.path.rsplit('/', 1)[-1] }}{% if not loop.last %}<br>{% endif %}{% else %}<span class="text-muted">{{ _('GPS track (no original file kept)') }}</span>{% endfor %}
+            </td>
+            <td>
+              <span class="oh-mono">{{ r.removed_at.strftime('%Y-%m-%d %H:%M') }}</span>
+              {% if r.removed_by %}<br><span class="text-muted">{{ r.removed_by.display_name }}</span>{% endif %}
+              {% if r.reason == 'import_undone' %}<br><span class="badge text-bg-secondary">{{ _('Import undone') }}</span>{% endif %}
+            </td>
+            <td class="pe-3 text-end">
+              {% if restorable(r) %}
+              <form method="post" action="{{ url_for('flights.restore_gps_file', removal_id=r.id) }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-ac-secondary btn-sm">
+                  <i class="bi bi-arrow-counterclockwise me-1"></i>{{ _('Restore') }}
+                </button>
+              </form>
+              <div class="text-muted small mt-1">{{ _('Deleted on %(date)s', date=purge_date(r).strftime('%Y-%m-%d')) }}</div>
+              {% elif r.restored_at %}
+              <span class="text-success">{{ _('Restored on %(date)s', date=r.restored_at.strftime('%Y-%m-%d')) }}</span>
+              {% else %}
+              <span class="text-muted">{{ _('Deleted on %(date)s', date=r.purged_at.strftime('%Y-%m-%d')) }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

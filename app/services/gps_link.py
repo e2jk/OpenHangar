@@ -11,7 +11,8 @@ The recorded flight is authoritative — it's what the paper logbook says — so
 GPS data never changes its times or date; it only adds the track.
 
 A track is kept as parts in time order (GeoJSON properties "parts": start,
-end, number of points, files, and whether it's a taxi part), its coordinates
+end, number of points, files, whether it's a taxi part, and the import batch
+that added it), its coordinates
 those of all parts joined. link_track() decides, for a flight and a new GPS
 segment:
   - no track yet → the segment's track becomes the flight's;
@@ -307,6 +308,9 @@ def _store(flight: Any, track: Any, parts: list[dict[str, Any]]) -> None:
                     "n": len(p["coords"]),
                     "files": p.get("files") or [],
                     "taxi": bool(p.get("taxi")),
+                    # The import batch that added it (services.gps_removal:
+                    # "Undo import" removes only its own parts).
+                    **({"batch": p["batch"]} if p.get("batch") else {}),
                 }
                 for p in parts
             ]
@@ -341,17 +345,20 @@ def link_track(
     departure_icao: str | None = None,
     arrival_icao: str | None = None,
     taxi: bool = False,
+    batch_id: int | None = None,
 ) -> Any:
     """Give *flight* the track of a GPS segment (see the module docstring)
     and return the track it now has. *taxi*: a ground movement before or
-    after the flight, shown with it but never changing its times. Caller
-    commits."""
+    after the flight, shown with it but never changing its times.
+    *batch_id*: the GPS import batch it comes from, recorded on its part.
+    Caller commits."""
     new_part = {
         "start": _iso(block_off),
         "end": _iso(block_on),
         "files": list(files),
         "taxi": taxi,
         "coords": _line_coords(geojson) or [],
+        **({"batch": batch_id} if batch_id else {}),
     }
     track = (
         db.session.get(GpsTrack, flight.gps_track_id) if flight.gps_track_id else None
