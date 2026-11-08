@@ -169,11 +169,35 @@ def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 # decides (detect_format).
 GPS_UPLOAD_EXTENSIONS = (".gpx", ".kml", ".csv", ".bin")
 
-# The first element of an XML document, after its declaration, comments
-# and doctype.
-_XML_ROOT_RE = re.compile(
-    r"^\s*(?:<\?.*?\?>\s*|<!--.*?-->\s*|<!DOCTYPE[^>]*>\s*)*<([\w:.-]+)", re.DOTALL
-)
+
+def _xml_root_name(text: str) -> str:
+    """The name of an XML document's first element, past its declaration,
+    comments and doctype ("" when there's none). A plain left-to-right scan
+    rather than a regular expression: one with nested repeats over those
+    parts backtracks exponentially on crafted input (CodeQL py/redos)."""
+    pos, end = 0, len(text)
+    while True:
+        while pos < end and text[pos].isspace():
+            pos += 1
+        if text.startswith("<?", pos):
+            close = text.find("?>", pos + 2)
+            skip = 2
+        elif text.startswith("<!--", pos):
+            close = text.find("-->", pos + 4)
+            skip = 3
+        elif text.startswith("<!", pos):
+            close = text.find(">", pos + 2)
+            skip = 1
+        elif text.startswith("<", pos):
+            start = pos = pos + 1
+            while pos < end and (text[pos].isalnum() or text[pos] in "_:.-"):
+                pos += 1
+            return text[start:pos]
+        else:
+            return ""
+        if close < 0:
+            return ""
+        pos = close + skip
 
 
 def is_gps_upload_name(filename: str) -> bool:
@@ -198,8 +222,7 @@ def detect_format(data: bytes, filename: str) -> str:
             return "garmin_csv"
     else:
         head = data[:4096].decode("utf-8-sig", errors="replace")
-        match = _XML_ROOT_RE.match(head)
-        root = match.group(1).rsplit(":", 1)[-1].lower() if match else ""
+        root = _xml_root_name(head).rsplit(":", 1)[-1].lower()
         if root in ("gpx", "kml"):
             return root
     if filename.lower().endswith(".flightlog.bin"):
