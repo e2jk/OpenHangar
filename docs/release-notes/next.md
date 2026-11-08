@@ -1,4 +1,4 @@
-# Tracks played back in flight order, and a faster GPS import review
+# Logbook filters, tracks in flight order, and large GPS uploads fixed
 
 **Logbooks**
 - An aircraft's flight log and your pilot logbook can be filtered: with or without a GPS track, by date range, and by crew (your own flights on an aircraft's log; as PIC or as second crew in your logbook) — e.g. the flights since you bought the aircraft that have no GPS track yet. Simulator sessions never count as missing a track. Filters stay applied across pages and when coming back from a flight.
