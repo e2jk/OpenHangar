@@ -177,6 +177,9 @@ def continuation_candidates(
 # A ground run this close before a departure or after an arrival, at that
 # airfield, is the flight's taxi (to the fuel station, customs, the hangar).
 TAXI_WINDOW = timedelta(minutes=45)
+# A ground run further from a flight than TAXI_WINDOW, but within this, is
+# offered as that flight's taxi — never linked on its own.
+NEARBY_TAXI_WINDOW = timedelta(hours=3)
 
 
 def ground_run_target(
@@ -214,28 +217,52 @@ def ground_run_target(
     if entries:
         return entries[0], "entry", ""
 
-    best: tuple[timedelta, Any, str] | None = None
+    nearby = nearby_flights(block_off, block_on, airfield, flights, gps_spans)
+    if not nearby or nearby[0][0] > TAXI_WINDOW:
+        return None
+    _gap, flight, when = nearby[0]
+    return flight, "taxi", when
+
+
+def _span(
+    flight: Any, gps_spans: dict[int, tuple[datetime, datetime]]
+) -> tuple[datetime, datetime] | None:
+    """A flight's times: its GPS block times (*gps_spans*: from the import
+    under way, else its track), or else its logged times."""
+    if flight.id in gps_spans:
+        return gps_spans[flight.id]
+    if flight.block_off_utc is not None and flight.block_on_utc is not None:
+        return (flight.block_off_utc, flight.block_on_utc)
+    return _logged_span(flight)
+
+
+def nearby_flights(
+    block_off: datetime,
+    block_on: datetime,
+    airfield: str | None,
+    flights: list[Any],
+    gps_spans: dict[int, tuple[datetime, datetime]],
+    window: timedelta | None = None,
+) -> list[tuple[timedelta, Any, str]]:
+    """The flights of *flights* a ground run at *airfield* could be the taxi
+    of, closest first, as (gap, flight, "before"/"after"): departing from
+    that airfield after the run ended, or arriving there before it started
+    — within *window* when given. ground_run_target takes the closest when
+    it's within TAXI_WINDOW; further ones, up to NEARBY_TAXI_WINDOW, the
+    review page offers for an explicit choice (a taxi back to the hangar
+    after a long wait at the fuel station, say)."""
+    found: list[tuple[timedelta, Any, str]] = []
     for f in flights:
-        if f.id in gps_spans:
-            span: tuple[datetime, datetime] | None = gps_spans[f.id]
-        elif f.block_off_utc is not None and f.block_on_utc is not None:
-            span = (f.block_off_utc, f.block_on_utc)
-        else:
-            span = _logged_span(f)
+        span = _span(f, gps_spans)
         if span is None:
             continue
         start, end = _utc(span[0]), _utc(span[1])
-        options = []
         if _utc(block_on) <= start and _same_icao(f.departure_icao, airfield):
-            options.append((start - _utc(block_on), "before"))
+            found.append((start - _utc(block_on), f, "before"))
         if _utc(block_off) >= end and _same_icao(f.arrival_icao, airfield):
-            options.append((_utc(block_off) - end, "after"))
-        for gap, when in options:
-            if gap <= TAXI_WINDOW and (best is None or gap < best[0]):
-                best = (gap, f, when)
-    if best is None:
-        return None
-    return best[1], "taxi", best[2]
+            found.append((_utc(block_off) - end, f, "after"))
+    found.sort(key=lambda item: item[0])
+    return [item for item in found if window is None or item[0] <= window]
 
 
 def adds_to_track(flight: Any, block_off: datetime, block_on: datetime) -> bool:

@@ -96,6 +96,7 @@
       {% set _gps_pfx        = 'pe-gps' %}
       {% set _gps_parse_url  = url_for('flights.parse_gps_api') %}
       {% set _gps_track      = entry.gps_track if entry else none %}
+      {% set _gps_existing   = entry is not none %}
       {% set _gps_f_filename  = request.form.get('gps_filename', '') %}
       {% set _gps_f_block_off = request.form.get('gps_block_off_utc', '') %}
       {% set _gps_f_block_on  = request.form.get('gps_block_on_utc', '') %}

@@ -65,11 +65,13 @@ from services.gps_archive import (  # pyright: ignore[reportMissingImports]
     sources_for_window,
 )
 from services.gps_link import (  # pyright: ignore[reportMissingImports]
+    NEARBY_TAXI_WINDOW,
     adds_to_track,
     block_match,
     continuation_candidates,
     ground_run_target,
     link_track,
+    nearby_flights,
 )
 from services.gps_removal import (  # pyright: ignore[reportMissingImports]
     TRASH_DAYS,
@@ -2414,6 +2416,7 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
     for seg in full_segs:
         seg["matched_ground_role"] = ""
         seg["matched_ground_when"] = ""
+        seg["ground_candidates"] = []
     # Longest first: of several ground runs that day, the longest is a
     # logged ground entry's own recording (e.g. an aborted takeoff run), the
     # others the taxi before or after it.
@@ -2433,19 +2436,37 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
         if state.get("other_aircraft"):
             continue
         off = _dt.fromisoformat(seg["block_off_utc"])
-        target = ground_run_target(
-            off,
-            _dt.fromisoformat(seg["block_on_utc"]),
-            seg["departure_icao"],
+        on = _dt.fromisoformat(seg["block_on_utc"])
+        day_flights = (
             Flight.query.filter(
                 Flight.aircraft_id == aircraft_id, Flight.date == off.date()
             )
             .order_by(Flight.departure_time, Flight.id)
-            .all(),
-            gps_spans,
-            claimed,
+            .all()
+        )
+        target = ground_run_target(
+            off, on, seg["departure_icao"], day_flights, gps_spans, claimed
         )
         if target is None:
+            # Too far from any flight to be linked on its own, but a flight
+            # that day at the same airfield may still be the one (a long wait
+            # at the fuel station before taxiing back): offered to choose.
+            seg["ground_candidates"] = [
+                {
+                    "id": f.id,
+                    "str": f"#{f.id} — {f.date} {f.departure_icao} → {f.arrival_icao}",
+                    "when": when,
+                    "gap_min": round(gap.total_seconds() / 60),
+                }
+                for gap, f, when in nearby_flights(
+                    off,
+                    on,
+                    seg["departure_icao"],
+                    day_flights,
+                    gps_spans,
+                    NEARBY_TAXI_WINDOW,
+                )
+            ]
             continue
         flight, role, when = target
         if role == "entry":
@@ -2876,6 +2897,18 @@ def gps_import_confirm_one(aircraft_id: int) -> ResponseReturnValue:
         return redirect(url_for("aircraft.gps_import_review", aircraft_id=aircraft_id))
 
     seg = segments_data[seg_idx]
+
+    if seg.get("ground_candidates"):
+        # A ground run near (but not within the taxi window of) flights
+        # that day: the one picked takes it as a taxi part; "none of these"
+        # leaves it a ground entry of its own.
+        picked = request.form.get("ground_flight_id", "")
+        chosen = next(
+            (c for c in seg["ground_candidates"] if str(c["id"]) == picked), None
+        )
+        seg["matched_flight_id"] = chosen["id"] if chosen else None
+        seg["matched_ground_role"] = "taxi" if chosen else ""
+        seg["matched_ground_when"] = chosen["when"] if chosen else ""
 
     if seg.get("matched_ambiguous"):
         # A fuzzy (non-exact) match picker was rendered — respect the

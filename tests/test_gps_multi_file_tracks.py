@@ -259,7 +259,10 @@ class TestAcceptAllBestMatches:
         assert segs[0]["matched_flight_id"] == fid
         assert segs[0]["matched_ambiguous"] is False
         page = client.get(f"/aircraft/{ac_id}/gps-import/review").data.decode()
-        assert "Accept all best matches" in page
+        # Above and below the segments, the same both times.
+        assert page.count("Accept all best matches") == 2
+        assert page.count("/gps-import/confirm-all") == 2
+        assert page.count("One segment matches a flight already in the log.") == 2
 
         # Add a ground-only segment and one without any match.
         with open(spill, encoding="utf-8") as fh:
@@ -761,6 +764,53 @@ class TestGroundRuns:
         assert rv.headers["Location"].endswith("/flights")
         with app.app_context():
             assert Flight.query.filter_by(aircraft_id=ac_id).count() == 0
+
+    def test_further_flights_that_day_are_offered(self, client, app):
+        """A ground run 45 min to 3 h from a flight at its airfield: offered
+        as that flight's taxi, closest first, never linked on its own."""
+        uid, _tid, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        landed = self._logged(app, ac_id, "EBAW", "EBNM", time(7, 0), time(8, 0))
+        later = self._logged(app, ac_id, "EBNM", "EBAW", time(12, 0), time(13, 0))
+        self._logged(app, ac_id, "EBAW", "EBNM", time(5, 0), time(6, 30))  # 3.5 h
+        (seg,), page = self._upload_ground_run(client, ac_id)
+        assert seg["matched_flight_id"] is None
+        assert [
+            (c["id"], c["when"], c["gap_min"]) for c in seg["ground_candidates"]
+        ] == [
+            (later, "before", 116),
+            (landed, "after", 120),
+        ]
+        assert "Add it to a flight as a taxi part" in page
+        assert "120 minutes after it landed" in page
+        assert "Accept all best matches" not in page  # a choice, not a match
+
+        client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={
+                "seg_idx": "0",
+                "pilot_role": "none",
+                "ground_flight_id": str(landed),
+            },
+        )
+        with app.app_context():
+            f = db.session.get(Flight, landed)
+            assert f.gps_track.geojson["properties"]["parts"][0]["taxi"] is True
+            assert (f.departure_time, f.arrival_time) == (time(7, 0), time(8, 0))
+            assert Flight.query.filter_by(aircraft_id=ac_id).count() == 3
+
+    def test_none_of_these_makes_a_ground_entry(self, client, app):
+        uid, _tid, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        self._logged(app, ac_id, "EBAW", "EBNM", time(7, 0), time(8, 0))
+        (seg,), _page = self._upload_ground_run(client, ac_id)
+        assert len(seg["ground_candidates"]) == 1
+        client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "none", "ground_flight_id": ""},
+        )
+        with app.app_context():
+            assert Flight.query.filter_by(aircraft_id=ac_id).count() == 2
 
     def test_other_aircraft_mode_leaves_ground_runs_alone(self, client, app):
         uid, _tid, ac_id = _make_user_and_aircraft(app)

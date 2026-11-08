@@ -14,6 +14,14 @@
     var fieldMap = JSON.parse((document.getElementById(pfx + '-field-map') || { textContent: '{}' }).textContent);
     var i18n = JSON.parse((document.getElementById(pfx + '-i18n') || { textContent: '{}' }).textContent);
     var opiKey = gpsFile.dataset.openaipKey || null;
+    // An existing flight: the file is added to its GPS track on save, and
+    // the flight's own data (times, route, date…) is never replaced by it.
+    var existingFlight = gpsFile.dataset.existingFlight === '1';
+
+    function hhmm(iso) {
+      var m = /T(\d{2}:\d{2})/.exec(iso || '');
+      return m ? m[1] : '?';
+    }
 
     var _map = null, _layer = null;
 
@@ -87,11 +95,15 @@
         .then(function (resp) {
           if (resp.success) {
             var d = resp.data;
-            Object.keys(fieldMap).forEach(function (gpsKey) {
-              var el = document.getElementById(fieldMap[gpsKey]);
-              var val = d[gpsKey];
-              if (el && val !== undefined && val !== null && String(val) !== '') el.value = val;
-            });
+            if (!existingFlight) {
+              Object.keys(fieldMap).forEach(function (gpsKey) {
+                var el = document.getElementById(fieldMap[gpsKey]);
+                var val = d[gpsKey];
+                if (el && val !== undefined && val !== null && String(val) !== '') el.value = val;
+              });
+            }
+            var groundInp = document.getElementById(pfx + '-inp-ground-only');
+            if (groundInp) groundInp.value = d.ground_only ? '1' : '';
             document.getElementById(pfx + '-inp-filename').value = d.filename || '';
             var archiveInp = document.getElementById(pfx + '-inp-archive');
             if (archiveInp) archiveInp.value = d.archive_name || '';
@@ -105,7 +117,12 @@
               var ac = document.getElementById('aircraft_id');
               if (ac && !ac.value) { ac.value = String(resp.suggested_aircraft_id); ac.dispatchEvent(new Event('change')); }
             }
-            var parts = [resp.message];
+            var parts = [existingFlight ? (i18n.readOnly || '').replace('{name}', d.filename || '') : resp.message];
+            if (existingFlight) {
+              var note = (d.ground_only ? i18n.addedGroundNote : i18n.addedNote) || '';
+              parts.push(document.createElement('br'),
+                note.replace('{start}', hhmm(d.block_off_utc)).replace('{end}', hhmm(d.block_on_utc)));
+            }
             if (resp.duplicate) {
               var dup = resp.duplicate;
               var dupIcon = document.createElement('i');

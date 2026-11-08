@@ -206,6 +206,14 @@ class TestSkyDemonExports:
             detect_format(b"<html></html>", "page.bin")
         with pytest.raises(ValueError, match="Unsupported GPS file format"):
             detect_format(b"time,lat,lon\n", "other.csv")
+        # Garmin log rows without the header (a fragment written while the
+        # logger powered up or down) — sometimes starting mid-row.
+        fragment = (
+            b"1,       ,       ,\n"
+            b"2026-05-18, 21:38:31,  +02:00, ______,   51.1936035,    4.4594688\n"
+        )
+        with pytest.raises(ValueError, match="fragment of a Garmin data log"):
+            detect_format(fragment, "log_260518_213954_EBAW.csv")
 
     def test_gpx_and_kml_read_the_same(self):
         pts = _takeoff_roll_flight()
