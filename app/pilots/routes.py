@@ -2458,16 +2458,14 @@ def pilot_gps_import_upload() -> ResponseReturnValue:
     return redirect(url_for("pilots.pilot_gps_import_review"))
 
 
-@pilots_bp.route("/pilot/gps-import/review", methods=["GET"])
-@login_required
-@require_pilot_access
-def pilot_gps_import_review() -> ResponseReturnValue:
-    uid = _current_user_id()
-    state = session.get("pilot_gps_import")
-    if not state:
-        flash(_("Session expired — please upload your GPS files again."), "warning")
-        return redirect(url_for("pilots.pilot_gps_import_upload"))
-
+def _analyse_pilot_gps_review(
+    uid: int, state: dict[str, Any]
+) -> list[dict[str, Any]] | ResponseReturnValue:
+    """Analyse an upload for the pilot GPS review page: parse its files,
+    find the flight segments and match each against the pilot's flights.
+    Run once per upload (pilot_gps_import_review keeps the result): a skip
+    or a confirmation then only reloads it. Returns the segments, or a
+    redirect when a file can't be read any more."""
     from aircraft.gps_import import (
         detect_segments,
         logged_flight_windows,
@@ -2476,9 +2474,7 @@ def pilot_gps_import_review() -> ResponseReturnValue:
         parse_gps_file,
     )
     from aircraft.routes import (
-        _gps_tmp_dir,
         _linked_pilot_entries,
-        _segment_for_session,
         _segment_to_dict,
     )
     from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
@@ -2575,6 +2571,37 @@ def pilot_gps_import_review() -> ResponseReturnValue:
         )
         seg.update(_pilot_seg_match_dict(parts))
 
+    return full_segs
+
+
+@pilots_bp.route("/pilot/gps-import/review", methods=["GET"])
+@login_required
+@require_pilot_access
+def pilot_gps_import_review() -> ResponseReturnValue:
+    uid = _current_user_id()
+    state = session.get("pilot_gps_import")
+    if not state:
+        flash(_("Session expired — please upload your GPS files again."), "warning")
+        return redirect(url_for("pilots.pilot_gps_import_upload"))
+
+    from aircraft.routes import (
+        _gps_tmp_dir,
+        _load_segment_geojson,
+        _segment_for_session,
+    )
+
+    if state.get("analysed"):
+        # Already analysed: the segments as kept, their tracks read back.
+        full_segs = [
+            {**seg, "track_geojson": _load_segment_geojson(seg)}
+            for seg in state["segments"]
+        ]
+    else:
+        analysed = _analyse_pilot_gps_review(uid, state)
+        if not isinstance(analysed, list):
+            return analysed
+        full_segs = analysed
+
     from services.gps_link import adds_to_track  # pyright: ignore[reportMissingImports]
 
     for seg in full_segs:
@@ -2592,8 +2619,13 @@ def pilot_gps_import_review() -> ResponseReturnValue:
             )
         )
 
-    tmp_dir = _gps_tmp_dir()
-    state["segments"] = [_segment_for_session(s, tmp_dir) for s in full_segs]
+    if state.get("analysed"):
+        for kept, seg in zip(state["segments"], full_segs, strict=True):
+            kept.update({k: v for k, v in seg.items() if k != "track_geojson"})
+    else:
+        tmp_dir = _gps_tmp_dir()
+        state["segments"] = [_segment_for_session(s, tmp_dir) for s in full_segs]
+        state["analysed"] = True
     session["pilot_gps_import"] = state
     session.modified = True
 

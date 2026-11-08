@@ -2167,16 +2167,14 @@ def gps_import_upload(aircraft_id: int) -> ResponseReturnValue:
     return redirect(url_for("aircraft.gps_import_review", aircraft_id=aircraft_id))
 
 
-@aircraft_bp.route("/<aircraft_ref:aircraft_id>/gps-import/review", methods=["GET"])
-@login_required
-@require_role(*_PILOT_ROLES)
-def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
-    ac = _get_aircraft_or_404(aircraft_id)
-    state = _gps_state_load()
-    if not state or state.get("aircraft_id") != aircraft_id:
-        flash(_("Session expired — please upload your GPS files again."), "warning")
-        return redirect(url_for("aircraft.gps_import_upload", aircraft_id=aircraft_id))
-
+def _analyse_gps_review(
+    ac: Any, aircraft_id: int, state: dict[str, Any]
+) -> list[dict[str, Any]] | ResponseReturnValue:
+    """Analyse an upload for the review page: parse its files, find the
+    flight segments and match each against the logbook. Run once per
+    upload (gps_import_review keeps the result in the import's state): a
+    skip or a confirmation then only reloads it. Returns the segments, or a
+    redirect when a file can't be read any more."""
     file_metas = state["files"]
 
     # Re-parse each tmp file and build combined trackpoint list
@@ -2480,6 +2478,36 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
         seg["matched_ground_role"] = role
         seg["matched_ground_when"] = when
 
+    return full_segs
+
+
+@aircraft_bp.route("/<aircraft_ref:aircraft_id>/gps-import/review", methods=["GET"])
+@login_required
+@require_role(*_PILOT_ROLES)
+def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
+    ac = _get_aircraft_or_404(aircraft_id)
+    state = _gps_state_load()
+    if not state or state.get("aircraft_id") != aircraft_id:
+        flash(_("Session expired — please upload your GPS files again."), "warning")
+        return redirect(url_for("aircraft.gps_import_upload", aircraft_id=aircraft_id))
+
+    from datetime import datetime as _dt
+
+    if state.get("analysed"):
+        # Already analysed: the segments as kept (with each one's choices),
+        # their tracks read back from the files they were spilled to.
+        full_segs = [
+            {**seg, "track_geojson": _load_segment_geojson(seg)}
+            for seg in state["segments"]
+        ]
+    else:
+        analysed = _analyse_gps_review(ac, aircraft_id, state)
+        if not isinstance(analysed, list):
+            return analysed
+        full_segs = analysed
+
+    # Refreshed on every load: a confirmation may have given a matched
+    # flight its track, or changed its crew.
     for seg in full_segs:
         matched_flight = (
             db.session.get(Flight, seg["matched_flight_id"])
@@ -2504,8 +2532,13 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
             else None
         )
 
-    tmp_dir = _gps_tmp_dir()
-    state["segments"] = [_segment_for_session(s, tmp_dir) for s in full_segs]
+    if state.get("analysed"):
+        for kept, seg in zip(state["segments"], full_segs, strict=True):
+            kept.update({k: v for k, v in seg.items() if k != "track_geojson"})
+    else:
+        tmp_dir = _gps_tmp_dir()
+        state["segments"] = [_segment_for_session(s, tmp_dir) for s in full_segs]
+        state["analysed"] = True
     _gps_state_save(state)
 
     # Get OpenAIP API key for map tiles
