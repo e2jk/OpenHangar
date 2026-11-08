@@ -896,8 +896,10 @@ def view_entry(entry_id: int) -> ResponseReturnValue:
 _LOGBOOK_VIEW_SESSION_KEY = "pilot_logbook_view"
 
 
-def _remember_logbook_view(page: int, order: str, per_page: str) -> None:
-    view: dict[str, Any] = {}
+def _remember_logbook_view(
+    page: int, order: str, per_page: str, filters: dict[str, str] | None = None
+) -> None:
+    view: dict[str, Any] = dict(filters or {})
     if page > 1:
         view["page"] = page
     if order == "asc":
@@ -937,9 +939,16 @@ def logbook() -> ResponseReturnValue:
         )
     )
 
-    _remember_logbook_view(page, order, "all" if show_all else str(per_page))
+    from flights.list_filters import (  # pyright: ignore[reportMissingImports]
+        PILOT_CREW_CHOICES,
+        apply_filters,
+        parse_filters,
+    )
 
-    q = _my_entries_query(uid)
+    filters = parse_filters(request.args, PILOT_CREW_CHOICES)
+    _remember_logbook_view(page, order, "all" if show_all else str(per_page), filters)
+
+    q = apply_filters(_my_entries_query(uid), filters, uid)
     if order == "asc":
         q = q.order_by(
             Flight.date.asc(),
@@ -983,6 +992,7 @@ def logbook() -> ResponseReturnValue:
         crew_claims=pending_claims_to_review(uid),
         flight_corrections=pending_suggestions_to_review(uid),
         crew_roles=CrewRole,
+        filters=filters,
     )
 
 

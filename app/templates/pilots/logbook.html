@@ -38,7 +38,7 @@
       <a href="{{ url_for('pilots.pilot_stats') }}" class="btn btn-ac-ghost d-none d-lg-inline-block">
         <i class="bi bi-bar-chart-line me-1"></i>{{ _('Statistics') }}
       </a>
-      <a href="{{ url_for('pilots.logbook', order=other_order, per_page=per_page) }}"
+      <a href="{{ url_for('pilots.logbook', order=other_order, per_page=per_page, **filters) }}"
          class="btn btn-ac-ghost d-none d-lg-inline-block" title="{{ other_order_label }}">
         <i class="bi {{ other_order_icon }} me-1"></i>{{ other_order_label }}
       </a>
@@ -64,7 +64,7 @@
             <i class="bi bi-map me-2"></i>{{ _('Tracks') }}</a></li>
           <li><a class="dropdown-item" href="{{ url_for('pilots.pilot_stats') }}">
             <i class="bi bi-bar-chart-line me-2"></i>{{ _('Statistics') }}</a></li>
-          <li><a class="dropdown-item" href="{{ url_for('pilots.logbook', order=other_order, per_page=per_page) }}">
+          <li><a class="dropdown-item" href="{{ url_for('pilots.logbook', order=other_order, per_page=per_page, **filters) }}">
             <i class="bi {{ other_order_icon }} me-2"></i>{{ other_order_label }}</a></li>
           <li><a class="dropdown-item" href="{{ url_for('pilots.profile') }}">
             <i class="bi bi-person-badge me-2"></i>{{ _('Pilot Profile') }}</a></li>
@@ -107,6 +107,12 @@
   {% include 'partials/_flight_corrections.html' %}
   {% endif %}
 
+  {% set _lf_action = url_for('pilots.logbook') %}
+  {% set _lf_crew_options = [('pic', _('As PIC')), ('second', _('As second crew'))] %}
+  {% set _lf_hidden = {'per_page': per_page, 'order': order} %}
+  {% set _lf_clear_url = url_for('pilots.logbook', per_page=per_page, order=order) %}
+  {% include 'partials/_list_filters.html' %}
+
   {% if entries or total_entries > 0 %}
 
   {# ── Per-page selector + entry count ─────────────────────────────────────── #}
@@ -129,13 +135,13 @@
           {% if per_page == n_str %}
             <strong class="px-2 py-1 rounded oh-bg-navy-solid text-white">{{ n }}</strong>
           {% else %}
-            <a href="{{ url_for('pilots.logbook', per_page=n_str, order=order) }}" class="px-2 py-1 text-decoration-none">{{ n }}</a>
+            <a href="{{ url_for('pilots.logbook', per_page=n_str, order=order, **filters) }}" class="px-2 py-1 text-decoration-none">{{ n }}</a>
           {% endif %}
         {% endfor %}
         {% if per_page == 'all' %}
           <strong class="px-2 py-1 rounded oh-bg-navy-solid text-white">{{ _('All') }}</strong>
         {% else %}
-          <a href="{{ url_for('pilots.logbook', per_page='all', order=order) }}" class="px-2 py-1 text-decoration-none">{{ _('All') }}</a>
+          <a href="{{ url_for('pilots.logbook', per_page='all', order=order, **filters) }}" class="px-2 py-1 text-decoration-none">{{ _('All') }}</a>
         {% endif %}
       </div>
       <div class="form-check form-switch mb-0">
@@ -151,21 +157,21 @@
     <nav>
       <ul class="pagination pagination-sm mb-0">
         <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
-          <a class="page-link" href="{{ url_for('pilots.logbook', page=pagination.prev_num, order=order, per_page=per_page) if pagination.has_prev else '#' }}">
+          <a class="page-link" href="{{ url_for('pilots.logbook', page=pagination.prev_num, order=order, per_page=per_page, **filters) if pagination.has_prev else '#' }}">
             &laquo;
           </a>
         </li>
         {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
           {% if p %}
             <li class="page-item {{ 'active' if p == pagination.page }}">
-              <a class="page-link" href="{{ url_for('pilots.logbook', page=p, order=order, per_page=per_page) }}">{{ p }}</a>
+              <a class="page-link" href="{{ url_for('pilots.logbook', page=p, order=order, per_page=per_page, **filters) }}">{{ p }}</a>
             </li>
           {% else %}
             <li class="page-item disabled"><span class="page-link">…</span></li>
           {% endif %}
         {% endfor %}
         <li class="page-item {{ 'disabled' if not pagination.has_next }}">
-          <a class="page-link" href="{{ url_for('pilots.logbook', page=pagination.next_num, order=order, per_page=per_page) if pagination.has_next else '#' }}">
+          <a class="page-link" href="{{ url_for('pilots.logbook', page=pagination.next_num, order=order, per_page=per_page, **filters) if pagination.has_next else '#' }}">
             &raquo;
           </a>
         </li>
@@ -332,19 +338,19 @@
     <nav>
       <ul class="pagination pagination-sm mb-0">
         <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
-          <a class="page-link" href="{{ url_for('pilots.logbook', page=pagination.prev_num, order=order, per_page=per_page) if pagination.has_prev else '#' }}">&laquo;</a>
+          <a class="page-link" href="{{ url_for('pilots.logbook', page=pagination.prev_num, order=order, per_page=per_page, **filters) if pagination.has_prev else '#' }}">&laquo;</a>
         </li>
         {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
           {% if p %}
             <li class="page-item {{ 'active' if p == pagination.page }}">
-              <a class="page-link" href="{{ url_for('pilots.logbook', page=p, order=order, per_page=per_page) }}">{{ p }}</a>
+              <a class="page-link" href="{{ url_for('pilots.logbook', page=p, order=order, per_page=per_page, **filters) }}">{{ p }}</a>
             </li>
           {% else %}
             <li class="page-item disabled"><span class="page-link">…</span></li>
           {% endif %}
         {% endfor %}
         <li class="page-item {{ 'disabled' if not pagination.has_next }}">
-          <a class="page-link" href="{{ url_for('pilots.logbook', page=pagination.next_num, order=order, per_page=per_page) if pagination.has_next else '#' }}">&raquo;</a>
+          <a class="page-link" href="{{ url_for('pilots.logbook', page=pagination.next_num, order=order, per_page=per_page, **filters) if pagination.has_next else '#' }}">&raquo;</a>
         </li>
       </ul>
     </nav>
@@ -354,7 +360,7 @@
   {% else %}
   <div class="ac-form-card p-4 text-center">
     <i class="bi bi-journal-x fs-1 text-muted mb-3 d-block"></i>
-    <p class="text-muted mb-3">{{ _('No logbook entries yet.') }}</p>
+    <p class="text-muted mb-3">{% if filters %}{{ _('No flight matches these filters.') }}{% else %}{{ _('No logbook entries yet.') }}{% endif %}</p>
     <a href="{{ url_for('flights.log_flight') }}" class="btn btn-ac-primary">
       <i class="bi bi-plus-circle me-1"></i>{{ _('Add First Entry') }}
     </a>

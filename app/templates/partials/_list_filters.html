@@ -1,0 +1,41 @@
+{#
+  Filters of a logbook list (flights/list_filters.py), as a GET form.
+  Parent template sets:
+    _lf_action        -- the list's URL (without filters)
+    _lf_crew_options  -- [(value, label), ...] for the crew select
+    _lf_hidden        -- dict of other parameters to keep (per_page, order)
+    _lf_clear_url     -- the list's URL with those, without filters
+  and passes `filters` (the active ones).
+#}
+<form method="get" action="{{ _lf_action }}" class="ac-form-card p-2 px-3 mb-3 d-flex flex-wrap align-items-end gap-2 oh-fs-09" id="list-filters">
+  {% for k, v in _lf_hidden.items() %}{% if v %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}
+  <div>
+    <label class="form-label form-label-sm mb-0" for="lf-gps">{{ _('GPS track') }}</label>
+    <select class="form-select form-select-sm" name="gps" id="lf-gps">
+      <option value="">{{ _('Any') }}</option>
+      <option value="with" {% if filters.get('gps') == 'with' %}selected{% endif %}>{{ _('With a GPS track') }}</option>
+      <option value="without" {% if filters.get('gps') == 'without' %}selected{% endif %}>{{ _('Without a GPS track') }}</option>
+    </select>
+  </div>
+  <div>
+    <label class="form-label form-label-sm mb-0" for="lf-from">{{ _('Since') }}</label>
+    <input type="date" class="form-control form-control-sm" name="from" id="lf-from" value="{{ filters.get('from', '') }}">
+  </div>
+  <div>
+    <label class="form-label form-label-sm mb-0" for="lf-to">{{ _('Until') }}</label>
+    <input type="date" class="form-control form-control-sm" name="to" id="lf-to" value="{{ filters.get('to', '') }}">
+  </div>
+  <div>
+    <label class="form-label form-label-sm mb-0" for="lf-crew">{{ _('Crew') }}</label>
+    <select class="form-select form-select-sm" name="crew" id="lf-crew">
+      <option value="">{{ _('Anyone') }}</option>
+      {% for value, label in _lf_crew_options %}
+      <option value="{{ value }}" {% if filters.get('crew') == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="btn btn-ac-secondary btn-sm"><i class="bi bi-funnel me-1"></i>{{ _('Filter') }}</button>
+  {% if filters %}
+  <a href="{{ _lf_clear_url }}" class="btn btn-ac-ghost btn-sm">{{ _('Clear filters') }}</a>
+  {% endif %}
+</form>
