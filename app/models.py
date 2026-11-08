@@ -807,8 +807,8 @@ class GpsTrack(db.Model):
         nullable=False,
         default=lambda: datetime.now(UTC),
     )
-    # Render cache for the default (landscape, low-res) single-flight PNG/GIF —
-    # geojson never changes once saved, so no invalidation is ever needed.
+    # Render cache for the default (landscape, low-res) single-flight PNG/GIF,
+    # cleared whenever the track changes (services.gps_link._store).
     cached_png = db.Column(db.LargeBinary, nullable=True)
     cached_gif = db.Column(db.LargeBinary, nullable=True)
 

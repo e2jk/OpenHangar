@@ -593,6 +593,10 @@ nav.navbar.mayday #oh-mayday-banner {
   --bs-table-border-color: var(--bs-border-color);
 }
 /* Leaflet tile pane: unloaded tiles show container background; keep it dark */
+/* Base map toning (js/map_base_layer.js; same as utils._tone_down): a
+   quieter OpenStreetMap under the airspace layer and the track. */
+.oh-basemap { filter: grayscale(.6) brightness(1.05) contrast(.85) opacity(.8); }
+[data-bs-theme=dark] .oh-basemap { filter: grayscale(.6) invert(1) hue-rotate(180deg) brightness(.95) contrast(.85) opacity(.8); }
 [data-bs-theme=dark] .leaflet-container { background: #1a1d20; }
 [data-bs-theme=dark] .oh-bg-light { background: #2a2d31; }
 [data-bs-theme=dark] .icon-blue   { background: #1e3a5f; color: #90bfef; }
