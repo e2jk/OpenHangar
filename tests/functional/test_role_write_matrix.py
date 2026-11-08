@@ -213,6 +213,7 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
     "pilots.import_rollback": _PILOT_ACCESS_ROLES,
     "pilots.pilot_gps_import_upload": _PILOT_ACCESS_ROLES,
     "pilots.pilot_gps_import_confirm_one": _PILOT_ACCESS_ROLES,
+    "pilots.pilot_gps_import_confirm_all": _PILOT_ACCESS_ROLES,
     "pilots.profile": _PILOT_ACCESS_ROLES,
     # pwa_bp
     "pwa.share_target": _ANY_ROLE,
