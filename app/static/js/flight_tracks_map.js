@@ -27,28 +27,9 @@
     pbar.id  = 'anim-pbar';
     if (pbarWrap) pbarWrap.appendChild(pbar);
 
-    var isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
     var map = L.map(mapEl);
 
-    if (opiKey) {
-      L.tileLayer(
-        isDark ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-               : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-        { maxZoom: 19, subdomains: 'abcd', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>' }
-      ).addTo(map);
-      L.tileLayer(
-        'https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey=' + opiKey,
-        { maxZoom: 14, attribution: '&copy; <a href="https://www.openaip.net">OpenAIP</a>' }
-      ).addTo(map);
-    } else {
-      L.tileLayer(
-        isDark ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-               : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-        isDark
-          ? { maxZoom: 19, subdomains: 'abcd', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>' }
-          : { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }
-      ).addTo(map);
-    }
+    window.ohAddBaseLayers(map, opiKey);
 
     function trackOpacity(idx, total) {
       return Math.max(0.3, 0.8 - (total - 1 - idx) * 0.05);

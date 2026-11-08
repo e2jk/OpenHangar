@@ -2953,3 +2953,16 @@ class TestLogbookViewRemembered:
         client.get("/pilot/logbook?page=2&per_page=50")
         rv = client.post(f"/pilot/logbook/{eid}/delete")
         assert rv.headers["Location"].endswith("/pilot/logbook?page=2&per_page=50")
+
+
+def test_base_map_tiles_are_toned_down():
+    """utils._tone_down matches the web maps' .oh-basemap filter: colour
+    mostly gone, contrast lowered, faded towards Leaflet's background."""
+    from PIL import Image
+    from utils import _LEAFLET_BG, _tone_down  # pyright: ignore[reportMissingImports]
+
+    red = _tone_down(Image.new("RGBA", (4, 4), (255, 0, 0, 255))).getpixel((0, 0))
+    r, g, b = red
+    assert r > g == b and r - g < 120  # some colour kept, much less of it
+    white = _tone_down(Image.new("RGB", (4, 4), (255, 255, 255))).getpixel((0, 0))
+    assert all(_LEAFLET_BG[i] <= white[i] < 255 for i in range(3))

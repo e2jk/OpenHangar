@@ -220,22 +220,20 @@ def _make_tile_background(
                 tile_w = max(1, px_se - px + 1)
                 tile_h = max(1, py_se - py + 1)
 
-                # Base map: CARTO light (same as web animation)
+                # Base map: OpenStreetMap, toned down like the web maps'
                 base_key = (z, tx_w, ty)
                 if tile_cache is not None and base_key in tile_cache:
                     raw = tile_cache[base_key]
                 else:
-                    base_url = (
-                        f"https://a.basemaps.cartocdn.com/light_all/{z}/{tx_w}/{ty}.png"
-                    )
+                    base_url = f"https://tile.openstreetmap.org/{z}/{tx_w}/{ty}.png"
                     req = urllib.request.Request(base_url, headers={"User-Agent": ua})
                     with urllib.request.urlopen(req, timeout=5) as resp:  # nosec B310  # base_url has a hardcoded https:// prefix
                         raw = resp.read()
                     if tile_cache is not None:
                         tile_cache[base_key] = raw
-                tile = _Img.open(io.BytesIO(raw)).convert("RGBA")
+                tile = _tone_down(_Img.open(io.BytesIO(raw)))
                 tile = tile.resize((tile_w, tile_h), _Img.Resampling.LANCZOS)
-                bg.paste(tile.convert("RGB"), (px, py))
+                bg.paste(tile, (px, py))
                 # Aviation overlay: OpenAIP (only at zoom ≤ 14, requires key)
                 if openaip_key and z <= 14:
                     opi_key = ("opi", z, tx_w, ty)
@@ -259,6 +257,24 @@ def _make_tile_background(
                 _log.debug("OPI tile unavailable, leaving area as background: %s", exc)
 
     return bg
+
+
+# Leaflet's map background, which the web maps' faded base layer lets through.
+_LEAFLET_BG = (221, 221, 221)
+
+
+def _tone_down(tile: Any) -> Any:
+    """A base-map tile toned down the way the web maps do it (base.css
+    .oh-basemap: grayscale(.6) brightness(1.05) contrast(.85) opacity(.8)),
+    so the airspace layer and the track stand out on the images too."""
+    from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+    from PIL import ImageEnhance  # pyright: ignore[reportMissingImports]
+
+    rgb = tile.convert("RGB")
+    rgb = _Img.blend(rgb, rgb.convert("L").convert("RGB"), 0.6)
+    rgb = ImageEnhance.Brightness(rgb).enhance(1.05)
+    rgb = ImageEnhance.Contrast(rgb).enhance(0.85)
+    return _Img.blend(_Img.new("RGB", rgb.size, _LEAFLET_BG), rgb, 0.8)
 
 
 def _canvas_geo_bounds(

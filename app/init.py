@@ -544,7 +544,7 @@ def create_app() -> Flask:
             f"style-src-elem 'self'; "
             f"style-src-attr 'none'; "
             f"font-src 'self'; "
-            f"img-src 'self' data: blob: tile.openstreetmap.org *.basemaps.cartocdn.com api.tiles.openaip.net; "
+            f"img-src 'self' data: blob: tile.openstreetmap.org api.tiles.openaip.net; "
             f"connect-src 'self'; "
             f"object-src 'none'; "
             f"base-uri 'self'; "
