@@ -13,6 +13,8 @@
     _gps_help_id    -- element ID of the help text (hidden after parse)
     _gps_field_map  -- dict mapping GPS response keys to form field IDs,
                        e.g. {'departure_icao': 'departure_place', ...}
+    _gps_existing   -- true on an existing flight: the file is added to its
+                       track and its fields are never filled from it
 #}
 
 <div class="mb-1">
@@ -23,7 +25,8 @@
          data-parse-url="{{ _gps_parse_url }}"
          data-status-id="{{ _gps_status_id }}"
          data-help-id="{{ _gps_help_id }}"
-         data-openaip-key="{{ openaip_key or '' }}">
+         data-openaip-key="{{ openaip_key or '' }}"
+         {% if _gps_existing %}data-existing-flight="1"{% endif %}>
 </div>
 
 {% if _gps_track and _gps_track.geojson %}
@@ -36,8 +39,9 @@
 <input type="hidden" id="{{ _gps_pfx }}-inp-block-off" name="gps_block_off_utc" value="{{ _gps_f_block_off }}">
 <input type="hidden" id="{{ _gps_pfx }}-inp-block-on"  name="gps_block_on_utc"  value="{{ _gps_f_block_on }}">
 <input type="hidden" id="{{ _gps_pfx }}-inp-geojson"   name="gps_geojson"       value="{{ _gps_f_geojson }}">
+<input type="hidden" id="{{ _gps_pfx }}-inp-ground-only" name="gps_ground_only" value="">
 
 <div id="{{ _gps_pfx }}-map" class="mb-3 mt-2 d-none"></div>
 
 <div id="{{ _gps_pfx }}-field-map" hidden>{{ _gps_field_map | tojson }}</div>
-<div id="{{ _gps_pfx }}-i18n" hidden>{{ {'parsing': _('Parsing GPS file…'), 'parseError': _('Could not parse GPS file. Fill in the fields manually.'), 'dupLabel': _('Possible duplicate:'), 'exists': _('already exists.'), 'review': _('Review before saving.')} | tojson }}</div>
+<div id="{{ _gps_pfx }}-i18n" hidden>{{ {'parsing': _('Parsing GPS file…'), 'parseError': _('Could not parse GPS file. Fill in the fields manually.'), 'dupLabel': _('Possible duplicate:'), 'exists': _('already exists.'), 'review': _('Review before saving.'), 'readOnly': _('GPS file read: {name}.'), 'addedNote': _("Saving adds this file to the flight's GPS track; the flight's own data stays as entered. The GPS recorded {start}–{end} UTC: change the flight's times yourself if they need it."), 'addedGroundNote': _("Ground movement only ({start}–{end} UTC): saving adds it to the flight's GPS track as a taxi part; the flight's own data stays as entered.")} | tojson }}</div>
