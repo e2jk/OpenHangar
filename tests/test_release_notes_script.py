@@ -131,3 +131,56 @@ def test_heading_check(capsys, tmp_path):
     assert "73 characters long" in capsys.readouterr().err
     f.write_text("# " + "x" * 72 + "\n")
     assert release_notes.main(["heading", str(f), "--check"]) == 0
+
+
+NOTES = """## What's Changed
+* GPX tracks from cameras by @e2jk in https://github.com/o/r/pull/434
+* [later] refactor: address CodeQL notes by @e2jk in https://github.com/o/r/pull/435
+  * refactor: one commit
+  * docs: another
+
+**Full Changelog**: https://github.com/o/r/compare/v1...v2
+"""
+
+
+def test_drop_released_prs():
+    out = release_notes.drop_released(NOTES, {"https://github.com/o/r/pull/435"})
+    assert "pull/434" in out and "pull/435" not in out and "one commit" not in out
+    assert out.endswith("compare/v1...v2\n")
+    # Nothing new left: no empty "What's Changed" heading.
+    both = {"https://github.com/o/r/pull/434", "https://github.com/o/r/pull/435"}
+    out = release_notes.drop_released("## Summary\n\nx\n\n" + NOTES, both)
+    assert "What's Changed" not in out and out.startswith("## Summary")
+    assert "**Full Changelog**" in out
+    assert release_notes.drop_released(NOTES, set()) == NOTES
+
+
+def test_fallback_title():
+    one = NOTES.replace(
+        "* GPX tracks from cameras by @e2jk in https://github.com/o/r/pull/434\n", ""
+    )
+    assert release_notes.fallback_title(one) == "refactor: address CodeQL notes"
+    assert release_notes.fallback_title(NOTES) == ""  # several: no guess
+    deps = (
+        "* chore(deps): update a by @renovate[bot] in u/1\n"
+        "* fix(deps): update b [SECURITY] by @renovate[bot] in u/2\n"
+    )
+    assert release_notes.fallback_title(deps) == "Dependency updates"
+    assert release_notes.fallback_title("no PR list") == ""
+    long = "* feat: " + "word " * 30 + "by @e in u/3\n"
+    capped = release_notes.fallback_title(long)
+    assert len(capped) <= release_notes.MAX_TITLE and capped.endswith("…")
+
+
+def test_drop_released_and_fallback_cli(capsys, tmp_path):
+    notes = tmp_path / "notes.md"
+    urls = tmp_path / "urls.txt"
+    notes.write_text(NOTES)
+    urls.write_text("https://github.com/o/r/pull/434\n\n")
+    release_notes.main(["drop-released", str(notes), str(urls)])
+    assert "pull/434" not in notes.read_text()
+    release_notes.main(["fallback-title", str(notes)])
+    assert capsys.readouterr().out == "refactor: address CodeQL notes\n"
+    notes.write_text("nothing")
+    release_notes.main(["fallback-title", str(notes)])
+    assert capsys.readouterr().out == ""

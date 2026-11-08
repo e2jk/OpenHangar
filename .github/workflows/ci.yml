@@ -1476,6 +1476,23 @@ jobs:
             "${NOTES_ARGS[@]}" \
             --jq '.body' > /tmp/auto-notes.md
 
+          # That previous tag sits on the commit its own release was built
+          # from — a ship PR's head, published before the PR merged (by
+          # design, see below) — so generate-notes, listing the PRs merged
+          # after it, listed that release's own PR again. Drop every PR the
+          # previous release's notes already list: they're in it. (Not via
+          # the tag commit's PRs: GitHub no longer links a deleted ship
+          # branch's commit to its PR.) Best-effort: if the lookup fails,
+          # the notes stay as generated.
+          if [ -n "$PREVIOUS_TAG" ] && [ "$PREVIOUS_TAG" != "v${VERSION}" ]; then
+            if gh release view "$PREVIOUS_TAG" --repo "${REPO}" --json body --jq .body > /tmp/previous-notes.md; then
+              grep -oE "https://github\.com/${REPO}/pull/[0-9]+" /tmp/previous-notes.md | sort -u > /tmp/released-prs.txt || true
+              python3 scripts/release_notes.py drop-released /tmp/auto-notes.md /tmp/released-prs.txt
+            else
+              echo "::warning::Couldn't read the ${PREVIOUS_TAG} release notes; this release's may repeat its PRs."
+            fi
+          fi
+
           # generate-notes only reports already-merged PRs, and the PR that
           # triggered this very run is still open at this exact moment —
           # publish happens before merge, by design (see the version job's
@@ -1535,6 +1552,15 @@ jobs:
             echo "Release summary included (changed since ${PREV_TAG})."
           else
             echo "No release summary (unchanged since ${PREV_TAG:-<none>}, or empty)."
+          fi
+          # No title line in the summary: name the release after its only
+          # PR, or "Dependency updates" when that's all it has (a nightly
+          # release of Renovate updates) — scripts/release_notes.py.
+          if [ "${RELEASE_TITLE}" = "v${VERSION}" ]; then
+            FALLBACK=$(python3 scripts/release_notes.py fallback-title /tmp/auto-notes.md)
+            if [ -n "$FALLBACK" ]; then
+              RELEASE_TITLE="v${VERSION} — ${FALLBACK}"
+            fi
           fi
           {
             cat /tmp/summary.md
