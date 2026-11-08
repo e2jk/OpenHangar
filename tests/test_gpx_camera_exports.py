@@ -119,3 +119,135 @@ class TestBadFixes:
 def test_heliports_are_not_landing_fields():
     # On Ostend's runway, nearer to the Oostende Heliport's reference point.
     assert resolve_icao(51.196, 2.86) == "EBOS"
+
+
+# ── SkyDemon exports and format detection by content ───────────────────────
+
+
+def _skydemon_gpx(points):
+    """A SkyDemon for Android GPX export: BOM, GPX 1.1, speed in m/s, a
+    track name with the route — saved as "….gpx.bin"."""
+    pts = "".join(
+        f'<trkpt lat="{lat}" lon="{lon}"><ele>{alt}</ele><speed>{speed}</speed>'
+        f"<time>{when.strftime('%Y-%m-%dT%H:%M:%SZ')}</time></trkpt>"
+        for lat, lon, alt, speed, when in points
+    )
+    return (
+        '﻿<?xml version="1.0" encoding="utf-8"?>\n'
+        '<gpx version="1.1" creator="SkyDemon for Android" '
+        'xmlns="http://www.topografix.com/GPX/1/1"><trk>'
+        "<name>EBNM NAMUR  Suarlée - EBNM NAMUR  Suarlée</name>"
+        f"<trkseg>{pts}</trkseg></trk></gpx>"
+    ).encode()
+
+
+def _skydemon_kml(points):
+    """The same track as SkyDemon's KML (gx:Track, no speed, no route name)."""
+    whens = "".join(
+        f"<when>{w.strftime('%Y-%m-%dT%H:%M:%SZ')}</when>" for *_x, w in points
+    )
+    coords = "".join(
+        f"<gx:coord>{lon} {lat} {alt}</gx:coord>" for lat, lon, alt, _s, _w in points
+    )
+    return (
+        '﻿<?xml version="1.0" encoding="utf-8"?>'
+        '<kml xmlns:gx="http://www.google.com/kml/ext/2.2" creator="SkyDemon for Android" '
+        'xmlns="http://www.opengis.net/kml/2.2"><Document><name>SkyDemon Track Log</name>'
+        f"<Placemark><gx:Track>{whens}{coords}</gx:Track></Placemark></Document></kml>"
+    ).encode()
+
+
+def _takeoff_roll_flight():
+    """Logging starts mid takeoff roll (already 26 kt) at Namur (EBNM),
+    flies 10 min at ~108 kt and 300 m up, lands back and stops 4 s after."""
+    lat0, lon0, field = 50.4867, 4.7686, 180.0
+    pts = []
+    t = _T0
+    for i in range(20):  # takeoff roll and climb: accelerating
+        pts.append((lat0 + 0.00005 * i * i / 2, lon0, field + i * 15, 13.0 + i * 2, t))
+        t += timedelta(seconds=1)
+    lat = pts[-1][0]
+    for _i in range(600):  # flying
+        lat += 0.0005 * (1 if _i < 300 else -1)
+        pts.append((lat, lon0, field + 300, 55.6, t))
+        t += timedelta(seconds=1)
+    start = lat
+    for i in range(1, 61):  # descent and landing roll, back to the field
+        frac = min(1.0, i / 40)
+        pts.append(
+            (
+                start + (lat0 - start) * frac,
+                lon0,
+                field + max(0.0, 300 - i * 10),
+                max(3.6, 55.6 - i * 1.2),
+                t,
+            )
+        )
+        t += timedelta(seconds=1)
+    return pts
+
+
+class TestSkyDemonExports:
+    def test_detect_by_content(self):
+        from aircraft.gps_import import detect_format, is_gps_upload_name
+
+        gpx = _skydemon_gpx(_takeoff_roll_flight())
+        kml = _skydemon_kml(_takeoff_roll_flight())
+        assert detect_format(gpx, "EBNM - EBNM 202603201607.gpx.bin") == "gpx"
+        assert detect_format(kml, "EBNM - EBNM 202603201607.kml.bin") == "kml"
+        assert detect_format(b"<!-- x --><ns0:gpx xmlns:ns0='u'/>", "t.bin") == "gpx"
+        assert is_gps_upload_name("a.gpx.bin") and is_gps_upload_name("a.KML")
+        assert not is_gps_upload_name("a.txt")
+        import pytest
+
+        with pytest.raises(ValueError, match="SkyDemon's own log format"):
+            detect_format(b"\x00\x01binary", "x 202603201607.flightlog.bin")
+        with pytest.raises(ValueError, match="Unsupported GPS file format"):
+            detect_format(b"<html></html>", "page.bin")
+        with pytest.raises(ValueError, match="Unsupported GPS file format"):
+            detect_format(b"time,lat,lon\n", "other.csv")
+
+    def test_gpx_and_kml_read_the_same(self):
+        pts = _takeoff_roll_flight()
+        for doc, name in (
+            (_skydemon_gpx(pts), "flight.gpx.bin"),
+            (_skydemon_kml(pts), "flight.kml"),
+        ):
+            parsed = parse_gps_file(doc, name)
+            (seg,) = detect_segments(merge_and_sort([parsed]))
+            # Started mid takeoff roll — on the ground, not in flight: the
+            # field is named from the position (no route name in the KML).
+            assert (seg.departure_icao, seg.arrival_icao) == ("EBNM", "EBNM"), name
+            assert seg.landing_count == 1 and not seg.is_ground_only
+
+    def test_upload_gpx_bin_on_both_import_pages(self, client, app):
+        import io
+
+        from tests.test_gps_import import (  # pyright: ignore[reportMissingImports]
+            _login,
+            _make_user_and_aircraft,
+        )
+
+        uid, _tid, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        doc = _skydemon_gpx(_takeoff_roll_flight())
+        name = "EBNM NAMUR - EBNM NAMUR 202603201607.gpx.bin"
+        rv = client.post(
+            f"/aircraft/{ac_id}/gps-import",
+            data={"gps_files": (io.BytesIO(doc), name)},
+            content_type="multipart/form-data",
+        )
+        assert rv.headers["Location"].endswith("/gps-import/review")
+        rv = client.post(
+            "/pilot/gps-import",
+            data={"gps_files": (io.BytesIO(doc), name)},
+            content_type="multipart/form-data",
+        )
+        assert rv.headers["Location"].endswith("/pilot/gps-import/review")
+        # Still refused by name: neither a GPS extension nor .bin.
+        page = client.post(
+            "/pilot/gps-import",
+            data={"gps_files": (io.BytesIO(doc), "notes.txt")},
+            content_type="multipart/form-data",
+        ).data.decode()
+        assert "unsupported file type" in page

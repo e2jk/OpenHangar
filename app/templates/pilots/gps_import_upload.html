@@ -69,9 +69,9 @@
           {{ _('GPS log files') }}
         </label>
         <input type="file" class="form-control" id="gps_files" name="gps_files"
-               accept=".gpx,.kml,.csv" multiple required>
+               accept=".gpx,.kml,.csv,.bin" multiple required>
         <div class="form-text">
-          {{ _('Supported: GPX, KML, CSV. Multiple files accepted. Maximum 20 MB per file.') }}
+          {{ _('Supported formats: GPX and KML (SkyDemon — including its .gpx.bin exports —, ForeFlight, cameras and phones), Garmin GTN/G1000 CSV. Maximum 20 MB per file. You may upload multiple files at once.') }}
           {{ _('A copy of each original file is kept unchanged and included in backups.') }}
         </div>
       </div>

@@ -1023,8 +1023,8 @@ class TestParseKmlEdgeCases:
         result = parse_gps_file(kml, "f.kml")
         assert len(result.trackpoints) == 1
 
-    def test_malformed_coord_uses_zero(self):
-        # <gx:coord> with only one number → parts < 3 → (0, 0, 0)
+    def test_malformed_coord_point_dropped(self):
+        # <gx:coord> with only one number → parts < 3 → (0, 0, 0) → dropped
         kml = (
             b'<?xml version="1.0"?>'
             b'<kml xmlns="http://www.opengis.net/kml/2.2"'
@@ -1037,11 +1037,12 @@ class TestParseKmlEdgeCases:
             b"</gx:Track></Placemark></Document></kml>"
         )
         result = parse_gps_file(kml, "f.kml")
-        # first point has (lon=0, lat=0) from fallback
-        assert result.trackpoints[0].lat == 0.0
+        # The unreadable point falls back to (0, 0) — no fix, so dropped
+        # (see _drop_bad_fixes); the readable one stays.
+        assert [tp.lat for tp in result.trackpoints] == [51.20]
 
-    def test_coord_bad_float_uses_zero(self):
-        # <gx:coord> with 3 parts but non-numeric → ValueError → (0, 0, 0)
+    def test_coord_bad_float_point_dropped(self):
+        # <gx:coord> with 3 parts but non-numeric → (0, 0, 0) → dropped
         kml = (
             b'<?xml version="1.0"?>'
             b'<kml xmlns="http://www.opengis.net/kml/2.2"'
@@ -1054,7 +1055,7 @@ class TestParseKmlEdgeCases:
             b"</gx:Track></Placemark></Document></kml>"
         )
         result = parse_gps_file(kml, "f.kml")
-        assert result.trackpoints[0].lat == 0.0
+        assert [tp.lat for tp in result.trackpoints] == [51.20]
 
     def test_when_coord_count_mismatch_raises(self):
         kml = (

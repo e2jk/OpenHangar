@@ -127,7 +127,6 @@ from flights.shared_flight import (  # pyright: ignore[reportMissingImports]
 flights_bp = Blueprint("flights", __name__)
 
 _ALLOWED_PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic"}
-_ALLOWED_GPS_EXTS = {".gpx", ".kml", ".csv"}
 _FUEL_UNITS = ["L", "gal"]
 _NATURE_SUGGESTIONS = [
     "Local flight",
@@ -317,14 +316,14 @@ def _parse_gps_upload(file: Any) -> dict[str, Any] | None:
     try:
         from aircraft.gps_import import (  # pyright: ignore[reportMissingImports]
             detect_segments,
+            is_gps_upload_name,
             merge_and_sort,
             parse_gps_file,
         )
     except ImportError:
         return None
     filename = secure_filename(file.filename or "")
-    ext = os.path.splitext(filename)[1].lower()
-    if ext not in _ALLOWED_GPS_EXTS:
+    if not is_gps_upload_name(filename):
         return None
     data = file.read()
     # Kept whatever the parser makes of it (services.gps_archive), in the

@@ -164,8 +164,29 @@ def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 # ── Format detection ──────────────────────────────────────────────────────────
 
 
+# File name extensions a GPS upload may have. ".bin": SkyDemon for Android
+# exports its GPX and KML as "….gpx.bin" / "….kml.bin" — what's inside
+# decides (detect_format).
+GPS_UPLOAD_EXTENSIONS = (".gpx", ".kml", ".csv", ".bin")
+
+# The first element of an XML document, after its declaration, comments
+# and doctype.
+_XML_ROOT_RE = re.compile(
+    r"^\s*(?:<\?.*?\?>\s*|<!--.*?-->\s*|<!DOCTYPE[^>]*>\s*)*<([\w:.-]+)", re.DOTALL
+)
+
+
+def is_gps_upload_name(filename: str) -> bool:
+    """Whether *filename*'s extension is one a GPS upload may have."""
+    return os.path.splitext(filename.lower())[1] in GPS_UPLOAD_EXTENSIONS
+
+
 def detect_format(data: bytes, filename: str) -> str:
-    """Return "gpx", "kml", or "garmin_csv". Raise ValueError for unknown format."""
+    """Return "gpx", "kml", or "garmin_csv". Raise ValueError for unknown format.
+
+    By extension for .gpx / .kml / .csv; otherwise (e.g. SkyDemon's
+    ".gpx.bin") by content — an XML document whose root element is <gpx>
+    or <kml>."""
     ext = os.path.splitext(filename.lower())[1]
     if ext == ".gpx":
         return "gpx"
@@ -175,6 +196,17 @@ def detect_format(data: bytes, filename: str) -> str:
         lines = data.decode("utf-8-sig", errors="replace").splitlines()
         if lines and lines[0].startswith("#airframe_info"):
             return "garmin_csv"
+    else:
+        head = data[:4096].decode("utf-8-sig", errors="replace")
+        match = _XML_ROOT_RE.match(head)
+        root = match.group(1).rsplit(":", 1)[-1].lower() if match else ""
+        if root in ("gpx", "kml"):
+            return root
+    if filename.lower().endswith(".flightlog.bin"):
+        raise ValueError(
+            f"{filename!r} is SkyDemon's own log format — export the track "
+            "as GPX (….gpx.bin) or KML from SkyDemon instead."
+        )
     raise ValueError(f"Unsupported GPS file format: {filename!r}")
 
 
@@ -540,22 +572,20 @@ def _parse_kml(data: bytes, filename: str) -> ParsedGpsFile:
             f"{len(whens)} vs {len(coords)}"
         )
 
-    trackpoints: list[TrackPoint] = []
-    for i, (when, (lon, lat, alt_m)) in enumerate(zip(whens, coords)):
-        if when is None:
-            continue
-
-        if trackpoints:
-            prev = trackpoints[-1]
-            dt_s = (when - prev.utc_dt).total_seconds()
-            dist_km = _haversine_km(prev.lat, prev.lon, lat, lon)
-            speed_kt = (dist_km / _KM_PER_NM * 3600.0 / dt_s) if dt_s > 0 else 0.0
-        else:
-            speed_kt = 0.0
-
-        trackpoints.append(
-            TrackPoint(lat=lat, lon=lon, alt_m=alt_m, speed_kt=speed_kt, utc_dt=when)
-        )
+    # KML carries no speed: derived from the positions, like a GPX file
+    # without one — with the same bad-fix filtering and smoothing.
+    points = _drop_bad_fixes(
+        [
+            (lat, lon, alt_m, None, when)
+            for when, (lon, lat, alt_m) in zip(whens, coords, strict=True)
+            if when is not None
+        ]
+    )
+    speeds = _speeds_from_positions([(p[0], p[1], p[4]) for p in points])
+    trackpoints = [
+        TrackPoint(lat=lat, lon=lon, alt_m=alt_m, speed_kt=kt, utc_dt=when)
+        for (lat, lon, alt_m, _speed, when), kt in zip(points, speeds, strict=True)
+    ]
 
     return ParsedGpsFile(
         trackpoints=trackpoints,
@@ -741,8 +771,27 @@ def _break_points(
 
 
 # A segment whose flying starts (ends) this close to its first (last)
-# point was recorded from (until) the air, not from (until) the ground.
+# point, and that high above its lowest part (≈ the airfield), was recorded
+# from (until) the air — not from a takeoff roll (until a landing roll),
+# which is fast too but on the ground (SkyDemon may start logging mid-roll).
 _IN_FLIGHT_EDGE_S = 10.0
+_IN_FLIGHT_HEIGHT_M = 150.0
+_EDGE_POINTS = 10
+
+
+def _median(values: list[float]) -> float:
+    ordered = sorted(values)
+    return ordered[len(ordered) // 2]
+
+
+def _high_above_ground(pts: list[TrackPoint], edge: list[TrackPoint]) -> bool:
+    """Whether the *edge* points (a segment's first or last few) are well
+    above the segment's low part (its 10th percentile altitude — robust to
+    the noisy altitudes of cameras and phones)."""
+    altitudes = sorted(p.alt_m for p in pts)
+    low = altitudes[len(altitudes) // 10]
+    return _median([p.alt_m for p in edge]) - low > _IN_FLIGHT_HEIGHT_M
+
 
 # Above _FLIGHT_SPEED_KT for at least this long is flying, below it for at
 # least this long after flying is a landing: a noisy GPS (a camera's, a
@@ -821,11 +870,13 @@ def detect_segments(
             periods
             and (pts[periods[0][0]].utc_dt - pts[0].utc_dt).total_seconds()
             < _IN_FLIGHT_EDGE_S
+            and _high_above_ground(pts, pts[:_EDGE_POINTS])
         )
         ended_flying = bool(
             periods
             and (pts[-1].utc_dt - pts[periods[-1][1]].utc_dt).total_seconds()
             < _IN_FLIGHT_EDGE_S
+            and _high_above_ground(pts, pts[-_EDGE_POINTS:])
         )
         # (The file's own hint — a Garmin file name, a GPX track name —
         # still counts: it's the recorder's own record of the field.)
