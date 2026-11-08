@@ -7,5 +7,5 @@
 
 **Maintenance**
 - Release notes list only what's new since the previous release (patch or minor): no more PRs of the previous release, nor everything since the start of the minor version.
-- A release without a title line in its summary is named after its only PR, or "Dependency updates" when that's all it has — the nightly releases included.
+- A release without a title line in its summary is named after its only PR, "Dependency updates" when that's all it has, or its first meaningful PR "(+N more)" — the nightly releases included.
 - A release that includes a security fix says so in its name: `[SECURITY]` at the end.
