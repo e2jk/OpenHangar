@@ -1,4 +1,4 @@
-# Safer return page after removing a GPS file
+# GPS files on saved flights, and taxi runs further from a flight
 
 **GPS import**
 - A ground-only recording more than 45 minutes from any flight, but at the same airfield within 3 hours that day (a taxi back to the hangar after a long wait at the fuel station), now offers those flights to add it to as a taxi part, the closest preselected — instead of only importing it as a ground entry of its own or skipping it.
