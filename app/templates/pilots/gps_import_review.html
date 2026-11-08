@@ -25,6 +25,28 @@
   </div>
   {% endif %}
 
+  {# Accept all best matches: every unconfirmed segment that matched a
+     flight. Shown above and below the segments: after checking them one by
+     one further down, there's no need to scroll back up to accept them. #}
+  {% set _pending_matched = [] %}
+  {% for seg in segments %}{% if seg.matched_flight_id and not (confirmed_segments and (loop.index0|string) in confirmed_segments) %}{% set _discard = _pending_matched.append(seg) %}{% endif %}{% endfor %}
+  {% macro accept_all_best_matches(n, margin) %}
+  <div class="ac-form-card p-3 {{ margin }} d-flex flex-wrap align-items-center gap-2">
+    <span class="me-auto">
+      <i class="bi bi-lightning-charge me-1"></i>{{ ngettext('One segment matches a flight already in the log.', '%(n)d segments match flights already in the log.', n, n=n) }}
+      <span class="text-muted oh-fs-09">{{ _('Their times and dates stay as recorded; segments without a match are left for you to decide.') }}</span>
+    </span>
+    <form method="POST" action="{{ url_for('pilots.pilot_gps_import_confirm_all') }}"
+          data-confirm="{{ ngettext('Link one segment to its matching flight?', 'Link %(n)d segments to their matching flights, using the best match where several were possible?', n, n=n) }}">
+      <input type="hidden" name="pilot_role" class="pilot-role-hidden" value="pic">
+      <button type="submit" class="btn btn-ac-primary btn-sm">
+        <i class="bi bi-check2-all me-1"></i>{{ _('Accept all best matches') }}
+      </button>
+    </form>
+  </div>
+  {% endmacro %}
+  {% if _pending_matched %}{{ accept_all_best_matches(_pending_matched|length, 'mb-4') }}{% endif %}
+
   {% if not segments %}
   <div class="alert alert-warning">
     <i class="bi bi-exclamation-triangle me-1"></i>
@@ -63,7 +85,7 @@
   {% set has_match = seg.matched_flight_id %}
   {% set is_ambiguous = seg.matched_ambiguous %}
 
-  <div class="seg-card{% if seg.is_ground_only %} ground-only{% endif %}{% if already_confirmed %} opacity-75{% endif %}">
+  <div id="seg-card-{{ i }}" class="seg-card{% if seg.is_ground_only %} ground-only{% endif %}{% if already_confirmed %} opacity-75{% endif %}">
     <div class="d-flex align-items-start justify-content-between mb-2">
       <div>
         <span class="fw-semibold">
@@ -95,7 +117,18 @@
     {% endif %}
 
     {# ── Match banner ── #}
-    {% if has_match and not is_ambiguous %}
+    {% if already_confirmed and not is_skipped %}
+    {% set _outcome = confirmed_outcomes.get(i|string) %}
+    <div class="alert alert-success py-2 mt-2 mb-2 small">
+      <i class="bi bi-check-circle me-1"></i>
+      {% if not _outcome %}{{ _('Confirmed.') }}
+      {% elif _outcome[0] == 'taxi' %}{{ _('Added to flight %(info)s as a taxi part.', info=_outcome[1]) }}
+      {% elif _outcome[0] == 'linked' %}{{ _('Linked to flight %(info)s.', info=_outcome[1]) }}
+      {% else %}{{ _('Imported as a new flight: %(info)s.', info=_outcome[1]) }}{% endif %}
+    </div>
+    {% elif already_confirmed %}
+    {# Skipped: nothing to show — the badge says so. #}
+    {% elif has_match and not is_ambiguous %}
     <div class="alert alert-info py-2 mt-2 mb-2 small">
       <i class="bi bi-link-45deg me-1"></i>
       {{ _('Matches existing flight %(info)s (%(reg)s) — GPS track will be linked.',
@@ -146,6 +179,7 @@
 
     {% if not already_confirmed %}
     <form class="seg-confirm-form mt-3"
+          data-scroll-anchor="seg-card-{{ i }}" hx-swap="innerHTML show:none"
           method="POST"
           action="{{ url_for('pilots.pilot_gps_import_confirm_one') }}">
       <input type="hidden" name="seg_idx" value="{{ i }}">
@@ -269,6 +303,7 @@
 
     {# ── Skip button ── #}
     <form method="POST" class="mt-2"
+          data-scroll-anchor="seg-card-{{ i }}" hx-swap="innerHTML show:none"
           action="{{ url_for('pilots.pilot_gps_import_confirm_one') }}">
       <input type="hidden" name="seg_idx" value="{{ i }}">
       <input type="hidden" name="pilot_role" class="pilot-role-hidden" value="pic">
@@ -281,6 +316,7 @@
   </div>
   {% endfor %}
 
+  {% if _pending_matched %}{{ accept_all_best_matches(_pending_matched|length, 'mt-4') }}{% endif %}
   {% endif %}
 </div>
 

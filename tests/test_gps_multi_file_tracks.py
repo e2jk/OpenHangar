@@ -259,6 +259,10 @@ class TestAcceptAllBestMatches:
         assert segs[0]["matched_flight_id"] == fid
         assert segs[0]["matched_ambiguous"] is False
         page = client.get(f"/aircraft/{ac_id}/gps-import/review").data.decode()
+        # Confirming or skipping a segment comes back to its card after the
+        # reload (ui.js data-scroll-anchor), not to the top of the page.
+        assert 'id="seg-card-0"' in page
+        assert page.count('data-scroll-anchor="seg-card-0"') == 2
         # Above and below the segments, the same both times.
         assert page.count("Accept all best matches") == 2
         assert page.count("/gps-import/confirm-all") == 2
@@ -284,6 +288,11 @@ class TestAcceptAllBestMatches:
         with client.session_transaction() as sess:
             confirmed = sess["gps_import"]["confirmed_segments"]
         assert confirmed["1"] == "skip" and "2" not in confirmed
+
+        # The confirmed segment says which flight it went to — not the
+        # matching it was offered.
+        page = client.get(f"/aircraft/{ac_id}/gps-import/review").data.decode()
+        assert f"Linked to flight #{fid} — 2024-06-01 EBNM → EBAW." in page
 
         # Again: the unmatched one still waits for a decision.
         client.post(f"/aircraft/{ac_id}/gps-import/confirm-all")
@@ -945,3 +954,40 @@ class TestReviewAnalysedOnce:
         with client.session_transaction() as sess:
             (seg,) = _session_segments(sess)
         assert seg["matched_has_existing_track"] is True  # refreshed
+
+
+def test_confirmed_outcomes(app):
+    """What each confirmed segment became: linked to its matched flight, a
+    taxi part of it, or a new flight; skipped ones and gone flights left out."""
+    from aircraft.routes import _confirmed_outcomes
+
+    _uid, _tid, ac_id = _make_user_and_aircraft(app)
+    with app.app_context():
+        flights = [
+            Flight(
+                aircraft_id=ac_id,
+                date=date(2024, 6, 1),
+                departure_icao="EBAW",
+                arrival_icao=a,
+            )
+            for a in ("EBNM", "EBOS", "EBCI")
+        ]
+        db.session.add_all(flights)
+        db.session.flush()
+        a, b, c = (f.id for f in flights)
+        segs = [
+            {"matched_flight_id": a},
+            {"matched_flight_id": b, "matched_ground_role": "taxi"},
+            {"matched_flight_id": None},
+            {},
+            {},
+        ]
+        got = _confirmed_outcomes(
+            {"0": a, "1": b, "2": c, "3": "skip", "4": 0, "9": 999999}, segs
+        )
+        assert {k: v[0] for k, v in got.items()} == {
+            "0": "linked",
+            "1": "taxi",
+            "2": "new",
+        }
+        assert got["2"][1] == f"#{c} — 2024-06-01 EBAW → EBCI"

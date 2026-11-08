@@ -5,7 +5,7 @@ import decimal
 import io
 import os
 import tempfile
-from datetime import UTC, datetime, time
+from datetime import UTC, date, datetime, time
 from textwrap import dedent
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
@@ -107,6 +107,7 @@ def _seg_dict(idx=0, matched_flight_id=None):
         "matched_aircraft_reg": None,
         "matched_ambiguous": False,
         "matched_candidates": [],
+        "linked_pilot_entries": [],
     }
 
 
@@ -1424,3 +1425,96 @@ def test_many_files_stay_out_of_the_session_cookie(app, client):
         assert "files" not in sess["pilot_gps_import"]
         assert len(_session_state(sess, "pilot_gps_import")["files"]) == 40
     assert client.get("/pilot/gps-import/review").status_code == 200
+
+
+class TestPilotAcceptAll:
+    """ "Accept all best matches" on the pilot review: matched segments are
+    linked as they are — the crew and logged data of the flight kept —
+    ground-only ones without a match skipped, unmatched ones left."""
+
+    def _flight(self, app, ac_id, **kw):
+        with app.app_context():
+            f = Flight(
+                aircraft_id=ac_id,
+                date=date(2024, 6, 1),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                landings_day=3,
+                notes="As logged",
+                **kw,
+            )
+            db.session.add(f)
+            db.session.commit()
+            return f.id
+
+    def test_links_matches_keeps_the_crew_leaves_the_rest(self, client, app):
+        uid, _tid, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        # Flown as second crew: "PIC" selected must not move the user.
+        mine = self._flight(app, ac_id, second_crew_user_id=uid, pic_name="Instructor")
+        ground = dict(_seg_dict(1), is_ground_only=True)
+        unmatched = _seg_dict(2)
+        with client.session_transaction() as sess:
+            sess["pilot_gps_import"] = {
+                "user_id": uid,
+                "files": [],
+                "segments": [_seg_dict(0, matched_flight_id=mine), ground, unmatched],
+                "skipped_empty": 0,
+                "analysed": True,
+            }
+        page = client.get("/pilot/gps-import/review").data.decode()
+        assert page.count("Accept all best matches") == 2
+        assert page.count("/pilot/gps-import/confirm-all") == 2
+        resp = client.post("/pilot/gps-import/confirm-all", data={"pilot_role": "pic"})
+        assert resp.headers["Location"].endswith("/pilot/gps-import/review")
+        with app.app_context():
+            f = db.session.get(Flight, mine)
+            assert f.gps_track_id is not None
+            assert f.pic_user_id is None and f.second_crew_user_id == uid
+            assert (f.landings_day, f.notes) == (3, "As logged")
+        with client.session_transaction() as sess:
+            confirmed = sess["pilot_gps_import"]["confirmed_segments"]
+        assert (
+            confirmed["0"] == mine and confirmed["1"] == "skip" and "2" not in confirmed
+        )
+
+        # Again: what's done stays done, the unmatched one still waits.
+        resp = client.post("/pilot/gps-import/confirm-all", data={"pilot_role": "pic"})
+        assert resp.headers["Location"].endswith("/pilot/gps-import/review")
+
+        # Skipping the last one finishes the import.
+        resp = client.post(
+            "/pilot/gps-import/confirm-one", data={"seg_idx": "2", "skip": "1"}
+        )
+        assert "/pilot/logbook" in resp.headers["Location"]
+
+    def test_all_matched_finishes_and_free_seat_gets_the_role(self, client, app):
+        uid, _tid, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        free = self._flight(app, ac_id)  # in the aircraft log, nobody named
+        with client.session_transaction() as sess:
+            sess["pilot_gps_import"] = {
+                "user_id": uid,
+                "files": [],
+                "segments": [_seg_dict(0, matched_flight_id=free)],
+                "skipped_empty": 0,
+            }
+        resp = client.post(
+            "/pilot/gps-import/confirm-all", data={"pilot_role": "bogus"}
+        )
+        assert "/pilot/logbook" in resp.headers["Location"]
+        with app.app_context():
+            assert db.session.get(Flight, free).pic_user_id == uid
+
+    def test_session_expired(self, client, app):
+        uid, _tid, _ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        resp = client.post("/pilot/gps-import/confirm-all")
+        assert "/pilot/gps-import" in resp.headers["Location"]
+        assert "review" not in resp.headers["Location"]
+
+
+def test_int_or_none():
+    from pilots.routes import _int_or_none
+
+    assert (_int_or_none("12"), _int_or_none(""), _int_or_none("x")) == (12, None, None)

@@ -1916,6 +1916,31 @@ def _logged_pic(fe: Flight) -> str | None:
     return fe.pic_name or None
 
 
+def _confirmed_outcomes(
+    confirmed: dict[str, Any], segments: list[dict[str, Any]]
+) -> dict[str, tuple[str, str]]:
+    """For the review page, what each confirmed segment became, by segment
+    index: ("linked" | "taxi" | "new", "#id — date dep → arr") — the flight
+    it was linked to (as a taxi part), or the flight it created."""
+    outcomes: dict[str, tuple[str, str]] = {}
+    for idx, value in (confirmed or {}).items():
+        if not isinstance(value, int) or isinstance(value, bool) or not value:
+            continue  # skipped, or nothing created
+        fe = db.session.get(Flight, value)
+        if fe is None:
+            continue
+        seg = segments[int(idx)] if idx.isdigit() and int(idx) < len(segments) else {}
+        if seg.get("matched_flight_id") == value:
+            kind = "taxi" if seg.get("matched_ground_role") == "taxi" else "linked"
+        else:
+            kind = "new"
+        outcomes[idx] = (
+            kind,
+            f"#{fe.id} — {fe.date} {fe.departure_icao or ''} → {fe.arrival_icao or ''}",
+        )
+    return outcomes
+
+
 def _default_pilot_role(segments: list[dict[str, Any]], other_aircraft: bool) -> str:
     """The review page's preselected role: PIC when a segment would create a
     new flight or the user already flies a matched one as PIC, dual when
@@ -2558,6 +2583,9 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
         other_ac_make_model=state.get("other_ac_make_model", ""),
         other_ac_reg=state.get("other_ac_reg", ""),
         confirmed_segments=state.get("confirmed_segments", {}),
+        confirmed_outcomes=_confirmed_outcomes(
+            state.get("confirmed_segments", {}), full_segs
+        ),
         default_role=_default_pilot_role(
             full_segs, bool(state.get("other_aircraft", False))
         ),

@@ -255,6 +255,7 @@ class TestPilotGpsImport:
         assert seg["matched_near_date"] is True
         assert [c["id"] for c in seg["matched_candidates"]] == [typo_id]
         assert "possibly a date typo" in page
+        assert page.count('data-scroll-anchor="seg-card-0"') == 2
         # Reloaded without being analysed again: the same choice offered.
         import pilots.routes as pilot_routes
 

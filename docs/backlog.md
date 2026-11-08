@@ -355,6 +355,31 @@ that airfield (`services.gps_link.ground_run_target`, `link_track(taxi=True)`).
 The pilot GPS import (any aircraft) still skips them; it could use the same
 two helpers on the pilot's flights of that day.
 
+## GPS import: one import instead of the aircraft and pilot ones
+
+The aircraft GPS import (`aircraft/routes.py`, `gps_import_*`) and the pilot
+one (`pilots/routes.py`, `pilot_gps_import_*`) share the parser, segment
+detection, track linking (`services.gps_link`), file archive and state
+helpers, but are two route sets and two review templates — fixes keep
+having to be made twice (session-cookie overflow, crew overwritten on
+confirm, "Accept all best matches", analysing the upload once). Make it one
+import with a context — "for aircraft X" or "for my logbook" — whose
+differences become options:
+
+| | Aircraft context | Logbook context |
+|---|---|---|
+| Matches against | that aircraft's flights | the user's flights, any aircraft |
+| Unmatched segment becomes | an aircraft-log flight (+ the user's entry by role) | the user's entry (other or managed aircraft) |
+| Ground runs (taxi parts, nearby flights) | yes | not yet ("ground runs in the pilot GPS import" above) |
+| Undo import | per batch | — |
+| Files archived in | the aircraft's folder | the user's folder |
+| Access | aircraft owner/pilot roles | pilot access |
+
+The aircraft import's "other aircraft" mode is the logbook context done a
+second time, and goes. Steps: one review template, then one confirm path,
+then one upload page with the context chosen (current URLs kept as entry
+points); check against a real import (Garmin + camera tracks) at each step.
+
 ## GPS files: follow-ups to removing them from flights
 
 A GPS file can be taken off a flight from the flight's page (its part of the
@@ -371,6 +396,12 @@ track comes off, the file goes to the trash for 7 days, restorable from
   show the whole track. Cut the file's track at the landing in between and
   give each flight its own half — and removing it from one flight then only
   takes that half.
+- **Undo one segment on the GPS import review page:** confirming links the
+  track at once; picking the wrong candidate means removing the file from
+  that flight (Remove file) and importing it again. A per-segment "undo"
+  could take that part off the flight (services.gps_removal.remove_part,
+  parts recording their batch — the pilot import would have to record one
+  too) and offer the segment's choices again.
 - **Deleting a flight** (logbook delete, deleting an aircraft) still leaves
   its GPS track row and original files behind: send them to the trash the
   same way, like "Undo import" now does.
