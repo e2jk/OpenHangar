@@ -7247,7 +7247,7 @@ msgstr "Vol"
 
 #: app/templates/config/data_checks.html:40
 msgid "Check"
-msgstr "Vérification"
+msgstr "Contrôle"
 
 #: app/templates/config/data_checks.html:42
 msgid "GPS"
