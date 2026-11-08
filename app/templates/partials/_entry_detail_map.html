@@ -42,7 +42,7 @@
             data-confirm="{{ ngettext('Remove this GPS file from the flight? Its part of the track is removed, and the file is kept for one day in the removed GPS files, where you can restore it.', 'Remove this GPS file from the flight? Its part of the track is removed, and the file is kept for %(n)s days in the removed GPS files, where you can restore it.', gps_trash_days, n=gps_trash_days) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="part_key" value="{{ part.key }}">
-        <input type="hidden" name="next" value="{{ request.path }}">
+        {% if request.endpoint == 'pilots.view_entry' %}<input type="hidden" name="back" value="pilot">{% endif %}
         <button type="submit" class="btn btn-ac-ghost btn-sm text-danger py-0">
           <i class="bi bi-trash me-1"></i>{{ _('Remove file') }}
         </button>

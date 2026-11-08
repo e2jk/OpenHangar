@@ -431,9 +431,9 @@ class TestFlightPageAndRoutes:
         assert b"changed meanwhile" in resp.data
         resp = client.post(
             f"/flights/{fid}/gps-part/2/remove",
-            data={"part_key": key, "next": f"/aircraft/{ac_id}/flights/{fid}"},
+            data={"part_key": key},
         )
-        assert resp.headers["Location"].endswith(f"/aircraft/{ac_id}/flights/{fid}")
+        assert resp.headers["Location"].endswith(f"/aircraft/OO-GPS/flights/{fid}")
         with app.app_context():
             assert db.session.get(Flight, fid).gps_track.source_files == [TAXI, A]
             removal_id = GpsFileRemoval.query.one().id
@@ -508,19 +508,34 @@ class TestFlightPageAndRoutes:
         _login(client, admin_id)
         assert "b.csv" in client.get("/flights/removed-gps-files").data.decode()
 
-    def test_pilot_page_and_unsafe_next(self, client, app):
+    def test_back_to_the_page_it_came_from(self, client, app):
         uid, _tid, _ac_id, fid = _world(app, pilot=True)
         _login(client, uid)
         page = client.get(f"/pilot/logbook/{fid}/view").data.decode()
         assert f"/flights/{fid}/gps-part/0/remove" in page
+        assert 'name="back" value="pilot"' in page
+        with app.app_context():
+            keys = [
+                p["key"] for p in listed_parts(db.session.get(Flight, fid).gps_track)
+            ]
+        # From the pilot logbook: back there, though the aircraft page exists.
+        resp = client.post(
+            f"/flights/{fid}/gps-part/2/remove",
+            data={"part_key": keys[2], "back": "pilot"},
+        )
+        assert resp.headers["Location"].endswith(f"/pilot/logbook/{fid}/view")
+        # Anything else: the aircraft's flight page.
+        resp = client.post(
+            f"/flights/{fid}/gps-part/1/remove",
+            data={"part_key": keys[1], "back": "//evil.example/"},
+        )
+        assert resp.headers["Location"].endswith(f"/aircraft/OO-GPS/flights/{fid}")
         with app.app_context():
             f = db.session.get(Flight, fid)
-            key = listed_parts(f.gps_track)[0]["key"]
             f.aircraft_id = None  # flown on an aircraft not managed here
             db.session.commit()
         resp = client.post(
-            f"/flights/{fid}/gps-part/0/remove",
-            data={"part_key": key, "next": "//evil.example/"},
+            f"/flights/{fid}/gps-part/0/remove", data={"part_key": keys[0]}
         )
         assert resp.headers["Location"].endswith(f"/pilot/logbook/{fid}/view")
 
@@ -552,7 +567,5 @@ class TestFlightPageAndRoutes:
     def test_flight_form_can_edit_check_applies(self, client, app, monkeypatch):
         uid, _tid, _ac, fid = _world(app)
         _login(client, uid)
-        import flights.routes as flight_routes
-
-        monkeypatch.setattr(flight_routes, "can_edit_shared", lambda *_a: False)
+        monkeypatch.setattr("flights.routes.can_edit_shared", lambda *_a: False)
         assert client.post(f"/flights/{fid}/gps-part/0/remove").status_code == 403

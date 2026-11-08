@@ -1,30 +1,4 @@
-# Removing GPS files from flights, SkyDemon exports
-
-**Maps**
-- Maps show OpenStreetMap again under the OpenAIP airspace layer and the tracks, toned down (greyer, softer) so the airspace and the track stand out — in dark mode too. CARTO's base maps, used until now, began requiring an API key: every map showed "API key required" tiles. Flight track images are re-drawn with the new base map.
-
-- Maps of all the flights of an aircraft or a pilot (and their animation and GIF) use a light version of each track, stored with it — the shape at map scale, not every recorded point: those pages are about 5 times smaller (1.6 MB → 0.35 MB for 87 tracks).
-- The browser animation draws on a canvas and lasts about half a minute however many tracks there are (shorter steps from a few dozen tracks on).
-- The tracks GIF is several times faster (87 tracks: 107 s → 24 s the first time, under 4 s after; high quality: 265 s → 50 s, then 9 s — it used to exceed the server's 2-minute limit). Map tiles are fetched in parallel and kept on disk between requests (left out of backups), each one decoded once, and frames whose view doesn't change build on the previous one.
-- Track images fill the whole frame with map: the default one used to leave plain bands around a track that doesn't fill it.
-
-**GPS import**
-- Importing GPS logs onto flights already in the logbook no longer puts you on them as PIC (or dual) over the pilot logged there — e.g. the previous owner's flights: your role is only added where that seat is free. The review page shows who's logged as PIC, and preselects "Not flying" when none of the matched flights are yours. Their logged landings are kept too.
-- A GPS file linked to the wrong flight can be taken off it: the flight's page lists its GPS files with their times, and **Remove file** takes that file's part off the track and map. The file is kept for 7 days in the new **Removed GPS files** page (linked from the flight and the configuration page), where it can be restored with its part of the track; then it's deleted. Removing a file never changes the logged times.
-- **Undo import** only removes what that import added: a flight whose track also had a part from an earlier import keeps it (it used to lose its whole track), and the GPS data and files it removes go to the removed GPS files too instead of staying behind unused.
-- SkyDemon's GPX and KML exports import as they come — its `.gpx.bin` files no longer need renaming: a file's GPX or KML content is recognised whatever its extension. (SkyDemon's own `.flightlog.bin` can't be read; the import says so and suggests exporting GPX or KML.)
-- KML tracks get the same treatment as GPX files without speed: speed worked out over a few seconds and bad fixes left out — a SkyDemon KML used to show a dozen landings and a split flight.
-- A recording that starts during the takeoff roll (as SkyDemon's often do) or stops right after the landing roll now names the airfield: it only counts as recorded from the air when it also starts high above the field.
+# Safer return page after removing a GPS file
 
 **Maintenance**
-- Release notes list only what's new since the previous release (patch or minor): no more PRs of the previous release, nor everything since the start of the minor version.
-- A release without a title line in its summary is named after its only PR, "Dependency updates" when that's all it has, or its most significant PR "(+N more)" (a hand-written title, then a feature, then a fix…) — the nightly releases included.
-- A release that includes a security fix (a dependency update for a vulnerability) says so in its name: `[SECURITY]` at the end.
-- All past releases were renamed and their change lists rewritten the same way (each lists only what's new; the early ones, which had no list, now list their commits).
-- CI rides out brief outages of GitHub's downloads (actionlint, the fuzzing badge): retried instead of failing the job — one such outage had failed a ship PR's required checks.
-- The site's versions.json, read by every instance's update check, is built from the published releases: a failed download of the current copy no longer risks republishing it as just the latest version, and versions earlier runs missed are listed again.
-- Recognising a GPS file by its content no longer uses a regular expression that crafted input could make very slow (CodeQL alerts #619–621).
-- Distinct French and Dutch wordings where two different English texts shared one translation (Weblate checks): the Data checks page's "Check" column and "Dismiss" button (Dutch "Terzijde leggen", as "Afwijzen" is "Reject"), and the dashboard's "Past month".
-- `scripts/weblate_check_report.py` works again: Weblate now blocks scripts from its translate pages (a proof-of-work bot challenge), so the script finds which check failed through Weblate's search API instead.
-- A `ship-later` PR is named after its own commits, not the release's title line (which named every PR of the release alike).
-- The Weblate translation scan uses weblate-checks-action v1.1.0, which names each finding's check again (Weblate's bot challenge had turned them all into "unknown check").
+- After removing a GPS file from a flight, the page to go back to (the pilot logbook entry or the aircraft's flight page) is decided by the server instead of taken from a URL sent with the form — CodeQL alerts #635 and #636 (open redirect). A test imports its module one way only (#637).
