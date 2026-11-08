@@ -1142,6 +1142,7 @@ def create_app() -> Flask:
     def index() -> ResponseReturnValue:
         from models import TenantUser, User
         from services.track_overview import (  # pyright: ignore[reportMissingImports]
+            in_flight_order,
             overview_geojson,
         )
 
@@ -1334,7 +1335,7 @@ def create_app() -> Flask:
                     else _url_for_dash("pilots.view_entry", entry_id=e.id),
                     "geojson": overview_geojson(e.gps_track),
                 }
-                for e in track_entries
+                for e in in_flight_order(track_entries)
             ]
             from models import AppSetting as _AppSetting
 

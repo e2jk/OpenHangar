@@ -645,8 +645,13 @@ def _flights_total_hours(aircraft_id: int) -> float:
 _FLIGHTS_VIEW_SESSION_KEY = "aircraft_flights_view"
 
 
-def _remember_flights_view(aircraft_id: int, page: int, per_page: str) -> None:
-    view: dict[str, Any] = {}
+def _remember_flights_view(
+    aircraft_id: int,
+    page: int,
+    per_page: str,
+    filters: dict[str, str] | None = None,
+) -> None:
+    view: dict[str, Any] = dict(filters or {})
     if page > 1:
         view["page"] = page
     if per_page != str(_FLIGHTS_DEFAULT_PER_PAGE):
@@ -685,8 +690,17 @@ def list_flights(aircraft_id: int) -> ResponseReturnValue:
         )
     )
 
-    _remember_flights_view(ac.id, page, "all" if show_all else str(per_page))
-    query = Flight.query.filter_by(aircraft_id=ac.id).order_by(
+    from flights.list_filters import (  # pyright: ignore[reportMissingImports]
+        AIRCRAFT_CREW_CHOICES,
+        apply_filters,
+        parse_filters,
+    )
+
+    filters = parse_filters(request.args, AIRCRAFT_CREW_CHOICES)
+    _remember_flights_view(ac.id, page, "all" if show_all else str(per_page), filters)
+    query = apply_filters(
+        Flight.query.filter_by(aircraft_id=ac.id), filters, int(session["user_id"])
+    ).order_by(
         Flight.date.desc(),
         Flight.departure_time.desc().nullslast(),
         Flight.id.desc(),
@@ -711,6 +725,7 @@ def list_flights(aircraft_id: int) -> ResponseReturnValue:
         total_count=total_count,
         total_hours=_flights_total_hours(ac.id),
         milestone_hours=milestone_hours,
+        filters=filters,
     )
 
 

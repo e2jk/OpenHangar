@@ -32,6 +32,8 @@ from models import (  # pyright: ignore[reportMissingImports]
     db,
 )
 
+from tests.test_gps_import import _session_segments  # pyright: ignore[reportMissingImports]
+
 _GPS_DAY = date(2024, 6, 1)
 
 
@@ -249,7 +251,7 @@ class TestPilotGpsImport:
         )
         page = client.get("/pilot/gps-import/review").data.decode()
         with client.session_transaction() as sess:
-            (seg,) = sess["pilot_gps_import"]["segments"]
+            (seg,) = _session_segments(sess, "pilot_gps_import")
         assert seg["matched_near_date"] is True
         assert [c["id"] for c in seg["matched_candidates"]] == [typo_id]
         assert "possibly a date typo" in page
