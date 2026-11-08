@@ -375,6 +375,24 @@ track comes off, the file goes to the trash for 7 days, restorable from
   its GPS track row and original files behind: send them to the trash the
   same way, like "Undo import" now does.
 
+## Tracks GIF: keep it instead of rendering it on each download
+
+The tracks GIF of an aircraft or a pilot is rendered from scratch on every
+download (87 tracks: ~4 s with the tile cache warm, ~25 s cold). Mostly a
+new flight only adds a frame at the end, so the GIF could be stored and
+extended — but a few things tie every frame to the whole set today, to
+change first:
+- the "k / N" counter on each frame (N changes with every new flight);
+- frames ordered by date: a backfilled older flight goes in the middle,
+  and its frames' views (the zoom-out) shift for everything after it;
+- the final "All N tracks" frame, and the one palette taken from it
+  (`quantize` on the last frame) shared by all frames.
+With those changed (no total on frames, per-frame palettes, the final
+frame kept apart), append frames for flights newer than the last one, and
+rebuild only when a track is removed, changed or inserted earlier. Store
+it like the single-flight renders (`GpsTrack.cached_png`), per aircraft /
+pilot, orientation and quality.
+
 ---
 
 ## Email notifications: airworthiness digest (`AIRWORTHINESS_DIGEST`)

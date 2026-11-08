@@ -72,6 +72,9 @@ from services.gps_archive import (  # pyright: ignore[reportMissingImports]
     resolve_pilot_archive_name,
     sources_for_window,
 )
+from services.track_overview import (  # pyright: ignore[reportMissingImports]
+    overview_geojson,
+)
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
     IMPORT_TMP_DIRNAME,
 )
@@ -786,7 +789,7 @@ def pilot_tracks() -> ResponseReturnValue:
             )
             if e.aircraft_id
             else _url_for("pilots.view_entry", entry_id=e.id),
-            "geojson": e.gps_track.geojson if e.gps_track else None,
+            "geojson": overview_geojson(e.gps_track),
         }
         for e in entries
     ]
@@ -816,7 +819,7 @@ def pilot_tracks_gif() -> ResponseReturnValue:
                 "date": str(e.date),
                 "dep": e.departure_icao or "",
                 "arr": e.arrival_icao or "",
-                "geojson": e.gps_track.geojson if e.gps_track else None,
+                "geojson": overview_geojson(e.gps_track),
             }
             for e in entries
         ]

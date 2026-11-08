@@ -187,19 +187,20 @@ def run_backup() -> BackupRecord:
 def _add_uploads_to_zip(zf: zipfile.ZipFile, upload_folder: str) -> None:
     """Add every file in *upload_folder* into the ZIP under ``uploads/``, preserving subdirs.
 
-    Except the working folders of imports in progress (upload_layout's
-    TEMP_DIRNAMES): a temporary copy of an uploaded spreadsheet or GPS log,
-    left there by an import abandoned halfway, isn't data worth restoring.
+    Except the working folders of imports in progress and the map tile cache
+    (upload_layout's NOT_BACKED_UP_DIRNAMES): a temporary copy of an uploaded
+    spreadsheet or GPS log, left there by an import abandoned halfway, or a
+    downloaded map tile, isn't data worth restoring.
     """
     from services.upload_layout import (  # pyright: ignore[reportMissingImports]
-        TEMP_DIRNAMES,
+        NOT_BACKED_UP_DIRNAMES,
     )
 
     if not os.path.isdir(upload_folder):
         return
     for dirpath, dirs, filenames in os.walk(upload_folder):
         if dirpath == upload_folder:
-            dirs[:] = [d for d in dirs if d not in TEMP_DIRNAMES]
+            dirs[:] = [d for d in dirs if d not in NOT_BACKED_UP_DIRNAMES]
         for fname in filenames:
             full_path = os.path.join(dirpath, fname)
             rel_path = os.path.relpath(full_path, upload_folder)

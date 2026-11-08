@@ -4,7 +4,7 @@ from datetime import UTC, date, datetime
 from typing import Any, ClassVar
 
 from flask_sqlalchemy import SQLAlchemy  # pyright: ignore[reportMissingImports]
-from sqlalchemy import text
+from sqlalchemy import event, text
 
 db = SQLAlchemy()
 
@@ -811,6 +811,21 @@ class GpsTrack(db.Model):
     # cleared whenever the track changes (services.gps_link._store).
     cached_png = db.Column(db.LargeBinary, nullable=True)
     cached_gif = db.Column(db.LargeBinary, nullable=True)
+    # The track's simplified line for maps of many flights
+    # (services.track_overview), kept up to date by the listener below.
+    overview = db.Column(db.JSON, nullable=True)
+
+
+@event.listens_for(GpsTrack, "before_insert")
+@event.listens_for(GpsTrack, "before_update")
+def _refresh_track_overview(_mapper: Any, _connection: Any, track: GpsTrack) -> None:
+    from services.track_overview import (  # pyright: ignore[reportMissingImports]
+        overview_coords,
+    )
+    from sqlalchemy import inspect as _inspect  # pyright: ignore[reportMissingImports]
+
+    if _inspect(track).attrs.geojson.history.has_changes() or track.overview is None:
+        track.overview = overview_coords(track.geojson)
 
 
 class GpsFileRemoval(db.Model):
