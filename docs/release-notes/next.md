@@ -15,3 +15,4 @@
 - Recognising a GPS file by its content no longer uses a regular expression that crafted input could make very slow (CodeQL alerts #619–621).
 - Distinct French and Dutch wordings where two different English texts shared one translation (Weblate checks): the Data checks page's "Check" column and "Dismiss" button, and the dashboard's "Past month".
 - `scripts/weblate_check_report.py` works again: Weblate now blocks scripts from its translate pages (a proof-of-work bot challenge), so the script finds which check failed through Weblate's search API instead.
+- A `ship-later` PR is named after its own commits, not the release's title line (which named every PR of the release alike).

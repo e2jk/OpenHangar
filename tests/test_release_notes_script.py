@@ -61,8 +61,8 @@ def test_cli(monkeypatch, capsys, tmp_path):
 
 
 def test_later_title_and_body(monkeypatch, capsys):
-    assert release_notes.title(SUBJECTS, later=True).startswith(
-        "[later] 1 feature, 2 fixes"
+    assert release_notes.title(SUBJECTS, later=True) == (
+        "[later] feat(fuel): add a fuel log (+7 more)"
     )
     assert release_notes.title(["fix: one"], later=True) == "[later] fix: one"
     assert release_notes.title([], later=True) == "ship-later"
@@ -71,7 +71,7 @@ def test_later_title_and_body(monkeypatch, capsys):
     assert "without a release of its own" in body
     monkeypatch.setattr(sys, "stdin", io.StringIO("feat: a\nfix: b\n"))
     release_notes.main(["title", "--later"])
-    assert capsys.readouterr().out == "[later] 1 feature, 1 fix\n"
+    assert capsys.readouterr().out == "[later] feat: a (+1 more)\n"
     monkeypatch.setattr(sys, "stdin", io.StringIO("feat: a\n"))
     release_notes.main(["body", "--later"])
     assert "ship-later" in capsys.readouterr().out
@@ -86,8 +86,10 @@ def test_title_from_the_summary_title_line():
     assert release_notes.title(SUBJECTS, summary=SUMMARY) == (
         "GPS import: several files per flight, ground runs"
     )
+    # A ship-later PR is one batch: named after its own commits, not the
+    # release's title line.
     assert release_notes.title(SUBJECTS, later=True, summary=SUMMARY) == (
-        "[later] GPS import: several files per flight, ground runs"
+        "[later] feat(fuel): add a fuel log (+7 more)"
     )
     # No title line, or an empty one: the counts, as before.
     assert release_notes.title(SUBJECTS, summary="**GPS**\n- x").startswith("Release: ")

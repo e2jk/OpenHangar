@@ -16,7 +16,9 @@ start the next one — the published GitHub release keeps the text.
 
 `next.md` may start with a title line, `# <title>`, naming what the release
 is mostly about — e.g. `# GPS import: several files per flight, ground runs`.
-It becomes the ship PR's title and the GitHub release's name
+It becomes the ship PR's title (a `--later` PR is named after its own
+commits instead — it's only one batch of the release) and the GitHub release's
+name
 (`v3.36.0 — <title>`) instead of the generic count ("Release: 6 features, 5
 fixes, …"), which moves into the PR's description, and isn't repeated in the
 summary. Keep it to **72 characters** or fewer — longer titles are cut off in
