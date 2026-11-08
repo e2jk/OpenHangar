@@ -6,6 +6,6 @@
 - A recording that starts during the takeoff roll (as SkyDemon's often do) or stops right after the landing roll now names the airfield: it only counts as recorded from the air when it also starts high above the field.
 
 **Maintenance**
-- Release notes no longer list again the PRs of the previous release (each one repeated the PR that made the release before it).
+- Release notes list only what's new since the previous release (patch or minor): no more PRs of the previous release, nor everything since the start of the minor version.
 - A release without a title line in its summary is named after its only PR, or "Dependency updates" when that's all it has — the nightly releases included.
 - A release that includes a security fix says so in its name: `[SECURITY]` at the end.

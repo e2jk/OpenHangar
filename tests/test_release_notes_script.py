@@ -210,3 +210,16 @@ def test_drop_released_cli(tmp_path):
     urls.write_text("https://github.com/o/r/pull/434\n\n")
     release_notes.main(["drop-released", str(notes), str(urls)])
     assert "pull/434" not in notes.read_text()
+
+
+def test_previous_release(monkeypatch, capsys):
+    tags = ["v3.37.0", "v3.36.0", "v3.9.9", "v3.36.1", "draft", "v3.38.0", ""]
+    assert release_notes.previous_release("3.37.0", tags) == "v3.36.1"
+    assert release_notes.previous_release("3.36.0", tags) == "v3.9.9"  # numeric order
+    assert release_notes.previous_release("0.1.0", tags) == ""
+    monkeypatch.setattr(sys, "stdin", io.StringIO("\n".join(tags)))
+    release_notes.main(["previous-release", "3.38.0"])
+    assert capsys.readouterr().out == "v3.37.0\n"
+    monkeypatch.setattr(sys, "stdin", io.StringIO("v9.0.0\n"))
+    release_notes.main(["previous-release", "1.0.0"])
+    assert capsys.readouterr().out == ""

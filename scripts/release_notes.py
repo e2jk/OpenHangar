@@ -26,6 +26,7 @@ GitHub release after it the same way (`release_notes.py heading FILE`).
     release_notes.py heading FILE [--check]  # the title line, or nothing
     release_notes.py summary FILE            # the summary without it
     release_notes.py release-name VERSION NOTES [--heading TITLE]
+    release_notes.py previous-release VERSION < tags  # the release before
     release_notes.py drop-released NOTES URLS
         # remove from GitHub-generated release NOTES (in place) the PRs
         # whose URLs are listed in the URLS file — see drop_released
@@ -187,6 +188,21 @@ def release_name(version: str, heading: str | None, notes: str) -> str:
     return f"v{version} — {name}" if name else f"v{version}"
 
 
+_VERSION_TAG_RE = re.compile(r"^v(\d+)\.(\d+)\.(\d+)$")
+
+
+def previous_release(version: str, tags: list[str]) -> str:
+    """The highest "vX.Y.Z" tag in *tags* below *version* ("" if none)."""
+    me = tuple(int(n) for n in version.split("."))
+    older = [
+        (key, tag)
+        for tag in (t.strip() for t in tags)
+        if (m := _VERSION_TAG_RE.match(tag))
+        and (key := tuple(int(n) for n in m.groups())) < me
+    ]
+    return max(older)[1] if older else ""
+
+
 def drop_released(notes: str, released_urls: set[str]) -> str:
     """GitHub-generated release notes without the PRs in *released_urls*
     (and their sub-bullets), dropping the "What's Changed" heading if no PR
@@ -229,6 +245,7 @@ def main(argv: list[str] | None = None) -> int:
             "summary",
             "drop-released",
             "release-name",
+            "previous-release",
         ],
     )
     parser.add_argument("file", nargs="?", help="heading/summary: the summary file")
@@ -240,6 +257,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--later", action="store_true")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args(argv)
+    if args.mode == "previous-release":  # file = version, tags on stdin
+        found = previous_release(args.file, sys.stdin.read().splitlines())
+        if found:
+            print(found)
+        return 0
     if args.mode == "release-name":  # file = version, urls = the notes
         with open(args.urls, encoding="utf-8") as fh:
             print(release_name(args.file, args.heading, fh.read()))
