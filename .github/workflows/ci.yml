@@ -1448,25 +1448,19 @@ jobs:
           # a release from ~30 versions back on a run here, producing a
           # changelog spanning dozens of unrelated PRs.
           #
-          # Deliberately compare against the closest vX.Y.0 (minor) tag
-          # below ours, not the immediately preceding patch — patches land
-          # frequently (several an hour at times) and each one's own diff
-          # against the last patch is too sparse to be a useful changelog,
-          # so instead every release's notes accumulate everything since
-          # the current minor series started (v1.25.0...v1.26.0 covers
-          # v1.25.0 through v1.25.7 in one changelog; v1.25.5's own notes
-          # would cover v1.25.0...v1.25.5, the same way). This repo's
-          # history is a strictly linear, rebase-only sequence of tags (no
-          # merge commits), so this is an unambiguous, race-free
-          # computation — unlike GitHub's own detection, which seems
-          # sensitive to timing when releases are created in quick
-          # succession.
+          # Compare against the previous *release* — patch or minor: small
+          # changes now go out together in the nightly release
+          # (daily-release.yml), so each release lists what's new since the
+          # one before it, nothing already listed there. (Releases used to
+          # accumulate everything since their minor version began, from when
+          # patches landed several an hour.) The previous published release,
+          # not the previous tag: a version tag is reserved before
+          # publishing, and a run that failed after that leaves a tag
+          # without a release, whose PRs would otherwise be left out.
           git fetch --tags --force
-          PREVIOUS_TAG=$(git tag --list 'v[0-9]*' --sort=-version:refname | awk -v me="v${VERSION}" '
-            found { print }
-            $0 == me { found=1 }
-          ' | grep -E '^v[0-9]+\.[0-9]+\.0$' | head -1)
-          echo "Previous minor tag: ${PREVIOUS_TAG:-<none — first release>}"
+          PREVIOUS_TAG=$(gh release list --repo "${REPO}" --limit 100 --json tagName --jq '.[].tagName' \
+            | python3 scripts/release_notes.py previous-release "${VERSION}")
+          echo "Previous release: ${PREVIOUS_TAG:-<none — first release>}"
           NOTES_ARGS=(--field tag_name="v${VERSION}" --field target_commitish="${GIT_SHA}")
           if [ -n "$PREVIOUS_TAG" ] && [ "$PREVIOUS_TAG" != "v${VERSION}" ]; then
             NOTES_ARGS+=(--field previous_tag_name="${PREVIOUS_TAG}")
