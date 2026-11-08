@@ -95,7 +95,18 @@
     {% endif %}
 
     {# ── Match banner ── #}
-    {% if has_match and not is_ambiguous %}
+    {% if already_confirmed and not is_skipped %}
+    {% set _outcome = confirmed_outcomes.get(i|string) %}
+    <div class="alert alert-success py-2 mt-2 mb-2 small">
+      <i class="bi bi-check-circle me-1"></i>
+      {% if not _outcome %}{{ _('Confirmed.') }}
+      {% elif _outcome[0] == 'taxi' %}{{ _('Added to flight %(info)s as a taxi part.', info=_outcome[1]) }}
+      {% elif _outcome[0] == 'linked' %}{{ _('Linked to flight %(info)s.', info=_outcome[1]) }}
+      {% else %}{{ _('Imported as a new flight: %(info)s.', info=_outcome[1]) }}{% endif %}
+    </div>
+    {% elif already_confirmed %}
+    {# Skipped: nothing to show — the badge says so. #}
+    {% elif has_match and not is_ambiguous %}
     <div class="alert alert-info py-2 mt-2 mb-2 small">
       <i class="bi bi-link-45deg me-1"></i>
       {{ _('Matches existing flight %(info)s (%(reg)s) — GPS track will be linked.',
