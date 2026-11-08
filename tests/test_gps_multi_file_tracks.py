@@ -803,8 +803,9 @@ class TestGroundRuns:
         uid, _tid, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
         self._logged(app, ac_id, "EBAW", "EBNM", time(7, 0), time(8, 0))
-        (seg,), _page = self._upload_ground_run(client, ac_id)
+        (seg,), page = self._upload_ground_run(client, ac_id)
         assert len(seg["ground_candidates"]) == 1
+        assert "None of these — import it as a ground entry of its own" in page
         client.post(
             f"/aircraft/{ac_id}/gps-import/confirm-one",
             data={"seg_idx": "0", "pilot_role": "none", "ground_flight_id": ""},
