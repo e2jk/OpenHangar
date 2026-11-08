@@ -259,7 +259,10 @@ class TestAcceptAllBestMatches:
         assert segs[0]["matched_flight_id"] == fid
         assert segs[0]["matched_ambiguous"] is False
         page = client.get(f"/aircraft/{ac_id}/gps-import/review").data.decode()
-        assert "Accept all best matches" in page
+        # Above and below the segments, the same both times.
+        assert page.count("Accept all best matches") == 2
+        assert page.count("/gps-import/confirm-all") == 2
+        assert page.count("One segment matches a flight already in the log.") == 2
 
         # Add a ground-only segment and one without any match.
         with open(spill, encoding="utf-8") as fh:

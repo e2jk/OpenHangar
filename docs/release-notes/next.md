@@ -1,6 +1,7 @@
 # Safer return page after removing a GPS file
 
 **GPS import**
+- **Accept all best matches** is also at the bottom of the review page, after the segments, so there's no need to scroll back up after checking them.
 - A Garmin data log fragment without its header (a minute or two the logger writes while powering up or down, never a flight) is reported as such instead of "Unsupported GPS file format".
 
 **Maintenance**
