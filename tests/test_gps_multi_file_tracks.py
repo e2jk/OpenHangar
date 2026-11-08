@@ -259,6 +259,10 @@ class TestAcceptAllBestMatches:
         assert segs[0]["matched_flight_id"] == fid
         assert segs[0]["matched_ambiguous"] is False
         page = client.get(f"/aircraft/{ac_id}/gps-import/review").data.decode()
+        # Confirming or skipping a segment comes back to its card after the
+        # reload (ui.js data-scroll-anchor), not to the top of the page.
+        assert 'id="seg-card-0"' in page
+        assert page.count('data-scroll-anchor="seg-card-0"') == 2
         # Above and below the segments, the same both times.
         assert page.count("Accept all best matches") == 2
         assert page.count("/gps-import/confirm-all") == 2
