@@ -160,7 +160,7 @@ def test_fallback_title():
         "* GPX tracks from cameras by @e2jk in https://github.com/o/r/pull/434\n", ""
     )
     assert release_notes.fallback_title(one) == "refactor: address CodeQL notes"
-    assert release_notes.fallback_title(NOTES) == ""  # several: no guess
+    assert release_notes.fallback_title(NOTES) == "GPX tracks from cameras (+1 more)"
     deps = (
         "* chore(deps): update a by @renovate[bot] in u/1\n"
         "* fix(deps): update b [SECURITY] by @renovate[bot] in u/2\n"
@@ -182,7 +182,10 @@ def test_release_name(capsys, tmp_path):
     assert release_notes.release_name("3.38.0", "SkyDemon exports", NOTES) == (
         "v3.38.0 — SkyDemon exports"
     )
-    assert release_notes.release_name("3.38.0", None, NOTES) == "v3.38.0"
+    assert release_notes.release_name("3.38.0", None, NOTES) == (
+        "v3.38.0 — GPX tracks from cameras (+1 more)"
+    )
+    assert release_notes.release_name("3.38.0", None, "no PRs") == "v3.38.0"
     security = (
         "* chore(deps): update security patches [security] [security]"
         " by @renovate[bot] in u/9\n"
@@ -195,7 +198,7 @@ def test_release_name(capsys, tmp_path):
     ) == ("v3.39.0 — SkyDemon exports [SECURITY]")
     # Several PRs, no title line, one of them a security fix.
     assert release_notes.release_name("3.39.0", "", NOTES + security) == (
-        "v3.39.0 — Security update [SECURITY]"
+        "v3.39.0 — GPX tracks from cameras (+2 more) [SECURITY]"
     )
     notes = tmp_path / "notes.md"
     notes.write_text(security)
@@ -223,3 +226,19 @@ def test_previous_release(monkeypatch, capsys):
     monkeypatch.setattr(sys, "stdin", io.StringIO("v9.0.0\n"))
     release_notes.main(["previous-release", "1.0.0"])
     assert capsys.readouterr().out == ""
+
+
+def test_name_from_titles():
+    name = release_notes.name_from_titles
+    assert name([]) == ""
+    assert name(["[later] fix: one thing"]) == "fix: one thing"
+    assert name(["chore(deps): a", "fix(deps): b"]) == "Dependency updates"
+    # The first meaningful title, skipping dependency updates and generic
+    # "Release: …" counts.
+    assert (
+        name(["chore(deps): a", "Release: 2 fixes", "feat: real"])
+        == "feat: real (+2 more)"
+    )
+    assert name(["Release: 2 fixes", "chore(deps): a"]) == "Release: 2 fixes (+1 more)"
+    long = name(["feat: " + "word " * 30, "fix: x"])
+    assert len(long) <= release_notes.MAX_TITLE and long.endswith("… (+1 more)")

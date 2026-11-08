@@ -25,7 +25,8 @@ one. Write the title for the whole release, not just the latest batch, and
 adjust it as the release grows — including for `--later` pushes, whose release
 (the daily one) is named the same way. Without a title line, the PR's title is
 the count; the release is named after its only PR if it has one, "Dependency
-updates" if that's all it has, and otherwise just its version. A release that
+updates" if that's all it has, and otherwise after its first meaningful PR
+with "(+N more)". A release that
 includes a security fix (a Renovate vulnerability-alert PR, "[security]" in its
 title) gets `[SECURITY]` at the end of its name.
 

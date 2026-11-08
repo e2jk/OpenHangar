@@ -156,24 +156,35 @@ def _pr_titles(notes: str) -> list[str]:
 _SECURITY_RE = re.compile(r"\s*\[security\]", re.IGNORECASE)
 
 
-def fallback_title(notes: str) -> str:
-    """A name for a release whose summary has no title line, from the PRs
-    its release notes list: the PR's own title when there's only one
-    (without the "[later]" prefix), or "Dependency updates" when they all
-    are; "" otherwise — the release is then just its version."""
-    titles = _pr_titles(notes)
+def name_from_titles(titles: list[str]) -> str:
+    """A release name from the titles of what it contains (PRs, or commits):
+    the only one's own title (without the "[later]" prefix); "Dependency
+    updates" when they all are; otherwise the first meaningful one — not a
+    dependency update, nor a generic "Release: …" count — with
+    "(+N more)"; "" when there's nothing."""
+    titles = [t[len(_LATER) + 1 :] if t.startswith(_LATER + " ") else t for t in titles]
     if not titles:
         return ""
     if all(_DEPS_RE.match(t) for t in titles):
         return "Dependency updates"
     if len(titles) == 1:
-        title = titles[0]
-        if title.startswith(_LATER + " "):
-            title = title[len(_LATER) + 1 :]
-        if len(title) > MAX_TITLE:
-            title = title[: MAX_TITLE - 1].rstrip() + "…"
-        return title
-    return ""
+        main, more = titles[0], ""
+    else:
+        candidates = [t for t in titles if not _DEPS_RE.match(t)]
+        main = next(
+            (t for t in candidates if not t.startswith("Release: ")), candidates[0]
+        )
+        more = f" (+{len(titles) - 1} more)"
+    room = MAX_TITLE - len(more)
+    if len(main) > room:
+        main = main[: room - 1].rstrip() + "…"
+    return main + more
+
+
+def fallback_title(notes: str) -> str:
+    """A name for a release whose summary has no title line, from the PRs
+    its release notes list (name_from_titles)."""
+    return name_from_titles(_pr_titles(notes))
 
 
 def release_name(version: str, heading: str | None, notes: str) -> str:
