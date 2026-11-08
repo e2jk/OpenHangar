@@ -137,7 +137,18 @@
     <div class="seg-map" id="map_{{ i }}"></div>
     {% endif %}
 
-    {% if seg.matched_ground_role == 'taxi' %}
+    {% if already_confirmed and not is_skipped %}
+    {% set _outcome = confirmed_outcomes.get(i|string) %}
+    <div class="alert alert-success py-2 mt-2 mb-2 small">
+      <i class="bi bi-check-circle me-1"></i>
+      {% if not _outcome %}{{ _('Confirmed.') }}
+      {% elif _outcome[0] == 'taxi' %}{{ _('Added to flight %(info)s as a taxi part.', info=_outcome[1]) }}
+      {% elif _outcome[0] == 'linked' %}{{ _('Linked to flight %(info)s.', info=_outcome[1]) }}
+      {% else %}{{ _('Imported as a new flight: %(info)s.', info=_outcome[1]) }}{% endif %}
+    </div>
+    {% elif already_confirmed %}
+    {# Skipped: nothing to show — the badge says so. #}
+    {% elif seg.matched_ground_role == 'taxi' %}
     <div class="alert alert-info py-2 mt-2 mb-2 small">
       <i class="bi bi-signpost-split me-1"></i>
       {% if seg.matched_ground_when == 'before' %}

@@ -2617,6 +2617,7 @@ def pilot_gps_import_review() -> ResponseReturnValue:
         return redirect(url_for("pilots.pilot_gps_import_upload"))
 
     from aircraft.routes import (
+        _confirmed_outcomes,
         _gps_tmp_dir,
         _load_segment_geojson,
         _segment_for_session,
@@ -2681,6 +2682,9 @@ def pilot_gps_import_review() -> ResponseReturnValue:
         segments=full_segs,
         skipped_empty=state.get("skipped_empty", 0),
         confirmed_segments=state.get("confirmed_segments", {}),
+        confirmed_outcomes=_confirmed_outcomes(
+            state.get("confirmed_segments", {}), full_segs
+        ),
         tenant_aircraft=tenant_aircraft,
         openaip_key=openaip_key,
     )
@@ -2957,6 +2961,9 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
     db.session.commit()
 
     confirmed[str(seg_idx)] = entry.id if entry else 0
+    # The flight actually chosen (a picked candidate, or none: a new one),
+    # for the review page to say what the segment became.
+    seg["matched_flight_id"] = matched_flight_id
     state["confirmed_segments"] = confirmed
     _gps_state_save(state, "pilot_gps_import")
 

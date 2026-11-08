@@ -371,6 +371,12 @@ track comes off, the file goes to the trash for 7 days, restorable from
   show the whole track. Cut the file's track at the landing in between and
   give each flight its own half — and removing it from one flight then only
   takes that half.
+- **Undo one segment on the GPS import review page:** confirming links the
+  track at once; picking the wrong candidate means removing the file from
+  that flight (Remove file) and importing it again. A per-segment "undo"
+  could take that part off the flight (services.gps_removal.remove_part,
+  parts recording their batch — the pilot import would have to record one
+  too) and offer the segment's choices again.
 - **Deleting a flight** (logbook delete, deleting an aircraft) still leaves
   its GPS track row and original files behind: send them to the trash the
   same way, like "Undo import" now does.
