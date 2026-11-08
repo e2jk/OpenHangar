@@ -73,6 +73,7 @@ from services.gps_archive import (  # pyright: ignore[reportMissingImports]
     sources_for_window,
 )
 from services.track_overview import (  # pyright: ignore[reportMissingImports]
+    in_flight_order,
     overview_geojson,
 )
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
@@ -791,7 +792,7 @@ def pilot_tracks() -> ResponseReturnValue:
             else _url_for("pilots.view_entry", entry_id=e.id),
             "geojson": overview_geojson(e.gps_track),
         }
-        for e in entries
+        for e in in_flight_order(entries)
     ]
 
     return render_template(
@@ -821,7 +822,7 @@ def pilot_tracks_gif() -> ResponseReturnValue:
                 "arr": e.arrival_icao or "",
                 "geojson": overview_geojson(e.gps_track),
             }
-            for e in entries
+            for e in in_flight_order(entries)
         ]
     )
     portrait = request.args.get("orientation") == "portrait"

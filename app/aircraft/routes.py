@@ -79,6 +79,7 @@ from services.gps_removal import (  # pyright: ignore[reportMissingImports]
     remove_whole_track,
 )
 from services.track_overview import (  # pyright: ignore[reportMissingImports]
+    in_flight_order,
     overview_geojson,
 )
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
@@ -433,7 +434,7 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
             ),
             "geojson": overview_geojson(e.gps_track),
         }
-        for e in _gps_entries
+        for e in in_flight_order(_gps_entries)
     ]
     _tile = db.session.get(AppSetting, "openaip_api_key")
     openaip_key = _tile.value if _tile and _tile.value else None
@@ -3275,7 +3276,7 @@ def flight_tracks(aircraft_id: int) -> ResponseReturnValue:
             ),
             "geojson": overview_geojson(e.gps_track),
         }
-        for e in entries_with_tracks
+        for e in in_flight_order(entries_with_tracks)
     ]
 
     tile_setting = db.session.get(AppSetting, "openaip_api_key")
@@ -3312,7 +3313,7 @@ def flight_tracks_gif(aircraft_id: int) -> ResponseReturnValue:
                 "arr": e.arrival_icao or "",
                 "geojson": overview_geojson(e.gps_track),
             }
-            for e in entries
+            for e in in_flight_order(entries)
         ]
     )
     tile_s = db.session.get(AppSetting, "openaip_api_key")

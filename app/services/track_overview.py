@@ -14,6 +14,8 @@ to keep in sync.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
+from datetime import UTC, datetime, time
 from typing import Any
 
 MAX_POINTS = 300
@@ -101,3 +103,21 @@ def overview_geojson(track: Any) -> dict[str, Any] | None:
         "geometry": {"type": "LineString", "coordinates": coords},
         "properties": {},
     }
+
+
+def _start(flight: Any) -> datetime:
+    """When a flight started, in UTC: its GPS block-off time when it has
+    one, else its logged departure (or take-off) time — logged times are
+    UTC too — else the start of its day."""
+    if flight.block_off_utc is not None:
+        start: datetime = flight.block_off_utc
+        return start.astimezone(UTC).replace(tzinfo=None) if start.tzinfo else start
+    logged = flight.departure_time or flight.takeoff_time or time.min
+    return datetime.combine(flight.date, logged)
+
+
+def in_flight_order(flights: Iterable[Any]) -> list[Any]:
+    """*flights* in the order they were flown: by date, then by start time
+    (_start), then by id — so a same-day outbound flight is drawn before
+    its return on the maps and animations of many flights."""
+    return sorted(flights, key=lambda f: (f.date, _start(f), f.id))

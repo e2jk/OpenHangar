@@ -154,3 +154,36 @@ class TestTileCache:
             _add_uploads_to_zip(zf, str(up))
         with zipfile.ZipFile(out) as zf:
             assert zf.namelist() == ["uploads/t/doc.pdf"]
+
+
+def test_flights_in_the_order_they_were_flown():
+    """Same-day flights by start time — GPS block-off, else logged departure
+    (both UTC) — so an outbound flight is drawn before its return."""
+    from datetime import UTC, date, datetime, time
+    from types import SimpleNamespace
+
+    from services.track_overview import (  # pyright: ignore[reportMissingImports]
+        in_flight_order,
+    )
+
+    def f(fid, day, block_off=None, dep=None, takeoff=None):
+        return SimpleNamespace(
+            id=fid,
+            date=day,
+            block_off_utc=block_off,
+            departure_time=dep,
+            takeoff_time=takeoff,
+        )
+
+    d = date(2026, 6, 26)
+    back = f(1, d, block_off=datetime(2026, 6, 26, 13, 34, tzinfo=UTC))
+    out = f(2, d, block_off=datetime(2026, 6, 26, 6, 10))  # naive, as SQLite
+    logged_only = f(3, d, dep=time(9, 0))
+    takeoff_only = f(4, d, takeoff=time(15, 0))
+    no_time = f(5, d)
+    # A track whose GPS date is the day after its logged date (a logbook
+    # date typo) stays on its logged day, after that day's flights.
+    typo = f(6, date(2026, 6, 25), block_off=datetime(2026, 6, 26, 14, 8, tzinfo=UTC))
+    earlier_day = f(7, date(2026, 6, 25), dep=time(16, 0))
+    flights = [back, typo, takeoff_only, no_time, logged_only, out, earlier_day]
+    assert [x.id for x in in_flight_order(flights)] == [7, 6, 5, 2, 3, 1, 4]
