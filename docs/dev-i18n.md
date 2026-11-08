@@ -166,11 +166,14 @@ the rate limit from 100 anonymous requests/day to 5000/hour — create one at
 Pass it via `WEBLATE_API_TOKEN` (env var), `--token`, or a
 `WEBLATE_API_TOKEN=...` line in a `.env` file at the repo root — `.env` is
 already gitignored, and the script reads it itself (no extra setup needed).
-The check name/description is
-scraped from each string's public translate page (the REST API only exposes a
-`has_failing_check` boolean, not which check fired) — if Weblate changes that
-page's markup, the string still gets reported, just without a parsed check
-name.
+The REST API only says *that* a string fails a check, not which one, so the
+script finds that out by searching the flagged strings again per check name
+(`check:reused`, `check:same`, …, the list `CHECKS` in the script), most likely
+first, stopping once every flagged string is accounted for — a couple of
+requests per language. (It used to read each string's public translate page
+instead, but Weblate now guards those with a proof-of-work bot challenge: HTTP
+403 `pow_required`.) A check missing from `CHECKS` shows as "Unknown check" —
+add its name there.
 
 The resulting report is plain Markdown — read it directly, or hand it to an AI
 coding assistant to triage: which "Reused translation" flags indicate two

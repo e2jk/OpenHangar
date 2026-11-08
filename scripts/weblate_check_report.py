@@ -12,8 +12,11 @@ string's own public translate page ("Things to check" panel). So this script:
      English strings both translated the same way elsewhere), so it needs the same
      scrape. Adding a new supported language picks it up automatically, no script
      changes needed.
-  2. Fetches each flagged string's public translate page and scrapes the "Things to
-     check" panel for the check name(s) and description.
+  2. Finds which check(s) fired on each, by searching the same strings again per
+     Weblate check name ("check:reused", "check:same", …) — most likely first,
+     stopping once every flagged string is accounted for. (It used to read each
+     string's public translate page, but Weblate now guards those pages with a
+     proof-of-work bot challenge — HTTP 403 "pow_required" — the API isn't.)
   3. Writes a Markdown report grouped by language, then by check type, with the
      source/target strings, source locations, and a direct Weblate edit link —
      suitable for reviewing by hand or handing to an AI coding assistant. Strings
@@ -38,9 +41,8 @@ Usage:
     python3 scripts/weblate_check_report.py --verbose
     python3 scripts/weblate_check_report.py --recheck
 
-Progress is logged to stderr as it runs (one HTTP request per flagged string,
-so this can take a while) — pass --verbose for each string's source text and
-detected check name(s) as well.
+Progress is logged to stderr as it runs — pass --verbose for each string's
+source text and detected check name(s) as well.
 
 --recheck: once you've started fixing strings locally (editing .po files, merging
 duplicate source strings, etc.) but haven't pushed/synced with Weblate yet, a normal
@@ -52,16 +54,14 @@ string, whether it's still present with the same content in the *current* local
 extract) — dropping anything that's already been fixed locally. Requires having run
 the script at least once without --recheck first.
 
-Caveat: check names/descriptions are scraped from Weblate's HTML, not a stable API
-contract. If Weblate changes that page's markup, scraping degrades gracefully (the
-string is still reported, just without a parsed check name) rather than failing.
+Caveat: a check name missing from CHECKS below can't be found this way — such a
+string is still reported, under "Unknown check" (add the name to CHECKS).
 """
 
 from __future__ import annotations
 
 import argparse
 import ast
-import html
 import json
 import os
 import re
@@ -85,17 +85,121 @@ Unit = dict[str, Any]
 Check = tuple[str, str]
 Entry = tuple[Unit, list[Check]]
 
-# Matches one "Things to check" list-group-item block on a string's translate page:
-#   <div class="list-group-item check check-item ">
-#     <h5> ...icon svg... Reused translation <span class="check-number">...</span> </h5>
-#     <p class="list-group-item-text check-description">Other source string: "Record"</p>
-CHECK_ITEM_RE = re.compile(
-    r'<div class="list-group-item check check-item\s*">'
-    r"\s*<h5>(?P<name>.*?)</h5>"
-    r'(?:\s*<p class="list-group-item-text check-description">(?P<desc>.*?)</p>)?',
-    re.DOTALL,
-)
-TAG_RE = re.compile(r"<[^>]+>")
+# Weblate's quality checks, as named in its search syntax ("check:<name>"), most
+# likely first for a gettext project — with a readable label and explanation for
+# the report. A string can fail several; the search stops once each flagged string
+# has at least one.
+CHECKS: list[tuple[str, str, str]] = [
+    (
+        "reused",
+        "Reused translation",
+        "Different source strings are translated the same way.",
+    ),
+    (
+        "multiple_failures",
+        "Multiple failing checks",
+        "The translations in several languages fail checks.",
+    ),
+    (
+        "inconsistent",
+        "Inconsistent",
+        "The same string is translated differently elsewhere in the project.",
+    ),
+    ("same", "Unchanged translation", "The translation is the same as the source."),
+    ("same_plurals", "Same plurals", "Some plural forms are translated the same way."),
+    (
+        "python_format",
+        "Python format",
+        "The %-format placeholders don't match the source.",
+    ),
+    (
+        "python_brace_format",
+        "Python brace format",
+        "The {} placeholders don't match the source.",
+    ),
+    (
+        "placeholders",
+        "Placeholders",
+        "Some placeholders are missing from the translation.",
+    ),
+    (
+        "end_stop",
+        "Mismatched full stop",
+        "The source and translation don't both end with a full stop.",
+    ),
+    (
+        "end_colon",
+        "Mismatched colon",
+        "The source and translation don't both end with a colon.",
+    ),
+    (
+        "end_question",
+        "Mismatched question mark",
+        "The source and translation don't both end with a question mark.",
+    ),
+    (
+        "end_exclamation",
+        "Mismatched exclamation mark",
+        "The source and translation don't both end with an exclamation mark.",
+    ),
+    (
+        "end_ellipsis",
+        "Mismatched ellipsis",
+        "The source and translation don't both end with an ellipsis.",
+    ),
+    (
+        "end_space",
+        "Trailing space",
+        "The source and translation don't both end with a space.",
+    ),
+    (
+        "begin_space",
+        "Starting spaces",
+        "The source and translation don't both start with the same spaces.",
+    ),
+    ("double_space", "Double space", "The translation contains a double space."),
+    (
+        "punctuation_spacing",
+        "Punctuation spacing",
+        "Missing non-breaking space before double punctuation (French).",
+    ),
+    (
+        "escaped_newline",
+        "Mismatched \\n",
+        "The number of \\n doesn't match the source.",
+    ),
+    (
+        "end_newline",
+        "Mismatched trailing newline",
+        "The source and translation don't both end with a newline.",
+    ),
+    (
+        "begin_newline",
+        "Mismatched starting newline",
+        "The source and translation don't both start with a newline.",
+    ),
+    ("duplicate", "Consecutive duplicated words", "The translation repeats a word."),
+    ("xml-tags", "XML markup", "The XML/HTML tags don't match the source."),
+    (
+        "xml-invalid",
+        "Invalid XML markup",
+        "The translation's XML/HTML markup is invalid.",
+    ),
+    ("safe-html", "Unsafe HTML", "The translation contains unsafe HTML."),
+    ("url", "URL", "The translation should be a valid URL."),
+    ("plurals", "Missing plurals", "Some plural forms aren't translated."),
+    (
+        "translated",
+        "Has been translated",
+        "This string was translated before (now untranslated or fuzzy).",
+    ),
+    ("max_length", "Maximum length", "The translation is longer than allowed."),
+    (
+        "zero-width-space",
+        "Zero-width space",
+        "The translation contains a zero-width space.",
+    ),
+]
 
 
 def _dotenv_token(var: str = "WEBLATE_API_TOKEN") -> str | None:
@@ -179,10 +283,15 @@ def _fetch(url: str, token: str | None) -> bytes:
                     f"Weblate API rate limit hit (HTTP 429).{reset_note}{token_hint}"
                 ) from exc
             if exc.code in (401, 403):
-                raise WeblateApiError(
-                    f"Weblate rejected the request (HTTP {exc.code}) — "
+                reason = (
                     "WEBLATE_API_TOKEN is set but invalid or lacks access. Check it "
                     "at https://hosted.weblate.org/accounts/profile/#api."
+                    if token
+                    else "no WEBLATE_API_TOKEN is set — the request needs one, or "
+                    "Weblate refused it (e.g. a bot challenge on a web page)."
+                )
+                raise WeblateApiError(
+                    f"Weblate rejected the request (HTTP {exc.code}) — {reason}"
                 ) from exc
             if exc.code == 503 and attempt == 0:
                 time.sleep(5)
@@ -208,26 +317,44 @@ def fetch_flagged_units(
     return units
 
 
-def scrape_checks(translate_url: str, token: str | None) -> list[Check]:
-    try:
-        page = _fetch(translate_url, token).decode("utf-8", errors="replace")
-    except (urllib.error.HTTPError, urllib.error.URLError):
-        return []
-    checks = []
-    for m in CHECK_ITEM_RE.finditer(page):
-        # Replace tags with a space, not "" — some check blocks (e.g. the
-        # multi-language rollup shown on English source strings) rely on a tag
-        # boundary for the visual gap, and stripping to "" would glue adjacent
-        # words together ("Reused translationFrench, Dutch").
-        name = _clean_html_text(m.group("name"))
-        desc = _clean_html_text(m.group("desc") or "")
-        checks.append((name, desc))
-    return checks
-
-
-def _clean_html_text(fragment: str) -> str:
-    text = html.unescape(TAG_RE.sub(" ", fragment))
-    return re.sub(r"\s+", " ", text).strip()
+def fetch_unit_checks(
+    project: str,
+    component: str,
+    language: str,
+    units: list[Unit],
+    token: str | None,
+    delay: float = 0.0,
+) -> dict[int, list[Check]]:
+    """{unit id: [(check label, explanation)]} for the flagged *units*, by
+    searching Weblate per check name (CHECKS) — the strings' translate pages
+    can't be read any more (proof-of-work bot challenge)."""
+    found: dict[int, list[Check]] = {u["id"]: [] for u in units}
+    remaining = set(found)
+    for name, label, explanation in CHECKS:
+        if not remaining:
+            break
+        query = (
+            f"project:{project} AND component:{component} AND language:{language} "
+            f"AND check:{name} AND state:>=translated"
+        )
+        url: str | None = (
+            WEBLATE_URL
+            + "/api/units/?"
+            + urllib.parse.urlencode({"q": query, "page_size": 100})
+        )
+        while url:
+            data = json.loads(_fetch(url, token))
+            for unit in data["results"]:
+                if unit["id"] in found:
+                    found[unit["id"]].append((label, explanation))
+                    remaining.discard(unit["id"])
+            url = data["next"]
+        time.sleep(delay)
+    for unit_id in remaining:
+        found[unit_id].append(
+            ("Unknown check", "Not among CHECKS in this script — see Weblate.")
+        )
+    return found
 
 
 def _log(msg: str) -> None:
@@ -383,17 +510,17 @@ def build_report(
         suffix = " — fetching check details..." if units else ""
         _log(f"[{lang}] {len(units)} flagged string{plural}{suffix}")
 
+        unit_checks = fetch_unit_checks(project, component, lang, units, token, delay)
         entries: list[Entry] = []
         progress = _Progress(lang, len(units), verbose=verbose)
         for i, unit in enumerate(units, start=1):
-            checks = scrape_checks(unit["web_url"], token)
+            checks = unit_checks[unit["id"]]
             detail = ""
             if verbose:
                 source_preview = " / ".join(unit["source"])[:60]
                 check_names = ", ".join(name for name, _desc in checks) or "?"
                 detail = f"{i}/{len(units)}: {source_preview!r} — {check_names}"
             progress.update(i, detail)
-            time.sleep(delay)
             entries.append((unit, checks))
         progress.finish()
         total += len(entries)
@@ -571,7 +698,7 @@ def main() -> int:
         "--delay",
         type=float,
         default=0.3,
-        help="Seconds to sleep between per-string page fetches (default: %(default)s)",
+        help="Seconds to sleep between Weblate check searches (default: %(default)s)",
     )
     parser.add_argument(
         "--verbose",
