@@ -1420,14 +1420,15 @@ def gps_file_context(fe: Flight) -> dict[str, Any]:
     }
 
 
-def _local_next(default: str) -> str:
-    target = request.form.get("next") or ""
-    if target.startswith("/") and not target.startswith(("//", "/\\")):
-        return target
-    return default
-
-
-def _flight_page(fe: Flight) -> str:
+def _flight_page(fe: Flight, back: str | None = None) -> str:
+    """The flight's page to return to: the pilot logbook entry when asked
+    for (*back* "pilot") and the user is on the flight, else the aircraft's
+    flight page when they can see it, else the logbook entry. Built here,
+    never taken from the request — no open redirect."""
+    uid = session.get("user_id")
+    on_flight = uid is not None and uid in (fe.pic_user_id, fe.second_crew_user_id)
+    if back == "pilot" and on_flight:
+        return url_for("pilots.view_entry", entry_id=fe.id)
     if fe.aircraft_id is not None and user_can_access_aircraft(fe.aircraft_id):
         return url_for(
             "aircraft.flight_detail", aircraft_id=fe.aircraft_id, flight_id=fe.id
@@ -1452,7 +1453,7 @@ def remove_gps_part(flight_id: int, index: int) -> ResponseReturnValue:
     fe = _get_flight_or_404(flight_id)
     if not gps_editable(fe):
         abort(403)
-    back = _local_next(_flight_page(fe))
+    back = _flight_page(fe, request.form.get("back"))
     parts = listed_parts(fe.gps_track)
     if not 0 <= index < len(parts) or parts[index]["key"] != request.form.get(
         "part_key"
