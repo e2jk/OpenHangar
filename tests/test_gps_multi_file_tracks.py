@@ -902,3 +902,45 @@ class TestSeveralGroundRunsOneEntry:
         with app.app_context():
             parts = db.session.get(Flight, fid).gps_track.geojson["properties"]["parts"]
             assert [p["taxi"] for p in parts] == [True, False]
+
+
+class TestReviewAnalysedOnce:
+    """The review page analyses an upload once: a skip or a confirmation
+    reloads it without parsing the files or matching every segment again —
+    only what a confirmation changes is refreshed."""
+
+    def test_reload_reuses_the_analysis(self, client, app, monkeypatch):
+        import aircraft.routes as aircraft_routes
+
+        uid, _tid, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        (seg0,), _ = _upload(client, ac_id)
+        fid = _logged_flight(app, ac_id, seg0)
+        segs, _spill = _upload(client, ac_id)
+        assert segs[0]["matched_flight_id"] == fid
+        assert segs[0]["matched_has_existing_track"] is False
+
+        calls = []
+        real_parse = aircraft_routes.parse_gps_file
+        monkeypatch.setattr(
+            aircraft_routes,
+            "parse_gps_file",
+            lambda *a, **k: calls.append(a) or real_parse(*a, **k),
+        )
+        # The flight gets a track meanwhile (another import, say).
+        with app.app_context():
+            f = db.session.get(Flight, fid)
+            link_track(
+                f,
+                geojson=_line((1, 1), (2, 2)),
+                files=["other.csv"],
+                block_off=_t(14),
+                block_on=_t(15),
+            )
+            db.session.commit()
+        page = client.get(f"/aircraft/{ac_id}/gps-import/review").data.decode()
+        assert calls == []  # not parsed again
+        assert "seg-map" in page  # the track still shown
+        with client.session_transaction() as sess:
+            (seg,) = _session_segments(sess)
+        assert seg["matched_has_existing_track"] is True  # refreshed

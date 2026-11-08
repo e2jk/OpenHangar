@@ -14,6 +14,7 @@ import json
 from datetime import UTC, date, datetime, time, timedelta
 from textwrap import dedent
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from aircraft.gps_import import (  # pyright: ignore[reportMissingImports]
@@ -252,6 +253,14 @@ class TestPilotGpsImport:
         assert seg["matched_near_date"] is True
         assert [c["id"] for c in seg["matched_candidates"]] == [typo_id]
         assert "possibly a date typo" in page
+        # Reloaded without being analysed again: the same choice offered.
+        import pilots.routes as pilot_routes
+
+        with patch.object(
+            pilot_routes, "_analyse_pilot_gps_review", side_effect=AssertionError
+        ):
+            again = client.get("/pilot/gps-import/review").data.decode()
+        assert "possibly a date typo" in again
         client.post(
             "/pilot/gps-import/confirm-one",
             data={
