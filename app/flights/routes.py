@@ -354,6 +354,7 @@ def _parse_gps_upload(file: Any) -> dict[str, Any] | None:
         "flight_time_h": round(seg.flight_time_raw_h, 1),
         "geojson": seg.track_geojson,
         "landing_count": seg.landing_count,
+        "ground_only": seg.is_ground_only,
     }
 
 
@@ -1611,6 +1612,7 @@ def parse_gps_api() -> ResponseReturnValue:
                 else "",
                 "landing_count": gps_data["landing_count"] or 0,
                 "device_id": gps_data["device_id"] or "",
+                "ground_only": bool(gps_data["ground_only"]),
             },
             "duplicate": _check_gps_duplicate(gps_data),
             "suggested_aircraft_id": _suggested_aircraft_for_device(
@@ -1939,37 +1941,24 @@ def _handle_log_flight_post(
     create_pilot = pilot_role in ("pic", "dual")
 
     gps_track: GpsTrack | None = None
-    if gps_geojson or gps_filename:
-        existing_track_id: int | None = fe.gps_track_id if fe else None
-        if existing_track_id:
-            gps_track = db.session.get(GpsTrack, existing_track_id)
-            if gps_track:
-                if gps_geojson:
-                    gps_track.geojson = gps_geojson
-                if gps_filename:
-                    gps_track.source_filename = gps_filename
-                if gps_source_file:
-                    # A new upload replaces the track (geojson above).
-                    gps_track.source_files = [gps_source_file]
-                if gps_block_off:
-                    gps_track.block_off_utc = gps_block_off
-                if gps_block_on:
-                    gps_track.block_on_utc = gps_block_on
-        if gps_track and gps_device_id:
-            gps_track.device_id = gps_device_id
-        if not gps_track:
-            gps_track = GpsTrack(
-                source_filename=gps_filename,
-                source_files=[gps_source_file] if gps_source_file else None,
-                device_id=gps_device_id,
-                block_off_utc=gps_block_off,
-                block_on_utc=gps_block_on,
-                departure_icao=dep,
-                arrival_icao=arr,
-                geojson=gps_geojson,
-            )
-            db.session.add(gps_track)
-            db.session.flush()
+    # A file uploaded on an existing flight is added to its track
+    # (services.gps_link.link_track, after the flight's own fields below):
+    # the flight's recorded data stays as entered — GPS data never replaces
+    # it. Without a new upload, the track the form echoes back is left alone.
+    add_to_existing = fe is not None and bool(gps_filename or gps_source_file)
+    if (gps_geojson or gps_filename) and fe is None:
+        gps_track = GpsTrack(
+            source_filename=gps_filename,
+            source_files=[gps_source_file] if gps_source_file else None,
+            device_id=gps_device_id,
+            block_off_utc=gps_block_off,
+            block_on_utc=gps_block_on,
+            departure_icao=dep,
+            arrival_icao=arr,
+            geojson=gps_geojson,
+        )
+        db.session.add(gps_track)
+        db.session.flush()
 
     # ── Unified flight row ─────────────────────────────────────────────────────
     # A Flight row now always exists, whether or not the aircraft is managed
@@ -2002,10 +1991,27 @@ def _handle_log_flight_post(
 
     if gps_track:
         fe.gps_track_id = gps_track.id
-    if gps_block_off:
-        fe.block_off_utc = gps_block_off
-    if gps_block_on:
-        fe.block_on_utc = gps_block_on
+        if gps_block_off:
+            fe.block_off_utc = gps_block_off
+        if gps_block_on:
+            fe.block_on_utc = gps_block_on
+    if add_to_existing and gps_geojson:
+        from services.gps_link import (  # pyright: ignore[reportMissingImports]
+            link_track as _add_to_track,
+        )
+
+        _add_to_track(
+            fe,
+            geojson=gps_geojson,
+            files=[gps_source_file] if gps_source_file else [],
+            block_off=gps_block_off,
+            block_on=gps_block_on,
+            source_filename=gps_filename,
+            device_id=gps_device_id,
+            departure_icao=dep,
+            arrival_icao=arr,
+            taxi=f.get("gps_ground_only") == "1",
+        )
 
     if ac:
         if _fe_is_new and flight_date is not None:

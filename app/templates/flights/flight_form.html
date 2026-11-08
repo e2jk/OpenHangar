@@ -218,6 +218,7 @@
           {% set _gps_pfx        = 'gps' %}
           {% set _gps_parse_url  = url_for('flights.parse_gps_api') %}
           {% set _gps_track      = flight.gps_track if flight else none %}
+          {% set _gps_existing   = flight is not none %}
           {% set _gps_f_filename  = gps_prefill.filename if gps_prefill else request.form.get('gps_filename', '') %}
           {% set _gps_f_block_off = gps_prefill.block_off_utc if gps_prefill else request.form.get('gps_block_off_utc', '') %}
           {% set _gps_f_block_on  = gps_prefill.block_on_utc if gps_prefill else request.form.get('gps_block_on_utc', '') %}

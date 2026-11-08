@@ -1140,7 +1140,7 @@ def edit_entry(entry_id: int) -> ResponseReturnValue:
         other_pilots = protect_other_pilots(entry, uid)
         apply_pilot_fields(entry, values)
         restore_other_pilots(entry, other_pilots)
-        _apply_gps_to_pilot_entry(entry)
+        _apply_gps_to_pilot_entry(entry, existing=True)
         db.session.commit()
         notify_shared_changes(entry, uid, shared_before)
         flash(_("Logbook entry updated."), "success")
@@ -1217,8 +1217,9 @@ def delete_entry(entry_id: int) -> ResponseReturnValue:
 # ── GPS track helper ──────────────────────────────────────────────────────────
 
 
-def _apply_gps_to_pilot_entry(entry: Flight) -> None:
-    """Create or update the GpsTrack linked to a pilot logbook entry from form data."""
+def _apply_gps_to_pilot_entry(entry: Flight, existing: bool = False) -> None:
+    """Create the GpsTrack of a new pilot logbook entry from form data, or
+    — *existing* entry — add a newly uploaded file to its track."""
     f = request.form
     gps_geojson_raw = f.get("gps_geojson", "").strip()
     gps_filename = f.get("gps_filename", "").strip() or None
@@ -1248,21 +1249,28 @@ def _apply_gps_to_pilot_entry(entry: Flight) -> None:
     dep = f.get("departure_place", "").strip().upper()[:4] or None
     arr = f.get("arrival_place", "").strip().upper()[:4] or None
 
-    if entry.gps_track_id:
-        gt = db.session.get(GpsTrack, entry.gps_track_id)
-        if gt:
-            if geojson is not None:
-                gt.geojson = geojson
-            if gps_filename:
-                gt.source_filename = gps_filename
-            if gps_source_file:
-                # A new upload replaces the track (see geojson above).
-                gt.source_files = [gps_source_file]
-            if block_off:
-                gt.block_off_utc = block_off
-            if block_on:
-                gt.block_on_utc = block_on
-            return
+    if entry.gps_track_id and not (gps_filename or gps_source_file):
+        return  # no new upload: the track the form echoes back stays as is
+    if existing:
+        # An existing entry: the file is added to its track (or becomes it),
+        # the entry's recorded data staying as entered (services.gps_link).
+        from services.gps_link import (  # pyright: ignore[reportMissingImports]
+            link_track,
+        )
+
+        if geojson is not None:
+            link_track(
+                entry,
+                geojson=geojson,
+                files=[gps_source_file] if gps_source_file else [],
+                block_off=block_off,
+                block_on=block_on,
+                source_filename=gps_filename,
+                departure_icao=dep,
+                arrival_icao=arr,
+                taxi=f.get("gps_ground_only") == "1",
+            )
+        return
 
     gt = GpsTrack(
         source_filename=gps_filename,

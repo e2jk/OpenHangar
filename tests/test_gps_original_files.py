@@ -352,6 +352,104 @@ class TestFlightFormUpload:
                 f"_pilots/{uid}/gps_logs/later.gpx"
             ]
 
+    def test_upload_on_an_existing_flight_is_added_never_replacing(
+        self, app, client, uploads
+    ):
+        """A file uploaded on a saved flight joins its GPS track, as a taxi
+        part when it's ground-only; the flight's recorded data stays."""
+        uid, _slug, ac_id = _world(app, "gof9@example.com")
+        _login(client, uid)
+        flight_part = '{"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[4.0, 51.0], [4.1, 51.1]]}, "properties": {}}'
+        client.post(
+            "/flights/new",
+            data=self._form(
+                ac_id,
+                gps_geojson=flight_part,
+                gps_block_off_utc="2024-06-01T10:00:00+00:00",
+                gps_block_on_utc="2024-06-01T11:00:00+00:00",
+                departure_time="10:05",
+                arrival_time="10:55",
+            ),
+        )
+        _put(uploads, f"_pilots/{uid}/gps_logs/taxi.gpx")
+        with app.app_context():
+            fe = Flight.query.filter_by(aircraft_id=ac_id).one()
+            fid, first_files = fe.id, list(fe.gps_track.source_files or [])
+
+        # Saved again without a new file: the echoed track is left alone.
+        client.post(
+            f"/flights/{fid}/edit",
+            data=self._form(
+                ac_id,
+                gps_filename="",
+                departure_time="10:05",
+                arrival_time="10:55",
+            ),
+        )
+        # A ground run later that day, uploaded on the flight.
+        client.post(
+            f"/flights/{fid}/edit",
+            data=self._form(
+                ac_id,
+                gps_filename="taxi.gpx",
+                gps_archive="taxi.gpx",
+                gps_ground_only="1",
+                gps_geojson='{"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[4.2, 51.2], [4.21, 51.21]]}, "properties": {}}',
+                gps_block_off_utc="2024-06-01T13:00:00+00:00",
+                gps_block_on_utc="2024-06-01T13:05:00+00:00",
+                departure_time="10:05",
+                arrival_time="10:55",
+            ),
+        )
+        with app.app_context():
+            fe = db.session.get(Flight, fid)
+            parts = fe.gps_track.geojson["properties"]["parts"]
+            assert [p["taxi"] for p in parts] == [False, True]
+            assert fe.gps_track.source_files == [
+                *first_files,
+                f"_pilots/{uid}/gps_logs/taxi.gpx",
+            ]
+            # The flight's own times and GPS block times are unchanged.
+            assert fe.departure_time.strftime("%H:%M") == "10:05"
+            assert fe.block_on_utc.replace(tzinfo=UTC) == datetime(
+                2024, 6, 1, 11, tzinfo=UTC
+            )
+
+    def test_upload_on_a_flight_without_a_track_starts_one(self, app, client, uploads):
+        uid, _slug, ac_id = _world(app, "gof10@example.com")
+        _login(client, uid)
+        client.post(
+            "/flights/new", data=self._form(ac_id, gps_filename="", gps_geojson="")
+        )
+        with app.app_context():
+            fe = Flight.query.filter_by(aircraft_id=ac_id).one()
+            assert fe.gps_track_id is None
+            fid = fe.id
+        client.post(f"/flights/{fid}/edit", data=self._form(ac_id))
+        with app.app_context():
+            assert db.session.get(Flight, fid).gps_track_id is not None
+
+    def test_the_form_knows_when_the_flight_exists(self, app, client, uploads):
+        uid, _slug, ac_id = _world(app, "gof11@example.com")
+        _login(client, uid)
+        assert (
+            'data-existing-flight="1"' not in client.get("/flights/new").data.decode()
+        )
+        client.post("/flights/new", data=self._form(ac_id))
+        with app.app_context():
+            fid = Flight.query.filter_by(aircraft_id=ac_id).one().id
+        page = client.get(f"/flights/{fid}/edit").data.decode()
+        assert 'data-existing-flight="1"' in page
+        assert "the flight&#39;s own data stays as entered" in page or (
+            "own data stays as entered" in page
+        )
+        resp = client.post(
+            "/flights/parse-gps",
+            data={"gps_file": (io.BytesIO(_gpx_bytes()), "flight.gpx")},
+            content_type="multipart/form-data",
+        )
+        assert resp.get_json()["data"]["ground_only"] is False
+
     def test_pilot_entry_form_links_too(self, app, client, uploads):
         uid, _slug, _ac_id = _world(app, "gof8@example.com")
         _login(client, uid)
@@ -377,7 +475,8 @@ class TestFlightFormUpload:
             assert fe.gps_track.source_files == [f"_pilots/{uid}/gps_logs/rental.gpx"]
             fid = fe.id
 
-        # Editing the entry with another kept file relinks its track.
+        # Uploading another file on the entry adds it to its track — here in
+        # place of the first, whose times were unknown (services.gps_link).
         _put(uploads, f"_pilots/{uid}/gps_logs/better.gpx")
         client.post(
             f"/pilot/logbook/{fid}/edit",
@@ -392,12 +491,67 @@ class TestFlightFormUpload:
                 "landings_day": "1",
                 "gps_filename": "better.gpx",
                 "gps_archive": "better.gpx",
+                "gps_geojson": '{"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[4, 51], [4.1, 51.1]]}, "properties": {}}',
             },
         )
         with app.app_context():
             assert db.session.get(Flight, fid).gps_track.source_files == [
                 f"_pilots/{uid}/gps_logs/better.gpx"
             ]
+
+
+def test_pilot_entry_edit_keeps_or_adds_to_its_track(app, client, uploads):
+    """Saving a pilot logbook entry without a new file leaves its track
+    alone; a ground-only file is added to it as a taxi part."""
+    uid, _slug, _ac_id = _world(app, "gof12@example.com")
+    _login(client, uid)
+    form = {
+        "date": "2024-06-01",
+        "aircraft_type": "C172",
+        "aircraft_registration": "OO-RNT",
+        "departure_place": "EBNM",
+        "arrival_place": "EBAW",
+        "single_pilot_se": "1.0",
+        "function_pic": "1.0",
+        "landings_day": "1",
+    }
+    line = '{"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[4, 51], [4.1, 51.1]]}, "properties": {}}'
+    _put(uploads, f"_pilots/{uid}/gps_logs/flight.gpx")
+    client.post(
+        "/pilot/logbook/new",
+        data={
+            **form,
+            "gps_filename": "flight.gpx",
+            "gps_archive": "flight.gpx",
+            "gps_geojson": line,
+            "gps_block_off_utc": "2024-06-01T10:00:00+00:00",
+            "gps_block_on_utc": "2024-06-01T11:00:00+00:00",
+        },
+    )
+    with app.app_context():
+        fe = Flight.query.filter_by(pic_user_id=uid).one()
+        fid, track_id = fe.id, fe.gps_track_id
+    client.post(f"/pilot/logbook/{fid}/edit", data={**form, "gps_geojson": line})
+    _put(uploads, f"_pilots/{uid}/gps_logs/taxi.gpx")
+    client.post(
+        f"/pilot/logbook/{fid}/edit",
+        data={
+            **form,
+            "gps_filename": "taxi.gpx",
+            "gps_archive": "taxi.gpx",
+            "gps_ground_only": "1",
+            "gps_geojson": line,
+            "gps_block_off_utc": "2024-06-01T13:00:00+00:00",
+            "gps_block_on_utc": "2024-06-01T13:05:00+00:00",
+        },
+    )
+    with app.app_context():
+        fe = db.session.get(Flight, fid)
+        assert fe.gps_track_id == track_id
+        assert [p["taxi"] for p in fe.gps_track.geojson["properties"]["parts"]] == [
+            False,
+            True,
+        ]
 
 
 # ── Downloads ─────────────────────────────────────────────────────────────────
