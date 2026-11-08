@@ -2690,93 +2690,96 @@ def pilot_gps_import_review() -> ResponseReturnValue:
     )
 
 
-@pilots_bp.route("/pilot/gps-import/confirm-one", methods=["POST"])
+@pilots_bp.route("/pilot/gps-import/confirm-all", methods=["POST"])
 @login_required
 @require_pilot_access
-def pilot_gps_import_confirm_one() -> ResponseReturnValue:
-
-    from aircraft.gps_import import segment_times
-    from aircraft.routes import _gps_cleanup, _load_segment_geojson
+def pilot_gps_import_confirm_all() -> ResponseReturnValue:
+    """Confirm every segment still on the pilot review page that has a
+    matching flight — the best candidate where several were offered — as
+    is, like the aircraft import's "Accept all best matches". Ground-only
+    segments without a match are skipped; segments without any match
+    (they'd become new flights) are left for a decision one by one."""
+    from aircraft.routes import _gps_cleanup
 
     uid = _current_user_id()
     state = _gps_state_load("pilot_gps_import")
-    if not state:
+    if not state or not state.get("segments"):
         flash(_("Session expired — please upload your GPS files again."), "warning")
         return redirect(url_for("pilots.pilot_gps_import_upload"))
-
-    segments_data: list[dict[str, Any]] = state.get("segments", [])
-    if not segments_data:
-        flash(_("No segments to import."), "warning")
-        return redirect(url_for("pilots.pilot_gps_import_upload"))
-
-    try:
-        seg_idx = int(request.form.get("seg_idx", ""))
-    except (ValueError, TypeError):
-        flash(_("Invalid segment index."), "danger")
-        return redirect(url_for("pilots.pilot_gps_import_review"))
-
-    if seg_idx < 0 or seg_idx >= len(segments_data):
-        flash(_("Invalid segment index."), "danger")
-        return redirect(url_for("pilots.pilot_gps_import_review"))
-
-    confirmed = state.get("confirmed_segments", {})
-    if str(seg_idx) in confirmed:
-        flash(_("This segment has already been confirmed."), "info")
-        return redirect(url_for("pilots.pilot_gps_import_review"))
-
     pilot_role = request.form.get("pilot_role", "pic")
     if pilot_role not in ("pic", "dual", "none"):
         pilot_role = "pic"
 
-    # ── Skip ─────────────────────────────────────────────────────────────────
-    if request.form.get("skip") == "1":
-        confirmed[str(seg_idx)] = "skip"
-        state["confirmed_segments"] = confirmed
-        _gps_state_save(state, "pilot_gps_import")
-        if len(confirmed) == len(segments_data):
-            _gps_cleanup(state)
-            session.pop("pilot_gps_import", None)
-            imported = sum(1 for v in confirmed.values() if v != "skip")
-            skipped_count = len(segments_data) - imported
-            if imported > 0:
-                flash(
-                    ngettext(
-                        "one flight imported successfully.",
-                        "%(n)s flights imported successfully.",
-                        imported,
-                        n=imported,
-                    ),
-                    "success",
-                )
-            flash(
-                ngettext(
-                    "one segment skipped.",
-                    "%(n)s segments skipped.",
-                    skipped_count,
-                    n=skipped_count,
-                ),
-                "info",
-            )
-            if imported > 0 and pilot_role in ("pic", "dual"):
-                return redirect(url_for("pilots.logbook"))
-            return redirect(url_for("pilots.logbook"))
-        flash(_("Segment skipped."), "info")
-        return redirect(url_for("pilots.pilot_gps_import_review"))
+    segments_data: list[dict[str, Any]] = state["segments"]
+    confirmed = state.setdefault("confirmed_segments", {})
+    accepted = 0
+    for seg_idx, seg in enumerate(segments_data):
+        if str(seg_idx) in confirmed:
+            continue
+        if not seg.get("matched_flight_id"):
+            if seg.get("is_ground_only"):
+                confirmed[str(seg_idx)] = "skip"
+            continue
+        # Nothing picked: an offered choice falls back to the best match.
+        best = {"matched_flight_id": str(seg["matched_flight_id"])}
+        entry, matched_flight_id = _pilot_confirm_segment(
+            state, seg_idx, best, uid, pilot_role
+        )
+        confirmed[str(seg_idx)] = entry.id if entry else 0
+        seg["matched_flight_id"] = matched_flight_id
+        accepted += 1
+    _gps_state_save(state, "pilot_gps_import")
 
-    # ── Confirm ───────────────────────────────────────────────────────────────
-    seg = segments_data[seg_idx]
+    flash(
+        ngettext(
+            "One flight linked to its GPS track.",
+            "%(n)d flights linked to their GPS tracks.",
+            accepted,
+            n=accepted,
+        ),
+        "success",
+    )
+    if len(confirmed) == len(segments_data):
+        _gps_cleanup(state)
+        session.pop("pilot_gps_import", None)
+        return redirect(url_for("pilots.logbook"))
+    return redirect(url_for("pilots.pilot_gps_import_review"))
+
+
+def _int_or_none(raw: Any) -> int | None:
+    try:
+        return int(raw) if raw not in (None, "") else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _pilot_confirm_segment(
+    state: dict[str, Any],
+    seg_idx: int,
+    form: Any,
+    uid: int,
+    pilot_role: str,
+) -> tuple[Flight | None, int | None]:
+    """Import one segment of the pilot GPS review — onto its matched (or
+    picked) flight, or as a new one — from *form*'s choices (the
+    one-by-one form, or "accept all" with none). Returns (the flight, the
+    matched flight's id or None). Caller records the confirmation."""
+    from aircraft.gps_import import segment_times
+    from aircraft.routes import _load_segment_geojson, _role_applies
+
+    seg = state["segments"][seg_idx]
     file_metas = state.get("files", [])
     block_off = _datetime.fromisoformat(seg["block_off_utc"])
     block_on = _datetime.fromisoformat(seg["block_on_utc"])
 
     dep_icao = (
-        request.form.get("dep_icao") or seg.get("departure_icao") or ""
+        form.get("dep_icao") or seg.get("departure_icao") or ""
     ).strip().upper()[:4] or "????"
-    arr_icao = (
-        request.form.get("arr_icao") or seg.get("arrival_icao") or ""
-    ).strip().upper()[:4] or "????"
-    nature = (request.form.get("nature") or "").strip()[:100] or None
-    remarks = (request.form.get("remarks") or "").strip() or None
+    arr_icao = (form.get("arr_icao") or seg.get("arrival_icao") or "").strip().upper()[
+        :4
+    ] or "????"
+    nature = (form.get("nature") or "").strip()[:100] or None
+    remarks = (form.get("remarks") or "").strip() or None
 
     geojson = _load_segment_geojson(seg)
     source_filename = (
@@ -2797,7 +2800,7 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
         # A candidate picker was rendered — respect the human's explicit
         # choice (including "none of these", submitted as "") instead of
         # always falling back to the top-scored candidate.
-        picked = request.form.get("matched_flight_id", "")
+        picked = form.get("matched_flight_id", "")
         matched_flight_id = int(picked) if picked.strip().isdigit() else None
     else:
         matched_flight_id = seg.get("matched_flight_id")
@@ -2833,14 +2836,20 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
             # other slot too — no separate per-pilot row left to update.
             db.session.flush()
             entry = existing
+            # The logbook names the crew: the user is only added to a free
+            # seat, never over the pilot logged there, nor moved when
+            # already on the flight (aircraft.routes._role_applies).
+            create_pilot_entry = create_pilot_entry and _role_applies(
+                existing, uid, pilot_role
+            )
         else:
             matched_flight_id = None  # stale — fall through to new entry
 
     if not matched_flight_id:
-        resolution = request.form.get("resolution", "other_aircraft")
+        resolution = form.get("resolution", "other_aircraft")
 
         if resolution == "managed_aircraft":
-            aircraft_id = request.form.get("aircraft_id", type=int)
+            aircraft_id = _int_or_none(form.get("aircraft_id"))
             if aircraft_id:
                 tenant_id = _pilot_tenant_id(uid)
                 ac = (
@@ -2914,8 +2923,8 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
 
         if entry is None:
             # Other/external aircraft, no existing match — standalone row.
-            other_reg = (request.form.get("other_reg") or "").strip().upper()
-            other_mm = (request.form.get("other_make_model") or "").strip()
+            other_reg = (form.get("other_reg") or "").strip().upper()
+            other_mm = (form.get("other_make_model") or "").strip()
             entry = Flight(
                 date=block_off.date(),
                 other_aircraft_type=other_mm or None,
@@ -2941,8 +2950,9 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
         # GPS-derived landing count has no day/night split — treat them all
         # as day landings, same simplification the old standalone pilot
         # entry made.
-        entry.landings_day = seg.get("landing_count") or 0
-        if remarks:
+        if not entry.landings_day:
+            entry.landings_day = seg.get("landing_count") or 0
+        if remarks and not entry.notes:
             entry.notes = remarks
         entry_ac: Aircraft | None = (
             ac if ac is not None else entry.aircraft  # type: ignore[assignment]
@@ -2959,6 +2969,84 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
         )
 
     db.session.commit()
+    return entry, matched_flight_id
+
+
+@pilots_bp.route("/pilot/gps-import/confirm-one", methods=["POST"])
+@login_required
+@require_pilot_access
+def pilot_gps_import_confirm_one() -> ResponseReturnValue:
+    from aircraft.routes import _gps_cleanup
+
+    uid = _current_user_id()
+    state = _gps_state_load("pilot_gps_import")
+    if not state:
+        flash(_("Session expired — please upload your GPS files again."), "warning")
+        return redirect(url_for("pilots.pilot_gps_import_upload"))
+
+    segments_data: list[dict[str, Any]] = state.get("segments", [])
+    if not segments_data:
+        flash(_("No segments to import."), "warning")
+        return redirect(url_for("pilots.pilot_gps_import_upload"))
+
+    try:
+        seg_idx = int(request.form.get("seg_idx", ""))
+    except (ValueError, TypeError):
+        flash(_("Invalid segment index."), "danger")
+        return redirect(url_for("pilots.pilot_gps_import_review"))
+
+    if seg_idx < 0 or seg_idx >= len(segments_data):
+        flash(_("Invalid segment index."), "danger")
+        return redirect(url_for("pilots.pilot_gps_import_review"))
+
+    confirmed = state.get("confirmed_segments", {})
+    if str(seg_idx) in confirmed:
+        flash(_("This segment has already been confirmed."), "info")
+        return redirect(url_for("pilots.pilot_gps_import_review"))
+
+    pilot_role = request.form.get("pilot_role", "pic")
+    if pilot_role not in ("pic", "dual", "none"):
+        pilot_role = "pic"
+
+    # ── Skip ─────────────────────────────────────────────────────────────────
+    if request.form.get("skip") == "1":
+        confirmed[str(seg_idx)] = "skip"
+        state["confirmed_segments"] = confirmed
+        _gps_state_save(state, "pilot_gps_import")
+        if len(confirmed) == len(segments_data):
+            _gps_cleanup(state)
+            session.pop("pilot_gps_import", None)
+            imported = sum(1 for v in confirmed.values() if v != "skip")
+            skipped_count = len(segments_data) - imported
+            if imported > 0:
+                flash(
+                    ngettext(
+                        "one flight imported successfully.",
+                        "%(n)s flights imported successfully.",
+                        imported,
+                        n=imported,
+                    ),
+                    "success",
+                )
+            flash(
+                ngettext(
+                    "one segment skipped.",
+                    "%(n)s segments skipped.",
+                    skipped_count,
+                    n=skipped_count,
+                ),
+                "info",
+            )
+            if imported > 0 and pilot_role in ("pic", "dual"):
+                return redirect(url_for("pilots.logbook"))
+            return redirect(url_for("pilots.logbook"))
+        flash(_("Segment skipped."), "info")
+        return redirect(url_for("pilots.pilot_gps_import_review"))
+
+    seg = segments_data[seg_idx]
+    entry, matched_flight_id = _pilot_confirm_segment(
+        state, seg_idx, request.form, uid, pilot_role
+    )
 
     confirmed[str(seg_idx)] = entry.id if entry else 0
     # The flight actually chosen (a picked candidate, or none: a new one),
