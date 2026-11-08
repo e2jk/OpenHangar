@@ -1535,16 +1535,13 @@ jobs:
             $0 == me { found=1 }
           ')
           : > /tmp/summary.md
-          # A `# <title>` first line names the release ("v1.2.3 — <title>")
-          # and isn't repeated in its summary (scripts/release_notes.py).
-          RELEASE_TITLE="v${VERSION}"
+          # A `# <title>` first line names the release (see RELEASE_TITLE
+          # below) and isn't repeated in its summary.
+          HEADING=""
           if [ -n "$PREV_TAG" ] && [ -s "$SUMMARY_FILE" ] \
               && git cat-file -e "${PREV_TAG}^{commit}" 2>/dev/null \
               && ! git diff --quiet "$PREV_TAG" "${GIT_SHA}" -- "$SUMMARY_FILE" 2>/dev/null; then
             HEADING=$(python3 scripts/release_notes.py heading "$SUMMARY_FILE")
-            if [ -n "$HEADING" ]; then
-              RELEASE_TITLE="v${VERSION} — ${HEADING}"
-            fi
             SUMMARY_TEXT=$(python3 scripts/release_notes.py summary "$SUMMARY_FILE")
             if [ -n "$SUMMARY_TEXT" ]; then
               printf '## Summary\n\n%s\n\n' "$SUMMARY_TEXT" > /tmp/summary.md
@@ -1553,15 +1550,11 @@ jobs:
           else
             echo "No release summary (unchanged since ${PREV_TAG:-<none>}, or empty)."
           fi
-          # No title line in the summary: name the release after its only
-          # PR, or "Dependency updates" when that's all it has (a nightly
-          # release of Renovate updates) — scripts/release_notes.py.
-          if [ "${RELEASE_TITLE}" = "v${VERSION}" ]; then
-            FALLBACK=$(python3 scripts/release_notes.py fallback-title /tmp/auto-notes.md)
-            if [ -n "$FALLBACK" ]; then
-              RELEASE_TITLE="v${VERSION} — ${FALLBACK}"
-            fi
-          fi
+          # "v1.2.3 — <the summary's title line>", or — without one — after
+          # its only PR, or "Dependency updates" when that's all it has;
+          # tagged [SECURITY] when it includes a security fix
+          # (scripts/release_notes.py release_name).
+          RELEASE_TITLE=$(python3 scripts/release_notes.py release-name "${VERSION}" /tmp/auto-notes.md --heading "${HEADING}")
           {
             cat /tmp/summary.md
             # shellcheck disable=SC2016  # backticks are literal markdown code-fences, not command substitution
