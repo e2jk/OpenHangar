@@ -105,7 +105,7 @@
   {% set already_confirmed = confirmed_segments and (i|string) in confirmed_segments %}
   {% set is_skipped = already_confirmed and confirmed_segments[(i|string)] == "skip" %}
 
-  <div class="seg-card{% if seg.is_ground_only %} ground-only{% endif %}{% if already_confirmed %} opacity-75{% endif %}">
+  <div id="seg-card-{{ i }}" class="seg-card{% if seg.is_ground_only %} ground-only{% endif %}{% if already_confirmed %} opacity-75{% endif %}">
     <div class="d-flex align-items-start justify-content-between mb-2">
       <div>
         <span class="fw-semibold">
@@ -212,6 +212,7 @@
     {% if not already_confirmed %}
     {# ── Per-segment confirm form ── #}
     <form class="seg-confirm-form mt-3"
+          data-scroll-anchor="seg-card-{{ i }}" hx-swap="innerHTML show:none"
           method="POST"
           action="{{ url_for('aircraft.gps_import_confirm_one', aircraft_id=aircraft.id) }}">
       <input type="hidden" name="seg_idx" value="{{ i }}">
@@ -318,6 +319,7 @@
       </div>
     </form>
     <form method="POST" class="mt-2"
+          data-scroll-anchor="seg-card-{{ i }}" hx-swap="innerHTML show:none"
           action="{{ url_for('aircraft.gps_import_confirm_one', aircraft_id=aircraft.id) }}">
       <input type="hidden" name="seg_idx" value="{{ i }}">
       <input type="hidden" name="pilot_role" class="pilot-role-hidden" value="{{ default_role }}">
