@@ -25,7 +25,7 @@ GitHub release after it the same way (`release_notes.py heading FILE`).
 
     release_notes.py heading FILE [--check]  # the title line, or nothing
     release_notes.py summary FILE            # the summary without it
-    release_notes.py fallback-title NOTES    # a release name from its PRs
+    release_notes.py release-name VERSION NOTES [--heading TITLE]
     release_notes.py drop-released NOTES URLS
         # remove from GitHub-generated release NOTES (in place) the PRs
         # whose URLs are listed in the URLS file — see drop_released
@@ -142,17 +142,25 @@ def body(subjects: list[str], summary: str | None, later: bool = False) -> str:
     return "\n".join(out).rstrip() + "\n"
 
 
-def fallback_title(notes: str) -> str:
-    """A name for a release whose summary has no title line, from the PRs
-    its release notes list ("* <title> by @<author> in <url>"): the PR's
-    own title when there's only one (without the "[later]" prefix), or
-    "Dependency updates" when they all are; "" otherwise — the release is
-    then just its version."""
-    titles = [
+def _pr_titles(notes: str) -> list[str]:
+    """The PR titles of GitHub-generated release notes
+    ("* <title> by @<author> in <url>")."""
+    return [
         line[2 : line.rfind(" by @")]
         for line in notes.splitlines()
         if line.startswith("* ") and " by @" in line
     ]
+
+
+_SECURITY_RE = re.compile(r"\s*\[security\]", re.IGNORECASE)
+
+
+def fallback_title(notes: str) -> str:
+    """A name for a release whose summary has no title line, from the PRs
+    its release notes list: the PR's own title when there's only one
+    (without the "[later]" prefix), or "Dependency updates" when they all
+    are; "" otherwise — the release is then just its version."""
+    titles = _pr_titles(notes)
     if not titles:
         return ""
     if all(_DEPS_RE.match(t) for t in titles):
@@ -165,6 +173,18 @@ def fallback_title(notes: str) -> str:
             title = title[: MAX_TITLE - 1].rstrip() + "…"
         return title
     return ""
+
+
+def release_name(version: str, heading: str | None, notes: str) -> str:
+    """The GitHub release's name: "v<version> — <name>", the name being the
+    summary's title line (*heading*) or else fallback_title(); tagged
+    "[SECURITY]" when one of its PRs is a security fix (Renovate's
+    vulnerability-alert PRs carry "[security]" in their title) — just
+    "v<version>" when there's nothing to name it after."""
+    name = (heading or "").strip() or fallback_title(notes)
+    if any(_SECURITY_RE.search(t) for t in _pr_titles(notes)):
+        name = f"{_SECURITY_RE.sub('', name).strip() or 'Security update'} [SECURITY]"
+    return f"v{version} — {name}" if name else f"v{version}"
 
 
 def drop_released(notes: str, released_urls: set[str]) -> str:
@@ -208,20 +228,21 @@ def main(argv: list[str] | None = None) -> int:
             "heading",
             "summary",
             "drop-released",
-            "fallback-title",
+            "release-name",
         ],
     )
     parser.add_argument("file", nargs="?", help="heading/summary: the summary file")
-    parser.add_argument("urls", nargs="?", help="drop-released: file of PR URLs")
+    parser.add_argument(
+        "urls", nargs="?", help="drop-released: file of PR URLs; release-name: notes"
+    )
+    parser.add_argument("--heading", default="")
     parser.add_argument("--summary-file")
     parser.add_argument("--later", action="store_true")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args(argv)
-    if args.mode == "fallback-title":
-        with open(args.file, encoding="utf-8") as fh:
-            name = fallback_title(fh.read())
-        if name:
-            print(name)
+    if args.mode == "release-name":  # file = version, urls = the notes
+        with open(args.urls, encoding="utf-8") as fh:
+            print(release_name(args.file, args.heading, fh.read()))
         return 0
     if args.mode == "drop-released":
         with open(args.urls, encoding="utf-8") as fh:

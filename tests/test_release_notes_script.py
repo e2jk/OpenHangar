@@ -172,15 +172,41 @@ def test_fallback_title():
     assert len(capped) <= release_notes.MAX_TITLE and capped.endswith("…")
 
 
-def test_drop_released_and_fallback_cli(capsys, tmp_path):
+def test_release_name(capsys, tmp_path):
+    one = NOTES.replace(
+        "* GPX tracks from cameras by @e2jk in https://github.com/o/r/pull/434\n", ""
+    )
+    assert release_notes.release_name("3.37.0", "", one) == (
+        "v3.37.0 — refactor: address CodeQL notes"
+    )
+    assert release_notes.release_name("3.38.0", "SkyDemon exports", NOTES) == (
+        "v3.38.0 — SkyDemon exports"
+    )
+    assert release_notes.release_name("3.38.0", None, NOTES) == "v3.38.0"
+    security = (
+        "* chore(deps): update security patches [security] [security]"
+        " by @renovate[bot] in u/9\n"
+    )
+    assert release_notes.release_name("3.38.1", "", security) == (
+        "v3.38.1 — Dependency updates [SECURITY]"
+    )
+    assert release_notes.release_name(
+        "3.39.0", "SkyDemon exports", NOTES + security
+    ) == ("v3.39.0 — SkyDemon exports [SECURITY]")
+    # Several PRs, no title line, one of them a security fix.
+    assert release_notes.release_name("3.39.0", "", NOTES + security) == (
+        "v3.39.0 — Security update [SECURITY]"
+    )
+    notes = tmp_path / "notes.md"
+    notes.write_text(security)
+    release_notes.main(["release-name", "3.38.1", str(notes), "--heading", ""])
+    assert capsys.readouterr().out == "v3.38.1 — Dependency updates [SECURITY]\n"
+
+
+def test_drop_released_cli(tmp_path):
     notes = tmp_path / "notes.md"
     urls = tmp_path / "urls.txt"
     notes.write_text(NOTES)
     urls.write_text("https://github.com/o/r/pull/434\n\n")
     release_notes.main(["drop-released", str(notes), str(urls)])
     assert "pull/434" not in notes.read_text()
-    release_notes.main(["fallback-title", str(notes)])
-    assert capsys.readouterr().out == "refactor: address CodeQL notes\n"
-    notes.write_text("nothing")
-    release_notes.main(["fallback-title", str(notes)])
-    assert capsys.readouterr().out == ""

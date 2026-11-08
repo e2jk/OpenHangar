@@ -8,3 +8,4 @@
 **Maintenance**
 - Release notes no longer list again the PRs of the previous release (each one repeated the PR that made the release before it).
 - A release without a title line in its summary is named after its only PR, or "Dependency updates" when that's all it has — the nightly releases included.
+- A release that includes a security fix says so in its name: `[SECURITY]` at the end.
