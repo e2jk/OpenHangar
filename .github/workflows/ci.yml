@@ -125,8 +125,11 @@ jobs:
         run: .venv/bin/zizmor -q --persona=pedantic --offline .github/
 
       - name: Install actionlint
+        # Retried: a brief outage of GitHub's release downloads (HTTP 5xx)
+        # failed this job — and with it a ship PR's required checks — once.
         run: |
-          curl -sfL -o actionlint.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          curl -sfL --retry 5 --retry-all-errors --retry-delay 10 --connect-timeout 20 \
+            -o actionlint.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
           echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  actionlint.tar.gz" | sha256sum -c -
           tar xzf actionlint.tar.gz actionlint
 
@@ -250,7 +253,8 @@ jobs:
           mkdir -p htmlcov-fuzz
           harness_files=(fuzz/fuzz_*.py)
           harness_count=${#harness_files[@]}
-          curl -sf "https://img.shields.io/badge/fuzz%20harnesses-${harness_count}-blue" \
+          curl -sf --retry 5 --retry-all-errors --retry-delay 10 --connect-timeout 20 \
+            "https://img.shields.io/badge/fuzz%20harnesses-${harness_count}-blue" \
             -o htmlcov-fuzz/badge.svg
 
       - name: Assemble Pages site
@@ -1595,27 +1599,19 @@ jobs:
           path: _site
 
       - name: Update versions.json
+        # Every instance's update check reads this list (newest first). Built
+        # from the published releases, not from the current Pages copy: a
+        # failed fetch of that copy fell back to an empty list, which would
+        # have republished the whole history as just this version. From the
+        # releases it's also self-healing — a version a failed deploy left
+        # out is back in the next one.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
-          # Fetch existing versions list from GitHub Pages; fall back to empty array
-          curl -sf https://e2jk.github.io/OpenHangar/versions.json \
-            -o /tmp/versions-existing.json 2>/dev/null \
-            || echo '[]' > /tmp/versions-existing.json
-          python3 - "${VERSION}" <<'PYEOF'
-          import json, sys
-          version = sys.argv[1]
-          try:
-              with open('/tmp/versions-existing.json') as f:
-                  versions = json.load(f)
-              if not isinstance(versions, list):
-                  versions = []
-          except Exception:
-              versions = []
-          if version not in versions:
-              versions.insert(0, version)
-          with open('_site/versions.json', 'w') as f:
-              json.dump(versions, f)
-          print(f"versions.json updated: {versions}")
-          PYEOF
+          gh release list --repo "${REPO}" --limit 10000 --json tagName --jq '.[].tagName' \
+            | python3 scripts/release_notes.py versions-json "${VERSION}" > _site/versions.json
+          echo "versions.json: $(python3 -c 'import json; v = json.load(open("_site/versions.json")); print(len(v), "versions, newest", v[0])')"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
