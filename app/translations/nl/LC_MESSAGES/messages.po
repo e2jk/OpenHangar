@@ -878,7 +878,7 @@ msgstr "Vlucht gecorrigeerd: %(old)s → %(new)s. Verder is niets gewijzigd; de 
 
 #: app/config/routes.py:1809
 msgid "Difference dismissed."
-msgstr "Verschil afgewezen."
+msgstr "Verschil terzijde gelegd."
 
 #: app/documents/routes.py:76 app/templates/pilots/profile.html:186
 msgid "Licence"
@@ -7222,7 +7222,7 @@ msgstr "Verschillen tussen geregistreerde vluchten en hun GPS-sporen"
 
 #: app/templates/config/data_checks.html:20
 msgid "The logbook is never changed on its own: each difference below is only corrected when you choose to use the GPS value. That changes only the one field named on its line — the departure airfield, the arrival airfield or the date; times, counters and everything else stay as logged — and adds a note to the flight with what the paper logbook says, so the paper logbook can stay as written. Dismiss the ones that are right as logged — they are not listed again unless the GPS track changes. Checked daily, and whenever this page is opened."
-msgstr "Het logboek wordt nooit vanzelf gewijzigd: elk verschil hieronder wordt pas gecorrigeerd als u kiest voor de GPS-waarde. Dan verandert alleen het veld op die regel — het vertrekvliegveld, het aankomstvliegveld of de datum; tijden, tellers en al het andere blijven zoals geregistreerd — en de vlucht krijgt een notitie met wat het papieren logboek vermeldt, zodat het papieren logboek kan blijven zoals het geschreven is. Wijs de verschillen die kloppen zoals geregistreerd af — ze komen pas terug als het GPS-spoor verandert. Dagelijks gecontroleerd, en telkens deze pagina geopend wordt."
+msgstr "Het logboek wordt nooit vanzelf gewijzigd: elk verschil hieronder wordt pas gecorrigeerd als u kiest voor de GPS-waarde. Dan verandert alleen het veld op die regel — het vertrekvliegveld, het aankomstvliegveld of de datum; tijden, tellers en al het andere blijven zoals geregistreerd — en de vlucht krijgt een notitie met wat het papieren logboek vermeldt, zodat het papieren logboek kan blijven zoals het geschreven is. Leg de verschillen die kloppen zoals geregistreerd terzijde — ze komen pas terug als het GPS-spoor verandert. Dagelijks gecontroleerd, en telkens deze pagina geopend wordt."
 
 #: app/templates/config/data_checks.html:25
 msgid "No differences found between the flights and their GPS tracks."
@@ -7311,7 +7311,7 @@ msgstr "GPS-waarde gebruiken"
 
 #: app/templates/config/data_checks.html:83
 msgid "Dismiss"
-msgstr "Afwijzen"
+msgstr "Terzijde leggen"
 
 #: app/templates/config/data_checks.html:85
 msgid "Nothing to correct automatically — open the flight to check its times."
