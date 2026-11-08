@@ -54,7 +54,7 @@ _KINDS = [
 ]
 _OTHER = ("Other changes", ("other", "other"))
 _TYPE_RE = re.compile(r"^(\w+)(\([^)]*\))?!?:\s*")
-_DEPS_RE = re.compile(r"^(chore|fix|build)\(deps\)")
+_DEPS_RE = re.compile(r"^(chore|fix|build)\(deps(-dev)?\)")
 
 
 def _kind(subject: str) -> str:
@@ -158,12 +158,20 @@ def _pr_titles(notes: str) -> list[str]:
 _SECURITY_RE = re.compile(r"\s*\[security\]", re.IGNORECASE)
 
 
-def name_from_titles(titles: list[str]) -> str:
+def is_security_fix(title: str) -> bool:
+    """A dependency update fixing a vulnerability — Renovate's alert PRs:
+    "chore(deps): update … [security]". Only dependency updates: a change
+    *about* security (e.g. logging tagged "[SECURITY]") isn't one."""
+    return bool(_DEPS_RE.match(title) and _SECURITY_RE.search(title))
+
+
+def name_from_titles(titles: list[str], untyped_first: bool = True) -> str:
     """A release name from the titles of what it contains (PRs, or commits):
     the only one's own title (without the "[later]" prefix); "Dependency
-    updates" when they all are; otherwise the first meaningful one — not a
-    dependency update, nor a generic "Release: …" count — with
-    "(+N more)"; "" when there's nothing."""
+    updates" when they all are; otherwise the most significant one — not a
+    dependency update, nor a generic "Release: …" count; a hand-written
+    title before a feature, before a fix, … — with "(+N more)"; "" when
+    there's nothing."""
     titles = [t[len(_LATER) + 1 :] if t.startswith(_LATER + " ") else t for t in titles]
     if not titles:
         return ""
@@ -173,8 +181,19 @@ def name_from_titles(titles: list[str]) -> str:
         main, more = titles[0], ""
     else:
         candidates = [t for t in titles if not _DEPS_RE.match(t)]
-        main = next(
-            (t for t in candidates if not t.startswith("Release: ")), candidates[0]
+        meaningful = [
+            t for t in candidates if not t.startswith("Release: ")
+        ] or candidates
+        # The most significant first: a hand-written title (a ship PR named
+        # after its summary's title line, no "type:" prefix), then a
+        # feature, a fix, … — the earliest within the same rank.
+        # (*untyped_first* False: commit messages, where no prefix is just
+        # an untyped commit — ranked last instead.)
+        kinds = [k for k, _h, _w in _KINDS]
+        order = ["", *kinds] if untyped_first else kinds
+        main = min(
+            meaningful,
+            key=lambda t: order.index(_kind(t)) if _kind(t) in order else len(order),
         )
         more = f" (+{len(titles) - 1} more)"
     room = MAX_TITLE - len(more)
@@ -196,7 +215,7 @@ def release_name(version: str, heading: str | None, notes: str) -> str:
     vulnerability-alert PRs carry "[security]" in their title) — just
     "v<version>" when there's nothing to name it after."""
     name = (heading or "").strip() or fallback_title(notes)
-    if any(_SECURITY_RE.search(t) for t in _pr_titles(notes)):
+    if any(is_security_fix(t) for t in _pr_titles(notes)):
         name = f"{_SECURITY_RE.sub('', name).strip() or 'Security update'} [SECURITY]"
     return f"v{version} — {name}" if name else f"v{version}"
 

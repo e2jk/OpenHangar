@@ -233,6 +233,9 @@ def test_name_from_titles():
     assert name([]) == ""
     assert name(["[later] fix: one thing"]) == "fix: one thing"
     assert name(["chore(deps): a", "fix(deps): b"]) == "Dependency updates"
+    assert (
+        name(["chore(deps-dev): pytest-cov", "chore(deps): c"]) == "Dependency updates"
+    )
     # The first meaningful title, skipping dependency updates and generic
     # "Release: …" counts.
     assert (
@@ -258,3 +261,20 @@ def test_versions_json(monkeypatch, capsys):
     monkeypatch.setattr(sys, "stdin", io.StringIO("v1.0.0\nv1.0.1\n"))
     release_notes.main(["versions-json", "1.1.0"])
     assert capsys.readouterr().out == '["1.1.0", "1.0.1", "1.0.0"]\n'
+
+
+def test_most_significant_and_security_only_for_dependency_updates():
+    name = release_notes.name_from_titles
+    assert name(["docs: a", "fix: b", "feat: c", "feat: d"]) == "feat: c (+3 more)"
+    assert (
+        name(["feat: c", "GPX tracks from cameras"])
+        == "GPX tracks from cameras (+1 more)"
+    )
+    assert name(["ci: x", "fix: b"]) == "fix: b (+1 more)"
+    fix = release_notes.is_security_fix
+    assert fix("chore(deps): update security patches [security] [security]")
+    assert not fix("feat(security): log failures with [SECURITY] tag")
+    notes = "* feat(security): add [SECURITY] logging by @e in u/1\n"
+    assert release_notes.release_name("1.40.0", "", notes) == (
+        "v1.40.0 — feat(security): add [SECURITY] logging"
+    )

@@ -7,8 +7,9 @@
 
 **Maintenance**
 - Release notes list only what's new since the previous release (patch or minor): no more PRs of the previous release, nor everything since the start of the minor version.
-- A release without a title line in its summary is named after its only PR, "Dependency updates" when that's all it has, or its first meaningful PR "(+N more)" — the nightly releases included.
-- A release that includes a security fix says so in its name: `[SECURITY]` at the end.
+- A release without a title line in its summary is named after its only PR, "Dependency updates" when that's all it has, or its most significant PR "(+N more)" (a hand-written title, then a feature, then a fix…) — the nightly releases included.
+- A release that includes a security fix (a dependency update for a vulnerability) says so in its name: `[SECURITY]` at the end.
+- All past releases were renamed and their change lists rewritten the same way (each lists only what's new; the early ones, which had no list, now list their commits).
 - CI rides out brief outages of GitHub's downloads (actionlint, the fuzzing badge): retried instead of failing the job — one such outage had failed a ship PR's required checks.
 - The site's versions.json, read by every instance's update check, is built from the published releases: a failed download of the current copy no longer risks republishing it as just the latest version, and versions earlier runs missed are listed again.
 - Recognising a GPS file by its content no longer uses a regular expression that crafted input could make very slow (CodeQL alerts #619–621).
