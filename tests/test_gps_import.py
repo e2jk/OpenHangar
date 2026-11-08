@@ -652,11 +652,19 @@ def _make_user_and_aircraft(app):
         return user.id, tenant.id, ac.id
 
 
-def _session_segments(sess):
-    """The review step's segments — spilled to a server-side state file
-    (see aircraft.routes._gps_state_save), the session keeps its path."""
-    with open(sess["gps_import"]["spill_path"], encoding="utf-8") as fh:
-        return json.load(fh)["segments"]
+def _session_state(sess, key="gps_import"):
+    """A GPS import's state with its spilled lists (files, segments) read
+    back from the server-side file (see aircraft.routes._gps_state_save)."""
+    state = dict(sess[key])
+    if "spill_path" in state:
+        with open(state["spill_path"], encoding="utf-8") as fh:
+            state.update(json.load(fh))
+    return state
+
+
+def _session_segments(sess, key="gps_import"):
+    """The review step's segments (see _session_state)."""
+    return _session_state(sess, key).get("segments", [])
 
 
 def _login(client, uid):

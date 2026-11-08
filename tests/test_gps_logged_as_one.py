@@ -35,6 +35,8 @@ from models import (  # pyright: ignore[reportMissingImports]
     db,
 )
 
+from tests.test_gps_import import _session_segments  # pyright: ignore[reportMissingImports]
+
 _BASE = datetime(2024, 6, 1, 10, 0, tzinfo=UTC)
 
 
@@ -299,5 +301,5 @@ class TestReviewsJoinLoggedLegs:
         )
         client.get("/pilot/gps-import/review")
         with client.session_transaction() as sess:
-            segs = sess["pilot_gps_import"]["segments"]
+            segs = _session_segments(sess, "pilot_gps_import")
         assert [s["landing_count"] for s in segs] == [2]

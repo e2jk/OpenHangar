@@ -20,6 +20,8 @@ from models import (  # pyright: ignore[reportMissingImports]
     db,
 )
 
+from tests.test_gps_import import _session_segments  # pyright: ignore[reportMissingImports]
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
@@ -403,7 +405,7 @@ class TestPilotGpsReview:
             assert resp.status_code == 200
             # Session should have segments with matched_flight_id set
             with client.session_transaction() as sess:
-                segs = sess["pilot_gps_import"].get("segments", [])
+                segs = _session_segments(sess, "pilot_gps_import")
                 assert len(segs) > 0
                 assert segs[0].get("matched_flight_id") == entry_id
         finally:
@@ -462,7 +464,7 @@ class TestPilotGpsReview:
             resp = client.get("/pilot/gps-import/review")
             assert resp.status_code == 200
             with client.session_transaction() as sess:
-                segs = sess["pilot_gps_import"].get("segments", [])
+                segs = _session_segments(sess, "pilot_gps_import")
                 assert any(s.get("matched_flight_id") == entry_id for s in segs)
         finally:
             os.unlink(tmp_path)
@@ -1373,7 +1375,7 @@ class TestPilotFuzzyMatchEndToEnd:
             assert resp.status_code == 200
 
             with client.session_transaction() as sess:
-                segs = sess["pilot_gps_import"]["segments"]
+                segs = _session_segments(sess, "pilot_gps_import")
             # The only close candidate: a match, not a doubt.
             assert segs[0]["matched_ambiguous"] is False
             assert segs[0]["matched_flight_id"] == imported_id
@@ -1397,3 +1399,28 @@ class TestPilotFuzzyMatchEndToEnd:
             fe = db.session.get(Flight, imported_id)
             assert fe.gps_track_id is not None
             assert fe.pic_name == "Test Pilot"
+
+
+def test_many_files_stay_out_of_the_session_cookie(app, client):
+    """Dozens of files (a season of camera tracks) made the import's state
+    too big for the session cookie: the browser dropped it and the review
+    page said the session had expired. The lists live in a server file."""
+    import io
+
+    from tests.test_gps_import import _session_state
+
+    uid, _tid, _ac_id = _make_user_and_aircraft(app)
+    _login(client, uid)
+    files = [
+        (io.BytesIO(_gpx_bytes()), f"a-rather-long-camera-track-name-{i:03d}.gpx")
+        for i in range(40)
+    ]
+    client.post(
+        "/pilot/gps-import",
+        data={"gps_files": files, "mode": "agnostic"},
+        content_type="multipart/form-data",
+    )
+    with client.session_transaction() as sess:
+        assert "files" not in sess["pilot_gps_import"]
+        assert len(_session_state(sess, "pilot_gps_import")["files"]) == 40
+    assert client.get("/pilot/gps-import/review").status_code == 200

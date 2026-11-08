@@ -2010,10 +2010,12 @@ def _load_segment_geojson(seg: dict[str, Any]) -> Any:
 _GPS_STATE_SPILL_KEYS = ("files", "segments")
 
 
-def _gps_state_load() -> dict[str, Any] | None:
+def _gps_state_load(key: str = "gps_import") -> dict[str, Any] | None:
     """The current GPS import state, with its spilled lists merged back in.
-    None when there's no import in progress, or its state file is gone."""
-    state = session.get("gps_import")
+    None when there's no import in progress, or its state file is gone.
+    *key*: the session key — "gps_import" for an aircraft's GPS import,
+    "pilot_gps_import" for a pilot's."""
+    state = session.get(key)
     if not state or "spill_path" not in state:
         return state
     try:
@@ -2024,7 +2026,7 @@ def _gps_state_load() -> dict[str, Any] | None:
     return {**state, **spilled}
 
 
-def _gps_state_save(state: dict[str, Any]) -> None:
+def _gps_state_save(state: dict[str, Any], key: str = "gps_import") -> None:
     spilled = {k: state[k] for k in _GPS_STATE_SPILL_KEYS if k in state}
     slim = {k: v for k, v in state.items() if k not in _GPS_STATE_SPILL_KEYS}
     path = slim.get("spill_path") or os.path.join(
@@ -2033,7 +2035,7 @@ def _gps_state_save(state: dict[str, Any]) -> None:
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(spilled, fh)
     slim["spill_path"] = path
-    session["gps_import"] = slim
+    session[key] = slim
     session.modified = True
 
 
