@@ -15,7 +15,8 @@ grouped by kind, with routine dependency updates collapsed into one line.
 
 --later: the batch was shipped to `ship-later` (scripts/ship.sh --later) —
 it merges without a release of its own and goes out with the next daily
-release, so its title starts with "[later]" instead of "Release:".
+release: its title starts with "[later]" and names its own commits, not the
+summary's title line (which names the whole release).
 
 The summary may start with a title line, `# <title>` (at most
 MAX_TITLE characters — scripts/ship.sh checks before pushing): it is then
@@ -106,17 +107,26 @@ def counts(subjects: list[str]) -> str:
 
 
 def title(subjects: list[str], later: bool = False, summary: str | None = None) -> str:
+    """The PR's title. A ship PR becomes a release: the summary's title line
+    names it (else the count of its commits). A ship-later PR is one batch
+    on the way to a release whose summary may already cover earlier batches,
+    so it's named after its own commits instead: the most significant one,
+    "(+N more)" — never after the release's title line."""
+    if later:
+        if not subjects:
+            return "ship-later"
+        return f"{_LATER} {name_from_titles(subjects, untyped_first=False)}"
     heading, _rest = split_summary(summary)
     if heading:
         # Hand-written; capped in case it slipped past ship.sh's check.
         if len(heading) > MAX_TITLE:
             heading = heading[: MAX_TITLE - 1].rstrip() + "…"
-        return f"{_LATER} {heading}" if later else heading
+        return heading
     if not subjects:
-        return "ship-later" if later else "ship"
+        return "ship"
     if len(subjects) == 1:
-        return f"{_LATER} {subjects[0]}" if later else subjects[0]
-    return f"{_LATER} {counts(subjects)}" if later else f"Release: {counts(subjects)}"
+        return subjects[0]
+    return f"Release: {counts(subjects)}"
 
 
 def body(subjects: list[str], summary: str | None, later: bool = False) -> str:
