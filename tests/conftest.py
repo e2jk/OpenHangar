@@ -117,7 +117,7 @@ def _block_tile_fetches():
     """Prevent real HTTP tile fetches in every test.
 
     GIF/image generation calls urllib.request.urlopen to download map tiles from
-    a.basemaps.cartocdn.com.  When the local DNS resolver is slow or unreachable
+    tile.openstreetmap.org.  When the local DNS resolver is slow or unreachable
     each tile request hangs for the full socket timeout, turning a fast test run
     into a 49-minute one.
 

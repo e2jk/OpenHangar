@@ -482,6 +482,11 @@ def run_daily_checks(app: Any) -> None:
                 _recompute_all_expiry_fields()
                 materialize_recurring_expenses()
                 cleanup_temp_uploads(app.config.get("UPLOAD_FOLDER", "/data/uploads"))
+                from services.gps_removal import (  # pyright: ignore[reportMissingImports]
+                    purge_expired,
+                )
+
+                purge_expired(app.config.get("UPLOAD_FOLDER", "/data/uploads"))
                 _refresh_data_checks()
                 run_co_owner_billing_pass_all()
                 _check_maintenance(app)

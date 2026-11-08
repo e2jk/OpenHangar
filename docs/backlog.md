@@ -355,6 +355,44 @@ that airfield (`services.gps_link.ground_run_target`, `link_track(taxi=True)`).
 The pilot GPS import (any aircraft) still skips them; it could use the same
 two helpers on the pilot's flights of that day.
 
+## GPS files: follow-ups to removing them from flights
+
+A GPS file can be taken off a flight from the flight's page (its part of the
+track comes off, the file goes to the trash for 7 days, restorable from
+"Removed GPS files" — `services/gps_removal.py`). Left for later:
+
+- **Move a file to another flight** (it was linked to the wrong one): today,
+  remove it and import it again. Better: removing it lists the file as an
+  *unlinked recording*, and "re-import from the archive" sends it through
+  the normal review page without uploading it again — the matching picks
+  (or offers) the right flight.
+- **Split one file over two flights:** a single log covering two logged
+  flights (e.g. two legs without an engine stop) is linked to both, so both
+  show the whole track. Cut the file's track at the landing in between and
+  give each flight its own half — and removing it from one flight then only
+  takes that half.
+- **Deleting a flight** (logbook delete, deleting an aircraft) still leaves
+  its GPS track row and original files behind: send them to the trash the
+  same way, like "Undo import" now does.
+
+## Tracks GIF: keep it instead of rendering it on each download
+
+The tracks GIF of an aircraft or a pilot is rendered from scratch on every
+download (87 tracks: ~4 s with the tile cache warm, ~25 s cold). Mostly a
+new flight only adds a frame at the end, so the GIF could be stored and
+extended — but a few things tie every frame to the whole set today, to
+change first:
+- the "k / N" counter on each frame (N changes with every new flight);
+- frames ordered by date: a backfilled older flight goes in the middle,
+  and its frames' views (the zoom-out) shift for everything after it;
+- the final "All N tracks" frame, and the one palette taken from it
+  (`quantize` on the last frame) shared by all frames.
+With those changed (no total on frames, per-frame palettes, the final
+frame kept apart), append frames for flights newer than the last one, and
+rebuild only when a track is removed, changed or inserted earlier. Store
+it like the single-flight renders (`GpsTrack.cached_png`), per aircraft /
+pilot, orientation and quality.
+
 ---
 
 ## Email notifications: airworthiness digest (`AIRWORTHINESS_DIGEST`)

@@ -4,7 +4,7 @@ from datetime import UTC, date, datetime
 from typing import Any, ClassVar
 
 from flask_sqlalchemy import SQLAlchemy  # pyright: ignore[reportMissingImports]
-from sqlalchemy import text
+from sqlalchemy import event, text
 
 db = SQLAlchemy()
 
@@ -807,10 +807,66 @@ class GpsTrack(db.Model):
         nullable=False,
         default=lambda: datetime.now(UTC),
     )
-    # Render cache for the default (landscape, low-res) single-flight PNG/GIF —
-    # geojson never changes once saved, so no invalidation is ever needed.
+    # Render cache for the default (landscape, low-res) single-flight PNG/GIF,
+    # cleared whenever the track changes (services.gps_link._store).
     cached_png = db.Column(db.LargeBinary, nullable=True)
     cached_gif = db.Column(db.LargeBinary, nullable=True)
+    # The track's simplified line for maps of many flights
+    # (services.track_overview), kept up to date by the listener below.
+    overview = db.Column(db.JSON, nullable=True)
+
+
+@event.listens_for(GpsTrack, "before_insert")
+@event.listens_for(GpsTrack, "before_update")
+def _refresh_track_overview(_mapper: Any, _connection: Any, track: GpsTrack) -> None:
+    from services.track_overview import (  # pyright: ignore[reportMissingImports]
+        overview_coords,
+    )
+    from sqlalchemy import inspect as _inspect  # pyright: ignore[reportMissingImports]
+
+    if _inspect(track).attrs.geojson.history.has_changes() or track.overview is None:
+        track.overview = overview_coords(track.geojson)
+
+
+class GpsFileRemoval(db.Model):
+    """A GPS file taken off a flight's track (services.gps_removal): the part
+    of the track it gave, kept so the removal can be undone, and where its
+    original file went — the trash folder, purged TRASH_DAYS later. Kept
+    after that as a record of who removed what."""
+
+    __tablename__ = "gps_file_removals"
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(
+        db.Integer, db.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    flight_id = db.Column(
+        db.Integer,
+        db.ForeignKey("flights.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    # "2025-06-25 EGSU → EGSC" — still readable once the flight is gone.
+    flight_label = db.Column(db.String(96), nullable=True)
+    removed_by_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    removed_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+    )
+    # "removed" (from the flight's page) | "import_undone" (Undo import)
+    reason = db.Column(db.String(16), nullable=False, default="removed")
+    # [{"path": original path under the uploads folder, "trash": its path in
+    # the trash, or None when it wasn't moved (missing, or still used)}]
+    files = db.Column(db.JSON, nullable=False, default=list)
+    # The removed part of the track: start, end, taxi, files, coords.
+    part = db.Column(db.JSON, nullable=True)
+    restored_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    purged_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    removed_by = db.relationship("User", foreign_keys=[removed_by_user_id])
 
 
 class LogbookEntryType:

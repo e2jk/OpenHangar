@@ -1,6 +1,17 @@
-# SkyDemon exports, and release notes without repeats
+# Removing GPS files from flights, SkyDemon exports
+
+**Maps**
+- Maps show OpenStreetMap again under the OpenAIP airspace layer and the tracks, toned down (greyer, softer) so the airspace and the track stand out — in dark mode too. CARTO's base maps, used until now, began requiring an API key: every map showed "API key required" tiles. Flight track images are re-drawn with the new base map.
+
+- Maps of all the flights of an aircraft or a pilot (and their animation and GIF) use a light version of each track, stored with it — the shape at map scale, not every recorded point: those pages are about 5 times smaller (1.6 MB → 0.35 MB for 87 tracks).
+- The browser animation draws on a canvas and lasts about half a minute however many tracks there are (shorter steps from a few dozen tracks on).
+- The tracks GIF is several times faster (87 tracks: 107 s → 24 s the first time, under 4 s after; high quality: 265 s → 50 s, then 9 s — it used to exceed the server's 2-minute limit). Map tiles are fetched in parallel and kept on disk between requests (left out of backups), each one decoded once, and frames whose view doesn't change build on the previous one.
+- Track images fill the whole frame with map: the default one used to leave plain bands around a track that doesn't fill it.
 
 **GPS import**
+- Importing GPS logs onto flights already in the logbook no longer puts you on them as PIC (or dual) over the pilot logged there — e.g. the previous owner's flights: your role is only added where that seat is free. The review page shows who's logged as PIC, and preselects "Not flying" when none of the matched flights are yours. Their logged landings are kept too.
+- A GPS file linked to the wrong flight can be taken off it: the flight's page lists its GPS files with their times, and **Remove file** takes that file's part off the track and map. The file is kept for 7 days in the new **Removed GPS files** page (linked from the flight and the configuration page), where it can be restored with its part of the track; then it's deleted. Removing a file never changes the logged times.
+- **Undo import** only removes what that import added: a flight whose track also had a part from an earlier import keeps it (it used to lose its whole track), and the GPS data and files it removes go to the removed GPS files too instead of staying behind unused.
 - SkyDemon's GPX and KML exports import as they come — its `.gpx.bin` files no longer need renaming: a file's GPX or KML content is recognised whatever its extension. (SkyDemon's own `.flightlog.bin` can't be read; the import says so and suggests exporting GPX or KML.)
 - KML tracks get the same treatment as GPX files without speed: speed worked out over a few seconds and bad fixes left out — a SkyDemon KML used to show a dozen landings and a split flight.
 - A recording that starts during the takeoff roll (as SkyDemon's often do) or stops right after the landing roll now names the airfield: it only counts as recorded from the air when it also starts high above the field.

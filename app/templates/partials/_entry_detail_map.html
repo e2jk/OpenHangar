@@ -6,6 +6,8 @@
     _detail_dep    -- departure ICAO / place string (for start marker tooltip)
     _detail_arr    -- arrival ICAO / place string (for end marker tooltip)
     entry          -- the Flight (for the original-file download link)
+    gps_parts      -- services.gps_removal.listed_parts(track)
+    gps_editable   -- whether the user may remove GPS files from the flight
 
   Parent template must also load Leaflet CSS/JS in its {% block head %}.
 #}
@@ -18,13 +20,40 @@
        data-openaip-key="{{ openaip_key or '' }}"
        data-dep="{{ _detail_dep }}"
        data-arr="{{ _detail_arr }}"></div>
-  {% if _detail_track.source_files %}
-  <div class="small mt-2">
-    <i class="bi bi-download me-1"></i>{{ ngettext('Original GPS file:', 'Original GPS files:', _detail_track.source_files|length) }}
-    {% for f in _detail_track.source_files %}
-    <a href="{{ url_for('flights.download_gps_file', flight_id=entry.id, index=loop.index0) }}" hx-boost="false" class="ms-1">{{ f.rsplit('/', 1)[-1] }}</a>{% if not loop.last %} ·{% endif %}
+  {% if gps_parts %}
+  <ul class="list-unstyled small mt-2 mb-0" id="gps-file-list">
+    {% for part in gps_parts %}
+    <li class="d-flex flex-wrap align-items-center gap-2 py-1{% if not loop.last %} border-bottom{% endif %}">
+      <i class="bi bi-file-earmark-binary text-muted"></i>
+      <span>
+        {% for name, file_index in part.files %}
+          {% if file_index is not none %}<a href="{{ url_for('flights.download_gps_file', flight_id=entry.id, index=file_index) }}" hx-boost="false" title="{{ _('Download the original GPS file') }}">{{ name }}</a>{% else %}{{ name }}{% endif %}{% if not loop.last %} ·{% endif %}
+        {% else %}
+          <span class="text-muted">{{ _('GPS track (no original file kept)') }}</span>
+        {% endfor %}
+      </span>
+      {% if part.start and part.end %}
+      <span class="text-muted oh-mono">{{ part.start.strftime('%H:%M') }}–{{ part.end.strftime('%H:%M') }} UTC</span>
+      {% endif %}
+      {% if part.taxi %}<span class="badge text-bg-secondary">{{ _('Taxi') }}</span>{% endif %}
+      {% if gps_editable %}
+      <form method="post" class="ms-auto"
+            action="{{ url_for('flights.remove_gps_part', flight_id=entry.id, index=part.index) }}"
+            data-confirm="{{ ngettext('Remove this GPS file from the flight? Its part of the track is removed, and the file is kept for one day in the removed GPS files, where you can restore it.', 'Remove this GPS file from the flight? Its part of the track is removed, and the file is kept for %(n)s days in the removed GPS files, where you can restore it.', gps_trash_days, n=gps_trash_days) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="part_key" value="{{ part.key }}">
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button type="submit" class="btn btn-ac-ghost btn-sm text-danger py-0">
+          <i class="bi bi-trash me-1"></i>{{ _('Remove file') }}
+        </button>
+      </form>
+      {% endif %}
+    </li>
     {% endfor %}
-  </div>
+  </ul>
+  {% if gps_editable %}
+  <div class="small mt-1"><a href="{{ url_for('flights.removed_gps_files') }}" class="text-muted"><i class="bi bi-trash me-1"></i>{{ _('Removed GPS files') }}</a></div>
+  {% endif %}
   {% endif %}
   {% if not openaip_key %}
   <div class="text-muted small mt-2">

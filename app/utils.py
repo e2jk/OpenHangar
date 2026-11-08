@@ -139,6 +139,118 @@ def _coords_from_geojson(geojson: dict[str, Any] | None) -> list[tuple[float, fl
     return []
 
 
+_TILE_UA = "OpenHangar flight track images (https://github.com/e2jk/OpenHangar)"
+# How long a downloaded tile is reused from the on-disk cache: OpenStreetMap
+# asks for tiles to be cached (its tile usage policy), OpenAIP data changes
+# more often.
+_TILE_MAX_AGE_S = {"osm": 30 * 86400, "opi": 7 * 86400}
+_TILE_FETCH_WORKERS = 4
+
+
+def _tile_cache_dir() -> str | None:
+    """Where downloaded map tiles are kept between requests
+    (upload_layout.TILE_CACHE_DIRNAME), or None outside the app."""
+    from flask import current_app, has_app_context
+    from services.upload_layout import (  # pyright: ignore[reportMissingImports]
+        TILE_CACHE_DIRNAME,
+    )
+
+    if not has_app_context():
+        return None
+    return os.path.join(
+        current_app.config.get("UPLOAD_FOLDER", "/data/uploads"), TILE_CACHE_DIRNAME
+    )
+
+
+def _fetch_tile_bytes(
+    source: str, z: int, x: int, y: int, url: str, cache_dir: str | None
+) -> bytes:
+    """One tile's PNG: from the on-disk cache when fresh enough, else
+    downloaded (and kept there)."""
+    import time
+    import urllib.request
+
+    path = (
+        os.path.join(cache_dir, source, str(z), str(x), f"{y}.png")
+        if cache_dir
+        else None
+    )
+    if (
+        path
+        and os.path.isfile(path)
+        and time.time() - os.path.getmtime(path) < _TILE_MAX_AGE_S[source]
+    ):
+        with open(path, "rb") as fh:
+            return fh.read()
+    req = urllib.request.Request(url, headers={"User-Agent": _TILE_UA})
+    with urllib.request.urlopen(req, timeout=5) as resp:  # nosec B310  # url has a hardcoded https:// prefix
+        raw: bytes = resp.read()
+    if path:
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            tmp = f"{path}.{os.getpid()}.part"
+            with open(tmp, "wb") as fh:
+                fh.write(raw)
+            os.replace(tmp, path)
+        except OSError as exc:  # a full or read-only disk: just don't cache
+            _log.debug("Could not cache map tile %s: %s", path, exc)
+    return raw
+
+
+def _ensure_tiles(
+    z: int,
+    tiles: list[tuple[int, int]],
+    openaip_key: str | None,
+    cache: dict[Any, Any],
+) -> None:
+    """Put each of *tiles* (x, y at zoom *z*) in *cache* ready to paste, as
+    ("img", z, x, y): the OpenStreetMap tile toned down (_tone_down), with
+    the OpenAIP tile on top when there's a key (zoom ≤ 14). Missing ones are
+    fetched in parallel; a tile that can't be had is left out."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+
+    todo = [(x, y) for x, y in dict.fromkeys(tiles) if ("img", z, x, y) not in cache]
+    if not todo:
+        return
+    cache_dir = _tile_cache_dir()
+    with_opi = bool(openaip_key) and z <= 14
+
+    def fetch(xy: tuple[int, int]) -> tuple[tuple[int, int], Any]:
+        x, y = xy
+        try:
+            base = _fetch_tile_bytes(
+                "osm",
+                z,
+                x,
+                y,
+                f"https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                cache_dir,
+            )
+            img = _tone_down(_Img.open(io.BytesIO(base)))
+            if with_opi:
+                opi = _fetch_tile_bytes(
+                    "opi",
+                    z,
+                    x,
+                    y,
+                    f"https://api.tiles.openaip.net/api/data/openaip/{z}/{x}/{y}.png?apiKey={openaip_key}",
+                    cache_dir,
+                )
+                overlay = _Img.open(io.BytesIO(opi)).convert("RGBA")
+                img.paste(overlay.convert("RGB"), (0, 0), overlay)
+            return xy, img
+        except Exception as exc:  # noqa: BLE001 -- one bad tile must not fail the whole image
+            _log.debug("Map tile %s/%s/%s unavailable: %s", z, x, y, exc)
+            return xy, None
+
+    with ThreadPoolExecutor(max_workers=_TILE_FETCH_WORKERS) as pool:
+        for (x, y), img in pool.map(fetch, todo):
+            if img is not None:
+                cache[("img", z, x, y)] = img
+
+
 def _make_tile_background(
     project: Callable[[float, float], tuple[int, int]],
     min_lon: float,
@@ -148,7 +260,7 @@ def _make_tile_background(
     canvas_w: int,
     canvas_h: int,
     openaip_key: str | None = None,
-    tile_cache: dict[Any, bytes] | None = None,
+    tile_cache: dict[Any, Any] | None = None,
     max_tiles: int = 36,
 ) -> Any:
     """Fetch OSM raster tiles and composite them into a background PIL Image.
@@ -157,11 +269,10 @@ def _make_tile_background(
     Tiles are fetched from OpenStreetMap; zoom level is chosen automatically.
     Max 36 tiles are fetched to keep export time reasonable.
 
-    tile_cache, if provided, is a dict keyed by (z, tx, ty) or ("opi", z, tx, ty)
-    holding raw PNG bytes so repeated calls across frames skip network fetches.
+    tile_cache, if provided, is shared across the frames of one image: it holds
+    each tile ready to paste (see _ensure_tiles), so a tile is fetched,
+    decoded and toned once per request.
     """
-    import urllib.request
-
     from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
 
     # Compute pixels-per-degree-lon from the projection function
@@ -203,62 +314,54 @@ def _make_tile_background(
         return None
 
     bg = _Img.new("RGB", (canvas_w, canvas_h), _BG_COLOUR)
-    ua = "OpenHangar flight-logbook GIF export (https://github.com/e2jk/OpenHangar)"
+    cache: dict[Any, Any] = tile_cache if tile_cache is not None else {}
+    _ensure_tiles(
+        z,
+        [
+            (tx % n, ty)
+            for tx in range(tx_min, tx_max + 1)
+            for ty in range(ty_min, ty_max + 1)
+        ],
+        openaip_key,
+        cache,
+    )
 
     for tx in range(tx_min, tx_max + 1):
         for ty in range(ty_min, ty_max + 1):
-            try:
-                tx_w = tx % n
-                # Compute pixel bounds for this tile by projecting its NW corner
-                # and the NW corner of the tile to its SE — then size the resize
-                # to exactly span that gap plus 1 px overlap, eliminating seams
-                # caused by integer rounding of adjacent corner coordinates.
-                lon_nw, lat_nw = _tile_nw_lonlat(tx, ty)
-                lon_se, lat_se = _tile_nw_lonlat(tx + 1, ty + 1)
-                px, py = project(lon_nw, lat_nw)
-                px_se, py_se = project(lon_se, lat_se)
-                tile_w = max(1, px_se - px + 1)
-                tile_h = max(1, py_se - py + 1)
-
-                # Base map: CARTO light (same as web animation)
-                base_key = (z, tx_w, ty)
-                if tile_cache is not None and base_key in tile_cache:
-                    raw = tile_cache[base_key]
-                else:
-                    base_url = (
-                        f"https://a.basemaps.cartocdn.com/light_all/{z}/{tx_w}/{ty}.png"
-                    )
-                    req = urllib.request.Request(base_url, headers={"User-Agent": ua})
-                    with urllib.request.urlopen(req, timeout=5) as resp:  # nosec B310  # base_url has a hardcoded https:// prefix
-                        raw = resp.read()
-                    if tile_cache is not None:
-                        tile_cache[base_key] = raw
-                tile = _Img.open(io.BytesIO(raw)).convert("RGBA")
-                tile = tile.resize((tile_w, tile_h), _Img.Resampling.LANCZOS)
-                bg.paste(tile.convert("RGB"), (px, py))
-                # Aviation overlay: OpenAIP (only at zoom ≤ 14, requires key)
-                if openaip_key and z <= 14:
-                    opi_key = ("opi", z, tx_w, ty)
-                    if tile_cache is not None and opi_key in tile_cache:
-                        opi_raw = tile_cache[opi_key]
-                    else:
-                        opi_url = f"https://api.tiles.openaip.net/api/data/openaip/{z}/{tx_w}/{ty}.png?apiKey={openaip_key}"
-                        opi_req = urllib.request.Request(
-                            opi_url, headers={"User-Agent": ua}
-                        )
-                        with urllib.request.urlopen(opi_req, timeout=5) as opi_resp:  # nosec B310  # opi_url has a hardcoded https:// prefix
-                            opi_raw = opi_resp.read()
-                        if tile_cache is not None:
-                            tile_cache[opi_key] = opi_raw
-                    opi_tile = _Img.open(io.BytesIO(opi_raw)).convert("RGBA")
-                    opi_tile = opi_tile.resize(
-                        (tile_w, tile_h), _Img.Resampling.LANCZOS
-                    )
-                    bg.paste(opi_tile.convert("RGB"), (px, py), opi_tile)
-            except Exception as exc:  # noqa: BLE001 -- one bad tile must not fail the whole image
-                _log.debug("OPI tile unavailable, leaving area as background: %s", exc)
+            tile = cache.get(("img", z, tx % n, ty))
+            if tile is None:
+                continue  # unavailable: that area stays plain background
+            # Compute pixel bounds for this tile by projecting its NW corner
+            # and the NW corner of the tile to its SE — then size the resize
+            # to exactly span that gap plus 1 px overlap, eliminating seams
+            # caused by integer rounding of adjacent corner coordinates.
+            lon_nw, lat_nw = _tile_nw_lonlat(tx, ty)
+            lon_se, lat_se = _tile_nw_lonlat(tx + 1, ty + 1)
+            px, py = project(lon_nw, lat_nw)
+            px_se, py_se = project(lon_se, lat_se)
+            tile_w = max(1, px_se - px + 1)
+            tile_h = max(1, py_se - py + 1)
+            bg.paste(tile.resize((tile_w, tile_h), _Img.Resampling.LANCZOS), (px, py))
 
     return bg
+
+
+# Leaflet's map background, which the web maps' faded base layer lets through.
+_LEAFLET_BG = (221, 221, 221)
+
+
+def _tone_down(tile: Any) -> Any:
+    """A base-map tile toned down the way the web maps do it (base.css
+    .oh-basemap: grayscale(.6) brightness(1.05) contrast(.85) opacity(.8)),
+    so the airspace layer and the track stand out on the images too."""
+    from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+    from PIL import ImageEnhance  # pyright: ignore[reportMissingImports]
+
+    rgb = tile.convert("RGB")
+    rgb = _Img.blend(rgb, rgb.convert("L").convert("RGB"), 0.6)
+    rgb = ImageEnhance.Brightness(rgb).enhance(1.05)
+    rgb = ImageEnhance.Contrast(rgb).enhance(0.85)
+    return _Img.blend(_Img.new("RGB", rgb.size, _LEAFLET_BG), rgb, 0.8)
 
 
 def _canvas_geo_bounds(
@@ -305,6 +408,57 @@ def _canvas_geo_bounds(
     c_lat_max = math.degrees(2.0 * math.atan(math.exp(merc_canvas_top)) - math.pi / 2.0)
     c_lat_min = math.degrees(2.0 * math.atan(math.exp(merc_canvas_bot)) - math.pi / 2.0)
     return c_lon_min, max(-85.0, c_lat_min), c_lon_max, min(85.0, c_lat_max)
+
+
+def _canvas_tile_background(
+    project_fn: Callable[[float, float], tuple[int, int]],
+    min_lon: float,
+    max_lon: float,
+    min_lat: float,
+    max_lat: float,
+    canvas_w: int,
+    canvas_h: int,
+    *,
+    openaip_key: str | None,
+    tile_cache: dict[Any, Any],
+    max_tiles_canvas: int,
+    max_tiles: int,
+) -> Any:
+    """The map background for a whole canvas showing the track bbox
+    (*min_lon*…*max_lat*): tiles over the full canvas — not only the track's
+    own extent, which left bands of plain background around a track whose
+    shape doesn't fill the canvas — or, when that needs more than
+    *max_tiles_canvas* tiles, over the track's extent with *max_tiles*.
+    None when neither fits (caller falls back to a plain fill)."""
+    c_min_lon, c_min_lat, c_max_lon, c_max_lat = _canvas_geo_bounds(
+        project_fn, canvas_w, canvas_h, min_lon, max_lon, min_lat, max_lat
+    )
+    bg = _make_tile_background(
+        project_fn,
+        c_min_lon,
+        c_max_lon,
+        c_min_lat,
+        c_max_lat,
+        canvas_w,
+        canvas_h,
+        openaip_key=openaip_key,
+        tile_cache=tile_cache,
+        max_tiles=max_tiles_canvas,
+    )
+    if bg is None:
+        bg = _make_tile_background(
+            project_fn,
+            min_lon,
+            max_lon,
+            min_lat,
+            max_lat,
+            canvas_w,
+            canvas_h,
+            openaip_key=openaip_key,
+            tile_cache=tile_cache,
+            max_tiles=max_tiles,
+        )
+    return bg
 
 
 def sort_tracks_oldest_first(
@@ -400,7 +554,7 @@ def generate_tracks_gif(
 
     # Shared tile cache: (z, tx, ty) → raw PNG bytes; ("opi", z, tx, ty) for OpenAIP.
     # Avoids re-fetching tiles that appear in multiple frames at the same zoom level.
-    tile_cache: dict[Any, bytes] = {}
+    tile_cache: dict[Any, Any] = {}
 
     def _frame_bg(
         project_fn: Callable[[float, float], tuple[int, int]],
@@ -409,50 +563,19 @@ def generate_tracks_gif(
         min_lat: float,
         max_lat: float,
     ) -> Any:
-        fetch_lon_min, fetch_lat_min, fetch_lon_max, fetch_lat_max = (
-            min_lon,
-            min_lat,
-            max_lon,
-            max_lat,
-        )
-        if high_res:
-            fetch_lon_min, fetch_lat_min, fetch_lon_max, fetch_lat_max = (
-                _canvas_geo_bounds(
-                    project_fn,
-                    canvas_w,
-                    canvas_h,
-                    min_lon,
-                    max_lon,
-                    min_lat,
-                    max_lat,
-                )
-            )
-        bg = _make_tile_background(
+        bg = _canvas_tile_background(
             project_fn,
-            fetch_lon_min,
-            fetch_lon_max,
-            fetch_lat_min,
-            fetch_lat_max,
+            min_lon,
+            max_lon,
+            min_lat,
+            max_lat,
             canvas_w,
             canvas_h,
             openaip_key=_openaip_key,
             tile_cache=tile_cache,
-            max_tiles=_max_tiles_canvas,
+            max_tiles_canvas=_max_tiles_canvas,
+            max_tiles=_max_tiles,
         )
-        if bg is None and high_res:
-            # Canvas extent still exceeded the raised cap; fall back to track bbox
-            bg = _make_tile_background(
-                project_fn,
-                min_lon,
-                max_lon,
-                min_lat,
-                max_lat,
-                canvas_w,
-                canvas_h,
-                openaip_key=_openaip_key,
-                tile_cache=tile_cache,
-                max_tiles=_max_tiles,
-            )
         return (
             bg.copy()
             if bg is not None
@@ -463,6 +586,13 @@ def generate_tracks_gif(
     durations: list[int] = []
     accumulated_coords: list[tuple[float, float]] = []
 
+    # The map with every earlier track drawn, for the view it was drawn in:
+    # a frame whose view didn't change (the new track lies within the area
+    # already shown — most frames once the first few flights are in) starts
+    # from it instead of fetching the map and redrawing all earlier tracks.
+    history_img: Any = None
+    history_view: tuple[float, float, float, float] | None = None
+
     for frame_idx in range(len(track_rows)):
         accumulated_coords.extend(per_track_coords[frame_idx])
         proj_result = _build_gif_projection(
@@ -471,16 +601,33 @@ def generate_tracks_gif(
         if proj_result is None:
             continue  # not enough coords yet (e.g. leading rows with no geojson)
 
-        project_fn, (f_min_lon, f_min_lat, f_max_lon, f_max_lat) = proj_result
-        img = _frame_bg(project_fn, f_min_lon, f_max_lon, f_min_lat, f_max_lat)
-        draw = ImageDraw.Draw(img)
-
-        for i in range(frame_idx):
-            draw_track(
-                draw, per_track_coords[i], _HISTORY_COLOUR, _line_hist, project_fn
+        project_fn, view = proj_result
+        f_min_lon, f_min_lat, f_max_lon, f_max_lat = view
+        if view != history_view:
+            history_img = _frame_bg(
+                project_fn, f_min_lon, f_max_lon, f_min_lat, f_max_lat
             )
+            history_draw = ImageDraw.Draw(history_img)
+            for i in range(frame_idx):
+                draw_track(
+                    history_draw,
+                    per_track_coords[i],
+                    _HISTORY_COLOUR,
+                    _line_hist,
+                    project_fn,
+                )
+            history_view = view
+        img = history_img.copy()
+        draw = ImageDraw.Draw(img)
         draw_track(
             draw, per_track_coords[frame_idx], _TRACK_COLOUR, _line_curr, project_fn
+        )
+        draw_track(
+            ImageDraw.Draw(history_img),
+            per_track_coords[frame_idx],
+            _HISTORY_COLOUR,
+            _line_hist,
+            project_fn,
         )
 
         row = track_rows[frame_idx]
@@ -576,42 +723,20 @@ def generate_single_track_image(
 
     project_fn, (f_min_lon, f_min_lat, f_max_lon, f_max_lat) = proj_result
 
-    tile_cache: dict[Any, bytes] = {}
-    fetch_lon_min, fetch_lat_min, fetch_lon_max, fetch_lat_max = (
-        f_min_lon,
-        f_min_lat,
-        f_max_lon,
-        f_max_lat,
-    )
-    if high_res:
-        fetch_lon_min, fetch_lat_min, fetch_lon_max, fetch_lat_max = _canvas_geo_bounds(
-            project_fn, canvas_w, canvas_h, f_min_lon, f_max_lon, f_min_lat, f_max_lat
-        )
-    bg = _make_tile_background(
+    tile_cache: dict[Any, Any] = {}
+    bg = _canvas_tile_background(
         project_fn,
-        fetch_lon_min,
-        fetch_lon_max,
-        fetch_lat_min,
-        fetch_lat_max,
+        f_min_lon,
+        f_max_lon,
+        f_min_lat,
+        f_max_lat,
         canvas_w,
         canvas_h,
         openaip_key=_openaip_key,
         tile_cache=tile_cache,
-        max_tiles=_max_tiles_canvas,
+        max_tiles_canvas=_max_tiles_canvas,
+        max_tiles=_max_tiles,
     )
-    if bg is None and high_res:
-        bg = _make_tile_background(
-            project_fn,
-            f_min_lon,
-            f_max_lon,
-            f_min_lat,
-            f_max_lat,
-            canvas_w,
-            canvas_h,
-            openaip_key=_openaip_key,
-            tile_cache=tile_cache,
-            max_tiles=_max_tiles,
-        )
     img = (
         bg.copy()
         if bg is not None
@@ -745,7 +870,7 @@ def generate_single_track_gif(
             ex, ey = pts[-1]
             draw.ellipse([ex - r, ey - r, ex + r, ey + r], fill=(200, 40, 40))
 
-    tile_cache: dict[Any, bytes] = {}
+    tile_cache: dict[Any, Any] = {}
 
     def _frame_bg(
         project_fn: Callable[[float, float], tuple[int, int]],
@@ -754,43 +879,19 @@ def generate_single_track_gif(
         min_lat: float,
         max_lat: float,
     ) -> Any:
-        fetch_lon_min, fetch_lat_min, fetch_lon_max, fetch_lat_max = (
-            min_lon,
-            min_lat,
-            max_lon,
-            max_lat,
-        )
-        if high_res:
-            fetch_lon_min, fetch_lat_min, fetch_lon_max, fetch_lat_max = (
-                _canvas_geo_bounds(
-                    project_fn, canvas_w, canvas_h, min_lon, max_lon, min_lat, max_lat
-                )
-            )
-        bg = _make_tile_background(
+        bg = _canvas_tile_background(
             project_fn,
-            fetch_lon_min,
-            fetch_lon_max,
-            fetch_lat_min,
-            fetch_lat_max,
+            min_lon,
+            max_lon,
+            min_lat,
+            max_lat,
             canvas_w,
             canvas_h,
             openaip_key=_openaip_key,
             tile_cache=tile_cache,
-            max_tiles=_max_tiles_canvas,
+            max_tiles_canvas=_max_tiles_canvas,
+            max_tiles=_max_tiles,
         )
-        if bg is None and high_res:
-            bg = _make_tile_background(
-                project_fn,
-                min_lon,
-                max_lon,
-                min_lat,
-                max_lat,
-                canvas_w,
-                canvas_h,
-                openaip_key=_openaip_key,
-                tile_cache=tile_cache,
-                max_tiles=_max_tiles,
-            )
         return (
             bg.copy()
             if bg is not None
