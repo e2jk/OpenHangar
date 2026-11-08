@@ -205,6 +205,10 @@ def is_gps_upload_name(filename: str) -> bool:
     return os.path.splitext(filename.lower())[1] in GPS_UPLOAD_EXTENSIONS
 
 
+# A Garmin data log row: "2026-05-18, 21:38:31,  +02:00, ...".
+_GARMIN_ROW_RE = re.compile(r"\d{4}-\d{2}-\d{2},\s*\d{2}:\d{2}:\d{2},")
+
+
 def detect_format(data: bytes, filename: str) -> str:
     """Return "gpx", "kml", or "garmin_csv". Raise ValueError for unknown format.
 
@@ -220,6 +224,15 @@ def detect_format(data: bytes, filename: str) -> str:
         lines = data.decode("utf-8-sig", errors="replace").splitlines()
         if lines and lines[0].startswith("#airframe_info"):
             return "garmin_csv"
+        if any(_GARMIN_ROW_RE.match(line) for line in lines[:10]):
+            # Rows of a Garmin data log without its header: a fragment the
+            # logger writes while powering up or down — seconds to a few
+            # minutes, usually without a GPS position, never a flight.
+            raise ValueError(
+                f"{filename!r} is a fragment of a Garmin data log without its "
+                "header (written while the logger was powering up or down) — "
+                "nothing to import."
+            )
     else:
         head = data[:4096].decode("utf-8-sig", errors="replace")
         root = _xml_root_name(head).rsplit(":", 1)[-1].lower()
