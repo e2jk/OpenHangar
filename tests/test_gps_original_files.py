@@ -33,7 +33,10 @@ from services.temp_cleanup import (  # pyright: ignore[reportMissingImports]
 )
 
 from tests.test_gps_archive import _login, _world
-from tests.test_gps_import import _gpx_bytes
+from tests.test_gps_import import (
+    _gpx_bytes,
+    _session_state,  # pyright: ignore[reportMissingImports]
+)
 
 
 @pytest.fixture
@@ -244,9 +247,9 @@ class TestTracksLinkToTheirFile:
             content_type="multipart/form-data",
         )
         with client.session_transaction() as sess:
-            assert sess["pilot_gps_import"]["files"][0]["archive_path"] == (
-                f"_pilots/{uid}/gps_logs/own.gpx"
-            )
+            assert _session_state(sess, "pilot_gps_import")["files"][0][
+                "archive_path"
+            ] == (f"_pilots/{uid}/gps_logs/own.gpx")
             sess["pilot_gps_import"] = {
                 "user_id": uid,
                 "files": _two_file_metas(slug),

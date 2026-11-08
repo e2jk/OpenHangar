@@ -2437,26 +2437,47 @@ def pilot_gps_import_upload() -> ResponseReturnValue:
             return render_template(
                 "pilots/gps_import_upload.html", tenant_aircraft=tenant_aircraft
             )
-        session["gps_import"] = {
-            "user_id": session["user_id"],
-            "aircraft_id": aircraft_id,
-            "files": parsed_meta,
-            "skipped_empty": skipped_empty,
-            "other_aircraft": False,
-            "other_ac_make_model": "",
-            "other_ac_reg": "",
-        }
-        session.modified = True
+        # The lists of files and segments outgrow the session cookie with
+        # dozens of files: kept in a server-side file (_gps_state_save).
+        _gps_state_save(
+            {
+                "user_id": session["user_id"],
+                "aircraft_id": aircraft_id,
+                "files": parsed_meta,
+                "skipped_empty": skipped_empty,
+                "other_aircraft": False,
+                "other_ac_make_model": "",
+                "other_ac_reg": "",
+            }
+        )
         return redirect(url_for("aircraft.gps_import_review", aircraft_id=aircraft_id))
 
     # agnostic mode
-    session["pilot_gps_import"] = {
-        "user_id": session["user_id"],
-        "files": parsed_meta,
-        "skipped_empty": skipped_empty,
-    }
-    session.modified = True
+    _gps_state_save(
+        {
+            "user_id": session["user_id"],
+            "files": parsed_meta,
+            "skipped_empty": skipped_empty,
+        },
+        "pilot_gps_import",
+    )
     return redirect(url_for("pilots.pilot_gps_import_review"))
+
+
+def _gps_state_load(key: str) -> dict[str, Any] | None:
+    """A GPS import's state (aircraft.routes._gps_state_load)."""
+    from aircraft.routes import _gps_state_load as _load
+
+    return _load(key)
+
+
+def _gps_state_save(state: dict[str, Any], key: str = "gps_import") -> None:
+    """Keep a GPS import's state — its lists of files and segments in a
+    server-side file, which dozens of files would make too large for the
+    session cookie (aircraft.routes._gps_state_save)."""
+    from aircraft.routes import _gps_state_save as _save
+
+    _save(state, key)
 
 
 def _analyse_pilot_gps_review(
@@ -2580,7 +2601,7 @@ def _analyse_pilot_gps_review(
 @require_pilot_access
 def pilot_gps_import_review() -> ResponseReturnValue:
     uid = _current_user_id()
-    state = session.get("pilot_gps_import")
+    state = _gps_state_load("pilot_gps_import")
     if not state:
         flash(_("Session expired — please upload your GPS files again."), "warning")
         return redirect(url_for("pilots.pilot_gps_import_upload"))
@@ -2627,8 +2648,7 @@ def pilot_gps_import_review() -> ResponseReturnValue:
         tmp_dir = _gps_tmp_dir()
         state["segments"] = [_segment_for_session(s, tmp_dir) for s in full_segs]
         state["analysed"] = True
-    session["pilot_gps_import"] = state
-    session.modified = True
+    _gps_state_save(state, "pilot_gps_import")
 
     tenant_id = _pilot_tenant_id(uid)
     tenant_aircraft = (
@@ -2665,7 +2685,7 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
     from aircraft.routes import _gps_cleanup, _load_segment_geojson
 
     uid = _current_user_id()
-    state = session.get("pilot_gps_import")
+    state = _gps_state_load("pilot_gps_import")
     if not state:
         flash(_("Session expired — please upload your GPS files again."), "warning")
         return redirect(url_for("pilots.pilot_gps_import_upload"))
@@ -2698,8 +2718,7 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
     if request.form.get("skip") == "1":
         confirmed[str(seg_idx)] = "skip"
         state["confirmed_segments"] = confirmed
-        session["pilot_gps_import"] = state
-        session.modified = True
+        _gps_state_save(state, "pilot_gps_import")
         if len(confirmed) == len(segments_data):
             _gps_cleanup(state)
             session.pop("pilot_gps_import", None)
@@ -2929,8 +2948,7 @@ def pilot_gps_import_confirm_one() -> ResponseReturnValue:
 
     confirmed[str(seg_idx)] = entry.id if entry else 0
     state["confirmed_segments"] = confirmed
-    session["pilot_gps_import"] = state
-    session.modified = True
+    _gps_state_save(state, "pilot_gps_import")
 
     all_handled = len(confirmed) == len(segments_data)
     if all_handled:

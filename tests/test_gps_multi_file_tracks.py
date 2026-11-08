@@ -594,7 +594,7 @@ class TestLaterFileOfATrackedFlight:
         )
         page = client.get("/pilot/gps-import/review").data.decode()
         with client.session_transaction() as sess:
-            (seg,) = sess["pilot_gps_import"]["segments"]
+            (seg,) = _session_segments(sess, "pilot_gps_import")
         assert seg["matched_flight_id"] == fid
         assert seg["matched_adds_to_track"] is True
         assert "this segment will be added to it" in page
