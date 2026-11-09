@@ -188,7 +188,11 @@ def pending_invites_for_user(user_id: int) -> list[FlightCrewInvite]:
             FlightCrewInvite.status == CrewInviteStatus.PENDING,
             FlightCrewInvite.kind == CrewInviteKind.INVITE,
         )
-        .order_by(Flight.date.desc(), Flight.id.desc())
+        .order_by(
+            Flight.date.desc(),
+            Flight.departure_time.desc().nullslast(),
+            Flight.id.desc(),
+        )
         .all()
     )
     return invites
@@ -278,7 +282,11 @@ def pending_claims_to_review(user_id: int) -> list[FlightCrewInvite]:
             FlightCrewInvite.kind == CrewInviteKind.CLAIM,
             or_(Flight.pic_user_id == user_id, Flight.second_crew_user_id == user_id),
         )
-        .order_by(Flight.date.desc(), Flight.id.desc())
+        .order_by(
+            Flight.date.desc(),
+            Flight.departure_time.desc().nullslast(),
+            Flight.id.desc(),
+        )
         .all()
     )
     return [c for c in candidates if user_id in shared_editor_ids(_invite_flight(c))]
