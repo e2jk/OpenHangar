@@ -959,7 +959,7 @@ class TestReviewAnalysedOnce:
 def test_confirmed_outcomes(app):
     """What each confirmed segment became: linked to its matched flight, a
     taxi part of it, or a new flight; skipped ones and gone flights left out."""
-    from aircraft.routes import _confirmed_outcomes
+    import aircraft.routes as aircraft_routes
 
     _uid, _tid, ac_id = _make_user_and_aircraft(app)
     with app.app_context():
@@ -982,7 +982,7 @@ def test_confirmed_outcomes(app):
             {},
             {},
         ]
-        got = _confirmed_outcomes(
+        got = aircraft_routes._confirmed_outcomes(
             {"0": a, "1": b, "2": c, "3": "skip", "4": 0, "9": 999999}, segs
         )
         assert {k: v[0] for k, v in got.items()} == {
