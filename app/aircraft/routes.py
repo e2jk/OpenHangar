@@ -2012,7 +2012,9 @@ def _gps_candidate_dict(fe: Any) -> dict[str, Any]:
         "id": fe.id,
         "str": _gps_candidate_str(fe),
         "aircraft_id": fe.aircraft_id,
-        "aircraft_reg": fe.aircraft.registration if fe.aircraft else "?",
+        # The managed aircraft's, or the one recorded with a flight on
+        # another aircraft; empty when none is known.
+        "aircraft_reg": fe.display_registration or "",
         "has_existing_track": fe.gps_track_id is not None,
     }
 
