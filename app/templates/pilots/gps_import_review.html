@@ -131,8 +131,12 @@
     {% elif has_match and not is_ambiguous %}
     <div class="alert alert-info py-2 mt-2 mb-2 small">
       <i class="bi bi-link-45deg me-1"></i>
+      {% if seg.matched_aircraft_reg %}
       {{ _('Matches existing flight %(info)s (%(reg)s) — GPS track will be linked.',
            info=seg.matched_flight_str, reg=seg.matched_aircraft_reg) }}
+      {% else %}
+      {{ _('Matches existing flight %(info)s — GPS track will be linked.', info=seg.matched_flight_str) }}
+      {% endif %}
       {% if seg.matched_adds_to_track %}
       <div class="mt-1">
         <i class="bi bi-plus-circle text-info me-1"></i>
@@ -195,7 +199,7 @@
                  id="cand_{{ i }}_{{ loop.index0 }}" value="{{ cand.id }}"
                  {% if loop.first %}checked{% endif %}>
           <label class="form-check-label" for="cand_{{ i }}_{{ loop.index0 }}">
-            {{ cand.str }} — {{ cand.aircraft_reg }}
+            {{ cand.str }}{% if cand.aircraft_reg %} — {{ cand.aircraft_reg }}{% endif %}
             {% if cand.has_existing_track %}
             <span class="badge bg-warning text-dark ms-1">{{ _('has track') }}</span>
             {% endif %}

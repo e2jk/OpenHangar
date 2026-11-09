@@ -1518,3 +1518,44 @@ def test_int_or_none():
     from pilots.routes import _int_or_none
 
     assert (_int_or_none("12"), _int_or_none(""), _int_or_none("x")) == (12, None, None)
+
+
+def test_candidate_registration_of_a_flight_on_another_aircraft(app):
+    """A matched flight on an aircraft not managed here shows the
+    registration recorded with it — not "?" — and none at all when no
+    registration was recorded."""
+    from aircraft.routes import _gps_candidate_dict
+
+    with app.app_context():
+        other = Flight(date=date(2025, 11, 23), other_aircraft_registration="OO-ABC")
+        unknown = Flight(date=date(2025, 11, 23))
+        db.session.add_all([other, unknown])
+        db.session.flush()
+        assert _gps_candidate_dict(other)["aircraft_reg"] == "OO-ABC"
+        assert _gps_candidate_dict(unknown)["aircraft_reg"] == ""
+
+
+def test_review_message_without_a_registration(client, app):
+    uid, _tid, _ac_id = _make_user_and_aircraft(app)
+    _login(client, uid)
+    with app.app_context():
+        f = Flight(date=date(2024, 6, 1), pic_user_id=uid, departure_icao="EBNM")
+        db.session.add(f)
+        db.session.commit()
+        fid = f.id
+    seg = dict(
+        _seg_dict(0, matched_flight_id=fid),
+        matched_flight_str=f"#{fid} — 2024-06-01 EBNM → EBNM",
+        matched_aircraft_reg="",
+    )
+    with client.session_transaction() as sess:
+        sess["pilot_gps_import"] = {
+            "user_id": uid,
+            "files": [],
+            "segments": [seg, _seg_dict(1)],
+            "skipped_empty": 0,
+            "analysed": True,
+        }
+    page = client.get("/pilot/gps-import/review").data.decode()
+    assert "2024-06-01 EBNM → EBNM — GPS track will be linked." in page
+    assert "(?)" not in page
