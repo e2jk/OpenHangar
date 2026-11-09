@@ -605,6 +605,35 @@ class TestDashboardPanels:
         assert b"EBOS" in r.data
         assert b"EBBR" in r.data
 
+    def test_recent_flights_same_day_latest_first(self, app, client):
+        """Same-day flights by departure time, latest first — not in the
+        order they were entered (a logbook import may enter them newest
+        first, giving the earlier leg the higher id)."""
+        from datetime import time
+
+        _uid, tid = _setup(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            day = date(2026, 11, 2)
+            for dep, arr, t in (
+                ("EGHF", "EBAW", time(16, 24)),
+                ("EGMC", "EGHF", time(9, 54)),
+            ):
+                db.session.add(
+                    Flight(
+                        aircraft_id=acid,
+                        date=day,
+                        departure_icao=dep,
+                        arrival_icao=arr,
+                        departure_time=t,
+                    )
+                )
+            db.session.commit()
+        _login(app, client)
+        page = client.get("/").get_data(as_text=True)
+        # The first row is EGHF → EBAW: in the wrong order it'd be EGMC → EGHF.
+        assert page.index("EGHF") < page.index("EGMC")
+
     def test_recent_flights_single_aircraft_mode_shows_reg_in_header_not_rows(
         self, app, client
     ):

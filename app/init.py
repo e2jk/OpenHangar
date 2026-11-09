@@ -1185,7 +1185,11 @@ def create_app() -> Flask:
             recent_flights = (
                 (
                     Flight.query.filter(Flight.aircraft_id.in_(aircraft_ids))
-                    .order_by(Flight.date.desc(), Flight.id.desc())
+                    .order_by(
+                        Flight.date.desc(),
+                        Flight.departure_time.desc().nullslast(),
+                        Flight.id.desc(),
+                    )
                     .limit(5)
                     .all()
                 )
