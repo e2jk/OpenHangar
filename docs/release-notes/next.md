@@ -7,3 +7,4 @@
 
 **Maintenance**
 - `scripts/ship.sh` stops before pushing when `docs/release-notes/next.md` still holds notes that a recent release already published, so they aren't announced twice.
+- CI rides out network outages on GitHub's runners: the browser-test jobs no longer fail when Ubuntu's package mirrors are unreachable (as long as Chromium launches with what the runner already has), jobs that fail only while setting up are re-run once automatically a few minutes later, and `pip-audit` waits longer for pypi.org — locally too, where the pre-push hook retries it once on a network error.
