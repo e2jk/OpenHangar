@@ -29,6 +29,10 @@ GitHub release after it the same way (`release_notes.py heading FILE`).
     release_notes.py release-name VERSION NOTES [--heading TITLE]
     release_notes.py previous-release VERSION < tags  # the release before
     release_notes.py versions-json VERSION < tags     # Pages versions.json
+    release_notes.py already-released FILE NOTES [--heading NAME]
+        # the summary's lines already in the latest release's NOTES (or
+        # its title already that release's NAME); exit 1 if any — see
+        # already_released
     release_notes.py drop-released NOTES URLS
         # remove from GitHub-generated release NOTES (in place) the PRs
         # whose URLs are listed in the URLS file — see drop_released
@@ -289,6 +293,32 @@ def drop_released(notes: str, released_urls: set[str]) -> str:
     return text.strip("\n") + "\n"
 
 
+def already_released(summary: str, notes: str, release_name: str = "") -> list[str]:
+    """The lines of *summary* (next.md) that the latest release already
+    published: its title line when that's the release's own title (the part
+    of *release_name* after "vX.Y.Z — "), and every content line found
+    word for word in the release's *notes*. Section headings ("**GPS
+    import**") are skipped — they repeat from one release to the next.
+
+    Why: next.md has to be emptied once a release is out. When it isn't,
+    the next ship's summary quietly carries the previous release's items
+    again (2026-11-11: a --later PR listed three already-released fixes,
+    under the previous release's title). scripts/ship.sh stops on this."""
+    heading, rest = split_summary(summary)
+    released_title = release_name.split(" — ", 1)[1] if " — " in release_name else ""
+    released = {line.strip() for line in notes.splitlines() if line.strip()}
+    found = []
+    if heading and heading == released_title.strip():
+        found.append(f"# {heading}")
+    for line in rest.splitlines():
+        line = line.strip()
+        if not line or (line.startswith("**") and line.endswith("**")):
+            continue
+        if line in released:
+            found.append(line)
+    return found
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -299,6 +329,7 @@ def main(argv: list[str] | None = None) -> int:
             "heading",
             "summary",
             "drop-released",
+            "already-released",
             "release-name",
             "previous-release",
             "versions-json",
@@ -325,6 +356,15 @@ def main(argv: list[str] | None = None) -> int:
         with open(args.urls, encoding="utf-8") as fh:
             print(release_name(args.file, args.heading, fh.read()))
         return 0
+    if args.mode == "already-released":  # file = next.md, urls = the notes
+        with open(args.file, encoding="utf-8") as fh:
+            summary_text = fh.read()
+        with open(args.urls, encoding="utf-8") as fh:
+            notes_text = fh.read()
+        found = already_released(summary_text, notes_text, args.heading)
+        for line in found:
+            print(line)
+        return 1 if found else 0
     if args.mode == "drop-released":
         with open(args.urls, encoding="utf-8") as fh:
             urls = {line.strip() for line in fh if line.strip()}

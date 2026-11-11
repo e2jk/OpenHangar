@@ -11,6 +11,10 @@ It's only used when it **changed** in the batch being shipped (PR) /
 since the previous version tag (release notes) — a summary left over from an
 earlier release is never reused. Once a release is out, empty `next.md` to
 start the next one — the published GitHub release keeps the text.
+If you forget and then add to it, the next batch would announce the old
+release's items again: `scripts/ship.sh` compares `next.md` with the last five
+published releases and refuses to push while it still contains one of their
+lines (or the title of one of them) — remove those and ship again.
 
 ## Title line
 

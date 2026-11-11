@@ -280,3 +280,34 @@ def test_most_significant_and_security_only_for_dependency_updates():
     assert release_notes.release_name("1.40.0", "", notes) == (
         "v1.40.0 — feat(security): add [SECURITY] logging"
     )
+
+
+def test_already_released(capsys, tmp_path):
+    notes = "## Summary\n\n**GPS import**\n- Old fix, already out.\n\n## Docker Image\n"
+    stale = "# Old title\n\n**GPS import**\n- Old fix, already out.\n- New fix.\n"
+    found = release_notes.already_released(stale, notes, "v3.42.0 — Old title")
+    # The title and the released line; the shared section heading and the
+    # new line are not flagged.
+    assert found == ["# Old title", "- Old fix, already out."]
+    fresh = "# New title\n\n**GPS import**\n- New fix.\n"
+    assert release_notes.already_released(fresh, notes, "v3.42.0 — Old title") == []
+    # A release named after its version only: no title to compare.
+    assert release_notes.already_released("# v3.42.0\n", "", "v3.42.0") == []
+
+    summary_file = tmp_path / "next.md"
+    notes_file = tmp_path / "notes"
+    notes_file.write_text(notes, encoding="utf-8")
+    summary_file.write_text(stale, encoding="utf-8")
+    assert (
+        release_notes.main(
+            ["already-released", str(summary_file), str(notes_file), "--heading", ""]
+        )
+        == 1
+    )
+    assert capsys.readouterr().out == "- Old fix, already out.\n"
+    summary_file.write_text(fresh, encoding="utf-8")
+    assert (
+        release_notes.main(["already-released", str(summary_file), str(notes_file)])
+        == 0
+    )
+    assert capsys.readouterr().out == ""
