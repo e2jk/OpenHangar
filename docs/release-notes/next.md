@@ -5,6 +5,9 @@
 - An FSTD session left without a duration gets it from its start and end times. The device qualification (FFS, FNPT…) can be left empty for a simulator that isn't qualified.
 - Simulator sessions now count only towards the Sim total: their PIC, co-pilot, dual, instructor, night and instrument hours are no longer added to those logbook totals. They also no longer count as your last flight (or last instructor flight) for personal minimums' recency reminders.
 
+**Configuration**
+- Data tools has a new "Run data checks" tool: it checks every flight with a GPS track against it again and opens the Data checks page, which says so when there is nothing to review.
+
 **Maintenance**
 - `scripts/ship.sh` stops before pushing when `docs/release-notes/next.md` still holds notes that a recent release already published, so they aren't announced twice.
 - CI rides out network outages on GitHub's runners: the browser-test jobs no longer fail when Ubuntu's package mirrors are unreachable (as long as Chromium launches with what the runner already has), jobs that fail only while setting up are re-run once automatically a few minutes later, and `pip-audit` waits longer for pypi.org — locally too, where the pre-push hook retries it once on a network error.

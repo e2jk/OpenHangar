@@ -228,14 +228,16 @@ def _check_aircraft(aircraft_id: int) -> list[Finding]:
     return [f for flight, track in rows for f in check_flight(flight, track, airports)]
 
 
-def aircraft_findings(aircraft_id: int) -> list[Finding]:
+def aircraft_findings(aircraft_id: int, force: bool = False) -> list[Finding]:
     """All findings for the aircraft's tracked flights, dismissed ones
-    included — from the cache when nothing changed since the last check.
+    included — from the cache when nothing changed since the last check,
+    unless *force* (the "Run data checks" tool: e.g. after the airfield
+    database was updated, which the cache's fingerprint doesn't see).
     Caller commits (a refreshed cache is added to the session)."""
     key = f"{_CACHE_PREFIX}{aircraft_id}"
     fingerprint = _fingerprint(aircraft_id)
     setting = db.session.get(AppSetting, key)
-    if setting is not None and setting.value:
+    if setting is not None and setting.value and not force:
         try:
             cached = json.loads(setting.value)
             if cached.get("fingerprint") == fingerprint:
@@ -262,16 +264,19 @@ def _dismissed(flight_ids: list[int]) -> set[tuple[int, str]]:
     return {(r.flight_id, r.key) for r in rows}
 
 
-def open_findings(tenant_id: int) -> list[tuple[Any, list[Finding]]]:
+def open_findings(
+    tenant_id: int, force: bool = False
+) -> list[tuple[Any, list[Finding]]]:
     """(aircraft, its findings not dismissed) for each of the tenant's
-    aircraft that has any, by registration. Caller commits."""
+    aircraft that has any, by registration — every aircraft checked anew
+    when *force* (see aircraft_findings). Caller commits."""
     result: list[tuple[Any, list[Finding]]] = []
     for ac in (
         Aircraft.query.filter_by(tenant_id=tenant_id)
         .order_by(Aircraft.registration)
         .all()
     ):
-        findings = aircraft_findings(ac.id)
+        findings = aircraft_findings(ac.id, force=force)
         dismissed = _dismissed(sorted({f.flight_id for f in findings}))
         kept = [f for f in findings if (f.flight_id, f.key) not in dismissed]
         if kept:
@@ -279,10 +284,11 @@ def open_findings(tenant_id: int) -> list[tuple[Any, list[Finding]]]:
     return result
 
 
-def refresh_open_count(tenant_id: int) -> int:
+def refresh_open_count(tenant_id: int, force: bool = False) -> int:
     """Re-count the tenant's open findings (checking aircraft whose flights
-    changed) and store it for the navbar bell. Caller commits."""
-    count = sum(len(f) for _ac, f in open_findings(tenant_id))
+    changed — or all of them when *force*) and store it for the navbar
+    bell. Caller commits."""
+    count = sum(len(f) for _ac, f in open_findings(tenant_id, force=force))
     key = f"{_COUNT_PREFIX}{tenant_id}"
     setting = db.session.get(AppSetting, key)
     if setting is None:

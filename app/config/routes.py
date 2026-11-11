@@ -1735,6 +1735,24 @@ def data_checks() -> ResponseReturnValue:
     )
 
 
+@config_bp.route("/data-checks/run", methods=["POST"])
+@login_required
+def data_checks_run() -> ResponseReturnValue:
+    """The Data tools section's "Run data checks": check every flight with a
+    GPS track again, ignoring the cached results, then show the Data checks
+    page — its "no differences found" when everything is in order."""
+    from services.data_checks import (  # pyright: ignore[reportMissingImports]
+        refresh_open_count,
+    )
+
+    tid = _data_checks_tenant_id()
+    if tid is not None:
+        refresh_open_count(tid, force=True)
+        db.session.commit()
+    flash(_("Every flight with a GPS track was checked again."), "success")
+    return redirect(url_for("config.data_checks"))
+
+
 def _data_check_flight(flight_id: int) -> tuple[Any, int]:
     """The flight, on one of the current tenant's aircraft, and that tenant."""
     from models import Aircraft, Flight  # pyright: ignore[reportMissingImports]

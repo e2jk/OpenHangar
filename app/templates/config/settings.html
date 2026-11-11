@@ -466,6 +466,19 @@
   <!-- Data tools section (instance admin only) -->
   <hr class="my-4">
   <h2 class="section-title mb-3"><i class="bi bi-tools me-2"></i>{{ _('Data tools') }}</h2>
+  <div class="ac-form-card p-3 mb-4 oh-fs-09" id="data-checks-card">
+    <div class="d-flex align-items-center justify-content-between">
+      <div>
+        <div class="fw-semibold">{{ _('Run data checks') }}</div>
+        <div class="text-muted small">{{ _('Check every flight with a GPS track against it again (airfields, date, times) and list the differences to review — or confirm that there are none.') }}</div>
+      </div>
+      <form method="post" action="{{ url_for('config.data_checks_run') }}">
+        <button type="submit" class="btn btn-ac-secondary btn-sm ms-3">
+          <i class="bi bi-clipboard-check me-1"></i>{{ _('Run checks') }}
+        </button>
+      </form>
+    </div>
+  </div>
   <div class="ac-form-card p-3 mb-4 oh-fs-09" id="backfill-icao-card">
     <div class="d-flex align-items-center justify-content-between">
       <div>

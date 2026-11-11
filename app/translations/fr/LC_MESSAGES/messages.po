@@ -12928,3 +12928,15 @@ msgstr "Début UTC"
 
 msgid "End UTC"
 msgstr "Fin UTC"
+
+msgid "Run data checks"
+msgstr "Lancer les vérifications des données"
+
+msgid "Check every flight with a GPS track against it again (airfields, date, times) and list the differences to review — or confirm that there are none."
+msgstr "Revérifier chaque vol ayant une trace GPS par rapport à celle-ci (aérodromes, date, heures) et lister les différences à examiner — ou confirmer qu'il n'y en a aucune."
+
+msgid "Run checks"
+msgstr "Lancer les vérifications"
+
+msgid "Every flight with a GPS track was checked again."
+msgstr "Chaque vol ayant une trace GPS a été revérifié."
