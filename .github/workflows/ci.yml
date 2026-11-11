@@ -79,6 +79,8 @@ jobs:
     timeout-minutes: 30
     permissions:
       security-events: write  # pip-audit SARIF upload
+      contents: read          # check_contributors.py: commit authors
+      pull-requests: read     # check_contributors.py: merged PR authors
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
@@ -162,6 +164,24 @@ jobs:
         run: |
           .venv/bin/python scripts/check_translations.py
           .venv/bin/pybabel compile -d app/translations
+
+      - name: Check the contributors list is current
+        # README's all-contributors table in sync with .all-contributorsrc,
+        # and every person (not bot) who authored commits or merged PRs —
+        # or this PR — listed there (scripts/check_contributors.py). On a
+        # pull request someone missing is only a warning: a first-time
+        # contributor's CI must never fail over it. On a push it fails.
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          PR_AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+        run: |
+          args=(--github)
+          if [ "$EVENT_NAME" = pull_request ]; then
+            args+=(--missing-as-warning)
+          fi
+          .venv/bin/python scripts/check_contributors.py "${args[@]}"
 
       - name: Run tests
         run: bash scripts/run-tests-with-coverage.sh

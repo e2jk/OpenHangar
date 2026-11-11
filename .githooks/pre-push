@@ -268,6 +268,11 @@ run_step "check-migrations" "$PYTHON" "$REPO_ROOT/scripts/check_migrations.py"
 echo "[translations] Checking catalogs..."
 run_step "translations" "$PYTHON" "$REPO_ROOT/scripts/check_translations.py"
 
+# ── Contributors list (README in sync with .all-contributorsrc) ───────────────
+# Offline part only; CI's --github run also checks that every person who
+# contributed is listed.
+run_step "contributors" "$PYTHON" "$REPO_ROOT/scripts/check_contributors.py"
+
 # ── Local tool version drift (non-blocking) ────────────────────────────────────
 STALE_TOOLS=()
 for pkg in ruff mypy bandit pip-audit zizmor; do
