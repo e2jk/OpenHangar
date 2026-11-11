@@ -11,6 +11,9 @@
 [![Last commit](https://img.shields.io/github/last-commit/e2jk/OpenHangar)](https://github.com/e2jk/OpenHangar/commits/main)
 [![Translations](https://img.shields.io/badge/translations-Weblate-brightgreen?logo=weblate)](https://hosted.weblate.org/engage/openhangar/)
 [![Try the demo](https://img.shields.io/badge/try%20the%20demo-live-brightgreen)](https://openhangar-demo.devolenvol.eu/)
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 Self-hosted, open-source platform for pilots, owner-operators, and clubs to manage aircraft maintenance, log flights, track costs and documents, and monitor pilot currency — all in one place.
 
@@ -76,6 +79,29 @@ OpenHangar is deployed as a Docker Compose stack:
 - **Roadmap feedback**: use GitHub issue reactions or the voting label to signal interest.
 
 Roadmap decisions are guided by maintainers and community input. Feature requests and discussion via GitHub Issues and PRs.
+
+## Contributors ✨
+
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/e2jk"><img src="https://avatars.githubusercontent.com/u/229379?v=4?s=100" width="100px;" alt="Emilien Klein"/><br /><sub><b>Emilien Klein</b></sub></a><br /><a href="https://github.com/e2jk/OpenHangar/commits?author=e2jk" title="Code">💻</a> <a href="https://github.com/e2jk/OpenHangar/commits?author=e2jk" title="Documentation">📖</a> <a href="https://github.com/e2jk/OpenHangar/commits?author=e2jk" title="Tests">⚠️</a> <a href="#translation-e2jk" title="Translation">🌍</a> <a href="#infra-e2jk" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#maintenance-e2jk" title="Maintenance">🚧</a> <a href="#security-e2jk" title="Security">🛡️</a> <a href="#projectManagement-e2jk" title="Project Management">📆</a> <a href="#ideas-e2jk" title="Ideas, Planning, & Feedback">🤔</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://kristofdv.be"><img src="https://avatars.githubusercontent.com/u/35935156?v=4?s=100" width="100px;" alt="Kristof De Vos"/><br /><sub><b>Kristof De Vos</b></sub></a><br /><a href="https://github.com/e2jk/OpenHangar/commits?author=kristofdv" title="Code">💻</a> <a href="https://github.com/e2jk/OpenHangar/commits?author=kristofdv" title="Documentation">📖</a> <a href="https://github.com/e2jk/OpenHangar/commits?author=kristofdv" title="Tests">⚠️</a> <a href="#translation-kristofdv" title="Translation">🌍</a> <a href="#a11y-kristofdv" title="Accessibility">️️️️♿️</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification: every kind of contribution counts, not only code — translations, bug reports, ideas, reviews, documentation. Only people are listed here; the bots and AI tools used along the way (dependency updates, CI, coding assistants) are not.
 
 ## License
 

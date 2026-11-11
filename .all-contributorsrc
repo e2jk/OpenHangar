@@ -1,0 +1,46 @@
+{
+  "projectName": "OpenHangar",
+  "projectOwner": "e2jk",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "commitConvention": "angular",
+  "contributorsPerLine": 7,
+  "linkToUsage": false,
+  "contributors": [
+    {
+      "login": "e2jk",
+      "name": "Emilien Klein",
+      "avatar_url": "https://avatars.githubusercontent.com/u/229379?v=4",
+      "profile": "https://github.com/e2jk",
+      "contributions": [
+        "code",
+        "doc",
+        "test",
+        "translation",
+        "infra",
+        "maintenance",
+        "security",
+        "projectManagement",
+        "ideas"
+      ]
+    },
+    {
+      "login": "kristofdv",
+      "name": "Kristof De Vos",
+      "avatar_url": "https://avatars.githubusercontent.com/u/35935156?v=4",
+      "profile": "https://kristofdv.be",
+      "contributions": [
+        "code",
+        "doc",
+        "test",
+        "translation",
+        "a11y"
+      ]
+    }
+  ]
+}
