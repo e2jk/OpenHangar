@@ -122,6 +122,36 @@ if [ -f "${SUMMARY_FILE}" ] && ! git diff --quiet origin/main HEAD -- "${SUMMARY
   fi
 fi
 
+# next.md must have been emptied once the last release went out: anything
+# in it that a recent release already published would be announced a
+# second time (scripts/release_notes.py already-released). The last few
+# releases, not just the latest: a daily dependency-only release can sit on
+# top of the one whose notes were left behind (2026-11-11: v3.42.1 on top of
+# v3.42.0). Needs `gh`; without it (or offline) this is skipped with a note.
+if [ -f "${SUMMARY_FILE}" ] && ! git diff --quiet origin/main HEAD -- "${SUMMARY_FILE}"; then
+  RELEASE_NOTES_TMP="$(mktemp)"
+  if RECENT_RELEASES="$(gh release list --limit 5 --json tagName --jq '.[].tagName' 2>/dev/null)"; then
+    STALE_FOUND=""
+    for tag in ${RECENT_RELEASES}; do
+      RELEASE_NAME="$(gh release view "${tag}" --json name --jq .name 2>/dev/null || true)"
+      gh release view "${tag}" --json body --jq .body >"${RELEASE_NOTES_TMP}" 2>/dev/null || continue
+      if ! STALE="$(python3 scripts/release_notes.py already-released "${SUMMARY_FILE}" "${RELEASE_NOTES_TMP}" --heading "${RELEASE_NAME}")"; then
+        echo "${SUMMARY_FILE} still has lines that ${tag} already published:"
+        printf '%s\n' "${STALE}" | sed 's/^/  /'
+        STALE_FOUND=1
+      fi
+    done
+    rm -f "${RELEASE_NOTES_TMP}"
+    if [ -n "${STALE_FOUND}" ]; then
+      echo "Not pushing — remove them (keep only this batch's own notes), commit, and run this again."
+      exit 1
+    fi
+  else
+    rm -f "${RELEASE_NOTES_TMP}"
+    echo "Note: couldn't list releases with gh — not checking ${SUMMARY_FILE} for already-released notes."
+  fi
+fi
+
 # One PR in flight at a time: both branches carry the same local history,
 # so two open PRs would overlap. A pending ship PR (released on merge)
 # takes precedence — --later would only hold back what it's releasing
