@@ -304,6 +304,39 @@ class TestDataChecksPage:
         assert "No differences found" in page
         assert "Data checks to review" not in client.get("/config/").data.decode()
 
+    def test_run_checks_tool_rechecks_everything(self, client, app):
+        """Data tools' "Run data checks": every aircraft checked anew, the
+        cached results ignored, then the Data checks page."""
+        from models import User  # pyright: ignore[reportMissingImports]
+
+        uid, tid, ac_id = _make_user_and_aircraft(app)
+        with app.app_context():
+            db.session.get(User, uid).is_instance_admin = True  # Data tools
+            db.session.commit()
+        _login(client, uid)
+        # Listed on the configuration page, even with nothing to review.
+        config = client.get("/config/").data.decode()
+        assert "Run data checks" in config and "/config/data-checks/run" in config
+
+        rv = client.post("/config/data-checks/run", follow_redirects=True)
+        page = rv.data.decode()
+        assert "Every flight with a GPS track was checked again." in page
+        assert "No differences found" in page
+
+        _tracked_flight(app, ac_id)
+        with app.app_context():
+            dc.refresh_open_count(tid)
+            db.session.commit()
+            cache = db.session.get(AppSetting, f"data_checks:aircraft:{ac_id}")
+            # A stale cache the flight's fingerprint doesn't see changing.
+            cache.value = cache.value.replace("EDRK", "EDRX")
+            db.session.commit()
+        page = client.post("/config/data-checks/run", follow_redirects=True)
+        page = page.data.decode()
+        assert "EDRK" in page and "EDRX" not in page
+        with app.app_context():
+            assert dc.open_count(tid) == 1
+
     def test_other_tenant_and_no_tenant(self, client, app):
         from models import Aircraft, Tenant  # pyright: ignore[reportMissingImports]
 
@@ -344,6 +377,8 @@ class TestDataChecksPage:
             uid = u.id
         _login(client, uid)
         assert "No differences found" in client.get("/config/data-checks").data.decode()
+        rv = client.post("/config/data-checks/run", follow_redirects=True)
+        assert "No differences found" in rv.data.decode()
 
 
 class TestDailyRefresh:
