@@ -1207,6 +1207,58 @@ class TestFstdLogbookEntries:
         # …but shown in their own Sim total.
         assert b"2" in resp.data
 
+    def test_fstd_hours_excluded_from_function_and_condition_totals(self, app):
+        """A sim session's PIC/dual/instructor and night/instrument hours
+        stay out of those totals; only the Sim total counts it."""
+        from pilots.routes import _compute_totals_sql
+
+        uid, _ = _create_user_and_tenant(app)
+        _add_logbook_entry(
+            app,
+            uid,
+            single_pilot_se=1.5,
+            function_pic=1.5,
+            night_time=0.5,
+            instrument_time=0.3,
+        )
+        _add_logbook_entry(
+            app,
+            uid,
+            entry_type=LogbookEntryType.FSTD,
+            fstd_duration=2.0,
+            single_pilot_se=None,
+            landings_day=None,
+            function_pic=2.0,
+            night_time=1.0,
+            instrument_time=2.0,
+        )
+        with app.app_context():
+            # Second-crew slot: a dual sim session plus a dual flight.
+            for entry_type, dual in (
+                (LogbookEntryType.FLIGHT, 1.2),
+                (LogbookEntryType.FSTD, 1.0),
+            ):
+                db.session.add(
+                    Flight(
+                        date=date(2024, 3, 2),
+                        second_crew_user_id=uid,
+                        entry_type=entry_type,
+                        function_dual=dual,
+                        function_copilot=dual,
+                        function_instructor=dual,
+                    )
+                )
+            db.session.commit()
+            totals = _compute_totals_sql(uid)
+        assert totals["total_flight_time"] == 1.5
+        assert totals["function_pic"] == 1.5
+        assert totals["function_dual"] == 1.2
+        assert totals["function_copilot"] == 1.2
+        assert totals["function_instructor"] == 1.2
+        assert totals["night_time"] == 0.5
+        assert totals["instrument_time"] == 0.3
+        assert totals["fstd_duration"] == 2.0
+
     def test_logbook_list_shows_fstd_badge(self, app, client):
         uid, _ = _create_user_and_tenant(app)
         _add_logbook_entry(

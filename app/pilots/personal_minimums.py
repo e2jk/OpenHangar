@@ -142,8 +142,12 @@ def recency_breaches(revision: object, pilot_user_id: int) -> list[dict[str, Any
     """Return a list of {item, days_since, threshold} for every item on
     `revision` tagged with a recency-checkable tag whose threshold has been
     exceeded. Only MAX_DAYS_SINCE_LAST_FLIGHT and
-    MAX_DAYS_SINCE_INSTRUCTOR_FLIGHT are automatically checkable in v1."""
-    from models import Flight  # pyright: ignore[reportMissingImports]
+    MAX_DAYS_SINCE_INSTRUCTOR_FLIGHT are automatically checkable in v1.
+    FSTD/simulator sessions don't count as a flight for either."""
+    from models import (  # pyright: ignore[reportMissingImports]
+        Flight,
+        LogbookEntryType,
+    )
     from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
 
     breaches = []
@@ -170,7 +174,8 @@ def recency_breaches(revision: object, pilot_user_id: int) -> list[dict[str, Any
                 or_(
                     Flight.pic_user_id == pilot_user_id,
                     Flight.second_crew_user_id == pilot_user_id,
-                )
+                ),
+                Flight.entry_type != LogbookEntryType.FSTD,
             )
             if (
                 item.semantic_tag
