@@ -1,0 +1,79 @@
+# Re-run, once, the CI jobs that failed while setting up — not testing.
+#
+# GitHub's runners sometimes lose access to something CI downloads from
+# (2026-11-11: Ubuntu's apt mirrors stopped resolving for 45+ minutes, so
+# every browser-test job failed while installing Chromium's OS packages,
+# before running a single test). Those failures say nothing about the code,
+# so instead of a person spotting them and clicking "Re-run failed jobs",
+# this does it: a few minutes after the CI run ends, if every failed step of
+# every failed job is a setup step (installing, caching, downloading,
+# logging in — see SETUP_STEP below), it re-runs the failed jobs.
+#
+# Never more than once per run (only attempt 1 is looked at, and the
+# re-run's own completion is attempt 2), never when a test, lint or build
+# step failed — a real failure is never retried away — and never for a
+# release (tag) run or the publish job, where repeating a half-done step
+# could publish twice.
+#
+# workflow_run fires when the "CI" workflow completes and runs in this
+# repo's trusted context whatever triggered CI — that's why it's flagged by
+# zizmor's dangerous-triggers audit. Nothing here checks out or runs code
+# from the run it reacts to: it only reads that run's job/step names
+# through the API and asks GitHub to re-run it, by run ID.
+
+name: Re-run CI setup failures
+
+on:
+  workflow_run:  # zizmor: ignore[dangerous-triggers] intentional: no checkout, only gh api/run calls by run ID -- see the comment above
+    workflows: [CI]
+    types: [completed]
+
+permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, the job opts into the one write scope it needs
+
+# One check per CI run: a second completion event for the same run (there
+# shouldn't be one) waits rather than racing it to the re-run.
+concurrency:
+  group: rerun-setup-failures-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  rerun:
+    name: Re-run failed setup steps once
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.run_attempt == 1 &&
+      github.event.workflow_run.event != 'release' &&
+      !startsWith(github.event.workflow_run.head_branch, 'v')
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    permissions:
+      actions: write  # gh run rerun
+    steps:
+      - name: Re-run the failed jobs if only setup steps failed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          # Step names (ci.yml's own, and the ones GitHub gives `uses:`
+          # steps) that only prepare a job — any other failed step means
+          # the failure is real, and nothing is re-run.
+          SETUP_STEP: '^(Set up |Install |Cache |Download |Log in to |Load Docker image$|Run actions/(checkout|setup-python|cache|download-artifact)@)'
+        run: |
+          failed="$(gh api --paginate "repos/${REPO}/actions/runs/${RUN_ID}/attempts/1/jobs?per_page=100" \
+            --jq '.jobs[] | select(.conclusion == "failure") | {name, steps: [.steps[] | select(.conclusion == "failure") | .name]}' | jq -s .)"
+          echo "Failed jobs and steps:"
+          jq -r '.[] | "  \(.name): \(.steps | join(", "))"' <<<"${failed}"
+          if ! jq -e --arg re "${SETUP_STEP}" '
+              length > 0
+              and all(.[]; (.name | startswith("Publish") | not)
+                           and (.steps | length > 0)
+                           and all(.steps[]; test($re)))' <<<"${failed}" >/dev/null; then
+            echo "A failed step isn't a setup step (or nothing failed in a step) — not re-running."
+            exit 0
+          fi
+          # Whatever was unreachable is often still down right after the
+          # run ends: give it a few minutes first.
+          echo "Only setup steps failed — re-running the failed jobs in 5 minutes."
+          sleep 300
+          gh run rerun "${RUN_ID}" --failed --repo "${REPO}"
+          echo "::notice::Re-ran the failed jobs of CI run ${RUN_ID} (setup-only failure)."

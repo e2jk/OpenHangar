@@ -139,7 +139,9 @@ jobs:
       - name: Audit all dependencies (runtime + transitive)
         id: pip-audit
         continue-on-error: true
-        run: .venv/bin/pip-audit --local --format json -o pip-audit.json
+        # --timeout: pypi.org's default 15 s read timeout is sometimes too
+        # short from a runner.
+        run: .venv/bin/pip-audit --local --timeout 60 --format json -o pip-audit.json
 
       - name: Convert pip-audit JSON to SARIF
         if: always() && hashFiles('pip-audit.json') != ''
@@ -360,7 +362,9 @@ jobs:
       - name: Audit all dependencies (runtime + transitive)
         id: pip-audit
         continue-on-error: true
-        run: .venv/bin/pip-audit --local --format json -o pip-audit.json
+        # --timeout: pypi.org's default 15 s read timeout is sometimes too
+        # short from a runner.
+        run: .venv/bin/pip-audit --local --timeout 60 --format json -o pip-audit.json
 
       - name: Convert pip-audit JSON to SARIF
         if: always() && hashFiles('pip-audit.json') != ''
@@ -1068,8 +1072,36 @@ jobs:
 
       - name: Install Playwright Chromium browser and OS dependencies
         # With a warm cache the browser download is a no-op; only the (fast,
-        # uncacheable) apt deps run.
-        run: .venv/bin/playwright install chromium --with-deps
+        # uncacheable) apt deps run. Ubuntu's mirrors sometimes stop
+        # resolving from GitHub's runners, for minutes or for most of an
+        # hour (2026-11-11: every browser job failed here for 45+ minutes),
+        # so: two tries of the apt install, 3 minutes at most each (an
+        # unreachable mirror otherwise costs ~20 s per index and per
+        # package, which adds up to the whole job's timeout — that's also
+        # why apt's own Acquire::Retries isn't raised). If apt still can't
+        # be reached, carry on when Chromium launches anyway — the runner
+        # image ships Google Chrome, so its system libraries are normally
+        # already there — and fail only when it doesn't.
+        run: |
+          .venv/bin/playwright install chromium
+          for wait in 30 0; do
+            if timeout 180 .venv/bin/playwright install-deps chromium; then
+              exit 0
+            fi
+            if [ "$wait" -eq 0 ]; then
+              break
+            fi
+            echo "::warning::Installing Chromium's OS dependencies failed — retrying in ${wait}s"
+            sleep "$wait"
+          done
+          if .venv/bin/python -c 'from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+              p.chromium.launch().close()'; then
+            echo "::warning::Couldn't install Chromium's OS dependencies (apt unreachable?), but Chromium launches with what the runner already has — continuing."
+            exit 0
+          fi
+          echo "::error::Couldn't install Chromium's OS dependencies, and Chromium doesn't launch without them."
+          exit 1
 
       - name: Download image artifact
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
@@ -1210,8 +1242,36 @@ jobs:
 
       - name: Install Playwright Chromium browser and OS dependencies
         # With a warm cache the browser download is a no-op; only the (fast,
-        # uncacheable) apt deps run.
-        run: .venv/bin/playwright install chromium --with-deps
+        # uncacheable) apt deps run. Ubuntu's mirrors sometimes stop
+        # resolving from GitHub's runners, for minutes or for most of an
+        # hour (2026-11-11: every browser job failed here for 45+ minutes),
+        # so: two tries of the apt install, 3 minutes at most each (an
+        # unreachable mirror otherwise costs ~20 s per index and per
+        # package, which adds up to the whole job's timeout — that's also
+        # why apt's own Acquire::Retries isn't raised). If apt still can't
+        # be reached, carry on when Chromium launches anyway — the runner
+        # image ships Google Chrome, so its system libraries are normally
+        # already there — and fail only when it doesn't.
+        run: |
+          .venv/bin/playwright install chromium
+          for wait in 30 0; do
+            if timeout 180 .venv/bin/playwright install-deps chromium; then
+              exit 0
+            fi
+            if [ "$wait" -eq 0 ]; then
+              break
+            fi
+            echo "::warning::Installing Chromium's OS dependencies failed — retrying in ${wait}s"
+            sleep "$wait"
+          done
+          if .venv/bin/python -c 'from playwright.sync_api import sync_playwright
+          with sync_playwright() as p:
+              p.chromium.launch().close()'; then
+            echo "::warning::Couldn't install Chromium's OS dependencies (apt unreachable?), but Chromium launches with what the runner already has — continuing."
+            exit 0
+          fi
+          echo "::error::Couldn't install Chromium's OS dependencies, and Chromium doesn't launch without them."
+          exit 1
 
       - name: Download image artifact
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
