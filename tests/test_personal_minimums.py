@@ -10,6 +10,7 @@ from datetime import date, timedelta
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Flight,
+    LogbookEntryType,
     PersonalMinimumsItem,
     PersonalMinimumsRevision,
     PersonalMinimumsSection,
@@ -77,7 +78,7 @@ def _add_item(app, client, section_id, label, value="", tag="", numeric=""):
     )
 
 
-def _add_logbook_entry(app, uid, days_ago, dual=0.0):
+def _add_logbook_entry(app, uid, days_ago, dual=0.0, fstd=False):
     with app.app_context():
         # function_dual is always the second_crew_user_id slot's own hours
         # (see Flight's docstring) — a "dual" entry for this pilot means
@@ -87,10 +88,13 @@ def _add_logbook_entry(app, uid, days_ago, dual=0.0):
             if dual
             else {"pic_user_id": uid}
         )
+        if fstd:
+            kwargs.update(entry_type=LogbookEntryType.FSTD, fstd_duration=1.0)
+        else:
+            kwargs["single_pilot_se"] = 1.5
         db.session.add(
             Flight(
                 date=date.today() - timedelta(days=days_ago),
-                single_pilot_se=1.5,
                 **kwargs,
             )
         )
@@ -945,6 +949,56 @@ class TestRecencyBreaches:
         uid, _tid = _make_user(app, "r6@ex.com")
         _add_logbook_entry(app, uid, days_ago=2, dual=0.0)  # solo, no instructor
         _add_logbook_entry(app, uid, days_ago=50, dual=1.0)  # last dual flight
+        _login(app, client, uid)
+        client.post("/pilot/minimums/create", data={"starter": "blank"})
+        sid = _add_section(app, client, uid, "Recency")
+        _add_item(
+            app,
+            client,
+            sid,
+            "Days since instructor flight",
+            "30 days",
+            tag=PersonalMinimumsTag.MAX_DAYS_SINCE_INSTRUCTOR_FLIGHT,
+            numeric="30",
+        )
+        client.post("/pilot/minimums/publish")
+        with app.app_context():
+            rev = PersonalMinimumsRevision.query.filter_by(
+                user_id=uid, status=PersonalMinimumsStatus.ACTIVE
+            ).one()
+            breaches = recency_breaches(rev, uid)
+            assert len(breaches) == 1
+            assert breaches[0]["days_since"] == 50
+
+    def test_sim_session_is_not_a_last_flight(self, app, client):
+        uid, _tid = _make_user(app, "r9@ex.com")
+        _add_logbook_entry(app, uid, days_ago=45)
+        _add_logbook_entry(app, uid, days_ago=2, fstd=True)
+        _login(app, client, uid)
+        client.post("/pilot/minimums/create", data={"starter": "blank"})
+        sid = _add_section(app, client, uid, "Recency")
+        _add_item(
+            app,
+            client,
+            sid,
+            "Days since last flight",
+            "30 days",
+            tag=PersonalMinimumsTag.MAX_DAYS_SINCE_LAST_FLIGHT,
+            numeric="30",
+        )
+        client.post("/pilot/minimums/publish")
+        with app.app_context():
+            rev = PersonalMinimumsRevision.query.filter_by(
+                user_id=uid, status=PersonalMinimumsStatus.ACTIVE
+            ).one()
+            breaches = recency_breaches(rev, uid)
+            assert len(breaches) == 1
+            assert breaches[0]["days_since"] == 45
+
+    def test_dual_sim_session_is_not_an_instructor_flight(self, app, client):
+        uid, _tid = _make_user(app, "r10@ex.com")
+        _add_logbook_entry(app, uid, days_ago=50, dual=1.0)
+        _add_logbook_entry(app, uid, days_ago=2, dual=1.0, fstd=True)
         _login(app, client, uid)
         client.post("/pilot/minimums/create", data={"starter": "blank"})
         sid = _add_section(app, client, uid, "Recency")

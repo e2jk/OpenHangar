@@ -79,7 +79,7 @@ from services.track_overview import (  # pyright: ignore[reportMissingImports]
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
     IMPORT_TMP_DIRNAME,
 )
-from sqlalchemy import func, or_  # pyright: ignore[reportMissingImports]
+from sqlalchemy import case, func, or_  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
     current_user_role,
     login_required,
@@ -999,6 +999,11 @@ def logbook() -> ResponseReturnValue:
 def _compute_totals_sql(pilot_user_id: int) -> dict[str, object]:
     """Aggregate totals over ALL entries for the pilot via SQL queries.
 
+    FSTD/simulator sessions only count towards the Sim (fstd_duration)
+    total: their night/instrument and function (PIC/co-pilot/dual/
+    instructor) hours are left out of those totals, like their (already
+    nulled) landings and single/multi-pilot time.
+
     Shared EASA figures (night/instrument time, landings, single_pilot_se/me,
     multi_pilot, fstd_duration) are summed once per row regardless of which
     slot this pilot occupies — they describe the flight, not the occupant.
@@ -1014,15 +1019,20 @@ def _compute_totals_sql(pilot_user_id: int) -> dict[str, object]:
         Flight.pic_user_id == pilot_user_id,
         Flight.second_crew_user_id == pilot_user_id,
     )
+    not_fstd = Flight.entry_type != LogbookEntryType.FSTD
+
+    def flight_sum(col: Any) -> Any:
+        return func.sum(case((not_fstd, col)))
+
     row = (
         db.session.query(
-            func.sum(Flight.night_time),
-            func.sum(Flight.instrument_time),
-            func.sum(Flight.landings_day),
-            func.sum(Flight.landings_night),
-            func.sum(Flight.single_pilot_se),
-            func.sum(Flight.single_pilot_me),
-            func.sum(Flight.multi_pilot),
+            flight_sum(Flight.night_time),
+            flight_sum(Flight.instrument_time),
+            flight_sum(Flight.landings_day),
+            flight_sum(Flight.landings_night),
+            flight_sum(Flight.single_pilot_se),
+            flight_sum(Flight.single_pilot_me),
+            flight_sum(Flight.multi_pilot),
             func.sum(Flight.fstd_duration),
         )
         .filter(mine)
@@ -1030,7 +1040,7 @@ def _compute_totals_sql(pilot_user_id: int) -> dict[str, object]:
     )
     fn_pic = (
         db.session.query(func.sum(Flight.function_pic))
-        .filter(Flight.pic_user_id == pilot_user_id)
+        .filter(Flight.pic_user_id == pilot_user_id, not_fstd)
         .scalar()
     )
     fn_second = (
@@ -1039,7 +1049,7 @@ def _compute_totals_sql(pilot_user_id: int) -> dict[str, object]:
             func.sum(Flight.function_dual),
             func.sum(Flight.function_instructor),
         )
-        .filter(Flight.second_crew_user_id == pilot_user_id)
+        .filter(Flight.second_crew_user_id == pilot_user_id, not_fstd)
         .one()
     )
 
