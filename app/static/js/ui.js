@@ -405,8 +405,22 @@ window.toggleLogbookEntryType = function () {
   document.querySelectorAll('.pe-flight-only').forEach(function (el) {
     el.style.display = isFstd ? 'none' : '';
   });
+  document.querySelectorAll('.pe-fstd-only').forEach(function (el) {
+    el.classList.toggle('d-none', !isFstd);
+  });
   var fstd = document.getElementById('pe-fstd-fields');
   if (fstd) fstd.style.display = isFstd ? '' : 'none';
+  // Switching to FSTD: prefill an empty session duration from the start/end
+  // times (the server does the same if it's still empty on save).
+  var dur = document.getElementById('fstd_duration');
+  var dep = document.getElementById('departure_time');
+  var arr = document.getElementById('arrival_time');
+  if (isFstd && dur && !dur.value && dep && arr && dep.value && arr.value) {
+    var toMin = function (v) { var p = v.split(':'); return (+p[0]) * 60 + (+p[1]); };
+    var mins = toMin(arr.value) - toMin(dep.value);
+    if (mins < 0) mins += 24 * 60;
+    if (mins > 0) dur.value = (Math.round(mins / 6) / 10).toString();
+  }
 };
 
 window._copyResetUrl = function () {

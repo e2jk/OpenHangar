@@ -66,18 +66,20 @@
         <h6 class="text-muted mb-2 border-bottom pb-1">{{ _('Simulator session') }}</h6>
         <div class="row g-3 mb-4">
           <div class="col-sm-4">
-            <label class="form-label" for="fstd_type">{{ _('Device type') }}</label>
+            <label class="form-label" for="fstd_type">{{ _('Device qualification') }}</label>
             <select class="form-select" id="fstd_type" name="fstd_type">
               <option value="">{{ _('Select…') }}</option>
               {% for t in FstdType.ALL %}
               <option value="{{ t }}" {% if entry and entry.fstd_type == t %}selected{% elif not entry and form.get('fstd_type') == t %}selected{% endif %}>{{ t }}</option>
               {% endfor %}
             </select>
+            <div class="form-text">{{ _('EASA FSTD category. Leave empty for a device that is not qualified.') }}</div>
           </div>
           <div class="col-sm-4">
             <label class="form-label" for="fstd_duration">{{ _('Duration (hours)') }}</label>
             <input type="number" class="form-control" id="fstd_duration" name="fstd_duration"
                    step="0.1" min="0" value="{{ fv_num('fstd_duration') }}">
+            <div class="form-text">{{ _('Left empty, it is computed from the session start and end times.') }}</div>
           </div>
         </div>
       </div>
@@ -122,13 +124,19 @@
         </div>
       </div>
 
-      {# ── Aircraft (flight only) ──────────────────────────────────────── #}
-      <div class="pe-flight-only">
-      <!-- Aircraft -->
-      <h6 class="text-muted mb-2 border-bottom pb-1">{{ _('Aircraft') }}</h6>
+      {# ── Aircraft / simulator device — kept on both entry types, so ──── #}
+      {# switching a flight to FSTD (or back) never drops it.              #}
+      {% set _is_fstd = (entry and entry.entry_type == LogbookEntryType.FSTD) or (not entry and form.get('entry_type') == LogbookEntryType.FSTD) %}
+      <h6 class="text-muted mb-2 border-bottom pb-1">
+        <span class="pe-flight-only">{{ _('Aircraft') }}</span>
+        <span class="pe-fstd-only{% if not _is_fstd %} d-none{% endif %}">{{ _('Simulator device') }}</span>
+      </h6>
       <div class="row g-3 mb-4">
         <div class="col-sm-6">
-          <label class="form-label" for="aircraft_type">{{ _('Type') }}</label>
+          <label class="form-label" for="aircraft_type">
+            <span class="pe-flight-only">{{ _('Type') }}</span>
+            <span class="pe-fstd-only{% if not _is_fstd %} d-none{% endif %}">{{ _('Make and model') }}</span>
+          </label>
           <input type="text" class="form-control" id="aircraft_type" name="aircraft_type"
                  value="{{ fv_str('aircraft_type', 'other_aircraft_type') }}" placeholder="e.g. C172S"
                  data-aircraft-type-ac="{{ url_for('aircraft_type_search') }}">
@@ -136,14 +144,20 @@
                  value="{{ entry.other_aircraft_type_icao or '' if entry else form.get('aircraft_type_icao', '') }}">
         </div>
         <div class="col-sm-6">
-          <label class="form-label" for="aircraft_registration">{{ _('Registration') }}</label>
+          <label class="form-label" for="aircraft_registration">
+            <span class="pe-flight-only">{{ _('Registration') }}</span>
+            <span class="pe-fstd-only{% if not _is_fstd %} d-none{% endif %}">{{ _('Device identifier') }} <span class="fw-normal small">({{ _('optional') }})</span></span>
+          </label>
           <input type="text" class="form-control" id="aircraft_registration" name="aircraft_registration"
                  value="{{ fv_str('aircraft_registration', 'other_aircraft_registration') }}" placeholder="e.g. OO-PNH">
         </div>
       </div>
 
       <!-- Route -->
-      <h6 class="text-muted mb-2 border-bottom pb-1">{{ _('Route') }}</h6>
+      <h6 class="text-muted mb-2 border-bottom pb-1">
+        <span class="pe-flight-only">{{ _('Route') }}</span>
+        <span class="pe-fstd-only{% if not _is_fstd %} d-none{% endif %}">{{ _('Session') }}</span>
+      </h6>
       <div class="row g-3 mb-4">
         <div class="col-sm-3">
           <label class="form-label" for="departure_place">{{ _('Departure') }}</label>
@@ -152,7 +166,10 @@
                  data-airport-ac="{{ url_for('airport_search') }}">
         </div>
         <div class="col-sm-3">
-          <label class="form-label" for="departure_time">{{ _('Dep. UTC') }}</label>
+          <label class="form-label" for="departure_time">
+            <span class="pe-flight-only">{{ _('Dep. UTC') }}</span>
+            <span class="pe-fstd-only{% if not _is_fstd %} d-none{% endif %}">{{ _('Start UTC') }}</span>
+          </label>
           <input type="time" class="form-control" id="departure_time" name="departure_time"
                  value="{{ fv_time('departure_time') }}">
         </div>
@@ -163,12 +180,15 @@
                  data-airport-ac="{{ url_for('airport_search') }}">
         </div>
         <div class="col-sm-3">
-          <label class="form-label" for="arrival_time">{{ _('Arr. UTC') }}</label>
+          <label class="form-label" for="arrival_time">
+            <span class="pe-flight-only">{{ _('Arr. UTC') }}</span>
+            <span class="pe-fstd-only{% if not _is_fstd %} d-none{% endif %}">{{ _('End UTC') }}</span>
+          </label>
           <input type="time" class="form-control" id="arrival_time" name="arrival_time"
                  value="{{ fv_time('arrival_time') }}">
         </div>
       </div>
-      <div class="row g-3 mb-4">
+      <div class="row g-3 mb-4 pe-flight-only">
         <div class="col-sm-12">
           <div class="form-text mb-2">
             <i class="bi bi-info-circle me-1"></i>
@@ -185,7 +205,6 @@
           <input type="time" class="form-control" id="landing_time" name="landing_time"
                  value="{{ fv_time('landing_time') }}">
         </div>
-      </div>
       </div>
 
       <!-- Crew -->

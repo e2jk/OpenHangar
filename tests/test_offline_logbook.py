@@ -1372,7 +1372,10 @@ def test_pilot_sync_fstd_toggle_applies(app, client):
     with app.app_context():
         pe = db.session.get(Flight, eid)
         assert pe.entry_type == "fstd"
-        assert pe.other_aircraft_type is None
+        # The aircraft/device descriptor survives the toggle; landings,
+        # which can't apply to a simulator, don't.
+        assert pe.other_aircraft_type == "Cessna 172S"
+        assert pe.landings_day is None
         assert float(pe.fstd_duration) == 1.5
 
 
