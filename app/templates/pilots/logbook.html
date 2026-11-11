@@ -245,6 +245,7 @@
             {% if e.entry_type == LogbookEntryType.FSTD %}
             <span class="badge oh-bg-navy-solid oh-fs-08"><i class="bi bi-display me-1"></i>{{ _('FSTD') }}</span>
             {{ e.fstd_type or '' }}
+            {% if e.display_aircraft_type %}<div class="text-muted oh-fs-08">{{ e.display_aircraft_type }}</div>{% endif %}
             {% else %}
             {{ e.display_aircraft_type or '—' }}
             {% endif %}

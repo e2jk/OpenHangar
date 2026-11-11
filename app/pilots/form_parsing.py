@@ -79,13 +79,28 @@ def _parse_date(val: str, field: str) -> tuple[_date | None, str | None]:
         return None, _("%(field)s: enter a valid date (YYYY-MM-DD).", field=field)
 
 
+def _session_hours(start: _time | None, end: _time | None) -> float | None:
+    """Hours between two UTC clock times, to one decimal, wrapping past
+    midnight; None unless both are given and differ."""
+    if start is None or end is None:
+        return None
+    minutes = (end.hour * 60 + end.minute) - (start.hour * 60 + start.minute)
+    if minutes < 0:
+        minutes += 24 * 60
+    return round(minutes / 60, 1) if minutes else None
+
+
 def parse_pilot_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str]]:
     """Parse + validate the editable standalone PilotLogbookEntry fields.
 
     Mirrors ``_entry_from_form``'s existing logic exactly: date required/ISO;
-    times ``HH:MM``; decimals/ints non-negative; the FSTD toggle nulls
-    flight-only fields when ``entry_type == "fstd"`` and nulls
-    ``fstd_type``/``fstd_duration`` otherwise.
+    times ``HH:MM``; decimals/ints non-negative. An FSTD session keeps its
+    device (``other_aircraft_*`` = device make/model + optional identifier),
+    route and session start/end times — so toggling a flight to FSTD (or
+    back) never drops them — and only nulls what can't apply to a
+    simulator: landings and the single/multi-pilot flight-time columns.
+    An empty FSTD duration is derived from the session start/end times.
+    A flight nulls ``fstd_type``/``fstd_duration``.
     """
     errors: list[str] = []
 
@@ -160,27 +175,21 @@ def parse_pilot_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str]]
     if err:
         errors.append(err)
 
+    if is_fstd and fstd_duration is None:
+        fstd_duration = _session_hours(dep_time, arr_time)
+
     values: dict[str, Any] = {
         "date": date_val,
-        "other_aircraft_type": None
-        if is_fstd
-        else (f.get("aircraft_type") or "").strip() or None,
-        "other_aircraft_type_icao": None
-        if is_fstd
-        else (f.get("aircraft_type_icao") or "").strip() or None,
-        "other_aircraft_registration": None
-        if is_fstd
-        else (f.get("aircraft_registration") or "").strip() or None,
-        "departure_icao": None
-        if is_fstd
-        else (f.get("departure_place") or "").strip() or None,
-        "departure_time": None if is_fstd else dep_time,
-        "arrival_icao": None
-        if is_fstd
-        else (f.get("arrival_place") or "").strip() or None,
-        "arrival_time": None if is_fstd else arr_time,
-        "takeoff_time": None if is_fstd else takeoff_time,
-        "landing_time": None if is_fstd else landing_time,
+        "other_aircraft_type": (f.get("aircraft_type") or "").strip() or None,
+        "other_aircraft_type_icao": (f.get("aircraft_type_icao") or "").strip() or None,
+        "other_aircraft_registration": (f.get("aircraft_registration") or "").strip()
+        or None,
+        "departure_icao": (f.get("departure_place") or "").strip() or None,
+        "departure_time": dep_time,
+        "arrival_icao": (f.get("arrival_place") or "").strip() or None,
+        "arrival_time": arr_time,
+        "takeoff_time": takeoff_time,
+        "landing_time": landing_time,
         "pic_name": (f.get("pic_name") or "").strip() or None,
         "night_time": night_time,
         "instrument_time": instrument_time,

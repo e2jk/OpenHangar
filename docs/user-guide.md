@@ -152,7 +152,7 @@ Edits made while offline are queued on your device and upload automatically the 
 
 ![Offline changes and conflict resolution](screenshots/offline_changes.png)
 
-Your **pilot logbook** works offline the same way. If a flight's aircraft-logbook entry has a personal logbook entry linked to it, the offline workbench shows a **My logbook** section under that row: night/instrument time, landings, PIC name, and time overrides are editable there, while everything derived from the flight itself (aircraft type, route, function hours, remarks) stays read-only and simply follows whatever the flight fields say. Standalone entries — manual, imported, FSTD/simulator sessions, or flights in aircraft outside the fleet — get their own **offline pilot logbook** workbench (linked from the Pilot logbook page), with FSTD rows showing device type and duration instead of route/counter columns.
+Your **pilot logbook** works offline the same way. If a flight's aircraft-logbook entry has a personal logbook entry linked to it, the offline workbench shows a **My logbook** section under that row: night/instrument time, landings, PIC name, and time overrides are editable there, while everything derived from the flight itself (aircraft type, route, function hours, remarks) stays read-only and simply follows whatever the flight fields say. Standalone entries — manual, imported, FSTD/simulator sessions, or flights in aircraft outside the fleet — get their own **offline pilot logbook** workbench (linked from the Pilot logbook page), with FSTD rows also showing the device qualification and session duration (they keep their device, route and times; only landings are hidden).
 
 ![Offline pilot logbook workbench](screenshots/offline_pilot_workbench.png)
 

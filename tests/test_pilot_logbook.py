@@ -948,11 +948,10 @@ class TestFstdLogbookEntries:
             assert float(entry.fstd_duration) == 2.5
             assert entry.notes == "Instrument approaches"
 
-    def test_fstd_entry_nulls_flight_specific_fields_even_if_submitted(
-        self, app, client
-    ):
-        """A tampered form submitting aircraft/route/counters alongside
-        entry_type=fstd must not persist those flight-only values."""
+    def test_fstd_entry_keeps_device_route_and_times(self, app, client):
+        """An FSTD session keeps its device (make/model + identifier), route
+        and session times, but drops landings and the single/multi-pilot
+        flight-time columns, which can't apply to a simulator."""
         uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         client.post(
@@ -962,13 +961,14 @@ class TestFstdLogbookEntries:
                 "date": "2024-06-01",
                 "fstd_type": "FFS",
                 "fstd_duration": "1.0",
-                "aircraft_type": "C172S",
-                "aircraft_type_icao": "C172",
-                "aircraft_registration": "OO-TST",
+                "aircraft_type": "ALSIM AL-250",
+                "aircraft_registration": "OO-SIM",
                 "departure_place": "EBOS",
                 "departure_time": "10:00",
                 "arrival_place": "EBBR",
                 "arrival_time": "11:00",
+                "takeoff_time": "10:10",
+                "landing_time": "10:50",
                 "landings_day": "3",
                 "landings_night": "1",
                 "single_pilot_se": "1.5",
@@ -980,19 +980,150 @@ class TestFstdLogbookEntries:
         with app.app_context():
             entry = Flight.query.filter_by(pic_user_id=uid).first()
             assert entry is not None
-            assert entry.other_aircraft_type is None
-            assert entry.other_aircraft_type_icao is None
-            assert entry.other_aircraft_registration is None
-            assert entry.departure_icao is None
-            assert entry.departure_time is None
-            assert entry.arrival_icao is None
-            assert entry.arrival_time is None
+            assert entry.other_aircraft_type == "ALSIM AL-250"
+            assert entry.other_aircraft_registration == "OO-SIM"
+            assert entry.departure_icao == "EBOS"
+            assert entry.arrival_icao == "EBBR"
+            assert entry.departure_time.strftime("%H:%M") == "10:00"
+            assert entry.arrival_time.strftime("%H:%M") == "11:00"
+            assert entry.takeoff_time.strftime("%H:%M") == "10:10"
+            assert entry.landing_time.strftime("%H:%M") == "10:50"
+            assert float(entry.fstd_duration) == 1.0
             assert entry.landings_day is None
             assert entry.landings_night is None
             assert entry.single_pilot_se is None
             assert entry.single_pilot_me is None
             assert entry.multi_pilot is None
             assert entry.total_flight_time is None
+
+    def test_fstd_duration_derived_from_session_times(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        client.post(
+            "/pilot/logbook/new",
+            data={
+                "entry_type": "fstd",
+                "date": "2024-06-01",
+                "departure_time": "15:14",
+                "arrival_time": "16:20",
+            },
+            follow_redirects=True,
+        )
+        with app.app_context():
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
+            assert float(entry.fstd_duration) == 1.1
+
+    def test_fstd_duration_derivation_wraps_midnight(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        client.post(
+            "/pilot/logbook/new",
+            data={
+                "entry_type": "fstd",
+                "date": "2024-06-01",
+                "departure_time": "23:30",
+                "arrival_time": "00:30",
+            },
+            follow_redirects=True,
+        )
+        with app.app_context():
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
+            assert float(entry.fstd_duration) == 1.0
+
+    def test_fstd_duration_not_derived_from_identical_times(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        client.post(
+            "/pilot/logbook/new",
+            data={
+                "entry_type": "fstd",
+                "date": "2024-06-01",
+                "departure_time": "10:00",
+                "arrival_time": "10:00",
+            },
+            follow_redirects=True,
+        )
+        with app.app_context():
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
+            assert entry.fstd_duration is None
+
+    def test_explicit_fstd_duration_wins_over_session_times(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        client.post(
+            "/pilot/logbook/new",
+            data={
+                "entry_type": "fstd",
+                "date": "2024-06-01",
+                "departure_time": "10:00",
+                "arrival_time": "12:00",
+                "fstd_duration": "1.5",
+            },
+            follow_redirects=True,
+        )
+        with app.app_context():
+            entry = Flight.query.filter_by(pic_user_id=uid).first()
+            assert float(entry.fstd_duration) == 1.5
+
+    def test_switching_fstd_back_to_flight_keeps_times(self, app, client):
+        """Correcting a session back to a flight keeps its start/end times
+        as the engine start/end and drops the FSTD-only fields."""
+        uid, _ = _create_user_and_tenant(app)
+        _login(app, client)
+        client.post(
+            "/pilot/logbook/new",
+            data={
+                "entry_type": "fstd",
+                "date": "2024-06-01",
+                "fstd_type": "FNPT",
+                "aircraft_type": "C172S",
+                "departure_time": "10:00",
+                "arrival_time": "11:00",
+            },
+            follow_redirects=True,
+        )
+        with app.app_context():
+            eid = Flight.query.filter_by(pic_user_id=uid).first().id
+        client.post(
+            f"/pilot/logbook/{eid}/edit",
+            data={
+                "entry_type": "flight",
+                "date": "2024-06-01",
+                "fstd_type": "FNPT",
+                "fstd_duration": "1.0",
+                "aircraft_type": "C172S",
+                "departure_time": "10:00",
+                "arrival_time": "11:00",
+            },
+            follow_redirects=True,
+        )
+        with app.app_context():
+            entry = db.session.get(Flight, eid)
+            assert entry.entry_type == LogbookEntryType.FLIGHT
+            assert entry.other_aircraft_type == "C172S"
+            assert entry.departure_time.strftime("%H:%M") == "10:00"
+            assert entry.arrival_time.strftime("%H:%M") == "11:00"
+            assert entry.fstd_type is None
+            assert entry.fstd_duration is None
+
+    def test_fstd_edit_form_shows_device_labels(self, app, client):
+        uid, _ = _create_user_and_tenant(app)
+        eid = _add_logbook_entry(
+            app,
+            uid,
+            entry_type=LogbookEntryType.FSTD,
+            fstd_duration=1.0,
+            aircraft_type="ALSIM AL-250",
+            aircraft_registration="OO-SIM",
+            single_pilot_se=None,
+            landings_day=None,
+        )
+        _login(app, client)
+        resp = client.get(f"/pilot/logbook/{eid}/edit")
+        html = resp.get_data(as_text=True)
+        assert 'class="pe-fstd-only">Simulator device' in html
+        assert "ALSIM AL-250" in html
+        assert "OO-SIM" in html
 
     def test_invalid_entry_type_falls_back_to_flight(self, app, client):
         uid, _ = _create_user_and_tenant(app)
@@ -1049,7 +1180,6 @@ class TestFstdLogbookEntries:
             entry = db.session.get(Flight, eid)
             assert entry.entry_type == LogbookEntryType.FSTD
             assert entry.fstd_type == "AATD"
-            assert entry.other_aircraft_type is None
             assert entry.single_pilot_se is None
 
     def test_logbook_totals_include_fstd_duration_separately(self, app, client):
@@ -1246,7 +1376,7 @@ class TestParserValidation:
         assert resp.status_code == 422
         assert b"valid HH:MM" in resp.data
 
-    def test_takeoff_landing_time_nulled_for_fstd(self, app, client):
+    def test_takeoff_landing_time_kept_for_fstd(self, app, client):
         uid, _ = _create_user_and_tenant(app)
         _login(app, client)
         _post_entry(
@@ -1261,8 +1391,8 @@ class TestParserValidation:
         )
         with app.app_context():
             entry = Flight.query.filter_by(pic_user_id=uid).first()
-            assert entry.takeoff_time is None
-            assert entry.landing_time is None
+            assert entry.takeoff_time.strftime("%H:%M") == "09:05"
+            assert entry.landing_time.strftime("%H:%M") == "10:25"
 
     def test_invalid_date_string_shows_error(self, app, client):
         # covers line 266: invalid (non-empty) date

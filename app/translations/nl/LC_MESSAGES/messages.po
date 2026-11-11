@@ -12901,3 +12901,30 @@ msgstr "Eigenaren en beheerders hebben altijd volledige toegang tot de vloot —
 msgid "Permissions updated."
 msgstr "Machtigingen bijgewerkt."
 
+
+msgid "Device qualification"
+msgstr "Kwalificatie van het toestel"
+
+msgid "EASA FSTD category. Leave empty for a device that is not qualified."
+msgstr "EASA FSTD-categorie. Leeg laten voor een niet-gekwalificeerd toestel."
+
+msgid "Left empty, it is computed from the session start and end times."
+msgstr "Indien leeg, wordt deze berekend uit de begin- en eindtijd van de sessie."
+
+msgid "Simulator device"
+msgstr "Simulator"
+
+msgid "Make and model"
+msgstr "Merk en model"
+
+msgid "Device identifier"
+msgstr "Identificatie van het toestel"
+
+msgid "Session"
+msgstr "Sessie"
+
+msgid "Start UTC"
+msgstr "Begin UTC"
+
+msgid "End UTC"
+msgstr "Einde UTC"

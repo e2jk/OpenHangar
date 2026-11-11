@@ -1,10 +1,5 @@
-# Registration of other aircraft shown on GPS import matches
+# Simulator sessions keep their data and stay out of flight totals
 
-**GPS import**
-- A GPS segment matching a flight on an aircraft not managed here shows that flight's registration (as recorded with it) instead of "(?)"; when none was recorded, nothing is shown.
-
-**Dashboard**
-- The dashboard's recent flights put same-day flights latest first by departure time, like the aircraft page: the day's earlier leg could show as the most recent flight (it had been entered after the later one). Same for the lists of pending crew invitations and claims.
-
-**Maintenance**
-- A GPS import test imports its module one way only (CodeQL note #639).
+**Pilot logbook**
+- Marking a logbook entry as an FSTD/simulator session no longer wipes its aircraft, route and start/end times: they are kept as the simulator device (make and model, plus an optional identifier such as the school's "registration"), the simulated route and the session times. Only landings and single/multi-pilot flight time are dropped, as they can't apply to a simulator. Switching a session back to a flight keeps its times too.
+- An FSTD session left without a duration gets it from its start and end times. The device qualification (FFS, FNPT…) can be left empty for a simulator that isn't qualified.
