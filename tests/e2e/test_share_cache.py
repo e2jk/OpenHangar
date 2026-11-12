@@ -75,33 +75,33 @@ def isolated_showcase_server(tmp_path, monkeypatch):
             db.engine.dispose()
 
 
-def test_showcase_photo_http_cache_rechecks_revoked_token(isolated_showcase_server):
+def test_showcase_photo_http_cache_rechecks_revoked_token(
+    isolated_showcase_server, playwright_runtime
+):
     from models import ShareToken, db
-    from playwright.sync_api import sync_playwright
 
     app, origin, photo_id, token_id, requests = isolated_showcase_server
     photo_path = f"/showcase/browsercache/photos/{photo_id}/img"
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
-        try:
-            # Routing/interception disables Chromium's HTTP cache: do not install
-            # a page/context route here. The browser uses its ordinary cache.
-            context = browser.new_context(service_workers="block")
-            page = context.new_page()
-            page.goto(origin + "/showcase/browsercache", wait_until="load")
-            page.wait_for_function(
-                "() => Array.from(document.images).some(img => img.naturalWidth === 2)"
-            )
-            before = len(requests)
-            assert before >= 1
-            with app.app_context():
-                db.session.get(ShareToken, token_id).revoked_at = datetime.now(UTC)
-                db.session.commit()
-            status = page.evaluate(
-                "path => fetch(path).then(response => response.status)", photo_path
-            )
-            assert status == 404
-            assert len(requests) == before + 1
-            context.close()
-        finally:
-            browser.close()
+    browser = playwright_runtime.chromium.launch(headless=True)
+    try:
+        # Routing/interception disables Chromium's HTTP cache: do not install
+        # a page/context route here. The browser uses its ordinary cache.
+        context = browser.new_context(service_workers="block")
+        page = context.new_page()
+        page.goto(origin + "/showcase/browsercache", wait_until="load")
+        page.wait_for_function(
+            "() => Array.from(document.images).some(img => img.naturalWidth === 2)"
+        )
+        before = len(requests)
+        assert before >= 1
+        with app.app_context():
+            db.session.get(ShareToken, token_id).revoked_at = datetime.now(UTC)
+            db.session.commit()
+        status = page.evaluate(
+            "path => fetch(path).then(response => response.status)", photo_path
+        )
+        assert status == 404
+        assert len(requests) == before + 1
+        context.close()
+    finally:
+        browser.close()
