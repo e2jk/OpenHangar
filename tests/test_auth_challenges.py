@@ -206,6 +206,7 @@ def test_profile_challenge_cannot_be_replayed_or_used_for_login(app, client):
 def test_losing_a_consumption_race_never_authenticates_or_changes_credentials(
     app, client, purpose
 ):
+    uid = None  # only the non-setup purposes create a user up front
     if purpose == "setup":
         client.post(
             "/setup",
