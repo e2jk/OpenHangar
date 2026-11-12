@@ -637,11 +637,38 @@ class Aircraft(db.Model):
         from datetime import date as _date
 
         today = _date.today()
-        if self.insurance_expiry is not None and self.insurance_expiry < today:
+        insurance = self.insurance_covered_until
+        if insurance is not None and insurance < today:
             return True
-        if self.arc_expiry is not None and self.arc_expiry < today:
+        arc = self.arc_covered_until
+        if arc is not None and arc < today:
             return True
         return any(s.is_grounding and s.is_open for s in self.snags)
+
+    def _covered_until(self, doc_type: str, cached: date | None) -> date | None:
+        """Through a renewal already on file (services.document_lifecycle),
+        so a renewal uploaded ahead of time stops "expiring soon" warnings
+        and takes over on its start date even before the daily job syncs
+        the cached date. The cached date itself when no document backs it
+        (e.g. demo/seed data that sets it directly)."""
+        from services import (  # pyright: ignore[reportMissingImports]
+            document_lifecycle,
+        )
+
+        return (
+            document_lifecycle.coverage_until(
+                document_lifecycle.Owner(aircraft_id=self.id), doc_type
+            )
+            or cached
+        )
+
+    @property
+    def insurance_covered_until(self) -> date | None:
+        return self._covered_until(DocType.INSURANCE_CERT, self.insurance_expiry)
+
+    @property
+    def arc_covered_until(self) -> date | None:
+        return self._covered_until(DocType.ARC, self.arc_expiry)
 
     @staticmethod
     def _expiry_status(expiry: date | None) -> str:
@@ -657,13 +684,15 @@ class Aircraft(db.Model):
 
     @property
     def insurance_status(self) -> str:
-        """Return 'expired', 'expiring_soon' (≤30 days), or 'ok'."""
-        return self._expiry_status(self.insurance_expiry)
+        """Return 'expired', 'expiring_soon' (≤30 days), or 'ok' — for
+        coverage through any renewal already on file."""
+        return self._expiry_status(self.insurance_covered_until)
 
     @property
     def arc_status(self) -> str:
-        """Return 'expired', 'expiring_soon' (≤30 days), or 'ok'."""
-        return self._expiry_status(self.arc_expiry)
+        """Return 'expired', 'expiring_soon' (≤30 days), or 'ok' — for
+        coverage through any renewal already on file."""
+        return self._expiry_status(self.arc_covered_until)
 
 
 class AircraftPhoto(db.Model):

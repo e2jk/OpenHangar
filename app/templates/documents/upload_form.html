@@ -46,6 +46,13 @@
             <div id="file-name" class="form-text mt-1 text-muted"></div>
           </div>
 
+          {% if replacing %}
+          <div class="alert alert-info oh-fs-09">
+            <i class="bi bi-arrow-repeat me-1"></i>{{ _('Replacing %(name)s.', name=(replacing.title or replacing.original_filename)) }}
+            {{ _("It stays on file, marked as superseded once the new document is in force: right away, or on its 'Valid from' date if that is later.") }}
+          </div>
+          {% endif %}
+
           <div class="mb-3">
             <label for="title" class="form-label">
               {{ _('Title') }} <span class="text-muted small">({{ _('optional — shown instead of filename') }})</span>
@@ -60,7 +67,7 @@
             <select class="form-select" id="category" name="category">
               <option value="">{{ _('— none —') }}</option>
               {% for value, label in categories %}
-              <option value="{{ value }}">{{ _(label) }}</option>
+              <option value="{{ value }}"{% if value == selected_category %} selected{% endif %}>{{ _(label) }}</option>
               {% endfor %}
             </select>
             <div class="form-text">{{ _('Sets the folder on disk — used by Syncthing sync.') }}</div>
@@ -71,7 +78,7 @@
             <select class="form-select" id="doc_type" name="doc_type">
               <option value="">{{ _('— none —') }}</option>
               {% for value, label in doc_types %}
-              <option value="{{ value }}">{{ label }}</option>
+              <option value="{{ value }}"{% if value == selected_type %} selected{% endif %}>{{ label }}</option>
               {% endfor %}
             </select>
           </div>

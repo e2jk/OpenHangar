@@ -408,26 +408,19 @@ def dispatch(
 
 
 def _recompute_all_expiry_fields() -> None:
-    """Roll Aircraft.insurance_expiry/arc_expiry over to a future-dated
-    document once its valid_from arrives, even on days nobody touches that
-    aircraft's documents -- upload/edit/delete (documents/routes.py) are
-    the only other trigger for _recompute_expiry_field. Runs before the
-    checks below so a same-day rollover is reflected in that day's
-    notification emails too, not just the next one."""
-    from documents.routes import (  # pyright: ignore[reportMissingImports]
-        _recompute_expiry_field,
-    )
-    from models import (  # pyright: ignore[reportMissingImports]
-        Aircraft,
-        DocType,
-        Tenant,
-        db,
+    """Let a renewal uploaded ahead of time take over on its valid_from —
+    mark the certificate it replaces superseded and sync the aircraft's
+    insurance/ARC dates and pilots' medical expiry — even on days nobody
+    touches those documents (services.document_lifecycle.refresh_all).
+    Runs before the checks below so a same-day rollover is reflected in
+    that day's notification emails too."""
+    from models import db  # pyright: ignore[reportMissingImports]
+
+    from services import (  # pyright: ignore[reportMissingImports]
+        document_lifecycle,
     )
 
-    for tenant in Tenant.query.filter_by(is_active=True).all():
-        for ac in Aircraft.query.filter_by(tenant_id=tenant.id, archived_at=None).all():
-            _recompute_expiry_field(ac, DocType.INSURANCE_CERT)
-            _recompute_expiry_field(ac, DocType.ARC)
+    document_lifecycle.refresh_all()
     db.session.commit()
 
 
@@ -742,6 +735,10 @@ def _check_medical_and_sep(app: Any) -> None:
     from models import NotificationType as NT  # pyright: ignore[reportMissingImports]
     from models import PilotProfile, TenantUser, User, db
 
+    from services.document_lifecycle import (  # pyright: ignore[reportMissingImports]
+        medical_covered_until,
+    )
+
     today = date.today()
     for profile in PilotProfile.query.all():
         user = db.session.get(User, profile.user_id)
@@ -758,7 +755,9 @@ def _check_medical_and_sep(app: Any) -> None:
         for notif_type, expiry, label, label_lower in [
             (
                 NT.MEDICAL_EXPIRING,
-                profile.medical_expiry,
+                # Through a renewal already on file: no reminder while the
+                # next medical certificate is uploaded and starts in time.
+                medical_covered_until(profile),
                 _l("Medical certificate"),
                 _l("medical certificate"),
             ),

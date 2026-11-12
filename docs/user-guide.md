@@ -231,14 +231,43 @@ An aircraft's insurance and ARC status are both driven by documents, not by a
 manually-typed date: upload the current insurance certificate or ARC (via the
 aircraft's Documents section, or the quick "Upload cert" button in its
 Insurance/ARC panel) with a **Valid until** date, and OpenHangar tracks the
-expiry from there. Uploading a new certificate of the same type automatically
-supersedes the previous one and becomes the one driving the aircraft's status.
+expiry from there. To renew, use **Replace** on the certificate in force in the
+Documents list (or just upload the new one with the same document type).
+
+The same rules apply to an aircraft's insurance and ARC and to a pilot's
+medical certificate and licence (see [Pilot documents](#pilot-documents)):
+
+- **In force** is the certificate that has started (its **Valid from** date has
+  arrived, or it has none) and is valid the longest. Uploading an older
+  certificate for your records never displaces the current one.
+- The others are kept on file, marked **superseded** — still viewable and
+  downloadable, for archival.
+- A renewal uploaded ahead of time, with a **Valid from** date still in the
+  future, is shown as **upcoming**: the current certificate stays in force
+  until that date, then the renewal takes over and the old one is marked
+  superseded (checked daily, so it happens on its own).
+- As long as a renewal on file starts no later than the day after the current
+  one ends, there is no "expires soon" warning or reminder — coverage is
+  counted through the renewal. A real gap between the two is still reported.
 
 A lapsed insurance certificate or ARC marks the aircraft **grounded**, exactly
 like an open grounding snag — reservations warn or block the same way, and
 both send an "expiring soon" reminder email (default 30 days ahead for
 insurance, 60 days for the ARC; configurable per user under **Configuration →
 Notifications**).
+
+### Pilot documents
+
+Your **Pilot profile** keeps your licence, medical certificate and other
+personal documents (always marked sensitive). A medical certificate or licence
+follows the same lifecycle as an aircraft's insurance and ARC (see above):
+**Replace** on the one in force uploads its successor, the old one stays on
+file as superseded, and a renewal can be uploaded ahead of time with a future
+**Valid from** date.
+
+Once a medical certificate is uploaded, it drives the **Medical expiry** on
+your profile (the field becomes read-only) and so the "medical expiring"
+reminder: no reminder while the next certificate is already on file.
 
 ### Understanding operating costs
 

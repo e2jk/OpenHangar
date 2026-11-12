@@ -157,7 +157,13 @@ def night_currency(entries: Any, today: _date | None = None) -> dict[str, Any]:
 def medical_status(profile: Any, today: _date | None = None) -> dict[str, Any]:
     if today is None:
         today = _date.today()
-    expiry = profile.medical_expiry if profile else None
+    # Through a renewal already on file (services.document_lifecycle): no
+    # "expiring" status while the next medical certificate is uploaded.
+    from services.document_lifecycle import (  # pyright: ignore[reportMissingImports]
+        medical_covered_until,
+    )
+
+    expiry = medical_covered_until(profile, today) if profile else None
     status, days = _expiry_status(expiry, today, EXPIRY_WARN_DAYS)
     return {"expiry": expiry, "status": status, "days_remaining": days}
 

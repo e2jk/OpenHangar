@@ -37,6 +37,13 @@
             <div id="file-name" class="form-text mt-1 text-muted"></div>
           </div>
 
+          {% if replacing %}
+          <div class="alert alert-info oh-fs-09">
+            <i class="bi bi-arrow-repeat me-1"></i>{{ _('Replacing %(name)s.', name=(replacing.title or replacing.original_filename)) }}
+            {{ _("It stays on file, marked as superseded once the new document is in force: right away, or on its 'Valid from' date if that is later.") }}
+          </div>
+          {% endif %}
+
           <div class="mb-3">
             <label for="title" class="form-label">
               {{ _('Title') }} <span class="text-muted small">({{ _('optional — shown instead of filename') }})</span>
@@ -50,9 +57,15 @@
             <select class="form-select" id="doc_type" name="doc_type">
               <option value="">{{ _('— none —') }}</option>
               {% for value, label in doc_types %}
-              <option value="{{ value }}">{{ label }}</option>
+              <option value="{{ value }}"{% if value == selected_type %} selected{% endif %}>{{ label }}</option>
               {% endfor %}
             </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="valid_from" class="form-label">{{ _('Valid from') }}</label>
+            <input type="date" class="form-control" id="valid_from" name="valid_from">
+            <div class="form-text">{{ _("Only needed if this document shouldn't count as in force yet — e.g. a renewal that starts when the current one ends.") }}</div>
           </div>
 
           <div class="mb-4">

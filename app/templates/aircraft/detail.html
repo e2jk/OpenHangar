@@ -38,10 +38,10 @@
     <div>
       <strong>{{ _('Aircraft grounded.') }}</strong>
       {% if aircraft.insurance_status == 'expired' %}
-      {{ _('Insurance expired on %(date)s.', date=aircraft.insurance_expiry.strftime('%Y-%m-%d')) }}
+      {{ _('Insurance expired on %(date)s.', date=aircraft.insurance_covered_until.strftime('%Y-%m-%d')) }}
       {% endif %}
       {% if aircraft.arc_status == 'expired' %}
-      {{ _('ARC expired on %(date)s.', date=aircraft.arc_expiry.strftime('%Y-%m-%d')) }}
+      {{ _('ARC expired on %(date)s.', date=aircraft.arc_covered_until.strftime('%Y-%m-%d')) }}
       {% endif %}
       {% set grounding_snags = open_snags | selectattr('is_grounding') | list %}
       {% if grounding_snags %}
