@@ -148,6 +148,16 @@ def login(page, origin, label):
     return page.evaluate("() => window.OhOfflineIdentity.current()")
 
 
+def wait_for_settled_worker(page):
+    """Wait until no service-worker update is installing or waiting, so a test
+    does not go offline while a new worker is still taking over."""
+    page.wait_for_function(
+        """() => navigator.serviceWorker.getRegistration().then(reg =>
+            !!reg && !!reg.active && reg.active.state === 'activated'
+            && !reg.installing && !reg.waiting)"""
+    )
+
+
 def test_account_switch_preserves_owners_queue_without_disclosing_or_replaying_it(
     isolated_offline_server,
     playwright_runtime,
@@ -247,6 +257,7 @@ def test_account_switch_preserves_owners_queue_without_disclosing_or_replaying_i
 def test_logout_permission_loss_and_worker_upgrade_retire_private_cache(
     isolated_offline_server,
     playwright_runtime,
+    monkeypatch,
 ):
     from models import User, db
 
@@ -259,15 +270,21 @@ def test_logout_permission_loss_and_worker_upgrade_retire_private_cache(
         page.evaluate(
             "() => OhOffline.addQueueEntry({queued_at:Date.now(),fields:{notes:'PRESERVE-ON-UPGRADE'}})"
         )
-        page.evaluate("""async () => {
-          await caches.open('old-unscoped-cache').then(c => c.put('/pilot/logbook', new Response('ALPHA-OLD-CACHE')));
-          const old = await navigator.serviceWorker.getRegistration(); await old.unregister();
-          await navigator.serviceWorker.register('/sw.js?upgrade=1',{scope:'/'});
-          await navigator.serviceWorker.ready;
-        }""")
-        page.wait_for_function(
-            "() => caches.keys().then(names => !names.includes('old-unscoped-cache'))"
+        page.evaluate(
+            """() => caches.open('old-unscoped-cache').then(c =>
+                 c.put('/pilot/logbook', new Response('ALPHA-OLD-CACHE')))"""
         )
+        # A real upgrade: same /sw.js URL, new content (the cache version comes
+        # from OPENHANGAR_VERSION, read on every request), picked up by update().
+        monkeypatch.setenv("OPENHANGAR_VERSION", "offline-account-browser-test-v2")
+        page.evaluate(
+            "() => navigator.serviceWorker.getRegistration().then(reg => reg.update())"
+        )
+        page.wait_for_function(
+            """() => caches.keys().then(names => !names.includes('old-unscoped-cache')
+                 && names.includes('openhangar-offline-account-browser-test-v2'))"""
+        )
+        wait_for_settled_worker(page)
         assert (
             page.evaluate("() => OhOffline.getQueue().then(rows => rows.length)") == 1
         )
@@ -282,6 +299,7 @@ def test_logout_permission_loss_and_worker_upgrade_retire_private_cache(
             "owner => caches.keys().then(names => !names.some(name => name.includes('-private-' + owner)))",
             arg=alpha["owner"],
         )
+        wait_for_settled_worker(page)
         context.set_offline(True)
         page.goto(origin + "/pilot/logbook", wait_until="load")
         assert "ALPHA-PRIVATE" not in page.content()
@@ -427,7 +445,8 @@ def test_own_password_change_renews_context_without_a_login_dead_end(
         form.locator('[name="confirm_password"]').fill("RenewedBrowserPassword123!")
         form.locator('button[type="submit"]').click()
         page.wait_for_function(
-            "previous => !!OhOfflineIdentity.current() && OhOfflineIdentity.current().session !== previous",
+            # Guarded: the condition is also evaluated while the next page loads.
+            "previous => !!window.OhOfflineIdentity?.current() && OhOfflineIdentity.current().session !== previous",
             arg=before["session"],
         )
         after = page.evaluate("() => OhOfflineIdentity.current()")
