@@ -242,9 +242,9 @@ def _login_credentials() -> ResponseReturnValue:
     _clear_account_failures(email)
 
     # Upgrade legacy bcrypt hashes to Argon2id transparently at login time.
+    # Same password, so the user's other logins stay valid.
     if _pw.needs_rehash(user.password_hash):
-        user.password_hash = _pw.hash(password)
-        db.session.commit()
+        auth_sessions.rehash_password(user, _pw.hash(password))
 
     # Block users whose only tenant(s) have been deactivated, unless they are
     # the instance admin (who must always be able to log in).

@@ -8,7 +8,14 @@ import secrets
 import time
 
 from flask import current_app, session
-from models import AuthSession, TenantUser, User, db
+from models import (
+    SAME_PASSWORD_REHASH,
+    AuthChallenge,
+    AuthSession,
+    TenantUser,
+    User,
+    db,
+)
 
 from services.auth_challenges import credential_binding
 
@@ -52,6 +59,26 @@ def start(user: User) -> None:
     session["user_id"] = user.id
     session["auth_session"] = issue(user)
     session.permanent = True
+
+
+def rehash_password(user: User, new_hash: str) -> None:
+    """Store a stronger hash of the same, just-verified password.
+
+    Not a credential change: logins and challenges valid under the old hash stay
+    valid. Only records bound to the old credentials are re-bound, so anything
+    already revoked stays revoked. Real password changes must not use this.
+    """
+    old_binding = credential_binding(user)
+    user.password_hash = new_hash
+    # Read (and cleared) by models._rotate_auth_version during the flush.
+    db.session.info.setdefault(SAME_PASSWORD_REHASH, set()).add(user.id)
+    db.session.flush()
+    new_binding = credential_binding(user)
+    for model in (AuthSession, AuthChallenge):
+        model.query.filter_by(user_id=user.id, credential_binding=old_binding).update(
+            {"credential_binding": new_binding}, synchronize_session=False
+        )
+    db.session.commit()
 
 
 def revoke_current() -> None:
