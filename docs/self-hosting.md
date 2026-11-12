@@ -68,6 +68,9 @@ services:
     environment:
       OPENHANGAR_DATABASE_URL: postgresql://openhangar:changeme@openhangar-db/openhangar
       OPENHANGAR_SECRET_KEY: change-this-to-a-long-random-string
+      # This minimal example publishes the app directly.
+      OPENHANGAR_PROXY_HOPS: 0
+      # OPENHANGAR_TRUSTED_HOSTS: hangar.example.com,localhost,127.0.0.1
     volumes:
       - ./openhangar/uploads:/data/uploads
       - ./openhangar/backups:/data/backups
@@ -942,3 +945,13 @@ Also worth trimming proactively rather than only alerting on it:
   across upgrades; `docker image prune -f` reclaims them (the built-in
   one-click upgrade path already does this after every upgrade — see
   [One-click upgrades](#one-click-upgrades-optional)).
+
+### Forwarded headers and host validation
+
+The reference Traefik stack trusts one proxy hop and accepts only the configured
+public hostname plus loopback healthcheck hosts. Keep the application port private
+to the trusted proxy network; hop counting does not verify who sent a header.
+The proxy must strip incoming untrusted forwarding values and generate its own.
+For direct access without a proxy, set `OPENHANGAR_PROXY_HOPS=0`; configure
+`OPENHANGAR_TRUSTED_HOSTS` with the names/IPs actually used. See the
+[configuration reference](configuration.md#openhangar_proxy_hops) for custom chains.

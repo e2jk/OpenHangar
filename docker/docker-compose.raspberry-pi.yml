@@ -60,6 +60,10 @@ services:
     environment:
       - OPENHANGAR_DATABASE_URL=postgresql://openhangar:CHANGE_THIS_db_password@db:5432/openhangar
       - OPENHANGAR_ENV=production
+      # Direct LAN access: client-supplied forwarding headers are untrusted.
+      - OPENHANGAR_PROXY_HOPS=0
+      # Optional: include every actual hostname/LAN IP used by your devices.
+      # - OPENHANGAR_TRUSTED_HOSTS=openhangar.local,raspberrypi.local,192.168.1.50,localhost,127.0.0.1
       - OPENHANGAR_SECRET_KEY=CHANGE_THIS_secret_key_min_32_chars     # ← CHANGE THIS
       - OPENHANGAR_BACKUP_ENCRYPTION_KEY=CHANGE_THIS_backup_enc_key  # ← CHANGE THIS
       # This setup is reached over plain http:// on your home network.
