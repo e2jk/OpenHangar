@@ -394,26 +394,29 @@ def reserve_fund_balance(aircraft: Aircraft) -> Decimal:
     aircraft's co-owner accounts — a contribution is money owed *into*
     the fund, so it accumulates here regardless of which owner it was
     charged to. Spending the fund is out of scope for this phase."""
-    from models import BillingAccount, BillingAccountKind, LedgerEntry
+    from models import BillingAccount, BillingAccountKind, LedgerEntry, db
+    from sqlalchemy.orm import aliased
 
-    accounts = BillingAccount.query.filter_by(
-        tenant_id=aircraft.tenant_id,
-        kind=BillingAccountKind.CO_OWNER,
-        aircraft_id=aircraft.id,
-    ).all()
-    total = Decimal(0)
-    for account in accounts:
-        entries = (
-            LedgerEntry.query.filter_by(
-                account_id=account.id, source_type="reserve_contribution"
-            )
-            .filter(LedgerEntry.reverses_id.is_(None))
-            .all()
+    reversal = aliased(LedgerEntry)
+    has_reversal = (
+        db.session.query(reversal.id)
+        .filter(reversal.reverses_id == LedgerEntry.id)
+        .exists()
+    )
+    total = (
+        db.session.query(db.func.sum(LedgerEntry.amount))
+        .join(BillingAccount, BillingAccount.id == LedgerEntry.account_id)
+        .filter(
+            BillingAccount.tenant_id == aircraft.tenant_id,
+            BillingAccount.kind == BillingAccountKind.CO_OWNER,
+            BillingAccount.aircraft_id == aircraft.id,
+            LedgerEntry.source_type == "reserve_contribution",
+            LedgerEntry.reverses_id.is_(None),
+            ~has_reversal,
         )
-        for entry in entries:
-            if LedgerEntry.query.filter_by(reverses_id=entry.id).first() is None:
-                total += Decimal(entry.amount)
-    return _quantize(total)
+        .scalar()
+    )
+    return _quantize(total or Decimal(0))
 
 
 def run_co_owner_billing_pass(aircraft: Aircraft) -> None:
