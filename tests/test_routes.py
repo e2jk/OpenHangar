@@ -11,6 +11,8 @@ from models import (  # pyright: ignore[reportMissingImports]
     db,
 )
 
+from tests.auth_helpers import challenge_payload
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
@@ -324,7 +326,8 @@ class TestLogin:
         )
         client.post("/login", data={"step": "totp", "totp_code": "000000"})
         with client.session_transaction() as sess:
-            assert "login_pending_user_id" in sess
+            assert "login_challenge" in sess
+            assert "login_pending_user_id" not in sess
 
     def test_pending_session_cleared_after_successful_totp(self, app, client):
         """login_pending_user_id is gone and user_id is set after a successful TOTP."""
@@ -514,8 +517,7 @@ class TestSetup:
                 "password": "validpassword123",
             },
         )
-        with client.session_transaction() as sess:
-            totp_secret = sess["setup_totp_secret"]
+        totp_secret = challenge_payload(client, "setup_challenge")["secret"]
         valid_code = pyotp.TOTP(totp_secret).now()
         response = client.post(
             "/setup",

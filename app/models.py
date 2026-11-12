@@ -147,6 +147,21 @@ class User(db.Model):
         return (self.name or "").strip() or self.email.split("@")[0]
 
 
+class AuthChallenge(db.Model):
+    """Expiring authentication state; browsers receive only an opaque token."""
+
+    __tablename__ = "auth_challenges"
+
+    token_hash = db.Column(db.String(64), primary_key=True)
+    purpose = db.Column(db.String(32), nullable=False)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=True
+    )
+    credential_binding = db.Column(db.String(64), nullable=True)
+    expires_at = db.Column(db.BigInteger, nullable=False, index=True)
+    payload = db.Column(db.JSON, nullable=False)
+
+
 class TenantUser(db.Model):
     __tablename__ = "tenant_users"
 

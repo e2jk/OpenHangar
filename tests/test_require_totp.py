@@ -24,6 +24,8 @@ from models import (  # pyright: ignore[reportMissingImports]
     db,
 )
 
+from tests.auth_helpers import challenge_payload
+
 PASSWORD = "SecurePass1!"
 
 
@@ -121,8 +123,7 @@ class TestRequireTotpEnrolPage:
     def test_post_valid_code_completes_login(self, app, client):
         uid, _ = _make_tenant_and_user(app, require_totp=True)
         client.post("/login", data={"email": "pilot@mfa.test", "password": PASSWORD})
-        with client.session_transaction() as sess:
-            secret = sess.get("enrol_totp_secret")
+        secret = challenge_payload(client, "login_challenge")["secret"]
         assert secret is not None
         code = pyotp.TOTP(secret).now()
         r = client.post("/login", data={"step": "totp-enrol", "totp_code": code})
@@ -141,8 +142,7 @@ class TestRequireTotpEnrolPage:
     def test_post_valid_code_logs_security_event(self, app, client, caplog):
         _make_tenant_and_user(app, require_totp=True)
         client.post("/login", data={"email": "pilot@mfa.test", "password": PASSWORD})
-        with client.session_transaction() as sess:
-            secret = sess.get("enrol_totp_secret")
+        secret = challenge_payload(client, "login_challenge")["secret"]
         code = pyotp.TOTP(secret).now()
         with caplog.at_level(logging.WARNING, logger="openhangar.auth"):
             client.post("/login", data={"step": "totp-enrol", "totp_code": code})
@@ -154,8 +154,7 @@ class TestRequireTotpEnrolPage:
     def test_session_cleared_after_enrolment(self, app, client):
         _make_tenant_and_user(app, require_totp=True)
         client.post("/login", data={"email": "pilot@mfa.test", "password": PASSWORD})
-        with client.session_transaction() as sess:
-            secret = sess.get("enrol_totp_secret")
+        secret = challenge_payload(client, "login_challenge")["secret"]
         code = pyotp.TOTP(secret).now()
         client.post("/login", data={"step": "totp-enrol", "totp_code": code})
         with client.session_transaction() as sess:
