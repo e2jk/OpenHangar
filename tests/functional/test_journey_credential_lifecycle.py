@@ -63,6 +63,8 @@ from models import (  # pyright: ignore[reportMissingImports]
 )
 from sqlalchemy.pool import StaticPool  # pyright: ignore[reportMissingImports]
 
+from tests.auth_helpers import challenge_payload
+
 _PASSWORD = "OwnerSecret123!"
 _NEW_PASSWORD = "OwnerNewSecret456!"
 _RESET_PASSWORD = "OwnerResetSecret789!"
@@ -179,15 +181,9 @@ def test_credential_lifecycle_with_csrf_enabled(app, client):
     )
     assert invitee.get("/").status_code == 200
 
-    # Owner enables TOTP via the real profile flow. profile()'s GET branch
-    # pops profile_totp_secret from the session (a deliberate one-shot
-    # reveal of the QR/secret), so the confirm step must reuse the token
-    # from setup_totp's own POST response rather than _post()'s usual
-    # get-a-fresh-token-first pattern -- an intervening GET /profile would
-    # silently consume the secret before confirm_totp ever saw it.
+    # Enable TOTP through the real profile flow; inspect its server-side challenge.
     setup_resp = _post(client, "/profile", "/profile", {"action": "setup_totp"})
-    with client.session_transaction() as sess:
-        totp_secret = sess["profile_totp_secret"]
+    totp_secret = challenge_payload(client, "profile_challenge")["secret"]
     confirm_resp = client.post(
         "/profile",
         data={

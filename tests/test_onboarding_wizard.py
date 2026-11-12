@@ -15,6 +15,8 @@ from models import (  # pyright: ignore[reportMissingImports]
     db,
 )
 
+from tests.auth_helpers import challenge_payload
+
 # ── Wizard helpers ─────────────────────────────────────────────────────────────
 
 
@@ -338,8 +340,7 @@ class TestWizardCompleteFlows:
 
     def test_wizard_with_valid_totp_saves_totp_secret(self, app, client):
         _step_account(client)
-        with client.session_transaction() as sess:
-            totp_secret = sess["setup_totp_secret"]
+        totp_secret = challenge_payload(client, "setup_challenge")["secret"]
         valid_code = pyotp.TOTP(totp_secret).now()
         client.post("/setup", data={"step": "totp", "totp_code": valid_code})
         _step_operating_model(client, "sole_pilot")

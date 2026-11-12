@@ -89,14 +89,18 @@ class TestSetupWizardFirstUser:
     def test_setup_wizard_creates_instance_admin(self, app, client):
         # The setup route requires no users to exist — use a fresh empty DB context.
         # Each test gets its own DB (from the conftest fixture), so this is safe.
-        with client.session_transaction() as sess:
-            sess["setup_email"] = "owner@wizard.com"
-            sess["setup_password_hash"] = _pw_hash.hash("password1234")
-            sess["setup_operating_model"] = "sole_pilot"
-            sess["setup_totp_done"] = True
-            sess["setup_totp_to_save"] = None
-
-        rv = client.post("/setup", data={"step": "summary"})
+        client.post(
+            "/setup",
+            data={
+                "step": "account",
+                "email": "owner@wizard.com",
+                "password": "password1234",
+            },
+        )
+        client.post("/setup", data={"step": "totp", "action": "skip"})
+        rv = client.post(
+            "/setup", data={"step": "operating_model", "operating_model": "sole_pilot"}
+        )
         assert rv.status_code == 302
 
         with app.app_context():

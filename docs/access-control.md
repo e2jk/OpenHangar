@@ -161,3 +161,12 @@ permission:
   [implementation plan](implementation_plan.md)).
 - The pilot logbook remains **private to the holder** in all cases; opt-in
   sharing with instructors/admins is tracked in [`backlog.md`](backlog.md).
+
+## Authentication challenge lifetime
+
+Password-verified logins awaiting an authenticator code and profile authenticator
+enrolments expire after 10 minutes. First-run account setup expires after 30 minutes.
+Restart the flow if it expires. These challenges are stored on the server, bound to
+their purpose and current credentials, and consumed once on successful completion;
+the browser cookie contains only an opaque reference. Changing a password or
+authenticator invalidates challenges issued against the previous credentials.

@@ -28,6 +28,8 @@ from models import (
     db,
 )  # pyright: ignore[reportMissingImports]
 
+from tests.auth_helpers import challenge_payload
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
@@ -786,12 +788,13 @@ class TestDemoBlock:
 
 
 class TestProfileTOTP:
-    def test_setup_totp_puts_secret_in_session(self, app, client):
+    def test_setup_totp_stores_only_challenge_in_session(self, app, client):
         _, uid = _make_tenant_user(app, "user@test.com", Role.ADMIN)
         _login(client, uid)
         client.post("/profile", data={"action": "setup_totp"})
         with client.session_transaction() as sess:
-            assert "profile_totp_secret" in sess
+            assert "profile_challenge" in sess
+            assert "profile_totp_secret" not in sess
 
     def test_setup_totp_renders_profile(self, app, client):
         _, uid = _make_tenant_user(app, "user@test.com", Role.ADMIN)
@@ -829,8 +832,7 @@ class TestProfileTOTP:
         _, uid = _make_tenant_user(app, "user@test.com", Role.ADMIN)
         _login(client, uid)
         client.post("/profile", data={"action": "setup_totp"})
-        with client.session_transaction() as sess:
-            secret = sess["profile_totp_secret"]
+        secret = challenge_payload(client, "profile_challenge")["secret"]
         valid_code = pyotp.TOTP(secret).now()
         client.post(
             "/profile",

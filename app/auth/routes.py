@@ -31,6 +31,7 @@ from models import (
     User,
     db,
 )
+from services import auth_challenges as challenges
 from utils import login_required
 
 _log = logging.getLogger("openhangar.auth")
@@ -153,16 +154,15 @@ def login() -> ResponseReturnValue:
         return _login_post()
 
     step = request.args.get("step", "credentials")
-    # TOTP steps only accessible after credentials have been verified
-    if step == "totp" and not session.get("login_pending_user_id"):
+    challenge = challenges.get("login_challenge", step)
+    if step in ("totp", "totp-enrol") and challenge is None:
         return redirect(url_for("auth.login"))
-    if step == "totp-enrol" and not session.get("totp_must_enrol"):
-        return redirect(url_for("auth.login"))
-
-    totp_secret = session.get("enrol_totp_secret")
-    totp_uri = session.get("enrol_totp_uri")
+    payload = challenge.payload if challenge else {}
     return render_template(
-        "auth/login.html", step=step, totp_secret=totp_secret, totp_uri=totp_uri
+        "auth/login.html",
+        step=step,
+        totp_secret=payload.get("secret"),
+        totp_uri=payload.get("uri"),
     )
 
 
@@ -264,7 +264,7 @@ def _login_credentials() -> ResponseReturnValue:
             return render_template("auth/login.html", step="credentials")
 
     if user.totp_secret:
-        session["login_pending_user_id"] = user.id
+        challenges.issue("login_challenge", "totp", user=user)
         return redirect(url_for("auth.login", step="totp"))
 
     # If the tenant mandates TOTP and the user has none, redirect to enrolment.
@@ -274,10 +274,12 @@ def _login_credentials() -> ResponseReturnValue:
         totp_uri = pyotp.TOTP(totp_secret).provisioning_uri(
             name=user.email, issuer_name="OpenHangar"
         )
-        session["login_pending_user_id"] = user.id
-        session["totp_must_enrol"] = True
-        session["enrol_totp_secret"] = totp_secret
-        session["enrol_totp_uri"] = totp_uri
+        challenges.issue(
+            "login_challenge",
+            "totp-enrol",
+            user=user,
+            payload={"secret": totp_secret, "uri": totp_uri},
+        )
         return redirect(url_for("auth.login", step="totp-enrol"))
 
     session.clear()
@@ -291,15 +293,11 @@ def _login_credentials() -> ResponseReturnValue:
 
 
 def _login_totp() -> ResponseReturnValue:
-    pending_id = session.get("login_pending_user_id")
-    if not pending_id:
+    challenge = challenges.get("login_challenge", "totp")
+    if challenge is None:
         return redirect(url_for("auth.login"))
-
-    user = db.session.get(User, pending_id)
-    if not user:
-        session.pop("login_pending_user_id", None)
-        return redirect(url_for("auth.login"))
-
+    pending_id = challenge.user_id
+    user = User.query.filter_by(id=pending_id).one()
     totp_code = request.form.get("totp_code", "").strip()
 
     _totp_cache_key = f"totp_used:{user.id}:{totp_code}"
@@ -321,6 +319,9 @@ def _login_totp() -> ResponseReturnValue:
         flash(_("Invalid authenticator code."), "danger")
         return render_template("auth/login.html", step="totp")
 
+    if not challenges.consume(challenge):
+        return redirect(url_for("auth.login"))
+    db.session.commit()
     _cache.set(_totp_cache_key, True, timeout=90)
 
     session.clear()
@@ -335,17 +336,14 @@ def _login_totp() -> ResponseReturnValue:
 
 def _login_totp_enrol() -> ResponseReturnValue:
     """Mandatory TOTP enrolment during login when tenant.require_totp is True."""
-    pending_id = session.get("login_pending_user_id")
-    totp_secret = session.get("enrol_totp_secret")
-    totp_uri = session.get("enrol_totp_uri")
-    if not pending_id or not totp_secret:
+    challenge = challenges.get("login_challenge", "totp-enrol")
+    if challenge is None:
         return redirect(url_for("auth.login"))
-
-    user = db.session.get(User, pending_id)
-    if not user:
-        session.clear()
+    user = User.query.filter_by(id=challenge.user_id).one()
+    if user.totp_secret or not challenges.requires_totp(user):
         return redirect(url_for("auth.login"))
-
+    totp_secret = challenge.payload["secret"]
+    totp_uri = challenge.payload["uri"]
     totp_code = request.form.get("totp_code", "").strip()
     if not pyotp.TOTP(totp_secret).verify(totp_code, valid_window=1):
         flash(_("Invalid code — please try again."), "danger")
@@ -356,6 +354,8 @@ def _login_totp_enrol() -> ResponseReturnValue:
             totp_uri=totp_uri,
         )
 
+    if not challenges.consume(challenge):
+        return redirect(url_for("auth.login"))
     user.totp_secret = totp_secret
     db.session.commit()
     _log.warning(
@@ -473,15 +473,16 @@ def setup() -> ResponseReturnValue:
     phase = _wizard_phase(step)
 
     if step == "totp":
-        if not session.get("setup_totp_secret"):
+        challenge = challenges.get("setup_challenge", "setup")
+        if challenge is None:
             return redirect(url_for("auth.setup"))
         return render_template(
             "auth/setup.html",
             step="totp",
             phase=phase,
             show_review=False,
-            totp_secret=session["setup_totp_secret"],
-            provisioning_uri=session["setup_provisioning_uri"],
+            totp_secret=challenge.payload["secret"],
+            provisioning_uri=challenge.payload["uri"],
         )
 
     if step == "operating_model":
@@ -570,26 +571,30 @@ def _setup_account() -> ResponseReturnValue:
 
     session["setup_email"] = email
     session["setup_name"] = name or None
-    session["setup_password_hash"] = _pw.hash(password)
-    session["setup_totp_secret"] = totp_secret
-    session["setup_provisioning_uri"] = provisioning_uri
+    challenges.issue(
+        "setup_challenge",
+        "setup",
+        lifetime=challenges.SETUP_SECONDS,
+        payload={
+            "password_hash": _pw.hash(password),
+            "secret": totp_secret,
+            "uri": provisioning_uri,
+        },
+    )
 
     return redirect(url_for("auth.setup", step="totp"))
 
 
 def _setup_totp() -> ResponseReturnValue:
-    email = session.get("setup_email")
-    password_hash = session.get("setup_password_hash")
-    totp_secret = session.get("setup_totp_secret")
-    provisioning_uri = session.get("setup_provisioning_uri")
-
-    if not all([email, password_hash, totp_secret]):
+    challenge = challenges.get("setup_challenge", "setup")
+    if challenge is None:
         flash(_("Session expired. Please start over."), "danger")
         return redirect(url_for("auth.setup"))
-
+    totp_secret = challenge.payload["secret"]
+    provisioning_uri = challenge.payload["uri"]
     # "Skip" path — user will not have TOTP
     if request.form.get("action") == "skip":
-        session["setup_totp_to_save"] = None
+        challenge.payload = {**challenge.payload, "totp_to_save": None}
     else:
         totp_code = request.form.get("totp_code", "").strip()
         if not pyotp.TOTP(str(totp_secret)).verify(totp_code, valid_window=1):
@@ -602,8 +607,9 @@ def _setup_totp() -> ResponseReturnValue:
                 totp_secret=totp_secret,
                 provisioning_uri=provisioning_uri,
             )
-        session["setup_totp_to_save"] = totp_secret
+        challenge.payload = {**challenge.payload, "totp_to_save": totp_secret}
 
+    db.session.commit()
     session["setup_totp_done"] = True
     return redirect(url_for("auth.setup", step="operating_model"))
 
@@ -698,11 +704,18 @@ def _setup_co_owners() -> ResponseReturnValue:
 
 
 def _setup_finish() -> ResponseReturnValue:
-    required = ["setup_email", "setup_password_hash", "setup_operating_model"]
-    if not all(session.get(k) for k in required) or not session.get("setup_totp_done"):
+    required = ["setup_email", "setup_operating_model"]
+    challenge = challenges.get("setup_challenge", "setup")
+    if (
+        not all(session.get(k) for k in required)
+        or challenge is None
+        or "totp_to_save" not in challenge.payload
+    ):
         flash(_("Session expired. Please start over."), "danger")
         return redirect(url_for("auth.setup"))
 
+    if not challenges.consume(challenge):
+        return redirect(url_for("auth.setup"))
     from models import UserInvitation
 
     operating_model_raw = session.get("setup_operating_model", "")
@@ -730,8 +743,8 @@ def _setup_finish() -> ResponseReturnValue:
 
     user = User(
         email=session["setup_email"],
-        password_hash=session["setup_password_hash"],
-        totp_secret=session.get("setup_totp_to_save"),
+        password_hash=challenge.payload["password_hash"],
+        totp_secret=challenge.payload["totp_to_save"],
         name=session.get("setup_name"),
         is_active=True,
         is_instance_admin=True,
@@ -817,7 +830,7 @@ def _clear_setup_session() -> None:
     for key in (
         "setup_email",
         "setup_name",
-        "setup_password_hash",
+        "setup_challenge",
         "setup_totp_secret",
         "setup_provisioning_uri",
         "setup_totp_to_save",
@@ -854,10 +867,8 @@ def profile() -> ResponseReturnValue:
         if action == "disable_totp":
             return _profile_disable_totp(user)
 
-    totp_secret = session.pop("profile_totp_secret", None)
-    totp_uri = session.pop("profile_totp_uri", None)
     return render_template(
-        "auth/profile.html", user=user, totp_secret=totp_secret, totp_uri=totp_uri
+        "auth/profile.html", user=user, totp_secret=None, totp_uri=None
     )
 
 
@@ -900,20 +911,24 @@ def _profile_setup_totp(user: User) -> ResponseReturnValue:
     totp_uri = pyotp.TOTP(totp_secret).provisioning_uri(
         name=user.email, issuer_name="OpenHangar"
     )
-    session["profile_totp_secret"] = totp_secret
-    session["profile_totp_uri"] = totp_uri
+    challenges.issue(
+        "profile_challenge",
+        "profile-totp",
+        user=user,
+        payload={"secret": totp_secret, "uri": totp_uri},
+    )
     return render_template(
         "auth/profile.html", user=user, totp_secret=totp_secret, totp_uri=totp_uri
     )
 
 
 def _profile_confirm_totp(user: User) -> ResponseReturnValue:
-    totp_secret = session.get("profile_totp_secret")
-    totp_uri = session.get("profile_totp_uri")
-    if not totp_secret:
+    challenge = challenges.get("profile_challenge", "profile-totp", user_id=user.id)
+    if challenge is None:
         flash(_("Session expired. Please try again."), "danger")
         return redirect(url_for("auth.profile"))
-
+    totp_secret = challenge.payload["secret"]
+    totp_uri = challenge.payload["uri"]
     code = request.form.get("totp_code", "").strip()
     if not pyotp.TOTP(totp_secret).verify(code, valid_window=1):
         flash(_("Invalid code. Please try again."), "danger")
@@ -921,10 +936,11 @@ def _profile_confirm_totp(user: User) -> ResponseReturnValue:
             "auth/profile.html", user=user, totp_secret=totp_secret, totp_uri=totp_uri
         )
 
+    if not challenges.consume(challenge):
+        return redirect(url_for("auth.profile"))
     user.totp_secret = totp_secret
     db.session.commit()
-    session.pop("profile_totp_secret", None)
-    session.pop("profile_totp_uri", None)
+    session.pop("profile_challenge", None)
     _log.warning(
         "[SECURITY] auth.totp.enabled user_id=%s ip=%s",
         _sl(str(user.id)),
