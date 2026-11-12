@@ -203,7 +203,7 @@ class TestListSnags:
         ac_id = _add_aircraft(app, tenant_id)
         _login_orphan_user(app, client)
         resp = client.get(f"/aircraft/{ac_id}/snags")
-        assert resp.status_code == 403
+        assert resp.status_code == 302
 
 
 # ── New snag ──────────────────────────────────────────────────────────────────

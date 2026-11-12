@@ -396,7 +396,7 @@ def test_snapshot_orphan_user_403(app, client):
         sess["user_id"] = uid
 
     resp = client.get(f"/api/offline/aircraft/{ac_id}/logbook")
-    assert resp.status_code == 403
+    assert resp.status_code == 401
 
 
 def test_snapshot_anonymous_401_json(app, client):

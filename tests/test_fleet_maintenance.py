@@ -118,7 +118,7 @@ class TestFleetOverviewAccess:
     def test_403_when_no_tenant(self, app, client):
         _login_orphan(app, client)
         resp = client.get("/maintenance")
-        assert resp.status_code == 403
+        assert resp.status_code == 302
 
     def test_renders_for_logged_in_user(self, app, client):
         _create_user_and_tenant(app)

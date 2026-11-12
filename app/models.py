@@ -4,7 +4,7 @@ from datetime import UTC, date, datetime
 from typing import Any, ClassVar
 
 from flask_sqlalchemy import SQLAlchemy  # pyright: ignore[reportMissingImports]
-from sqlalchemy import event, text
+from sqlalchemy import event, inspect, select, text, update
 
 db = SQLAlchemy()
 
@@ -121,6 +121,9 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
+    auth_version = db.Column(
+        db.String(32), nullable=False, default=lambda: secrets.token_hex(16)
+    )
     totp_secret = db.Column(db.String(64), nullable=True, default=None)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     name = db.Column(db.String(128), nullable=True)
@@ -145,6 +148,25 @@ class User(db.Model):
     @property
     def display_name(self) -> str:
         return (self.name or "").strip() or self.email.split("@")[0]
+
+
+class AuthSession(db.Model):
+    """Revocable login, bound to the user's credentials and selected tenant."""
+
+    __tablename__ = "auth_sessions"
+
+    token_hash = db.Column(db.String(64), primary_key=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    tenant_id = db.Column(
+        db.Integer, db.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=True
+    )
+    credential_binding = db.Column(db.String(64), nullable=False)
+    expires_at = db.Column(db.BigInteger, nullable=False, index=True)
 
 
 class AuthChallenge(db.Model):
@@ -3908,3 +3930,42 @@ class CoOwnerValuationSnapshot(db.Model):
     aircraft = db.relationship("Aircraft")
     user = db.relationship("User", foreign_keys=[user_id])
     created_by = db.relationship("User", foreign_keys=[created_by_id])
+
+
+@event.listens_for(User, "before_update")
+def _rotate_auth_version(_mapper: Any, _connection: Any, user: User) -> None:
+    """A security change must remain revoking even if its old value is restored."""
+    state = inspect(user)
+    if any(
+        state.attrs[name].history.has_changes()
+        for name in ("password_hash", "totp_secret", "is_active")
+    ):
+        user.auth_version = secrets.token_hex(16)
+
+
+@event.listens_for(Tenant, "before_update")
+def _revoke_changed_tenant_sessions(
+    _mapper: Any, connection: Any, tenant: Tenant
+) -> None:
+    if inspect(tenant).attrs.is_active.history.has_changes():
+        connection.execute(
+            update(User)
+            .where(
+                User.is_instance_admin.is_(False),
+                User.id.in_(
+                    select(TenantUser.user_id).where(TenantUser.tenant_id == tenant.id)
+                ),
+            )
+            .values(auth_version=secrets.token_hex(16))
+        )
+
+
+@event.listens_for(TenantUser, "after_delete")
+def _revoke_removed_membership(
+    _mapper: Any, connection: Any, membership: TenantUser
+) -> None:
+    connection.execute(
+        update(User)
+        .where(User.id == membership.user_id, User.is_instance_admin.is_(False))
+        .values(auth_version=secrets.token_hex(16))
+    )

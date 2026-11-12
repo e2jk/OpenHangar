@@ -170,3 +170,19 @@ Restart the flow if it expires. These challenges are stored on the server, bound
 their purpose and current credentials, and consumed once on successful completion;
 the browser cookie contains only an opaque reference. Changing a password or
 authenticator invalidates challenges issued against the previous credentials.
+
+## Revoking authenticated sessions
+
+Each browser login has a revocable server-side record. Logout ends that login;
+other browsers remain signed in. Password changes, password recovery, authenticator
+changes, account deactivation and tenant-membership removal invalidate previous
+logins. Changing your own password or authenticator keeps the acting browser signed
+in with a new login record. Reactivating an account or tenant does not restore old
+cookies. Active instance administrators retain recovery access when a tenant is
+deactivated; deactivating the administrator's own account still ends access.
+
+The configured session lifetime is an absolute maximum from login (or a credential
+change that renews the acting browser). Existing cookies issued before server-side
+sessions were introduced require a fresh login after upgrade. Private pages already
+stored for offline use are a separate browser-storage concern; server-side revocation
+prevents further authenticated requests, not recovery of previously downloaded data.

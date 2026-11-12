@@ -10,6 +10,7 @@ from flask_babel import (
     get_locale as _get_locale,  # pyright: ignore[reportMissingImports]
 )
 from models import DemoSlot, User, db
+from services import auth_sessions
 
 log = logging.getLogger(__name__)
 
@@ -27,23 +28,6 @@ def _busy_window_minutes() -> int:
         return _DEFAULT_BUSY_WINDOW
 
 
-@demo_bp.before_app_request
-def _fix_stale_demo_session() -> None:
-    """After a demo wipe, user_id in session may point to a deleted user.
-
-    The seed() function deletes old users and creates new ones (sequences are
-    not reset), so stale user_ids from before the wipe no longer exist.  Clear
-    the stale user_id so the next page load shows the landing page with a
-    fresh-entry prompt.  The demo_slot_id is preserved so the visitor can
-    seamlessly re-enter the same sandbox number.
-    """
-    user_id = session.get("user_id")
-    if not user_id or not session.get("demo_slot_id"):
-        return
-    if db.session.get(User, user_id) is None:
-        session.pop("user_id", None)
-
-
 @demo_bp.route("/demo/enter", methods=["POST"])
 @_limiter.limit("3 per minute", exempt_when=_rate_limiting_disabled)
 def enter() -> ResponseReturnValue:
@@ -54,7 +38,9 @@ def enter() -> ResponseReturnValue:
     if existing_slot_id:
         slot = db.session.get(DemoSlot, existing_slot_id)
         if slot:
-            session["user_id"] = _slot_user_id(slot, role)
+            auth_sessions.start(
+                User.query.filter_by(id=_slot_user_id(slot, role)).one()
+            )
             session["demo_role"] = role
             session.permanent = True
             _touch_slot(slot)
@@ -74,9 +60,10 @@ def enter() -> ResponseReturnValue:
     if slot.last_activity_at and slot.last_activity_at >= cutoff:
         return render_template("demo_full.html"), 503
 
+    auth_sessions.revoke_current()
     session.clear()
     session["demo_slot_id"] = slot.id
-    session["user_id"] = _slot_user_id(slot, role)
+    auth_sessions.start(User.query.filter_by(id=_slot_user_id(slot, role)).one())
     session["demo_role"] = role
     session["language"] = visitor_lang
     session.permanent = True

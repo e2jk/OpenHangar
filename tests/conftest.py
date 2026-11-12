@@ -153,3 +153,32 @@ def captured_templates(app):
     template_rendered.connect(record, app)
     yield recorded
     template_rendered.disconnect(record, app)
+
+
+# Tests that explicitly install user_id are creating authenticated clients,
+# not exercising the login protocol. Give those fixtures a real server-side
+# session too; normal browser requests and real login tests are unchanged.
+from contextlib import contextmanager
+
+from flask import Flask
+from flask.testing import FlaskClient
+
+
+class AuthenticatedClient(FlaskClient):
+    @contextmanager
+    def session_transaction(self, *args, **kwargs):
+        with super().session_transaction(*args, **kwargs) as sess:
+            previous_uid = sess.get("user_id")
+            yield sess
+            uid = sess.get("user_id")
+            if uid and (uid != previous_uid or "auth_session" not in sess):
+                from models import User
+                from services.auth_sessions import issue
+
+                with self.application.app_context():
+                    user = _db.session.get(User, uid)
+                    if user is not None:
+                        sess["auth_session"] = issue(user)
+
+
+Flask.test_client_class = AuthenticatedClient

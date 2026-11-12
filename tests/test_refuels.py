@@ -114,7 +114,7 @@ class TestListRefuels:
         ac_id = _add_aircraft(app, tenant_id)
         _login_orphan_user(app, client)
         resp = client.get(f"/aircraft/{ac_id}/refuels")
-        assert resp.status_code == 403
+        assert resp.status_code == 302
 
     def test_empty_state(self, app, client):
         _, tenant_id = _create_user_and_tenant(app)

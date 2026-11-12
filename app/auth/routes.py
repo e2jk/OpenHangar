@@ -32,6 +32,7 @@ from models import (
     db,
 )
 from services import auth_challenges as challenges
+from services import auth_sessions
 from utils import login_required
 
 _log = logging.getLogger("openhangar.auth")
@@ -283,8 +284,7 @@ def _login_credentials() -> ResponseReturnValue:
         return redirect(url_for("auth.login", step="totp-enrol"))
 
     session.clear()
-    session["user_id"] = user.id
-    session.permanent = True
+    auth_sessions.start(user)
     # _swr_fresh: tells the SW (sw.js) this / request must bypass whatever
     # it has cached (e.g. the landing page from before this login) and
     # re-cache the dashboard under the canonical / key. See pwa.js for the
@@ -325,8 +325,7 @@ def _login_totp() -> ResponseReturnValue:
     _cache.set(_totp_cache_key, True, timeout=90)
 
     session.clear()
-    session["user_id"] = user.id
-    session.permanent = True
+    auth_sessions.start(user)
     # _swr_fresh: tells the SW (sw.js) this / request must bypass whatever
     # it has cached (e.g. the landing page from before this login) and
     # re-cache the dashboard under the canonical / key. See pwa.js for the
@@ -365,8 +364,7 @@ def _login_totp_enrol() -> ResponseReturnValue:
     )
 
     session.clear()
-    session["user_id"] = user.id
-    session.permanent = True
+    auth_sessions.start(user)
     flash(_("Two-factor authentication is now active on your account."), "success")
     # See the _swr_fresh comment on the other two login-success redirects above.
     return redirect(url_for("index", _swr_fresh=1))
@@ -378,6 +376,7 @@ def _login_totp_enrol() -> ResponseReturnValue:
 @auth_bp.route("/logout")
 def logout() -> ResponseReturnValue:
     slot_id = session.get("demo_slot_id")
+    auth_sessions.revoke_current()
     session.clear()
     if slot_id is not None:
         # Preserve the slot so the visitor can re-enter the same sandbox
@@ -819,8 +818,7 @@ def _setup_finish() -> ResponseReturnValue:
         msg = Markup(f"{welcome} {flight_link}")  # nosec B704
 
     _clear_setup_session()
-    session["user_id"] = user.id
-    session.permanent = True
+    auth_sessions.start(user)
     flash(msg, "success")
     # See the _swr_fresh comment on the login-success redirects above.
     return redirect(url_for("index", _swr_fresh=1))
@@ -897,6 +895,7 @@ def _profile_change_password(user: User) -> ResponseReturnValue:
 
     user.password_hash = _pw.hash(new_pw)
     db.session.commit()
+    auth_sessions.start(user)
     _log.warning(
         "[SECURITY] auth.password.changed user_id=%s ip=%s",
         _sl(str(user.id)),
@@ -940,6 +939,7 @@ def _profile_confirm_totp(user: User) -> ResponseReturnValue:
         return redirect(url_for("auth.profile"))
     user.totp_secret = totp_secret
     db.session.commit()
+    auth_sessions.start(user)
     session.pop("profile_challenge", None)
     _log.warning(
         "[SECURITY] auth.totp.enabled user_id=%s ip=%s",
@@ -967,6 +967,7 @@ def _profile_disable_totp(user: User) -> ResponseReturnValue:
         return redirect(url_for("auth.profile"))
     user.totp_secret = None
     db.session.commit()
+    auth_sessions.start(user)
     _log.warning(
         "[SECURITY] auth.totp.disabled user_id=%s ip=%s",
         _sl(str(user.id)),

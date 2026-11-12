@@ -1870,12 +1870,13 @@ class TestNotificationPreferencesRouteExtra:
         with client.session_transaction() as sess:
             sess["user_id"] = 99999
         response = client.get("/config/notifications/")
-        assert response.status_code == 403
+        assert response.status_code == 302
 
     def test_post_when_user_has_no_tenant_shows_error(self, app, client):
         with app.app_context():
             u = User(
                 email="notenant@edge.com",
+                is_instance_admin=True,
                 password_hash=_pw_hash.hash("pw"),
                 is_active=True,
                 is_pilot=True,
@@ -1972,6 +1973,7 @@ class TestNotificationPreferencesRouteExtra:
         with app.app_context():
             u = User(
                 email="notenant2@edge.com",
+                is_instance_admin=True,
                 password_hash=_pw_hash.hash("pw"),
                 is_active=True,
                 is_pilot=True,

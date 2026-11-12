@@ -499,6 +499,20 @@ def create_app() -> Flask:
             return str(session["language"])
         return str(request.accept_languages.best_match(SUPPORTED_LOCALES, default="en"))
 
+    @app.before_request
+    def _validate_authenticated_session() -> ResponseReturnValue | None:
+        from flask import redirect, url_for
+        from services.auth_sessions import validate
+
+        g.had_authenticated_session = bool(session.get("user_id"))
+        if request.endpoint == "static" or validate():
+            return None
+        if request.path.startswith("/api/"):
+            return {"status": "auth"}, 401
+        if request.method not in ("GET", "HEAD", "OPTIONS"):
+            return redirect(url_for("auth.login"))
+        return None
+
     Babel(app, locale_selector=_get_locale)
     # No independent expiry: some nav pages are cached client-side (sw.js
     # SWR_ROUTES) for offline/instant-navigation support, so a token embedded
@@ -571,7 +585,7 @@ def create_app() -> Flask:
             # safe; uploads/documents go through their own routes and keep the
             # authenticated no-store below.
             response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-        elif session.get("user_id"):
+        elif session.get("user_id") or getattr(g, "had_authenticated_session", False):
             existing_cc = response.headers.get("Cache-Control", "")
             if "public" not in existing_cc and "immutable" not in existing_cc:
                 response.headers["Cache-Control"] = "no-store, private"
