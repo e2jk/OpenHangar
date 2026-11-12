@@ -14,3 +14,6 @@
 
 **Performance**
 - The dashboard and pilot profile no longer load the whole logbook to work out landing recency — only the last 6 months, plus one summary query — and the dashboard's flight-tracks map loads its tracks in one query instead of one per flight (about a third faster on a 170-flight logbook).
+
+**Maintenance**
+- Translation files regenerated with the i18n script: strings added by hand now carry their source references (their absence made the nightly Weblate scan's Code Scanning upload fail), and four strings no longer used are dropped.
