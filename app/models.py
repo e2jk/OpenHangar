@@ -3932,14 +3932,30 @@ class CoOwnerValuationSnapshot(db.Model):
     created_by = db.relationship("User", foreign_keys=[created_by_id])
 
 
+# Session.info key: user ids whose password_hash change in the current flush is a
+# re-hash of the same verified password (see services.auth_sessions).
+SAME_PASSWORD_REHASH = "same_password_rehash"
+
+
 @event.listens_for(User, "before_update")
 def _rotate_auth_version(_mapper: Any, _connection: Any, user: User) -> None:
-    """A security change must remain revoking even if its old value is restored."""
+    """A security change must remain revoking even if its old value is restored.
+
+    Exception: a stronger re-hash of the same verified password
+    (services.auth_sessions.rehash_password), when nothing else changed.
+    """
     state = inspect(user)
-    if any(
-        state.attrs[name].history.has_changes()
+    flagged = (
+        state.session.info.get(SAME_PASSWORD_REHASH, set()) if state.session else set()
+    )
+    same_password_rehash = user.id in flagged
+    flagged.discard(user.id)
+    changed = [
+        name
         for name in ("password_hash", "totp_secret", "is_active")
-    ):
+        if state.attrs[name].history.has_changes()
+    ]
+    if changed and not (same_password_rehash and changed == ["password_hash"]):
         user.auth_version = secrets.token_hex(16)
 
 

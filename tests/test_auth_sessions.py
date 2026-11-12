@@ -231,3 +231,65 @@ def test_preference_switch_race_keeps_public_session_fallback(app, endpoint, arg
         assert response.status_code == 302
         key = "language" if endpoint == "set_language" else "theme"
         assert session[key] == next(iter(argument.values()))
+
+
+def _rehash_on_next_login(monkeypatch):
+    calls = []
+
+    def needs_rehash(_hash):
+        calls.append(_hash)
+        return len(calls) == 1
+
+    monkeypatch.setattr("pw_hash.needs_rehash", needs_rehash)
+    return calls
+
+
+def test_login_rehash_keeps_other_logins_and_auth_version(app, monkeypatch):
+    uid, _ = make_user(app, required=False)
+    other = logged_in(app)
+    with app.app_context():
+        before = db.session.get(User, uid)
+        old_hash, old_version = before.password_hash, before.auth_version
+    calls = _rehash_on_next_login(monkeypatch)
+    client = logged_in(app)
+    assert calls, "the login must have checked for a re-hash"
+    with app.app_context():
+        after = db.session.get(User, uid)
+        assert after.password_hash != old_hash
+        assert after.auth_version == old_version
+    assert other.get("/profile").status_code == 200
+    assert client.get("/profile").status_code == 200
+
+
+def test_password_change_after_rehash_still_revokes_other_logins(app, monkeypatch):
+    make_user(app, required=False)
+    other = logged_in(app)
+    _rehash_on_next_login(monkeypatch)
+    client = logged_in(app)
+    response = client.post(
+        "/profile",
+        data={
+            "action": "change_password",
+            "current_password": PASSWORD,
+            "new_password": "NewPassword123!",
+            "confirm_password": "NewPassword123!",
+        },
+    )
+    assert response.status_code == 302
+    assert client.get("/profile").status_code == 200
+    assert other.get("/profile").status_code == 302
+
+
+def test_rehash_flag_does_not_cover_other_security_changes(app):
+    from models import SAME_PASSWORD_REHASH
+
+    uid, _ = make_user(app, required=False)
+    with app.app_context():
+        user = db.session.get(User, uid)
+        old_version = user.auth_version
+        db.session.info.setdefault(SAME_PASSWORD_REHASH, set()).add(uid)
+        user.password_hash = user.password_hash + "x"
+        user.is_active = False
+        db.session.commit()
+        assert user.auth_version != old_version
+        assert uid not in db.session.info[SAME_PASSWORD_REHASH]
