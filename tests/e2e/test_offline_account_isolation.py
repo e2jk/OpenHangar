@@ -193,7 +193,10 @@ def test_account_switch_preserves_owners_queue_without_disclosing_or_replaying_i
         assert (
             page.evaluate("() => OhOffline.getQueue().then(rows => rows.length)") == 0
         )
-        assert page.evaluate("() => OhOffline.getPilotSnapshot()") is None
+        # Bravo may already have refreshed their own snapshot in the background;
+        # what must never be visible here is Alpha's.
+        snapshot = page.evaluate("() => OhOffline.getPilotSnapshot()")
+        assert snapshot is None or "ALPHA" not in repr(snapshot)
         context.set_offline(True)
         page.goto(origin + "/pilot/logbook", wait_until="load")
         assert "BRAVO-PRIVATE" in page.content()
@@ -378,8 +381,18 @@ def test_aircraft_grant_loss_retires_cached_page_and_snapshot(
                 user_id=users["Alpha"], aircraft_id=aircraft_id
             ).delete()
             db.session.commit()
-        # The forbidden page itself must evict its old cached success.
-        assert page.evaluate("url => fetch(url).then(r => r.status)", target) == 404
+        # The forbidden page itself must evict its old cached success. The page's
+        # own background snapshot refresh may get its 404 first and retire this
+        # whole login (the stronger response); the worker then answers with the
+        # generic offline page. Either way the private page is never served.
+        result = page.evaluate(
+            "url => fetch(url).then(async r => ({status: r.status, text: await r.text()}))",
+            target,
+        )
+        assert "AIRCRAFT-GRANT-PRIVATE" not in result["text"]
+        assert result["status"] == 404 or not page.evaluate(
+            "() => !!window.OhOfflineIdentity.current()"
+        )
         # The corresponding snapshot denial also quarantines the old epoch.
         page.evaluate(
             "async id => { try { await OhOfflineIdentity.fetch('/api/offline/aircraft/'+id+'/logbook'); } catch (_) {} }",
