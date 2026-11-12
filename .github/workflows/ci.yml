@@ -186,6 +186,25 @@ jobs:
       - name: Run tests
         run: bash scripts/run-tests-with-coverage.sh
 
+      - name: Test reservation races on PostgreSQL
+        env:
+          TEST_POSTGRES_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:55432/reservation_test
+        run: |
+          trap 'docker rm -f reservation-test-db >/dev/null 2>&1 || true' EXIT
+          docker run -d --name reservation-test-db \
+            -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=reservation_test \
+            -p 127.0.0.1:55432:5432 postgres:18-alpine
+          ready=false
+          for ((attempt=0; attempt<30; attempt++)); do
+            if docker exec reservation-test-db pg_isready -U postgres >/dev/null 2>&1; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" != true ]; then docker logs reservation-test-db; exit 1; fi
+          bash scripts/test-reservation-concurrency.sh
+
       - name: Generate coverage badge
         # Custom script rather than genbadge: the badge also shows the
         # passing test count after the percentage (e.g. "100.00% (3309
