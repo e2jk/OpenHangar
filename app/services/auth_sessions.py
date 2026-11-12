@@ -7,7 +7,8 @@ import hmac
 import secrets
 import time
 
-from flask import current_app, session
+from flask import Flask, Response, current_app, g, session
+from flask.sessions import SecureCookieSessionInterface, SessionMixin
 from models import (
     SAME_PASSWORD_REHASH,
     AuthChallenge,
@@ -53,9 +54,30 @@ def issue(user: User) -> str:
     return token
 
 
+# A login replaced by a renewal in the same browser (credential change, sign-in)
+# stays recognisable this long, so requests still in flight with its cookie can
+# be told apart from a revoked login: see _clear_login and validate.
+RENEWED = "renewed"
+RENEWED_GRACE_SECONDS = 60
+
+
 def start(user: User) -> None:
-    """Start/renew this browser login without retaining its old bearer token."""
-    revoke_current()
+    """Start/renew this browser login without retaining its old bearer token.
+
+    The replaced token is retired, not just deleted: it no longer authenticates
+    anything, but for a short while it is known to have been renewed, so a
+    response to a request that was in flight with it does not clear the cookie
+    the browser has meanwhile received.
+    """
+    token = session.pop("auth_session", None)
+    if isinstance(token, str):
+        AuthSession.query.filter_by(token_hash=_digest(token)).update(
+            {
+                "credential_binding": RENEWED,
+                "expires_at": int(time.time()) + RENEWED_GRACE_SECONDS,
+            },
+            synchronize_session=False,
+        )
     session["user_id"] = user.id
     session["auth_session"] = issue(user)
     session.permanent = True
@@ -99,6 +121,13 @@ def validate() -> bool:
     )
     user = db.session.get(User, uid)
     if (
+        record is not None
+        and record.credential_binding == RENEWED
+        and record.expires_at > int(time.time())
+    ):
+        _clear_login(keep_cookie=True)
+        return False
+    if (
         record is None
         or record.user_id != uid
         or user is None
@@ -120,9 +149,44 @@ def validate() -> bool:
     return True
 
 
-def _clear_login() -> None:
+def _clear_login(*, keep_cookie: bool = False) -> None:
     # A demo slot is a public sandbox selector, not an authenticated identity.
     slot = session.get("demo_slot_id")
     session.clear()
     if slot is not None:
         session["demo_slot_id"] = slot
+    if keep_cookie:
+        # A just-renewed login: handle this request as signed out, but do not
+        # write that back. The browser already holds the newer cookie, and a
+        # cleared one in this response could overwrite it (a request in flight
+        # during a password change would sign the browser out).
+        g.renewed_login_cookie = True
+
+
+def _renewed(token: str) -> bool:
+    record = db.session.get(AuthSession, _digest(token), populate_existing=True)
+    return record is not None and record.credential_binding == RENEWED
+
+
+class RenewedLoginSafeSessions(SecureCookieSessionInterface):
+    """Cookie sessions where a just-renewed login cannot overwrite its successor.
+
+    Flask re-sends the session cookie on every authenticated response. When this
+    browser's login is renewed (e.g. its password changed) while other requests
+    are still in flight, their responses must not put the old cookie back, nor a
+    cleared one: whichever arrives last would win and sign the browser out.
+    So no cookie is written by a request that was handled as a renewed login, or
+    whose token has been renewed meanwhile (checked at save time). Revoked,
+    logged-out or expired logins still get a cleared cookie, so the browser can
+    sign in again; a request that started a new login carries the new token.
+    """
+
+    def save_session(
+        self, app: Flask, session: SessionMixin, response: Response
+    ) -> None:
+        token = session.get("auth_session")
+        if g.get("renewed_login_cookie") and not token:
+            return
+        if isinstance(token, str) and _renewed(token):
+            return
+        super().save_session(app, session, response)

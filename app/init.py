@@ -436,6 +436,9 @@ def create_app() -> Flask:
     attach_to_logger()
 
     app = Flask(__name__)
+    from services.auth_sessions import RenewedLoginSafeSessions
+
+    app.session_interface = RenewedLoginSafeSessions()
 
     # Propagate OPENHANGAR_ENV → FLASK_ENV so Flask's own internals keep working.
     os.environ["FLASK_ENV"] = os.environ.get("OPENHANGAR_ENV", "production")
