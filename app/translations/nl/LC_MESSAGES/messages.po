@@ -11874,7 +11874,7 @@ msgstr "Afdrukken / PDF downloaden"
 
 #: app/templates/pilots/minimums_view.html:46
 msgid "Superseded"
-msgstr "Vervangen"
+msgstr "Verouderd"
 
 #: app/templates/pilots/minimums_view.html:48
 msgid "This is a past, read-only revision."

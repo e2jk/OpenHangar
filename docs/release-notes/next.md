@@ -19,3 +19,4 @@
 - Translation files regenerated with the i18n script: strings added by hand now carry their source references (their absence made the nightly Weblate scan's Code Scanning upload fail), and four strings no longer used are dropped.
 - Contributor docs: new strings now always go through `scripts/update_i18n.sh`; the shortcut of adding a few `.po` entries by hand is retired.
 - The nightly Weblate translation scan uses weblate-checks-action v1.1.1: a flagged string with no source location no longer makes GitHub reject the whole upload.
+- Dutch: a past revision of the personal minimums is now labelled "Verouderd" instead of "Vervangen", the label of the documents' **Replace** button.
