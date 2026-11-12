@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
+import pytest
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AircraftPhoto,
@@ -709,3 +710,46 @@ class TestShowcasePhoto:
         _add_token(app, acid, "nophotoid1", access_level="showcase")
         resp = client.get("/showcase/nophotoid1/photos/999999/img")
         assert resp.status_code == 404
+
+
+class TestShareCacheAuthorization:
+    @pytest.mark.parametrize(
+        "level,path",
+        [("summary", "/share"), ("full", "/share"), ("showcase", "/showcase")],
+    )
+    def test_bearer_html_is_private_and_not_stored(self, app, client, level, path):
+        _uid, _tid, acid = _setup(app)
+        _add_token(app, acid, "htmlcache", access_level=level)
+        for prefix in (path, path + "/OO-TST"):
+            response = client.get(prefix + "/htmlcache")
+            assert response.status_code == 200
+            assert response.headers["Cache-Control"] == "no-store, private"
+
+    def test_showcase_photo_conditional_requests_recheck_token(self, app, client):
+        _uid, _tid, acid = _setup(app)
+        photo_id = _add_photo(app, acid)
+        token_id = _add_token(app, acid, "cachephoto", access_level="showcase")
+        url = f"/showcase/cachephoto/photos/{photo_id}/img"
+        first = client.get(url)
+        assert first.status_code == 200
+        assert first.headers["Cache-Control"] == "no-store, private"
+        assert "Expires" not in first.headers
+        etag = first.headers["ETag"]
+        modified = first.headers["Last-Modified"]
+        valid = client.get(url, headers={"If-None-Match": etag})
+        assert valid.status_code == 304
+        assert valid.headers["Cache-Control"] == "no-store, private"
+        with app.app_context():
+            db.session.get(ShareToken, token_id).revoked_at = datetime.now(UTC)
+            db.session.commit()
+        for headers in ({}, {"If-None-Match": etag}, {"If-Modified-Since": modified}):
+            response = client.get(url, headers=headers)
+            assert response.status_code == 404
+            assert response.headers["Cache-Control"] == "no-store, private"
+            assert "ETag" not in response.headers
+
+    @pytest.mark.parametrize("path", ["/share/missing", "/showcase/missing"])
+    def test_rejected_bearer_html_is_not_stored(self, client, path):
+        response = client.get(path)
+        assert response.status_code == 404
+        assert response.headers["Cache-Control"] == "no-store, private"

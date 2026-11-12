@@ -8,6 +8,7 @@ from datetime import UTC
 
 from flask import (
     Blueprint,
+    Response,
     abort,
     make_response,
     redirect,
@@ -36,6 +37,18 @@ share_bp = Blueprint("share", __name__)
 _OWNER_ROLES = (Role.ADMIN, Role.OWNER)
 
 _TOKEN_LENGTH = 16
+
+
+@share_bp.after_request
+def _private_share_response(response: Response) -> Response:
+    """Every bearer-link response must reach authorization on its next visit.
+
+    File contents can stay unchanged while their token is revoked, so neither
+    immutable caching nor a fresh max-age is safe. This also covers rejected
+    tokens and authenticated QR responses; static assets use another blueprint.
+    """
+    response.headers["Cache-Control"] = "no-store, private"
+    return response
 
 
 def _generate_token() -> str:
@@ -244,7 +257,7 @@ def showcase_photo(token: str, photo_id: int) -> ResponseReturnValue:
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
     directory = os.path.join(folder, os.path.dirname(photo.filename))
     fname = os.path.basename(photo.filename)
-    response = send_from_directory(directory, fname, max_age=31536000)
-    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    # Authorize above before Werkzeug handles any conditional file request.
+    response = send_from_directory(directory, fname, max_age=None)
     response.headers["X-Robots-Tag"] = "noindex, nofollow"
     return response
