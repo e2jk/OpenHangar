@@ -834,3 +834,30 @@ docker pull ghcr.io/e2jk/openhangar:1.0.0
 ## Roadmap
 
 The phased delivery plan with completion status is tracked in [docs/implementation_plan.md](implementation_plan.md).
+
+
+### PostgreSQL reservation concurrency tests
+
+The normal coverage suite uses SQLite. Reservation race regressions also run in CI
+against PostgreSQL, with two authenticated requests on separate connections and an
+observer that verifies row-lock waiting. Each test creates and drops its own random
+schema; use a disposable database and never an operator database.
+
+With a disposable PostgreSQL server available, run:
+
+```bash
+TEST_POSTGRES_URL='postgresql+psycopg://test:test@127.0.0.1:55432/test' \
+  bash scripts/test-reservation-concurrency.sh
+```
+
+The database user needs permission to create schemas. The PostgreSQL lane supplements
+`bash scripts/run-tests-with-coverage.sh`; it does not replace or lower the full
+100% line-coverage gate. Without `TEST_POSTGRES_URL`, these PostgreSQL tests skip in
+the normal suite.
+
+Reservation confirmation, owner edits, downtime changes, cancellation and dispatch
+writes serialize on the aircraft row until commit or rollback. Adjacent intervals
+remain valid. Owner edits and explicitly confirmed maintenance conflicts retain
+their existing override behavior. Repeated dispatch requests re-read committed
+state and report the existing "already checked out/in" message. Checkin creates a
+charge draft, not a flight; flights remain explicitly logged by the pilot.

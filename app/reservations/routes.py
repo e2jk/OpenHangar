@@ -28,6 +28,7 @@ from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AircraftBookingSettings,
+    DispatchRecord,
     MaintenanceDowntime,
     RateBasis,
     RateType,
@@ -96,7 +97,7 @@ def _tenant_id() -> int:
     return tu.tenant_id
 
 
-def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
+def _get_aircraft_or_404(aircraft_id: int, *, for_update: bool = False) -> Aircraft:
     ac = db.session.get(Aircraft, aircraft_id)
     if (
         not ac
@@ -104,11 +105,22 @@ def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
         or not user_can_access_aircraft(aircraft_id)
     ):
         abort(404)
+    if for_update:
+        # All booking/downtime/dispatch writers lock the same stable row before
+        # reading state, including when no conflicting booking/dispatch exists.
+        # READ COMMITTED then sees the preceding writer's committed state. Refresh
+        # the identity map too: the URL converter may already have loaded aircraft.
+        ac = (
+            Aircraft.query.filter_by(id=aircraft_id)
+            .populate_existing()
+            .with_for_update()
+            .one()
+        )
     return ac
 
 
 def _get_reservation_or_404(ac: Aircraft, res_id: int) -> Reservation:
-    r = db.session.get(Reservation, res_id)
+    r = db.session.get(Reservation, res_id, populate_existing=True)
     if not r or r.aircraft_id != ac.id:
         abort(404)
     return r
@@ -493,7 +505,7 @@ def calendar_view(aircraft_id: int):
 
 
 def _get_downtime_or_404(ac: Aircraft, downtime_id: int) -> MaintenanceDowntime:
-    d = db.session.get(MaintenanceDowntime, downtime_id)
+    d = db.session.get(MaintenanceDowntime, downtime_id, populate_existing=True)
     if not d or d.aircraft_id != ac.id:
         abort(404)
     return d
@@ -563,7 +575,7 @@ def _save_downtime(ac: Aircraft, d: MaintenanceDowntime | None):
 @login_required
 @require_role(*_DOWNTIME_ROLES)
 def downtime_new(aircraft_id: int):
-    ac = _get_aircraft_or_404(aircraft_id)
+    ac = _get_aircraft_or_404(aircraft_id, for_update=request.method == "POST")
     if request.method == "POST":
         return _save_downtime(ac, None)
     return render_template(
@@ -578,7 +590,7 @@ def downtime_new(aircraft_id: int):
 @login_required
 @require_role(*_DOWNTIME_ROLES)
 def downtime_edit(aircraft_id: int, downtime_id: int):
-    ac = _get_aircraft_or_404(aircraft_id)
+    ac = _get_aircraft_or_404(aircraft_id, for_update=request.method == "POST")
     d = _get_downtime_or_404(ac, downtime_id)
     if request.method == "POST":
         return _save_downtime(ac, d)
@@ -594,7 +606,7 @@ def downtime_edit(aircraft_id: int, downtime_id: int):
 @login_required
 @require_role(*_DOWNTIME_ROLES)
 def downtime_delete(aircraft_id: int, downtime_id: int):
-    ac = _get_aircraft_or_404(aircraft_id)
+    ac = _get_aircraft_or_404(aircraft_id, for_update=request.method == "POST")
     d = _get_downtime_or_404(ac, downtime_id)
     db.session.delete(d)
     db.session.commit()
@@ -611,7 +623,7 @@ def downtime_delete(aircraft_id: int, downtime_id: int):
 @login_required
 @require_role(*_BOOKING_ROLES)
 def new_reservation(aircraft_id: int):
-    ac = _get_aircraft_or_404(aircraft_id)
+    ac = _get_aircraft_or_404(aircraft_id, for_update=request.method == "POST")
     if ac.is_archived:
         abort(404)
     settings = ac.booking_settings
@@ -656,7 +668,7 @@ def new_reservation(aircraft_id: int):
 )
 @login_required
 def edit_reservation(aircraft_id: int, res_id: int):
-    ac = _get_aircraft_or_404(aircraft_id)
+    ac = _get_aircraft_or_404(aircraft_id, for_update=request.method == "POST")
     r = _get_reservation_or_404(ac, res_id)
 
     # Pilots may only edit their own pending reservations
@@ -696,7 +708,7 @@ def edit_reservation(aircraft_id: int, res_id: int):
 )
 @login_required
 def cancel_reservation(aircraft_id: int, res_id: int):
-    ac = _get_aircraft_or_404(aircraft_id)
+    ac = _get_aircraft_or_404(aircraft_id, for_update=request.method == "POST")
     r = _get_reservation_or_404(ac, res_id)
 
     role = TenantUser.query.filter_by(user_id=session["user_id"]).first()
@@ -775,7 +787,7 @@ def cancel_reservation(aircraft_id: int, res_id: int):
 @login_required
 @require_role(*_OWNER_ROLES)
 def confirm_reservation(aircraft_id: int, res_id: int):
-    ac = _get_aircraft_or_404(aircraft_id)
+    ac = _get_aircraft_or_404(aircraft_id, for_update=request.method == "POST")
     r = _get_reservation_or_404(ac, res_id)
     _next = request.form.get("next", "")
     _fallback = url_for("reservations.calendar_view", aircraft_id=ac.id)
@@ -886,7 +898,7 @@ def confirm_reservation(aircraft_id: int, res_id: int):
 @login_required
 @require_role(*_OWNER_ROLES)
 def decline_reservation(aircraft_id: int, res_id: int):
-    ac = _get_aircraft_or_404(aircraft_id)
+    ac = _get_aircraft_or_404(aircraft_id, for_update=request.method == "POST")
     r = _get_reservation_or_404(ac, res_id)
     _next = request.form.get("next", "")
     _fallback = url_for("reservations.calendar_view", aircraft_id=ac.id)
@@ -912,7 +924,7 @@ def decline_reservation(aircraft_id: int, res_id: int):
 @login_required
 @require_role(*_OWNER_ROLES)
 def booking_settings(aircraft_id: int):
-    ac = _get_aircraft_or_404(aircraft_id)
+    ac = _get_aircraft_or_404(aircraft_id, for_update=request.method == "POST")
     settings = ac.booking_settings
 
     if request.method == "POST":
@@ -1314,9 +1326,9 @@ def reservation_detail(aircraft_id: int, res_id: int):
 )
 @login_required
 def checkout(aircraft_id: int, res_id: int):
-    from models import DispatchRecord, Snag  # pyright: ignore[reportMissingImports]
+    from models import Snag  # pyright: ignore[reportMissingImports]
 
-    ac = _get_aircraft_or_404(aircraft_id)
+    ac = _get_aircraft_or_404(aircraft_id, for_update=request.method == "POST")
     r = _get_reservation_or_404(ac, res_id)
     uid = int(session["user_id"])
     if not _can_dispatch(r, uid):
@@ -1327,7 +1339,9 @@ def checkout(aircraft_id: int, res_id: int):
             url_for("reservations.reservation_detail", aircraft_id=ac.id, res_id=r.id)
         )
 
-    dispatch_record = r.dispatch
+    dispatch_record = (
+        DispatchRecord.query.filter_by(reservation_id=r.id).populate_existing().first()
+    )
     if dispatch_record is not None and dispatch_record.is_checked_out:
         flash(_("This reservation has already been checked out."), "warning")
         return redirect(
@@ -1505,13 +1519,15 @@ def _draft_rental_charge(ac: Aircraft, r: Reservation, dispatch_record: Any) -> 
 )
 @login_required
 def checkin(aircraft_id: int, res_id: int):
-    ac = _get_aircraft_or_404(aircraft_id)
+    ac = _get_aircraft_or_404(aircraft_id, for_update=request.method == "POST")
     r = _get_reservation_or_404(ac, res_id)
     uid = int(session["user_id"])
     if not _can_dispatch(r, uid):
         abort(403)
 
-    dispatch_record = r.dispatch
+    dispatch_record = (
+        DispatchRecord.query.filter_by(reservation_id=r.id).populate_existing().first()
+    )
     if dispatch_record is None or not dispatch_record.is_checked_out:
         flash(_("Check out before checking in."), "danger")
         return redirect(
