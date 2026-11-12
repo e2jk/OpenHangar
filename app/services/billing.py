@@ -16,6 +16,8 @@ from datetime import UTC, date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from typing import TYPE_CHECKING, Any, cast
 
+from services.csv_export import safe_csv_text
+
 if TYPE_CHECKING:
     from models import BillingAccount, LedgerEntry, User
 
@@ -223,13 +225,18 @@ class BillingService:
         buf = io.StringIO()
         writer = csv.writer(buf)
         writer.writerow(["Export date", datetime.now(UTC).date().isoformat()])
-        writer.writerow(["Exporter", exported_by.display_name if exported_by else ""])
+        writer.writerow(
+            ["Exporter", safe_csv_text(exported_by.display_name) if exported_by else ""]
+        )
         writer.writerow(
             ["Period", f"{statement.start.isoformat()} to {statement.end.isoformat()}"]
         )
         account = statement.account
         writer.writerow(
-            ["Account holder", account.user.display_name if account.user else ""]
+            [
+                "Account holder",
+                safe_csv_text(account.user.display_name) if account.user else "",
+            ]
         )
         writer.writerow(["Scope", account.kind])
         writer.writerow([])
@@ -240,7 +247,7 @@ class BillingService:
                 [
                     line.entry.entry_date.isoformat(),
                     line.entry.entry_type,
-                    line.entry.description,
+                    safe_csv_text(line.entry.description),
                     str(line.entry.amount),
                     str(line.running_balance),
                 ]

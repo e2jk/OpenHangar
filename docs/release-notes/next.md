@@ -19,6 +19,8 @@
 - Authentication challenges now expire and can be used only once. Login and authenticator enrolment state stays on the server, including first-run setup, so saved browser cookies cannot replay a completed enrolment.
 - Logins are now revocable: logout ends that browser session, and password recovery, password/authenticator changes, deactivation and membership removal invalidate older logins. Your acting browser stays signed in after changing its own credentials. Upgrading requires a fresh login for existing browser sessions.
 
+- CSV downloads protect user-entered text from being interpreted as spreadsheet formulas, while keeping monetary amounts numeric.
+
 **Reservations and billing**
 - Booking settings, dispatch counters and rental charges reject invalid, non-finite, negative (where prohibited) and out-of-range numbers without saving changes. Charge totals use decimal arithmetic with ties rounded to even cents; signed adjustments remain supported.
 

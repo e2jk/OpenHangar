@@ -325,6 +325,11 @@ When the **Shared ownership** operating model is in use, two or more people can 
 
 6. **Statements.** Each co-owner can view their own account and download a CSV statement from **My share** on the aircraft page; owners/admins can do the same for any co-owner from the billing dashboard.
 
+CSV downloads preserve amounts and negative balances as numbers. Names, descriptions
+and aircraft registrations that resemble spreadsheet formulas are prefixed with an
+apostrophe in the exported file so they are treated as text. That apostrophe may
+be visible when reading the raw CSV; the records in OpenHangar are unchanged.
+
 ### Managing documents
 
 Upload any PDF, image, or document from the Aircraft or Component detail page.
