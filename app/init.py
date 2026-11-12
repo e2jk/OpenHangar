@@ -67,6 +67,12 @@ def _normalize_database_url(db_url: str) -> str:
 
 SUPPORTED_LOCALES = ["en", "fr", "nl"]
 
+# Authenticated responses that may be cached only with revalidation (private,
+# no-cache). Everything else authenticated is no-store; see _security_headers.
+_REVALIDATED_PRIVATE_ENDPOINTS = frozenset(
+    {"aircraft.serve_photo", "aircraft.serve_photo_thumb"}
+)
+
 LOCALE_META = {
     "en": {"flag": "🇬🇧", "abbr": "EN", "native": "English", "english": "English"},
     "fr": {"flag": "🇫🇷", "abbr": "FR", "native": "Français", "english": "French"},
@@ -614,6 +620,14 @@ def create_app() -> Flask:
             # safe; uploads/documents go through their own routes and keep the
             # authenticated no-store below.
             response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        elif (
+            request.endpoint in _REVALIDATED_PRIVATE_ENDPOINTS
+            and response.status_code in (200, 304)
+        ):
+            # Unchanged aircraft photos may be revalidated (ETag → 304) instead of
+            # re-downloaded; each revisit still reaches the route's authorization
+            # check first. Every other authenticated file keeps no-store.
+            response.headers["Cache-Control"] = "private, no-cache"
         elif session.get("user_id") or getattr(g, "had_authenticated_session", False):
             existing_cc = response.headers.get("Cache-Control", "")
             if "public" not in existing_cc and "immutable" not in existing_cc:
