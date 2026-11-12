@@ -1,0 +1,11 @@
+{# Landing recency (pilots/currency.py per_class_currency): the name of a
+   recency row — an EASA class, or the ICAO type for an aircraft counted
+   by type — shared by the pilot profile and the dashboard. #}
+{% macro class_label(cls, icao=none) -%}
+  {%- if cls == 'sep_land' -%}{{ _('SEP (land)') }}
+  {%- elif cls == 'sep_sea' -%}{{ _('SEP (sea)') }}
+  {%- elif cls == 'mep_land' -%}{{ _('MEP (land)') }}
+  {%- elif cls == 'mep_sea' -%}{{ _('MEP (sea)') }}
+  {%- else -%}{{ icao or '—' }}
+  {%- endif -%}
+{%- endmacro %}

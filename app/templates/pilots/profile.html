@@ -69,20 +69,21 @@
 
   {# ── Per-type currency ─────────────────────────────────────────────────── #}
   <div id="currency"></div>
-  {% if currency and currency.per_type.by_type %}
+  {% from 'partials/_recency.html' import class_label %}
+  {% if currency and currency.per_class.by_class %}
   <div class="mt-5">
     <h2 class="section-title mb-3">
       <i class="bi bi-clock-history me-2"></i>{{ _('Landing Currency') }}
     </h2>
 
-    {% if currency.per_type.unresolved_count > 0 %}
+    {% if currency.per_class.unresolved_count > 0 %}
     <div class="alert alert-warning d-flex align-items-start gap-2 oh-fs-09 mb-3">
       <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
       <div>
         {{ ngettext(
-          'one logbook entry has no ICAO type code and is excluded from type-specific currency checks.',
-          '%(n)s logbook entries have no ICAO type code and are excluded from type-specific currency checks.',
-          currency.per_type.unresolved_count, n=currency.per_type.unresolved_count
+          'One flight of the last 90 days has no known aircraft type and is not counted below.',
+          '%(n)s flights of the last 90 days have no known aircraft type and are not counted below.',
+          currency.per_class.unresolved_count, n=currency.per_class.unresolved_count
         ) }}
       </div>
     </div>
@@ -93,18 +94,26 @@
         <table class="table table-hover mb-0 oh-fs-09">
         <thead class="table-light">
           <tr>
-            <th class="ps-3">{{ _('Type') }}</th>
+            <th class="ps-3">{{ _('Class or type') }}</th>
             <th class="text-center">{{ _('Landings (90 d)') }}</th>
             <th class="text-center">{{ _('Night (90 d)') }}</th>
-            <th class="pe-3">{{ _('Passenger currency expires') }}</th>
+            <th>{{ _('Passenger currency expires') }}</th>
+            <th class="pe-3">{{ _('Last flown') }}</th>
           </tr>
         </thead>
         <tbody>
-          {% for icao, tc in currency.per_type.by_type.items() %}
-          {% set d = tc.passenger %}
-          {% set n = tc.night %}
+          {% for row in currency.per_class.by_class %}
+          {% set d = row.passenger %}
+          {% set n = row.night %}
           <tr>
-            <td class="ps-3 fw-semibold oh-text-navy">{{ icao }}</td>
+            <td class="ps-3">
+              <span class="fw-semibold oh-text-navy">{{ class_label(row['class'], row.type) }}</span>
+              {% if row.types %}
+              <div class="text-muted oh-fs-08">
+                {% for icao, landings in row.types.items() %}{{ icao }} · {{ ngettext('one landing', '%(n)s landings', landings, n=landings) }}{% if not loop.last %}, {% endif %}{% endfor %}
+              </div>
+              {% endif %}
+            </td>
             <td class="text-center">
               {% if d.status == 'ok' %}
                 <span class="badge bg-success">{{ d.count }}/{{ d.required }}</span>
@@ -127,7 +136,7 @@
                 <span class="badge bg-secondary">0/{{ n.required }}</span>
               {% endif %}
             </td>
-            <td class="pe-3 text-muted">
+            <td class="text-muted">
               {% if d.expires_on %}
                 {% if d.status == 'warning' %}
                   <span class="text-warning fw-semibold">
@@ -141,6 +150,7 @@
                 <span class="text-danger">{{ _('Not current') }}</span>
               {% endif %}
             </td>
+            <td class="pe-3 text-muted text-nowrap">{{ row.last_flown.strftime('%Y-%m-%d') }}</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -148,8 +158,41 @@
       </div>
     </div>
     <p class="form-text mt-1">
-      {{ _('%(ref)s: 3 landings (day or night) in the last 90 days to carry passengers; 1 night landing in the last 90 days to carry passengers at night. Both per ICAO aircraft type.', ref='EASA FCL.060') }}
+      {{ _('%(ref)s: 3 take-offs and landings in the last 90 days to carry passengers, and 1 at night to carry passengers at night, in an aircraft of the same type or class. Piston aeroplanes count by class (SEP or MEP, land or sea), other aircraft by type. Simulator sessions are not counted.', ref='EASA FCL.060') }}
     </p>
+
+    {% if currency.recent_aircraft %}
+    <h3 class="h6 text-muted mt-4 mb-2"><i class="bi bi-airplane me-1"></i>{{ _('Aircraft flown in the last 6 months') }}</h3>
+    <div class="ac-form-card p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 oh-fs-09">
+        <thead class="table-light">
+          <tr>
+            <th class="ps-3">{{ _('Aircraft') }}</th>
+            <th>{{ _('Class or type') }}</th>
+            <th class="text-center">{{ _('Flights (6 months)') }}</th>
+            <th class="text-center">{{ _('Landings (90 d)') }}</th>
+            <th class="pe-3">{{ _('Last flown') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ac in currency.recent_aircraft %}
+          <tr>
+            <td class="ps-3">
+              <span class="fw-semibold oh-text-navy">{{ ac.registration or '—' }}</span>
+              {% if ac.aircraft_type %}<div class="text-muted oh-fs-08">{{ ac.aircraft_type }}</div>{% endif %}
+            </td>
+            <td>{{ class_label(ac['class'], ac.icao) }}{% if ac['class'] and ac.icao %} <span class="text-muted oh-fs-08">({{ ac.icao }})</span>{% endif %}</td>
+            <td class="text-center">{{ ac.flights }}</td>
+            <td class="text-center">{{ ac.landings_90 }}</td>
+            <td class="pe-3 text-muted text-nowrap">{{ ac.last_flown.strftime('%Y-%m-%d') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
   </div>
   {% endif %}
 

@@ -91,6 +91,28 @@ class TestRules:
             assert renewal.superseded_by_id is None
             assert ac.insurance_expiry == T + timedelta(days=100)
 
+    def test_remembered_coverage_follows_document_changes(self, app):
+        """Aircraft remembers its covered-until dates for the request; a
+        document change (refresh) makes it look again."""
+        _uid, tid = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tid)
+        with app.app_context():
+            kw = {"aircraft_id": ac_id}
+            owner = lc.Owner(aircraft_id=ac_id)
+            _doc(kw, DocType.INSURANCE_CERT, until=T + timedelta(days=10))
+            lc.refresh(owner, DocType.INSURANCE_CERT)
+            db.session.commit()
+            ac = db.session.get(Aircraft, ac_id)
+            assert ac.insurance_status == "expiring_soon"
+            _doc(
+                kw,
+                DocType.INSURANCE_CERT,
+                start=T + timedelta(days=11),
+                until=T + timedelta(days=100),
+            )
+            lc.refresh(owner, DocType.INSURANCE_CERT)
+            assert ac.insurance_status == "ok"
+
     def test_a_gap_before_the_renewal_still_warns(self, app):
         _uid, tid = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tid)

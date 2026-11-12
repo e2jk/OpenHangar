@@ -3,6 +3,8 @@ from datetime import timedelta
 from typing import Any
 
 WINDOW_DAYS = 90
+# "Recently flown aircraft" statistics: about six months.
+STATS_WINDOW_DAYS = 182
 PASSENGER_REQUIRED = 3  # FCL.060(b)(1): 3 take-offs/landings (any) in 90 days
 NIGHT_REQUIRED = 1  # FCL.060(b)(2): 1 night landing in 90 days
 EXPIRY_WARN_DAYS = 90  # warn when medical/SEP expires within this many days
@@ -71,62 +73,101 @@ def _expiry_status(
     return STATUS_OK, days
 
 
-def per_type_currency(entries: Any, today: _date | None = None) -> dict[str, Any]:
-    """Rolling 90-day landing currency grouped by ICAO aircraft type.
-
-    EASA FCL.060 per type:
-    - Passenger carry: 3 landings (day OR night combined) in 90 days.
-    - Night passenger carry: 1 night landing in 90 days.
-
-    Entries whose aircraft_type_icao is blank are resolved on-the-fly from
-    aircraft_type via resolve_aircraft_type_icao(). Those that still cannot be
-    resolved are tallied in unresolved_count so the UI can surface a warning.
-
-    Returns::
-
-        {
-            "by_type": {
-                "C172": {"passenger": {...}, "night": {...}, "status": "ok"},
-                "P28A": {"passenger": {...}, "night": {...}, "status": "warning"},
-            },
-            "unresolved_count": 3,
-        }
-    """
-    if today is None:
-        today = _date.today()
-
+def _entry_icao(entry: Any) -> str | None:
+    """The entry's ICAO type: stored, or resolved from its type text."""
     from utils import (
         resolve_aircraft_type_icao,  # pyright: ignore[reportMissingImports]
     )
 
+    icao: str | None = getattr(entry, "display_aircraft_type_icao", None) or None
+    return icao or resolve_aircraft_type_icao(
+        getattr(entry, "display_aircraft_type", None)
+    )
+
+
+def _recency_key(icao: str) -> tuple[str, str | None, str | None]:
+    """(grouping key, EASA class or None, ICAO type or None) for *icao*:
+    a class-rated aircraft groups under its class (FCL.060(b): "same type
+    or class"), any other under its own type."""
+    from utils import aircraft_class_for_icao  # pyright: ignore[reportMissingImports]
+
+    cls = aircraft_class_for_icao(icao)
+    if cls:
+        return cls, cls, None
+    return f"type:{icao}", None, icao
+
+
+def _is_simulator(entry: Any) -> bool:
+    # A simulator session lands on no aircraft (its landings aren't kept):
+    # neither counted nor reported as an unresolved type.
+    return getattr(entry, "entry_type", None) == "fstd"
+
+
+_STATUS_ORDER = {STATUS_OK: 0, STATUS_WARNING: 1, STATUS_EXPIRED: 2, STATUS_UNKNOWN: 3}
+
+
+def per_class_currency(
+    entries: Any,
+    today: _date | None = None,
+    history: list[tuple[str | None, _date]] | None = None,
+) -> dict[str, Any]:
+    """Rolling 90-day landing recency per EASA class, FCL.060(b): 3 take-offs
+    and landings (passengers) and 1 at night (passengers at night) "in an
+    aircraft of the same type or class". Piston aeroplanes count by class
+    (SEP/MEP, land/sea — utils.aircraft_class_for_icao), any other aircraft
+    by ICAO type.
+
+    *entries* need only cover the last 90 days (more is fine). *history*
+    — (ICAO type or None, last flown) per type ever logged (flown_history)
+    — adds the classes flown before but not lately, as not current.
+
+    Returns {"by_class": [...], "unresolved_count": n}: one dict per class
+    or type — key, class, type, passenger, night, status, last_flown and
+    types ({ICAO type: landings in the last 90 days}) — current ones first;
+    unresolved_count counts the recent flights whose type isn't known.
+    """
+    if today is None:
+        today = _date.today()
+    window_start = today - timedelta(days=WINDOW_DAYS)
+
     buckets: dict[str, list[Any]] = {}
+    meta: dict[str, tuple[str | None, str | None]] = {}
+    types: dict[str, dict[str, int]] = {}
+    last_flown: dict[str, _date] = {}
     unresolved_count = 0
 
+    def _seen(key: str, cls: str | None, icao: str | None, day: _date) -> None:
+        meta[key] = (cls, icao)
+        if key not in last_flown or day > last_flown[key]:
+            last_flown[key] = day
+
     for entry in entries:
-        # A simulator session is no landing on any aircraft type (its
-        # landings aren't kept): neither counted nor reported unresolved.
-        if getattr(entry, "entry_type", None) == "fstd":
+        if _is_simulator(entry) or entry.date < window_start:
             continue
-        icao: str | None = getattr(entry, "display_aircraft_type_icao", None) or None
-        if not icao:
-            icao = resolve_aircraft_type_icao(
-                getattr(entry, "display_aircraft_type", None)
-            )
+        icao = _entry_icao(entry)
         if not icao:
             unresolved_count += 1
             continue
-        buckets.setdefault(icao, []).append(entry)
+        key, cls, typ = _recency_key(icao)
+        _seen(key, cls, typ, entry.date)
+        buckets.setdefault(key, []).append(entry)
+        landings = (entry.landings_day or 0) + (entry.landings_night or 0)
+        per_type = types.setdefault(key, {})
+        per_type[icao] = per_type.get(icao, 0) + landings
 
-    by_type: dict[str, dict[str, Any]] = {}
-    for icao, type_entries in sorted(buckets.items()):
+    for icao, day in history or []:
+        if icao:
+            key, cls, typ = _recency_key(icao)
+            _seen(key, cls, typ, day)
+
+    rows: list[dict[str, Any]] = []
+    for key, (cls, icao) in meta.items():
+        class_entries = buckets.get(key, [])
         pax = _rolling_landing_currency(
-            type_entries,
-            ("landings_day", "landings_night"),
-            PASSENGER_REQUIRED,
-            today,
+            class_entries, ("landings_day", "landings_night"), PASSENGER_REQUIRED, today
         )
         night = _rolling_landing_currency(
-            type_entries, "landings_night", NIGHT_REQUIRED, today
+            class_entries, "landings_night", NIGHT_REQUIRED, today
         )
         statuses = [pax["status"], night["status"]]
         if STATUS_EXPIRED in statuses:
@@ -137,9 +178,131 @@ def per_type_currency(entries: Any, today: _date | None = None) -> dict[str, Any
             status = STATUS_UNKNOWN
         else:
             status = STATUS_OK
-        by_type[icao] = {"passenger": pax, "night": night, "status": status}
+        rows.append(
+            {
+                "key": key,
+                "class": cls,
+                "type": icao,
+                "passenger": pax,
+                "night": night,
+                "status": status,
+                "last_flown": last_flown[key],
+                "types": dict(sorted(types.get(key, {}).items())),
+            }
+        )
+    # Current first — passenger currency, then night — then most recently flown.
+    rows.sort(
+        key=lambda r: (
+            _STATUS_ORDER[r["passenger"]["status"]],
+            _STATUS_ORDER[r["night"]["status"]],
+            -r["last_flown"].toordinal(),
+            r["key"],
+        )
+    )
+    return {"by_class": rows, "unresolved_count": unresolved_count}
 
-    return {"by_type": by_type, "unresolved_count": unresolved_count}
+
+def recent_aircraft(entries: Any, today: _date | None = None) -> list[dict[str, Any]]:
+    """The aircraft flown in the last STATS_WINDOW_DAYS, most recent first:
+    registration, type, ICAO type and class, last flown, number of flights
+    then, and landings in the last 90 days. Statistics, not a legal check."""
+    if today is None:
+        today = _date.today()
+    since = today - timedelta(days=STATS_WINDOW_DAYS)
+    window_start = today - timedelta(days=WINDOW_DAYS)
+    from utils import aircraft_class_for_icao  # pyright: ignore[reportMissingImports]
+
+    by_aircraft: dict[str, dict[str, Any]] = {}
+    for entry in entries:
+        if _is_simulator(entry) or entry.date < since:
+            continue
+        registration = getattr(entry, "display_registration", None)
+        aircraft_type = getattr(entry, "display_aircraft_type", None)
+        key = registration or aircraft_type or ""
+        row = by_aircraft.get(key)
+        if row is None:
+            icao = _entry_icao(entry)
+            row = by_aircraft[key] = {
+                "registration": registration,
+                "aircraft_type": aircraft_type,
+                "icao": icao,
+                "class": aircraft_class_for_icao(icao),
+                "last_flown": entry.date,
+                "flights": 0,
+                "landings_90": 0,
+            }
+        row["flights"] += 1
+        row["last_flown"] = max(row["last_flown"], entry.date)
+        if entry.date >= window_start:
+            row["landings_90"] += (entry.landings_day or 0) + (
+                entry.landings_night or 0
+            )
+    return sorted(
+        by_aircraft.values(),
+        key=lambda r: (-r["last_flown"].toordinal(), r["registration"] or ""),
+    )
+
+
+def recent_flights(user_id: int, today: _date | None = None) -> list[Any]:
+    """The pilot's flights (either crew slot) of the last STATS_WINDOW_DAYS:
+    all currency_summary needs, however long the logbook."""
+    from models import Flight  # pyright: ignore[reportMissingImports]
+    from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
+
+    since = (today or _date.today()) - timedelta(days=STATS_WINDOW_DAYS)
+    result: list[Any] = Flight.query.filter(
+        or_(Flight.pic_user_id == user_id, Flight.second_crew_user_id == user_id),
+        Flight.date >= since,
+    ).all()
+    return result
+
+
+def flown_history(user_id: int) -> list[tuple[str | None, _date]]:
+    """(ICAO type or None, last flown) for each aircraft type the pilot
+    ever logged, simulator sessions aside: one grouped query, each distinct
+    type resolved once — so the recency doesn't load the whole logbook."""
+    from models import (  # pyright: ignore[reportMissingImports]
+        Aircraft,
+        Flight,
+        LogbookEntryType,
+        db,
+    )
+    from sqlalchemy import func, or_  # pyright: ignore[reportMissingImports]
+    from utils import (
+        resolve_aircraft_type_icao,  # pyright: ignore[reportMissingImports]
+    )
+
+    rows = (
+        db.session.query(
+            Aircraft.make,
+            Aircraft.model,
+            Flight.other_aircraft_type,
+            Flight.other_aircraft_type_icao,
+            func.max(Flight.date),
+        )
+        .outerjoin(Aircraft, Flight.aircraft_id == Aircraft.id)
+        .filter(
+            or_(Flight.pic_user_id == user_id, Flight.second_crew_user_id == user_id),
+            Flight.entry_type != LogbookEntryType.FSTD,
+        )
+        .group_by(
+            Aircraft.make,
+            Aircraft.model,
+            Flight.other_aircraft_type,
+            Flight.other_aircraft_type_icao,
+        )
+        .all()
+    )
+    result: list[tuple[str | None, _date]] = []
+    for make, model, other_type, other_icao, last in rows:
+        # Same as Flight.display_aircraft_type(_icao): a managed aircraft's
+        # make and model, else the free-text type.
+        if make is not None:
+            icao = resolve_aircraft_type_icao(f"{make} {model}".strip())
+        else:
+            icao = other_icao or resolve_aircraft_type_icao(other_type)
+        result.append((icao, last))
+    return result
 
 
 def passenger_currency(entries: Any, today: _date | None = None) -> dict[str, Any]:
@@ -181,10 +344,16 @@ def sep_status(profile: Any, today: _date | None = None) -> dict[str, Any]:
 
 
 def currency_summary(
-    profile: Any, entries: Any, today: _date | None = None
+    profile: Any,
+    entries: Any,
+    today: _date | None = None,
+    history: list[tuple[str | None, _date]] | None = None,
 ) -> dict[str, Any] | None:
     """
     Aggregate all currency checks. Returns None if profile is None.
+
+    *entries* need only cover the last STATS_WINDOW_DAYS (recent_flights
+    loads just those); *history* is flown_history().
     """
     if profile is None:
         return None
@@ -195,7 +364,7 @@ def currency_summary(
     nite = night_currency(entries, today)
     med = medical_status(profile, today)
     sep = sep_status(profile, today)
-    per_type = per_type_currency(entries, today)
+    per_class = per_class_currency(entries, today, history)
 
     statuses = [pax["status"], nite["status"], med["status"], sep["status"]]
     if STATUS_EXPIRED in statuses:
@@ -210,6 +379,7 @@ def currency_summary(
         "night": nite,
         "medical": med,
         "sep": sep,
-        "per_type": per_type,
+        "per_class": per_class,
+        "recent_aircraft": recent_aircraft(entries, today),
         "overall": overall,
     }

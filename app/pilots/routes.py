@@ -264,12 +264,15 @@ def profile() -> ResponseReturnValue:
         flash(_("Profile saved."), "success")
         return redirect(url_for("pilots.profile"))
 
-    from pilots.currency import (
-        currency_summary as _currency_summary,  # pyright: ignore[reportMissingImports]
+    from pilots.currency import (  # pyright: ignore[reportMissingImports]
+        currency_summary,
+        flown_history,
+        recent_flights,
     )
 
-    pilot_entries = _my_entries_query(uid).all()
-    currency = _currency_summary(p, pilot_entries)
+    # Only the recent flights, plus one grouped query of the types ever
+    # flown: the recency's cost doesn't grow with the logbook.
+    currency = currency_summary(p, recent_flights(uid), history=flown_history(uid))
 
     pilot_docs = (
         Document.query.filter_by(pilot_user_id=uid)

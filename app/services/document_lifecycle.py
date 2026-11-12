@@ -181,6 +181,10 @@ def refresh(owner: Owner, doc_type: str | None, as_of: date | None = None) -> No
         if owner.component_id is None:
             ac = db.session.get(Aircraft, owner.aircraft_id)
             if ac is not None:
+                # Its remembered "covered until" dates (Aircraft._covered_until).
+                memo = getattr(ac, "_coverage_memo", None)
+                if memo:
+                    memo.clear()
                 setattr(
                     ac,
                     AIRCRAFT_FIELDS[doc_type],

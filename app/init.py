@@ -1288,8 +1288,19 @@ def create_app() -> Flask:
                 else 0
             )
 
-            from models import PilotProfile
-            from pilots.currency import currency_summary as _currency_summary
+            from models import GpsTrack, PilotProfile
+            from pilots.currency import (
+                STATS_WINDOW_DAYS as _STATS_WINDOW_DAYS,
+            )
+            from pilots.currency import (
+                currency_summary as _currency_summary,
+            )
+            from pilots.currency import (
+                flown_history as _flown_history,
+            )
+            from pilots.currency import (
+                recent_flights as _recent_flights,
+            )
             from sqlalchemy import (
                 or_ as _or_dash,  # pyright: ignore[reportMissingImports]
             )
@@ -1301,13 +1312,24 @@ def create_app() -> Flask:
                 Flight.pic_user_id == session["user_id"],
                 Flight.second_crew_user_id == session["user_id"],
             )
-            pilot_entries = (
-                Flight.query.filter(_mine_dash).all() if pilot_profile else []
+            # Only the recent flights and one grouped query of the types
+            # ever flown — not the whole logbook — on every dashboard view.
+            pilot_currency = (
+                _currency_summary(
+                    pilot_profile,
+                    _recent_flights(session["user_id"], today),
+                    today,
+                    history=_flown_history(session["user_id"]),
+                )
+                if pilot_profile
+                else None
             )
-            pilot_currency = _currency_summary(pilot_profile, pilot_entries, today)
 
             recent_pilot_entries = (
-                sorted(pilot_entries, key=lambda e: (e.date, e.id), reverse=True)[:5]
+                Flight.query.filter(_mine_dash)
+                .order_by(Flight.date.desc(), Flight.id.desc())
+                .limit(5)
+                .all()
                 if not aircraft_ids
                 else []
             )
@@ -1322,6 +1344,14 @@ def create_app() -> Flask:
                 if pilot_profile
                 else []
             )
+            # The tracks in one query, not one lazy load per flight (159 on a
+            # production logbook — most of the dashboard's time).
+            _dash_tracks = {
+                t.id: t
+                for t in GpsTrack.query.filter(
+                    GpsTrack.id.in_({e.gps_track_id for e in track_entries})
+                )
+            }
             dash_track_rows = [
                 {
                     "date": str(e.date),
@@ -1337,7 +1367,7 @@ def create_app() -> Flask:
                     )
                     if e.aircraft_id
                     else _url_for_dash("pilots.view_entry", entry_id=e.id),
-                    "geojson": overview_geojson(e.gps_track),
+                    "geojson": overview_geojson(_dash_tracks[e.gps_track_id]),
                 }
                 for e in in_flight_order(track_entries)
             ]
@@ -1485,6 +1515,7 @@ def create_app() -> Flask:
                 triggers=triggers,
                 pilot_currency=pilot_currency,
                 today=today,
+                recency_stats_window=timedelta(days=_STATS_WINDOW_DAYS),
                 res_7d=res_7d,
                 res_30d=res_30d,
                 cal_weeks=cal_weeks,

@@ -318,24 +318,17 @@
 
       </div>
 
-      {# ── Per-type currency strip ──────────────────────────────────────── #}
-      {# Show types where passenger currency is active or expired < 6 months ago #}
-      {% if pilot_currency.per_type.by_type %}
-      {% set _recent_types = [] %}
-      {% for icao, tc in pilot_currency.per_type.by_type.items() %}
-        {% set _pax_ok = tc.passenger.status in ('ok', 'warning') %}
-        {% set _pax_recent = tc.passenger.expires_on and (today - tc.passenger.expires_on).days <= 180 %}
-        {% if _pax_ok or _pax_recent %}
-          {% set _ = _recent_types.append((icao, tc)) %}
-        {% endif %}
-      {% endfor %}
-      {% if _recent_types %}
+      {# ── Per-class recency strip: the classes (or types) flown in the
+         last 6 months — pilots/currency.py per_class_currency. #}
+      {% from 'partials/_recency.html' import class_label %}
+      {% set _recent_rows = pilot_currency.per_class.by_class | selectattr('last_flown', 'ge', today - recency_stats_window) | list %}
+      {% if _recent_rows %}
       <div class="border-top pt-3 mt-1">
         <div class="d-flex flex-wrap gap-3 align-items-center">
-          <span class="text-muted small">{{ _('By type:') }}</span>
-          {% for icao, tc in _recent_types %}
+          <span class="text-muted small">{{ _('By class:') }}</span>
+          {% for tc in _recent_rows %}
           <div class="d-flex align-items-center gap-1">
-            <span class="fw-semibold small oh-text-navy">{{ icao }}</span>
+            <span class="fw-semibold small oh-text-navy">{{ class_label(tc['class'], tc.type) }}</span>
             {# Passenger: 3 landings any #}
             {% if tc.passenger.status == 'ok' %}
               <span class="badge bg-success" title="{{ _('Passenger: current') }}"><i class="bi bi-people-fill"></i></span>
@@ -357,7 +350,6 @@
           <a href="{{ url_for('pilots.profile') }}#currency" class="small ms-auto text-muted">{{ _('Details →') }}</a>
         </div>
       </div>
-      {% endif %}
       {% endif %}
 
     </div>

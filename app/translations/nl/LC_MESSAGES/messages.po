@@ -12961,3 +12961,38 @@ msgstr "Overgenomen van je medisch certificaat bij Documenten hieronder — uplo
 
 msgid "Valid from %(date)s"
 msgstr "Geldig vanaf %(date)s"
+
+msgid "SEP (land)"
+msgstr "SEP (land)"
+
+msgid "SEP (sea)"
+msgstr "SEP (zee)"
+
+msgid "MEP (land)"
+msgstr "MEP (land)"
+
+msgid "MEP (sea)"
+msgstr "MEP (zee)"
+
+msgid "Class or type"
+msgstr "Klasse of type"
+
+msgid "Last flown"
+msgstr "Laatst gevlogen"
+
+msgid "Aircraft flown in the last 6 months"
+msgstr "Vliegtuigen gevlogen in de laatste 6 maanden"
+
+msgid "Flights (6 months)"
+msgstr "Vluchten (6 maanden)"
+
+msgid "By class:"
+msgstr "Per klasse:"
+
+msgid "%(ref)s: 3 take-offs and landings in the last 90 days to carry passengers, and 1 at night to carry passengers at night, in an aircraft of the same type or class. Piston aeroplanes count by class (SEP or MEP, land or sea), other aircraft by type. Simulator sessions are not counted."
+msgstr "%(ref)s: 3 starts en landingen in de laatste 90 dagen om passagiers te vervoeren, en 1 bij nacht om 's nachts passagiers te vervoeren, in een luchtvaartuig van hetzelfde type of dezelfde klasse. Zuigermotorvliegtuigen tellen per klasse (SEP of MEP, land of zee), andere luchtvaartuigen per type. Simulatorsessies tellen niet mee."
+
+msgid "One flight of the last 90 days has no known aircraft type and is not counted below."
+msgid_plural "%(n)s flights of the last 90 days have no known aircraft type and are not counted below."
+msgstr[0] "Eén vlucht van de laatste 90 dagen heeft geen bekend vliegtuigtype en telt hieronder niet mee."
+msgstr[1] "%(n)s vluchten van de laatste 90 dagen hebben geen bekend vliegtuigtype en tellen hieronder niet mee."
