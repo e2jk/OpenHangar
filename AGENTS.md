@@ -158,9 +158,10 @@ confirm the chain is valid.
 
 ### Translations
 Every user-visible string must be wrapped in `_()` (Python) or `{{ _('…') }}` (Jinja).
-After any change, update all non-English locales (`fr`, `nl`) and recompile. The
-pre-push hook and CI both validate completeness — zero untranslated or fuzzy strings
-are allowed.
+After any change, run `bash scripts/update_i18n.sh` and translate the new entries in
+all non-English locales (`fr`, `nl`) — never add `.po` entries by hand (see "Adding
+new strings" below). The pre-push hook and CI both validate completeness — zero
+untranslated or fuzzy strings are allowed.
 
 ### New environment variables
 Every new `OPENHANGAR_*` variable read via `os.environ` must be added to
@@ -211,7 +212,7 @@ descriptions — propose the message and let the human commit, per "Purpose" abo
 - Existing Alembic migrations — never alter a committed migration; always add a new one.
 - `app/translations/*.po` lines you did not add — do not hand-reformat or reorder entries.
   Running `scripts/update_i18n.sh` is fine even if it reflows the whole file (see
-  "Adding 1–10 strings" below) — that's the sanctioned tool doing its job, not you
+  "Adding new strings" below) — that's the sanctioned tool doing its job, not you
   editing lines you shouldn't.
 
 ---
@@ -325,16 +326,26 @@ the `{% if is_pilot/is_maint %}` guard in the template.
   .venv/bin/pybabel compile -f -d app/translations
   ```
 
-**Adding 1–10 strings** (faster than running the full extract cycle): manually append
-the `msgid`/`msgstr` blocks to both `fr` and `nl` `.po` files, then compile:
-```bash
-.venv/bin/pybabel compile -f -d app/translations
-```
-Use `bash scripts/update_i18n.sh` only when syncing after many changes or to pick up
-strings you may have missed.
+**Adding new strings — always through the script, however few.** Never append
+`msgid`/`msgstr` blocks to the `.po` files by hand:
+1. Wrap the new strings in `_()` / `ngettext()`.
+2. Run `bash scripts/update_i18n.sh` (from the project root). It adds each new
+   string to `fr` and `nl` with an empty `msgstr`, and drops strings the code no
+   longer uses.
+3. Fill in those empty `msgstr`s — edit the entries the script created, or use
+   `scripts/add_translations.py <file.toml>`, which only fills empty ones.
+4. Compile (`.venv/bin/pybabel compile -f -d app/translations`, or re-run the script)
+   and check with `.venv/bin/python scripts/check_translations.py`.
+
+Why not by hand, even for one string: a hand-added entry has no `#:` source
+reference and no `#, python-format` flag. Without the reference, Weblate has no
+location for the string — the nightly Weblate scan's Code Scanning upload rejects
+any result without one, so a single flagged hand-added string fails it. Without
+the flag, Weblate never runs its placeholder checks on that string. Unused strings
+also pile up, and `messages.pot` goes stale.
 
 **Formatting: always single-line (`--no-wrap`) msgstr, never wrapped.** The script
-passes `--no-wrap`, so anything you add by hand should match — one physical line per
+passes `--no-wrap`, so the `msgstr`s you fill in should match — one physical line per
 `msgstr`, however long. Weblate's own PO writer wraps at ~79 columns, so a file last
 touched by a Weblate sync will look wrapped; running the script on it then reflows
 *every* entry back to single-line, producing a diff that's almost entirely line-noise.

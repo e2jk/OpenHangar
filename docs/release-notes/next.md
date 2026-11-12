@@ -17,3 +17,4 @@
 
 **Maintenance**
 - Translation files regenerated with the i18n script: strings added by hand now carry their source references (their absence made the nightly Weblate scan's Code Scanning upload fail), and four strings no longer used are dropped.
+- Contributor docs: new strings now always go through `scripts/update_i18n.sh`; the shortcut of adding a few `.po` entries by hand is retired.
