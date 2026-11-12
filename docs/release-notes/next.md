@@ -31,7 +31,7 @@
 - Forwarded client addresses are trusted only as far as configured: `OPENHANGAR_PROXY_HOPS` sets the number of trusted proxies (`0` for direct access), and `OPENHANGAR_TRUSTED_HOSTS` limits the hostnames used for invite, password-reset and share links. The internal readiness check accepts only genuine local requests.
 
 **Reservations and billing**
-- Booking settings, dispatch counters and rental charges reject invalid, non-finite, negative (where prohibited) and out-of-range numbers without saving changes. Charge totals use decimal arithmetic with ties rounded to even cents; signed adjustments remain supported.
+- Booking settings, dispatch counters and rental charges reject invalid, non-finite, negative (where prohibited) and out-of-range numbers without saving changes. Charge totals use decimal arithmetic with ties rounded to even cents; signed adjustments remain supported. A charge too large to store is reported as such, not as invalid billable hours.
 - Competing booking, downtime and dispatch changes now wait for each other per aircraft. Overlapping confirmations cannot both succeed, and repeated checkout/checkin requests return a useful message instead of a database error. Adjacent bookings and authorized overrides remain supported.
 
 **Maintenance**

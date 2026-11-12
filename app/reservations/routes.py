@@ -1601,7 +1601,10 @@ def checkin(aircraft_id: int, res_id: int):
                 draft = _draft_rental_charge(ac, r, dispatch_record)
             except ValueError:
                 db.session.rollback()
-                flash(_("Invalid billable hours."), "danger")
+                flash(
+                    _("The rental charge is out of range. Check the values entered."),
+                    "danger",
+                )
                 return render_template(
                     "reservations/checkin.html",
                     aircraft=ac,
@@ -1686,7 +1689,9 @@ def rental_charge(aircraft_id: int, res_id: int):
 
         total = billable_hours * hourly_rate - fuel_credit + adjustment
         if abs(total) > Decimal("99999999.99"):
-            errors.append(_("Invalid billable hours."))
+            errors.append(
+                _("The rental charge is out of range. Check the values entered.")
+            )
 
         if errors:
             for msg in errors:

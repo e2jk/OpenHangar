@@ -171,6 +171,8 @@ def test_charge_product_overflow_rejected(app, client, booking) -> None:
         data={"billable_hours": "99999.9", "hourly_rate": "999999.99"},
     )
     assert response.status_code == 200
+    assert b"The rental charge is out of range." in response.data
+    assert b"Invalid billable hours." not in response.data
     with app.app_context():
         assert RentalCharge.query.one().billable_hours == Decimal("2.0")
 
@@ -196,6 +198,7 @@ def test_draft_overflow_leaves_dispatch_open(
     )
     response = client.post(base + "/checkin", data={"in_engine_counter": counter})
     assert response.status_code == 200
+    assert b"The rental charge is out of range." in response.data
     with app.app_context():
         assert DispatchRecord.query.one().in_at is None
         assert RentalCharge.query.count() == 0
