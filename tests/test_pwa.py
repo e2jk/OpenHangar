@@ -145,7 +145,7 @@ class TestServiceWorker:
         # guard on that branch.
         r = client.get("/sw.js")
         body = r.data.decode()
-        assert "if (_isSWRRoute(url)) {" in body
+        assert "_isSWRRoute(url)) return _privateNavigation(request)" in body
         assert "req.mode === 'navigate' && _isSWRRoute(url)" not in body
 
     def test_sw_js_handles_nav_cache_invalidation_message(self, client):
@@ -163,7 +163,7 @@ class TestServiceWorker:
         r = client.get("/sw.js")
         body = r.data.decode()
         assert "OH_REFRESH_NAV_CACHE" in body
-        assert "cache.put(r, resp)" in body
+        assert "_cachePrivate(key, response)" in body
 
 
 class TestPwaJsWriteInvalidation:
@@ -222,13 +222,15 @@ class TestRootCaching:
         r = client.get("/sw.js")
         body = r.data.decode()
         assert "_swr_fresh" in body
-        assert "url.pathname === '/'" in body
+        assert "url.searchParams.delete('_swr_fresh')" in body
 
-    def test_pwa_js_clears_root_cache_on_logout_click(self):
-        content = (_STATIC_DIR / "js" / "pwa.js").read_text()
-        assert "oh-logout-link" in content
-        assert "caches.open(name)" in content
-        assert "c.delete('/')" in content
+    def test_logout_retires_the_whole_private_namespace(self):
+        identity_js = (_STATIC_DIR / "js" / "offline_identity.js").read_text()
+        worker = (_STATIC_DIR / "js" / "sw.js").read_text()
+        assert "oh-logout-link" in identity_js
+        assert "OH_CLEAR_PRIVATE" in identity_js
+        assert "url.pathname === '/logout'" in worker
+        assert "_changeIdentity({ owner: '', session: '' })" in worker
 
     def test_pwa_js_scrubs_swr_fresh_marker_from_url(self):
         content = (_STATIC_DIR / "js" / "pwa.js").read_text()

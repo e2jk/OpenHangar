@@ -19,6 +19,8 @@ var PRECACHE = [
   '/static/vendor/htmx/htmx.min.js',
   '/static/js/ui.js',
   '/static/js/pwa.js',
+  '/static/js/offline_identity.js',
+  '/static/js/offline_db.js',
   '/static/js/airport_autocomplete.js',
   '/static/js/aircraft_type_autocomplete.js',
   '/static/favicon.svg',
@@ -164,203 +166,226 @@ function _isSameOrigin(u) {
   }
 }
 
-self.addEventListener('install', function (e) {
-  e.waitUntil(
-    caches.open(CACHE)
-      .then(function (cache) {
-        /* cache: 'reload' bypasses the HTTP cache — static assets are served
-         * with a long immutable lifetime, so a plain fetch after an upgrade
-         * would precache the previous version's files. */
-        return cache.addAll(PRECACHE.map(function (u) {
-          return new Request(u, { cache: 'reload' });
-        }));
+/* Identity metadata survives worker suspension, but never contains a bearer
+ * credential. Private pages are separate from the public static-asset cache. */
+var _identity = { owner: '', session: '' };
+var _revision = 0;
+var _metadataCache = CACHE + '-identity';
+var _identityReady = caches.open(_metadataCache).then(function (cache) {
+  return cache.match('/__oh_offline_identity__');
+}).then(function (response) {
+  return response ? response.json() : null;
+}).then(function (identity) {
+  if (identity) _identity = identity;
+}).catch(function () { _identity = { owner: '', session: '' }; });
+var _identityCommit = Promise.resolve();
+function _sameIdentity(a, b) { return a.owner === b.owner && a.session === b.session; }
+function _privateName(identity) { return CACHE + '-private-' + identity.owner + '-' + identity.session; }
+function _fallback() { return caches.match('/static/pwa/offline.html'); }
+function _changeIdentity(next) {
+  if (_sameIdentity(next, _identity)) return _identityCommit;
+  _identity = next;
+  _revision += 1;
+  var version = _revision;
+  /* Serialize metadata writes so a slow retired A write cannot overwrite B's
+   * persisted identity after B has already signed in. */
+  _identityCommit = _identityCommit.catch(function () {}).then(function () {
+    if (version !== _revision) return;
+    return Promise.all([
+      caches.open(_metadataCache).then(function (cache) {
+        return cache.put('/__oh_offline_identity__', new Response(JSON.stringify(next)));
+      }),
+      caches.keys().then(function (names) {
+        var currentName = _identity.owner ? _privateName(_identity) : '';
+        return Promise.all(names.filter(function (name) {
+          return name.indexOf(CACHE + '-private-') === 0 && name !== currentName;
+        }).map(function (name) { return caches.delete(name); }));
+      }),
+      self.clients.matchAll({ includeUncontrolled: true }).then(function (clients) {
+        if (version !== _revision) return;
+        clients.forEach(function (client) {
+          client.postMessage({ type: 'OH_IDENTITY_CHANGED', owner: next.owner, session: next.session });
+        });
       })
-      .then(function () { return self.skipWaiting(); })
-  );
+    ]);
+  });
+  return _identityCommit;
+}
+function _persistedIdentity() {
+  return caches.open(_metadataCache).then(function (cache) {
+    return cache.match('/__oh_offline_identity__');
+  }).then(function (response) {
+    return response ? response.json() : { owner: '', session: '' };
+  });
+}
+function _network(request) {
+  if (request.credentials === 'omit') return fetch(request);
+  var began = _revision;
+  var startedIdentity = _identity;
+  return fetch(request).then(function (response) {
+    var next = { owner: response.headers.get('X-OH-Offline-Owner') || '',
+      session: response.headers.get('X-OH-Offline-Session') || '' };
+    if (began !== _revision && !_sameIdentity(next, _identity)) {
+      /* An old account's in-flight response must not re-activate or render it
+       * after a newer login/logout has already changed the global epoch. */
+      throw new Error('offline-identity-retired');
+    }
+    /* The server's identity headers are authoritative. A forbidden page may
+     * belong to an otherwise valid login (e.g. a nav prefetch), not a logout. */
+    return _persistedIdentity().then(function (persisted) {
+      /* A retiring worker must not replace a newer worker's login state. */
+      if (!_sameIdentity(persisted, startedIdentity) && !_sameIdentity(persisted, next)) {
+        throw new Error('offline-identity-retired');
+      }
+      return _changeIdentity(next).then(function () { return response; });
+    });
+  });
+}
+function _cachePrivate(request, response) {
+  var identity = { owner: response.headers.get('X-OH-Offline-Owner') || '',
+    session: response.headers.get('X-OH-Offline-Session') || '' };
+  if (!response.ok || !identity.owner || !identity.session || !_sameIdentity(identity, _identity)) {
+    return Promise.resolve(response);
+  }
+  var version = _revision;
+  var name = _privateName(identity);
+  var url = new URL(request.url);
+  url.searchParams.delete('_swr_fresh');
+  var key = new Request(url.href);
+  return _persistedIdentity().then(function (persisted) {
+    if (version !== _revision || !_sameIdentity(identity, persisted)) return;
+    return caches.open(name).then(function (cache) {
+      if (version !== _revision) return;
+      return cache.put(key, response.clone());
+    });
+  }).then(function () { return _persistedIdentity(); }).then(function (persisted) {
+    /* Check both this worker's epoch and the state shared with replacement workers. */
+    if (version !== _revision || !_sameIdentity(identity, persisted)) return caches.delete(name);
+  }).then(function () { return response; });
+}
+function _privateNavigation(request) {
+  /* Network-first proves the current cookie still owns this namespace before
+   * showing sensitive data online. Offline fallback remains automatic. */
+  return _network(request).then(function (response) {
+    if (response.status === 403 || response.status === 404) {
+      var denied = new URL(request.url);
+      denied.searchParams.delete('_swr_fresh');
+      return caches.open(_privateName(_identity)).then(function (cache) {
+        return cache.delete(denied.href);
+      }).then(function () { return response; });
+    }
+    return _cachePrivate(request, response);
+  }).catch(function () {
+    if (!_identity.owner) return _fallback();
+    return caches.open(_privateName(_identity)).then(function (cache) {
+      var url = new URL(request.url);
+      url.searchParams.delete('_swr_fresh');
+      return cache.match(url.href).then(function (cached) { return cached || _fallback(); });
+    });
+  });
+}
+function _senderMatches(data) {
+  return data.owner === _identity.owner && data.session === _identity.session;
+}
+function _assertionHeaders(data) {
+  return { 'X-OH-Offline-Owner': data.owner || '', 'X-OH-Offline-Session': data.session || '' };
+}
+
+self.addEventListener('install', function (event) {
+  event.waitUntil(caches.open(CACHE).then(function (cache) {
+    return cache.addAll(PRECACHE.map(function (url) { return new Request(url, { cache: 'reload' }); }));
+  }).then(function () { return self.skipWaiting(); }));
 });
-
-self.addEventListener('activate', function (e) {
-  e.waitUntil(
-    caches.keys()
-      .then(function (keys) {
-        return Promise.all(
-          keys
-            .filter(function (k) { return k !== CACHE; })
-            .map(function (k) { return caches.delete(k); })
-        );
-      })
-      .then(function () { return self.clients.claim(); })
-  );
+self.addEventListener('activate', function (event) {
+  event.waitUntil(_identityReady.then(function () {
+    return caches.keys().then(function (names) {
+      return Promise.all(names.filter(function (name) {
+        return name !== CACHE && name !== _metadataCache &&
+          name !== (_identity.owner ? _privateName(_identity) : '');
+      }).map(function (name) { return caches.delete(name); }));
+    });
+  }).then(function () {
+    /* Remove any unscoped HTML left inside the old static cache as well. */
+    return caches.open(CACHE).then(function (cache) {
+      return cache.keys().then(function (keys) {
+        return Promise.all(keys.filter(function (key) {
+          return new URL(key.url).pathname.indexOf('/static/') !== 0;
+        }).map(function (key) { return cache.delete(key); }));
+      });
+    });
+  }).then(function () { return self.clients.claim(); }));
 });
-
-self.addEventListener('fetch', function (e) {
-  var req = e.request;
-
-  /* Ignore non-GET and cross-origin requests */
-  if (req.method !== 'GET') return;
-  var url = new URL(req.url);
+self.addEventListener('fetch', function (event) {
+  var request = event.request;
+  var url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
-
-  /* Cache-first for static assets.  ignoreSearch lets versioned page URLs
-   * (?v=…) hit the unversioned precache entries — safe because every entry
-   * in a given CACHE belongs to a single app version. */
-  if (url.pathname.startsWith('/static/')) {
-    e.respondWith(
-      caches.match(req, { ignoreSearch: true }).then(function (cached) {
-        if (cached) return cached;
-        return fetch(req).then(function (response) {
-          var clone = response.clone();
-          caches.open(CACHE).then(function (c) { c.put(req, clone); });
+  if (request.method === 'GET' && url.pathname.indexOf('/static/') === 0) {
+    event.respondWith(caches.open(CACHE).then(function (cache) {
+      return cache.match(request, { ignoreSearch: true }).then(function (cached) {
+        return cached || fetch(request).then(function (response) {
+          if (response.ok) cache.put(request, response.clone());
           return response;
         });
-      })
-    );
+      });
+    }));
     return;
   }
-
-  /* / renders different content depending on auth state (landing vs.
-   * dashboard) on the same URL, so a plain cache lookup could show the
-   * wrong one. auth/routes.py appends ?_swr_fresh=1 to every post-login
-   * redirect to / — that exact request always bypasses the cache and
-   * re-populates it (under the canonical / key, marker stripped) so the
-   * very first dashboard view after logging in is never the stale cached
-   * landing page. The logout link (pwa.js) separately deletes the / entry
-   * outright before navigating away, so a subsequent logged-out visit on
-   * the same browser never shows a leftover dashboard either. Once past
-   * these two edges, plain / requests behave like any other SWR route. */
-  if (url.pathname === '/' && url.searchParams.has('_swr_fresh')) {
-    e.respondWith(
-      fetch(req).then(function (response) {
-        if (response.ok) {
-          var canonical = new Request(url.origin + '/');
-          caches.open(CACHE).then(function (cache) {
-            cache.put(canonical, response.clone());
-          });
-        }
-        return response;
-      }).catch(function () {
-        return caches.match('/static/pwa/offline.html');
-      })
-    );
+  /* Browsers may issue credential-free speculative prefetches for private
+   * URLs. They neither establish login state nor receive private fallback. */
+  if (request.credentials === 'omit') {
+    event.respondWith(fetch(request));
     return;
   }
-
-  /* Stale-while-revalidate for the main read-only nav pages — deliberately
-   * NOT gated on req.mode === 'navigate'. hx-boost intercepts nav-bar clicks
-   * and issues its own fetch()/XHR (never mode:'navigate' — that mode is
-   * reserved for real browser-driven navigations per the Fetch spec), and
-   * <link rel="prefetch"> requests aren't 'navigate' either. Route
-   * allowlisting (_isSWRRoute) is what keeps this safe, not the request mode. */
-  if (_isSWRRoute(url)) {
-    e.respondWith(
-      caches.open(CACHE).then(function (cache) {
-        return cache.match(req).then(function (cached) {
-          /* Always kick off a background revalidation */
-          var fetchPromise = fetch(req).then(function (response) {
-            if (response.ok) {
-              cache.put(req, response.clone());
-            }
-            return response;
-          }).catch(function () {
-            return caches.match('/static/pwa/offline.html');
-          });
-          /* Return cached immediately if available; otherwise wait for fetch */
-          return cached || fetchPromise;
-        });
-      })
-    );
-    return;
-  }
-
-  /* Network-first for all other navigation and API calls; offline fallback for page loads */
-  if (req.mode === 'navigate') {
-    e.respondWith(
-      fetch(req).catch(function () {
-        return caches.match('/static/pwa/offline.html');
-      })
-    );
-    return;
+  event.respondWith(_identityReady.then(function () {
+    if (url.pathname === '/logout') {
+      return _changeIdentity({ owner: '', session: '' }).then(function () {
+        return _network(request).catch(_fallback);
+      });
+    }
+    if (request.method === 'GET' && _isSWRRoute(url)) return _privateNavigation(request);
+    return _network(request).catch(function (error) {
+      if (request.mode === 'navigate') return _fallback();
+      throw error;
+    });
+  }));
+});
+self.addEventListener('sync', function (event) {
+  if (event.tag === 'oh-flight-sync') {
+    event.waitUntil(self.clients.matchAll({ includeUncontrolled: true }).then(function (clients) {
+      clients.forEach(function (client) { client.postMessage({ type: 'OH_SYNC_REQUESTED' }); });
+    }));
   }
 });
-
-/* Background sync: notify open clients to flush the IndexedDB queue */
-self.addEventListener('sync', function (e) {
-  if (e.tag === 'oh-flight-sync') {
-    e.waitUntil(
-      self.clients.matchAll({ includeUncontrolled: true }).then(function (clients) {
-        clients.forEach(function (client) {
-          client.postMessage({ type: 'OH_SYNC_REQUESTED' });
+self.addEventListener('message', function (event) {
+  if (event.origin !== self.location.origin || !event.data) return;
+  var data = event.data;
+  event.waitUntil(_identityReady.then(function () {
+    if (data.type === 'OH_GET_IDENTITY') {
+      if (event.ports && event.ports[0]) event.ports[0].postMessage(_identity);
+      return;
+    }
+    if (data.type === 'OH_VERIFY_IDENTITY') {
+      return _network(new Request('/api/offline/csrf', { headers: _assertionHeaders(data), credentials: 'same-origin' })).catch(function () {});
+    }
+    if (!_senderMatches(data)) return;
+    if (data.type === 'OH_CLEAR_PRIVATE') return _changeIdentity({ owner: '', session: '' });
+    if (data.type === 'OH_PRECACHE' && Array.isArray(data.urls)) {
+      return Promise.all(data.urls.filter(_isSameOrigin).map(function (url) {
+        return _network(new Request(url, { headers: _assertionHeaders(data), credentials: 'same-origin' })).then(function (response) {
+          return _cachePrivate(new Request(url), response);
+        }).catch(function () {});
+      }));
+    }
+    if (data.type === 'OH_INVALIDATE_NAV_CACHE') return caches.delete(_privateName(_identity));
+    if (data.type === 'OH_REFRESH_NAV_CACHE' && _identity.owner) {
+      return caches.open(_privateName(_identity)).then(function (cache) {
+        return cache.keys().then(function (keys) {
+          return Promise.all(keys.map(function (key) {
+            return _network(new Request(key, { headers: _assertionHeaders(data), credentials: 'same-origin' }))
+              .then(function (response) { return _cachePrivate(key, response); }).catch(function () {});
+          }));
         });
-      })
-    );
-  }
-});
-
-/* Offline logbook editing (Phase 38): a visit to the aircraft logbook list
- * while online precaches the workbench + offline-changes page URLs, so
- * having browsed the logbook once online is sufficient to work offline —
- * no page has to be manually opened first. */
-self.addEventListener('message', function (e) {
-  /* Only trust postMessage calls from same-origin clients — a service
-   * worker can be reached by any page that holds a controller/registration
-   * reference, so the origin of the sender must be checked explicitly. */
-  if (e.origin !== self.location.origin) return;
-
-  if (e.data && e.data.type === 'OH_PRECACHE' && Array.isArray(e.data.urls)) {
-    e.waitUntil(
-      caches.open(CACHE).then(function (cache) {
-        return Promise.all(e.data.urls.filter(_isSameOrigin).map(function (u) {
-          return fetch(u).then(function (resp) {
-            if (resp.ok) return cache.put(u, resp.clone());
-          }).catch(function () {});
-        }));
-      })
-    );
-  }
-
-  /* A write (POST/PUT/DELETE) may have changed what a cached nav page would
-   * show — e.g. deleting a logbook entry while /pilot/logbook is cached.
-   * Rather than track which route each endpoint affects (a mapping that
-   * silently rots as routes change), just drop every currently-cached SWR
-   * entry so the next visit to any of them is guaranteed fresh. Triggered
-   * from pwa.js on every successful non-GET htmx request. */
-  if (e.data && e.data.type === 'OH_INVALIDATE_NAV_CACHE') {
-    e.waitUntil(
-      caches.open(CACHE).then(function (cache) {
-        return cache.keys().then(function (reqs) {
-          return Promise.all(
-            reqs
-              .filter(function (r) { return _isSWRRoute(new URL(r.url)); })
-              .map(function (r) { return cache.delete(r); })
-          );
-        });
-      })
-    );
-  }
-
-  /* Periodic freshness sweep (pwa.js, at most once per rolling 24h while a
-   * tab is open — see its banner-poll comment): refresh every currently-
-   * cached SWR entry in place (fetch + replace) instead of deleting it like
-   * OH_INVALIDATE_NAV_CACHE above. The page already on screen is untouched
-   * either way, but the *next* navigation to any cached route still gets an
-   * instant cached response — just a fresher one — rather than paying the
-   * network wait a delete-then-refetch would impose. A failed fetch (e.g.
-   * offline at the time) just leaves the existing stale entry in place. */
-  if (e.data && e.data.type === 'OH_REFRESH_NAV_CACHE') {
-    e.waitUntil(
-      caches.open(CACHE).then(function (cache) {
-        return cache.keys().then(function (reqs) {
-          return Promise.all(
-            reqs
-              .filter(function (r) { return _isSWRRoute(new URL(r.url)); })
-              .map(function (r) {
-                return fetch(r).then(function (resp) {
-                  if (resp.ok) return cache.put(r, resp);
-                }).catch(function () {});
-              })
-          );
-        });
-      })
-    );
-  }
+      });
+    }
+  }));
 });

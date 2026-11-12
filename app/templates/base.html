@@ -52,7 +52,9 @@
 
   {% block head %}{% endblock %}
 </head>
-<body hx-boost="true">
+{% set offline_owner, offline_session = offline_identity() %}
+<body hx-boost="true" data-oh-offline-owner="{{ offline_owner }}" data-oh-offline-session="{{ offline_session }}"
+      data-oh-offline-sign-in="{{ _('Log in') }}" data-oh-offline-changed="{{ _('Your account session changed. Sign in again to continue; pending offline changes remain saved for their owner.') }}">
 
   <!-- Prefetch main nav pages during idle time so the SW cache is warm before
        the first click (see sw.js SWR_ROUTES for which pages this covers).
@@ -430,6 +432,7 @@
     generic:              {{ _('Please enter a valid value.') | tojson }},
   };
   </script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/offline_identity.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/offline_db.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/offline_form_guard.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/pwa.js') }}"></script>

@@ -9,85 +9,82 @@
   var _DB_NAME = 'openhangar-offline';
   var _DB_VERSION = 3;
 
+  function _identity() { return window.OhOfflineIdentity; }
   function _openDb() {
+    var who = _identity().current();
+    if (!who) return Promise.reject(new Error('offline-account-changed'));
     return new Promise(function (resolve, reject) {
-      var req = indexedDB.open(_DB_NAME, _DB_VERSION);
-      req.onupgradeneeded = function (e) {
-        var db = e.target.result;
-        if (!db.objectStoreNames.contains('queue')) {
-          db.createObjectStore('queue', { keyPath: 'id', autoIncrement: true });
-        }
-        if (!db.objectStoreNames.contains('snapshots')) {
-          db.createObjectStore('snapshots', { keyPath: 'aircraft_id' });
-        }
-        if (!db.objectStoreNames.contains('outbox')) {
-          db.createObjectStore('outbox', { keyPath: 'id', autoIncrement: true });
-        }
-        if (!db.objectStoreNames.contains('pilot_snapshot')) {
-          db.createObjectStore('pilot_snapshot', { keyPath: 'id' });
-        }
-        if (!db.objectStoreNames.contains('pilot_outbox')) {
-          db.createObjectStore('pilot_outbox', { keyPath: 'id', autoIncrement: true });
-        }
+      /* Never open the old unowned database: legacy pending data is retained
+       * there in quarantine until its original owner can recover it manually. */
+      var req = indexedDB.open(_DB_NAME + '-' + who.owner, _DB_VERSION);
+      req.onupgradeneeded = function (event) {
+        var db = event.target.result;
+        ['queue', 'outbox', 'pilot_outbox'].forEach(function (store) {
+          if (!db.objectStoreNames.contains(store)) db.createObjectStore(store, { keyPath: 'id', autoIncrement: true });
+        });
+        if (!db.objectStoreNames.contains('snapshots')) db.createObjectStore('snapshots', { keyPath: 'aircraft_id' });
+        if (!db.objectStoreNames.contains('pilot_snapshot')) db.createObjectStore('pilot_snapshot', { keyPath: 'id' });
       };
-      req.onsuccess = function (e) { resolve(e.target.result); };
-      req.onerror = function (e) { reject(e.target.error); };
+      req.onsuccess = function (event) { resolve(event.target.result); };
+      req.onerror = function (event) { reject(event.target.error); };
     });
   }
-
+  function _operation(store, mode, operation) {
+    var expected = _identity().scope();
+    if (!expected) return Promise.reject(new Error('offline-account-changed'));
+    return _openDb().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx;
+        var result;
+        try {
+          _identity().assertScope(expected);
+          tx = db.transaction(store, mode);
+          var req = operation(tx.objectStore(store));
+          req.onsuccess = function () { result = req.result; };
+          tx.oncomplete = function () {
+            db.close();
+            try { _identity().assertScope(expected); resolve(result); }
+            catch (error) { reject(error); }
+          };
+          tx.onerror = tx.onabort = function () { db.close(); reject(tx.error || new Error('offline-write-aborted')); };
+        } catch (error) { db.close(); reject(error); }
+      });
+    });
+  }
   function _getAll(store) {
-    return _openDb().then(function (db) {
-      return new Promise(function (resolve, reject) {
-        var tx = db.transaction(store, 'readonly');
-        var req = tx.objectStore(store).getAll();
-        req.onsuccess = function () { resolve(req.result); };
-        req.onerror = function () { reject(req.error); };
-      });
-    });
+    if (!_identity().current()) return Promise.resolve([]);
+    return _operation(store, 'readonly', function (objectStore) { return objectStore.getAll(); });
   }
-
   function _get(store, key) {
-    return _openDb().then(function (db) {
-      return new Promise(function (resolve, reject) {
-        var tx = db.transaction(store, 'readonly');
-        var req = tx.objectStore(store).get(key);
-        req.onsuccess = function () { resolve(req.result || null); };
-        req.onerror = function () { reject(req.error); };
+    if (!_identity().current()) return Promise.resolve(null);
+    return _operation(store, 'readonly', function (objectStore) { return objectStore.get(key); })
+      .then(function (record) {
+        /* Snapshots are permission-sensitive; a new login must refresh them. */
+        return record && record._scope === _identity().scope() ? record : null;
       });
-    });
   }
-
   function _put(store, value) {
-    return _openDb().then(function (db) {
-      return new Promise(function (resolve, reject) {
-        var tx = db.transaction(store, 'readwrite');
-        var req = tx.objectStore(store).put(value);
-        req.onsuccess = function () { resolve(req.result); };
-        req.onerror = function () { reject(req.error); };
-      });
-    });
+    value = Object.assign({}, value);
+    if (store === 'snapshots' || store === 'pilot_snapshot') value._scope = _identity().scope();
+    return _operation(store, 'readwrite', function (objectStore) { return objectStore.put(value); });
   }
-
   function _add(store, value) {
-    return _openDb().then(function (db) {
-      return new Promise(function (resolve, reject) {
-        var tx = db.transaction(store, 'readwrite');
-        var req = tx.objectStore(store).add(value);
-        req.onsuccess = function () { resolve(req.result); };
-        req.onerror = function () { reject(req.error); };
-      });
-    });
+    value = Object.assign({}, value, { _scope: _identity().scope() });
+    return _operation(store, 'readwrite', function (objectStore) { return objectStore.add(value); });
   }
-
   function _delete(store, key) {
-    return _openDb().then(function (db) {
-      return new Promise(function (resolve, reject) {
-        var tx = db.transaction(store, 'readwrite');
-        var req = tx.objectStore(store).delete(key);
-        req.onsuccess = function () { resolve(); };
-        req.onerror = function () { reject(req.error); };
+    return _operation(store, 'readwrite', function (objectStore) { return objectStore.delete(key); });
+  }
+  function currentRecord(record) { return record._scope === _identity().scope(); }
+  function resumeQuarantined() {
+    return Promise.all(['queue', 'outbox', 'pilot_outbox'].map(function (store) {
+      return _getAll(store).then(function (records) {
+        return Promise.all(records.map(function (record) {
+          record._scope = _identity().scope();
+          return _put(store, record);
+        }));
       });
-    });
+    }));
   }
 
   /* ── Queue store (Phase 35 new-flight offline queue) ──
@@ -310,13 +307,15 @@
 
   /* ── Automatic snapshot refresh — the "no explicit take-offline action" requirement ── */
   function _refreshSnapshotIfNeeded(aircraftId) {
+    var expected = _identity().scope();
     if (!navigator.onLine || !aircraftId) return;
     outboxCountForAircraft(aircraftId).then(function (count) {
       if (count > 0) return; /* frozen while this aircraft has pending edits */
-      return fetch('/api/offline/aircraft/' + aircraftId + '/logbook')
+      return _identity().fetch('/api/offline/aircraft/' + aircraftId + '/logbook')
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (data) {
           if (!data) return;
+          _identity().assertScope(expected);
           return putSnapshot(aircraftId, data).then(function () {
             /* The workbench (and any other page reading this snapshot) may
              * have already rendered before this background fetch resolved
@@ -376,17 +375,19 @@
   }
 
   function _syncOneRecord(record, token, summary) {
+    _identity().assertScope(record._scope);
     var body = {
       fields: record.fields,
       base: record.base,
       force_duplicate: !!record.force_duplicate
     };
-    return fetch('/api/offline/flights/' + record.flight_id + '/sync', {
+    return _identity().fetch('/api/offline/flights/' + record.flight_id + '/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token },
       body: JSON.stringify(body)
     }).then(function (resp) {
       return resp.json().then(function (data) {
+        _identity().assertScope(record._scope);
         if (resp.ok && data.status === 'ok') {
           summary.synced += 1;
           return deleteOutbox(record.id).then(function () {
@@ -415,12 +416,14 @@
   }
 
   function _syncOnePilotRecord(record, token, summary) {
-    return fetch('/api/offline/pilot/logbook/' + record.entry_id + '/sync', {
+    _identity().assertScope(record._scope);
+    return _identity().fetch('/api/offline/pilot/logbook/' + record.entry_id + '/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': token },
       body: JSON.stringify({ fields: record.fields, base: record.base })
     }).then(function (resp) {
       return resp.json().then(function (data) {
+        _identity().assertScope(record._scope);
         if (resp.ok && data.status === 'ok') {
           summary.synced += 1;
           return deletePilotOutbox(record.id).then(function () {
@@ -448,14 +451,14 @@
 
     return Promise.all([getOutbox(), getPilotOutbox()]).then(function (results) {
       var pending = results[0]
-        .filter(function (r) { return !r.status || r.status === 'pending'; })
+        .filter(function (r) { return currentRecord(r) && (!r.status || r.status === 'pending'); })
         .sort(function (a, b) { return a.queued_at - b.queued_at; });
       var pendingPilot = results[1]
-        .filter(function (r) { return !r.status || r.status === 'pending'; })
+        .filter(function (r) { return currentRecord(r) && (!r.status || r.status === 'pending'); })
         .sort(function (a, b) { return a.queued_at - b.queued_at; });
       if (!pending.length && !pendingPilot.length) return;
 
-      return fetch('/api/offline/csrf').then(function (r) {
+      return _identity().fetch('/api/offline/csrf').then(function (r) {
         if (r.status === 401) {
           _fireSyncEvent({ authRequired: true });
           return null;
@@ -519,6 +522,7 @@
       if (!reg.active) return;
       reg.active.postMessage({
         type: 'OH_PRECACHE',
+        owner: (_identity().current() || {}).owner, session: (_identity().current() || {}).session,
         urls: ['/aircraft/' + aircraftId + '/logbook/offline', '/offline/changes']
       });
     }).catch(function () {});
@@ -528,13 +532,15 @@
    * _refreshSnapshotIfNeeded, for the current user's own standalone
    * pilot-logbook entries (38h/38i) rather than one aircraft's flights. */
   function _refreshPilotSnapshotIfNeeded() {
+    var expected = _identity().scope();
     if (!navigator.onLine) return;
     pilotOutboxCount().then(function (count) {
       if (count > 0) return; /* frozen while pilot edits are pending */
-      return fetch('/api/offline/pilot/logbook')
+      return _identity().fetch('/api/offline/pilot/logbook')
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (data) {
           if (!data) return;
+          _identity().assertScope(expected);
           return putPilotSnapshot(data).then(function () {
             document.dispatchEvent(new CustomEvent('oh-pilot-snapshot-updated'));
           });
@@ -553,6 +559,7 @@
       if (!reg.active) return;
       reg.active.postMessage({
         type: 'OH_PRECACHE',
+        owner: (_identity().current() || {}).owner, session: (_identity().current() || {}).session,
         urls: ['/pilot/logbook/offline', '/offline/changes']
       });
     }).catch(function () {});
@@ -600,6 +607,8 @@
     pilotOutboxCount: pilotOutboxCount,
     ohCanon: ohCanon,
     ohCanonPilot: ohCanonPilot,
+    currentRecord: currentRecord,
+    resumeQuarantined: resumeQuarantined,
     flush: flush
   };
 })();

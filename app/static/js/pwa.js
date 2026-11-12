@@ -31,30 +31,8 @@
     if (!verb || verb.toLowerCase() === 'get') return;
     if (!e.detail.successful) return;
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({ type: 'OH_INVALIDATE_NAV_CACHE' });
+      navigator.serviceWorker.controller.postMessage(Object.assign({ type: 'OH_INVALIDATE_NAV_CACHE' }, window.OhOfflineIdentity.current() || {}));
     }
-  });
-
-  /* The logout link is hx-boost="false" — it must stay a real, immediate
-   * navigation (delaying it, even briefly, to await async cleanup first is
-   * exactly the kind of thing a security-sensitive action shouldn't do).
-   * Best-effort: fire off deleting the cached / entry via the page-level
-   * Cache Storage API in parallel, without blocking or preventing the
-   * click's default navigation. Browsers reliably let an already-started
-   * Cache Storage write finish even as the page unloads; in the rare case
-   * it doesn't, the next logged-out visit to / just falls through to the
-   * normal SWR fetch-and-recache path instead of serving a stale entry.
-   * Event delegation on document (rather than binding to the link itself)
-   * because hx-boost swaps replace the whole body, including this link,
-   * on every other navigation. */
-  document.addEventListener('click', function (e) {
-    var link = e.target.closest && e.target.closest('#oh-logout-link');
-    if (!link || !('caches' in window)) return;
-    caches.keys().then(function (names) {
-      return Promise.all(names.map(function (name) {
-        return caches.open(name).then(function (c) { return c.delete('/'); });
-      }));
-    }).catch(function () {});
   });
 
   /* auth/routes.py appends ?_swr_fresh=1 to the post-login/post-setup
@@ -184,12 +162,13 @@
        * they need the user to fix the underlying issue (via the workbench
        * or a fresh submission) and discard the stale entry on
        * /offline/changes. */
-      var retryable = rows.filter(function (row) { return row.status !== 'error'; });
+      var retryable = rows.filter(function (row) { return window.OhOffline.currentRecord(row) && row.status !== 'error'; });
       retryable.forEach(function (row) { _syncEntry(row); });
     }).catch(function () {});
   }
 
   function _syncEntry(row) {
+    window.OhOfflineIdentity.assertScope(row._scope);
     var fields = row.fields || {};
     var date = fields['date'] || '';
     var aircraftId = fields['aircraft_id'] || '';
@@ -211,9 +190,10 @@
     var editMatch = /\/flights\/(\d+)\/edit(?:[/?]|$)/.exec(row.action || '');
     if (editMatch) checkUrl += '&exclude_flight_id=' + editMatch[1];
 
-    fetch(checkUrl)
+    window.OhOfflineIdentity.fetch(checkUrl)
       .then(function (r) { return r.json(); })
       .then(function (data) {
+        window.OhOfflineIdentity.assertScope(row._scope);
         if (data.duplicate) {
           _showConflict(row, data);
         } else {
@@ -226,6 +206,7 @@
   }
 
   function _submitEntry(row) {
+    window.OhOfflineIdentity.assertScope(row._scope);
     var fd = new FormData();
     var fields = row.fields || {};
     var pending = [];
@@ -244,20 +225,23 @@
     });
 
     Promise.all(pending).then(function () {
+      window.OhOfflineIdentity.assertScope(row._scope);
       /* Fetch a fresh CSRF token before replaying — the one captured at
        * queue time is in the form data too, but after a long offline
        * period it has outlived the 1 h token lifetime and would 400
        * forever, silently. */
-      return fetch('/api/offline/csrf');
+      return window.OhOfflineIdentity.fetch('/api/offline/csrf');
     }).then(function (r) {
       if (!r.ok) throw new Error('csrf-fetch-failed');
       return r.json();
     }).then(function (data) {
+      window.OhOfflineIdentity.assertScope(row._scope);
       fd.set('csrf_token', data.csrf_token);
       var targetUrl = row.action || '/flights/new';
-      return fetch(targetUrl, { method: 'POST', body: fd });
+      return window.OhOfflineIdentity.fetch(targetUrl, { method: 'POST', body: fd });
     }).then(function (resp) {
-      if (resp.ok || resp.redirected || resp.status === 302) {
+      window.OhOfflineIdentity.assertScope(row._scope);
+      if (resp.ok) {
         _removeEntry(row.id).then(function () {
           _updateQueueBadge();
           _showBanner(t.flightSynced || 'Offline flight synced.');
@@ -275,6 +259,8 @@
       /* offline again, or the CSRF fetch itself failed — leave queued */
     });
   }
+
+  document.addEventListener('oh-offline-resumed', _syncQueue);
 
   /* ── Conflict dialog ── */
   function _showConflict(row, data) {
@@ -415,7 +401,7 @@
     var last = parseInt(localStorage.getItem(_NAV_CACHE_REFRESH_KEY) || '0', 10);
     if (Date.now() - last < _NAV_CACHE_REFRESH_MS) return;
     localStorage.setItem(_NAV_CACHE_REFRESH_KEY, String(Date.now()));
-    navigator.serviceWorker.controller.postMessage({ type: 'OH_REFRESH_NAV_CACHE' });
+    navigator.serviceWorker.controller.postMessage(Object.assign({ type: 'OH_REFRESH_NAV_CACHE' }, window.OhOfflineIdentity.current() || {}));
   }
 
   function _pollBanners() {
