@@ -155,7 +155,7 @@ pip install -r requirements/dev.txt
 
 ### Running tests
 
-There are three modes depending on what you need:
+Choose a full run or an explicit targeted check:
 
 **Quick run** — use this during active development to check nothing is broken (~63s):
 
@@ -171,6 +171,18 @@ Also used by CI. Generates `htmlcov/`, `coverage.xml`, and `test-results.xml`
 ```bash
 bash scripts/run-tests-with-coverage.sh
 ```
+
+**Targeted check** — pass a file, test node or pytest selection options explicitly:
+
+```bash
+bash scripts/run-tests-with-coverage.sh --targeted tests/test_offline_identity.py
+bash scripts/run-tests-with-coverage.sh --targeted tests/test_offline_identity.py -k renewal
+```
+
+This mode disables coverage and leaves the full-run coverage/JUnit artifacts alone.
+It confirms only the selected tests; it cannot satisfy the full 100% coverage gate.
+Bare selectors/options without `--targeted` are rejected instead of silently ignored.
+`--durations` works in either mode. `--all` and `--e2e` retain their full-suite behavior.
 
 The pre-push hook (see below) checks `coverage.xml` if it was generated in the last 10 minutes,
 so running this shortly before `git push` is enough to satisfy it.
