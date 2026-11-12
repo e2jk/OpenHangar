@@ -293,3 +293,98 @@ def test_rehash_flag_does_not_cover_other_security_changes(app):
         db.session.commit()
         assert user.auth_version != old_version
         assert uid not in db.session.info[SAME_PASSWORD_REHASH]
+
+
+def _sets_session_cookie(response):
+    return any(
+        header.startswith("session=")
+        for header in response.headers.getlist("Set-Cookie")
+    )
+
+
+def test_request_with_revoked_cookie_cannot_overwrite_the_renewed_one(app):
+    """A request still in flight with the old cookie when the password changed
+    must not answer with a cleared cookie that would sign the browser out."""
+    make_user(app, required=False)
+    client = logged_in(app)
+    old_cookie = saved_cookie(client)
+    response = client.post(
+        "/profile",
+        data={
+            "action": "change_password",
+            "current_password": PASSWORD,
+            "new_password": "NewPassword123!",
+            "confirm_password": "NewPassword123!",
+        },
+    )
+    assert response.status_code == 302
+    stale = replay(app, old_cookie).get("/profile")
+    assert stale.status_code == 302  # still handled as signed out
+    assert not _sets_session_cookie(stale)
+    assert client.get("/profile").status_code == 200
+
+
+def test_revoked_cookie_is_still_cleared_so_the_browser_can_sign_in(app):
+    """Only a just-renewed login keeps its cookie untouched; a revoked one (here
+    logged out) is cleared as before, so the browser is not stuck with it."""
+    make_user(app, required=False)
+    client = logged_in(app)
+    old_cookie = saved_cookie(client)
+    client.get("/logout")
+    browser = replay(app, old_cookie)
+    login_page = browser.get("/login")
+    assert _sets_session_cookie(login_page)
+    assert begin(browser).status_code == 302
+    assert browser.get("/profile").status_code == 200
+
+
+def test_renewed_cookie_is_cleared_again_once_its_grace_period_ends(app):
+    make_user(app, required=False)
+    client = logged_in(app)
+    old_cookie = saved_cookie(client)
+    client.post(
+        "/profile",
+        data={
+            "action": "change_password",
+            "current_password": PASSWORD,
+            "new_password": "NewPassword123!",
+            "confirm_password": "NewPassword123!",
+        },
+    )
+    with app.app_context():
+        assert AuthSession.query.filter_by(credential_binding="renewed").count() == 1
+        AuthSession.query.filter_by(credential_binding="renewed").update(
+            {"expires_at": 0}
+        )
+        db.session.commit()
+    stale = replay(app, old_cookie).get("/profile")
+    assert stale.status_code == 302
+    assert _sets_session_cookie(stale)  # cleared: this browser can sign in again
+
+
+def test_response_for_a_token_renewed_meanwhile_does_not_resend_it(app):
+    """A request that was validated before the browser's login was renewed, but
+    responds after, must not put the old cookie back over the new one."""
+    from flask import Response
+
+    make_user(app, required=False)
+    client = logged_in(app)
+    old_cookie = saved_cookie(client)
+    client.post(
+        "/profile",
+        data={
+            "action": "change_password",
+            "current_password": PASSWORD,
+            "new_password": "NewPassword123!",
+            "confirm_password": "NewPassword123!",
+        },
+    )
+    with app.test_request_context("/", headers={"Cookie": f"session={old_cookie}"}):
+        from flask import request
+
+        interface = app.session_interface
+        old_session = interface.open_session(app, request)
+        assert old_session.get("auth_session")  # the in-flight request's view
+        response = Response()
+        interface.save_session(app, old_session, response)
+        assert not _sets_session_cookie(response)
