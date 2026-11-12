@@ -17,16 +17,28 @@ def configured_app(monkeypatch, hops="0", hosts="hangar.example,localhost,127.0.
     with application.app_context():
         db.create_all()
 
+    # Record what the request looked like instead of echoing it back: the test
+    # reads it from here, and the route never reflects client-supplied values.
+    seen = application.extensions["proxy_probe"] = []
+
     @application.route("/proxy-test")
     def probe():
-        return {
-            "address": request.remote_addr,
-            "scheme": request.scheme,
-            "host": request.host,
-            "external": url_for("auth.login", _external=True),
-        }
+        seen.append(
+            {
+                "address": request.remote_addr,
+                "scheme": request.scheme,
+                "host": request.host,
+                "external": url_for("auth.login", _external=True),
+            }
+        )
+        return "", 204
 
     return application
+
+
+def observed(application):
+    """What the most recent /proxy-test request looked like to the app."""
+    return application.extensions["proxy_probe"][-1]
 
 
 def test_direct_mode_ignores_all_forwarding_headers(monkeypatch):
@@ -45,8 +57,8 @@ def test_direct_mode_ignores_all_forwarding_headers(monkeypatch):
             "Forwarded": "for=127.0.0.1;host=attacker.invalid",
         },
     )
-    assert response.status_code == 200
-    assert response.json == {
+    assert response.status_code == 204
+    assert observed(application) == {
         "address": "192.0.2.9",
         "scheme": "http",
         "host": "hangar.example:8087",
@@ -66,8 +78,8 @@ def test_proxy_mode_uses_configured_hops_and_public_origin(monkeypatch, hops, ex
         },
         environ_overrides={"REMOTE_ADDR": "172.20.0.3"},
     )
-    assert response.status_code == 200
-    assert response.json == {
+    assert response.status_code == 204
+    assert observed(application) == {
         "address": expected,
         "scheme": "https",
         "host": "hangar.example",
@@ -126,7 +138,7 @@ def test_host_suffix_and_direct_lan_ip_configuration(monkeypatch):
         "http://example.com",
         "http://192.168.1.50:8087",
     ):
-        assert client.get("/proxy-test", base_url=base).status_code == 200
+        assert client.get("/proxy-test", base_url=base).status_code == 204
     assert (
         client.get(
             "/proxy-test", base_url="http://example.com.attacker.invalid"
