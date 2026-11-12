@@ -655,12 +655,24 @@ class Aircraft(db.Model):
             document_lifecycle,
         )
 
-        return (
-            document_lifecycle.coverage_until(
-                document_lifecycle.Owner(aircraft_id=self.id), doc_type
-            )
-            or cached
+        # Remembered on this instance (one request / session): a page asks
+        # for the status, the grounded check and the date several times.
+        # document_lifecycle.refresh clears it when the documents change;
+        # the key also changes with the day and the cached date.
+        memo: dict[tuple[str, date, date | None], date | None] | None = getattr(
+            self, "_coverage_memo", None
         )
+        if memo is None:
+            memo = self._coverage_memo = {}
+        key = (doc_type, date.today(), cached)
+        if key not in memo:
+            memo[key] = (
+                document_lifecycle.coverage_until(
+                    document_lifecycle.Owner(aircraft_id=self.id), doc_type
+                )
+                or cached
+            )
+        return memo[key]
 
     @property
     def insurance_covered_until(self) -> date | None:

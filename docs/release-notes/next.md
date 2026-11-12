@@ -10,3 +10,7 @@
 
 **Pilot logbook**
 - The per-type landing recency on the pilot profile counts flights on your own aircraft again: a type such as "ROBIN DR-401 155CDI" (manufacturer in front, engine variant after the model) now resolves to its ICAO code, DR40. Simulator sessions are left out of the per-type recency.
+- Landing recency now follows EASA FCL.060's "same type or class": piston aeroplanes count by class (SEP or MEP, land or sea), so landings on a DR40 also make you current on a C152 or a PA-28; other aircraft count by type. Each class lists the types it was flown on, and the pilot profile shows the aircraft flown in the last 6 months with their last flight and recent landings.
+
+**Performance**
+- The dashboard and pilot profile no longer load the whole logbook to work out landing recency — only the last 6 months, plus one summary query — and the dashboard's flight-tracks map loads its tracks in one query instead of one per flight (about a third faster on a 170-flight logbook).

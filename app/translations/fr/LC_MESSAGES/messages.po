@@ -12961,3 +12961,38 @@ msgstr "Repris de votre certificat médical dans les documents ci-dessous — t�
 
 msgid "Valid from %(date)s"
 msgstr "Valable à partir du %(date)s"
+
+msgid "SEP (land)"
+msgstr "SEP (terre)"
+
+msgid "SEP (sea)"
+msgstr "SEP (mer)"
+
+msgid "MEP (land)"
+msgstr "MEP (terre)"
+
+msgid "MEP (sea)"
+msgstr "MEP (mer)"
+
+msgid "Class or type"
+msgstr "Classe ou type"
+
+msgid "Last flown"
+msgstr "Dernier vol"
+
+msgid "Aircraft flown in the last 6 months"
+msgstr "Avions pilotés ces 6 derniers mois"
+
+msgid "Flights (6 months)"
+msgstr "Vols (6 mois)"
+
+msgid "By class:"
+msgstr "Par classe :"
+
+msgid "%(ref)s: 3 take-offs and landings in the last 90 days to carry passengers, and 1 at night to carry passengers at night, in an aircraft of the same type or class. Piston aeroplanes count by class (SEP or MEP, land or sea), other aircraft by type. Simulator sessions are not counted."
+msgstr "%(ref)s : 3 décollages et atterrissages dans les 90 derniers jours pour transporter des passagers, et 1 de nuit pour transporter des passagers de nuit, sur un aéronef du même type ou de la même classe. Les avions à pistons comptent par classe (SEP ou MEP, terre ou mer), les autres aéronefs par type. Les séances sur simulateur ne sont pas comptées."
+
+msgid "One flight of the last 90 days has no known aircraft type and is not counted below."
+msgid_plural "%(n)s flights of the last 90 days have no known aircraft type and are not counted below."
+msgstr[0] "Un vol des 90 derniers jours n'a pas de type d'aéronef connu et n'est pas compté ci-dessous."
+msgstr[1] "%(n)s vols des 90 derniers jours n'ont pas de type d'aéronef connu et ne sont pas comptés ci-dessous."

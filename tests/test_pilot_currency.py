@@ -22,7 +22,8 @@ from pilots.currency import (  # pyright: ignore[reportMissingImports]
     medical_status,
     night_currency,
     passenger_currency,
-    per_type_currency,
+    per_class_currency,
+    recent_aircraft,
     sep_status,
 )
 
@@ -301,7 +302,8 @@ class TestCurrencySummary:
             "night",
             "medical",
             "sep",
-            "per_type",
+            "per_class",
+            "recent_aircraft",
             "overall",
         }
 
@@ -349,6 +351,7 @@ class TestDashboardCurrencyIntegration:
                     single_pilot_se=1.5,
                     function_pic=1.5,
                     landings_day=3,
+                    other_aircraft_type_icao="C152",
                 )
             )
             db.session.commit()
@@ -357,6 +360,8 @@ class TestDashboardCurrencyIntegration:
         assert resp.status_code == 200
         assert b"Pilot Currency" in resp.data
         assert b"Expiring soon" in resp.data  # medical < 90 days
+        # The recency strip names the class the C152 counts under.
+        assert b"By class:" in resp.data and b"SEP (land)" in resp.data
 
     def test_dashboard_hides_currency_card_without_profile(self, app, client):
         _create_user(app, "noprofile@example.com")
@@ -427,60 +432,106 @@ def _typed_entry(
     )
 
 
-class TestPerTypeCurrency:
+def _row(result, key):
+    return next(r for r in result["by_class"] if r["key"] == key)
+
+
+class TestPerClassCurrency:
+    """FCL.060(b): "in an aircraft of the same type or class" — piston
+    aeroplanes by class, other aircraft by type."""
+
     def test_empty_entries(self):
-        result = per_type_currency([], TODAY)
-        assert result["by_type"] == {}
-        assert result["unresolved_count"] == 0
+        result = per_class_currency([], TODAY)
+        assert result == {"by_class": [], "unresolved_count": 0}
 
-    def test_single_type_current(self):
+    def test_default_today_no_arg(self):
+        assert per_class_currency([])["by_class"] == []
+
+    def test_sep_types_share_the_class(self):
+        """A DR40, a C152 and a PA-28 are all SEP (land): their landings add
+        up, and each type's share is listed."""
+        entries = [
+            _typed_entry("DR40", days_ago=5, landings_day=1),
+            _typed_entry("C152", days_ago=15, landings_day=1),
+            _typed_entry("P28A", days_ago=25, landings_day=1, landings_night=1),
+        ]
+        result = per_class_currency(entries, TODAY)
+        assert [r["key"] for r in result["by_class"]] == ["sep_land"]
+        row = _row(result, "sep_land")
+        assert row["class"] == "sep_land" and row["type"] is None
+        assert row["passenger"]["count"] == 4
+        assert row["passenger"]["status"] == STATUS_OK
+        assert row["night"]["status"] == STATUS_OK
+        assert row["types"] == {"C152": 1, "DR40": 1, "P28A": 2}
+        assert row["last_flown"] == TODAY - timedelta(days=5)
+
+    def test_classes_kept_apart_and_other_aircraft_by_type(self):
+        entries = [
+            _typed_entry("C172", days_ago=d, landings_day=1) for d in (5, 15, 25)
+        ] + [
+            _typed_entry("PA44", days_ago=10, landings_day=1),
+            _typed_entry("C208", days_ago=12, landings_day=3),
+        ]
+        result = per_class_currency(entries, TODAY)
+        assert {r["key"] for r in result["by_class"]} == {
+            "sep_land",
+            "mep_land",
+            "type:C208",
+        }
+        assert _row(result, "mep_land")["status"] == STATUS_EXPIRED  # 1 of 3
+        c208 = _row(result, "type:C208")
+        assert c208["class"] is None and c208["type"] == "C208"
+        assert c208["passenger"]["status"] == STATUS_OK
+        # Current first.
+        assert result["by_class"][-1]["key"] == "mep_land"
+
+    def test_sea_classes(self):
+        from utils import (  # pyright: ignore[reportMissingImports]
+            AIRCRAFT_CLASS_MEP_SEA,
+            AIRCRAFT_CLASS_SEP_SEA,
+            _load_aircraft_classes,
+        )
+
+        sea = {v for v in _load_aircraft_classes().values()}
+        assert AIRCRAFT_CLASS_SEP_SEA in sea and AIRCRAFT_CLASS_MEP_SEA in sea
+
+    def test_only_the_last_90_days_count(self):
+        entries = [
+            _typed_entry("C172", days_ago=d, landings_day=1) for d in (5, 15, 100)
+        ]
+        row = _row(per_class_currency(entries, TODAY), "sep_land")
+        assert row["passenger"]["count"] == 2
+        assert row["types"] == {"C172": 2}
+
+    def test_history_adds_classes_not_flown_lately(self):
         entries = [
             _typed_entry("C172", days_ago=d, landings_day=1) for d in (5, 15, 25)
         ]
-        result = per_type_currency(entries, TODAY)
-        assert "C172" in result["by_type"]
-        assert result["by_type"]["C172"]["passenger"]["status"] == STATUS_OK
-        assert result["by_type"]["C172"]["passenger"]["count"] == 3
-        assert result["unresolved_count"] == 0
-
-    def test_two_types_kept_separate(self):
-        entries = [
-            _typed_entry("C172", days_ago=d, landings_day=1) for d in (5, 15, 25)
-        ] + [_typed_entry("P28A", days_ago=d, landings_day=1) for d in (10, 20, 30)]
-        result = per_type_currency(entries, TODAY)
-        assert set(result["by_type"]) == {"C172", "P28A"}
-        assert result["by_type"]["C172"]["passenger"]["count"] == 3
-        assert result["by_type"]["P28A"]["passenger"]["count"] == 3
-
-    def test_variants_share_icao_bucket(self):
-        """PA-28-161 Warrior II and PA-28-181 Archer III both map to P28A."""
-        entries = [
-            _typed_entry(
-                "P28A", days_ago=5, landings_day=2, aircraft_type="PA-28-161 Warrior II"
-            ),
-            _typed_entry(
-                "P28A",
-                days_ago=10,
-                landings_day=1,
-                aircraft_type="PA-28-181 Archer III",
-            ),
+        history = [
+            ("C172", TODAY - timedelta(days=5)),
+            ("PA44", date(2019, 5, 1)),
+            (None, date(2018, 1, 1)),  # an unresolved type: nothing to show
         ]
-        result = per_type_currency(entries, TODAY)
-        assert set(result["by_type"]) == {"P28A"}
-        assert result["by_type"]["P28A"]["passenger"]["count"] == 3
+        result = per_class_currency(entries, TODAY, history)
+        mep = _row(result, "mep_land")
+        assert mep["passenger"]["status"] == STATUS_UNKNOWN
+        assert mep["last_flown"] == date(2019, 5, 1)
+        assert mep["types"] == {}
+        assert len(result["by_class"]) == 2
 
     def test_no_icao_resolved_via_aircraft_type(self):
-        """Entries without display_aircraft_type_icao fall back to resolve_aircraft_type_icao."""
+        """Entries without display_aircraft_type_icao fall back to
+        resolve_aircraft_type_icao — e.g. a managed aircraft's make and model."""
         entry = SimpleNamespace(
             date=TODAY - timedelta(days=5),
             id=1,
             display_aircraft_type_icao=None,
-            display_aircraft_type="C172",  # resolvable: exact ICAO code
+            display_aircraft_type="ROBIN DR-401 155CDI",
             landings_day=3,
             landings_night=None,
         )
-        result = per_type_currency([entry], TODAY)
-        assert "C172" in result["by_type"]
+        result = per_class_currency([entry], TODAY)
+        assert _row(result, "sep_land")["types"] == {"DR40": 3}
         assert result["unresolved_count"] == 0
 
     def test_unresolvable_type_counted(self):
@@ -495,13 +546,13 @@ class TestPerTypeCurrency:
             landings_day=2,
             landings_night=None,
         )
-        result = per_type_currency([entry], TODAY)
+        result = per_class_currency([entry], TODAY)
         assert result["unresolved_count"] == 1
-        assert result["by_type"] == {}
+        assert result["by_class"] == []
 
     def test_simulator_sessions_are_skipped(self):
-        """An FSTD session lands on no aircraft type: neither counted under
-        its device's name nor reported as an unresolved type."""
+        """An FSTD session lands on no aircraft: neither counted under its
+        device's name nor reported as an unresolved type."""
         entry = SimpleNamespace(
             date=TODAY - timedelta(days=5),
             id=1,
@@ -511,58 +562,134 @@ class TestPerTypeCurrency:
             landings_day=None,
             landings_night=None,
         )
-        result = per_type_currency([entry], TODAY)
-        assert result["unresolved_count"] == 0
-        assert result["by_type"] == {}
+        result = per_class_currency([entry], TODAY)
+        assert result == {"by_class": [], "unresolved_count": 0}
+        assert recent_aircraft([entry], TODAY) == []
 
-    def test_night_currency_tracked_separately(self):
-        entries = [
-            _typed_entry("C172", days_ago=5, landings_day=3, landings_night=1),
-        ]
-        result = per_type_currency(entries, TODAY)
-        tc = result["by_type"]["C172"]
-        assert tc["passenger"]["status"] == STATUS_OK  # 3 landings (day) ≥ 3
-        assert tc["night"]["status"] == STATUS_OK  # 1 night landing ≥ 1
-        assert tc["night"]["count"] == 1
-
-    def test_expired_day_sets_type_status_expired(self):
-        entries = [_typed_entry("P44A", days_ago=5, landings_day=1)]  # only 1, need 3
-        result = per_type_currency(entries, TODAY)
-        assert result["by_type"]["P44A"]["status"] == STATUS_EXPIRED
-
-    def test_unknown_when_no_landings(self):
-        entry = _typed_entry("C172", days_ago=5, landings_day=0, landings_night=0)
-        result = per_type_currency([entry], TODAY)
-        assert result["by_type"]["C172"]["passenger"]["status"] == STATUS_UNKNOWN
-        assert result["by_type"]["C172"]["night"]["status"] == STATUS_UNKNOWN
-
-    def test_currency_summary_includes_per_type(self):
-        entries = [
-            _typed_entry("C172", days_ago=d, landings_day=1) for d in (5, 15, 25)
-        ]
-        profile = _profile()
-        summary = currency_summary(profile, entries, TODAY)
-        assert "per_type" in summary
-        assert "C172" in summary["per_type"]["by_type"]
-
-    def test_sorted_by_icao_code(self):
-        entries = [
-            _typed_entry("P28A", days_ago=d, landings_day=1) for d in (5, 15, 25)
-        ] + [_typed_entry("C172", days_ago=d, landings_day=1) for d in (5, 15, 25)]
-        result = per_type_currency(entries, TODAY)
-        keys = list(result["by_type"])
-        assert keys == sorted(keys)
-
-    def test_warning_status_when_currency_expiring_soon(self):
+    def test_warning_and_unknown_statuses(self):
         # Anchor 65 days ago → expires in 25 days → WARNING, not EXPIRED
         entries = [
             _typed_entry("C172", days_ago=d, landings_day=1) for d in (60, 63, 65)
         ]
-        result = per_type_currency(entries, TODAY)
-        assert result["by_type"]["C172"]["passenger"]["status"] == STATUS_WARNING
-        assert result["by_type"]["C172"]["status"] == STATUS_WARNING
+        row = _row(per_class_currency(entries, TODAY), "sep_land")
+        assert row["passenger"]["status"] == STATUS_WARNING
+        assert row["night"]["status"] == STATUS_UNKNOWN  # no night landing
+        assert row["status"] == STATUS_WARNING
+        none = [_typed_entry("C172", days_ago=5)]
+        row = _row(per_class_currency(none, TODAY), "sep_land")
+        assert row["passenger"]["status"] == STATUS_UNKNOWN
+        night_only = [_typed_entry("C172", days_ago=5, landings_night=3)]
+        assert _row(per_class_currency(night_only, TODAY), "sep_land")["status"] == (
+            STATUS_OK
+        )
+        warn_night = [
+            _typed_entry("C172", days_ago=5, landings_day=3),
+            _typed_entry("C172", days_ago=70, landings_night=1),
+        ]
+        assert _row(per_class_currency(warn_night, TODAY), "sep_land")["status"] == (
+            STATUS_WARNING
+        )
 
-    def test_default_today_no_arg(self):
-        result = per_type_currency([])
-        assert result["by_type"] == {}
-        assert result["unresolved_count"] == 0
+    def test_currency_summary_includes_classes_and_aircraft(self):
+        entries = [
+            _typed_entry("C172", days_ago=d, landings_day=1) for d in (5, 15, 25)
+        ]
+        summary = currency_summary(_profile(), entries, TODAY)
+        assert [r["key"] for r in summary["per_class"]["by_class"]] == ["sep_land"]
+        assert summary["recent_aircraft"][0]["icao"] == "C172"
+
+
+class TestRecentAircraft:
+    def test_per_aircraft_over_six_months(self):
+        def flown(reg, days_ago, landings=1, aircraft_type="ROBIN DR-401 155CDI"):
+            return SimpleNamespace(
+                date=TODAY - timedelta(days=days_ago),
+                id=days_ago,
+                display_registration=reg,
+                display_aircraft_type=aircraft_type,
+                display_aircraft_type_icao=None,
+                landings_day=landings,
+                landings_night=None,
+            )
+
+        entries = [
+            flown("OO-LKN", 5),
+            flown("OO-LKN", 120, landings=2),
+            flown("OO-ABC", 30, aircraft_type="C152"),
+            flown("OO-OLD", 200),  # more than 6 months ago: left out
+        ]
+        rows = recent_aircraft(entries, TODAY)
+        assert [r["registration"] for r in rows] == ["OO-LKN", "OO-ABC"]
+        lkn = rows[0]
+        assert lkn["icao"] == "DR40" and lkn["class"] == "sep_land"
+        assert lkn["flights"] == 2
+        assert lkn["landings_90"] == 1  # the 120-day-old landings aren't recent
+        assert lkn["last_flown"] == TODAY - timedelta(days=5)
+        assert recent_aircraft([]) == []
+
+
+class TestRecencyQueries:
+    def test_recent_flights_and_flown_history(self, app):
+        from models import Aircraft  # pyright: ignore[reportMissingImports]
+        from pilots.currency import (  # pyright: ignore[reportMissingImports]
+            flown_history,
+            recent_flights,
+        )
+
+        uid = _create_user(app, "hist@example.com")
+        with app.app_context():
+            tid = TenantUser.query.filter_by(user_id=uid).one().tenant_id
+            ac = Aircraft(
+                tenant_id=tid,
+                registration="OO-LKN",
+                make="ROBIN",
+                model="DR-401 155CDI",
+            )
+            db.session.add(ac)
+            db.session.flush()
+            db.session.add_all(
+                [
+                    Flight(aircraft_id=ac.id, pic_user_id=uid, date=TODAY),
+                    Flight(
+                        aircraft_id=ac.id,
+                        pic_user_id=uid,
+                        date=TODAY - timedelta(days=400),
+                    ),
+                    Flight(
+                        second_crew_user_id=uid,
+                        other_aircraft_type="PA44",
+                        date=date(2019, 5, 1),
+                    ),
+                    Flight(
+                        pic_user_id=uid,
+                        other_aircraft_type_icao="C152",
+                        date=date(2018, 6, 1),
+                    ),
+                    Flight(
+                        pic_user_id=uid,
+                        entry_type="fstd",
+                        other_aircraft_type="ALSIM AL-250",
+                        date=TODAY,
+                    ),
+                ]
+            )
+            db.session.commit()
+            assert len(recent_flights(uid)) == 2  # the flight and the session
+            history = sorted(flown_history(uid), key=lambda h: h[1])
+            assert history == [
+                ("C152", date(2018, 6, 1)),
+                ("PA44", date(2019, 5, 1)),
+                ("DR40", TODAY),
+            ]
+
+
+def test_aircraft_classes_without_the_type_data(app):
+    from unittest.mock import patch
+
+    from utils import _load_aircraft_classes  # pyright: ignore[reportMissingImports]
+
+    with patch("builtins.open", side_effect=OSError):
+        _load_aircraft_classes.cache_clear()
+        result = _load_aircraft_classes()
+    _load_aircraft_classes.cache_clear()
+    assert result == {}

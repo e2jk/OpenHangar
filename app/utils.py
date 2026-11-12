@@ -1079,8 +1079,14 @@ def _sorted_model_prefix_keys() -> list[str]:
     return sorted(_build_model_name_prefix_lookup(), key=len, reverse=True)
 
 
+@functools.lru_cache(maxsize=4096)
 def resolve_aircraft_type_icao(aircraft_type: str | None) -> str | None:
-    """Return the matching ICAO type designator for *aircraft_type*, or None."""
+    """Return the matching ICAO type designator for *aircraft_type*, or None.
+
+    Cached: a pure function of the text over static type data, and a
+    "make model variant" text that only the word-by-word step below
+    resolves walks every model-name key first (~2 ms) — the landing
+    recency resolves each recent flight's type on every dashboard view."""
     if not aircraft_type:
         return None
     types = _load_aircraft_types()
@@ -1116,6 +1122,54 @@ def resolve_aircraft_type_icao(aircraft_type: str | None) -> str | None:
         if len(key) >= 4 and any(c.isdigit() for c in key) and key in prefix_lookup:
             return prefix_lookup[key]
     return None
+
+
+# EASA aeroplane class ratings that landing recency (FCL.060(b)) counts by
+# class rather than by type. Anything else — turboprops, jets, helicopters,
+# gyrocopters, electric — is counted per ICAO type, the stricter reading.
+AIRCRAFT_CLASS_SEP_LAND = "sep_land"
+AIRCRAFT_CLASS_SEP_SEA = "sep_sea"
+AIRCRAFT_CLASS_MEP_LAND = "mep_land"
+AIRCRAFT_CLASS_MEP_SEA = "mep_sea"
+
+
+@functools.lru_cache(maxsize=1)
+def _load_aircraft_classes() -> dict[str, str]:
+    """{type_designator: class} for the piston aeroplanes rated by class.
+
+    From the ICAO data's description and engines: one piston engine is SEP,
+    two are MEP; a seaplane is the "sea" class, a landplane or an amphibian
+    (flown mostly from land) the "land" one. The data can't tell a touring
+    motor glider from an aeroplane, so a TMG is counted as SEP (land)."""
+    path = os.path.join(os.path.dirname(__file__), "data", "aircraft_types.csv")
+    result: dict[str, str] = {}
+    try:
+        with open(path, newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                des = row.get("type_designator", "").strip().upper()
+                if not des or des in result or row.get("engine_type") != "Piston":
+                    continue
+                sea = row.get("description") == "SeaPlane"
+                if row.get("description") not in ("LandPlane", "Amphibian", "SeaPlane"):
+                    continue
+                engines = row.get("engine_count", "").strip()
+                if engines == "1":
+                    result[des] = (
+                        AIRCRAFT_CLASS_SEP_SEA if sea else AIRCRAFT_CLASS_SEP_LAND
+                    )
+                elif engines == "2":
+                    result[des] = (
+                        AIRCRAFT_CLASS_MEP_SEA if sea else AIRCRAFT_CLASS_MEP_LAND
+                    )
+    except OSError as exc:
+        _log.warning("aircraft_types.csv not found: %s", exc)
+    return result
+
+
+def aircraft_class_for_icao(icao: str | None) -> str | None:
+    """The EASA class (AIRCRAFT_CLASS_*) recency counts *icao* under, or
+    None when it is counted per type."""
+    return _load_aircraft_classes().get((icao or "").strip().upper())
 
 
 @functools.lru_cache(maxsize=1)

@@ -284,3 +284,23 @@ and record the device type (FFS, FTD, FNPT, BITD, or AATD) and the session
 duration. FSTD sessions are excluded from the flight-time totals and
 accumulate in their own **Sim** column and running total, mirroring the
 official EASA logbook layout.
+
+## Landing recency
+
+The **Landing Currency** section of your pilot profile (and the *By class* strip
+of the dashboard's Pilot Currency card) applies EASA FCL.060(b): to carry
+passengers you need 3 take-offs and landings in the last 90 days, and to carry
+them at night 1 of those at night, *in an aircraft of the same type or class*.
+
+- Piston aeroplanes count **by class** — SEP or MEP, land or sea — worked out
+  from the ICAO aircraft type data: landings on a DR40, a C152 and a PA-28 all
+  count towards SEP (land). A touring motor glider can't be told apart in that
+  data and counts as SEP (land).
+- Other aircraft (turboprops, jets, helicopters…) count **by ICAO type**.
+- Simulator sessions are not counted.
+- Classes you have flown before but not in the last 90 days are listed as not
+  current, with the date you last flew them.
+
+Below it, **Aircraft flown in the last 6 months** lists each aircraft with its
+class, last flight, number of flights and landings in the last 90 days — for
+information only.

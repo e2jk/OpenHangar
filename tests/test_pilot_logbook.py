@@ -2230,6 +2230,7 @@ class TestResolveAircraftTypeIcao:
                 _load_aircraft_types.cache_clear()
                 _build_model_name_prefix_lookup.cache_clear()
                 _sorted_model_prefix_keys.cache_clear()
+                resolve_aircraft_type_icao.cache_clear()
                 try:
                     with patch("utils.os.path.join", return_value=tmp):
                         result = resolve_aircraft_type_icao("ABCD12")
@@ -2238,6 +2239,7 @@ class TestResolveAircraftTypeIcao:
                     _load_aircraft_types.cache_clear()
                     _build_model_name_prefix_lookup.cache_clear()
                     _sorted_model_prefix_keys.cache_clear()
+                    resolve_aircraft_type_icao.cache_clear()
         finally:
             os.unlink(tmp)
 
