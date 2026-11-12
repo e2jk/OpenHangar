@@ -120,7 +120,13 @@
         channel.port1.close();
         if (expected !== scope()) return;
         var latest = reply.data || {};
-        if (latest.owner !== _current.owner || latest.session !== _current.session) quarantine();
+        if (latest.owner === _current.owner && latest.session === _current.session) return;
+        /* Same account, new login (e.g. this browser just changed its own
+         * password): nothing of another account is at stake and the old login's
+         * private cache is already gone, so load the page afresh under the new
+         * login instead of locking it. Another account always locks at once. */
+        if (latest.owner && latest.owner === _current.owner) { location.reload(); return; }
+        quarantine();
       };
       navigator.serviceWorker.controller.postMessage({ type: 'OH_GET_IDENTITY' }, [channel.port2]);
     });
