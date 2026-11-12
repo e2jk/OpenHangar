@@ -515,28 +515,40 @@ def _block_external_network(context) -> None:
 
 
 @pytest.fixture(scope="session")
-def browser_context(
-    live_server_url,
-):  # depends on live_server_url to ensure server is up first
+def playwright_runtime():
+    """The one Playwright instance for the whole session.
+
+    The sync API runs its own event loop, so a second ``sync_playwright()`` in
+    the same process fails ("using Playwright Sync API inside the asyncio
+    loop") while this one is open. Tests that need their own browser (e.g. with
+    service workers enabled) launch it from this fixture instead.
+    """
     from playwright.sync_api import sync_playwright
 
+    with sync_playwright() as playwright:
+        yield playwright
+
+
+@pytest.fixture(scope="session")
+def browser_context(
+    live_server_url, playwright_runtime
+):  # depends on live_server_url to ensure server is up first
     _ignore_tls = live_server_url.startswith("https://")
-    with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=True, args=_CHROMIUM_NO_BACKGROUND_NETWORK_ARGS
-        )
-        context = browser.new_context(
-            base_url=live_server_url,
-            ignore_https_errors=_ignore_tls,
-            # Block SW registration so cache.addAll() PRECACHE fetches don't
-            # keep the network busy and cause networkidle timeouts.  SW behaviour
-            # is tested separately in tests/test_pwa.py.
-            service_workers="block",
-        )
-        context.set_default_timeout(10000)
-        _block_external_network(context)
-        yield context
-        browser.close()
+    browser = playwright_runtime.chromium.launch(
+        headless=True, args=_CHROMIUM_NO_BACKGROUND_NETWORK_ARGS
+    )
+    context = browser.new_context(
+        base_url=live_server_url,
+        ignore_https_errors=_ignore_tls,
+        # Block SW registration so cache.addAll() PRECACHE fetches don't
+        # keep the network busy and cause networkidle timeouts.  SW behaviour
+        # is tested separately in tests/test_pwa.py.
+        service_workers="block",
+    )
+    context.set_default_timeout(10000)
+    _block_external_network(context)
+    yield context
+    browser.close()
 
 
 @pytest.fixture

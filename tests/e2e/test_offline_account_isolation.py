@@ -150,198 +150,191 @@ def login(page, origin, label):
 
 def test_account_switch_preserves_owners_queue_without_disclosing_or_replaying_it(
     isolated_offline_server,
+    playwright_runtime,
 ):
-    from playwright.sync_api import sync_playwright
 
     _app, origin, _users, requests, _, _ = isolated_offline_server
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
-        try:
-            context = browser.new_context(service_workers="allow")
-            page = context.new_page()
-            errors = []
-            page.on("pageerror", lambda error: errors.append(str(error)))
-            alpha = login(page, origin, "Alpha")
-            assert "ALPHA-PRIVATE" in page.content()
-            other_tab = context.new_page()
-            other_tab.goto(origin + "/pilot/logbook", wait_until="load")
-            context.set_offline(True)
-            page.evaluate("""() => Promise.all([
-              OhOffline.addQueueEntry({action:'/flights/new', queued_at:Date.now(), fields:{date:'2026-02-03',notes:'ALPHA-UNSYNCED'}}),
-              OhOffline.putPilotSnapshot({entries:[{id:42,fields:{notes:'ALPHA-SNAPSHOT'}}]})
-            ])""")
-            assert (
-                page.evaluate("() => OhOffline.getQueue().then(rows => rows.length)")
-                == 1
-            )
-            page.goto(origin + "/logout", wait_until="load")
-            context.set_offline(False)
-            page.goto(origin + "/logout", wait_until="load")
-            bravo = login(page, origin, "Bravo")
-            assert bravo["owner"] != alpha["owner"]
-            other_tab.wait_for_function(
-                "() => !document.body.textContent.includes('ALPHA-PRIVATE')"
-            )
-            before = len(
+    browser = playwright_runtime.chromium.launch(headless=True)
+    try:
+        context = browser.new_context(service_workers="allow")
+        page = context.new_page()
+        errors = []
+        page.on("pageerror", lambda error: errors.append(str(error)))
+        alpha = login(page, origin, "Alpha")
+        assert "ALPHA-PRIVATE" in page.content()
+        other_tab = context.new_page()
+        other_tab.goto(origin + "/pilot/logbook", wait_until="load")
+        context.set_offline(True)
+        page.evaluate("""() => Promise.all([
+          OhOffline.addQueueEntry({action:'/flights/new', queued_at:Date.now(), fields:{date:'2026-02-03',notes:'ALPHA-UNSYNCED'}}),
+          OhOffline.putPilotSnapshot({entries:[{id:42,fields:{notes:'ALPHA-SNAPSHOT'}}]})
+        ])""")
+        assert (
+            page.evaluate("() => OhOffline.getQueue().then(rows => rows.length)") == 1
+        )
+        page.goto(origin + "/logout", wait_until="load")
+        context.set_offline(False)
+        page.goto(origin + "/logout", wait_until="load")
+        bravo = login(page, origin, "Bravo")
+        assert bravo["owner"] != alpha["owner"]
+        other_tab.wait_for_function(
+            "() => !document.body.textContent.includes('ALPHA-PRIVATE')"
+        )
+        before = len(
+            [
+                item
+                for item in requests
+                if item[0] == "POST" and item[1] == "/flights/new"
+            ]
+        )
+        page.evaluate(
+            "() => { window.dispatchEvent(new Event('online')); return OhOffline.flush(); }"
+        )
+        assert (
+            page.evaluate("() => OhOffline.getQueue().then(rows => rows.length)") == 0
+        )
+        assert page.evaluate("() => OhOffline.getPilotSnapshot()") is None
+        context.set_offline(True)
+        page.goto(origin + "/pilot/logbook", wait_until="load")
+        assert "BRAVO-PRIVATE" in page.content()
+        assert "ALPHA-PRIVATE" not in page.content()
+        assert (
+            len(
                 [
                     item
                     for item in requests
                     if item[0] == "POST" and item[1] == "/flights/new"
                 ]
             )
+            == before
+        )
+        context.set_offline(False)
+        page.goto(origin + "/logout", wait_until="load")
+        login(page, origin, "Alpha")
+        page.goto(origin + "/offline/changes", wait_until="load")
+        page.wait_for_function(
+            "() => OhOffline.getQueue().then(rows => rows.length === 1)"
+        )
+        assert (
             page.evaluate(
-                "() => { window.dispatchEvent(new Event('online')); return OhOffline.flush(); }"
-            )
-            assert (
-                page.evaluate("() => OhOffline.getQueue().then(rows => rows.length)")
-                == 0
-            )
-            assert page.evaluate("() => OhOffline.getPilotSnapshot()") is None
-            context.set_offline(True)
-            page.goto(origin + "/pilot/logbook", wait_until="load")
-            assert "BRAVO-PRIVATE" in page.content()
-            assert "ALPHA-PRIVATE" not in page.content()
-            assert (
-                len(
-                    [
-                        item
-                        for item in requests
-                        if item[0] == "POST" and item[1] == "/flights/new"
-                    ]
-                )
-                == before
-            )
-            context.set_offline(False)
-            page.goto(origin + "/logout", wait_until="load")
-            login(page, origin, "Alpha")
-            page.goto(origin + "/offline/changes", wait_until="load")
-            page.wait_for_function(
-                "() => OhOffline.getQueue().then(rows => rows.length === 1)"
-            )
-            assert (
-                page.evaluate(
-                    "() => OhOffline.getQueue().then(rows => OhOffline.currentRecord(rows[0]))"
-                )
-                is False
-            )
-            assert (
-                "ALPHA-UNSYNCED" not in page.content()
-            )  # queue title does not disclose notes
-            context.set_offline(True)
-            page.locator(
-                "button", has_text="Resume saved changes for this account"
-            ).click()
-            page.wait_for_function(
                 "() => OhOffline.getQueue().then(rows => OhOffline.currentRecord(rows[0]))"
             )
-            assert (
-                page.evaluate(
-                    "() => OhOffline.getQueue().then(rows => rows[0].fields.notes)"
-                )
-                == "ALPHA-UNSYNCED"
+            is False
+        )
+        assert (
+            "ALPHA-UNSYNCED" not in page.content()
+        )  # queue title does not disclose notes
+        context.set_offline(True)
+        page.locator("button", has_text="Resume saved changes for this account").click()
+        page.wait_for_function(
+            "() => OhOffline.getQueue().then(rows => OhOffline.currentRecord(rows[0]))"
+        )
+        assert (
+            page.evaluate(
+                "() => OhOffline.getQueue().then(rows => rows[0].fields.notes)"
             )
-            assert not errors
-            context.close()
-        finally:
-            browser.close()
+            == "ALPHA-UNSYNCED"
+        )
+        assert not errors
+        context.close()
+    finally:
+        browser.close()
 
 
 def test_logout_permission_loss_and_worker_upgrade_retire_private_cache(
     isolated_offline_server,
+    playwright_runtime,
 ):
     from models import User, db
-    from playwright.sync_api import sync_playwright
 
     app, origin, users, _, _, _ = isolated_offline_server
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
-        try:
-            context = browser.new_context(service_workers="allow")
-            page = context.new_page()
-            alpha = login(page, origin, "Alpha")
-            page.evaluate(
-                "() => OhOffline.addQueueEntry({queued_at:Date.now(),fields:{notes:'PRESERVE-ON-UPGRADE'}})"
-            )
-            page.evaluate("""async () => {
-              await caches.open('old-unscoped-cache').then(c => c.put('/pilot/logbook', new Response('ALPHA-OLD-CACHE')));
-              const old = await navigator.serviceWorker.getRegistration(); await old.unregister();
-              await navigator.serviceWorker.register('/sw.js?upgrade=1',{scope:'/'});
-              await navigator.serviceWorker.ready;
-            }""")
-            page.wait_for_function(
-                "() => caches.keys().then(names => !names.includes('old-unscoped-cache'))"
-            )
-            assert (
-                page.evaluate("() => OhOffline.getQueue().then(rows => rows.length)")
-                == 1
-            )
-            with app.app_context():
-                db.session.get(User, users["Alpha"]).is_active = False
-                db.session.commit()
-            page.evaluate("() => fetch('/api/offline/csrf').then(r => r.status)")
-            page.wait_for_function(
-                "() => !document.body.textContent.includes('ALPHA-PRIVATE')"
-            )
-            page.wait_for_function(
-                "owner => caches.keys().then(names => !names.some(name => name.includes('-private-' + owner)))",
-                arg=alpha["owner"],
-            )
-            context.set_offline(True)
-            page.goto(origin + "/pilot/logbook", wait_until="load")
-            assert "ALPHA-PRIVATE" not in page.content()
-            context.close()
-        finally:
-            browser.close()
+    browser = playwright_runtime.chromium.launch(headless=True)
+    try:
+        context = browser.new_context(service_workers="allow")
+        page = context.new_page()
+        alpha = login(page, origin, "Alpha")
+        page.evaluate(
+            "() => OhOffline.addQueueEntry({queued_at:Date.now(),fields:{notes:'PRESERVE-ON-UPGRADE'}})"
+        )
+        page.evaluate("""async () => {
+          await caches.open('old-unscoped-cache').then(c => c.put('/pilot/logbook', new Response('ALPHA-OLD-CACHE')));
+          const old = await navigator.serviceWorker.getRegistration(); await old.unregister();
+          await navigator.serviceWorker.register('/sw.js?upgrade=1',{scope:'/'});
+          await navigator.serviceWorker.ready;
+        }""")
+        page.wait_for_function(
+            "() => caches.keys().then(names => !names.includes('old-unscoped-cache'))"
+        )
+        assert (
+            page.evaluate("() => OhOffline.getQueue().then(rows => rows.length)") == 1
+        )
+        with app.app_context():
+            db.session.get(User, users["Alpha"]).is_active = False
+            db.session.commit()
+        page.evaluate("() => fetch('/api/offline/csrf').then(r => r.status)")
+        page.wait_for_function(
+            "() => !document.body.textContent.includes('ALPHA-PRIVATE')"
+        )
+        page.wait_for_function(
+            "owner => caches.keys().then(names => !names.some(name => name.includes('-private-' + owner)))",
+            arg=alpha["owner"],
+        )
+        context.set_offline(True)
+        page.goto(origin + "/pilot/logbook", wait_until="load")
+        assert "ALPHA-PRIVATE" not in page.content()
+        context.close()
+    finally:
+        browser.close()
 
 
 def test_old_inflight_account_response_cannot_repopulate_a_retired_cache(
     isolated_offline_server,
+    playwright_runtime,
 ):
-    from playwright.sync_api import sync_playwright
 
     _, origin, _, _, entered, release = isolated_offline_server
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
-        try:
-            context = browser.new_context(service_workers="allow")
-            first = context.new_page()
-            alpha = login(first, origin, "Alpha")
-            first.evaluate(
-                "() => { window.heldResponse = fetch('/pilot/logbook?hold=1').then(r => r.text()).catch(() => 'retired'); }"
-            )
-            assert entered.wait(timeout=10)
-            # Retire the worker that owns the held response before changing
-            # accounts, not just the document that initiated the fetch.
-            first.evaluate("""async () => {
-              const old = await navigator.serviceWorker.getRegistration();
-              await old.unregister();
-              await navigator.serviceWorker.register('/sw.js?inflight-upgrade=1', {scope:'/'});
-            }""")
-            first.wait_for_function(
-                "() => navigator.serviceWorker.controller?.scriptURL.includes('inflight-upgrade=1')"
-            )
-            second = context.new_page()
-            second.goto(origin + "/logout", wait_until="load")
-            login(second, origin, "Bravo")
-            release.set()
-            first.evaluate("() => window.heldResponse")
-            second.wait_for_function(
-                "owner => caches.keys().then(names => !names.some(name => name.includes('-private-' + owner)))",
-                arg=alpha["owner"],
-            )
-            context.set_offline(True)
-            second.goto(origin + "/pilot/logbook", wait_until="load")
-            assert "BRAVO-PRIVATE" in second.content()
-            assert "ALPHA-PRIVATE" not in second.content()
-            context.close()
-        finally:
-            release.set()
-            browser.close()
+    browser = playwright_runtime.chromium.launch(headless=True)
+    try:
+        context = browser.new_context(service_workers="allow")
+        first = context.new_page()
+        alpha = login(first, origin, "Alpha")
+        first.evaluate(
+            "() => { window.heldResponse = fetch('/pilot/logbook?hold=1').then(r => r.text()).catch(() => 'retired'); }"
+        )
+        assert entered.wait(timeout=10)
+        # Retire the worker that owns the held response before changing
+        # accounts, not just the document that initiated the fetch.
+        first.evaluate("""async () => {
+          const old = await navigator.serviceWorker.getRegistration();
+          await old.unregister();
+          await navigator.serviceWorker.register('/sw.js?inflight-upgrade=1', {scope:'/'});
+        }""")
+        first.wait_for_function(
+            "() => navigator.serviceWorker.controller?.scriptURL.includes('inflight-upgrade=1')"
+        )
+        second = context.new_page()
+        second.goto(origin + "/logout", wait_until="load")
+        login(second, origin, "Bravo")
+        release.set()
+        first.evaluate("() => window.heldResponse")
+        second.wait_for_function(
+            "owner => caches.keys().then(names => !names.some(name => name.includes('-private-' + owner)))",
+            arg=alpha["owner"],
+        )
+        context.set_offline(True)
+        second.goto(origin + "/pilot/logbook", wait_until="load")
+        assert "BRAVO-PRIVATE" in second.content()
+        assert "ALPHA-PRIVATE" not in second.content()
+        context.close()
+    finally:
+        release.set()
+        browser.close()
 
 
-def test_aircraft_grant_loss_retires_cached_page_and_snapshot(isolated_offline_server):
+def test_aircraft_grant_loss_retires_cached_page_and_snapshot(
+    isolated_offline_server, playwright_runtime
+):
     from models import Aircraft, Flight, Role, TenantUser, UserAircraftAccess, db
-    from playwright.sync_api import sync_playwright
 
     app, origin, users, _, _, _ = isolated_offline_server
     with app.app_context():
@@ -368,67 +361,65 @@ def test_aircraft_grant_loss_retires_cached_page_and_snapshot(isolated_offline_s
             )
         )
         db.session.commit()
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
-        try:
-            context = browser.new_context(service_workers="allow")
-            page = context.new_page()
-            login(page, origin, "Alpha")
-            target = f"/aircraft/{aircraft_id}/flights"
-            page.goto(origin + target, wait_until="load")
-            page.wait_for_function(
-                "id => OhOffline.getSnapshot(id).then(value => !!value)",
-                arg=aircraft_id,
-            )
-            assert "AIRCRAFT-GRANT-PRIVATE" in page.content()
-            with app.app_context():
-                UserAircraftAccess.query.filter_by(
-                    user_id=users["Alpha"], aircraft_id=aircraft_id
-                ).delete()
-                db.session.commit()
-            # The forbidden page itself must evict its old cached success.
-            assert page.evaluate("url => fetch(url).then(r => r.status)", target) == 404
-            # The corresponding snapshot denial also quarantines the old epoch.
-            page.evaluate(
-                "async id => { try { await OhOfflineIdentity.fetch('/api/offline/aircraft/'+id+'/logbook'); } catch (_) {} }",
-                aircraft_id,
-            )
-            page.wait_for_function(
-                "() => !document.body.textContent.includes('AIRCRAFT-GRANT-PRIVATE')"
-            )
-            context.set_offline(True)
-            page.goto(origin + target, wait_until="load")
-            assert "AIRCRAFT-GRANT-PRIVATE" not in page.content()
-            context.close()
-        finally:
-            browser.close()
+    browser = playwright_runtime.chromium.launch(headless=True)
+    try:
+        context = browser.new_context(service_workers="allow")
+        page = context.new_page()
+        login(page, origin, "Alpha")
+        target = f"/aircraft/{aircraft_id}/flights"
+        page.goto(origin + target, wait_until="load")
+        page.wait_for_function(
+            "id => OhOffline.getSnapshot(id).then(value => !!value)",
+            arg=aircraft_id,
+        )
+        assert "AIRCRAFT-GRANT-PRIVATE" in page.content()
+        with app.app_context():
+            UserAircraftAccess.query.filter_by(
+                user_id=users["Alpha"], aircraft_id=aircraft_id
+            ).delete()
+            db.session.commit()
+        # The forbidden page itself must evict its old cached success.
+        assert page.evaluate("url => fetch(url).then(r => r.status)", target) == 404
+        # The corresponding snapshot denial also quarantines the old epoch.
+        page.evaluate(
+            "async id => { try { await OhOfflineIdentity.fetch('/api/offline/aircraft/'+id+'/logbook'); } catch (_) {} }",
+            aircraft_id,
+        )
+        page.wait_for_function(
+            "() => !document.body.textContent.includes('AIRCRAFT-GRANT-PRIVATE')"
+        )
+        context.set_offline(True)
+        page.goto(origin + target, wait_until="load")
+        assert "AIRCRAFT-GRANT-PRIVATE" not in page.content()
+        context.close()
+    finally:
+        browser.close()
 
 
 def test_own_password_change_renews_context_without_a_login_dead_end(
     isolated_offline_server,
+    playwright_runtime,
 ):
-    from playwright.sync_api import sync_playwright
 
     _app, origin, _users, _, _, _ = isolated_offline_server
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=True)
-        try:
-            context = browser.new_context(service_workers="allow")
-            page = context.new_page()
-            before = login(page, origin, "Alpha")
-            page.goto(origin + "/profile", wait_until="load")
-            form = page.locator('form:has(input[value="change_password"])')
-            form.locator('[name="current_password"]').fill(PASSWORD)
-            form.locator('[name="new_password"]').fill("RenewedBrowserPassword123!")
-            form.locator('[name="confirm_password"]').fill("RenewedBrowserPassword123!")
-            form.locator('button[type="submit"]').click()
-            page.wait_for_function(
-                "previous => !!OhOfflineIdentity.current() && OhOfflineIdentity.current().session !== previous",
-                arg=before["session"],
-            )
-            after = page.evaluate("() => OhOfflineIdentity.current()")
-            assert after["owner"] == before["owner"]
-            assert page.locator('[name="current_password"]').is_visible()
-            context.close()
-        finally:
-            browser.close()
+    browser = playwright_runtime.chromium.launch(headless=True)
+    try:
+        context = browser.new_context(service_workers="allow")
+        page = context.new_page()
+        before = login(page, origin, "Alpha")
+        page.goto(origin + "/profile", wait_until="load")
+        form = page.locator('form:has(input[value="change_password"])')
+        form.locator('[name="current_password"]').fill(PASSWORD)
+        form.locator('[name="new_password"]').fill("RenewedBrowserPassword123!")
+        form.locator('[name="confirm_password"]').fill("RenewedBrowserPassword123!")
+        form.locator('button[type="submit"]').click()
+        page.wait_for_function(
+            "previous => !!OhOfflineIdentity.current() && OhOfflineIdentity.current().session !== previous",
+            arg=before["session"],
+        )
+        after = page.evaluate("() => OhOfflineIdentity.current()")
+        assert after["owner"] == before["owner"]
+        assert page.locator('[name="current_password"]').is_visible()
+        context.close()
+    finally:
+        browser.close()
