@@ -646,18 +646,20 @@ def test_private_photo_rechecks_authentication_and_grants(app, client, variant):
     url = f"/aircraft/{acid}/photos/{photo_id}/{variant}"
     first = client.get(url)
     assert first.status_code == 200
-    assert first.headers["Cache-Control"] == "no-store, private"
+    # Revalidated, never re-downloaded blindly nor served without asking.
+    assert first.headers["Cache-Control"] == "private, no-cache"
     assert "Expires" not in first.headers
     etag = first.headers["ETag"]
     valid = client.get(url, headers={"If-None-Match": etag})
     assert valid.status_code == 304
-    assert valid.headers["Cache-Control"] == "no-store, private"
+    assert valid.headers["Cache-Control"] == "private, no-cache"
     with app.app_context():
         UserAircraftAccess.query.filter_by(user_id=uid, aircraft_id=acid).delete()
         db.session.commit()
     denied = client.get(url, headers={"If-None-Match": etag})
     assert denied.status_code == 404
     assert "ETag" not in denied.headers
+    assert denied.headers["Cache-Control"] == "no-store, private"
     client.get("/logout")
     anonymous = client.get(url, headers={"If-None-Match": etag})
     assert anonymous.status_code == 302

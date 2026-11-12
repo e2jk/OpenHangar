@@ -211,6 +211,9 @@ class TestReceiptUpload:
         resp = client.get(f"/uploads/{fname}")
         assert resp.status_code == 200
         assert b"receipt-bytes" in resp.data
+        # send_file defaults to "no-cache"; only the aircraft-photo endpoints may
+        # keep revalidated caching, every other authenticated file stays no-store.
+        assert resp.headers["Cache-Control"] == "no-store, private"
 
     def test_deleting_expense_removes_receipt_row(self, app, client):
         _uid, tid = _create_user_and_tenant(app)

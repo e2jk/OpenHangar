@@ -27,7 +27,7 @@
 - Authentication challenges now expire and can be used only once. Login and authenticator enrolment state stays on the server, including first-run setup, so saved browser cookies cannot replay a completed enrolment.
 - Logins are now revocable: logout ends that browser session, and password recovery, password/authenticator changes, deactivation and membership removal invalidate older logins. Your acting browser stays signed in after changing its own credentials. Upgrading the stored password hash at login does not sign you out elsewhere.
 - CSV downloads protect user-entered text from being interpreted as spreadsheet formulas, while keeping monetary amounts numeric.
-- Share pages and aircraft photos recheck authorization on revisits, so revoked links and removed aircraft access are respected by browser HTTP caches. Previously saved copies remain outside the application’s control.
+- Share pages and aircraft photos recheck authorization on revisits, so revoked links and removed aircraft access are respected by browser HTTP caches. Unchanged aircraft photos are revalidated rather than downloaded again. Previously saved copies remain outside the application’s control.
 - Forwarded client addresses are trusted only as far as configured: `OPENHANGAR_PROXY_HOPS` sets the number of trusted proxies (`0` for direct access), and `OPENHANGAR_TRUSTED_HOSTS` limits the hostnames used for invite, password-reset and share links. The internal readiness check accepts only genuine local requests.
 
 **Reservations and billing**
