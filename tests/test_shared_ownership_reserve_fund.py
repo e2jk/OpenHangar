@@ -8,6 +8,7 @@ from datetime import date
 from decimal import Decimal
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
+import pytest
 from aircraft.co_owner_form_parsing import (  # pyright: ignore[reportMissingImports]
     parse_reserve_fields,
 )
@@ -541,3 +542,132 @@ class TestReserveFundBalance:
         r = client.get(f"/aircraft/{acid}/owners/billing")
         assert r.status_code == 200
         assert b"Reserve / overhaul fund balance" not in r.data
+
+
+class TestReserveFundAggregate:
+    def test_live_cent_amounts_are_scoped_to_the_aircraft_and_co_owner_accounts(
+        self, app
+    ):
+        from models import BillingAccountKind, LedgerEntryType
+        from services.billing import BillingService
+
+        tid = _make_tenant(app)
+        alice = _make_user(app, tid, "aggregate-alice@example.com", "Alice")
+        bob = _make_user(app, tid, "aggregate-bob@example.com", "Bob")
+        acid = _make_aircraft(app, tid)
+        other_acid = _make_aircraft(app, tid, registration="OO-OTHER")
+        other_tid = _make_tenant(app)
+        other_uid = _make_user(app, other_tid, "aggregate-other@example.com", "Other")
+        with app.app_context():
+
+            def account(
+                user_id,
+                tenant_id=tid,
+                aircraft_id=acid,
+                kind=BillingAccountKind.CO_OWNER,
+            ):
+                return BillingService.get_or_create_account(
+                    tenant_id, user_id, kind, aircraft_id
+                )
+
+            def contribution(acc, amount, source="reserve_contribution"):
+                return BillingService.post(
+                    acc,
+                    LedgerEntryType.CHARGE,
+                    Decimal(amount),
+                    "Contribution",
+                    date(2026, 1, 1),
+                    source_type=source,
+                )
+
+            alice_account = account(alice)
+            bob_account = account(bob)
+            contribution(alice_account, "10.01")
+            contribution(bob_account, "20.02")
+            contribution(bob_account, "0.03")
+            original = contribution(alice_account, "12.34")
+            db.session.flush()
+            BillingService.reverse(original, None, "Contribution corrected")
+            # A later replacement is a separate live posting; the original and
+            # its negative reversal must not be counted again.
+            contribution(alice_account, "1.07")
+            contribution(alice_account, "500.00", source="expense_share")
+            contribution(account(alice, aircraft_id=other_acid), "600.00")
+            contribution(account(alice, kind=BillingAccountKind.RENTER), "700.00")
+            # Deliberately inconsistent legacy scope: tenant filtering must not
+            # be dropped just because the aircraft id is also checked.
+            contribution(account(other_uid, tenant_id=other_tid), "800.00")
+            db.session.commit()
+            aircraft = db.session.get(Aircraft, acid)
+            balance = co_owner_billing.reserve_fund_balance(aircraft)
+            assert balance == Decimal("31.13")
+            assert isinstance(balance, Decimal)
+
+    def test_zero_when_all_contributions_are_reversed(self, app):
+        from models import BillingAccountKind, LedgerEntryType
+        from services.billing import BillingService
+
+        tid = _make_tenant(app)
+        uid = _make_user(app, tid, "aggregate-reversed@example.com", "Owner")
+        acid = _make_aircraft(app, tid)
+        with app.app_context():
+            account = BillingService.get_or_create_account(
+                tid, uid, BillingAccountKind.CO_OWNER, acid
+            )
+            entry = BillingService.post(
+                account,
+                LedgerEntryType.CHARGE,
+                Decimal("15.37"),
+                "Contribution",
+                date(2026, 1, 1),
+                source_type="reserve_contribution",
+            )
+            db.session.flush()
+            BillingService.reverse(entry, None, "Contribution cancelled")
+            db.session.commit()
+            assert co_owner_billing.reserve_fund_balance(
+                db.session.get(Aircraft, acid)
+            ) == Decimal("0.00")
+
+    @pytest.mark.parametrize(
+        "size,expected", [(10, Decimal("99.90")), (100, Decimal("999.00"))]
+    )
+    def test_query_count_does_not_grow_with_ledger_history(self, app, size, expected):
+        from models import BillingAccountKind, LedgerEntryType
+        from services.billing import BillingService
+        from sqlalchemy import event
+
+        tid = _make_tenant(app)
+        alice = _make_user(app, tid, "query-alice@example.com", "Alice")
+        bob = _make_user(app, tid, "query-bob@example.com", "Bob")
+        acid = _make_aircraft(app, tid)
+        with app.app_context():
+            accounts = [
+                BillingService.get_or_create_account(
+                    tid, uid, BillingAccountKind.CO_OWNER, acid
+                )
+                for uid in (alice, bob)
+            ]
+            for index in range(size):
+                BillingService.post(
+                    accounts[index % 2],
+                    LedgerEntryType.CHARGE,
+                    Decimal("9.99"),
+                    "Contribution",
+                    date(2026, 1, 1),
+                    source_type="reserve_contribution",
+                )
+            db.session.commit()
+            aircraft = db.session.get(Aircraft, acid)
+            statements = []
+
+            def record(_conn, _cursor, statement, _parameters, _context, _many):
+                statements.append(statement)
+
+            event.listen(db.engine, "before_cursor_execute", record)
+            try:
+                balance = co_owner_billing.reserve_fund_balance(aircraft)
+            finally:
+                event.remove(db.engine, "before_cursor_execute", record)
+            assert balance == expected
+            assert len(statements) == 1
