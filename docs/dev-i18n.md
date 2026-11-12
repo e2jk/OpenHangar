@@ -108,10 +108,9 @@ after = polib.pofile("path/to/new.po")
 # compare {e.msgid: e.msgstr for e in before} against the same for `after`
 ```
 
-If you're adding strings by hand instead of running the script (the
-"1–10 strings" shortcut in `AGENTS.md`), write the `msgstr` as a single
-line too — matching the script's own output keeps the two workflows from
-fighting over formatting on every subsequent run.
+When you fill in the `msgstr` of a new entry the script created, write it
+as a single line too — matching the script's own output keeps the next run
+from reformatting it.
 
 ---
 
