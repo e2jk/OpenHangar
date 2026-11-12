@@ -6,6 +6,7 @@ owner approval workflow, and per-aircraft booking settings.
 import calendar
 from datetime import UTC, datetime, time, timedelta
 from datetime import date as _date
+from decimal import Decimal, InvalidOperation
 from typing import Any
 from urllib.parse import urlparse
 
@@ -51,6 +52,20 @@ _DOWNTIME_ROLES = (Role.ADMIN, Role.OWNER, Role.MAINTENANCE)
 # How far the manually-set booking rate may drift from the computed cost
 # dashboard's wet rate before the owner is nudged to review it.
 RATE_DIVERGENCE_WARN_PCT = 0.10
+
+
+def _booking_number(
+    raw: str, precision: int, scale: int, *, signed: bool = False
+) -> Decimal:
+    """Validate before rounding; bound values to the destination NUMERIC column."""
+    try:
+        value = Decimal(raw)
+    except InvalidOperation as exc:
+        raise ValueError from exc
+    limit = Decimal(10) ** (precision - scale) - Decimal(10) ** -scale
+    if not value.is_finite() or value.copy_abs() > limit or (not signed and value < 0):
+        raise ValueError
+    return value.quantize(Decimal(10) ** -scale)
 
 
 def _safe_next(next_url: str, fallback: str) -> str:
@@ -913,17 +928,30 @@ def booking_settings(aircraft_id: int):
 
 
 def _save_booking_settings(ac: Aircraft, settings: AircraftBookingSettings | None):
-    def _float_or_none(key: str) -> float | None:
+    errors = []
+
+    def _number_or_none(
+        key: str, precision: int, scale: int, message: str
+    ) -> Decimal | None:
         val = request.form.get(key, "").strip()
+        if not val:
+            return None
         try:
-            return float(val) if val else None
+            return _booking_number(val, precision, scale)
         except ValueError:
+            errors.append(message)
             return None
 
-    min_h = _float_or_none("min_booking_hours")
-    max_h = _float_or_none("max_booking_hours")
-    rate = _float_or_none("hourly_rate")
-    min_per_day = _float_or_none("min_hours_per_day")
+    min_h = _number_or_none(
+        "min_booking_hours", 4, 1, _("Minimum booking duration must be positive.")
+    )
+    max_h = _number_or_none(
+        "max_booking_hours", 4, 1, _("Maximum booking duration must be positive.")
+    )
+    rate = _number_or_none("hourly_rate", 8, 2, _("Invalid hourly rate."))
+    min_per_day = _number_or_none(
+        "min_hours_per_day", 4, 1, _("Minimum billed hours per day must be positive.")
+    )
     # A real <select>/<radio> form always submits one of the valid values;
     # a blank submission (e.g. an old cached form, or a direct API call that
     # omits the field) falls back to the model's own default rather than
@@ -931,15 +959,12 @@ def _save_booking_settings(ac: Aircraft, settings: AircraftBookingSettings | Non
     rate_basis = request.form.get("rate_basis", "").strip() or RateBasis.ENGINE_TIME
     rate_type = request.form.get("rate_type", "").strip() or RateType.WET
 
-    errors = []
     if min_h is not None and min_h <= 0:
         errors.append(_("Minimum booking duration must be positive."))
     if max_h is not None and max_h <= 0:
         errors.append(_("Maximum booking duration must be positive."))
     if min_h is not None and max_h is not None and min_h > max_h:
         errors.append(_("Minimum duration cannot exceed maximum duration."))
-    if rate is not None and rate < 0:
-        errors.append(_("Hourly rate cannot be negative."))
     if min_per_day is not None and min_per_day <= 0:
         errors.append(_("Minimum billed hours per day must be positive."))
     if rate_basis not in RateBasis.ALL:
@@ -1335,12 +1360,16 @@ def checkout(aircraft_id: int, res_id: int):
             )
 
         try:
-            engine_val = float(engine_counter) if engine_counter else None
+            engine_val = (
+                _booking_number(engine_counter, 8, 1) if engine_counter else None
+            )
         except ValueError:
             engine_val = None
             errors.append(_("Invalid engine counter value."))
         try:
-            flight_val = float(flight_counter) if flight_counter else None
+            flight_val = (
+                _booking_number(flight_counter, 8, 1) if flight_counter else None
+            )
         except ValueError:
             flight_val = None
             errors.append(_("Invalid flight counter value."))
@@ -1404,10 +1433,10 @@ def _draft_rental_charge(ac: Aircraft, r: Reservation, dispatch_record: Any) -> 
     rate_basis = settings.rate_basis if settings else RateBasis.ENGINE_TIME
     rate_type = settings.rate_type if settings else RateType.WET
 
-    def _delta(out_val: Any, in_val: Any) -> float | None:
+    def _delta(out_val: Any, in_val: Any) -> Decimal | None:
         if out_val is None or in_val is None:
             return None
-        return float(in_val) - float(out_val)
+        return Decimal(str(in_val)) - Decimal(str(out_val))
 
     engine_delta = _delta(
         dispatch_record.out_engine_counter, dispatch_record.in_engine_counter
@@ -1423,7 +1452,7 @@ def _draft_rental_charge(ac: Aircraft, r: Reservation, dispatch_record: Any) -> 
     # Fall back to the other counter when the selected one was left blank at
     # dispatch — noted via fallback_counter_used for the draft view.
     fallback_counter_used = primary is None and fallback is not None
-    counter_delta = primary if primary is not None else (fallback or 0.0)
+    counter_delta = primary if primary is not None else (fallback or Decimal(0))
 
     chargeable_days = 1
     if dispatch_record.out_at is not None and dispatch_record.in_at is not None:
@@ -1431,9 +1460,7 @@ def _draft_rental_charge(ac: Aircraft, r: Reservation, dispatch_record: Any) -> 
             dispatch_record.out_at, dispatch_record.in_at
         )
     min_per_day = (
-        float(settings.min_hours_per_day)
-        if settings and settings.min_hours_per_day
-        else None
+        settings.min_hours_per_day if settings and settings.min_hours_per_day else None
     )
     billable_hours = counter_delta
     if min_per_day:
@@ -1442,7 +1469,7 @@ def _draft_rental_charge(ac: Aircraft, r: Reservation, dispatch_record: Any) -> 
     hourly_rate, _source = _effective_rate(ac, settings)
     hourly_rate = hourly_rate or 0.0
 
-    fuel_credit = 0.0
+    fuel_credit_decimal = Decimal(0)
     if rate_type == RateType.WET and r.pilot_user_id is not None:
         flight_ids = [fe.id for fe in r.flights]
         if flight_ids:
@@ -1451,20 +1478,24 @@ def _draft_rental_charge(ac: Aircraft, r: Reservation, dispatch_record: Any) -> 
                 Expense.expense_type == ExpenseType.FUEL,
                 Expense.created_by_id == r.pilot_user_id,
             ).all()
-            fuel_credit = sum(float(e.amount) for e in fuel_rows)
+            fuel_credit_decimal = sum((e.amount for e in fuel_rows), Decimal(0))
 
-    total = round(billable_hours * hourly_rate - fuel_credit, 2)
+    billable_hours_decimal = Decimal(str(billable_hours)).quantize(Decimal("0.1"))
+    hourly_rate_decimal = Decimal(str(hourly_rate)).quantize(Decimal("0.01"))
+    total = (
+        billable_hours_decimal * hourly_rate_decimal - fuel_credit_decimal
+    ).quantize(Decimal("0.01"))
 
     return RentalCharge(
         reservation_id=r.id,
         renter_user_id=r.pilot_user_id,
-        billable_hours=round(billable_hours, 1),
-        hourly_rate=round(hourly_rate, 2),
+        billable_hours=_booking_number(str(billable_hours_decimal), 6, 1),
+        hourly_rate=_booking_number(str(hourly_rate_decimal), 8, 2),
         rate_type=rate_type,
-        fuel_credit=round(fuel_credit, 2),
+        fuel_credit=_booking_number(str(fuel_credit_decimal), 10, 2),
         adjustment=0,
         fallback_counter_used=fallback_counter_used,
-        total=total,
+        total=_booking_number(str(total), 10, 2, signed=True),
     )
 
 
@@ -1499,14 +1530,18 @@ def checkin(aircraft_id: int, res_id: int):
         notes = request.form.get("in_notes", "").strip() or None
 
         errors = []
-        engine_val: float | None = None
-        flight_val: float | None = None
+        engine_val: Decimal | None = None
+        flight_val: Decimal | None = None
         try:
-            engine_val = float(engine_counter) if engine_counter else None
+            engine_val = (
+                _booking_number(engine_counter, 8, 1) if engine_counter else None
+            )
         except ValueError:
             errors.append(_("Invalid engine counter value."))
         try:
-            flight_val = float(flight_counter) if flight_counter else None
+            flight_val = (
+                _booking_number(flight_counter, 8, 1) if flight_counter else None
+            )
         except ValueError:
             errors.append(_("Invalid flight counter value."))
 
@@ -1514,7 +1549,7 @@ def checkin(aircraft_id: int, res_id: int):
             not errors
             and engine_val is not None
             and dispatch_record.out_engine_counter is not None
-            and engine_val < float(dispatch_record.out_engine_counter)
+            and engine_val < dispatch_record.out_engine_counter
         ):
             errors.append(
                 _("Engine counter on return cannot be less than the check-out value.")
@@ -1523,7 +1558,7 @@ def checkin(aircraft_id: int, res_id: int):
             not errors
             and flight_val is not None
             and dispatch_record.out_flight_counter is not None
-            and flight_val < float(dispatch_record.out_flight_counter)
+            and flight_val < dispatch_record.out_flight_counter
         ):
             errors.append(
                 _("Flight counter on return cannot be less than the check-out value.")
@@ -1546,7 +1581,18 @@ def checkin(aircraft_id: int, res_id: int):
         dispatch_record.in_fuel_state = fuel_state
         dispatch_record.in_notes = notes
         if r.pilot_user_id is not None:
-            db.session.add(_draft_rental_charge(ac, r, dispatch_record))
+            try:
+                draft = _draft_rental_charge(ac, r, dispatch_record)
+            except ValueError:
+                db.session.rollback()
+                flash(_("Invalid billable hours."), "danger")
+                return render_template(
+                    "reservations/checkin.html",
+                    aircraft=ac,
+                    reservation=r,
+                    dispatch=dispatch_record,
+                )
+            db.session.add(draft)
         db.session.commit()
         flash(_("Checked in."), "success")
         return redirect(
@@ -1589,29 +1635,25 @@ def rental_charge(aircraft_id: int, res_id: int):
 
         action = request.form.get("action", "save")
 
-        def _float_field(key: str, current: Any) -> tuple[float, bool]:
+        def _number_field(
+            key: str, current: Any, precision: int, scale: int, *, signed: bool = False
+        ) -> tuple[Decimal, bool]:
             raw = request.form.get(key, "").strip()
+            if key in {"fuel_credit", "adjustment"} and not raw:
+                raw = "0"
             try:
-                return float(raw), True
+                return _booking_number(raw, precision, scale, signed=signed), True
             except ValueError:
-                return float(current), False
+                return Decimal(str(current)), False
 
-        billable_hours, hours_ok = _float_field("billable_hours", charge.billable_hours)
-        hourly_rate, rate_ok = _float_field("hourly_rate", charge.hourly_rate)
-        fuel_credit_raw = request.form.get("fuel_credit", "").strip()
-        try:
-            fuel_credit = float(fuel_credit_raw) if fuel_credit_raw else 0.0
-            credit_ok = True
-        except ValueError:
-            fuel_credit = float(charge.fuel_credit)
-            credit_ok = False
-        adjustment_raw = request.form.get("adjustment", "").strip()
-        try:
-            adjustment = float(adjustment_raw) if adjustment_raw else 0.0
-            adj_ok = True
-        except ValueError:
-            adjustment = float(charge.adjustment)
-            adj_ok = False
+        billable_hours, hours_ok = _number_field(
+            "billable_hours", charge.billable_hours, 6, 1
+        )
+        hourly_rate, rate_ok = _number_field("hourly_rate", charge.hourly_rate, 8, 2)
+        fuel_credit, credit_ok = _number_field("fuel_credit", charge.fuel_credit, 10, 2)
+        adjustment, adj_ok = _number_field(
+            "adjustment", charge.adjustment, 10, 2, signed=True
+        )
         adjustment_note = request.form.get("adjustment_note", "").strip() or None
 
         errors = []
@@ -1623,14 +1665,12 @@ def rental_charge(aircraft_id: int, res_id: int):
             errors.append(_("Invalid fuel credit."))
         if not adj_ok:
             errors.append(_("Invalid adjustment."))
-        if billable_hours < 0:
-            errors.append(_("Billable hours cannot be negative."))
-        if hourly_rate < 0:
-            errors.append(_("Hourly rate cannot be negative."))
-        if fuel_credit < 0:
-            errors.append(_("Fuel credit cannot be negative."))
         if adjustment != 0 and not adjustment_note:
             errors.append(_("An adjustment requires a note explaining it."))
+
+        total = billable_hours * hourly_rate - fuel_credit + adjustment
+        if abs(total) > Decimal("99999999.99"):
+            errors.append(_("Invalid billable hours."))
 
         if errors:
             for msg in errors:
@@ -1644,12 +1684,7 @@ def rental_charge(aircraft_id: int, res_id: int):
         charge.fuel_credit = round(fuel_credit, 2)
         charge.adjustment = round(adjustment, 2)
         charge.adjustment_note = adjustment_note
-        charge.total = round(
-            float(charge.billable_hours) * float(charge.hourly_rate)
-            - float(charge.fuel_credit)
-            + float(charge.adjustment),
-            2,
-        )
+        charge.total = total.quantize(Decimal("0.01"))
 
         if action == "finalize":
             from models import (

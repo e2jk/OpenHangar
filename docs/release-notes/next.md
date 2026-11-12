@@ -19,6 +19,9 @@
 - Authentication challenges now expire and can be used only once. Login and authenticator enrolment state stays on the server, including first-run setup, so saved browser cookies cannot replay a completed enrolment.
 - Logins are now revocable: logout ends that browser session, and password recovery, password/authenticator changes, deactivation and membership removal invalidate older logins. Your acting browser stays signed in after changing its own credentials. Upgrading requires a fresh login for existing browser sessions.
 
+**Reservations and billing**
+- Booking settings, dispatch counters and rental charges reject invalid, non-finite, negative (where prohibited) and out-of-range numbers without saving changes. Charge totals use decimal arithmetic with ties rounded to even cents; signed adjustments remain supported.
+
 **Maintenance**
 - Translation files regenerated with the i18n script: strings added by hand now carry their source references (their absence made the nightly Weblate scan's Code Scanning upload fail), and four strings no longer used are dropped.
 - Contributor docs: new strings now always go through `scripts/update_i18n.sh`; the shortcut of adding a few `.po` entries by hand is retired.

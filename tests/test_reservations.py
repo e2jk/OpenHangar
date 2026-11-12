@@ -1092,8 +1092,7 @@ class TestBookingSettings:
                 is None
             )
 
-    def test_non_numeric_field_treated_as_none(self, app, client):
-        # Covers _float_or_none ValueError branch (lines 292-293)
+    def test_non_numeric_field_rejected_without_creating_settings(self, app, client):
         uid, tid = _make_user(app, "owner@ex.com", role=Role.OWNER)
         ac_id = _make_aircraft(app, tid)
         _login(app, client, uid)
@@ -1105,13 +1104,10 @@ class TestBookingSettings:
                 "hourly_rate": "!!!",
             },
         )
-        assert r.status_code == 302
+        assert r.status_code == 200
         with app.app_context():
             s = AircraftBookingSettings.query.filter_by(aircraft_id=ac_id).first()
-            assert s is not None
-            assert s.min_booking_hours is None
-            assert s.max_booking_hours is None
-            assert s.hourly_rate is None
+            assert s is None
 
     def test_missing_rate_fields_default_to_engine_time_wet(self, app, client):
         """A raw POST omitting rate_basis/rate_type (e.g. an old cached form)
