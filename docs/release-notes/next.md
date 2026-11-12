@@ -1,4 +1,10 @@
-# Certificates: replace, keep the old one, and no warning with a renewal
+# Security hardening, certificate renewals and landing recency by class
+
+**Upgrade notes — please read before upgrading**
+- **Sync offline changes first.** Ask everyone who uses OpenHangar offline to open **Offline changes** and sync any pending flights or logbook edits before you upgrade. Offline data is now stored per account; anything still pending from before the upgrade stays in that browser but is no longer shown or synced.
+- **Everyone signs in again** after the upgrade: logins now have a server-side record, and older cookies are not accepted.
+- **Direct installations (Raspberry Pi or a published port, no reverse proxy):** add `OPENHANGAR_PROXY_HOPS=0` to your compose file. Existing compose files keep the previous behaviour (one trusted proxy hop), which lets a client fake its address and protocol when nothing strips those headers.
+- **Reverse-proxy installations:** nothing changes unless you adopt the updated `docker/docker-compose.yml`. It now sets `OPENHANGAR_TRUSTED_HOSTS` to `OPENHANGAR_HOSTNAME`, `localhost` and `127.0.0.1`; add any other hostname or IP you use, or those requests get HTTP 400. See `docs/configuration.md`.
 
 **Documents**
 - Pilot documents work like an aircraft's certificates: **Replace** on your medical certificate or licence uploads the next one, and the old one stays on file, marked superseded — still viewable and downloadable. Pilot documents also take a "Valid from" date.
@@ -19,10 +25,10 @@
 **Security**
 - Offline pages and saved changes are isolated by account. Signing out or changing accounts retires private page caches; pending changes remain with their original account and require an explicit review/resume after a new login. Private online navigation verifies access with the server before falling back to its cache.
 - Authentication challenges now expire and can be used only once. Login and authenticator enrolment state stays on the server, including first-run setup, so saved browser cookies cannot replay a completed enrolment.
-- Logins are now revocable: logout ends that browser session, and password recovery, password/authenticator changes, deactivation and membership removal invalidate older logins. Your acting browser stays signed in after changing its own credentials. Upgrading requires a fresh login for existing browser sessions.
+- Logins are now revocable: logout ends that browser session, and password recovery, password/authenticator changes, deactivation and membership removal invalidate older logins. Your acting browser stays signed in after changing its own credentials.
 - CSV downloads protect user-entered text from being interpreted as spreadsheet formulas, while keeping monetary amounts numeric.
 - Share pages and aircraft photos recheck authorization on revisits, so revoked links and removed aircraft access are respected by browser HTTP caches. Previously saved copies remain outside the application’s control.
-- Direct installations can ignore forwarded headers; proxied installations can select trusted proxy hops and permitted hostnames. Readiness checks also verify the original loopback peer.
+- Forwarded client addresses are trusted only as far as configured: `OPENHANGAR_PROXY_HOPS` sets the number of trusted proxies (`0` for direct access), and `OPENHANGAR_TRUSTED_HOSTS` limits the hostnames used for invite, password-reset and share links. The internal readiness check accepts only genuine local requests.
 
 **Reservations and billing**
 - Booking settings, dispatch counters and rental charges reject invalid, non-finite, negative (where prohibited) and out-of-range numbers without saving changes. Charge totals use decimal arithmetic with ties rounded to even cents; signed adjustments remain supported.
