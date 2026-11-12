@@ -18,49 +18,49 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: app/init.py:92
+#: app/init.py:98
 msgid "First flight of Concorde — André Turcat at the controls, Toulouse (1969)"
 msgstr "Eerste vlucht van de Concorde — André Turcat aan de besturing, Toulouse (1969)"
 
-#: app/init.py:98
+#: app/init.py:104
 msgid "Charles Lindbergh lands at Le Bourget — first solo transatlantic flight (1927)"
 msgstr "Charles Lindbergh landt op Le Bourget — eerste solo transatlantische vlucht (1927)"
 
-#: app/init.py:105
+#: app/init.py:111
 msgid "Louis Blériot crosses the English Channel — first crossing by airplane (1909)"
 msgstr "Louis Blériot steekt het Kanaal over — eerste oversteek per vliegtuig (1909)"
 
-#: app/init.py:112
+#: app/init.py:118
 msgid "Pilâtre de Rozier & d'Arlandes — first manned free balloon flight, Paris (1783)"
 msgstr "Pilâtre de Rozier en d'Arlandes — eerste bemande vrije ballonvlucht, Parijs (1783)"
 
-#: app/init.py:118
+#: app/init.py:124
 msgid "First flight: 17 Dec 1903 — 12 seconds, 37 metres. (Wright Brothers)"
 msgstr "Eerste vlucht: 17 december 1903 — 12 seconden, 37 meter. (gebroeders Wright)"
 
-#: app/init.py:175
+#: app/init.py:181
 #, python-format
 msgid "🎉 Today marks one year since your first solo flight!"
 msgid_plural "🎉 Today marks %(n)s years since your first solo flight!"
 msgstr[0] "🎉 Het is vandaag één jaar geleden dat u uw eerste solovlucht maakte!"
 msgstr[1] "🎉 Het is vandaag %(n)s jaar geleden dat u uw eerste solovlucht maakte!"
 
-#: app/init.py:182
+#: app/init.py:188
 msgid "🎉 Today is the anniversary of your first solo flight!"
 msgstr "🎉 Vandaag is het de verjaardag van uw eerste solovlucht!"
 
-#: app/init.py:188
+#: app/init.py:194
 #, python-format
 msgid "🎉 Today marks one year since you earned your PPL!"
 msgid_plural "🎉 Today marks %(n)s years since you earned your PPL!"
 msgstr[0] "🎉 Het is vandaag één jaar geleden dat u uw PPL behaalde!"
 msgstr[1] "🎉 Het is vandaag %(n)s jaar geleden dat u uw PPL behaalde!"
 
-#: app/init.py:194
+#: app/init.py:200
 msgid "🎉 Today is the anniversary of your PPL!"
 msgstr "🎉 Vandaag is het de verjaardag van uw PPL!"
 
-#: app/init.py:1140
+#: app/init.py:1154
 #, python-format
 msgid "This upload is too large (maximum %(mb)s MB in total). Please upload the files in smaller batches."
 msgstr "Deze upload is te groot (maximaal %(mb)s MB in totaal). Upload de bestanden in kleinere delen."
@@ -486,7 +486,7 @@ msgid_plural "%(n)s photos uploaded."
 msgstr[0] "één foto geüpload."
 msgstr[1] "%(n)s foto's geüpload."
 
-#: app/aircraft/routes.py:3655
+#: app/aircraft/routes.py:3656
 msgid "Photo deleted."
 msgstr "Foto verwijderd."
 
@@ -2790,7 +2790,7 @@ msgstr "De minimale reserveringsduur moet positief zijn."
 msgid "Maximum booking duration must be positive."
 msgstr "De maximale reserveringsduur moet positief zijn."
 
-#: app/reservations/routes.py:963 app/reservations/routes.py:1679
+#: app/reservations/routes.py:963 app/reservations/routes.py:1682
 msgid "Invalid hourly rate."
 msgstr "Ongeldig uurtarief."
 
@@ -2931,41 +2931,44 @@ msgstr "De motorteller bij terugkeer mag niet lager zijn dan de waarde bij uitch
 msgid "Flight counter on return cannot be less than the check-out value."
 msgstr "De vluchtteller bij terugkeer mag niet lager zijn dan de waarde bij uitchecken."
 
-#: app/reservations/routes.py:1604 app/reservations/routes.py:1677
-#: app/reservations/routes.py:1689
-msgid "Invalid billable hours."
-msgstr "Ongeldige factureerbare uren."
+#: app/reservations/routes.py:1605 app/reservations/routes.py:1693
+msgid "The rental charge is out of range. Check the values entered."
+msgstr "Het huurbedrag valt buiten het toegestane bereik. Controleer de ingevoerde waarden."
 
-#: app/reservations/routes.py:1613
+#: app/reservations/routes.py:1616
 msgid "Checked in."
 msgstr "Ingecheckt."
 
-#: app/reservations/routes.py:1645
+#: app/reservations/routes.py:1648
 msgid "This charge has already been finalized."
 msgstr "Deze factuur is al gefinaliseerd."
 
-#: app/reservations/routes.py:1681
+#: app/reservations/routes.py:1680
+msgid "Invalid billable hours."
+msgstr "Ongeldige factureerbare uren."
+
+#: app/reservations/routes.py:1684
 msgid "Invalid fuel credit."
 msgstr "Ongeldig brandstofkrediet."
 
-#: app/reservations/routes.py:1683
+#: app/reservations/routes.py:1686
 msgid "Invalid adjustment."
 msgstr "Ongeldige aanpassing."
 
-#: app/reservations/routes.py:1685
+#: app/reservations/routes.py:1688
 msgid "An adjustment requires a note explaining it."
 msgstr "Een aanpassing vereist een toelichtende notitie."
 
-#: app/reservations/routes.py:1727
+#: app/reservations/routes.py:1732
 #, python-format
 msgid "Rental charge — reservation #%(id)s"
 msgstr "Huurfactuur — reservering nr. %(id)s"
 
-#: app/reservations/routes.py:1734
+#: app/reservations/routes.py:1739
 msgid "Rental charge finalized."
 msgstr "Huurfactuur gefinaliseerd."
 
-#: app/reservations/routes.py:1737
+#: app/reservations/routes.py:1742
 msgid "Draft saved."
 msgstr "Concept opgeslagen."
 
