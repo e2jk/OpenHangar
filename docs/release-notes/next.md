@@ -17,23 +17,19 @@
 - The dashboard and pilot profile no longer load the whole logbook to work out landing recency — only the last 6 months, plus one summary query — and the dashboard's flight-tracks map loads its tracks in one query instead of one per flight (about a third faster on a 170-flight logbook).
 
 **Security**
+- Offline pages and saved changes are isolated by account. Signing out or changing accounts retires private page caches; pending changes remain with their original account and require an explicit review/resume after a new login. Private online navigation verifies access with the server before falling back to its cache.
 - Authentication challenges now expire and can be used only once. Login and authenticator enrolment state stays on the server, including first-run setup, so saved browser cookies cannot replay a completed enrolment.
 - Logins are now revocable: logout ends that browser session, and password recovery, password/authenticator changes, deactivation and membership removal invalidate older logins. Your acting browser stays signed in after changing its own credentials. Upgrading requires a fresh login for existing browser sessions.
-
 - CSV downloads protect user-entered text from being interpreted as spreadsheet formulas, while keeping monetary amounts numeric.
-
 - Share pages and aircraft photos recheck authorization on revisits, so revoked links and removed aircraft access are respected by browser HTTP caches. Previously saved copies remain outside the application’s control.
-
 - Direct installations can ignore forwarded headers; proxied installations can select trusted proxy hops and permitted hostnames. Readiness checks also verify the original loopback peer.
 
 **Reservations and billing**
 - Booking settings, dispatch counters and rental charges reject invalid, non-finite, negative (where prohibited) and out-of-range numbers without saving changes. Charge totals use decimal arithmetic with ties rounded to even cents; signed adjustments remain supported.
+- Competing booking, downtime and dispatch changes now wait for each other per aircraft. Overlapping confirmations cannot both succeed, and repeated checkout/checkin requests return a useful message instead of a database error. Adjacent bookings and authorized overrides remain supported.
 
 **Maintenance**
 - Translation files regenerated with the i18n script: strings added by hand now carry their source references (their absence made the nightly Weblate scan's Code Scanning upload fail), and four strings no longer used are dropped.
 - Contributor docs: new strings now always go through `scripts/update_i18n.sh`; the shortcut of adding a few `.po` entries by hand is retired.
-
-- Competing booking, downtime and dispatch changes now wait for each other per aircraft. Overlapping confirmations cannot both succeed, and repeated checkout/checkin requests return a useful message instead of a database error. Adjacent bookings and authorized overrides remain supported.
-
 - The nightly Weblate translation scan uses weblate-checks-action v1.1.1: a flagged string with no source location no longer makes GitHub reject the whole upload.
 - Dutch: a past revision of the personal minimums is now labelled "Verouderd" instead of "Vervangen", the label of the documents' **Replace** button.

@@ -328,6 +328,23 @@
         var queue = results[1];
         var pilotOutbox = results[2];
         listEl.innerHTML = '';
+        var quarantined = outbox.concat(queue, pilotOutbox).filter(function (record) {
+          return !window.OhOffline.currentRecord(record);
+        });
+        if (quarantined.length) {
+          var notice = el('div', { className: 'alert alert-warning', text: i18n.previousLoginPaused || '' });
+          var resume = el('button', { className: 'btn btn-ac-primary btn-sm d-block mt-2', text: i18n.resumeSavedChanges || '' });
+          resume.type = 'button';
+          resume.addEventListener('click', function () {
+            window.OhOffline.resumeQuarantined().then(function () {
+              document.dispatchEvent(new CustomEvent('oh-offline-resumed'));
+              return window.OhOffline.flush();
+            }).then(render);
+          });
+          notice.appendChild(resume);
+          listEl.appendChild(notice);
+        }
+
         if (!outbox.length && !queue.length && !pilotOutbox.length) {
           listEl.appendChild(el('p', { className: 'text-muted text-center py-4', text: i18n.noChangesPending || '' }));
           return;

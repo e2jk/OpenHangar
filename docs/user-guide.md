@@ -401,3 +401,23 @@ OpenHangar is available in English, French, and Dutch. If you'd like to help
 translate it into another language, or improve an existing translation, visit
 [hosted.weblate.org](https://hosted.weblate.org/engage/openhangar/) — no technical knowledge or
 Git access required, just a free Weblate account.
+
+### Offline data on a shared browser
+
+Private cached pages and snapshots belong to one account and login. Signing out,
+switching accounts or observing an expired/revoked login retires that login's page
+cache; another account cannot view or upload its pending work through OpenHangar.
+Online private navigation checks the server before using an offline page fallback.
+An offline device cannot discover a server-side permission change until it reconnects.
+
+Unsynced changes stay in storage for their original account. After signing back in,
+open **Offline changes**, review the paused records and choose **Resume saved changes
+for this account** to allow them to sync. You can discard individual records there.
+Do not clear browser site data until your pending work has been recovered.
+
+Unassigned records created before account-scoped storage was introduced remain
+quarantined in the legacy IndexedDB database. OpenHangar does not guess their owner
+or import them into the next account that signs in. An administrator can arrange
+manual recovery on the original trusted device; do not share an export containing
+another pilot's records. Offline storage remains local device data, not an encrypted
+vault against somebody with access to the browser profile or developer tools.

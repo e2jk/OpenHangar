@@ -512,6 +512,36 @@ def create_app() -> Flask:
             return redirect(url_for("auth.login"))
         return None
 
+    from services.offline_identity import OWNER_HEADER, SESSION_HEADER, identity
+
+    app.jinja_env.globals["offline_identity"] = identity
+
+    @app.before_request
+    def _check_offline_identity() -> ResponseReturnValue | None:
+        if (OWNER_HEADER in request.headers or SESSION_HEADER in request.headers) and (
+            request.headers.get(OWNER_HEADER),
+            request.headers.get(SESSION_HEADER),
+        ) != identity():
+            return {"status": "auth"}, 409
+        return None
+
+    @app.after_request
+    def _offline_identity_headers(response: Any) -> Any:
+        owner, login = identity()
+        response.headers[OWNER_HEADER] = owner
+        response.headers[SESSION_HEADER] = login
+        if (
+            request.headers.get("HX-Request") == "true"
+            and SESSION_HEADER in request.headers
+            and request.headers[SESSION_HEADER] != login
+            and response.status_code in (301, 302, 303, 307, 308)
+        ):
+            # Credential changes renew the cookie. A 302 XHR would forward the
+            # retired assertion headers to its GET; HTMX must navigate afresh.
+            response.headers["HX-Redirect"] = response.headers["Location"]
+            response.status_code = 200
+        return response
+
     Babel(app, locale_selector=_get_locale)
     # No independent expiry: some nav pages are cached client-side (sw.js
     # SWR_ROUTES) for offline/instant-navigation support, so a token embedded
