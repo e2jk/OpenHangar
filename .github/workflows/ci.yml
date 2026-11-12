@@ -1198,6 +1198,17 @@ jobs:
           fi
           echo "E2E environment ready."
 
+      - name: Copy vendor assets from the app image
+        # A few browser tests start their own in-process app from this checkout
+        # (tests/e2e/test_offline_account_isolation.py, with service workers
+        # enabled). app/static/vendor/ is gitignored, so without this every
+        # vendor file 404s there and the service worker's precache install
+        # fails. Take the exact files built into the image under test.
+        run: |
+          mkdir -p app/static/vendor
+          docker cp "$E2E_WEB:/app/static/vendor/." app/static/vendor/
+          ls app/static/vendor
+
       - name: Generate E2E route inventory and seed data
         # generate_routes.py connects to the app's PostgreSQL (exposed on localhost:5432)
         # and writes routes.json (all resolvable URLs) and seed.json (resource IDs).

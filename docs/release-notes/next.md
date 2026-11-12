@@ -35,7 +35,7 @@
 - Competing booking, downtime and dispatch changes now wait for each other per aircraft. Overlapping confirmations cannot both succeed, and repeated checkout/checkin requests return a useful message instead of a database error. Adjacent bookings and authorized overrides remain supported.
 
 **Maintenance**
-- The browser test suite runs on a single Playwright instance, so tests that need their own service-worker-enabled browser can run alongside the rest.
+- The browser test suite runs on a single Playwright instance, and CI gives tests that start their own app server the image's frontend assets, so service-worker tests run alongside the rest.
 - The test wrapper accepts explicit `--targeted` selections without overwriting full-suite coverage reports; unrecognized full-run arguments now fail clearly instead of being ignored.
 - Translation files regenerated with the i18n script: strings added by hand now carry their source references (their absence made the nightly Weblate scan's Code Scanning upload fail), and four strings no longer used are dropped.
 - Contributor docs: new strings now always go through `scripts/update_i18n.sh`; the shortcut of adding a few `.po` entries by hand is retired.
