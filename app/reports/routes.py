@@ -14,6 +14,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 from models import Aircraft, TenantUser, db  # pyright: ignore[reportMissingImports]
+from services.csv_export import safe_csv_text
 from utils import (  # pyright: ignore[reportMissingImports]
     login_required,
     user_can_access_aircraft,
@@ -111,7 +112,7 @@ def utilization_report_csv(aircraft_id: int) -> ResponseReturnValue:
     writer = csv.writer(buf)
     period_start_str = period_start.isoformat() if period_start else _("all time")
     period_label = f"{period_start_str} {_('to')} {period_end.isoformat()}"
-    writer.writerow([_("Aircraft"), ac.registration])
+    writer.writerow([_("Aircraft"), safe_csv_text(ac.registration)])
     writer.writerow([_("Period"), period_label])
     writer.writerow([_("Export date"), today.isoformat()])
     writer.writerow([])

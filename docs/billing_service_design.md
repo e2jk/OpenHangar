@@ -235,3 +235,18 @@ Validation rules enforced in `post()`:
   "two requests race" test).
 - Tenant isolation: user A cannot fetch user B's account or statement;
   accounts of tenant 1 invisible to tenant 2's owner.
+
+## CSV text-cell safety
+
+All four statement download routes use `BillingService.statement_csv`; the fifth
+CSV download is the aircraft utilization report. Both writers apply
+`services.csv_export.safe_csv_text` to user-controlled text cells (exporter and
+account-holder names, ledger descriptions, and aircraft registrations). Formula
+prefixes `=`, `+`, `-`, `@` and their full-width variants are detected after leading
+whitespace, control and format characters; leading tab/CR/LF is protected as well.
+A leading apostrophe is added without changing the original text, while `csv.writer`
+continues to quote delimiters, double quotes and embedded newlines. This escaping
+is export-only: stored data is unchanged, and amount/balance cells retain their
+original numeric signs and precision. CSV consumers reading raw text will see the
+added apostrophe; downstream reformatting or re-saving can change how spreadsheet
+software interprets the file.
