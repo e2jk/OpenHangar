@@ -28,7 +28,11 @@
         <div class="col-md-4">
           <label class="form-label" for="medical_expiry">{{ _('Medical Expiry') }}</label>
           <input type="date" class="form-control" id="medical_expiry" name="medical_expiry"
-                 value="{{ profile.medical_expiry.isoformat() if profile.medical_expiry else '' }}">
+                 value="{{ profile.medical_expiry.isoformat() if profile.medical_expiry else '' }}"
+                 {% if medical_from_documents %}readonly aria-describedby="medical_expiry_help"{% endif %}>
+          {% if medical_from_documents %}
+          <div class="form-text" id="medical_expiry_help">{{ _('Set from your medical certificate in Documents below — upload the next one there to change it.') }}</div>
+          {% endif %}
         </div>
         <div class="col-md-4">
           <label class="form-label" for="sep_expiry">{{ _('SEP Expiry') }}</label>
@@ -187,8 +191,31 @@
               {% elif doc.doc_type == 'medical' %}
                 <span class="badge bg-primary ms-1">{{ _('Medical') }}</span>
               {% endif %}
+              {% set _state = doc_states.get(doc.id) %}
+              {% if _state == 'active' %}
+                <span class="badge bg-success-subtle text-success-emphasis ms-1">{{ _('Document currently active') }}</span>
+              {% elif _state == 'upcoming' %}
+                <span class="badge bg-info-subtle text-info-emphasis ms-1">{{ _('Document upcoming') }}</span>
+              {% elif _state == 'superseded' %}
+                <span class="badge bg-secondary-subtle text-secondary-emphasis ms-1">{{ _('Document superseded') }}</span>
+              {% endif %}
+              {# "Expires soon" only for the one in force, and only when no
+                 renewal on file already covers the gap (covered_until runs
+                 through it); a document without a lifecycle type keeps its
+                 own date. #}
+              {% if _state %}
+                {% set _cov = covered_until.get(doc.doc_type) if _state == 'active' else none %}
+                {% set _warn = _cov is not none and (_cov - today).days <= 90 %}
+              {% else %}
+                {% set _warn = doc.is_expiring_soon %}
+              {% endif %}
+              {% if doc.valid_from and _state == 'upcoming' %}
+                <span class="badge bg-body-secondary text-body border ms-1 oh-fs-075">
+                  {{ _('Valid from %(date)s', date=doc.valid_from.strftime('%Y-%m-%d')) }}
+                </span>
+              {% endif %}
               {% if doc.valid_until %}
-                {% if doc.is_expiring_soon %}
+                {% if _warn %}
                   <span class="badge bg-warning text-dark ms-1">
                     <i class="bi bi-exclamation-triangle me-1"></i>{{ _('Expires %(date)s', date=doc.valid_until.strftime('%Y-%m-%d')) }}
                   </span>
@@ -219,6 +246,12 @@
               <a href="{{ url_for('flights.serve_upload', filename=doc.filename) }}"
                  class="btn btn-ac-secondary btn-xs" download>
                 <i class="bi bi-download me-1"></i>{{ _('Download') }}
+              </a>
+              {% endif %}
+              {% if _state == 'active' %}
+              <a href="{{ url_for('documents.upload_pilot_document', replace=doc.id) }}"
+                 class="btn btn-ac-secondary btn-xs" title="{{ _('Upload the document that replaces this one') }}">
+                <i class="bi bi-arrow-repeat me-1"></i>{{ _('Replace') }}
               </a>
               {% endif %}
               <form method="post"

@@ -12940,3 +12940,24 @@ msgstr "Controles uitvoeren"
 
 msgid "Every flight with a GPS track was checked again."
 msgstr "Elke vlucht met een GPS-spoor is opnieuw gecontroleerd."
+
+msgid "Replacing %(name)s."
+msgstr "%(name)s wordt vervangen."
+
+msgid "It stays on file, marked as superseded once the new document is in force: right away, or on its 'Valid from' date if that is later."
+msgstr "Het blijft bewaard en wordt als vervangen gemarkeerd zodra het nieuwe document geldt: meteen, of op de datum 'Geldig vanaf' als die later valt."
+
+msgid "Only needed if this document shouldn't count as in force yet — e.g. a renewal that starts when the current one ends."
+msgstr "Alleen nodig als dit document nog niet mag gelden — bijvoorbeeld een verlenging die begint wanneer het huidige afloopt."
+
+msgid "Upload the document that replaces this one"
+msgstr "Het document uploaden dat dit vervangt"
+
+msgid "Replace"
+msgstr "Vervangen"
+
+msgid "Set from your medical certificate in Documents below — upload the next one there to change it."
+msgstr "Overgenomen van je medisch certificaat bij Documenten hieronder — upload daar het volgende om dit te wijzigen."
+
+msgid "Valid from %(date)s"
+msgstr "Geldig vanaf %(date)s"

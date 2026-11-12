@@ -6,7 +6,7 @@ import os
 import re as _re
 import uuid
 import zipfile
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from datetime import date as _date
 
 from flask import (  # pyright: ignore[reportMissingImports]
@@ -38,6 +38,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     TenantUser,
     db,
 )
+from services import document_lifecycle as lifecycle  # pyright: ignore[reportMissingImports]
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
     is_app_managed,
 )
@@ -99,10 +100,7 @@ _DOCS_DEFAULT_PER_PAGE = 20
 # are synced caches, not directly user-editable — see the comment on those
 # columns in models.py. Kept in step by _recompute_expiry_field() below
 # whenever a Document of one of these types is uploaded, edited, or deleted.
-_EXPIRY_DRIVING_DOC_TYPES: dict[str, str] = {
-    DocType.INSURANCE_CERT: "insurance_expiry",
-    DocType.ARC: "arc_expiry",
-}
+_EXPIRY_DRIVING_DOC_TYPES: dict[str, str] = lifecycle.AIRCRAFT_FIELDS
 
 # Human-readable labels for each DocCategory value
 _CATEGORY_LABELS: dict[str, str] = {
@@ -152,32 +150,13 @@ def active_document_for(
     component_id: int | None = None,
     as_of: _date | None = None,
 ) -> Document | None:
-    """The document of this (aircraft, doc_type[, component]) that is in
-    force as of `as_of` (default today): valid_from is None (meaning "in
-    force as soon as uploaded") or has already arrived. Among those, the
-    one with the latest valid_from wins; ties -- including the common
-    valid_from=None case -- break on uploaded_at, so behaviour for
-    documents that never set valid_from is unchanged from before this
-    concept existed. Deliberately ignores superseded_by_id: that's a
-    structural "replaced by" pointer set at upload time, not a statement
-    about which document is in force today."""
-    as_of = as_of or _date.today()
-    # Ordering (not a Python-side max()) so the comparison stays in SQL --
-    # a freshly-flushed-but-uncommitted Document's tz-aware uploaded_at can
-    # otherwise be compared against an already-committed sibling's
-    # SQLite-naive one and raise. NULL valid_from sorts last (lowest
-    # priority, same as treating it as `date.min`).
-    result: Document | None = (
-        Document.query.filter(
-            Document.aircraft_id == aircraft_id,
-            Document.doc_type == doc_type,
-            Document.component_id == component_id,
-            db.or_(Document.valid_from.is_(None), Document.valid_from <= as_of),
-        )
-        .order_by(Document.valid_from.desc().nullslast(), Document.uploaded_at.desc())
-        .first()
+    """The aircraft's (or component's) document of that type in force on
+    *as_of* — see services.document_lifecycle.active for the rules."""
+    return lifecycle.active(
+        lifecycle.Owner(aircraft_id=aircraft_id, component_id=component_id),
+        doc_type,
+        as_of,
     )
-    return result
 
 
 def effective_coverage_until(
@@ -186,67 +165,21 @@ def effective_coverage_until(
     component_id: int | None = None,
     as_of: _date | None = None,
 ) -> _date | None:
-    """How far into the future coverage is unbroken, following a chain of
-    documents whose valid_from picks up on or the day after the previous
-    one's valid_until (no gap) -- e.g. next quarter's insurance cert
-    uploaded a month ahead of the current one's expiry. None if nothing is
-    currently active (active_document_for finds no document in force);
-    otherwise at least the active document's own valid_until.
-
-    Deliberately independent of the single-hop upcoming_*_cert query in
-    aircraft/routes.py, which only looks one step ahead and doesn't check
-    for a gap (it's a display hint: "here's the next thing on file",
-    correct even when there IS a gap). This instead walks as many chained
-    documents as exist and stops the moment a real gap appears -- a real
-    gap still means genuine expiry risk between the two documents and must
-    still be reported as such.
-    """
-    as_of = as_of or _date.today()
-    active = active_document_for(aircraft_id, doc_type, component_id, as_of=as_of)
-    if active is None or active.valid_until is None:
-        return None
-
-    frontier: _date = active.valid_until
-    while True:
-        # frontier only ever advances to a candidate's own valid_until, and
-        # every candidate here must have valid_until > frontier -- so a
-        # document picked in a prior iteration can never qualify again
-        # (its valid_until now equals frontier, not exceeds it). No
-        # "already visited" bookkeeping needed to avoid a repeat/infinite
-        # loop.
-        candidates = Document.query.filter(
-            Document.aircraft_id == aircraft_id,
-            Document.doc_type == doc_type,
-            Document.component_id == component_id,
-            Document.valid_from > as_of,
-            Document.valid_from <= frontier + timedelta(days=1),
-            Document.valid_until.isnot(None),
-            Document.valid_until > frontier,
-        ).all()
-        nxt: Document | None = None
-        for c in candidates:
-            if nxt is None or c.valid_until > nxt.valid_until:
-                nxt = c
-        if nxt is None:
-            return frontier
-        frontier = nxt.valid_until
+    """How far the aircraft's coverage of that type runs without a gap,
+    through renewals already on file — services.document_lifecycle."""
+    return lifecycle.coverage_until(
+        lifecycle.Owner(aircraft_id=aircraft_id, component_id=component_id),
+        doc_type,
+        as_of,
+    )
 
 
 def _recompute_expiry_field(ac: Aircraft, doc_type: str | None) -> None:
-    """Keep Aircraft.insurance_expiry/arc_expiry in step with whichever
-    Document of that doc_type is currently active (see
-    active_document_for). Called after any create/edit/delete that could
-    change which document is active, and once daily (see
-    services.notification_service._recompute_all_expiry_fields) so a
-    future-dated document activates on its valid_from even without a new
-    edit that day — safe to call for any doc_type, a no-op for ones that
-    don't drive an Aircraft field."""
-    field = _EXPIRY_DRIVING_DOC_TYPES.get(doc_type or "")
-    if not field:
-        return
-    assert doc_type is not None  # implied by `field` being truthy above
-    active = active_document_for(ac.id, doc_type, component_id=None)
-    setattr(ac, field, active.valid_until if active else None)
+    """After any create/edit/delete that could change which certificate is
+    in force (and daily): mark superseded ones, and sync
+    Aircraft.insurance_expiry/arc_expiry — services.document_lifecycle.
+    A no-op for a type without a lifecycle."""
+    lifecycle.refresh(lifecycle.Owner(aircraft_id=ac.id), doc_type)
 
 
 def _parse_date_field(raw: str) -> _date | None:
@@ -571,6 +504,20 @@ def list_documents(aircraft_id: int) -> ResponseReturnValue:
 def upload_document(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     component = _resolve_component(ac)
+    # "Replace" on the documents list: the certificate being replaced, to
+    # preselect its type and category and say what happens to it.
+    replacing = None
+    replace_id = request.values.get("replace", type=int)
+    if replace_id:
+        candidate = db.session.get(Document, replace_id)
+        if candidate is not None and candidate.aircraft_id == ac.id:
+            replacing = candidate
+    prefill = {
+        "replacing": replacing,
+        "selected_type": request.values.get("doc_type")
+        or (replacing.doc_type if replacing else ""),
+        "selected_category": replacing.category if replacing else "",
+    }
 
     if request.method == "POST":
         file = request.files.get("file")
@@ -592,6 +539,7 @@ def upload_document(aircraft_id: int) -> ResponseReturnValue:
                 component=component,
                 doc_types=_AIRCRAFT_DOC_TYPES,
                 categories=list(_CATEGORY_LABELS.items()),
+                **prefill,
             )
 
         if not file or not file.filename:
@@ -638,20 +586,10 @@ def upload_document(aircraft_id: int) -> ResponseReturnValue:
         if doc.doc_type is None and category == DocCategory.INSURANCE and not component:
             doc.doc_type = DocType.INSURANCE_CERT
 
-        # A new insurance/ARC document becomes the active certificate for its
-        # type — supersede whichever one was active before it, then recompute
-        # the aircraft's synced insurance_expiry/arc_expiry from what's now
-        # active (see _recompute_expiry_field).
-        if doc.doc_type in _EXPIRY_DRIVING_DOC_TYPES and not component:
-            db.session.flush()
-            prev_cert = Document.query.filter(
-                Document.aircraft_id == ac.id,
-                Document.doc_type == doc.doc_type,
-                Document.superseded_by_id.is_(None),
-                Document.id != doc.id,
-            ).first()
-            if prev_cert:
-                prev_cert.superseded_by_id = doc.id
+        # An insurance/ARC document: work out again which one is in force
+        # (it may supersede the current one now, or — starting later — only
+        # on its valid_from) and sync the aircraft's expiry date.
+        if not component:
             _recompute_expiry_field(ac, doc.doc_type)
 
         db.session.commit()
@@ -671,6 +609,7 @@ def upload_document(aircraft_id: int) -> ResponseReturnValue:
         component=component,
         doc_types=_AIRCRAFT_DOC_TYPES,
         categories=list(_CATEGORY_LABELS.items()),
+        **prefill,
     )
 
 
@@ -769,10 +708,8 @@ def delete_document(aircraft_id: int, document_id: int) -> ResponseReturnValue:
     db.session.delete(doc)
     db.session.commit()
 
-    # If the deleted document drove an Aircraft expiry field, recompute it —
-    # deleting the active cert reactivates whatever it had superseded (its
-    # own superseded_by_id is cleared by the FK's ON DELETE SET NULL) or
-    # clears the field if nothing is left.
+    # Deleting the certificate in force puts the one it had superseded back
+    # in force (or clears the aircraft's date when nothing is left).
     if doc_type in _EXPIRY_DRIVING_DOC_TYPES:
         _recompute_expiry_field(ac, doc_type)
         db.session.commit()
@@ -857,13 +794,6 @@ def _upload_expiry_cert(
     tenant = _get_tenant()
     stored, mime, size = _save_upload_canonical(file, tenant, ac, category, title)
 
-    prev = Document.query.filter_by(
-        aircraft_id=ac.id,
-        doc_type=doc_type,
-        superseded_by_id=None,
-        component_id=None,
-    ).first()
-
     new_cert = Document(
         aircraft_id=ac.id,
         filename=stored,
@@ -878,11 +808,6 @@ def _upload_expiry_cert(
         is_sensitive=True,
     )
     db.session.add(new_cert)
-    db.session.flush()
-
-    if prev:
-        prev.superseded_by_id = new_cert.id
-
     _recompute_expiry_field(ac, doc_type)
     db.session.commit()
     flash(_("Certificate uploaded."), "success")
@@ -924,24 +849,40 @@ def upload_arc_cert(aircraft_id: int) -> ResponseReturnValue:
 @login_required
 def upload_pilot_document() -> ResponseReturnValue:
     uid = int(session["user_id"])
+    owner = lifecycle.Owner(pilot_user_id=uid)
+    # "Replace" on the profile's documents list: the document being
+    # replaced, to preselect its type and say what happens to it.
+    replacing = None
+    replace_id = request.values.get("replace", type=int)
+    if replace_id:
+        candidate = db.session.get(Document, replace_id)
+        if candidate is not None and candidate.pilot_user_id == uid:
+            replacing = candidate
+
+    def _form(status: int = 200) -> ResponseReturnValue:
+        return (
+            render_template(
+                "documents/pilot_upload_form.html",
+                doc_types=_PILOT_DOC_TYPES,
+                replacing=replacing,
+                selected_type=request.values.get("doc_type")
+                or (replacing.doc_type if replacing else ""),
+            ),
+            status,
+        )
 
     if request.method == "POST":
         file = request.files.get("file")
         title = request.form.get("title", "").strip() or None
         doc_type = request.form.get("doc_type") or None
-        valid_until_str = request.form.get("valid_until", "").strip()
-        valid_until = None
-        if valid_until_str:
-            try:
-                valid_until = _date.fromisoformat(valid_until_str)
-            except ValueError as exc:
-                log.debug("Invalid valid_until date: %s", exc)
+        if doc_type not in dict(_PILOT_DOC_TYPES):
+            doc_type = None
+        valid_from = _parse_date_field(request.form.get("valid_from", ""))
+        valid_until = _parse_date_field(request.form.get("valid_until", ""))
 
         if not file or not file.filename:
             flash(_("Please select a file to upload."), "danger")
-            return render_template(
-                "documents/pilot_upload_form.html", doc_types=_PILOT_DOC_TYPES
-            )
+            return _form()
 
         original = secure_filename(file.filename)
         ext = os.path.splitext(original)[1].lower()
@@ -949,9 +890,10 @@ def upload_pilot_document() -> ResponseReturnValue:
             flash(
                 _("File type '%(ext)s' is not allowed.", ext=ext or "unknown"), "danger"
             )
-            return render_template(
-                "documents/pilot_upload_form.html", doc_types=_PILOT_DOC_TYPES
-            )
+            return _form()
+        if valid_from and valid_until and valid_from > valid_until:
+            flash(_("'Valid from' must not be after 'Valid until'."), "danger")
+            return _form()
 
         stored, mime, size = _save_upload(file, f"pilot{uid}")
 
@@ -963,18 +905,21 @@ def upload_pilot_document() -> ResponseReturnValue:
             size_bytes=size,
             title=title,
             doc_type=doc_type,
+            valid_from=valid_from,
             valid_until=valid_until,
             is_sensitive=True,
         )
         db.session.add(doc)
+        # A medical/licence: work out again which one is in force (this one
+        # may supersede the current one now, or only on its valid_from) and
+        # sync the profile's medical expiry.
+        lifecycle.refresh(owner, doc_type)
         db.session.commit()
 
         flash(_("Document uploaded."), "success")
         return redirect(url_for("pilots.profile"))
 
-    return render_template(
-        "documents/pilot_upload_form.html", doc_types=_PILOT_DOC_TYPES
-    )
+    return _form()
 
 
 # ── Pilot document delete ─────────────────────────────────────────────────────
@@ -987,8 +932,11 @@ def delete_pilot_document(document_id: int) -> ResponseReturnValue:
     doc = db.session.get(Document, document_id)
     if not doc or doc.pilot_user_id != uid:
         abort(404)
+    doc_type = doc.doc_type
     _delete_file(doc.filename)
     db.session.delete(doc)
+    # Deleting the one in force puts the one it had superseded back in force.
+    lifecycle.refresh(lifecycle.Owner(pilot_user_id=uid), doc_type)
     db.session.commit()
     flash(_("Document deleted."), "success")
     return redirect(url_for("pilots.profile"))

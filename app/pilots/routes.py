@@ -50,6 +50,7 @@ from flights.shared_flight import (  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     CrewRole,
+    DocType,
     Document,
     Flight,
     FstdType,
@@ -68,6 +69,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     TenantUser,
     db,
 )
+from services import document_lifecycle as lc  # pyright: ignore[reportMissingImports]
 from services.gps_archive import (  # pyright: ignore[reportMissingImports]
     resolve_pilot_archive_name,
     sources_for_window,
@@ -213,12 +215,15 @@ def profile() -> ResponseReturnValue:
 
         p.license_number = request.form.get("license_number", "").strip() or None
 
-        medical_str = request.form.get("medical_expiry", "")
-        medical, err = _parse_date(medical_str, "Medical expiry")
-        if err:
-            errors.append(err)
-        else:
-            p.medical_expiry = medical
+        # Once a medical certificate is uploaded, its document drives the
+        # date (services.document_lifecycle) and the field is read-only.
+        if not _medical_from_documents(uid):
+            medical_str = request.form.get("medical_expiry", "")
+            medical, err = _parse_date(medical_str, "Medical expiry")
+            if err:
+                errors.append(err)
+            else:
+                p.medical_expiry = medical
 
         sep_str = request.form.get("sep_expiry", "")
         sep, err = _parse_date(sep_str, "SEP expiry")
@@ -246,7 +251,11 @@ def profile() -> ResponseReturnValue:
                 flash(e, "danger")
             return (
                 render_template(
-                    "pilots/profile.html", profile=p, pilot_docs=[], currency=None
+                    "pilots/profile.html",
+                    profile=p,
+                    pilot_docs=[],
+                    currency=None,
+                    **_pilot_doc_context(uid),
                 ),
                 422,
             )
@@ -268,8 +277,40 @@ def profile() -> ResponseReturnValue:
         .all()
     )
     return render_template(
-        "pilots/profile.html", profile=p, pilot_docs=pilot_docs, currency=currency
+        "pilots/profile.html",
+        profile=p,
+        pilot_docs=pilot_docs,
+        currency=currency,
+        **_pilot_doc_context(uid),
     )
+
+
+def _medical_from_documents(uid: int) -> bool:
+    """A medical certificate document drives the profile's medical expiry:
+    one in force with an expiry date (the one document_lifecycle.refresh
+    copies). Otherwise — none uploaded, only a renewal not started yet, or
+    one without a date — the field stays the pilot's to fill in."""
+    current = lc.active(lc.Owner(pilot_user_id=uid), DocType.MEDICAL)
+    return current is not None and current.valid_until is not None
+
+
+def _pilot_doc_context(uid: int) -> dict[str, Any]:
+    """For the profile's documents list: each medical/licence document's
+    state (in force, upcoming, superseded), and how far each type is
+    covered through renewals on file — the "expires soon" badge only shows
+    on the one in force, and not while a renewal already covers the gap."""
+    owner = lc.Owner(pilot_user_id=uid)
+    doc_states: dict[int, str] = {}
+    covered_until: dict[str, Any] = {}
+    for doc_type in lc.PILOT_FIELDS:
+        doc_states.update(lc.states(owner, doc_type))
+        covered_until[doc_type] = lc.coverage_until(owner, doc_type)
+    return {
+        "doc_states": doc_states,
+        "covered_until": covered_until,
+        "medical_from_documents": _medical_from_documents(uid),
+        "today": _date.today(),
+    }
 
 
 _VALID_PER_PAGE = (10, 20, 50, 100)

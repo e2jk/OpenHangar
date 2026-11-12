@@ -1,14 +1,9 @@
-# Simulator sessions keep their data and stay out of flight totals
+# Certificates: replace, keep the old one, and no warning with a renewal
 
-**Pilot logbook**
-- Marking a logbook entry as an FSTD/simulator session no longer wipes its aircraft, route and start/end times: they are kept as the simulator device (make and model, plus an optional identifier such as the school's "registration"), the simulated route and the session times. Only landings and single/multi-pilot flight time are dropped, as they can't apply to a simulator. Switching a session back to a flight keeps its times too.
-- An FSTD session left without a duration gets it from its start and end times. The device qualification (FFS, FNPT…) can be left empty for a simulator that isn't qualified.
-- Simulator sessions now count only towards the Sim total: their PIC, co-pilot, dual, instructor, night and instrument hours are no longer added to those logbook totals. They also no longer count as your last flight (or last instructor flight) for personal minimums' recency reminders.
-
-**Configuration**
-- Data tools has a new "Run data checks" tool: it checks every flight with a GPS track against it again and opens the Data checks page, which says so when there is nothing to review.
-
-**Maintenance**
-- `scripts/ship.sh` stops before pushing when `docs/release-notes/next.md` still holds notes that a recent release already published, so they aren't announced twice.
-- CI rides out network outages on GitHub's runners: the browser-test jobs no longer fail when Ubuntu's package mirrors are unreachable (as long as Chromium launches with what the runner already has), jobs that fail only while setting up are re-run once automatically a few minutes later, and `pip-audit` waits longer for pypi.org — locally too, where the pre-push hook retries it once on a network error.
-- The README credits everyone who contributed to OpenHangar — code, translations, documentation, accessibility and more — following the all-contributors specification (people only, no bots or AI tools). CI keeps the list current: it flags anyone who contributed through GitHub but isn't credited (a warning on pull requests — a first-time contributor's CI never fails over it — and a failure on pushes), and fails when the README table no longer matches the list.
+**Documents**
+- Pilot documents work like an aircraft's certificates: **Replace** on your medical certificate or licence uploads the next one, and the old one stays on file, marked superseded — still viewable and downloadable. Pilot documents also take a "Valid from" date.
+- Your medical certificate now drives the **Medical expiry** on your profile (read-only once a medical document is uploaded), and with it the "medical expiring" reminder.
+- The same rules for every certificate, aircraft or pilot: the one in force is the one that has started and is valid the longest, so uploading an older certificate for the record never displaces the current one. A renewal uploaded ahead of time stays "upcoming" — the current one remains in force until the renewal's start date, then is marked superseded on its own.
+- No "expiring soon" warning or reminder while a renewal already on file picks up from the day after: the dashboard, the fleet status, the grounded check, the medical status and reminder and the documents' own badges now all count coverage through it (the aircraft page and insurance/ARC emails already did). A real gap is still reported.
+- The aircraft documents list has a **Replace** button on the certificate in force, preselecting its type and category.
+- Superseded links are now kept up to date (daily, and on every upload, edit and delete): an insurance certificate whose renewal was uploaded ahead of time is marked superseded once the renewal starts.

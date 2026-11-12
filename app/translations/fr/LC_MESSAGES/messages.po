@@ -12940,3 +12940,24 @@ msgstr "Lancer les vérifications"
 
 msgid "Every flight with a GPS track was checked again."
 msgstr "Chaque vol ayant une trace GPS a été revérifié."
+
+msgid "Replacing %(name)s."
+msgstr "Remplacement de %(name)s."
+
+msgid "It stays on file, marked as superseded once the new document is in force: right away, or on its 'Valid from' date if that is later."
+msgstr "Il reste archivé, marqué comme remplacé dès que le nouveau document est en vigueur : immédiatement, ou à sa date « Valide à partir du » si elle est plus tardive."
+
+msgid "Only needed if this document shouldn't count as in force yet — e.g. a renewal that starts when the current one ends."
+msgstr "Utile uniquement si ce document ne doit pas encore être en vigueur — par exemple un renouvellement qui commence à la fin du document actuel."
+
+msgid "Upload the document that replaces this one"
+msgstr "Téléverser le document qui remplace celui-ci"
+
+msgid "Replace"
+msgstr "Remplacer"
+
+msgid "Set from your medical certificate in Documents below — upload the next one there to change it."
+msgstr "Repris de votre certificat médical dans les documents ci-dessous — téléversez-y le suivant pour la modifier."
+
+msgid "Valid from %(date)s"
+msgstr "Valable à partir du %(date)s"

@@ -251,6 +251,12 @@
             </a>
             {% endif %}
             {% if is_owner %}
+            {% if doc.id in active_doc_ids %}
+            <a href="{{ url_for('documents.upload_document', aircraft_id=aircraft.id, replace=doc.id) }}"
+               class="btn btn-ac-secondary btn-xs" title="{{ _('Upload the document that replaces this one') }}">
+              <i class="bi bi-arrow-repeat me-1"></i>{{ _('Replace') }}
+            </a>
+            {% endif %}
             <a href="{{ url_for('documents.edit_document', aircraft_id=aircraft.id, document_id=doc.id) }}"
                class="btn btn-ac-secondary btn-xs">
               <i class="bi bi-pencil"></i>

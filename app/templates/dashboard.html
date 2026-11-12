@@ -413,7 +413,7 @@
             {% if ac.insurance_expiry %}
             <dt class="col-5 text-muted fw-normal">{{ _('Insurance') }}</dt>
             <dd class="col-7 mb-0">
-                <span class="fw-semibold oh-text-navy">{{ ac.insurance_expiry.strftime('%Y-%m-%d') }}</span>
+                <span class="fw-semibold oh-text-navy">{{ ac.insurance_covered_until.strftime('%Y-%m-%d') }}</span>
                 {% if ac.insurance_status == 'expired' %}
                   <span class="ac-status-badge ac-status-overdue ms-1">{{ _('Expired') }}</span>
                 {% elif ac.insurance_status == 'expiring_soon' %}
@@ -424,7 +424,7 @@
             {% if ac.arc_expiry %}
             <dt class="col-5 text-muted fw-normal">{{ _('ARC') }}</dt>
             <dd class="col-7 mb-0">
-                <span class="fw-semibold oh-text-navy">{{ ac.arc_expiry.strftime('%Y-%m-%d') }}</span>
+                <span class="fw-semibold oh-text-navy">{{ ac.arc_covered_until.strftime('%Y-%m-%d') }}</span>
                 {% if ac.arc_status == 'expired' %}
                   <span class="ac-status-badge ac-status-overdue ms-1">{{ _('Expired') }}</span>
                 {% elif ac.arc_status == 'expiring_soon' %}
