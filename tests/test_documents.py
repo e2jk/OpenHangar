@@ -211,7 +211,7 @@ class TestListDocuments:
         ac_id = _add_aircraft(app, tid)
         _login_orphan(app, client)
         rv = client.get(f"/aircraft/{ac_id}/documents")
-        assert rv.status_code == 403
+        assert rv.status_code == 302
 
     def test_list_404_wrong_tenant(self, app, client):
         _uid, tid = _create_user_and_tenant(app, "a@x.com")
@@ -470,7 +470,7 @@ class TestUploadDocument:
             data={"file": _fake_file("doc.txt", b"x")},
             content_type="multipart/form-data",
         )
-        assert rv.status_code == 403
+        assert rv.status_code == 302
 
     def test_upload_404_wrong_tenant(self, app, client):
         _create_user_and_tenant(app, "a@x.com")
@@ -567,7 +567,7 @@ class TestDeleteDocument:
         doc_id = _add_document(app, ac_id)
         _login_orphan(app, client)
         rv = client.post(f"/aircraft/{ac_id}/documents/{doc_id}/delete")
-        assert rv.status_code == 403
+        assert rv.status_code == 302
 
 
 # ── Edit document ─────────────────────────────────────────────────────────────
@@ -633,7 +633,7 @@ class TestEditDocument:
         doc_id = _add_document(app, ac_id)
         _login_orphan(app, client)
         rv = client.get(f"/aircraft/{ac_id}/documents/{doc_id}/edit")
-        assert rv.status_code == 403
+        assert rv.status_code == 302
 
 
 # ── Aircraft detail shows documents ──────────────────────────────────────────

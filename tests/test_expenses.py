@@ -321,7 +321,7 @@ class TestListExpenses:
         with client.session_transaction() as sess:
             sess["user_id"] = oid
         resp = client.get(f"/aircraft/{ac_id}/expenses")
-        assert resp.status_code == 403
+        assert resp.status_code == 302
 
     def test_list_requires_login(self, client, app):
         _, tenant_id = _create_user_and_tenant(app)

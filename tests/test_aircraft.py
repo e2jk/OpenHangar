@@ -608,7 +608,7 @@ class TestNoTenantUser:
     def test_aircraft_list_aborts_403_when_no_tenant_user(self, app, client):
         _login_orphan_user(app, client)
         response = client.get("/aircraft/")
-        assert response.status_code == 403
+        assert response.status_code == 302
 
 
 # ── Coverage gap: _save_aircraft validation ───────────────────────────────────

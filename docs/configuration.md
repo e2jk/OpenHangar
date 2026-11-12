@@ -101,7 +101,9 @@ the database container's own secret — see the example referenced above.
 
 ### `OPENHANGAR_SESSION_LIFETIME_DAYS`
 
-How long a logged-in session remains valid, in days.
+How long a logged-in session remains valid, in days. This is an absolute maximum
+from login; ordinary activity does not extend the server-side login record. Logging
+out or changing account security can invalidate a login earlier.
 
 - **Default**: `30`
 - **Example**: `OPENHANGAR_SESSION_LIFETIME_DAYS=90`

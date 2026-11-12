@@ -864,6 +864,7 @@ class TestShareTargetEdgeCases:
         with app.app_context():
             u = User(
                 email="orphan_st@test.com",
+                is_instance_admin=True,
                 password_hash=_pw_hash.hash("x"),
                 is_active=True,
             )

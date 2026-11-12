@@ -17,17 +17,7 @@ Documented deviations (the plan's own "deviate only with a documented
 reason" rule) -- two places where the plan's text doesn't match current
 code:
 
-1. "an old session cookie is no longer authenticated" after a password
-   change does not happen in current code. There is no session-version
-   or token column on User, login_required only checks
-   session.get("user_id") is truthy, and _profile_change_password never
-   touches any other client's session -- Flask's signed cookie session
-   is stateless with no server-side revocation list. This test asserts
-   the real behaviour instead: a second client's pre-existing session
-   cookie *remains* authenticated after the first client changes its
-   password.
-
-2. There is no self-service "forgot password" route, and no email is
+There is no self-service "forgot password" route, and no email is
    ever sent for password resets (grepping the whole app/ tree: the only
    send_email call sites are the invite-email path and notification
    dispatch). The only place a PasswordResetToken is created is
@@ -203,8 +193,8 @@ def test_credential_lifecycle_with_csrf_enabled(app, client):
         return pyotp.TOTP(totp_secret).at(_time.time() + offset_seconds)
 
     # A second, independent client logs in as the owner too, *before* the
-    # password change below -- its session must still work afterwards
-    # (see module docstring, deviation 1).
+    # password change below -- its session must be revoked afterwards
+    # (credential changes revoke all previously-issued logins).
     other_session_client = app.test_client()
     _post(
         other_session_client,
@@ -264,12 +254,12 @@ def test_credential_lifecycle_with_csrf_enabled(app, client):
     )
     assert b"Invalid" in fail_resp.data
 
-    # Deviation 1: the OTHER client's session, established before the
-    # password change, is still authenticated -- current code has no
-    # session-invalidation-on-password-change mechanism (see docstring).
-    assert other_session_client.get("/profile").status_code == 200
+    # A credential change revokes the other client's already-issued login.
+    other_response = other_session_client.get("/profile")
+    assert other_response.status_code == 302
+    assert "/login" in other_response.location
 
-    # Instance-admin-generated reset link (deviation 2: not an emailed
+    # Instance-admin-generated reset link (not an emailed
     # self-service flow). is_instance_admin is a global flag with no UI
     # path to grant it -- a direct write is the only way to create one,
     # matching this suite's "things the UI cannot create" convention.

@@ -17,6 +17,7 @@
 
 **Security**
 - Authentication challenges now expire and can be used only once. Login and authenticator enrolment state stays on the server, including first-run setup, so saved browser cookies cannot replay a completed enrolment.
+- Logins are now revocable: logout ends that browser session, and password recovery, password/authenticator changes, deactivation and membership removal invalidate older logins. Your acting browser stays signed in after changing its own credentials. Upgrading requires a fresh login for existing browser sessions.
 
 **Maintenance**
 - Translation files regenerated with the i18n script: strings added by hand now carry their source references (their absence made the nightly Weblate scan's Code Scanning upload fail), and four strings no longer used are dropped.

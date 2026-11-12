@@ -23,7 +23,9 @@ SETUP_SECONDS = 1800
 
 def credential_binding(user: User) -> str:
     """Bind to current credentials without exposing their hashes in cookies."""
-    value = json.dumps([user.password_hash, user.totp_secret, user.is_active])
+    value = json.dumps(
+        [user.password_hash, user.totp_secret, user.is_active, user.auth_version]
+    )
     return hmac.new(
         str(current_app.config["SECRET_KEY"]).encode(), value.encode(), hashlib.sha256
     ).hexdigest()

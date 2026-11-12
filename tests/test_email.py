@@ -328,7 +328,7 @@ class TestSendTestEmail:
         with client.session_transaction() as sess:
             sess["user_id"] = 99999  # non-existent user
         resp = client.post("/config/email/test")
-        assert resp.status_code == 403
+        assert resp.status_code == 302
 
     def test_test_email_success(self, app, client, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")

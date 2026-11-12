@@ -364,7 +364,7 @@ class TestProfile:
             db.session.commit()
         response = client.get("/profile")
         assert response.status_code == 302
-        assert "/logout" in response.headers["Location"]
+        assert "/login" in response.headers["Location"]
 
     def test_profile_update_name_saves(self, app, client):
         """auth/routes.py:237,254-258 — action=update_name persists the display name."""

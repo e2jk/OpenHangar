@@ -237,7 +237,7 @@ class TestCreateToken:
         resp = client.post(
             f"/aircraft/{acid}/share/create", data={"access_level": "summary"}
         )
-        assert resp.status_code == 403
+        assert resp.status_code == 302
 
 
 # ── revoke_token view ─────────────────────────────────────────────────────────

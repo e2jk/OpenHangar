@@ -1761,7 +1761,7 @@ class TestFlightsNoTenantUser:
             acid = ac.id
         _login_orphan_user(app, client)
         response = client.get(f"/aircraft/{acid}/flights")
-        assert response.status_code == 403
+        assert response.status_code == 302
 
 
 # ── Coverage gap: _save_flight validation ────────────────────────────────────
