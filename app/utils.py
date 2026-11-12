@@ -1105,6 +1105,16 @@ def resolve_aircraft_type_icao(aircraft_type: str | None) -> str | None:
             if tail and tail[0].isdigit():
                 continue  # "C172RG" matching "C17" — tail "2RG" starts with digit
             return prefix_lookup[key]
+    # Word by word, for a "make model variant" text such as a managed
+    # aircraft's "ROBIN DR-401 155CDI" (Flight.display_aircraft_type): the
+    # manufacturer in front breaks the match above, and the engine variant
+    # after the model ("155CDI") trips its digit guard. A word matching a
+    # model name's first word exactly ("DR-401" → DR40) settles it. Only
+    # words with a digit, so a manufacturer or a common word can't match.
+    for word in norm.split():
+        key = word.replace("-", "")
+        if len(key) >= 4 and any(c.isdigit() for c in key) and key in prefix_lookup:
+            return prefix_lookup[key]
     return None
 
 

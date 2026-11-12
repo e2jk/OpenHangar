@@ -2118,6 +2118,22 @@ class TestLoadAircraftTypes:
 
 
 class TestResolveAircraftTypeIcao:
+    def test_make_model_variant_text(self, app):
+        """A managed aircraft's "make model" text — the manufacturer in
+        front, an engine variant after the model — still resolves; a
+        manufacturer or variant alone doesn't."""
+        from utils import (
+            resolve_aircraft_type_icao,  # pyright: ignore[reportMissingImports]
+        )
+
+        with app.app_context():
+            assert resolve_aircraft_type_icao("ROBIN DR-401 155CDI") == "DR40"
+            assert resolve_aircraft_type_icao("DR-401 155CDI") == "DR40"
+            assert resolve_aircraft_type_icao("Robin DR401") == "DR40"
+            assert resolve_aircraft_type_icao("Jodel DR-1050 Ambassadeur") == "DR10"
+            assert resolve_aircraft_type_icao("ROBIN") is None
+            assert resolve_aircraft_type_icao("155CDI") is None
+
     def test_exact_match(self, app):
         from utils import (
             resolve_aircraft_type_icao,  # pyright: ignore[reportMissingImports]

@@ -103,6 +103,10 @@ def per_type_currency(entries: Any, today: _date | None = None) -> dict[str, Any
     unresolved_count = 0
 
     for entry in entries:
+        # A simulator session is no landing on any aircraft type (its
+        # landings aren't kept): neither counted nor reported unresolved.
+        if getattr(entry, "entry_type", None) == "fstd":
+            continue
         icao: str | None = getattr(entry, "display_aircraft_type_icao", None) or None
         if not icao:
             icao = resolve_aircraft_type_icao(

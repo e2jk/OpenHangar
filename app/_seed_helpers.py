@@ -1722,8 +1722,8 @@ def seed_pilot_profiles(
     # Maps aircraft_type strings (as they appear in seed rows and GPS entries)
     # to ICAO type designators. PA-28-161 and PA-28-181 both map to P28A,
     # demonstrating that variants of the same family share one currency bucket.
-    # "Jodel DR-1050 Ambassadeur" is intentionally absent so the demo shows
-    # the "N entries have no ICAO type code" warning.
+    # "Jodel DR-1050 Ambassadeur" is absent: utils.resolve_aircraft_type_icao
+    # resolves it from the ICAO type data (Centre Est DR-1050 → DR10).
     _TYPE_TO_ICAO: dict[str, str] = {
         # Logbook row keys
         "PA-28-161 Warrior II": "P28A",
@@ -1735,7 +1735,7 @@ def seed_pilot_profiles(
         "Cessna 172S Skyhawk": "C172",
         "Piper PA-44-180 Seminole": "P44A",
         # "Robin DR-401/155CDI" already covered above (same string in both contexts)
-        # "Jodel DR-1050 Ambassadeur" intentionally absent → demos unresolved warning
+        # "Jodel DR-1050 Ambassadeur": resolved without an entry (see above)
     }
 
     rows = [
