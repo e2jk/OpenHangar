@@ -49,7 +49,7 @@ Each person you then invite to your installation is assigned a **role** that con
 - **Mass & balance** — per-aircraft envelope configuration and loaded CG calculation with a visual envelope chart.
 - **Cost tracking** — expenses with receipt attachments, recurring fixed costs, and an operating-cost dashboard computing the true hourly (wet) rate.
 - **Document management** — attach PDFs and photos to aircraft, components, pilots, and logbook entries; inline viewer; sensitive-document controls hide files from renter/viewer roles; Syncthing-friendly on-disk layout.
-- **Share links** — passwordless read-only aircraft status pages with QR codes, for notice boards or your maintenance shop.
+- **Share links** — passwordless read-only aircraft status pages with QR codes, for notice boards or your maintenance shop. Revoking a link blocks subsequent page and photo requests. Shared pages and photos are not stored in the browser HTTP cache; revocation cannot erase copies a recipient has already downloaded or saved.
 - **Email notifications** — per-user preferences for maintenance, airworthiness, reservation, pilot-currency, and crew-confirmation alerts.
 - **Progressive Web App** — installable on mobile; offline flight logging with automatic sync when connectivity returns.
 - **Security** — role-based access with per-aircraft permissions, optional TOTP 2FA, and encrypted AES-256-GCM backups with built-in scheduling and retention (see [backup & restore guide](backup_restore.md)).

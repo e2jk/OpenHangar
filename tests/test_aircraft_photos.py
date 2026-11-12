@@ -4,6 +4,7 @@ from io import BytesIO
 from pathlib import Path
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
+import pytest
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AircraftPhoto,
@@ -627,3 +628,37 @@ class TestPhotoFolderHelper:
             assert result == "/uploads/my-hangar/OO-AB/photos"
         finally:
             app.config["UPLOAD_FOLDER"] = original
+
+
+@pytest.mark.parametrize("variant", ["img", "thumb"])
+def test_private_photo_rechecks_authentication_and_grants(app, client, variant):
+    from models import UserAircraftAccess
+
+    uid, tid = _make_user_tenant(app, "private@x.com", "private-hangar")
+    acid = _add_aircraft(app, tid, "OO-PR")
+    photo_id = _add_photo(app, acid, "private-hangar", "OO-PR")
+    with app.app_context():
+        membership = TenantUser.query.filter_by(user_id=uid).one()
+        membership.role = Role.PILOT
+        db.session.add(UserAircraftAccess(user_id=uid, aircraft_id=acid))
+        db.session.commit()
+    _login(app, client, "private@x.com")
+    url = f"/aircraft/{acid}/photos/{photo_id}/{variant}"
+    first = client.get(url)
+    assert first.status_code == 200
+    assert first.headers["Cache-Control"] == "no-store, private"
+    assert "Expires" not in first.headers
+    etag = first.headers["ETag"]
+    valid = client.get(url, headers={"If-None-Match": etag})
+    assert valid.status_code == 304
+    assert valid.headers["Cache-Control"] == "no-store, private"
+    with app.app_context():
+        UserAircraftAccess.query.filter_by(user_id=uid, aircraft_id=acid).delete()
+        db.session.commit()
+    denied = client.get(url, headers={"If-None-Match": etag})
+    assert denied.status_code == 404
+    assert "ETag" not in denied.headers
+    client.get("/logout")
+    anonymous = client.get(url, headers={"If-None-Match": etag})
+    assert anonymous.status_code == 302
+    assert "/login" in anonymous.location
