@@ -430,7 +430,6 @@ def create_app() -> Flask:
     attach_to_logger()
 
     app = Flask(__name__)
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)  # type: ignore[method-assign]
 
     # Propagate OPENHANGAR_ENV → FLASK_ENV so Flask's own internals keep working.
     os.environ["FLASK_ENV"] = os.environ.get("OPENHANGAR_ENV", "production")
@@ -1636,15 +1635,28 @@ def create_app() -> Flask:
     @app.route("/health/ready")
     def health_ready() -> ResponseReturnValue:
         # Readiness probe: confirms the database is reachable. Reserved for the
-        # in-container Docker healthcheck (curl localhost:5000); public callers
-        # arrive via Traefik with a non-loopback remote_addr (ProxyFix x_for=1),
-        # so they get a 404 and the endpoint stays hidden and unabusable. The
-        # check itself is a single cheap "SELECT 1".
+        # in-container Docker healthcheck. Check the original socket peer as
+        # well as the effective address, and never accept a forwarded probe:
+        # forwarded client addresses must not grant loopback-only access.
         from flask import abort as _abort
         from sqlalchemy import text as _text
         from sqlalchemy.exc import SQLAlchemyError
 
-        if request.remote_addr not in ("127.0.0.1", "::1"):
+        peer = request.environ.get("werkzeug.proxy_fix.orig", {}).get(
+            "REMOTE_ADDR", request.remote_addr
+        )
+        forwarded = any(
+            name in request.headers
+            for name in (
+                "Forwarded",
+                "X-Forwarded-For",
+                "X-Forwarded-Host",
+                "X-Forwarded-Proto",
+                "X-Forwarded-Port",
+                "X-Forwarded-Prefix",
+            )
+        )
+        if peer not in ("127.0.0.1", "::1") or forwarded:
             _abort(404)
         try:
             db.session.execute(_text("SELECT 1"))
@@ -1973,6 +1985,11 @@ def create_app() -> Flask:
         print("OPENHANGAR_SW_ENABLED: service worker active in debug mode", flush=True)
 
     _validate_config(app)
+    hops = app.config["PROXY_HOPS"]
+    if hops:
+        app.wsgi_app = ProxyFix(  # type: ignore[method-assign]
+            app.wsgi_app, x_for=hops, x_proto=hops, x_host=hops
+        )
     return app
 
 
@@ -1994,6 +2011,30 @@ def _validate_config(app: Flask) -> None:
         errors.append(
             f"OPENHANGAR_ENV must be one of: production, development, test, demo "
             f"(got {_raw_env!r})"
+        )
+
+    # Retain one trusted proxy by default for existing Traefik installations.
+    raw_hops = os.environ.get("OPENHANGAR_PROXY_HOPS", "1").strip()
+    proxy_hops = 0
+    try:
+        proxy_hops = int(raw_hops)
+        if proxy_hops < 0:
+            raise ValueError
+    except ValueError:
+        errors.append(
+            "OPENHANGAR_PROXY_HOPS must be a non-negative integer (0 for direct access)"
+        )
+
+    raw_hosts = os.environ.get("OPENHANGAR_TRUSTED_HOSTS", "").strip()
+    trusted_hosts = (
+        [host.strip() for host in raw_hosts.split(",")] if raw_hosts else None
+    )
+    if trusted_hosts and any(
+        not host or any(c.isspace() or c in "/\\@*?#" for c in host)
+        for host in trusted_hosts
+    ):
+        errors.append(
+            "OPENHANGAR_TRUSTED_HOSTS must be a comma-separated host list, without URLs or wildcards (use a leading dot for subdomains)"
         )
 
     # OPENHANGAR_MAX_UPLOAD_BYTES: must be a plain positive integer when set
@@ -2192,6 +2233,8 @@ def _validate_config(app: Flask) -> None:
             f"Configuration errors — fix before starting:\n{bullet_list}"
         )
 
+    app.config["PROXY_HOPS"] = proxy_hops
+    app.config["TRUSTED_HOSTS"] = trusted_hosts
     if _validated_max is not None:
         app.config["MAX_CONTENT_LENGTH"] = _validated_max
 

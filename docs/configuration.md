@@ -20,6 +20,8 @@ documented inline in [`docker/.env.example`](../docker/.env.example).
 | [`OPENHANGAR_SECRET_KEY`](#openhangar_secret_key) | Yes | — | [Core](#core) |
 | [`OPENHANGAR_ENV`](#openhangar_env) | No | `production` | [Core](#core) |
 | [`OPENHANGAR_SW_ENABLED`](#openhangar_sw_enabled) | No | `false` (in dev) | [Core](#core) |
+| [`OPENHANGAR_PROXY_HOPS`](#openhangar_proxy_hops) | No | `1` | [Core](#core) |
+| [`OPENHANGAR_TRUSTED_HOSTS`](#openhangar_trusted_hosts) | No | *(unrestricted)* | [Core](#core) |
 | [`OPENHANGAR_RATELIMIT_ENABLED`](#openhangar_ratelimit_enabled) | No | `true` | [Core](#core) |
 | [`OPENHANGAR_SESSION_LIFETIME_DAYS`](#openhangar_session_lifetime_days) | No | `30` | [Core](#core) |
 | [`OPENHANGAR_SESSION_COOKIE_SECURE`](#openhangar_session_cookie_secure) | No | `true` | [Core](#core) |
@@ -180,6 +182,46 @@ per-minute default applied to every route).
   browser-driven end-to-end test suite that re-navigates the same
   HTMX-prefetched routes across dozens of test cases. Never disable on an
   internet-facing production instance.
+
+### `OPENHANGAR_PROXY_HOPS`
+
+Number of trusted forwarding values, counted from the right, in each of
+`X-Forwarded-For`, `X-Forwarded-Proto` and `X-Forwarded-Host`.
+
+- **Allowed values**: non-negative integer; `0` disables forwarding-header trust.
+- **Default**: `1`, retaining existing single-Traefik deployment behavior.
+- **Direct access**: set `0` for a published application port or a LAN/Pi deployment
+  without a reverse proxy. Forwarding headers then cannot change caller identity,
+  protocol or generated URLs.
+- **Proxy access**: only the trusted proxy may reach the application port. Keep
+  that port off public/LAN interfaces; the reference Traefik compose uses internal
+  Docker networks and does not publish it. The proxy must discard untrusted incoming
+  forwarding headers and write/normalize the header values itself. Hop counting
+  does not authenticate the proxy or make a directly exposed application safe.
+- **Several proxies**: use a count matching the actual trusted values in all three
+  headers. Normalize those headers at the final trusted boundary if their chains
+  differ; do not increase this value to accommodate untrusted incoming values.
+- `Forwarded`, `X-Forwarded-Port` and `X-Forwarded-Prefix` are not trusted by this
+  setting. The loopback-only readiness probe rejects forwarded requests.
+
+### `OPENHANGAR_TRUSTED_HOSTS`
+
+Comma-separated accepted request hostnames/IP addresses, passed to Flask's
+`TRUSTED_HOSTS`. This constrains the origin used for request-generated invite,
+password-reset and share URLs as well as ordinary requests.
+
+- **Default**: unset or blank, retaining unrestricted hosts for existing custom
+  deployments. Set an explicit list for production.
+- **Example**: `hangar.example.com,localhost,127.0.0.1`.
+- Hostnames are exact matches; a leading dot (`.example.com`) explicitly allows
+  that domain and its subdomains. Ports are not an authorization boundary in
+  Flask's host matching. Do not use URL schemes, paths or `*` wildcards.
+- Behind a trusted proxy this checks the effective forwarded host; direct mode
+  checks the original `Host` header. Untrusted hosts return HTTP 400 before a
+  route can generate a link. This is separate from proxy hop configuration.
+- Include `localhost` (and `127.0.0.1` if used) so in-container healthchecks work.
+  The standard Traefik compose sets this list from `OPENHANGAR_HOSTNAME` plus those
+  loopback hosts. On a Pi include every actual LAN hostname/IP used by devices.
 
 ### `OPENHANGAR_INSTANCE_URL`
 

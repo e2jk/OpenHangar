@@ -24,6 +24,8 @@
 
 - Share pages and aircraft photos recheck authorization on revisits, so revoked links and removed aircraft access are respected by browser HTTP caches. Previously saved copies remain outside the application’s control.
 
+- Direct installations can ignore forwarded headers; proxied installations can select trusted proxy hops and permitted hostnames. Readiness checks also verify the original loopback peer.
+
 **Reservations and billing**
 - Booking settings, dispatch counters and rental charges reject invalid, non-finite, negative (where prohibited) and out-of-range numbers without saving changes. Charge totals use decimal arithmetic with ties rounded to even cents; signed adjustments remain supported.
 

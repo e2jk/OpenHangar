@@ -385,3 +385,18 @@ This setup is accessible to devices on your local network only, which is
 fine for home or small-club use. Do **not** forward port 8087 on your
 router to the Pi without first adding HTTPS and additional hardening.
 See the [self-hosting guide](self-hosting.md) for details.
+
+### Forwarded headers and allowed hosts
+
+The direct LAN compose sets `OPENHANGAR_PROXY_HOPS=0`: client-supplied forwarding
+headers cannot impersonate another address or change generated links. Leave that
+setting in place while connecting directly to port 8087. If adding a reverse proxy,
+first make the application port reachable only through that trusted proxy, then
+configure its actual hop count as described in the
+[configuration reference](configuration.md#openhangar_proxy_hops).
+
+To restrict accepted hostnames, uncomment `OPENHANGAR_TRUSTED_HOSTS` in the compose
+file and include your Pi's actual LAN IP, every hostname your devices use, and
+`localhost,127.0.0.1` for healthchecks. For example:
+`openhangar.local,raspberrypi.local,192.168.1.50,localhost,127.0.0.1`.
+An omitted alias/IP returns HTTP 400; use your own IP in place of the example.
