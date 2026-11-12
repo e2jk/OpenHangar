@@ -488,12 +488,31 @@ class TestPerTypeCurrency:
             date=TODAY - timedelta(days=5),
             id=1,
             display_aircraft_type_icao=None,
-            display_aircraft_type="Jodel DR-1050 Ambassadeur",  # not in ICAO data
+            # Not in the ICAO type data. (Not "Jodel DR-1050 Ambassadeur",
+            # used here before: it is — Centre Est DR-1050, DR10 — and is
+            # resolved since words are matched one by one.)
+            display_aircraft_type="Homebuilt Skylark",
             landings_day=2,
             landings_night=None,
         )
         result = per_type_currency([entry], TODAY)
         assert result["unresolved_count"] == 1
+        assert result["by_type"] == {}
+
+    def test_simulator_sessions_are_skipped(self):
+        """An FSTD session lands on no aircraft type: neither counted under
+        its device's name nor reported as an unresolved type."""
+        entry = SimpleNamespace(
+            date=TODAY - timedelta(days=5),
+            id=1,
+            entry_type="fstd",
+            display_aircraft_type_icao=None,
+            display_aircraft_type="ALSIM AL-250",
+            landings_day=None,
+            landings_night=None,
+        )
+        result = per_type_currency([entry], TODAY)
+        assert result["unresolved_count"] == 0
         assert result["by_type"] == {}
 
     def test_night_currency_tracked_separately(self):
