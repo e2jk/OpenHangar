@@ -172,7 +172,12 @@ def test_credential_lifecycle_with_csrf_enabled(app, client):
     assert invitee.get("/").status_code == 200
 
     # Enable TOTP through the real profile flow; inspect its server-side challenge.
-    setup_resp = _post(client, "/profile", "/profile", {"action": "setup_totp"})
+    setup_resp = _post(
+        client,
+        "/profile",
+        "/profile",
+        {"action": "setup_totp", "current_password": _PASSWORD},
+    )
     totp_secret = challenge_payload(client, "profile_challenge")["secret"]
     confirm_resp = client.post(
         "/profile",

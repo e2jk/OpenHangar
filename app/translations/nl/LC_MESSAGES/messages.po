@@ -60,7 +60,7 @@ msgstr[1] "🎉 Het is vandaag %(n)s jaar geleden dat u uw PPL behaalde!"
 msgid "🎉 Today is the anniversary of your PPL!"
 msgstr "🎉 Vandaag is het de verjaardag van uw PPL!"
 
-#: app/init.py:1154
+#: app/init.py:1157
 #, python-format
 msgid "This upload is too large (maximum %(mb)s MB in total). Please upload the files in smaller batches."
 msgstr "Deze upload is te groot (maximaal %(mb)s MB in totaal). Upload de bestanden in kleinere delen."
@@ -590,7 +590,7 @@ msgstr "Ongeldig e-mailadres of wachtwoord."
 msgid "Your account has been deactivated. Contact the administrator."
 msgstr "Uw account is gedeactiveerd. Neem contact op met de beheerder."
 
-#: app/auth/routes.py:310 app/auth/routes.py:319
+#: app/auth/routes.py:310 app/auth/routes.py:319 app/auth/routes.py:934
 msgid "Invalid authenticator code."
 msgstr "Ongeldige authenticatiecode."
 
@@ -610,7 +610,7 @@ msgstr "Aanmaken van accounts is uitgeschakeld in demomodus."
 msgid "A valid email address is required."
 msgstr "Een geldig e-mailadres is verplicht."
 
-#: app/auth/routes.py:557 app/auth/routes.py:890 app/auth/routes.py:1004
+#: app/auth/routes.py:557 app/auth/routes.py:890 app/auth/routes.py:1044
 #: app/users/routes.py:251
 msgid "Password must be at least 12 characters."
 msgstr "Wachtwoord moet minimaal 12 tekens bevatten."
@@ -619,7 +619,7 @@ msgstr "Wachtwoord moet minimaal 12 tekens bevatten."
 msgid "Session expired. Please start over."
 msgstr "Sessie verlopen. Begin opnieuw."
 
-#: app/auth/routes.py:600 app/auth/routes.py:933
+#: app/auth/routes.py:600 app/auth/routes.py:973
 msgid "Invalid code. Please try again."
 msgstr "Ongeldige code. Probeer opnieuw."
 
@@ -651,11 +651,11 @@ msgstr "Registreer uw eerste vlucht"
 msgid "Display name updated."
 msgstr "Weergavenaam bijgewerkt."
 
-#: app/auth/routes.py:887 app/auth/routes.py:966
+#: app/auth/routes.py:887 app/auth/routes.py:930
 msgid "Current password is incorrect."
 msgstr "Huidig wachtwoord is onjuist."
 
-#: app/auth/routes.py:893 app/auth/routes.py:1007 app/users/routes.py:253
+#: app/auth/routes.py:893 app/auth/routes.py:1047 app/users/routes.py:253
 msgid "Passwords do not match."
 msgstr "Wachtwoorden komen niet overeen."
 
@@ -663,35 +663,35 @@ msgstr "Wachtwoorden komen niet overeen."
 msgid "Password updated successfully."
 msgstr "Wachtwoord succesvol bijgewerkt."
 
-#: app/auth/routes.py:927
+#: app/auth/routes.py:967
 msgid "Session expired. Please try again."
 msgstr "Sessie verlopen. Probeer het opnieuw."
 
-#: app/auth/routes.py:949
+#: app/auth/routes.py:991
 msgid "Two-factor authentication enabled."
 msgstr "Tweestapsverificatie ingeschakeld."
 
-#: app/auth/routes.py:958
+#: app/auth/routes.py:1000
 msgid "Your administrator requires two-factor authentication. It cannot be disabled on this account."
 msgstr "Uw beheerder vereist tweefactorauthenticatie. Deze kan niet worden uitgeschakeld op dit account."
 
-#: app/auth/routes.py:976
+#: app/auth/routes.py:1016
 msgid "Two-factor authentication disabled."
 msgstr "Tweestapsverificatie uitgeschakeld."
 
-#: app/auth/routes.py:989
+#: app/auth/routes.py:1029
 msgid "This reset link has already been used."
 msgstr "Deze herstelkoppeling is al gebruikt."
 
-#: app/auth/routes.py:994
+#: app/auth/routes.py:1034
 msgid "This reset link has expired. Ask the administrator for a new one."
 msgstr "Deze resetlink is verlopen. Vraag de beheerder om een nieuwe."
 
-#: app/auth/routes.py:1012
+#: app/auth/routes.py:1052
 msgid "User not found."
 msgstr "Gebruiker niet gevonden."
 
-#: app/auth/routes.py:1020
+#: app/auth/routes.py:1060
 msgid "Password reset successfully. You can now log in."
 msgstr "Wachtwoord succesvol opnieuw ingesteld. U kunt nu inloggen."
 
@@ -7009,7 +7009,8 @@ msgstr "Uw volledige naam"
 msgid "Change Password"
 msgstr "Wachtwoord wijzigen"
 
-#: app/templates/auth/profile.html:51
+#: app/templates/auth/profile.html:51 app/templates/auth/profile.html:106
+#: app/templates/auth/profile.html:125 app/templates/auth/profile.html:148
 msgid "Current password"
 msgstr "Huidig wachtwoord"
 
@@ -7050,23 +7051,31 @@ msgstr "2FA inschakelen"
 msgid "Two-factor authentication is enabled on your account."
 msgstr "Tweestapsverificatie is ingeschakeld op uw account."
 
-#: app/templates/auth/profile.html:103
+#: app/templates/auth/profile.html:102
+msgid "To replace your authenticator app or disable two-factor authentication, confirm with your password and a code from your current app. Lost access to it? Ask your administrator for a password reset link: it also removes two-factor authentication."
+msgstr "Om uw authenticatie-app te vervangen of tweestapsverificatie uit te schakelen, bevestigt u met uw wachtwoord en een code uit uw huidige app. Hebt u er geen toegang meer toe? Vraag uw beheerder om een koppeling om uw wachtwoord opnieuw in te stellen: die schakelt ook tweestapsverificatie uit."
+
+#: app/templates/auth/profile.html:111 app/templates/auth/profile.html:130
+msgid "Code from your current authenticator app"
+msgstr "Code uit uw huidige authenticatie-app"
+
+#: app/templates/auth/profile.html:117
+msgid "Replace authenticator"
+msgstr "Authenticatie-app vervangen"
+
+#: app/templates/auth/profile.html:122
 msgid "Disable two-factor authentication? Your account will be less secure."
 msgstr "Tweestapsverificatie uitschakelen? Uw account wordt minder veilig."
 
-#: app/templates/auth/profile.html:106
-msgid "Current password (to confirm)"
-msgstr "Huidig wachtwoord (ter bevestiging)"
-
-#: app/templates/auth/profile.html:110
+#: app/templates/auth/profile.html:136
 msgid "Disable 2FA"
 msgstr "2FA uitschakelen"
 
-#: app/templates/auth/profile.html:117
+#: app/templates/auth/profile.html:143
 msgid "Two-factor authentication is not enabled."
 msgstr "Tweestapsverificatie is niet ingeschakeld."
 
-#: app/templates/auth/profile.html:122
+#: app/templates/auth/profile.html:153
 msgid "Set up 2FA"
 msgstr "2FA instellen"
 

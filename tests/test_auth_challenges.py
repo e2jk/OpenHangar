@@ -172,7 +172,7 @@ def test_setup_secrets_stay_server_side_and_expire(app, client):
 def test_profile_challenge_cannot_be_replayed_or_used_for_login(app, client):
     uid, _ = make_user(app, required=False)
     begin(client)
-    client.post("/profile", data={"action": "setup_totp"})
+    client.post("/profile", data={"action": "setup_totp", "current_password": PASSWORD})
     payload = challenge_payload(client, "profile_challenge")
     cookie = saved_cookie(client)
     client.get(
@@ -225,7 +225,9 @@ def test_losing_a_consumption_race_never_authenticates_or_changes_credentials(
         )
         begin(client)
         if purpose == "profile-totp":
-            client.post("/profile", data={"action": "setup_totp"})
+            client.post(
+                "/profile", data={"action": "setup_totp", "current_password": PASSWORD}
+            )
             secret = challenge_payload(client, "profile_challenge")["secret"]
             url = "/profile"
             data = {"action": "confirm_totp", "totp_code": pyotp.TOTP(secret).now()}
