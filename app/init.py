@@ -930,10 +930,11 @@ def create_app() -> Flask:
 
     @app.context_processor
     def inject_globals() -> dict[str, Any]:
-        from models import DemoSlot, Role, TenantProfile, TenantUser, User
+        from models import DemoSlot, Role, TenantProfile, User
         from utils import (
             check_legacy_logbook_data,
             check_update_available,
+            current_membership,
             current_user_role,
         )
 
@@ -964,7 +965,7 @@ def create_app() -> Flask:
         _has_renter_account = False
         _nav_tenant_id: int | None = None
         if uid:
-            tu = TenantUser.query.filter_by(user_id=uid).first()
+            tu = current_membership()
             if tu:
                 _nav_tenant_id = tu.tenant_id
                 _tenant_profile = TenantProfile.query.filter_by(
@@ -1180,7 +1181,7 @@ def create_app() -> Flask:
 
     @app.route("/")
     def index() -> ResponseReturnValue:
-        from models import TenantUser, User
+        from models import User
         from services.track_overview import (  # pyright: ignore[reportMissingImports]
             in_flight_order,
             overview_geojson,
@@ -1202,9 +1203,13 @@ def create_app() -> Flask:
                 MaintenanceTrigger,
                 Snag,
             )
-            from utils import accessible_aircraft, compute_aircraft_statuses
+            from utils import (
+                accessible_aircraft,
+                compute_aircraft_statuses,
+                current_membership,
+            )
 
-            tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+            tu = current_membership()
             aircraft = accessible_aircraft(tu.tenant_id).all() if tu else []
             aircraft_ids = [ac.id for ac in aircraft]
             hobbs_by_aircraft = Aircraft.engine_hours_by_id(aircraft_ids)

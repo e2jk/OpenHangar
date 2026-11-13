@@ -33,7 +33,12 @@ from models import (
     UserInvitation,
     db,
 )
-from utils import activity, login_required, require_role
+from utils import (
+    activity,
+    current_membership,  # pyright: ignore[reportMissingImports]
+    login_required,
+    require_role,
+)
 
 users_bp = Blueprint("users", __name__, url_prefix="/config/users")
 _log = _logging.getLogger("openhangar.users")
@@ -64,7 +69,7 @@ ROLE_LABELS = {
 
 
 def _tenant_id() -> int:
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         # Unreachable: require_role refuses a user without a membership first (every caller).
         abort(403)  # pragma: no cover

@@ -22,11 +22,11 @@ from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImp
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     Flight,
-    TenantUser,
     db,
 )
 from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
+    current_membership,
     login_required,
     require_pilot_access,
     user_can_access_aircraft,
@@ -57,7 +57,7 @@ def api_login_required(f: Callable[..., Any]) -> Callable[..., Any]:
 
 
 def _tenant_id() -> int:
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         abort(403)
     return int(tu.tenant_id)

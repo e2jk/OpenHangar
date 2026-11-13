@@ -42,6 +42,7 @@ from models import (  # pyright: ignore[reportMissingImports]
 )
 from sqlalchemy import CursorResult, update  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
+    current_membership,
     login_required,
     require_role,
     user_can_access_aircraft,
@@ -94,7 +95,7 @@ def _safe_next(next_url: str, fallback: str) -> str:
 
 
 def _tenant_id() -> int:
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         # Unreachable: require_role refuses a user without a membership first (every caller).
         abort(403)  # pragma: no cover
@@ -312,7 +313,7 @@ def _build_calendar_grid(year: int, month: int):
 @login_required
 @require_role(*_OWNER_ROLES)
 def fleet_reservations():
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         # Unreachable: require_role refuses a user without a membership first.
         abort(403)  # pragma: no cover
@@ -677,7 +678,7 @@ def edit_reservation(aircraft_id: int, res_id: int):
     r = _get_reservation_or_404(ac, res_id)
 
     # Pilots may only edit their own pending reservations
-    role = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    role = current_membership()
     user_role = role.role if role else None
     is_owner_role = user_role in _OWNER_ROLES
     if not is_owner_role and (
@@ -716,7 +717,7 @@ def cancel_reservation(aircraft_id: int, res_id: int):
     ac = _get_aircraft_or_404(aircraft_id, for_update=request.method == "POST")
     r = _get_reservation_or_404(ac, res_id)
 
-    role = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    role = current_membership()
     user_role = role.role if role else None
     is_owner_role = user_role in _OWNER_ROLES
     if not is_owner_role and r.pilot_user_id != session["user_id"]:
@@ -745,7 +746,7 @@ def cancel_reservation(aircraft_id: int, res_id: int):
                 dispatch,  # pyright: ignore[reportMissingImports]
             )
 
-            tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+            tu = current_membership()
             if tu:
                 dispatch(
                     NotificationType.RESERVATION_CANCELLED,
@@ -859,7 +860,7 @@ def confirm_reservation(aircraft_id: int, res_id: int):
                 dispatch,  # pyright: ignore[reportMissingImports]
             )
 
-            tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+            tu = current_membership()
             if tu:
                 dispatch(
                     NotificationType.RESERVATION_CONFIRMED,
@@ -1179,7 +1180,7 @@ def _save_reservation(
                 dispatch,  # pyright: ignore[reportMissingImports]
             )
 
-            tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+            tu = current_membership()
             if tu:
                 details = [
                     (_l("Aircraft"), ac.registration),

@@ -90,6 +90,7 @@ from utils import (
     accessible_aircraft,
     activity,
     compute_aircraft_statuses,
+    current_membership,
     get_aircraft_type_engine_info,
     login_required,
     require_role,
@@ -120,7 +121,7 @@ _PILOT_ROLES = (Role.ADMIN, Role.OWNER, Role.PILOT)
 
 def _tenant_id() -> int:
     """Return the tenant ID for the currently logged-in user."""
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         abort(403)
     return int(tu.tenant_id)

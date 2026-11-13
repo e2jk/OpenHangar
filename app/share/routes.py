@@ -14,7 +14,6 @@ from flask import (
     redirect,
     render_template,
     request,
-    session,
     url_for,
 )  # pyright: ignore[reportMissingImports]
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
@@ -27,10 +26,13 @@ from models import (
     MaintenanceTrigger,
     Role,
     ShareToken,
-    TenantUser,
     db,
 )  # pyright: ignore[reportMissingImports]
-from utils import login_required, require_role  # pyright: ignore[reportMissingImports]
+from utils import (  # pyright: ignore[reportMissingImports]
+    current_membership,  # pyright: ignore[reportMissingImports]
+    login_required,
+    require_role,
+)
 
 share_bp = Blueprint("share", __name__)
 
@@ -63,7 +65,7 @@ def _get_aircraft_or_403(aircraft_id: int) -> Aircraft:
     """Fetch an aircraft belonging to the logged-in user's tenant, or 403."""
     from utils import login_required  # noqa: F401 — guard already applied by decorator
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         # Unreachable: require_role refuses a user without a membership first.
         abort(403)  # pragma: no cover

@@ -9,13 +9,13 @@ from flask import (  # pyright: ignore[reportMissingImports]
     abort,
     render_template,
     request,
-    session,
 )
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
-from models import Aircraft, TenantUser, db  # pyright: ignore[reportMissingImports]
+from models import Aircraft, db  # pyright: ignore[reportMissingImports]
 from services.csv_export import safe_csv_text
 from utils import (  # pyright: ignore[reportMissingImports]
+    current_membership,
     login_required,
     user_can_access_aircraft,
 )
@@ -31,7 +31,7 @@ reports_bp = Blueprint("reports", __name__)
 
 
 def _tenant_id() -> int:
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         abort(403)
     return int(tu.tenant_id)

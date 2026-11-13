@@ -34,6 +34,7 @@ from init import _env_or_file  # pyright: ignore[reportMissingImports]
 from models import AppSetting, BackupRecord, db  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
     activity,
+    current_membership,
     login_required,
     require_instance_admin,
     to_libpq_url,
@@ -340,7 +341,7 @@ def index() -> ResponseReturnValue:
     from sqlalchemy import func  # pyright: ignore[reportMissingImports]
     from users.routes import ROLE_LABELS  # pyright: ignore[reportMissingImports]
 
-    tu_self = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu_self = current_membership()
     tid = tu_self.tenant_id if tu_self else None
     user_counts = []
     open_invitations = 0
@@ -519,10 +520,9 @@ def update_tenant_slug() -> ResponseReturnValue:
         Document,
         PendingReconcile,
         Tenant,
-        TenantUser,
     )
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         abort(403)
     tenant = db.session.get(Tenant, tu.tenant_id)
@@ -630,10 +630,9 @@ def update_profile() -> ResponseReturnValue:
         OperatingModel,
         Tenant,
         TenantProfile,
-        TenantUser,
     )
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         abort(403)
 
@@ -1314,10 +1313,9 @@ def _get_renter_auth_or_404(tenant_id: int, auth_id: int) -> Any:
 def renters_list() -> ResponseReturnValue:
     from models import (  # pyright: ignore[reportMissingImports]
         RenterAuthorization,
-        TenantUser,
     )
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         abort(403)
 
@@ -1479,9 +1477,8 @@ def _save_renter_authorization(tenant_id: int, auth: Any | None) -> ResponseRetu
 @config_bp.route("/renters/add", methods=["GET", "POST"])
 @login_required
 def renter_add() -> ResponseReturnValue:
-    from models import TenantUser  # pyright: ignore[reportMissingImports]
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         abort(403)
 
@@ -1495,9 +1492,8 @@ def renter_add() -> ResponseReturnValue:
 @config_bp.route("/renters/<int:auth_id>/edit", methods=["GET", "POST"])
 @login_required
 def renter_edit(auth_id: int) -> ResponseReturnValue:
-    from models import TenantUser  # pyright: ignore[reportMissingImports]
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         abort(403)
     auth = _get_renter_auth_or_404(tu.tenant_id, auth_id)
@@ -1512,9 +1508,8 @@ def renter_edit(auth_id: int) -> ResponseReturnValue:
 @config_bp.route("/renters/<int:auth_id>/revoke", methods=["POST"])
 @login_required
 def renter_revoke(auth_id: int) -> ResponseReturnValue:
-    from models import TenantUser  # pyright: ignore[reportMissingImports]
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         abort(403)
     auth = _get_renter_auth_or_404(tu.tenant_id, auth_id)
@@ -1552,7 +1547,7 @@ def renter_account(user_id: int) -> ResponseReturnValue:
     )
     from services.billing import BillingService  # pyright: ignore[reportMissingImports]
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         abort(403)
     renter_tu = TenantUser.query.filter_by(
@@ -1591,7 +1586,7 @@ def renter_record_payment(user_id: int) -> ResponseReturnValue:
     )
     from services.billing import BillingService  # pyright: ignore[reportMissingImports]
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         abort(403)
     renter_tu = TenantUser.query.filter_by(
@@ -1658,7 +1653,7 @@ def renter_statement_csv(user_id: int) -> ResponseReturnValue:
     )
     from services.billing import BillingService  # pyright: ignore[reportMissingImports]
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         abort(403)
     renter_tu = TenantUser.query.filter_by(
@@ -1712,9 +1707,8 @@ def gatus_badge(badge_path: str) -> ResponseReturnValue:
 
 
 def _data_checks_tenant_id() -> int | None:
-    from models import TenantUser  # pyright: ignore[reportMissingImports]
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     return tu.tenant_id if tu else None
 
 

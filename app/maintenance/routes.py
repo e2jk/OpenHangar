@@ -39,7 +39,6 @@ from models import (
     MaintenanceTrigger,
     Role,
     Snag,
-    TenantUser,
     TriggerType,
     db,
 )  # pyright: ignore[reportMissingImports]
@@ -56,6 +55,7 @@ from utils import (
     accessible_aircraft,
     activity,
     compute_aircraft_statuses,
+    current_membership,
     login_required,
     require_maint_access,
     require_role,
@@ -81,7 +81,7 @@ _MAINT_ROLES = (Role.ADMIN, Role.OWNER, Role.MAINTENANCE)
 
 
 def _tenant_id() -> int:
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         abort(403)
     return int(tu.tenant_id)
