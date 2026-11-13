@@ -85,7 +85,7 @@ def test_invalid_logins_cannot_read_or_write_even_after_reactivation(app, change
         db.session.commit()
     response = replay(app, cookie).get("/pilot/logbook")
     assert response.status_code == 302
-    assert replay(app, cookie).get("/api/offline/csrf").status_code == 401
+    assert replay(app, cookie).get("/api/offline/identity").status_code == 401
     response = replay(app, cookie).post(
         "/profile", data={"action": "update_name", "name": "Unauthorized"}
     )

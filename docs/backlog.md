@@ -54,7 +54,7 @@ deleting them.
 **Status — phase 2 built (per-pilot edit boundary):** `Flight.created_by_user_id`
 records the logger; while linked, only they (plus tenant owners/admins on a
 managed aircraft) edit the shared fields, and every save path — flight form,
-standalone entry form, offline sync — restores the other linked pilot's
+standalone entry form — restores the other linked pilot's
 personal fields (name, role, function hours, new `pic_remarks` /
 `second_crew_remarks`). The other pilot edits those on *My part of this
 flight* (`flights.crew_entry`) and proposes changes to shared fields as a
@@ -92,116 +92,6 @@ is scheduled, but each is a plausible follow-up if a real need surfaces:
   export covers this instead).
 - Multi-currency (the shared billing ledger core is single-currency by
   design).
-
----
-
-## Offline editing: consolidate on the workbenches, add "new row"
-
-**Stale since the 2026-07-24 logbook-unification refactor** (`FlightEntry`/
-`FlightCrew`/`PilotLogbookEntry` → one `Flight` table) — re-verify the
-technical details below before starting. In particular: there's no more
-nested `pilot` sub-diff/`PILOT_FIELDS` in `offline_workbench.js` (EASA
-figures are now flat fields alongside everything else), no more
-`apply_linked_pilot_entry` or `create_pilot` toggle in `flights/routes.py`
-(replaced by `apply_pilot_identity` + `pilot_role`), and no more separate
-`PilotLogbookEntry` to create alongside a `FlightEntry` — a "linked" pilot
-entry is just the same `Flight` row with `pic_user_id`/`second_crew_user_id`
-set. The core problem this item describes (two offline-editing paths, one
-of them add-only via a blind resubmission queue) still exists; the specific
-mechanics of "case 1" below need re-deriving against the current single-row
-model, not implemented as written.
-
-Two independent offline-editing paths exist today for the same domain objects:
-the classic single-flight form (`/flights/new`, `/flights/<id>/edit`, and the
-standalone `/pilot/logbook/new`/`/pilot/logbook/<id>/edit`) queues a blind
-full-record resubmission via IndexedDB's `queue` store, while the aircraft and
-pilot **offline workbenches** (`/aircraft/<id>/logbook/offline`,
-`/pilot/logbook/offline`) use a proper snapshot + per-field diff/conflict-
-resolution model (`outbox`/`pilot_outbox`), but are edit-only — no "add a new
-flight" capability.
-
-The workbench model is the more capable one and already partially solves the
-hardest part of this: `offline_workbench.js` can render a nested `pilot` sub-
-diff inline on an aircraft-log row (`PILOT_FIELDS`, its own base/delta), and
-the backend's `sync_flight` route already applies both the `FlightEntry` and
-its linked `PilotLogbookEntry` atomically from one sync call
-(`apply_linked_pilot_entry` in `flights/routes.py`). Plan:
-
-1. **Add a repeatable "add new row" action to both workbenches** — a blank,
-   editable row that can be pressed multiple times to queue several new
-   flights before syncing.
-2. **Make the classic form offline-inert** for both add and edit (it stays the
-   ergonomic path for *online* use — autocomplete, GPS import, etc.). Concretely,
-   mirror the pattern `offline_form_guard.js` already applies to every other
-   non-offline-aware form on the site, rather than inventing a new mechanism:
-   - Fields stay fully enabled/editable — nothing is disabled or read-only.
-     The offline check only happens at submit time (`navigator.onLine` inside
-     the `submit` handler), not proactively on page load, so a connection
-     that returns before you hit Save isn't penalized.
-   - What's blocked is the submit itself: `e.preventDefault()`, then an inline
-     alert instead of the request going out. Unlike the generic sitewide
-     guard text, this one is form-specific and links to the actual workbench
-     to use instead — the aircraft workbench if a tracked aircraft is
-     selected in the form, the pilot workbench if "other aircraft"/none is.
-   - Whatever was typed is **not** preserved or queued anywhere — same as
-     every other guarded form today; the user re-enters it via the
-     workbench's new "add row".
-   - Mechanically: drop `data-oh-offline-aware` from `flight_form.html` and
-     the standalone `entry_form.html` so they stop opting out of the generic
-     guard, and delete the bespoke `pwa.js` queue machinery outright instead
-     of leaving it as dead code — the `_flightForm` submit intercept,
-     `_syncQueue`/`_syncEntry`/`_submitEntry`/`_showConflict`, and the
-     `queue` store's read side in `offline_changes.js`'s `renderQueueCard`.
-3. **Reuse the existing create endpoints for sync**, not the outbox's
-   delta-sync route (there's nothing to diff against for a brand-new record):
-   - `/flights/new` for aircraft-log rows (already creates the submitter's own
-     linked `PilotLogbookEntry` in the same transaction when pilot fields are
-     present — see `create_pilot` handling in `flights/routes.py`).
-   - `/pilot/logbook/new` for standalone pilot-log rows.
-   - Run the existing `/api/check-flight-duplicate` safety net before each
-     replay, same as the legacy queue already does (no `exclude_flight_id` —
-     these are genuinely new records).
-
-### The three cases a new row can represent
-
-1. **Tracked aircraft + you're also the pilot** — new row gets the same
-   inline pilot sub-diff the edit view already shows (night/instrument time,
-   landings, PIC name, time overrides); synced via `/flights/new` with
-   `create_pilot` on, which creates both records together.
-
-2. **Tracked aircraft only, no pilot entry of yours** — aircraft-fields-only
-   row; synced via `/flights/new` with `create_pilot` off. **On the "linked to
-   another pilot's logbook we can't see" discrepancy**: this isn't a new risk
-   the feature introduces — `edit_flight` already scopes the linked-entry
-   lookup to `pilot_user_id == uid` (`flights/routes.py`), so today, online,
-   editing a shared flight's times/route never touches a *different* crew
-   member's own linked entry; that pilot's derived fields only refresh the
-   next time they themselves touch that flight. The workbench must preserve
-   exactly this boundary — never query or write a `PilotLogbookEntry` that
-   isn't the current user's — rather than inventing new cross-pilot
-   propagation. Ordinary same-flight conflicts (someone else changed the
-   aircraft-log fields before you synced) are already covered by the existing
-   outbox base/diff mechanism; nothing extra needed there.
-
-3. **Standalone pilot-only entry** (rental/training, no fleet aircraft) — no
-   aircraft-side interaction at all; synced via `/pilot/logbook/new`. The
-   simplest case.
-
-Explicitly **out of scope** for this: linking an *existing*, already-created
-flight to your own pilot logbook for the first time while offline — the
-user-guide currently calls this out as one of the few things not available
-offline, and this plan doesn't change that (it only covers *newly created*
-rows, which are inherently linked from birth in case 1).
-
-### Documentation
-
-`docs/user-guide.md`'s "Working offline" section (~line 135) currently states
-outright that "creating ... logbook entries (aircraft or pilot)... require[s]
-a connection." That line — and the screenshots it references
-(`offline_workbench.png`, `offline_pilot_workbench.png`) — need updating once
-this ships, along with a line covering the classic form's new offline-inert
-message. Re-run `scripts/take_screenshots.py` for both workbench screenshots
-if the UI gains a visible "add row" control.
 
 ---
 
@@ -304,9 +194,6 @@ where `engine_time_counter_start` ≠ previous entry's `engine_time_counter_end`
 (or same for flight time counter). Surface these discrepancies on the aircraft
 detail page and in a dedicated admin view, requiring an explicit acknowledgement
 or correction before the logbook can be considered complete.
-
-Note: Phase 38 (Offline Logbook Editing) plans a client-side variant of this
-check in its offline workbench; this item remains the server-side/admin view.
 
 **Where to build it now:** the Data checks page (Configuration → Data
 checks, `services/data_checks.py`) exists since the flight ↔ GPS-track
@@ -526,9 +413,10 @@ architecture decision; outbound email (Phase 14) must be stable first.
 
 ## Native mobile app
 
-Phase 35 added a PWA with camera capture and offline queuing, which covers the
-main mobile use-cases (quick flight entry, Hobbs photo, offline ramp use) with
-no second codebase.
+Phase 35 added a PWA with camera capture, which covers the main mobile
+use-cases (quick flight entry, Hobbs photo) with no second codebase. Offline
+editing (Phases 35 and 38) was removed in November 2026; logbooks stay
+readable offline.
 
 A native app (React Native or Flutter) would only add meaningful value if two
 conditions are met:
@@ -536,12 +424,12 @@ conditions are met:
 1. **Background push notifications** — Phase 34 email notifications are the
    current channel; native push requires APNs/FCM integration and app store
    distribution, which is a significant ongoing maintenance burden.
-2. **Deep offline** — Phase 35 shipped the offline queue for new entries and
-   Phase 38 (Offline Logbook Editing) plans full offline browsing/editing of
-   the airframe logbook with conflict resolution; native SQLite would only
-   matter for scenarios beyond even that.
+2. **Offline editing** — removed from the PWA in November 2026 (only two
+   users, and the sync/conflict machinery was a large maintenance and
+   security surface); a native app would only be worth it if offline data
+   entry turns out to be needed after all.
 
-Prerequisite: Phases 35 and 38 (PWA + deep offline). Re-evaluate
+Prerequisite: Phase 35 (PWA). Re-evaluate
 after real-world usage reveals whether the PWA gaps are felt in practice.
 
 ---
@@ -936,9 +824,7 @@ projection as-is.
 ## Process: e2e suite de-flaking (fixture hardening)
 
 The e2e suite has a history of intermittent failures (see commits `0ff5f20`,
-`39422a0`, `bd780a2`, `8a86c87`, `c0460e9`). The flaky offline-logbook e2e
-suite was removed in `a3959d6` pending this work; tasks 1 and 2 below are
-prerequisites for reintroducing it (task 7). Tasks are ordered by value and
+`39422a0`, `bd780a2`, `8a86c87`, `c0460e9`). Tasks are ordered by value and
 are independently committable — one task per commit, and after each task run
 the full e2e suite three consecutive times locally
 (`bash scripts/run-tests-with-coverage.sh --e2e`) and confirm CI's
@@ -1155,16 +1041,6 @@ debugging. (A similar runner for `browser-tests-fresh-db`, i.e. a second
 disposable Postgres + the app in `OPENHANGAR_ENV=production`, would be a
 natural follow-up if empty-DB CI failures ever need local repro too.)
 
-### 7. Reintroduce the offline-logbook e2e suite
-
-After tasks 1 and 2 land, restore the suite removed in `a3959d6`
-(`git show a3959d6^:tests/e2e/test_offline_logbook.py`), port its fixtures
-to the new helpers (`admin_storage_state`, `click_and_settle`,
-seed extras from task 1 instead of ad-hoc ids), and validate with at least
-three consecutive full-suite runs locally plus green CI
-`browser-tests-seeded-crawl`/`browser-tests-seeded-rest` jobs before
-proposing the commit.
-
 ---
 
 ## Fix a mis-entered PIC/second-crew identity on an existing flight
@@ -1319,7 +1195,7 @@ The [Raspberry Pi guide](raspberry-pi.md) serves OpenHangar over plain HTTP
 to the Traefik + Let's Encrypt setup in the self-hosting guide, which uses
 the TLS-ALPN challenge. That needs a domain and port 443 forwarded, so it
 exposes the Pi to the internet. Some users will want HTTPS at home *without*
-that, mainly to get PWA install and offline logbook editing, which browsers
+that, mainly to get PWA install and offline logbook reading, which browsers
 only enable in a secure context. It also matters for clubs running the Pi on
 shared Wi-Fi, where plain HTTP sends passwords unencrypted.
 

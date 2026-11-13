@@ -1556,6 +1556,9 @@ capability also qualifies.
 
 ## Phase 35 — Progressive Web App (PWA) ✅
 
+> **Offline queue removed (November 2026)** with offline editing — see the
+> note under Phase 38.
+
 Goal: make OpenHangar installable as a standalone app on mobile devices and functional when connectivity is unreliable, covering the main ramp use-cases (quick flight entry, Hobbs photo, offline queuing) without a native app codebase.
 
 - [x] **PWA manifest** (`/manifest.json`) — app name, short name, theme and background colours, `display: standalone`; `<link rel="manifest">` in the base template
@@ -1674,6 +1677,13 @@ core shared with Phases 38/39).
 ---
 
 ## Phase 38 — Offline Logbook Editing ✅
+
+> **Editing removed (November 2026):** offline editing (the workbenches'
+> edit controls, the outboxes and their sync API, **Offline changes**) and
+> Phase 35's offline queue were removed. The two offline logbook pages stay
+> as read-only views of the whole aircraft/pilot logbook, from per-account
+> snapshots (see `docs/user-guide.md`, "Working offline"). The checklist
+> below records what was built at the time.
 
 Goal: make the airframe logbook fully workable during extended offline
 periods (e.g. a long flight with no connectivity): entries of any aircraft

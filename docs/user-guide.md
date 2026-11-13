@@ -51,7 +51,7 @@ Each person you then invite to your installation is assigned a **role** that con
 - **Document management** — attach PDFs and photos to aircraft, components, pilots, and logbook entries; inline viewer; sensitive-document controls hide files from renter/viewer roles; Syncthing-friendly on-disk layout.
 - **Share links** — passwordless read-only aircraft status pages with QR codes, for notice boards or your maintenance shop. Revoking a link blocks subsequent page and photo requests. Shared pages and photos are not stored in the browser HTTP cache; revocation cannot erase copies a recipient has already downloaded or saved.
 - **Email notifications** — per-user preferences for maintenance, airworthiness, reservation, pilot-currency, and crew-confirmation alerts.
-- **Progressive Web App** — installable on mobile; offline flight logging with automatic sync when connectivity returns.
+- **Progressive Web App** — installable on mobile; recently opened pages and a read-only copy of your aircraft and pilot logbooks stay readable offline.
 - **Security** — role-based access with per-aircraft permissions, optional TOTP 2FA, and encrypted AES-256-GCM backups with built-in scheduling and retention (see [backup & restore guide](backup_restore.md)).
 - **Multi-language** — English, French, Dutch; language selectable per user.
 
@@ -144,21 +144,11 @@ The **Mass & balance** page lets you record and verify CG position before a flig
 
 ### Working offline
 
-Simply browsing an aircraft's logbook while online silently caches it on your device — there is no "go offline" button to remember. If you then lose connectivity (a long flight with no signal, a hangar with poor reception), open the **offline workbench** from that aircraft's logbook page to review and correct existing entries: departure/arrival times, counter values, fuel, crew, and notes. A row whose counter start doesn't match the previous entry's counter end is flagged so gaps are easy to spot.
+OpenHangar needs a connection to save anything, but you can still **read** while offline. Pages you opened recently while online stay available, and each logbook you open online is also saved on your device as a read-only copy — there is no "go offline" button to remember. If you then lose connectivity (no signal on an airfield, a hangar with poor reception), open **Offline logbook** from an aircraft's logbook page or from your Pilot logbook page to read the whole logbook: every flight, not only the pages you had opened. The page says when its copy was saved; it is refreshed each time you open that logbook online.
 
-![Offline logbook workbench](screenshots/offline_workbench.png)
+Your offline pilot logbook shows all your flights: in fleet aircraft, in other aircraft, and FSTD/simulator sessions. On a flight shared with another pilot, it shows only your own function hours and remarks, as the online logbook does.
 
-Edits made while offline are queued on your device and upload automatically the moment you're back online — while online, the same workbench saves every edit immediately, so it behaves identically either way. The **Offline changes** page (linked from the queue badge in the navbar) lists everything currently pending, lets you discard a change or revert a single field, and is where you resolve a conflict if the server copy changed while you were away: pick your offline value or the current online value for each affected field, then apply.
-
-![Offline changes and conflict resolution](screenshots/offline_changes.png)
-
-Your **pilot logbook** works offline the same way. If a flight's aircraft-logbook entry has a personal logbook entry linked to it, the offline workbench shows a **My logbook** section under that row: night/instrument time, landings, PIC name, and time overrides are editable there, while everything derived from the flight itself (aircraft type, route, function hours, remarks) stays read-only and simply follows whatever the flight fields say. Standalone entries — manual, imported, FSTD/simulator sessions, or flights in aircraft outside the fleet — get their own **offline pilot logbook** workbench (linked from the Pilot logbook page), with FSTD rows also showing the device qualification and session duration (they keep their device, route and times; only landings are hidden).
-
-![Offline pilot logbook workbench](screenshots/offline_pilot_workbench.png)
-
-Pilot-logbook edits queue and sync the same way, and show up on the **Offline changes** page alongside your aircraft-logbook edits — a linked entry's pilot changes appear inline under its flight's card, and standalone entries get their own cards. If the personal logbook entry a flight was linked to gets removed online while you're offline, the changes page tells you so and lets you keep the flight-side edit while dropping the stale pilot one.
-
-A few things are deliberately **not** available offline: creating or deleting logbook entries (aircraft or pilot), linking a pilot entry to a flight for the first time, photos, GPS tracks, and maintenance all require a connection — the workbenches are for correcting what's already there. Editing a flight another pilot has confirmed in their own logbook is also not available offline for its shared details (date, route, times, landings, remarks) — only the pilot who logged it can change those; your queued edit is rejected with an explanation on the **Offline changes** page once you're back online, and you can suggest a correction there instead (see [Flights with two pilots](logbook_pilot.md#flights-with-two-pilots)). Any other page you weren't browsing before losing connectivity — a maintenance form, a new pilot-logbook entry — shows a plain "you're offline" message instead of failing silently if you try to submit it. Firefox in a regular browser tab works fine; installing OpenHangar as an app is optional and only changes how it looks, not what works offline. A browser profile set to permanently private browsing (e.g. Firefox's "Always use private browsing mode") disables offline access entirely, since browsers block Service Workers outright in that mode — use a regular profile if you need offline access. Log in again if your session has expired before syncing — your queued changes stay safe on the device either way. Since this offline data lives unencrypted in the browser's local storage, avoid leaving pending logbook edits on a shared or public device.
+Forms can't be saved offline: a form you fill in while offline shows a plain "you're offline" message instead of failing silently, so reconnect and submit it again. Firefox in a regular browser tab works fine; installing OpenHangar as an app is optional and only changes how it looks, not what works offline. A browser profile set to permanently private browsing (e.g. Firefox's "Always use private browsing mode") disables offline access entirely, since browsers block Service Workers outright in that mode — use a regular profile if you need offline access. Offline copies live unencrypted in the browser's local storage, so avoid reading logbooks offline on a shared or public device.
 
 ### Importing an existing pilot logbook
 
@@ -404,20 +394,10 @@ Git access required, just a free Weblate account.
 
 ### Offline data on a shared browser
 
-Private cached pages and snapshots belong to one account and login. Signing out,
-switching accounts or observing an expired/revoked login retires that login's page
-cache; another account cannot view or upload its pending work through OpenHangar.
-Online private navigation checks the server before using an offline page fallback.
-An offline device cannot discover a server-side permission change until it reconnects.
-
-Unsynced changes stay in storage for their original account. After signing back in,
-open **Offline changes**, review the paused records and choose **Resume saved changes
-for this account** to allow them to sync. You can discard individual records there.
-Do not clear browser site data until your pending work has been recovered.
-
-Unassigned records created before account-scoped storage was introduced remain
-quarantined in the legacy IndexedDB database. OpenHangar does not guess their owner
-or import them into the next account that signs in. An administrator can arrange
-manual recovery on the original trusted device; do not share an export containing
-another pilot's records. Offline storage remains local device data, not an encrypted
-vault against somebody with access to the browser profile or developer tools.
+Cached pages and offline logbook copies belong to one account and login. Signing out,
+switching accounts or an expired/revoked login retires them; another account signing
+in on the same browser cannot see them. Online, private pages are always checked with
+the server before a saved copy is used. An offline device cannot discover a server-side
+permission change until it reconnects. Offline storage remains local device data, not
+an encrypted vault against somebody with access to the browser profile or developer
+tools.

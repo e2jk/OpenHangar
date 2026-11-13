@@ -54,7 +54,7 @@
 </head>
 {% set offline_owner, offline_session = offline_identity() %}
 <body hx-boost="true" data-oh-offline-owner="{{ offline_owner }}" data-oh-offline-session="{{ offline_session }}"
-      data-oh-offline-sign-in="{{ _('Log in') }}" data-oh-offline-changed="{{ _('Your account session changed. Sign in again to continue; pending offline changes remain saved for their owner.') }}">
+      data-oh-offline-sign-in="{{ _('Log in') }}" data-oh-offline-changed="{{ _('Your account session changed. Sign in again to continue.') }}">
 
   <!-- Prefetch main nav pages during idle time so the SW cache is warm before
        the first click (see sw.js SWR_ROUTES for which pages this covers).
@@ -173,7 +173,7 @@
     <div class="container">
       <a class="navbar-brand" href="/">
         <i class="bi bi-airplane brand-icon"></i> OpenHangar{% if flask_env == 'development' %}<span class="env-badge env-badge-dev">Dev</span>{% elif flask_env == 'test' %}<span class="env-badge env-badge-test">Test</span>{% elif flask_env == 'demo' %}<span class="env-badge env-badge-demo">Demo</span>{% endif %}<span id="oh-pwa-offline-badge" aria-live="polite" title="{{ _('Offline') }}"><i class="bi bi-wifi-off me-1"></i>{{ _('Offline') }}</span>
-      </a><a id="oh-pwa-queue-badge" href="{{ url_for('offline.changes') }}" aria-live="polite"></a>
+      </a>
       {% if logged_in or has_users %}
       <button class="navbar-toggler" type="button"
               data-bs-toggle="offcanvas" data-bs-target="#navMenu"
@@ -396,9 +396,7 @@
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/totp_autosubmit.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/pwa_share_target.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/personal_minimums.js') }}"></script>
-  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/offline_workbench.js') }}"></script>
-  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/offline_pilot_workbench.js') }}"></script>
-  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/offline_changes.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/offline_logbook.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/adsb_checklist.js') }}"></script>
   {% block scripts %}{% endblock %}
   <!-- Runtime config + PWA translated strings for static JS files -->
@@ -407,14 +405,6 @@
   window._pwa_i18n = {
     offline:       {{ _('Offline') | tojson }},
     install:       {{ _('Install app') | tojson }},
-    queued1:       {{ _('1 flight queued offline') | tojson }},
-    queuedN:       {{ _('{n} flights queued offline') | tojson }},
-    flightQueued:  {{ _('Flight saved offline — will sync when online.') | tojson }},
-    flightSynced:  {{ _('Offline flight synced.') | tojson }},
-    conflictTitle: {{ _('Duplicate flight') | tojson }},
-    conflictMsg:   {{ _('A duplicate flight was found on the server. Discard the offline copy?') | tojson }},
-    conflictDiscard: {{ _('Discard offline copy') | tojson }},
-    conflictKeep:  {{ _('Keep for later') | tojson }},
     offlineGuardMsg: {{ _("You're offline — this can't be saved right now. Reconnect and try again.") | tojson }},
   };
   window._oh_validation_i18n = {
@@ -453,10 +443,8 @@
       form.appendChild(inp);
     }, true);
     /* fetch() — add X-CSRFToken header for same-origin POST requests.
-     * Leaves an already-present X-CSRFToken alone: the offline sync engine
-     * (offline_db.js) fetches a *fresh* token per batch — a tab left open
-     * for hours would otherwise always resubmit this page-load token, which
-     * is stale by the time a long offline period ends (1 h CSRF lifetime). */
+     * Leaves an already-present X-CSRFToken alone, so a caller that sets its
+     * own token keeps it. */
     var _fetch = window.fetch;
     window.fetch = function (url, opts) {
       opts = opts || {};

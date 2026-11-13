@@ -31,7 +31,7 @@ Self-hosted, open-source platform for pilots, owner-operators, and clubs to mana
 - **Snags, mass & balance, share links** — grounding-aware defect list; CG envelope checks; public QR status pages
 - **Cost tracking** — expenses with receipts; recurring fixed costs; operating-cost (wet-rate) dashboard
 - **Document management** — inline viewer; sensitive-document access controls; Syncthing-friendly storage
-- **Notifications & PWA** — per-user email alerts; installable app with offline flight logging; mobile-first UI with a bottom tab bar, thumb-reachable actions, and touch-friendly forms
+- **Notifications & PWA** — per-user email alerts; installable app with offline reading of your logbooks; mobile-first UI with a bottom tab bar, thumb-reachable actions, and touch-friendly forms
 - **Security** — role-based access with per-aircraft permissions; TOTP 2FA; encrypted AES-256-GCM backups with built-in scheduling & retention
 - **Multi-language** — English, French, Dutch; translations managed via [Weblate](https://hosted.weblate.org/engage/openhangar/) *(setup in progress)*
 

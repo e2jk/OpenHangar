@@ -223,12 +223,11 @@ change what (`flights/shared_flight.py`):
   remark (`pic_remarks` / `second_crew_remarks`) — are edited only by the
   pilot in that slot, on *My part of this flight*
   (`/flights/<id>/my-part`). The logger's form shows the other pilot's name
-  and role read-only, and every save (form, standalone entry form, offline
-  sync) restores them; function hours that equalled the old flight time follow
+  and role read-only, and every save (form, standalone entry form)
+  restores them; function hours that equalled the old flight time follow
   a corrected flight time.
 - A linked pilot who may not edit the shared fields is redirected from the
-  edit forms to *My part of this flight*, and their offline sync of such a
-  flight is refused. There they can **suggest a correction**
+  edit forms to *My part of this flight*. There they can **suggest a correction**
   (`FlightCorrectionSuggestion`): the logger accepts (applied for both, other
   pilot notified) or rejects it (suggester notified). On a managed aircraft,
   times and flight time are not suggestable since they derive from counters.
