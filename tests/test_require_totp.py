@@ -184,10 +184,16 @@ class TestRequireTotpDisableGuard:
 
     def test_disable_allowed_when_not_required(self, app, client):
         uid, _ = _make_tenant_and_user(app, require_totp=False, with_totp=True)
+        with app.app_context():
+            secret = db.session.get(User, uid).totp_secret
         self._login(client, uid)
         r = client.post(
             "/profile",
-            data={"action": "disable_totp", "current_password": PASSWORD},
+            data={
+                "action": "disable_totp",
+                "current_password": PASSWORD,
+                "current_totp_code": pyotp.TOTP(secret).now(),
+            },
             follow_redirects=True,
         )
         assert r.status_code == 200

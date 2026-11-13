@@ -421,7 +421,14 @@ def reserve_fund_balance(aircraft: Aircraft) -> Decimal:
 
 def run_co_owner_billing_pass(aircraft: Aircraft) -> None:
     """Post/refresh all co-owner ledger entries for one aircraft. Caller
-    owns the transaction (commit after calling)."""
+    owns the transaction (commit after calling).
+
+    Every view of the billing page runs this pass, so two can run at once.
+    The aircraft row is locked until the caller commits: a second pass waits,
+    then finds the first one's entries instead of posting them again."""
+    from models import Aircraft, db
+
+    db.session.query(Aircraft.id).filter_by(id=aircraft.id).with_for_update().one()
     owners = _current_owners(aircraft.id)
     if aircraft.co_owner_billing_start is None:
         # Owners exist but no billing-start date somehow — treat as "no

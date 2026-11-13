@@ -39,12 +39,17 @@ from models import (  # pyright: ignore[reportMissingImports]
     db,
 )
 from services import document_lifecycle as lifecycle  # pyright: ignore[reportMissingImports]
+from services.safe_paths import (  # pyright: ignore[reportMissingImports]
+    regular_files,
+    resolve_inside,
+)
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
     is_app_managed,
 )
 from sqlalchemy.orm import joinedload  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
     activity,
+    current_membership,
     login_required,
     require_role,
     user_can_access_aircraft,
@@ -119,7 +124,7 @@ _CATEGORY_LABELS: dict[str, str] = {
 
 
 def _tenant_id() -> int:
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         abort(403)
     return int(tu.tenant_id)
@@ -275,10 +280,10 @@ def _safe_path_component(s: str) -> str:
 
 
 def _safe_join(upload_folder: str, *parts: str) -> str:
-    """Join parts under upload_folder; abort(400) if the result would escape it."""
-    root = os.path.realpath(upload_folder)
-    joined = os.path.normpath(os.path.join(root, *parts))
-    if not (joined == root or joined.startswith(root + os.sep)):
+    """The real path of parts under upload_folder; abort(400) if it would
+    leave it — through traversal, or a symbolic link (services/safe_paths)."""
+    joined = resolve_inside(upload_folder, *parts)
+    if joined is None:
         abort(400)
     return joined
 
@@ -739,9 +744,9 @@ def download_all_documents(aircraft_id: int) -> ResponseReturnValue:
 
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for doc in docs:
-            path = os.path.join(folder, doc.filename)
+            path = resolve_inside(folder, doc.filename)
             arcname = doc.original_filename
-            if os.path.exists(path):
+            if path is not None and os.path.isfile(path):
                 zf.write(path, arcname=arcname)
             doc_type_label = doc.doc_type or ""
             category_label = _CATEGORY_LABELS.get(
@@ -1045,44 +1050,43 @@ def scan_documents() -> ResponseReturnValue:
     }
 
     new_count = 0
-    for dirpath, _dirs, filenames in os.walk(slug_dir):
-        for fname in filenames:
-            if fname.startswith((".", "_")):
-                continue
-            full = os.path.join(dirpath, fname)
-            relpath = os.path.relpath(full, folder)
-            # Normalise to forward slashes for DB consistency
-            relpath = relpath.replace("\\", "/")
+    for full in regular_files(slug_dir):
+        fname = os.path.basename(full)
+        if fname.startswith((".", "_")):
+            continue
+        relpath = os.path.relpath(full, folder)
+        # Normalise to forward slashes for DB consistency
+        relpath = relpath.replace("\\", "/")
 
-            if relpath in known or relpath in existing_pending:
-                continue
+        if relpath in known or relpath in existing_pending:
+            continue
 
-            # Parse canonical path: slug/reg/category/YYYY-MM-DD - title.ext
-            parts = relpath.split("/")
-            if is_app_managed(relpath):
-                continue
-            aircraft_obj: Aircraft | None = None
-            category: str | None = None
-            title_hint: str | None = None
-            date_hint: _date | None = None
+        # Parse canonical path: slug/reg/category/YYYY-MM-DD - title.ext
+        parts = relpath.split("/")
+        if is_app_managed(relpath):
+            continue
+        aircraft_obj: Aircraft | None = None
+        category: str | None = None
+        title_hint: str | None = None
+        date_hint: _date | None = None
 
-            if len(parts) >= 4:
-                reg_raw = parts[1].upper().replace("-", "").replace(" ", "")
-                aircraft_obj = aircraft_by_reg.get(reg_raw)
-                category, title_hint, date_hint = _parse_reconcile_filename(
-                    parts[2], parts[3]
-                )
-
-            pr = PendingReconcile(
-                tenant_id=tid,
-                aircraft_id=aircraft_obj.id if aircraft_obj else None,
-                filepath=relpath,
-                category=category,
-                title_hint=title_hint,
-                date_hint=date_hint,
+        if len(parts) >= 4:
+            reg_raw = parts[1].upper().replace("-", "").replace(" ", "")
+            aircraft_obj = aircraft_by_reg.get(reg_raw)
+            category, title_hint, date_hint = _parse_reconcile_filename(
+                parts[2], parts[3]
             )
-            db.session.add(pr)
-            new_count += 1
+
+        pr = PendingReconcile(
+            tenant_id=tid,
+            aircraft_id=aircraft_obj.id if aircraft_obj else None,
+            filepath=relpath,
+            category=category,
+            title_hint=title_hint,
+            date_hint=date_hint,
+        )
+        db.session.add(pr)
+        new_count += 1
 
     db.session.commit()
     parts_msg = []
@@ -1148,9 +1152,10 @@ def rename_reconcile_folder() -> ResponseReturnValue:
                 dest_d = os.path.join(new_dir, rel)
                 os.makedirs(dest_d, exist_ok=True)
                 for fname in filenames:
-                    shutil.move(
-                        os.path.join(dirpath, fname), os.path.join(dest_d, fname)
-                    )
+                    source = os.path.join(dirpath, fname)
+                    if os.path.islink(source):
+                        continue  # links are not followed or moved
+                    shutil.move(source, os.path.join(dest_d, fname))
             shutil.rmtree(old_dir, ignore_errors=True)
         else:
             os.rename(old_dir, new_dir)
@@ -1182,51 +1187,49 @@ def rename_reconcile_folder() -> ResponseReturnValue:
     }
     new_count = 0
     if os.path.isdir(new_dir):
-        for dirpath, _dirs, filenames in os.walk(new_dir):
-            for fname in filenames:
-                if fname.startswith((".", "_")):
-                    continue
-                relpath = os.path.relpath(os.path.join(dirpath, fname), folder).replace(
-                    "\\", "/"
+        for path in regular_files(new_dir):
+            fname = os.path.basename(path)
+            if fname.startswith((".", "_")):
+                continue
+            relpath = os.path.relpath(path, folder).replace("\\", "/")
+            full = _safe_join(folder, relpath)
+            if relpath in known or relpath in existing_pending:
+                continue
+            parts = relpath.split("/")
+            aircraft_obj: Aircraft | None = None
+            category: str | None = None
+            title_hint: str | None = None
+            date_hint: _date | None = None
+            if len(parts) >= 4:
+                reg_raw = parts[1].upper().replace("-", "").replace(" ", "")
+                aircraft_obj = aircraft_by_reg.get(reg_raw)
+                category, title_hint, date_hint = _parse_reconcile_filename(
+                    parts[2], parts[3]
                 )
-                full = _safe_join(folder, relpath)
-                if relpath in known or relpath in existing_pending:
-                    continue
-                parts = relpath.split("/")
-                aircraft_obj: Aircraft | None = None
-                category: str | None = None
-                title_hint: str | None = None
-                date_hint: _date | None = None
-                if len(parts) >= 4:
-                    reg_raw = parts[1].upper().replace("-", "").replace(" ", "")
-                    aircraft_obj = aircraft_by_reg.get(reg_raw)
-                    category, title_hint, date_hint = _parse_reconcile_filename(
-                        parts[2], parts[3]
-                    )
-                if aircraft_obj and category:
-                    mime = mimetypes.guess_type(fname)[0] or "application/octet-stream"
-                    size = os.path.getsize(full) if os.path.exists(full) else None
-                    doc = Document(
-                        aircraft_id=aircraft_obj.id,
-                        filename=relpath,
-                        original_filename=fname,
-                        mime_type=mime,
-                        size_bytes=size,
-                        title=title_hint,
-                        category=category,
-                    )
-                    db.session.add(doc)
-                else:
-                    pr = PendingReconcile(
-                        tenant_id=tid,
-                        aircraft_id=aircraft_obj.id if aircraft_obj else None,
-                        filepath=relpath,
-                        category=category,
-                        title_hint=title_hint,
-                        date_hint=date_hint,
-                    )
-                    db.session.add(pr)
-                new_count += 1
+            if aircraft_obj and category:
+                mime = mimetypes.guess_type(fname)[0] or "application/octet-stream"
+                size = os.path.getsize(full) if os.path.exists(full) else None
+                doc = Document(
+                    aircraft_id=aircraft_obj.id,
+                    filename=relpath,
+                    original_filename=fname,
+                    mime_type=mime,
+                    size_bytes=size,
+                    title=title_hint,
+                    category=category,
+                )
+                db.session.add(doc)
+            else:
+                pr = PendingReconcile(
+                    tenant_id=tid,
+                    aircraft_id=aircraft_obj.id if aircraft_obj else None,
+                    filepath=relpath,
+                    category=category,
+                    title_hint=title_hint,
+                    date_hint=date_hint,
+                )
+                db.session.add(pr)
+            new_count += 1
 
     db.session.commit()
     flash(

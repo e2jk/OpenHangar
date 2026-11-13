@@ -1,11 +1,15 @@
-"""Tests for the offline logbook server API: snapshot/CSRF (38a) and sync (38b)."""
+"""Read-only offline logbooks: snapshot APIs, pages, and the removed editing.
+
+Offline editing was removed: nothing can queue or replay a write. While
+online, opening a logbook stores a snapshot in the browser; the offline
+logbook pages render it, read-only, with or without a connection.
+"""
 
 from datetime import UTC, date, datetime, time
 from decimal import Decimal
-from unittest.mock import patch
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
-from flask_wtf.csrf import validate_csrf  # pyright: ignore[reportMissingImports]
+import pytest
 from models import (
     Aircraft,
     Flight,
@@ -15,9 +19,6 @@ from models import (
     User,
     db,
 )  # pyright: ignore[reportMissingImports]
-from offline.serialize import (
-    canonical_pilot_entry,  # pyright: ignore[reportMissingImports]
-)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -148,630 +149,6 @@ def _add_second_pilot(app, tenant_id, email="other@example.com"):
         return user.id
 
 
-# ── Snapshot API ─────────────────────────────────────────────────────────────
-
-
-def test_snapshot_fully_populated_entry(app, client):
-    _uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(
-        app,
-        ac_id,
-        departure_time=time(10, 30),
-        arrival_time=time(11, 45),
-        takeoff_time=time(10, 35),
-        landing_time=time(11, 40),
-        flight_time=Decimal("1.3"),
-        flight_time_counter_start=Decimal("1424.5"),
-        flight_time_counter_end=Decimal("1425.8"),
-        engine_time=Decimal("1.4"),
-        engine_time_counter_start=Decimal("2200.0"),
-        engine_time_counter_end=Decimal("2201.3"),
-        fuel_added_before_qty=Decimal("45.50"),
-        fuel_added_before_unit="L",
-        fuel_added_after_qty=Decimal("12.00"),
-        fuel_added_after_unit="L",
-        fuel_remaining_qty=Decimal("30.25"),
-        oil_added_before_l=Decimal("0.50"),
-        oil_added_after_l=Decimal("0.30"),
-        passenger_count=2,
-        landing_count=3,
-        nature_of_flight="  Training  ",
-        notes="  Some notes  ",
-        # EASA figures — unified model: these live flat on the same Flight
-        # row as the airframe-log fields, not nested under a separate
-        # "pilot" key.
-        night_time=Decimal("0.4"),
-        instrument_time=Decimal("0.2"),
-        landings_day=2,
-        landings_night=1,
-        single_pilot_se=Decimal("1.3"),
-        single_pilot_me=None,
-        multi_pilot=None,
-        function_pic=Decimal("1.3"),
-        function_copilot=None,
-        function_dual=None,
-        function_instructor=None,
-    )
-    _add_crew(app, fe_id, "Alice", "PIC", 0)
-    _add_crew(app, fe_id, "Bob", "COPILOT", 1)
-
-    resp = client.get(f"/api/offline/aircraft/{ac_id}/logbook")
-    assert resp.status_code == 200
-    data = resp.get_json()
-    assert data["aircraft"]["id"] == ac_id
-    assert data["aircraft"]["registration"] == "OO-PNH"
-    assert data["aircraft"]["has_flight_counter"] is True
-    assert "snapshot_taken_at" in data
-    assert len(data["entries"]) == 1
-    entry = data["entries"][0]
-    assert entry["id"] == fe_id
-    assert entry["fields"] == {
-        "date": "2024-01-15",
-        "departure_icao": "EBOS",
-        "arrival_icao": "EBBR",
-        "departure_time": "10:30",
-        "arrival_time": "11:45",
-        "takeoff_time": "10:35",
-        "landing_time": "11:40",
-        "flight_time": "1.3",
-        "flight_time_counter_start": "1424.5",
-        "flight_time_counter_end": "1425.8",
-        "engine_time": "1.4",
-        "engine_time_counter_start": "2200.0",
-        "engine_time_counter_end": "2201.3",
-        "fuel_added_before_qty": "45.50",
-        "fuel_added_before_unit": "L",
-        "fuel_added_after_qty": "12.00",
-        "fuel_added_after_unit": "L",
-        "fuel_remaining_qty": "30.25",
-        "oil_added_before_l": "0.50",
-        "oil_added_after_l": "0.30",
-        "passenger_count": "2",
-        "landing_count": "3",
-        "nature_of_flight": "Training",
-        "notes": "Some notes",
-        "crew_name_0": "Alice",
-        "crew_name_1": "Bob",
-        "crew_role_1": "COPILOT",
-        "night_time": "0.4",
-        "instrument_time": "0.2",
-        "landings_day": "2",
-        "landings_night": "1",
-        "single_pilot_se": "1.3",
-        "single_pilot_me": "",
-        "multi_pilot": "",
-        "function_pic": "1.3",
-        "function_copilot": "",
-        "function_dual": "",
-        "function_instructor": "",
-    }
-    assert entry["meta"]["has_flight_counter_photo"] is False
-    assert entry["meta"]["has_engine_counter_photo"] is False
-    assert entry["meta"]["has_fuel_photo"] is False
-    assert entry["meta"]["has_gps_track"] is False
-    assert entry["meta"]["source"] is None
-    assert entry["meta"]["created_at"] is not None
-
-
-def test_snapshot_all_nulls_entry(app, client):
-    _uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    _add_flight(app, ac_id)
-
-    resp = client.get(f"/api/offline/aircraft/{ac_id}/logbook")
-    fields = resp.get_json()["entries"][0]["fields"]
-    for key in (
-        "departure_time",
-        "arrival_time",
-        "takeoff_time",
-        "landing_time",
-        "flight_time",
-        "flight_time_counter_start",
-        "flight_time_counter_end",
-        "engine_time",
-        "engine_time_counter_start",
-        "engine_time_counter_end",
-        "fuel_added_before_qty",
-        "fuel_added_before_unit",
-        "fuel_added_after_qty",
-        "fuel_added_after_unit",
-        "fuel_remaining_qty",
-        "oil_added_before_l",
-        "oil_added_after_l",
-        "passenger_count",
-        "landing_count",
-        "nature_of_flight",
-        "notes",
-        "crew_name_0",
-        "crew_name_1",
-        "crew_role_1",
-        "night_time",
-        "instrument_time",
-        "landings_day",
-        "landings_night",
-        "single_pilot_se",
-        "single_pilot_me",
-        "multi_pilot",
-        "function_pic",
-        "function_copilot",
-        "function_dual",
-        "function_instructor",
-    ):
-        assert fields[key] == "", f"{key} should canonicalize to empty string"
-    assert fields["date"] == "2024-01-15"
-    assert fields["departure_icao"] == "EBOS"
-    assert fields["arrival_icao"] == "EBBR"
-
-
-def test_snapshot_single_crew_slot(app, client):
-    _uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-    _add_crew(app, fe_id, "Alice", "PIC", 0)
-
-    resp = client.get(f"/api/offline/aircraft/{ac_id}/logbook")
-    fields = resp.get_json()["entries"][0]["fields"]
-    assert fields["crew_name_0"] == "Alice"
-    assert fields["crew_name_1"] == ""
-    assert fields["crew_role_1"] == ""
-
-
-def test_snapshot_sorted_by_date_then_id(app, client):
-    _uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_later = _add_flight(app, ac_id, date=date(2024, 2, 1))
-    fe_earlier = _add_flight(app, ac_id, date=date(2024, 1, 1))
-    fe_same_day_first = _add_flight(app, ac_id, date=date(2024, 1, 15))
-    fe_same_day_second = _add_flight(app, ac_id, date=date(2024, 1, 15))
-
-    resp = client.get(f"/api/offline/aircraft/{ac_id}/logbook")
-    ids = [e["id"] for e in resp.get_json()["entries"]]
-    assert ids == [fe_earlier, fe_same_day_first, fe_same_day_second, fe_later]
-
-
-def test_snapshot_decimal_precision(app, client):
-    _uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    _add_flight(
-        app,
-        ac_id,
-        flight_time_counter_start=Decimal("1424.50"),
-        fuel_added_before_qty=Decimal("45.5"),
-    )
-
-    resp = client.get(f"/api/offline/aircraft/{ac_id}/logbook")
-    fields = resp.get_json()["entries"][0]["fields"]
-    assert fields["flight_time_counter_start"] == "1424.5"
-    assert fields["fuel_added_before_qty"] == "45.50"
-
-
-def test_snapshot_archived_aircraft_included(app, client):
-    _uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid, archived=True)
-    _add_flight(app, ac_id)
-
-    resp = client.get(f"/api/offline/aircraft/{ac_id}/logbook")
-    assert resp.status_code == 200
-    assert len(resp.get_json()["entries"]) == 1
-
-
-def test_snapshot_other_tenant_aircraft_404(app, client):
-    _create_user_and_tenant(app, email="a@example.com")
-    _, tid_b = _create_user_and_tenant(app, email="b@example.com")
-    _login(app, client, email="a@example.com")
-    ac_id = _add_aircraft(app, tid_b, registration="OO-OTHER")
-
-    resp = client.get(f"/api/offline/aircraft/{ac_id}/logbook")
-    assert resp.status_code == 404
-
-
-def test_snapshot_missing_aircraft_404(app, client):
-    _create_user_and_tenant(app)
-    _login(app, client)
-    resp = client.get("/api/offline/aircraft/999999/logbook")
-    assert resp.status_code == 404
-
-
-def test_snapshot_orphan_user_403(app, client):
-    """A user with no TenantUser row (broken account state) gets 403, not a 500."""
-    _, tid = _create_user_and_tenant(app)
-    ac_id = _add_aircraft(app, tid)
-    with app.app_context():
-        user = User(
-            email="orphan@example.com",
-            password_hash=_pw_hash.hash("x"),
-            is_active=True,
-        )
-        db.session.add(user)
-        db.session.commit()
-        uid = user.id
-    with client.session_transaction() as sess:
-        sess["user_id"] = uid
-
-    resp = client.get(f"/api/offline/aircraft/{ac_id}/logbook")
-    assert resp.status_code == 401
-
-
-def test_snapshot_anonymous_401_json(app, client):
-    resp = client.get("/api/offline/aircraft/1/logbook")
-    assert resp.status_code == 401
-    assert resp.get_json() == {"status": "auth"}
-
-
-# ── CSRF API ─────────────────────────────────────────────────────────────────
-
-
-def test_csrf_endpoint_returns_valid_token(app, client):
-    _create_user_and_tenant(app)
-    _login(app, client)
-    resp = client.get("/api/offline/csrf")
-    assert resp.status_code == 200
-    token = resp.get_json()["csrf_token"]
-    assert isinstance(token, str) and token
-    with client.session_transaction() as sess:
-        stored = sess.get("csrf_token")
-    assert stored is not None
-    with app.test_request_context():
-        from flask import session as _session
-
-        _session["csrf_token"] = stored
-        validate_csrf(token)  # raises on failure
-
-
-def test_csrf_endpoint_anonymous_401_json(app, client):
-    resp = client.get("/api/offline/csrf")
-    assert resp.status_code == 401
-    assert resp.get_json() == {"status": "auth"}
-
-
-# ── Sync API (38b) ───────────────────────────────────────────────────────────
-
-
-def _fields(app, client, ac_id, fe_id):
-    resp = client.get(f"/api/offline/aircraft/{ac_id}/logbook")
-    entry = next(e for e in resp.get_json()["entries"] if e["id"] == fe_id)
-    return dict(entry["fields"])
-
-
-def _sync(client, fe_id, fields, base, force_duplicate=False):
-    return client.post(
-        f"/api/offline/flights/{fe_id}/sync",
-        json={"fields": fields, "base": base, "force_duplicate": force_duplicate},
-    )
-
-
-def test_sync_clean_change_applied(app, client):
-    _, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id, notes="original")
-    _add_crew(app, fe_id, "Alice", "PIC", 0)
-
-    base = _fields(app, client, ac_id, fe_id)
-    fields = dict(base)
-    fields["notes"] = "updated notes"
-
-    resp = _sync(client, fe_id, fields, base)
-    assert resp.status_code == 200
-    data = resp.get_json()
-    assert data["status"] == "ok"
-    assert data["entry"]["notes"] == "updated notes"
-    with app.app_context():
-        fe = db.session.get(Flight, fe_id)
-        assert fe.notes == "updated notes"
-
-
-def test_sync_no_conflict_when_server_unchanged(app, client):
-    _, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-    _add_crew(app, fe_id, "Alice", "PIC", 0)
-
-    base = _fields(app, client, ac_id, fe_id)
-    fields = dict(base)
-    fields["nature_of_flight"] = "Training"
-
-    resp = _sync(client, fe_id, fields, base)
-    assert resp.status_code == 200
-    assert resp.get_json()["entry"]["nature_of_flight"] == "Training"
-
-
-def test_sync_no_conflict_when_server_changed_to_same_value(app, client):
-    _, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-    _add_crew(app, fe_id, "Alice", "PIC", 0)
-
-    base = _fields(app, client, ac_id, fe_id)
-    with app.app_context():
-        fe = db.session.get(Flight, fe_id)
-        fe.nature_of_flight = "Training"
-        db.session.commit()
-
-    fields = dict(base)
-    fields["nature_of_flight"] = "Training"  # user picked the same value
-
-    resp = _sync(client, fe_id, fields, base)
-    assert resp.status_code == 200
-    assert resp.get_json()["entry"]["nature_of_flight"] == "Training"
-
-
-def test_sync_conflict_when_server_changed_differently(app, client):
-    _, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-
-    base = _fields(app, client, ac_id, fe_id)
-    with app.app_context():
-        fe = db.session.get(Flight, fe_id)
-        fe.nature_of_flight = "Server value"
-        db.session.commit()
-
-    fields = dict(base)
-    fields["nature_of_flight"] = "Local value"
-
-    resp = _sync(client, fe_id, fields, base)
-    assert resp.status_code == 409
-    data = resp.get_json()
-    assert data["status"] == "conflict"
-    assert data["conflicts"] == [
-        {
-            "field": "nature_of_flight",
-            "base": base["nature_of_flight"],
-            "local": "Local value",
-            "server": "Server value",
-        }
-    ]
-    assert data["entry"]["nature_of_flight"] == "Server value"
-    with app.app_context():
-        fe = db.session.get(Flight, fe_id)
-        assert fe.nature_of_flight == "Server value"  # nothing applied
-
-
-def test_sync_no_conflict_when_user_didnt_touch_drifted_field(app, client):
-    _, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id, notes="original")
-    _add_crew(app, fe_id, "Alice", "PIC", 0)
-
-    base = _fields(app, client, ac_id, fe_id)
-    with app.app_context():
-        fe = db.session.get(Flight, fe_id)
-        fe.notes = "server drifted this"  # user never touched notes
-        db.session.commit()
-
-    fields = dict(base)
-    fields["nature_of_flight"] = "Training"  # only field the user changed
-
-    resp = _sync(client, fe_id, fields, base)
-    assert resp.status_code == 200
-    data = resp.get_json()
-    assert data["entry"]["nature_of_flight"] == "Training"
-    assert data["entry"]["notes"] == "server drifted this"
-
-
-def test_sync_multi_field_one_conflict_blocks_all(app, client):
-    _, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id, notes="original")
-
-    base = _fields(app, client, ac_id, fe_id)
-    with app.app_context():
-        fe = db.session.get(Flight, fe_id)
-        fe.nature_of_flight = "Server value"
-        db.session.commit()
-
-    fields = dict(base)
-    fields["nature_of_flight"] = "Local value"  # conflicting
-    fields["notes"] = "clean change"  # not conflicting, but must not apply either
-
-    resp = _sync(client, fe_id, fields, base)
-    assert resp.status_code == 409
-    with app.app_context():
-        fe = db.session.get(Flight, fe_id)
-        assert fe.notes == "original"  # the clean change was not applied either
-
-
-def test_sync_validation_error_counter_end_less_than_start(app, client):
-    _, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-
-    base = _fields(app, client, ac_id, fe_id)
-    fields = dict(base)
-    fields["flight_time_counter_start"] = "100.0"
-    fields["flight_time_counter_end"] = "50.0"
-
-    resp = _sync(client, fe_id, fields, base)
-    assert resp.status_code == 400
-    data = resp.get_json()
-    assert data["status"] == "invalid"
-    assert any("counter" in e.lower() for e in data["errors"])
-    with app.app_context():
-        fe = db.session.get(Flight, fe_id)
-        assert fe.flight_time_counter_start != 100.0
-
-
-def test_sync_validation_error_negative_landing_count(app, client):
-    _, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-
-    base = _fields(app, client, ac_id, fe_id)
-    fields = dict(base)
-    fields["landing_count"] = "-1"
-
-    resp = _sync(client, fe_id, fields, base)
-    assert resp.status_code == 400
-    data = resp.get_json()
-    assert data["status"] == "invalid"
-    assert any("landing" in e.lower() for e in data["errors"])
-
-
-def test_sync_duplicate_guard_on_date_change(app, client):
-    _, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    _add_flight(
-        app, ac_id, date=date(2024, 3, 1), departure_icao="EBOS", arrival_icao="EBBR"
-    )
-    fe_id = _add_flight(app, ac_id, date=date(2024, 1, 15))
-    _add_crew(app, fe_id, "Alice", "PIC", 0)
-
-    base = _fields(app, client, ac_id, fe_id)
-    fields = dict(base)
-    fields["date"] = "2024-03-01"
-
-    resp = _sync(client, fe_id, fields, base)
-    assert resp.status_code == 409
-    assert resp.get_json()["status"] == "duplicate"
-
-    resp2 = _sync(client, fe_id, fields, base, force_duplicate=True)
-    assert resp2.status_code == 200
-    assert resp2.get_json()["entry"]["date"] == "2024-03-01"
-
-
-def test_sync_crew_replacement(app, client):
-    _, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-    _add_crew(app, fe_id, "Alice", "PIC", 0)
-
-    base = _fields(app, client, ac_id, fe_id)
-    fields = dict(base)
-    fields["crew_name_0"] = "Charlie"
-    fields["crew_name_1"] = "Dana"
-    fields["crew_role_1"] = "COPILOT"
-
-    resp = _sync(client, fe_id, fields, base)
-    assert resp.status_code == 200
-    with app.app_context():
-        fe = db.session.get(Flight, fe_id)
-        assert fe.pic_name == "Charlie"
-        assert fe.second_crew_name == "Dana"
-        assert fe.second_crew_role == "COPILOT"
-
-
-def test_sync_milestone_hook_called(app, client):
-    _, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-    _add_crew(app, fe_id, "Alice", "PIC", 0)
-
-    base = _fields(app, client, ac_id, fe_id)
-    fields = dict(base)
-    fields["flight_time"] = "1.5"
-
-    with patch("offline.routes._check_flight_hour_milestone") as mock_milestone:
-        resp = _sync(client, fe_id, fields, base)
-    assert resp.status_code == 200
-    mock_milestone.assert_called_once()
-
-
-def test_sync_wrong_tenant_404(app, client):
-    _create_user_and_tenant(app, email="a@example.com")
-    _, tid_b = _create_user_and_tenant(app, email="b@example.com")
-    ac_id = _add_aircraft(app, tid_b, registration="OO-OTHER")
-    fe_id = _add_flight(app, ac_id)
-    _login(app, client, email="a@example.com")
-
-    resp = _sync(client, fe_id, {}, {})
-    assert resp.status_code == 404
-
-
-def test_sync_missing_flight_404(app, client):
-    _create_user_and_tenant(app)
-    _login(app, client)
-    resp = _sync(client, 999999, {}, {})
-    assert resp.status_code == 404
-
-
-def test_sync_anonymous_401_json(app, client):
-    resp = client.post("/api/offline/flights/1/sync", json={})
-    assert resp.status_code == 401
-    assert resp.get_json() == {"status": "auth"}
-
-
-def test_sync_malformed_body_not_json_400(app, client):
-    _, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-
-    resp = client.post(
-        f"/api/offline/flights/{fe_id}/sync",
-        data="not json",
-        content_type="text/plain",
-    )
-    assert resp.status_code == 400
-    assert resp.get_json()["status"] == "invalid"
-
-
-def test_sync_malformed_body_missing_keys_400(app, client):
-    _, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-    base = _fields(app, client, ac_id, fe_id)
-
-    resp = client.post(
-        f"/api/offline/flights/{fe_id}/sync",
-        json={"fields": {"date": base["date"]}, "base": base},
-    )
-    assert resp.status_code == 400
-    assert resp.get_json()["status"] == "invalid"
-
-
-def test_sync_malformed_body_unknown_field_400(app, client):
-    _, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-    base = _fields(app, client, ac_id, fe_id)
-    fields = dict(base)
-    fields["bogus_field"] = "x"
-
-    resp = client.post(
-        f"/api/offline/flights/{fe_id}/sync",
-        json={"fields": fields, "base": base},
-    )
-    assert resp.status_code == 400
-    assert resp.get_json()["status"] == "invalid"
-
-
-def test_sync_malformed_body_non_string_value_400(app, client):
-    _, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-    base = _fields(app, client, ac_id, fe_id)
-    fields = dict(base)
-    fields["passenger_count"] = 2  # should be a canonical string, not an int
-
-    resp = client.post(
-        f"/api/offline/flights/{fe_id}/sync",
-        json={"fields": fields, "base": base},
-    )
-    assert resp.status_code == 400
-    assert resp.get_json()["status"] == "invalid"
-
-
 def _add_viewer_user(app, tenant_id, email="viewer@example.com"):
     with app.app_context():
         user = User(
@@ -786,431 +163,192 @@ def _add_viewer_user(app, tenant_id, email="viewer@example.com"):
         return user.id
 
 
-def test_sync_requires_pilot_access(app, client):
-    _, tid = _create_user_and_tenant(app)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id)
-    _add_viewer_user(app, tid)
-    _login(app, client, email="viewer@example.com")
-
-    resp = _sync(client, fe_id, {}, {})
-    assert resp.status_code == 403
+# ── Aircraft snapshot API ──────────────────────────────────────────────────────
 
 
-# ── Workbench page (38d) ─────────────────────────────────────────────────────
-
-
-def test_workbench_returns_200_for_pilot(app, client):
-    _, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-
-    resp = client.get(f"/aircraft/{ac_id}/logbook/offline")
-    assert resp.status_code == 200
-    assert b"oh-workbench-root" in resp.data
-
-
-def test_workbench_requires_pilot_access(app, client):
-    _, tid = _create_user_and_tenant(app)
-    ac_id = _add_aircraft(app, tid)
-    _add_viewer_user(app, tid)
-    _login(app, client, email="viewer@example.com")
-
-    resp = client.get(f"/aircraft/{ac_id}/logbook/offline")
-    assert resp.status_code == 403
-
-
-def test_workbench_wrong_tenant_404(app, client):
-    _create_user_and_tenant(app, email="a@example.com")
-    _, tid_b = _create_user_and_tenant(app, email="b@example.com")
-    ac_id = _add_aircraft(app, tid_b, registration="OO-OTHER")
-    _login(app, client, email="a@example.com")
-
-    resp = client.get(f"/aircraft/{ac_id}/logbook/offline")
-    assert resp.status_code == 404
-
-
-def test_workbench_missing_aircraft_404(app, client):
-    _create_user_and_tenant(app)
-    _login(app, client)
-    resp = client.get("/aircraft/999999/logbook/offline")
-    assert resp.status_code == 404
-
-
-def test_workbench_anonymous_redirects_to_login(app, client):
-    resp = client.get("/aircraft/1/logbook/offline")
-    assert resp.status_code == 302
-    assert "/login" in resp.headers["Location"]
-
-
-def test_workbench_has_data_oh_aircraft_id(app, client):
-    _, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-
-    resp = client.get(f"/aircraft/{ac_id}/logbook/offline")
-    assert f'data-oh-aircraft-id="{ac_id}"'.encode() in resp.data
-
-
-def test_workbench_has_row_template_and_i18n_bridge(app, client):
-    _, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-
-    resp = client.get(f"/aircraft/{ac_id}/logbook/offline")
-    assert b'<template id="oh-wb-row">' in resp.data
-    assert b'id="oh-wb-i18n"' in resp.data
-    assert b'type="application/json"' in resp.data
-
-
-def test_workbench_template_has_no_inline_script_nonce():
-    """Child templates may never carry <script nonce> — only base.html and
-    share/public.html may (see AGENTS.md); inline scripts are silently
-    dropped after an hx-boost navigation."""
-    from pathlib import Path
-
-    content = (
-        Path(__file__).parent.parent
-        / "app"
-        / "templates"
-        / "offline"
-        / "workbench.html"
-    ).read_text()
-    assert "<script nonce" not in content
-
-
-# ── Offline-changes page (38e) ────────────────────────────────────────────────
-
-
-def test_changes_returns_200_for_logged_in_user(app, client):
-    _create_user_and_tenant(app)
-    _login(app, client)
-
-    resp = client.get("/offline/changes")
-    assert resp.status_code == 200
-    assert b"oh-changes-root" in resp.data
-
-
-def test_changes_does_not_require_pilot_access(app, client):
-    """Viewing pending changes is harmless — only the sync endpoint itself
-    (already pilot-gated) can actually apply them."""
-    _, tid = _create_user_and_tenant(app)
-    _add_viewer_user(app, tid)
-    _login(app, client, email="viewer@example.com")
-
-    resp = client.get("/offline/changes")
-    assert resp.status_code == 200
-
-
-def test_changes_anonymous_redirects_to_login(app, client):
-    resp = client.get("/offline/changes")
-    assert resp.status_code == 302
-    assert "/login" in resp.headers["Location"]
-
-
-def test_changes_has_i18n_bridge_and_no_inline_script(app, client):
-    _create_user_and_tenant(app)
-    _login(app, client)
-
-    resp = client.get("/offline/changes")
-    assert b'id="oh-ch-i18n"' in resp.data
-    assert b'type="application/json"' in resp.data
-
-
-def test_changes_template_has_no_inline_script_nonce():
-    from pathlib import Path
-
-    content = (
-        Path(__file__).parent.parent / "app" / "templates" / "offline" / "changes.html"
-    ).read_text()
-    assert "<script nonce" not in content
-
-
-def test_base_html_queue_badge_links_to_changes(app, client):
-    _create_user_and_tenant(app)
-    _login(app, client)
-    resp = client.get("/offline/changes")
-    assert b'id="oh-pwa-queue-badge" href="/offline/changes"' in resp.data
-
-
-# ── Canonical pilot serializer (38h) ─────────────────────────────────────────
-
-
-def test_canonical_pilot_entry_full_fields(app):
-    uid, _ = _create_user_and_tenant(app)
-    pe_id = _add_pilot_entry(
-        app,
-        uid,
-        aircraft_type_icao="C172",
-        departure_time=time(9, 0),
-        arrival_time=time(10, 15),
-        takeoff_time=time(9, 5),
-        landing_time=time(10, 10),
-        night_time=Decimal("0.5"),
-        instrument_time=Decimal("0.2"),
-        landings_night=1,
-        remarks="  Some notes  ",
-        entry_type="flight",
-    )
-    with app.app_context():
-        pe = db.session.get(Flight, pe_id)
-        fields = canonical_pilot_entry(pe)
-    assert fields == {
-        "date": "2024-01-15",
-        "aircraft_type": "Cessna 172S",
-        "aircraft_type_icao": "C172",
-        "aircraft_registration": "OO-PNH",
-        "departure_place": "EBOS",
-        "departure_time": "09:00",
-        "arrival_place": "EBBR",
-        "arrival_time": "10:15",
-        "takeoff_time": "09:05",
-        "landing_time": "10:10",
-        "pic_name": "Alice",
-        "night_time": "0.5",
-        "instrument_time": "0.2",
-        "landings_day": "1",
-        "landings_night": "1",
-        "single_pilot_se": "",
-        "single_pilot_me": "",
-        "multi_pilot": "",
-        "function_pic": "1.3",
-        "function_copilot": "",
-        "function_dual": "",
-        "function_instructor": "",
-        "remarks": "Some notes",
-        "entry_type": "flight",
-        "fstd_type": "",
-        "fstd_duration": "",
-    }
-
-
-def test_canonical_pilot_entry_fstd_session(app):
-    uid, _ = _create_user_and_tenant(app)
-    pe_id = _add_pilot_entry(
-        app,
-        uid,
-        aircraft_type=None,
-        aircraft_registration=None,
-        departure_place=None,
-        arrival_place=None,
-        landings_day=None,
-        function_pic=None,
-        entry_type="fstd",
-        fstd_type="FNPT2",
-        fstd_duration=Decimal("1.5"),
-    )
-    with app.app_context():
-        pe = db.session.get(Flight, pe_id)
-        fields = canonical_pilot_entry(pe)
-    assert fields["entry_type"] == "fstd"
-    assert fields["fstd_type"] == "FNPT2"
-    assert fields["fstd_duration"] == "1.5"
-    assert fields["aircraft_type"] == ""
-    assert fields["aircraft_registration"] == ""
-    assert fields["departure_place"] == ""
-    assert fields["departure_time"] == ""
-    assert fields["landings_day"] == ""
-    assert fields["function_pic"] == ""
-    assert fields["pic_name"] == "Alice"  # PIC name is not FSTD-nulled
-
-
-# ── EASA figures on a linked entry (38h) ─────────────────────────────────────
-#
-# Unified model: the old nested "pilot" sub-object (a second PilotLogbookEntry
-# row joined via flight_id, with its own EASA columns, mirror-time logic for
-# departure/arrival time, and a separate pilot/pilot_conflicts/pilot_missing
-# sync channel) is gone. A linked entry is one Flight row — EASA figures
-# (night_time, landings_day, function_pic, ...) are just more entries in
-# FLIGHT_EDITABLE_FIELDS on the same row, so they snapshot, sync, and
-# conflict exactly like any other flight field (see the generic sync tests
-# above). Everything below that tested the old two-row split — pilot-only
-# conflicts reported separately from flight conflicts, "pilot_missing" on
-# deleting the second row, derived-field rejection in a separate pilot
-# payload, mirror-vs-override departure/arrival time tracking the flight's
-# own time, function_pic/function_dual re-derivation from a flight_time
-# change — is structurally impossible now (there's only one row, one set of
-# EASA columns, no second payload channel) and has been removed rather than
-# adapted; the two tests below cover the surviving, genuinely-EASA-specific
-# behaviour: the fields are visible flat and they participate in the same
-# conflict scan as everything else.
-
-
-def _linked_entry(client, ac_id, fe_id):
-    resp = client.get(f"/api/offline/aircraft/{ac_id}/logbook")
-    return next(e for e in resp.get_json()["entries"] if e["id"] == fe_id)
-
-
-def test_snapshot_easa_fields_flat_on_linked_entry(app, client):
-    uid, tid = _create_user_and_tenant(app)
+def test_aircraft_snapshot_rows_are_display_strings(app, client):
+    _uid, tid = _create_user_and_tenant(app)
     _login(app, client)
     ac_id = _add_aircraft(app, tid)
     fe_id = _add_flight(
         app,
         ac_id,
-        pic_user_id=uid,
-        departure_time=time(9, 0),
-        arrival_time=time(10, 0),
-        flight_time=Decimal("1.0"),
-        landings_day=1,
-        landings_night=0,
-        single_pilot_se=Decimal("1.0"),
-        function_pic=Decimal("1.0"),
+        departure_icao=" ebos ",
+        departure_time=time(10, 30),
+        arrival_time=time(11, 45),
+        flight_time=Decimal("1.30"),
+        flight_time_counter_start=Decimal("1424.50"),
+        flight_time_counter_end=Decimal("1425.8"),
+        engine_time_counter_start=Decimal(2200),
+        engine_time_counter_end=Decimal("2201.3"),
+        passenger_count=2,
+        landing_count=3,
+        notes="  Some notes  ",
     )
-
-    entry = _linked_entry(client, ac_id, fe_id)
-    assert "pilot" not in entry  # no more separate nested sub-object
-    assert entry["fields"]["landings_day"] == "1"
-    assert entry["fields"]["landings_night"] == "0"
-    assert entry["fields"]["single_pilot_se"] == "1.0"
-    assert entry["fields"]["function_pic"] == "1.0"
-
-
-def test_sync_linked_easa_field_applies(app, client):
-    uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id, pic_user_id=uid, night_time=None)
     _add_crew(app, fe_id, "Alice", "PIC", 0)
 
-    base = _fields(app, client, ac_id, fe_id)
-    fields = dict(base)
-    fields["night_time"] = "0.3"
-
-    resp = _sync(client, fe_id, fields, base)
+    resp = client.get(f"/api/offline/aircraft/{ac_id}/logbook")
     assert resp.status_code == 200
-    assert resp.get_json()["entry"]["night_time"] == "0.3"
-    with app.app_context():
-        fe = db.session.get(Flight, fe_id)
-        assert float(fe.night_time) == 0.3
-
-
-def test_sync_linked_easa_field_conflict_blocks_like_any_other_field(app, client):
-    uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id, pic_user_id=uid, landings_day=1, notes="orig")
-
-    base = _fields(app, client, ac_id, fe_id)
-    with app.app_context():
-        fe = db.session.get(Flight, fe_id)
-        fe.landings_day = 9  # server-side change, conflicts with the local edit below
-        db.session.commit()
-    fields = dict(base)
-    fields["landings_day"] = "3"  # conflicting
-    fields["notes"] = "clean change"  # not conflicting, must not apply either
-
-    resp = _sync(client, fe_id, fields, base)
-    assert resp.status_code == 409
     data = resp.get_json()
-    assert data["status"] == "conflict"
-    assert data["conflicts"] == [
-        {"field": "landings_day", "base": "1", "local": "3", "server": "9"}
+    assert data["aircraft"] == {"id": ac_id, "registration": "OO-PNH"}
+    assert "snapshot_taken_at" in data
+    assert data["entries"] == [
+        {
+            "id": fe_id,
+            "fields": {
+                "date": "2024-01-15",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "departure_time": "10:30",
+                "arrival_time": "11:45",
+                "flight_time": "1.3",
+                "flight_time_counter_start": "1424.5",
+                "flight_time_counter_end": "1425.8",
+                "engine_time_counter_start": "2200.0",
+                "engine_time_counter_end": "2201.3",
+                "landing_count": "3",
+                "passenger_count": "2",
+                "pic_name": "Alice",
+                "notes": "Some notes",
+            },
+        }
     ]
-    assert "pilot_conflicts" not in data
-    with app.app_context():
-        fe = db.session.get(Flight, fe_id)
-        assert fe.landings_day == 9  # nothing applied
-        assert fe.notes == "orig"  # the clean change was not applied either
 
 
-def test_sync_unparseable_easa_decimal_stored_as_none(app, client):
-    """A malformed EASA decimal field (can't happen through the real UI,
-    but nothing stops a hand-crafted sync body) is silently dropped to None
-    by _parse_easa_decimal's except branch rather than 500ing."""
-    uid, tid = _create_user_and_tenant(app)
+def test_aircraft_snapshot_empty_values_are_empty_strings(app, client):
+    _uid, tid = _create_user_and_tenant(app)
     _login(app, client)
     ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id, pic_user_id=uid, night_time=Decimal("0.5"))
-    _add_crew(app, fe_id, "Alice", "PIC", 0)
+    _add_flight(app, ac_id, departure_icao=None, arrival_icao=None)
 
-    base = _fields(app, client, ac_id, fe_id)
-    fields = dict(base)
-    fields["night_time"] = "not-a-number"
-
-    resp = _sync(client, fe_id, fields, base)
-    assert resp.status_code == 200
-    assert resp.get_json()["entry"]["night_time"] == ""
-    with app.app_context():
-        fe = db.session.get(Flight, fe_id)
-        assert fe.night_time is None
+    fields = client.get(f"/api/offline/aircraft/{ac_id}/logbook").get_json()["entries"][
+        0
+    ]["fields"]
+    assert fields["date"] == "2024-01-15"
+    assert {value for key, value in fields.items() if key != "date"} == {""}
 
 
-def test_sync_unparseable_easa_int_stored_as_none(app, client):
-    """A landings count of '²' (superscript two) used to 500: str.isdigit()
-    is True for it but int() raises ValueError — found by
-    fuzz/fuzz_offline_easa_values.py. _parse_easa_int now catches that like
-    _parse_easa_decimal already does, dropping it to None instead of
-    crashing the sync endpoint."""
-    uid, tid = _create_user_and_tenant(app)
+def test_aircraft_snapshot_is_the_whole_logbook_in_date_order(app, client):
+    _uid, tid = _create_user_and_tenant(app)
     _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    fe_id = _add_flight(app, ac_id, pic_user_id=uid, landings_day=1)
-    _add_crew(app, fe_id, "Alice", "PIC", 0)
+    ac_id = _add_aircraft(app, tid, archived=True)
+    later = _add_flight(app, ac_id, date=date(2024, 2, 1))
+    earlier = _add_flight(app, ac_id, date=date(2024, 1, 1))
+    same_day_first = _add_flight(app, ac_id, date=date(2024, 1, 15))
+    same_day_second = _add_flight(app, ac_id, date=date(2024, 1, 15))
 
-    base = _fields(app, client, ac_id, fe_id)
-    fields = dict(base)
-    fields["landings_day"] = "²"  # superscript two
-
-    resp = _sync(client, fe_id, fields, base)
-    assert resp.status_code == 200
-    assert resp.get_json()["entry"]["landings_day"] == ""
-    with app.app_context():
-        fe = db.session.get(Flight, fe_id)
-        assert fe.landings_day is None
-
-
-def test_sync_404_for_standalone_flight_owned_by_another_pilot(app, client):
-    """_get_flight_or_404's identity-scoped branch: a standalone (aircraft_id
-    NULL) Flight has no tenant to check, so only its own pic/second-crew
-    occupant may sync it."""
-    _create_user_and_tenant(app)
-    other_uid, _ = _create_user_and_tenant(app, email="other@example.com")
-    with app.app_context():
-        fe = Flight(
-            date=date(2024, 1, 15),
-            other_aircraft_type="PA28",
-            other_aircraft_registration="OO-OTH",
-            pic_user_id=other_uid,
-            pic_name="Other Pilot",
-        )
-        db.session.add(fe)
-        db.session.commit()
-        fe_id = fe.id
-    _login(app, client)
-
-    resp = _sync(client, fe_id, {}, {})
-    assert resp.status_code == 404
-
-
-# ── Standalone pilot logbook endpoints (38h) ─────────────────────────────────
-
-
-def test_pilot_snapshot_excludes_linked_entries(app, client):
-    uid, tid = _create_user_and_tenant(app)
-    _login(app, client)
-    ac_id = _add_aircraft(app, tid)
-    _add_pilot_entry(app, uid, aircraft_id=ac_id)
-    standalone_id = _add_pilot_entry(app, uid, aircraft_id=None)
-
-    resp = client.get("/api/offline/pilot/logbook")
-    assert resp.status_code == 200
+    resp = client.get(f"/api/offline/aircraft/{ac_id}/logbook")
     ids = [e["id"] for e in resp.get_json()["entries"]]
-    assert ids == [standalone_id]
+    assert ids == [earlier, same_day_first, same_day_second, later]
 
 
-def test_pilot_snapshot_sorted_by_date_then_id(app, client):
-    uid, _ = _create_user_and_tenant(app)
+def test_aircraft_snapshot_other_tenant_aircraft_404(app, client):
+    _create_user_and_tenant(app, email="a@example.com")
+    _, tid_b = _create_user_and_tenant(app, email="b@example.com")
+    _login(app, client, email="a@example.com")
+    ac_id = _add_aircraft(app, tid_b, registration="OO-OTHER")
+    assert client.get(f"/api/offline/aircraft/{ac_id}/logbook").status_code == 404
+
+
+def test_aircraft_snapshot_missing_aircraft_404(app, client):
+    _create_user_and_tenant(app)
     _login(app, client)
+    assert client.get("/api/offline/aircraft/999999/logbook").status_code == 404
+
+
+def test_aircraft_snapshot_anonymous_401_json(client):
+    resp = client.get("/api/offline/aircraft/1/logbook")
+    assert resp.status_code == 401
+    assert resp.get_json() == {"status": "auth"}
+
+
+# ── Pilot snapshot API ─────────────────────────────────────────────────────────
+
+
+def test_pilot_snapshot_is_the_whole_logbook(app, client):
+    """Fleet flights and standalone entries alike, as in the online logbook."""
+    uid, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+    fleet = _add_flight(app, ac_id, pic_user_id=uid, date=date(2024, 3, 1))
     later = _add_pilot_entry(app, uid, date=date(2024, 2, 1))
     earlier = _add_pilot_entry(app, uid, date=date(2024, 1, 1))
+    other = _add_second_pilot(app, tid)
+    _add_pilot_entry(app, other)
 
-    resp = client.get("/api/offline/pilot/logbook")
-    ids = [e["id"] for e in resp.get_json()["entries"]]
-    assert ids == [earlier, later]
+    entries = client.get("/api/offline/pilot/logbook").get_json()["entries"]
+    assert [e["id"] for e in entries] == [earlier, later, fleet]
+    fleet_row = entries[2]["fields"]
+    assert fleet_row["aircraft_type"] == "Cessna 172S"
+    assert fleet_row["registration"] == "OO-PNH"
 
 
-def test_pilot_snapshot_anonymous_401_json(app, client):
+def test_pilot_snapshot_row_fields(app, client):
+    uid, _ = _create_user_and_tenant(app)
+    _login(app, client)
+    entry_id = _add_pilot_entry(
+        app,
+        uid,
+        departure_time=time(9, 5),
+        arrival_time=time(10, 20),
+        landings_night=2,
+        single_pilot_se=Decimal("1.25"),
+        night_time=Decimal("0.4"),
+        instrument_time=Decimal("0.2"),
+        remarks="Cross-country",
+    )
+    with app.app_context():
+        db.session.get(Flight, entry_id).pic_remarks = "My note"
+        db.session.commit()
+
+    fields = client.get("/api/offline/pilot/logbook").get_json()["entries"][0]["fields"]
+    assert fields == {
+        "date": "2024-01-15",
+        "entry_type": "flight",
+        "fstd_type": "",
+        "aircraft_type": "Cessna 172S",
+        "registration": "OO-PNH",
+        "departure_place": "EBOS",
+        "departure_time": "09:05",
+        "arrival_place": "EBBR",
+        "arrival_time": "10:20",
+        "pic_name": "Alice",
+        "landings_day": "1",
+        "landings_night": "2",
+        "total_time": "1.2",
+        "fstd_duration": "",
+        "night_time": "0.4",
+        "instrument_time": "0.2",
+        "remarks": "Cross-country · My note",
+        "function_pic": "1.3",
+        "function_copilot": "",
+        "function_dual": "",
+        "function_instructor": "",
+    }
+
+
+def test_pilot_snapshot_hides_the_other_pilots_part_of_a_shared_flight(app, client):
+    uid, tid = _create_user_and_tenant(app)
+    other = _add_second_pilot(app, tid)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+    _add_flight(
+        app,
+        ac_id,
+        pic_user_id=other,
+        second_crew_user_id=uid,
+        function_pic=Decimal("1.5"),
+        function_dual=Decimal("1.5"),
+        pic_remarks="PIC's private remark",
+        second_crew_remarks="Student's remark",
+    )
+    fields = client.get("/api/offline/pilot/logbook").get_json()["entries"][0]["fields"]
+    assert fields["function_pic"] == ""
+    assert fields["function_dual"] == "1.5"
+    assert fields["remarks"] == "Student's remark"
+
+
+def test_pilot_snapshot_anonymous_401_json(client):
     resp = client.get("/api/offline/pilot/logbook")
     assert resp.status_code == 401
     assert resp.get_json() == {"status": "auth"}
@@ -1220,272 +358,130 @@ def test_pilot_snapshot_requires_pilot_access(app, client):
     _, tid = _create_user_and_tenant(app)
     _add_viewer_user(app, tid)
     _login(app, client, email="viewer@example.com")
-    resp = client.get("/api/offline/pilot/logbook")
-    assert resp.status_code == 403
+    assert client.get("/api/offline/pilot/logbook").status_code == 403
 
 
-def _pilot_fields(client, entry_id):
-    resp = client.get("/api/offline/pilot/logbook")
-    entry = next(e for e in resp.get_json()["entries"] if e["id"] == entry_id)
-    return dict(entry["fields"])
+# ── Identity check used by the service worker ─────────────────────────────────
 
 
-def _sync_pilot(client, entry_id, fields, base):
-    return client.post(
-        f"/api/offline/pilot/logbook/{entry_id}/sync",
-        json={"fields": fields, "base": base},
-    )
-
-
-def test_pilot_sync_clean_change_applied(app, client):
-    uid, _ = _create_user_and_tenant(app)
+def test_identity_check_returns_identity_headers(app, client):
+    _create_user_and_tenant(app)
     _login(app, client)
-    eid = _add_pilot_entry(app, uid, remarks="original")
+    resp = client.get("/api/offline/identity")
+    assert resp.status_code == 204
+    assert "X-OH-Offline-Owner" in resp.headers
 
-    base = _pilot_fields(client, eid)
-    fields = dict(base)
-    fields["remarks"] = "updated"
 
-    resp = _sync_pilot(client, eid, fields, base)
+def test_identity_check_anonymous_401_json(client):
+    resp = client.get("/api/offline/identity")
+    assert resp.status_code == 401
+    assert resp.headers["X-OH-Offline-Owner"] == ""
+
+
+# ── Read-only offline pages ────────────────────────────────────────────────────
+
+
+def test_aircraft_offline_page_is_read_only(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+    resp = client.get(f"/aircraft/{ac_id}/logbook/offline")
     assert resp.status_code == 200
-    data = resp.get_json()
-    assert data["status"] == "ok"
-    assert data["entry"]["remarks"] == "updated"
-    with app.app_context():
-        pe = db.session.get(Flight, eid)
-        assert pe.notes == "updated"
+    html = resp.data.decode()
+    assert 'data-oh-offline-logbook="aircraft"' in html
+    assert f'data-oh-aircraft-id="{ac_id}"' in html
+    assert 'id="oh-offline-row"' in html
+    assert 'id="oh-offline-logbook-i18n"' in html
+    page = html[html.index('id="oh-offline-logbook"') :]
+    assert "<input" not in page and "<select" not in page and "<textarea" not in page
 
 
-def test_pilot_sync_no_conflict_when_server_unchanged(app, client):
-    uid, _ = _create_user_and_tenant(app)
+def test_pilot_offline_page_is_read_only(app, client):
+    _create_user_and_tenant(app)
     _login(app, client)
-    eid = _add_pilot_entry(app, uid)
-
-    base = _pilot_fields(client, eid)
-    fields = dict(base)
-    fields["remarks"] = "Training"
-
-    resp = _sync_pilot(client, eid, fields, base)
+    resp = client.get("/pilot/logbook/offline")
     assert resp.status_code == 200
-    assert resp.get_json()["entry"]["remarks"] == "Training"
+    html = resp.data.decode()
+    assert 'data-oh-offline-logbook="pilot"' in html
+    assert 'data-oh-pilot-logbook="1"' in html
+    page = html[html.index('id="oh-offline-logbook"') :]
+    assert "<input" not in page and "<select" not in page and "<textarea" not in page
 
 
-def test_pilot_sync_no_conflict_when_server_changed_to_same_value(app, client):
-    uid, _ = _create_user_and_tenant(app)
-    _login(app, client)
-    eid = _add_pilot_entry(app, uid)
-
-    base = _pilot_fields(client, eid)
-    with app.app_context():
-        pe = db.session.get(Flight, eid)
-        pe.notes = "Training"
-        db.session.commit()
-
-    fields = dict(base)
-    fields["remarks"] = "Training"
-
-    resp = _sync_pilot(client, eid, fields, base)
-    assert resp.status_code == 200
-    assert resp.get_json()["entry"]["remarks"] == "Training"
+@pytest.mark.parametrize(
+    "path", ["/aircraft/{ac}/logbook/offline", "/pilot/logbook/offline"]
+)
+def test_offline_pages_require_pilot_access(app, client, path):
+    _, tid = _create_user_and_tenant(app)
+    ac_id = _add_aircraft(app, tid)
+    _add_viewer_user(app, tid)
+    _login(app, client, email="viewer@example.com")
+    assert client.get(path.format(ac=ac_id)).status_code == 403
 
 
-def test_pilot_sync_conflict_when_server_changed_differently(app, client):
-    uid, _ = _create_user_and_tenant(app)
-    _login(app, client)
-    eid = _add_pilot_entry(app, uid)
-
-    base = _pilot_fields(client, eid)
-    with app.app_context():
-        pe = db.session.get(Flight, eid)
-        pe.notes = "Server value"
-        db.session.commit()
-
-    fields = dict(base)
-    fields["remarks"] = "Local value"
-
-    resp = _sync_pilot(client, eid, fields, base)
-    assert resp.status_code == 409
-    data = resp.get_json()
-    assert data["status"] == "conflict"
-    assert data["conflicts"] == [
-        {
-            "field": "remarks",
-            "base": base["remarks"],
-            "local": "Local value",
-            "server": "Server value",
-        }
-    ]
-    with app.app_context():
-        pe = db.session.get(Flight, eid)
-        assert pe.notes == "Server value"
+@pytest.mark.parametrize(
+    "path", ["/aircraft/{ac}/logbook/offline", "/pilot/logbook/offline"]
+)
+def test_offline_pages_redirect_anonymous_to_login(app, client, path):
+    _, tid = _create_user_and_tenant(app)
+    ac_id = _add_aircraft(app, tid)
+    resp = client.get(path.format(ac=ac_id))
+    assert resp.status_code == 302
+    assert "/login" in resp.location
 
 
-def test_pilot_sync_multi_field_one_conflict_blocks_all(app, client):
-    uid, _ = _create_user_and_tenant(app)
-    _login(app, client)
-    eid = _add_pilot_entry(app, uid, remarks="original")
-
-    base = _pilot_fields(client, eid)
-    with app.app_context():
-        pe = db.session.get(Flight, eid)
-        pe.pic_name = "Server value"
-        db.session.commit()
-
-    fields = dict(base)
-    fields["pic_name"] = "Local value"
-    fields["remarks"] = "clean change"
-
-    resp = _sync_pilot(client, eid, fields, base)
-    assert resp.status_code == 409
-    with app.app_context():
-        pe = db.session.get(Flight, eid)
-        assert pe.notes == "original"
-
-
-def test_pilot_sync_validation_error_negative_landings(app, client):
-    uid, _ = _create_user_and_tenant(app)
-    _login(app, client)
-    eid = _add_pilot_entry(app, uid)
-
-    base = _pilot_fields(client, eid)
-    fields = dict(base)
-    fields["landings_day"] = "-1"
-
-    resp = _sync_pilot(client, eid, fields, base)
-    assert resp.status_code == 400
-    assert resp.get_json()["status"] == "invalid"
-
-
-def test_pilot_sync_fstd_toggle_applies(app, client):
-    uid, _ = _create_user_and_tenant(app)
-    _login(app, client)
-    eid = _add_pilot_entry(app, uid)
-
-    base = _pilot_fields(client, eid)
-    fields = dict(base)
-    fields["entry_type"] = "fstd"
-    fields["fstd_type"] = "FNPT2"
-    fields["fstd_duration"] = "1.5"
-
-    resp = _sync_pilot(client, eid, fields, base)
-    assert resp.status_code == 200
-    with app.app_context():
-        pe = db.session.get(Flight, eid)
-        assert pe.entry_type == "fstd"
-        # The aircraft/device descriptor survives the toggle; landings,
-        # which can't apply to a simulator, don't.
-        assert pe.other_aircraft_type == "Cessna 172S"
-        assert pe.landings_day is None
-        assert float(pe.fstd_duration) == 1.5
-
-
-def test_pilot_sync_other_users_entry_404(app, client):
-    _, tid = _create_user_and_tenant(app, email="a@example.com")
-    uid_b = _add_second_pilot(app, tid, email="b@example.com")
-    eid = _add_pilot_entry(app, uid_b)
+def test_aircraft_offline_page_other_tenant_404(app, client):
+    _create_user_and_tenant(app, email="a@example.com")
+    _, tid_b = _create_user_and_tenant(app, email="b@example.com")
     _login(app, client, email="a@example.com")
+    ac_id = _add_aircraft(app, tid_b, registration="OO-OTHER")
+    assert client.get(f"/aircraft/{ac_id}/logbook/offline").status_code == 404
 
-    resp = _sync_pilot(client, eid, {}, {})
-    assert resp.status_code == 404
+
+def test_offline_templates_have_no_inline_script():
+    from pathlib import Path
+
+    for name in (
+        "aircraft_logbook.html",
+        "pilot_logbook.html",
+        "_snapshot_notice.html",
+    ):
+        text = (Path("app/templates/offline") / name).read_text()
+        assert "<script nonce" not in text
 
 
-def test_pilot_sync_linked_entry_hit_on_standalone_endpoint_404(app, client):
+def test_logbooks_link_to_their_offline_page(app, client):
+    _, tid = _create_user_and_tenant(app)
+    _login(app, client)
+    ac_id = _add_aircraft(app, tid)
+    flights = client.get(f"/aircraft/{ac_id}/flights").data.decode()
+    assert "/aircraft/OO-PNH/logbook/offline" in flights
+    assert "Offline logbook" in flights
+    assert "/pilot/logbook/offline" in client.get("/pilot/logbook").data.decode()
+
+
+# ── Offline editing is gone ───────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("post", "/api/offline/flights/{fe}/sync"),
+        ("post", "/api/offline/pilot/logbook/{pe}/sync"),
+        ("get", "/api/offline/csrf"),
+        ("get", "/offline/changes"),
+        ("get", "/api/check-flight-duplicate"),
+    ],
+)
+def test_offline_editing_endpoints_are_gone(app, client, method, path):
     uid, tid = _create_user_and_tenant(app)
     _login(app, client)
     ac_id = _add_aircraft(app, tid)
-    eid = _add_pilot_entry(app, uid, aircraft_id=ac_id)
-
-    resp = _sync_pilot(client, eid, {}, {})
-    assert resp.status_code == 404
-
-
-def test_pilot_sync_missing_entry_404(app, client):
-    _create_user_and_tenant(app)
-    _login(app, client)
-    resp = _sync_pilot(client, 999999, {}, {})
-    assert resp.status_code == 404
-
-
-def test_pilot_sync_anonymous_401_json(app, client):
-    resp = client.post("/api/offline/pilot/logbook/1/sync", json={})
-    assert resp.status_code == 401
-    assert resp.get_json() == {"status": "auth"}
-
-
-def test_pilot_sync_requires_pilot_access(app, client):
-    uid, tid = _create_user_and_tenant(app)
-    eid = _add_pilot_entry(app, uid)
-    _add_viewer_user(app, tid)
-    _login(app, client, email="viewer@example.com")
-
-    resp = _sync_pilot(client, eid, {}, {})
-    assert resp.status_code == 403
-
-
-def test_pilot_sync_malformed_body_missing_keys_400(app, client):
-    uid, _ = _create_user_and_tenant(app)
-    _login(app, client)
-    eid = _add_pilot_entry(app, uid)
-    base = _pilot_fields(client, eid)
-
-    resp = client.post(
-        f"/api/offline/pilot/logbook/{eid}/sync",
-        json={"fields": {"date": base["date"]}, "base": base},
+    fe_id = _add_flight(app, ac_id, pic_user_id=uid)
+    pe_id = _add_pilot_entry(app, uid)
+    resp = getattr(client, method)(
+        path.format(fe=fe_id, pe=pe_id), json={"fields": {}, "base": {}}
     )
-    assert resp.status_code == 400
-    assert resp.get_json()["status"] == "invalid"
-
-
-def test_pilot_sync_malformed_body_not_json_400(app, client):
-    uid, _ = _create_user_and_tenant(app)
-    _login(app, client)
-    eid = _add_pilot_entry(app, uid)
-
-    resp = client.post(
-        f"/api/offline/pilot/logbook/{eid}/sync",
-        data="not json",
-        content_type="text/plain",
-    )
-    assert resp.status_code == 400
-    assert resp.get_json()["status"] == "invalid"
-
-
-# ── Standalone pilot workbench page (38i) ────────────────────────────────────
-
-
-def test_pilot_workbench_returns_200(app, client):
-    _create_user_and_tenant(app)
-    _login(app, client)
-    resp = client.get("/pilot/logbook/offline")
-    assert resp.status_code == 200
-    assert b"oh-pilot-workbench-root" in resp.data
-
-
-def test_pilot_workbench_requires_pilot_access(app, client):
-    _, tid = _create_user_and_tenant(app)
-    _add_viewer_user(app, tid)
-    _login(app, client, email="viewer@example.com")
-    resp = client.get("/pilot/logbook/offline")
-    assert resp.status_code == 403
-
-
-def test_pilot_workbench_anonymous_redirects_to_login(app, client):
-    resp = client.get("/pilot/logbook/offline")
-    assert resp.status_code == 302
-    assert "/login" in resp.headers["Location"]
-
-
-def test_pilot_workbench_has_row_template_and_i18n_bridge(app, client):
-    _create_user_and_tenant(app)
-    _login(app, client)
-    resp = client.get("/pilot/logbook/offline")
-    assert b'<template id="oh-pwb-row">' in resp.data
-    assert b'id="oh-pwb-i18n"' in resp.data
-    assert b'type="application/json"' in resp.data
-
-
-def test_pilot_workbench_has_data_oh_pilot_logbook(app, client):
-    _create_user_and_tenant(app)
-    _login(app, client)
-    resp = client.get("/pilot/logbook/offline")
-    assert b'data-oh-pilot-logbook="1"' in resp.data
+    assert resp.status_code in (404, 405)
+    with app.app_context():
+        assert db.session.get(Flight, fe_id).notes is None

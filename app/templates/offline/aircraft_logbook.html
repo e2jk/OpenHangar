@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Offline logbook') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
+
+{% block content %}
+<div class="container py-4" id="oh-offline-logbook" data-oh-offline-logbook="aircraft"
+     data-oh-aircraft-id="{{ aircraft.id }}">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-cloud-arrow-down me-2"></i>{{ _('Offline logbook') }}</h1>
+      <p class="page-sub"><span class="oh-reg-plate">{{ aircraft.registration }}</span> — {{ aircraft.make }} {{ aircraft.model }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('flights.list_flights', aircraft_id=aircraft.id) }}" class="btn btn-ac-ghost">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Back to logbook') }}
+      </a>
+    </div>
+  </div>
+
+  {% include "offline/_snapshot_notice.html" %}
+
+  <div class="ac-form-card p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 oh-fs-088">
+        <thead class="oh-bg-light">
+          <tr>
+            <th class="ps-3">{{ _('Date') }}</th>
+            <th>{{ _('Route') }}</th>
+            <th>{{ _('UTC times') }}</th>
+            <th class="text-end">{{ _('Duration') }}</th>
+            <th class="text-end">{{ _('Flight counter') }}</th>
+            <th class="text-end">{{ _('Engine counter') }}</th>
+            <th class="text-end">{{ _('Ldg') }}</th>
+            <th class="text-end">{{ _('Pax') }}</th>
+            <th>{{ _('PIC / Commander') }}</th>
+            <th class="pe-3">{{ _('Notes') }}</th>
+          </tr>
+        </thead>
+        <tbody data-oh-offline-rows>
+          <tr><td colspan="10" class="text-center text-muted py-4">{{ _('Loading…') }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<template id="oh-offline-row">
+  <tr>
+    <td class="ps-3 text-nowrap" data-col="date"></td>
+    <td class="text-nowrap"><span data-col="departure_icao"></span> → <span data-col="arrival_icao"></span></td>
+    <td class="text-nowrap"><span data-col="departure_time"></span>–<span data-col="arrival_time"></span></td>
+    <td class="text-end" data-col="flight_time"></td>
+    <td class="text-end text-nowrap"><span data-col="flight_time_counter_start"></span> / <span data-col="flight_time_counter_end"></span></td>
+    <td class="text-end text-nowrap"><span data-col="engine_time_counter_start"></span> / <span data-col="engine_time_counter_end"></span></td>
+    <td class="text-end" data-col="landing_count"></td>
+    <td class="text-end" data-col="passenger_count"></td>
+    <td data-col="pic_name"></td>
+    <td class="pe-3 oh-mw-160 overflow-hidden oh-text-ellipsis" data-col="notes"></td>
+  </tr>
+</template>
+
+{% endblock %}

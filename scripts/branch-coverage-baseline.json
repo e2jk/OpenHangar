@@ -1,0 +1,13 @@
+{
+  "auth/routes.py": 98.5,
+  "services/auth_challenges.py": 100.0,
+  "services/auth_sessions.py": 100.0,
+  "services/authorization.py": 100.0,
+  "services/billing.py": 100.0,
+  "services/co_owner_billing.py": 95.5,
+  "services/login_throttle.py": 100.0,
+  "services/offline_identity.py": 100.0,
+  "services/safe_paths.py": 100.0,
+  "services/spreadsheet_limits.py": 100.0,
+  "services/totp.py": 100.0
+}

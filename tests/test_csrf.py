@@ -3,22 +3,19 @@ Tests for CSRF protection.
 
 Verifies that:
 - The csrf-token meta tag is present and non-empty on every HTML page.
-- POST requests without a CSRF token are rejected with 400.
-- POST requests with a forged/mismatched token are rejected with 400.
+- POST requests without a CSRF token, or with a forged/mismatched one, are
+  refused: sign-in forms are shown again, other forms get an explanation page.
 - POST requests with a valid token are not rejected by the CSRF layer.
 - The X-CSRFToken header (used by AJAX fetch() calls) is also accepted.
 """
 
 import re
 import tempfile
-from datetime import date
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
 from init import create_app  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
-    Aircraft,
-    Flight,
     Role,
     Tenant,
     TenantUser,
@@ -89,116 +86,114 @@ class TestCSRFMetaTag:
         assert len(token) > 10
 
 
-class TestCSRFEnforcement:
-    def test_post_without_token_returns_400(self, csrf_client):
-        """A POST with no csrf_token field is rejected before any business logic runs."""
-        resp = csrf_client.post(
-            "/login",
-            data={"email": "x@example.com", "password": "wrongpassword"},
-        )
-        assert resp.status_code == 400
+def _login(client, password="TestPassword1!"):
+    token = _token_from_html(client.get("/login").data)
+    resp = client.post(
+        "/login",
+        data={"email": "csrf@test.com", "password": password, "csrf_token": token},
+    )
+    return token, resp
 
-    def test_post_with_forged_token_returns_400(self, csrf_client):
-        """A POST with a made-up csrf_token value is rejected."""
+
+class TestCSRFEnforcement:
+    @pytest.mark.parametrize("token", [None, "not-a-real-token"])
+    def test_sign_in_without_a_valid_token_is_refused_and_shown_again(
+        self, csrf_client, token
+    ):
+        """Even with correct credentials: the form is shown again, with a reason."""
+        data = {"email": "csrf@test.com", "password": "TestPassword1!"}
+        if token:
+            data["csrf_token"] = token
+        resp = csrf_client.post("/login", data=data)
+        assert resp.status_code == 302
+        assert resp.location.endswith("/login")
+        with csrf_client.session_transaction() as sess:
+            assert "user_id" not in sess
+        page = csrf_client.get("/login").data
+        assert b"The sign-in form had expired" in page
+
+    def test_other_forms_without_a_valid_token_are_refused(self, csrf_client):
+        _login(csrf_client)
         resp = csrf_client.post(
-            "/login",
-            data={
-                "email": "x@example.com",
-                "password": "wrongpassword",
-                "csrf_token": "not-a-real-token",
-            },
+            "/profile",
+            data={"action": "update_name", "name": "Forged"},
+            headers={"X-CSRFToken": "not-a-real-token"},
         )
         assert resp.status_code == 400
+        with csrf_client.application.app_context():
+            assert User.query.filter_by(email="csrf@test.com").one().name is None
 
     def test_post_with_valid_form_token_passes_csrf_check(self, csrf_client):
-        """A token obtained from the meta tag is accepted; the response is not a CSRF 400."""
-        get_resp = csrf_client.get("/login")
-        token = _token_from_html(get_resp.data)
-
-        # Auth will fail (no such user), but CSRF must not — so status != 400.
-        resp = csrf_client.post(
-            "/login",
-            data={
-                "email": "nobody@example.com",
-                "password": "wrongpassword",
-                "csrf_token": token,
-            },
-        )
-        assert resp.status_code != 400, "Valid CSRF token should not be rejected"
+        """A valid token reaches the view: wrong credentials re-render the form."""
+        _, resp = _login(csrf_client, password="wrongpassword")
+        assert resp.status_code == 200
+        assert b"The sign-in form had expired" not in resp.data
 
     def test_post_with_valid_header_token_passes_csrf_check(self, csrf_client):
         """X-CSRFToken header (used by fetch() AJAX calls) is accepted as an alternative."""
-        get_resp = csrf_client.get("/login")
-        token = _token_from_html(get_resp.data)
-
+        token = _token_from_html(csrf_client.get("/login").data)
         resp = csrf_client.post(
             "/login",
             data={"email": "nobody@example.com", "password": "wrongpassword"},
             headers={"X-CSRFToken": token},
         )
-        assert resp.status_code != 400, "X-CSRFToken header should be accepted"
+        assert resp.status_code == 200
 
 
-class TestCSRFOfflineSync:
-    """The offline sync endpoint (Phase 38b) is JSON-only — verify its CSRF
-    failures return JSON (via the blueprint's CSRFError handler) rather than
-    the default HTML error page, and that a valid X-CSRFToken header works."""
+class TestExpiredForms:
+    """A token that no longer matches the session: say what to do, never a
+    bare error page (the installed app has no browser navigation buttons)."""
 
-    @pytest.fixture()
-    def flight_id(self, csrf_app):
-        with csrf_app.app_context():
-            tenant = Tenant.query.filter_by(name="CSRF Test Hangar").first()
-            ac = Aircraft(
-                tenant_id=tenant.id, registration="OO-CSRF", make="Cessna", model="172S"
-            )
-            db.session.add(ac)
-            db.session.flush()
-            fe = Flight(
-                aircraft_id=ac.id,
-                date=date(2024, 1, 15),
-                departure_icao="EBOS",
-                arrival_icao="EBBR",
-            )
-            db.session.add(fe)
-            db.session.commit()
-            return fe.id
-
-    def _login(self, csrf_client):
-        with csrf_client.session_transaction() as sess:
-            with csrf_client.application.app_context():
-                uid = User.query.filter_by(email="csrf@test.com").first().id
-            sess["user_id"] = uid
-
-    def test_sync_without_csrf_token_returns_json_400(self, csrf_client, flight_id):
-        self._login(csrf_client)
-        resp = csrf_client.post(
-            f"/api/offline/flights/{flight_id}/sync",
-            json={"fields": {}, "base": {}},
-        )
-        assert resp.status_code == 400
-        errors = resp.get_json()["errors"]
-        assert any("csrf" in e.lower() for e in errors), errors
-
-    def test_sync_with_valid_header_token_passes_csrf_check(
-        self, csrf_client, flight_id
+    def test_sign_in_submitted_again_after_it_succeeded_goes_to_the_dashboard(
+        self, csrf_client, caplog
     ):
-        self._login(csrf_client)
-        token = csrf_client.get("/api/offline/csrf").get_json()["csrf_token"]
+        # e.g. the TOTP form auto-submitted and the user also pressed Enter:
+        # the first submission signed in and replaced the session.
+        token, first = _login(csrf_client)
+        assert first.status_code == 302
+        with caplog.at_level("WARNING", logger="openhangar.auth"):
+            again = csrf_client.post(
+                "/login",
+                data={
+                    "email": "csrf@test.com",
+                    "password": "TestPassword1!",
+                    "csrf_token": token,
+                },
+            )
+        assert again.status_code == 302
+        assert again.location == "/"
+        assert "[SECURITY] csrf.failed path=/login" in caplog.text
+        with csrf_client.session_transaction() as sess:
+            assert sess.get("user_id")
 
+    def test_other_forms_get_a_page_with_ways_back(self, csrf_client):
+        _login(csrf_client)
         resp = csrf_client.post(
-            f"/api/offline/flights/{flight_id}/sync",
-            json={"fields": {}, "base": {}},
-            headers={"X-CSRFToken": token},
+            "/profile",
+            data={"action": "update_name", "name": "Forged", "csrf_token": "stale"},
+            headers={"Referer": "http://localhost/profile?tab=security"},
         )
-        # A valid token clears the CSRF layer; the empty body is then
-        # rejected by the view's own malformed-body check instead — proven
-        # by the distinct, non-CSRF error message (unlike the no-token case
-        # above, which never reaches the view).
         assert resp.status_code == 400
-        assert resp.get_json() == {
-            "status": "invalid",
-            "errors": ["Malformed request."],
-        }
+        assert resp.headers["X-OH-Form-Expired"] == "1"
+        html = resp.data.decode()
+        assert "This form has expired" in html
+        assert 'href="/profile?tab=security"' in html
+        assert 'href="/"' in html
+
+    @pytest.mark.parametrize(
+        "referer", ["https://elsewhere.example/profile", "http://localhost//evil", ""]
+    )
+    def test_the_way_back_stays_on_this_site(self, csrf_client, referer):
+        _login(csrf_client)
+        resp = csrf_client.post(
+            "/profile",
+            data={"action": "update_name", "name": "Forged", "csrf_token": "stale"},
+            headers={"Referer": referer} if referer else {},
+        )
+        html = resp.data.decode()
+        assert "elsewhere.example" not in html
+        assert 'href="//evil"' not in html
+        assert html.count('href="/"') >= 2  # the way back falls back to home
 
 
 class TestCSRFTimeLimit:
@@ -210,3 +205,12 @@ class TestCSRFTimeLimit:
         # clock and rely solely on session validity instead.
         app = create_app()
         assert app.config["WTF_CSRF_TIME_LIMIT"] is None
+
+
+def test_boosted_forms_show_the_expired_form_page():
+    """HTMX does not swap 4xx responses; ui.js opts this marked one in."""
+    from pathlib import Path
+
+    ui = (Path(__file__).parent.parent / "app" / "static" / "js" / "ui.js").read_text()
+    assert "xhr.getResponseHeader('X-OH-Form-Expired') === '1'" in ui
+    assert "evt.detail.shouldSwap = true;" in ui

@@ -3,9 +3,8 @@
   color: #4a6fa5;
 }
 
-/* Nav badge shown when offline or queue is non-empty */
-#oh-pwa-offline-badge,
-#oh-pwa-queue-badge {
+/* Nav badge shown when offline */
+#oh-pwa-offline-badge {
   display: none;
   font-size: 0.7rem;
   vertical-align: middle;
@@ -22,15 +21,7 @@
   color: #fff;
 }
 
-#oh-pwa-queue-badge {
-  background: #fd7e14;
-  color: #fff;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-body.oh-offline #oh-pwa-offline-badge,
-body.oh-queue-active #oh-pwa-queue-badge {
+body.oh-offline #oh-pwa-offline-badge {
   display: inline-block;
 }
 

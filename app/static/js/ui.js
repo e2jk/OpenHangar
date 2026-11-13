@@ -537,6 +537,17 @@ document.addEventListener('htmx:beforeSwap', function (evt) {
   evt.detail.swapOverride = 'innerHTML show:none';
 });
 
+/* An expired form (CSRF failure, init.py's csrf_failed) answers 400 with a
+   page explaining what to do. HTMX does not swap 4xx responses, so a boosted
+   form would otherwise appear to do nothing: show that page instead. */
+document.addEventListener('htmx:beforeSwap', function (evt) {
+  var xhr = evt.detail.xhr;
+  if (xhr && xhr.status === 400 && xhr.getResponseHeader('X-OH-Form-Expired') === '1') {
+    evt.detail.shouldSwap = true;
+    evt.detail.isError = false;
+  }
+});
+
 /* ── Bootstrap component re-init after HTMX body swap ──────────────────── */
 document.addEventListener('htmx:afterSettle', function () {
   /* Re-run per-element wiring for newly swapped content */

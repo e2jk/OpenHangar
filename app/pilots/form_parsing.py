@@ -1,12 +1,9 @@
 """Shared validation for the standalone Flight (pilot-only, aircraft_id NULL)
 editable field set.
 
-``parse_pilot_fields`` / ``apply_pilot_fields`` are used by both the online
-pilot-logbook form (``new_entry`` / ``edit_entry`` in ``pilots/routes.py``)
-and the offline sync API (``offline/routes.py``) so the two paths can never
-diverge. The field set matches
-``offline.serialize.PILOT_EDITABLE_FIELDS`` exactly — the full,
-standalone-entry set. A *linked* entry (aircraft_id set) only ever exposes
+``parse_pilot_fields`` / ``apply_pilot_fields`` hold the validation used by
+the pilot-logbook form (``new_entry`` / ``edit_entry`` in
+``pilots/routes.py``) — the full, standalone-entry set. A *linked* entry (aircraft_id set) only ever exposes
 ``PILOT_LINKED_EDITABLE_FIELDS``, handled separately by
 ``apply_pilot_identity`` in ``flights/routes.py``.
 """
@@ -213,8 +210,7 @@ def parse_pilot_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str]]
 def parse_linked_pilot_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str]]:
     """Parse + validate the user-entered subset of a *linked* PilotLogbookEntry.
 
-    Field set matches ``offline.serialize.PILOT_LINKED_EDITABLE_FIELDS``. An
-    empty ``departure_time``/``arrival_time`` parses to ``None``, meaning
+    An empty ``departure_time``/``arrival_time`` parses to ``None``, meaning
     "mirror the flight's corresponding time" — resolved by the caller
     (``flights.routes.apply_linked_pilot_entry``) against the current flight.
     """

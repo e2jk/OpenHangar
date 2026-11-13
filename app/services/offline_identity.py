@@ -23,8 +23,8 @@ def _namespace(value: str) -> str:
 def identity() -> tuple[str, str]:
     """Return an account namespace and login epoch, never an authentication token.
 
-    The stable owner lets its user recover their own unsynced work after signing
-    in again. Cached pages and snapshots additionally belong to one login epoch.
+    The stable owner names the account's browser database; cached pages and
+    logbook snapshots additionally belong to one login epoch.
     Neither value is accepted by the authentication protocol as a bearer token.
     """
     if not has_request_context():

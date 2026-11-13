@@ -125,6 +125,9 @@ class User(db.Model):
         db.String(32), nullable=False, default=lambda: secrets.token_hex(16)
     )
     totp_secret = db.Column(db.String(64), nullable=True, default=None)
+    # Last TOTP time step accepted (RFC 6238 §5.2): a code is accepted once, in
+    # any worker, by an atomic conditional UPDATE (services/totp.py).
+    totp_last_step = db.Column(db.BigInteger, nullable=True, default=None)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     name = db.Column(db.String(128), nullable=True)
     language = db.Column(db.String(8), nullable=True, default="en")
@@ -182,6 +185,18 @@ class AuthChallenge(db.Model):
     credential_binding = db.Column(db.String(64), nullable=True)
     expires_at = db.Column(db.BigInteger, nullable=False, index=True)
     payload = db.Column(db.JSON, nullable=False)
+
+
+class LoginThrottle(db.Model):
+    """Failed sign-in attempts per client address or e-mail, shared by every
+    worker and kept across restarts (services/login_throttle.py)."""
+
+    __tablename__ = "login_throttles"
+
+    key = db.Column(db.String(320), primary_key=True)
+    failures = db.Column(db.Integer, nullable=False, default=0)
+    window_expires_at = db.Column(db.BigInteger, nullable=False, index=True)
+    blocked_until = db.Column(db.BigInteger, nullable=True)
 
 
 class TenantUser(db.Model):
@@ -3821,7 +3836,12 @@ class LedgerEntry(db.Model):
     negative = the holder owes less. balance = sum(amount)."""
 
     __tablename__ = "ledger_entries"
-    __table_args__ = (db.Index("ix_ledger_entries_account_id", "account_id"),)
+    __table_args__ = (
+        db.Index("ix_ledger_entries_account_id", "account_id"),
+        # An entry is reversed at most once, even by concurrent requests.
+        # NULLs (every entry that is not a reversal) never conflict.
+        db.Index("uq_ledger_entries_reverses_id", "reverses_id", unique=True),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     account_id = db.Column(

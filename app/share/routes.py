@@ -14,7 +14,6 @@ from flask import (
     redirect,
     render_template,
     request,
-    session,
     url_for,
 )  # pyright: ignore[reportMissingImports]
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
@@ -27,10 +26,13 @@ from models import (
     MaintenanceTrigger,
     Role,
     ShareToken,
-    TenantUser,
     db,
 )  # pyright: ignore[reportMissingImports]
-from utils import login_required, require_role  # pyright: ignore[reportMissingImports]
+from utils import (  # pyright: ignore[reportMissingImports]
+    current_membership,  # pyright: ignore[reportMissingImports]
+    login_required,
+    require_role,
+)
 
 share_bp = Blueprint("share", __name__)
 
@@ -63,8 +65,9 @@ def _get_aircraft_or_403(aircraft_id: int) -> Aircraft:
     """Fetch an aircraft belonging to the logged-in user's tenant, or 403."""
     from utils import login_required  # noqa: F401 — guard already applied by decorator
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
+        # Unreachable: require_role refuses a user without a membership first.
         abort(403)  # pragma: no cover
     ac = db.session.get(Aircraft, aircraft_id)
     if not ac or ac.tenant_id != tu.tenant_id:
@@ -240,12 +243,9 @@ def showcase_view(token: str, registration: str | None = None) -> ResponseReturn
 
 @share_bp.route("/showcase/<token>/photos/<int:photo_id>/img")
 def showcase_photo(token: str, photo_id: int) -> ResponseReturnValue:
-    import os
 
-    from flask import (  # pyright: ignore[reportMissingImports]
-        current_app,
-        send_from_directory,
-    )
+    from flask import current_app  # pyright: ignore[reportMissingImports]
+    from services.safe_paths import send_inside
 
     st = ShareToken.query.filter_by(token=token, access_level="showcase").first()
     if not st or not st.is_active:
@@ -255,9 +255,7 @@ def showcase_photo(token: str, photo_id: int) -> ResponseReturnValue:
         abort(404)
 
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
-    directory = os.path.join(folder, os.path.dirname(photo.filename))
-    fname = os.path.basename(photo.filename)
     # Authorize above before Werkzeug handles any conditional file request.
-    response = send_from_directory(directory, fname, max_age=None)
+    response = send_inside(folder, photo.filename, max_age=None)
     response.headers["X-Robots-Tag"] = "noindex, nofollow"
     return response
