@@ -9,4 +9,5 @@
 - Recently opened pages, installing the app and **Share to OpenHangar** work as before.
 
 **Account security**
+- No more bare "CSRF token" error page. A sign-in form submitted twice (for example the two-factor code sent automatically and again with Enter) now takes you to your dashboard, since the first submission already signed you in; any other stale sign-in form is simply shown again. Other forms opened before your session changed show a page explaining what to do, with links back that also work in the installed app.
 - Setting up two-factor authentication on your profile now asks for your password first. Replacing your authenticator app or disabling two-factor authentication asks for your password and a code from your current app, so an open session alone can no longer change your second factor. Lost your authenticator? Your administrator's password reset link still removes it.

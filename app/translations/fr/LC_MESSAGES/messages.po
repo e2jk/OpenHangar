@@ -65,6 +65,10 @@ msgstr "🎉 Aujourd'hui, c'est l'anniversaire de l'obtention de votre PPL !"
 msgid "This upload is too large (maximum %(mb)s MB in total). Please upload the files in smaller batches."
 msgstr "Cet envoi est trop volumineux (maximum %(mb)s Mo au total). Veuillez envoyer les fichiers en plusieurs fois."
 
+#: app/init.py:1152
+msgid "The sign-in form had expired. Please sign in again."
+msgstr "Le formulaire de connexion avait expiré. Veuillez vous reconnecter."
+
 #: app/models.py:855 app/templates/aircraft/flight_detail.html:114
 #: app/templates/aircraft/gps_import_review.html:67
 #: app/templates/flights/fleet.html:28
@@ -8769,9 +8773,25 @@ msgstr "Page introuvable"
 msgid "This page doesn't exist or has been moved."
 msgstr "Cette page n'existe pas ou a été déplacée."
 
-#: app/templates/errors/404.html:31
+#: app/templates/errors/404.html:31 app/templates/errors/csrf.html:25
 msgid "Home"
 msgstr "Accueil"
+
+#: app/templates/errors/csrf.html:3
+msgid "Form expired"
+msgstr "Formulaire expiré"
+
+#: app/templates/errors/csrf.html:14
+msgid "This form has expired"
+msgstr "Ce formulaire a expiré"
+
+#: app/templates/errors/csrf.html:17
+msgid "It was opened before your session changed (for example after signing in again, or in another tab), so it was not saved. Open the page again and resubmit it."
+msgstr "Il a été ouvert avant que votre session ne change (par exemple après une nouvelle connexion, ou dans un autre onglet), il n'a donc pas été enregistré. Rouvrez la page et soumettez-le à nouveau."
+
+#: app/templates/errors/csrf.html:22
+msgid "Open the page again"
+msgstr "Rouvrir la page"
 
 #: app/templates/expenses/cost_dashboard.html:17
 msgid "All expenses"

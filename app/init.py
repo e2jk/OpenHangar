@@ -21,7 +21,7 @@ from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImp
 from flask_babel import Babel  # pyright: ignore[reportMissingImports]
 from flask_babel import get_locale as _babel_get_locale
 from flask_migrate import Migrate
-from flask_wtf.csrf import CSRFProtect  # pyright: ignore[reportMissingImports]
+from flask_wtf.csrf import CSRFError, CSRFProtect  # pyright: ignore[reportMissingImports]
 from sqlalchemy import event  # pyright: ignore[reportMissingImports]
 from sqlalchemy.engine import Engine  # pyright: ignore[reportMissingImports]
 from werkzeug.middleware.proxy_fix import (
@@ -1088,7 +1088,7 @@ def create_app() -> Flask:
         # over MAX_CONTENT_LENGTH in total, each file being within its own
         # per-file limit — send the user back to the form with a reason
         # instead of a bare error page.
-        from flask import flash, redirect, url_for
+        from flask import flash, redirect
         from flask_babel import gettext as _
 
         max_mb = round((app.config.get("MAX_CONTENT_LENGTH") or 0) / (1024 * 1024))
@@ -1100,8 +1100,13 @@ def create_app() -> Flask:
             ),
             "danger",
         )
-        # Back to the submitting page — on this host only, and as a relative
-        # path (same guard as the language switcher's ?next=).
+        return redirect(_submitting_page())
+
+    def _submitting_page() -> str:
+        """Back to the submitting page — on this host only, and as a relative
+        path (same guard as the language switcher's ?next=)."""
+        from flask import url_for
+
         ref = urlparse(request.referrer or "")
         back = ""
         if ref.netloc == request.host:
@@ -1116,7 +1121,42 @@ def create_app() -> Flask:
             or back.startswith("//")
         ):
             back = url_for("index")
-        return redirect(back)
+        return back
+
+    @app.errorhandler(CSRFError)
+    def csrf_failed(e: CSRFError) -> ResponseReturnValue:
+        """A form whose security token no longer matches the session.
+
+        Usually harmless: a page rendered before the session changed (a login
+        submitted twice, a sign-in in another tab, a page from an older app
+        version's cache). Sign-in forms are simply shown again — or skipped
+        when the first submission already signed the user in — and other forms
+        get a page explaining what to do, with ways back that also work in the
+        installed app (no browser navigation buttons there).
+        """
+        import logging
+
+        from flask import flash, redirect, url_for
+        from flask_babel import gettext as _
+        from utils import _sl
+
+        logging.getLogger("openhangar.auth").warning(
+            "[SECURITY] csrf.failed path=%s reason=%s ip=%s",
+            _sl(request.path),
+            _sl(e.description),
+            _sl(request.remote_addr),
+        )
+        if request.endpoint == "auth.login":
+            if session.get("user_id"):
+                return redirect(url_for("index"))
+            flash(_("The sign-in form had expired. Please sign in again."), "warning")
+            return redirect(url_for("auth.login"))
+        # Marked so ui.js lets HTMX show it: boosted forms ignore 4xx bodies.
+        return (
+            render_template("errors/csrf.html", back_url=_submitting_page()),
+            400,
+            {"X-OH-Form-Expired": "1"},
+        )
 
     @app.errorhandler(500)
     def internal_error(e: Exception) -> ResponseReturnValue:
