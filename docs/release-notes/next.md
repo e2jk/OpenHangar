@@ -17,5 +17,8 @@
 **Documents and files**
 - Symbolic links inside the uploads folder (for example in a Syncthing-synced document folder) are no longer followed: OpenHangar never serves, imports, backs up, moves or deletes a file outside the uploads folder through a link. Copy files into the synced folder rather than linking them.
 
+**Imports**
+- Logbook, airframe and maintenance-programme spreadsheets, and GPS files, are now checked for how far they would expand before they are read: a crafted or runaway file (millions of rows, a highly compressed archive, a huge GPS recording) is refused at once with a message saying what to do, instead of tying the server up. Real logbooks are far below the limits and import exactly as before; reading a logbook's merged column headers no longer loads the whole workbook a second time.
+
 **Billing**
 - Finalizing a rental charge, reversing a ledger entry or opening the co-owner billing page from two places at once can no longer post the same charge, reversal or co-owner entry twice: the database now lets exactly one win, and the other request is told the charge or entry was already handled.
