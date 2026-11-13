@@ -55,7 +55,6 @@ from models import (
     Reservation,
     ReservationStatus,
     Role,
-    TenantUser,
     User,
     db,
 )  # pyright: ignore[reportMissingImports]
@@ -70,6 +69,7 @@ from sqlalchemy import case, func, or_  # pyright: ignore[reportMissingImports]
 from utils import (
     accessible_aircraft,
     activity,
+    current_membership,
     current_user_role,
     login_required,
     require_pilot_access,
@@ -181,7 +181,7 @@ def _openaip_key() -> str | None:
 
 
 def _tenant_id() -> int:
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         abort(403)
     return int(tu.tenant_id)

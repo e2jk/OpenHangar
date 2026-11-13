@@ -23,3 +23,6 @@
 
 **Billing**
 - Finalizing a rental charge, reversing a ledger entry or opening the co-owner billing page from two places at once can no longer post the same charge, reversal or co-owner entry twice: the database now lets exactly one win, and the other request is told the charge or entry was already handled.
+
+**Maintenance**
+- Pages run a few fewer database queries: the signed-in user's organisation membership is looked up once per page instead of several times.
