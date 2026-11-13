@@ -883,8 +883,13 @@ jobs:
           docker network rm migtest-net
 
       - name: Smoke-test backup (pg_dump end-to-end)
+        # Not an empty database: .github/scripts/backup_roundtrip.py adds a
+        # representative fleet (two-pilot flight, certificate with its file,
+        # ledger charge and reversal) and records what a restore must
+        # reproduce; the restore step below compares against it.
         env:
           CI_BACKUPS_DIR: ${{ runner.temp }}/ci-backups
+          CI_UPLOADS_SRC: ${{ runner.temp }}/ci-uploads-source
         run: |
           # 777: this bind-mount is written to by appuser (uid 1000) inside
           # the container, but created here by the runner user (uid 1001 on
@@ -892,8 +897,8 @@ jobs:
           # owner-only-writable, so appuser can't write into it without this.
           # Ephemeral CI scratch dir on a throwaway runner; nothing sensitive
           # persists past the job.
-          mkdir -p "$CI_BACKUPS_DIR"
-          chmod 777 "$CI_BACKUPS_DIR"
+          mkdir -p "$CI_BACKUPS_DIR" "$CI_UPLOADS_SRC"
+          chmod 777 "$CI_BACKUPS_DIR" "$CI_UPLOADS_SRC"
 
           docker network create backup-test-net
           docker run -d --name backup-test-db --network backup-test-net \
@@ -910,11 +915,26 @@ jobs:
             -e OPENHANGAR_SECRET_KEY=backuptest-ci-not-for-production-use-only \
             openhangar:ci docker-init-db.py
 
+          for action in populate "fingerprint /tmp/backups/expected.json"; do
+            # shellcheck disable=SC2086  # $action is the subcommand + argument
+            docker run --rm --network backup-test-net \
+              --entrypoint python \
+              -v "$PWD/.github/scripts:/ci:ro" \
+              -v "${CI_BACKUPS_DIR}:/tmp/backups" \
+              -v "${CI_UPLOADS_SRC}:/data/uploads" \
+              -e OPENHANGAR_DATABASE_URL="postgresql://postgres:postgres@backup-test-db:5432/openhangar" \
+              -e OPENHANGAR_ENV=production \
+              -e OPENHANGAR_SECRET_KEY=backuptest-ci-not-for-production-use-only \
+              -e OPENHANGAR_SKIP_BACKGROUND_THREADS=1 \
+              openhangar:ci /ci/backup_roundtrip.py $action
+          done
+
           # Backup folder is bind-mounted (not ephemeral container storage) so
           # the encrypted archive survives into the restore smoke test below.
           output=$(docker run --rm --network backup-test-net \
             --entrypoint flask \
             -v "${CI_BACKUPS_DIR}:/tmp/backups" \
+            -v "${CI_UPLOADS_SRC}:/data/uploads:ro" \
             -e OPENHANGAR_DATABASE_URL="postgresql://postgres:postgres@backup-test-db:5432/openhangar" \
             -e OPENHANGAR_ENV=production \
             -e OPENHANGAR_SECRET_KEY=backuptest-ci-not-for-production-use-only \
@@ -938,11 +958,16 @@ jobs:
       - name: Smoke-test restore (psql end-to-end)
         # Exercises the actual restore code path (flask restore-backup, which
         # invokes psql via subprocess — see app/init.py) against the archive
-        # the previous step just produced. The backup smoke test above only
-        # ever proves pg_dump works; nothing previously exercised psql restore.
+        # the previous step just produced, into another database and an empty
+        # upload folder, then requires the exact values and file hashes the
+        # backup step recorded. It also proves the comparison can fail: an
+        # altered ledger amount and a missing file must each be reported.
         env:
           CI_BACKUPS_DIR: ${{ runner.temp }}/ci-backups
+          CI_UPLOADS_DST: ${{ runner.temp }}/ci-uploads-restored
         run: |
+          mkdir -p "$CI_UPLOADS_DST"
+          chmod 777 "$CI_UPLOADS_DST"
           docker network create restore-test-net
           docker run -d --name restore-test-db --network restore-test-net \
             -e POSTGRES_DB=openhangar \
@@ -961,6 +986,7 @@ jobs:
           output=$(docker run --rm --network restore-test-net \
             --entrypoint flask \
             -v "${CI_BACKUPS_DIR}:/tmp/backups:ro" \
+            -v "${CI_UPLOADS_DST}:/data/uploads" \
             -e OPENHANGAR_DATABASE_URL="postgresql://postgres:postgres@restore-test-db:5432/openhangar" \
             -e OPENHANGAR_ENV=production \
             -e OPENHANGAR_SECRET_KEY=restoretest-ci-not-for-production-use-only \
@@ -973,6 +999,38 @@ jobs:
             exit 1
           fi
           echo "Restore smoke test passed."
+
+          roundtrip() {
+            docker run --rm --network restore-test-net \
+              --entrypoint python \
+              -v "$PWD/.github/scripts:/ci:ro" \
+              -v "${CI_BACKUPS_DIR}:/tmp/backups" \
+              -v "${CI_UPLOADS_DST}:/data/uploads" \
+              -e OPENHANGAR_DATABASE_URL="postgresql://postgres:postgres@restore-test-db:5432/openhangar" \
+              -e OPENHANGAR_ENV=production \
+              -e OPENHANGAR_SECRET_KEY=restoretest-ci-not-for-production-use-only \
+              -e OPENHANGAR_SKIP_BACKGROUND_THREADS=1 \
+              openhangar:ci /ci/backup_roundtrip.py "$@"
+          }
+          roundtrip fingerprint /tmp/backups/actual.json
+          roundtrip compare /tmp/backups/expected.json /tmp/backups/actual.json
+
+          # The comparison must be able to fail.
+          psql_restored() { docker exec restore-test-db psql -U postgres -d openhangar -qc "$1"; }
+          psql_restored "UPDATE ledger_entries SET amount = amount + 1 WHERE id = (SELECT MIN(id) FROM ledger_entries)"
+          roundtrip fingerprint /tmp/backups/altered.json
+          if roundtrip compare /tmp/backups/expected.json /tmp/backups/altered.json; then
+            echo "::error::an altered ledger amount went unnoticed"; exit 1
+          fi
+          psql_restored "UPDATE ledger_entries SET amount = amount - 1 WHERE id = (SELECT MIN(id) FROM ledger_entries)"
+          # Restored files belong to the container user: delete from inside one.
+          docker run --rm --entrypoint sh -v "${CI_UPLOADS_DST}:/data/uploads" \
+            openhangar:ci -c "find /data/uploads -type f -name '*.pdf' -print -delete"
+          roundtrip fingerprint /tmp/backups/missing.json
+          if roundtrip compare /tmp/backups/expected.json /tmp/backups/missing.json; then
+            echo "::error::a missing restored file went unnoticed"; exit 1
+          fi
+          echo "Round-trip checks passed: exact restore, and both deliberate faults detected."
 
           docker rm -f restore-test-db
           docker network rm restore-test-net
