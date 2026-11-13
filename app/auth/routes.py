@@ -905,7 +905,47 @@ def _profile_change_password(user: User) -> ResponseReturnValue:
     return redirect(url_for("auth.profile"))
 
 
+def _use_current_totp(user: User, code: str) -> bool:
+    """Verify a code from the user's *current* authenticator, at most once."""
+    key = f"totp_used:{user.id}:{code}"
+    if (
+        not user.totp_secret
+        or _cache.get(key)
+        or not pyotp.TOTP(str(user.totp_secret)).verify(code, valid_window=1)
+    ):
+        return False
+    _cache.set(key, True, timeout=90)
+    return True
+
+
+def _profile_step_up(user: User, purpose: str) -> bool:
+    """Re-authenticate before an authenticator is added, replaced or removed.
+
+    A session cookie (and CSRF token) alone must not change the second factor:
+    the current password is always required, and once an authenticator exists,
+    also a code from it. Losing that authenticator goes through the
+    administrator's password reset link, which clears it.
+    """
+    if not _pw.verify(request.form.get("current_password", ""), user.password_hash):
+        flash(_("Current password is incorrect."), "danger")
+    elif user.totp_secret and not _use_current_totp(
+        user, request.form.get("current_totp_code", "").strip()
+    ):
+        flash(_("Invalid authenticator code."), "danger")
+    else:
+        return True
+    _log.warning(
+        "[SECURITY] auth.totp.step_up_failed user_id=%s purpose=%s ip=%s",
+        _sl(str(user.id)),
+        _sl(purpose),
+        _sl(request.remote_addr),
+    )
+    return False
+
+
 def _profile_setup_totp(user: User) -> ResponseReturnValue:
+    if not _profile_step_up(user, "setup"):
+        return redirect(url_for("auth.profile"))
     totp_secret = pyotp.random_base32()
     totp_uri = pyotp.TOTP(totp_secret).provisioning_uri(
         name=user.email, issuer_name="OpenHangar"
@@ -937,12 +977,14 @@ def _profile_confirm_totp(user: User) -> ResponseReturnValue:
 
     if not challenges.consume(challenge):
         return redirect(url_for("auth.profile"))
+    replaced = bool(user.totp_secret)
     user.totp_secret = totp_secret
     db.session.commit()
     auth_sessions.start(user)
     session.pop("profile_challenge", None)
     _log.warning(
-        "[SECURITY] auth.totp.enabled user_id=%s ip=%s",
+        "[SECURITY] auth.totp.%s user_id=%s ip=%s",
+        "replaced" if replaced else "enabled",
         _sl(str(user.id)),
         _sl(request.remote_addr),
     )
@@ -961,9 +1003,7 @@ def _profile_disable_totp(user: User) -> ResponseReturnValue:
             "danger",
         )
         return redirect(url_for("auth.profile"))
-    current_pw = request.form.get("current_password", "")
-    if not _pw.verify(current_pw, user.password_hash):
-        flash(_("Current password is incorrect."), "danger")
+    if not _profile_step_up(user, "disable"):
         return redirect(url_for("auth.profile"))
     user.totp_secret = None
     db.session.commit()
