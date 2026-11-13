@@ -1838,9 +1838,10 @@ def create_app() -> Flask:
         os.makedirs(upload_folder, exist_ok=True)
         os.makedirs(backup_folder, exist_ok=True)
 
-        _existing = [
-            (dp, f) for dp, _dirs, files in os.walk(upload_folder) for f in files
-        ]
+        from services.safe_paths import regular_files
+
+        # Links are left out: the snapshot never copies a file from outside.
+        _existing = list(regular_files(upload_folder))
         if _existing:
             from datetime import datetime
 
@@ -1852,8 +1853,7 @@ def create_app() -> Flask:
 
             _snap_buf = io.BytesIO()
             with zipfile.ZipFile(_snap_buf, "w", zipfile.ZIP_DEFLATED) as _zf:
-                for _dp, _fn in _existing:
-                    _fp = os.path.join(_dp, _fn)
+                for _fp in _existing:
                     _rel = os.path.relpath(_fp, upload_folder)
                     _zf.write(_fp, arcname=_rel)
             _snap_bytes = _snap_buf.getvalue()
@@ -1878,7 +1878,8 @@ def create_app() -> Flask:
             )
 
         for _item in os.scandir(upload_folder):
-            if _item.is_dir():
+            # A linked folder is removed as a link, never emptied through it.
+            if _item.is_dir(follow_symlinks=False):
                 _shutil.rmtree(_item.path, ignore_errors=True)
             else:
                 os.unlink(_item.path)

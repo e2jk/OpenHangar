@@ -192,19 +192,20 @@ def _add_uploads_to_zip(zf: zipfile.ZipFile, upload_folder: str) -> None:
     spreadsheet or GPS log, left there by an import abandoned halfway, or a
     downloaded map tile, isn't data worth restoring.
     """
+    from services.safe_paths import regular_files  # pyright: ignore[reportMissingImports]
     from services.upload_layout import (  # pyright: ignore[reportMissingImports]
         NOT_BACKED_UP_DIRNAMES,
     )
 
     if not os.path.isdir(upload_folder):
         return
-    for dirpath, dirs, filenames in os.walk(upload_folder):
-        if dirpath == upload_folder:
-            dirs[:] = [d for d in dirs if d not in NOT_BACKED_UP_DIRNAMES]
-        for fname in filenames:
-            full_path = os.path.join(dirpath, fname)
-            rel_path = os.path.relpath(full_path, upload_folder)
-            zf.write(full_path, arcname=f"uploads/{rel_path}")
+    # Symbolic links are left out: a backup never copies a file from
+    # outside the uploads folder (services/safe_paths).
+    for full_path in regular_files(
+        upload_folder, skip_top_dirs=frozenset(NOT_BACKED_UP_DIRNAMES)
+    ):
+        rel_path = os.path.relpath(full_path, upload_folder)
+        zf.write(full_path, arcname=f"uploads/{rel_path}")
 
 
 def _pg_dump(database_url: str) -> bytes:
@@ -395,10 +396,12 @@ def index() -> ResponseReturnValue:
     try:
         _upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
         if os.path.isdir(_upload_folder):
+            from services.safe_paths import (  # pyright: ignore[reportMissingImports]
+                regular_files,
+            )
+
             upload_size_bytes = sum(
-                os.path.getsize(os.path.join(dp, f))
-                for dp, _dirs, files in os.walk(_upload_folder)
-                for f in files
+                os.path.getsize(path) for path in regular_files(_upload_folder)
             )
     except Exception as exc:  # noqa: BLE001 -- best-effort dashboard stat, page must still render
         log.debug("Could not retrieve upload folder size: %s", exc)
@@ -558,10 +561,10 @@ def update_tenant_slug() -> ResponseReturnValue:
                     dest_dir = os.path.join(new_dir, rel)
                     os.makedirs(dest_dir, exist_ok=True)
                     for fname in filenames:
-                        shutil.move(
-                            os.path.join(dirpath, fname),
-                            os.path.join(dest_dir, fname),
-                        )
+                        source = os.path.join(dirpath, fname)
+                        if os.path.islink(source):
+                            continue  # links are not followed or moved
+                        shutil.move(source, os.path.join(dest_dir, fname))
                 shutil.rmtree(old_dir, ignore_errors=True)
             else:
                 os.rename(old_dir, new_dir)
