@@ -451,7 +451,7 @@ def test_own_password_change_renews_context_without_a_login_dead_end(
         )
         after = page.evaluate("() => OhOfflineIdentity.current()")
         assert after["owner"] == before["owner"]
-        assert page.locator('[name="current_password"]').is_visible()
+        assert form.locator('[name="current_password"]').is_visible()
         context.close()
     finally:
         browser.close()
