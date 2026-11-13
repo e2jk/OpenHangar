@@ -1,5 +1,6 @@
 """Actual-cookie regressions for session revocation and current principal checks."""
 
+import time
 from datetime import UTC, datetime, timedelta
 
 import pyotp
@@ -165,7 +166,8 @@ def test_totp_enrolment_and_disable_revoke_other_sessions(app):
         data={
             "action": "disable_totp",
             "current_password": PASSWORD,
-            "current_totp_code": pyotp.TOTP(secret).now(),
+            # The enrolment used the current time step; a code is single-use.
+            "current_totp_code": pyotp.TOTP(secret).at(time.time() + 30),
         },
     )
     assert client.get("/profile").status_code == 200

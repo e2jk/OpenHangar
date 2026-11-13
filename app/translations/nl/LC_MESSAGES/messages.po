@@ -69,7 +69,7 @@ msgstr "Deze upload is te groot (maximaal %(mb)s MB in totaal). Upload de bestan
 msgid "The sign-in form had expired. Please sign in again."
 msgstr "Het aanmeldformulier was verlopen. Meld u opnieuw aan."
 
-#: app/models.py:855 app/templates/aircraft/flight_detail.html:114
+#: app/models.py:870 app/templates/aircraft/flight_detail.html:114
 #: app/templates/aircraft/gps_import_review.html:67
 #: app/templates/flights/fleet.html:28
 #: app/templates/flights/flight_form.html:313
@@ -83,7 +83,7 @@ msgstr "Het aanmeldformulier was verlopen. Meld u opnieuw aan."
 msgid "PIC"
 msgstr "PIC"
 
-#: app/models.py:856 app/templates/pilots/entry_detail.html:98
+#: app/models.py:871 app/templates/pilots/entry_detail.html:98
 #: app/templates/pilots/entry_form.html:298
 #: app/templates/pilots/import_map.html:151
 #: app/templates/users/permissions.html:59
@@ -91,19 +91,19 @@ msgstr "PIC"
 msgid "Instructor"
 msgstr "Instructeur"
 
-#: app/models.py:857
+#: app/models.py:872
 msgid "Safety Pilot"
 msgstr "Veiligheidspiloot"
 
-#: app/models.py:858
+#: app/models.py:873
 msgid "Co-Pilot"
 msgstr "Copiloot"
 
-#: app/models.py:859
+#: app/models.py:874
 msgid "Student"
 msgstr "Student"
 
-#: app/models.py:2255 app/pilots/personal_minimums.py:55
+#: app/models.py:2270 app/pilots/personal_minimums.py:55
 #: app/templates/aircraft/wb_config.html:163
 #: app/templates/aircraft/wb_config.html:195
 #: app/templates/aircraft/wb_config.html:244
@@ -111,41 +111,41 @@ msgstr "Student"
 msgid "Fuel"
 msgstr "Brandstof"
 
-#: app/models.py:2256
+#: app/models.py:2271
 msgid "Parts & Maintenance"
 msgstr "Onderdelen en onderhoud"
 
-#: app/models.py:2257 app/pwa/routes.py:101 app/templates/dashboard.html:406
+#: app/models.py:2272 app/pwa/routes.py:101 app/templates/dashboard.html:406
 msgid "Insurance"
 msgstr "Verzekering"
 
-#: app/models.py:2258 app/pwa/routes.py:106 app/templates/dashboard.html:164
+#: app/models.py:2273 app/pwa/routes.py:106 app/templates/dashboard.html:164
 #: app/templates/maintenance/list.html:77
 #: app/templates/maintenance/trigger_form.html:69
 msgid "Other"
 msgstr "Overig"
 
-#: app/models.py:3195
+#: app/models.py:3210
 msgid "AD"
 msgstr "AD"
 
-#: app/models.py:3196
+#: app/models.py:3211
 msgid "Mandatory SB"
 msgstr "Verplichte SB"
 
-#: app/models.py:3197
+#: app/models.py:3212
 msgid "SB"
 msgstr "SB"
 
-#: app/models.py:3198
+#: app/models.py:3213
 msgid "SIB"
 msgstr "SIB"
 
-#: app/models.py:3199 app/templates/dashboard.html:417
+#: app/models.py:3214 app/templates/dashboard.html:417
 msgid "ARC"
 msgstr "ARC"
 
-#: app/models.py:3200
+#: app/models.py:3215
 msgid "Manual"
 msgstr "Handleiding"
 
@@ -581,121 +581,128 @@ msgstr "Verlanglijst-item toegevoegd."
 msgid "Wish-list item removed."
 msgstr "Verlanglijst-item verwijderd."
 
-#: app/auth/routes.py:195
+#: app/auth/routes.py:151
+#, python-format
+msgid "Too many failed sign-in attempts. Try again in one second."
+msgid_plural "Too many failed sign-in attempts. Try again in %(n)s seconds."
+msgstr[0] "Te veel mislukte aanmeldpogingen. Probeer het over één seconde opnieuw."
+msgstr[1] "Te veel mislukte aanmeldpogingen. Probeer het over %(n)s seconden opnieuw."
+
+#: app/auth/routes.py:167
 #, python-format
 msgid "Account temporarily locked due to too many failed attempts. Try again in %(minutes)s minutes."
 msgstr "Account tijdelijk geblokkeerd vanwege te veel mislukte pogingen. Probeer het over %(minutes)s minuten opnieuw."
 
-#: app/auth/routes.py:237
+#: app/auth/routes.py:213
 msgid "Invalid email or password."
 msgstr "Ongeldig e-mailadres of wachtwoord."
 
-#: app/auth/routes.py:262
+#: app/auth/routes.py:237
 msgid "Your account has been deactivated. Contact the administrator."
 msgstr "Uw account is gedeactiveerd. Neem contact op met de beheerder."
 
-#: app/auth/routes.py:310 app/auth/routes.py:319 app/auth/routes.py:934
+#: app/auth/routes.py:286 app/auth/routes.py:900
 msgid "Invalid authenticator code."
 msgstr "Ongeldige authenticatiecode."
 
-#: app/auth/routes.py:348
+#: app/auth/routes.py:315
 msgid "Invalid code — please try again."
 msgstr "Ongeldige code — probeer het opnieuw."
 
-#: app/auth/routes.py:368
+#: app/auth/routes.py:336
 msgid "Two-factor authentication is now active on your account."
 msgstr "Tweefactorauthenticatie is nu actief op uw account."
 
-#: app/auth/routes.py:444
+#: app/auth/routes.py:412
 msgid "Account creation is disabled in demo mode."
 msgstr "Aanmaken van accounts is uitgeschakeld in demomodus."
 
-#: app/auth/routes.py:555 app/users/routes.py:249
+#: app/auth/routes.py:523 app/users/routes.py:249
 msgid "A valid email address is required."
 msgstr "Een geldig e-mailadres is verplicht."
 
-#: app/auth/routes.py:557 app/auth/routes.py:890 app/auth/routes.py:1044
+#: app/auth/routes.py:525 app/auth/routes.py:864 app/auth/routes.py:1013
 #: app/users/routes.py:251
 msgid "Password must be at least 12 characters."
 msgstr "Wachtwoord moet minimaal 12 tekens bevatten."
 
-#: app/auth/routes.py:590 app/auth/routes.py:713
+#: app/auth/routes.py:558 app/auth/routes.py:686
 msgid "Session expired. Please start over."
 msgstr "Sessie verlopen. Begin opnieuw."
 
-#: app/auth/routes.py:600 app/auth/routes.py:973
+#: app/auth/routes.py:569 app/auth/routes.py:940
 msgid "Invalid code. Please try again."
 msgstr "Ongeldige code. Probeer opnieuw."
 
-#: app/auth/routes.py:623
+#: app/auth/routes.py:596
 msgid "Please select an option."
 msgstr "Selecteer een optie."
 
-#: app/auth/routes.py:644
+#: app/auth/routes.py:617
 msgid "Please enter a valid number of aircraft (0 or more)."
 msgstr "Voer een geldig aantal vliegtuigen in (0 of meer)."
 
-#: app/auth/routes.py:670
+#: app/auth/routes.py:643
 msgid "Please enter a name."
 msgstr "Voer een naam in."
 
-#: app/auth/routes.py:802
+#: app/auth/routes.py:776
 msgid "Setup complete. Welcome to OpenHangar!"
 msgstr "Installatie voltooid. Welkom bij OpenHangar!"
 
-#: app/auth/routes.py:803 app/templates/dashboard.html:516
+#: app/auth/routes.py:777 app/templates/dashboard.html:516
 msgid "Add your first aircraft"
 msgstr "Voeg uw eerste vliegtuig toe"
 
-#: app/auth/routes.py:804
+#: app/auth/routes.py:778
 msgid "Register your first flight"
 msgstr "Registreer uw eerste vlucht"
 
-#: app/auth/routes.py:877
+#: app/auth/routes.py:851
 msgid "Display name updated."
 msgstr "Weergavenaam bijgewerkt."
 
-#: app/auth/routes.py:887 app/auth/routes.py:930
+#: app/auth/routes.py:861 app/auth/routes.py:896
 msgid "Current password is incorrect."
 msgstr "Huidig wachtwoord is onjuist."
 
-#: app/auth/routes.py:893 app/auth/routes.py:1047 app/users/routes.py:253
+#: app/auth/routes.py:867 app/auth/routes.py:1016 app/users/routes.py:253
 msgid "Passwords do not match."
 msgstr "Wachtwoorden komen niet overeen."
 
-#: app/auth/routes.py:904
+#: app/auth/routes.py:878
 msgid "Password updated successfully."
 msgstr "Wachtwoord succesvol bijgewerkt."
 
-#: app/auth/routes.py:967
+#: app/auth/routes.py:933
 msgid "Session expired. Please try again."
 msgstr "Sessie verlopen. Probeer het opnieuw."
 
-#: app/auth/routes.py:991
+#: app/auth/routes.py:959
 msgid "Two-factor authentication enabled."
 msgstr "Tweestapsverificatie ingeschakeld."
 
-#: app/auth/routes.py:1000
+#: app/auth/routes.py:968
 msgid "Your administrator requires two-factor authentication. It cannot be disabled on this account."
 msgstr "Uw beheerder vereist tweefactorauthenticatie. Deze kan niet worden uitgeschakeld op dit account."
 
-#: app/auth/routes.py:1016
+#: app/auth/routes.py:985
 msgid "Two-factor authentication disabled."
 msgstr "Tweestapsverificatie uitgeschakeld."
 
-#: app/auth/routes.py:1029
+#: app/auth/routes.py:998
 msgid "This reset link has already been used."
 msgstr "Deze herstelkoppeling is al gebruikt."
 
-#: app/auth/routes.py:1034
+#: app/auth/routes.py:1003
 msgid "This reset link has expired. Ask the administrator for a new one."
 msgstr "Deze resetlink is verlopen. Vraag de beheerder om een nieuwe."
 
-#: app/auth/routes.py:1052
+#: app/auth/routes.py:1021
 msgid "User not found."
 msgstr "Gebruiker niet gevonden."
 
-#: app/auth/routes.py:1060
+#: app/auth/routes.py:1030
 msgid "Password reset successfully. You can now log in."
 msgstr "Wachtwoord succesvol opnieuw ingesteld. U kunt nu inloggen."
 

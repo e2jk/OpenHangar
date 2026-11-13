@@ -248,18 +248,18 @@ Number of gunicorn worker processes serving the application.
 - **Default**: `1`
 - **Example**: `OPENHANGAR_WEB_WORKERS=4`
 - Each worker is a separate OS process holding its own full copy of the
-  application in memory — and its own separate copy of the in-memory
-  rate-limit counters (Flask-Limiter) and response cache (Flask-Caching).
-  Those two only stay correctly shared when there is exactly **one** worker
-  process (threads within that process share memory fine; see
-  `OPENHANGAR_WEB_THREADS`).
+  application in memory.
+- Sign-in protection is shared by all workers and survives a restart: failed
+  sign-in counts, the per-address backoff, account locks and already-used
+  authenticator codes are stored in the database.
+- The per-route request limits (Flask-Limiter, e.g. `20 per minute` on the
+  sign-in form) and the response cache (Flask-Caching) are kept in memory per
+  process: with several workers, each counts on its own (a `20 per minute`
+  limit becomes roughly `20 × workers` per minute) and cache misses multiply.
+  They are a coarse first line; the database-backed sign-in protection above
+  does not depend on them.
 - Raising this above `1` gives true multi-core parallelism and process-level
-  fault isolation — useful for a larger, busier installation — but it
-  silently weakens rate limiting (a `10 per minute` login limit becomes
-  roughly `10 × workers` per minute, since each process counts
-  independently) and multiplies cache misses across processes. If you need
-  more than one worker, pair it with a shared rate-limit/cache backend
-  (e.g. Redis) rather than relying on the in-memory defaults.
+  fault isolation — useful for a larger, busier installation.
 
 ### `OPENHANGAR_WEB_THREADS`
 
