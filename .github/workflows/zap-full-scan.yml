@@ -5,6 +5,12 @@ name: ZAP full (active) scan
 # the image from HEAD (more relevant than pulling :latest) and runs a full
 # active scan against it on a weekly schedule, since active scans are slow
 # and too disruptive to run on every push/PR.
+#
+# Two kinds of target: the public demo, signed out (zap-full-scan), and a
+# disposable production-mode instance seeded with fake data, scanned signed
+# in as the admin and as a limited pilot (zap-authenticated-scan). The
+# latter proves afterwards that its session survived the scan and that
+# signed-in pages were reached; see .zap/rules-authenticated.tsv.
 
 on:
   schedule:
@@ -106,3 +112,149 @@ jobs:
         with:
           sarif_file: zap-full-results.sarif
           category: zap-full
+
+  zap-authenticated-scan:
+    # The scan above only reaches what a signed-out visitor sees in demo mode.
+    # This one signs a real user in on a disposable, production-mode instance
+    # seeded with the fake development data (dev_seed.py), and scans with
+    # that session: the owner/admin surface and a limited pilot separately.
+    # Never point it at an operator's live instance.
+    name: ZAP authenticated scan (${{ matrix.user }})
+    runs-on: ubuntu-26.04
+    timeout-minutes: 120
+    permissions:
+      security-events: write  # ZAP SARIF upload
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - user: admin
+            email: admin@openhangar.dev
+            password: openhangar-dev-1
+            totp: JBSWY3DPEHPK3PXP  # fixed dev-seed secret, not a credential
+            evidence: '^/config/$ ^/config/users/$ ^/aircraft/[A-Z0-9-]+/expenses$'
+          - user: pilot
+            email: pilot@openhangar.dev
+            password: openhangar-dev-3
+            totp: ''
+            evidence: '^/pilot/logbook$ ^/flights$ ^/pilot/profile$'
+    env:
+      ZAP_DB: zap-db
+      ZAP_WEB: zap-web
+      ZAP_DB_URL: postgresql://zapuser:zappass@zap-db:5432/zapdb
+      ZAP_SECRET: zap-ci-secret-not-for-production-use-only-0123456789
+      BASE_URL: http://localhost:5001
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build Docker image (linux/amd64)
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            -f docker/Dockerfile \
+            -t openhangar:ci \
+            --load .
+
+      - name: Start a disposable, seeded, production-mode instance
+        run: |
+          docker network create zap-net
+          docker run -d --name "$ZAP_DB" --network zap-net \
+            -e POSTGRES_DB=zapdb -e POSTGRES_USER=zapuser -e POSTGRES_PASSWORD=zappass \
+            postgres:18-alpine
+          until docker exec "$ZAP_DB" pg_isready -U zapuser >/dev/null 2>&1; do sleep 1; done
+          # Seed once in development mode (dev_seed refuses production), then
+          # serve the same database in production mode.
+          docker run --rm --network zap-net --entrypoint python \
+            -e OPENHANGAR_DATABASE_URL="$ZAP_DB_URL" -e OPENHANGAR_DB_HOST="$ZAP_DB" \
+            -e OPENHANGAR_ENV=development \
+            -e OPENHANGAR_SECRET_KEY="$ZAP_SECRET" \
+            openhangar:ci docker-init-db.py
+          docker run -d --name "$ZAP_WEB" --network zap-net -p 5001:5000 \
+            -e OPENHANGAR_DATABASE_URL="$ZAP_DB_URL" -e OPENHANGAR_DB_HOST="$ZAP_DB" \
+            -e OPENHANGAR_ENV=production -e OPENHANGAR_SECRET_KEY="$ZAP_SECRET" \
+            -e OPENHANGAR_PROXY_HOPS=0 -e OPENHANGAR_ACCESS_LOG=1 \
+            openhangar:ci
+          for _ in $(seq 120); do
+            [ "$(docker inspect --format='{{.State.Health.Status}}' "$ZAP_WEB")" = healthy ] && exit 0
+            sleep 1
+          done
+          docker logs "$ZAP_WEB"
+          exit 1
+
+      - name: Sign the scan user in
+        env:
+          USER_EMAIL: ${{ matrix.email }}
+          USER_PASSWORD: ${{ matrix.password }}
+          USER_TOTP: ${{ matrix.totp }}
+        run: |
+          cookie=$(python3 .github/scripts/zap_auth_session.py login "$BASE_URL" "$USER_EMAIL" "$USER_PASSWORD" "$USER_TOTP")
+          echo "::add-mask::${cookie#session=}"
+          echo "ZAP_COOKIE=$cookie" >> "$GITHUB_ENV"
+
+      - name: OWASP ZAP full (active) scan, signed in
+        # The session cookie is added to every request (replacer rule).
+        # Logout and the account-security pages are excluded: they would end
+        # or renew the very session being scanned with.
+        uses: zaproxy/action-full-scan@3c58388149901b9a03b7718852c5ba889646c27c # v0.13.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          target: 'http://localhost:5001/'
+          rules_file_name: '.zap/rules-authenticated.tsv'
+          fail_action: 'true'
+          allow_issue_writing: 'false'
+          artifact_name: zap-authenticated-${{ matrix.user }}
+          cmd_options: >-
+            -m 10
+            -z "-config replacer.full_list(0).description=session
+            -config replacer.full_list(0).enabled=true
+            -config replacer.full_list(0).matchtype=REQ_HEADER
+            -config replacer.full_list(0).matchstr=Cookie
+            -config replacer.full_list(0).regex=false
+            -config replacer.full_list(0).replacement=${{ env.ZAP_COOKIE }}
+            -config globalexcludeurl.url_list.url(0).regex=.*/logout.*
+            -config globalexcludeurl.url_list.url(0).enabled=true
+            -config globalexcludeurl.url_list.url(1).regex=.*/profile$
+            -config globalexcludeurl.url_list.url(1).enabled=true
+            -config globalexcludeurl.url_list.url(2).regex=.*/reset-password/.*
+            -config globalexcludeurl.url_list.url(2).enabled=true"
+
+      - name: Prove the scan stayed signed in and reached signed-in pages
+        if: always()
+        env:
+          EVIDENCE: ${{ matrix.evidence }}
+        run: |
+          python3 .github/scripts/zap_auth_session.py verify "$BASE_URL" "$ZAP_COOKIE"
+          docker logs "$ZAP_WEB" 2>&1 | grep -oE '"GET [^ ]+ HTTP/1.1" 200' \
+            | sed -E 's/"GET ([^ ?]+).*/\1/' | sort -u > reached.txt
+          echo "Distinct signed-in pages answered 200: $(wc -l < reached.txt)"
+          missing=0
+          for pattern in $EVIDENCE; do
+            if grep -qE "$pattern" reached.txt; then echo "reached: $pattern"
+            else echo "::error::the scan never reached $pattern"; missing=1; fi
+          done
+          exit "$missing"
+
+      - name: Convert ZAP JSON report to SARIF
+        if: always() && hashFiles('report_json.json') != ''
+        env:
+          SCAN_USER: ${{ matrix.user }}
+        run: python3 .github/scripts/zap_to_sarif.py report_json.json zap-auth-results.sarif .zap/rules-authenticated.tsv "ZAP Authenticated Scan ($SCAN_USER)"
+
+      - name: Upload ZAP SARIF to GitHub Security tab
+        if: always() && hashFiles('zap-auth-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28 # v4
+        with:
+          sarif_file: zap-auth-results.sarif
+          category: zap-authenticated-${{ matrix.user }}
+
+      - name: Remove the disposable instance
+        if: always()
+        run: |
+          docker rm -f "$ZAP_WEB" "$ZAP_DB" >/dev/null 2>&1 || true
+          docker network rm zap-net >/dev/null 2>&1 || true
