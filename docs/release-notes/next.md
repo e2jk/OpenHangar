@@ -7,6 +7,7 @@
 - Offline editing is gone: flights and logbook entries can no longer be logged or corrected without a connection, and the **Offline changes** page and its navbar badge are gone. A form submitted offline now says so, and nothing is queued.
 - Reading offline stays. **Offline logbook** (on an aircraft's logbook and on your Pilot logbook) shows a read-only copy of the whole logbook saved on your device, refreshed each time you open that logbook online, with the time it was saved. Your offline pilot logbook now lists all your flights, including those in fleet aircraft.
 - Recently opened pages, installing the app and **Share to OpenHangar** work as before.
+- On a slow connection (patchy airfield mobile data), a recently opened page now appears after a few seconds from the copy saved on your device instead of waiting for the network; it refreshes itself once the server answers. Only your own login's copy is ever shown.
 
 **Account security**
 - Repeated failed sign-ins from one address are now refused at once with "try again in N seconds" while the address must wait, instead of the server holding each failed attempt open for up to a minute, so a burst of failures no longer ties the server up.

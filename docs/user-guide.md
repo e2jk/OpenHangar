@@ -144,7 +144,7 @@ The **Mass & balance** page lets you record and verify CG position before a flig
 
 ### Working offline
 
-OpenHangar needs a connection to save anything, but you can still **read** while offline. Pages you opened recently while online stay available, and each logbook you open online is also saved on your device as a read-only copy — there is no "go offline" button to remember. If you then lose connectivity (no signal on an airfield, a hangar with poor reception), open **Offline logbook** from an aircraft's logbook page or from your Pilot logbook page to read the whole logbook: every flight, not only the pages you had opened. The page says when its copy was saved; it is refreshed each time you open that logbook online.
+OpenHangar needs a connection to save anything, but you can still **read** while offline. Pages you opened recently while online stay available (and on a slow connection they appear after a few seconds from the saved copy, then refresh), and each logbook you open online is also saved on your device as a read-only copy — there is no "go offline" button to remember. If you then lose connectivity (no signal on an airfield, a hangar with poor reception), open **Offline logbook** from an aircraft's logbook page or from your Pilot logbook page to read the whole logbook: every flight, not only the pages you had opened. The page says when its copy was saved; it is refreshed each time you open that logbook online.
 
 Your offline pilot logbook shows all your flights: in fleet aircraft, in other aircraft, and FSTD/simulator sessions. On a flight shared with another pilot, it shows only your own function hours and remarks, as the online logbook does.
 
@@ -396,8 +396,10 @@ Git access required, just a free Weblate account.
 
 Cached pages and offline logbook copies belong to one account and login. Signing out,
 switching accounts or an expired/revoked login retires them; another account signing
-in on the same browser cannot see them. Online, private pages are always checked with
-the server before a saved copy is used. An offline device cannot discover a server-side
-permission change until it reconnects. Offline storage remains local device data, not
+in on the same browser cannot see them. Online, a private page is asked from the server
+first; only if the answer takes more than a few seconds is that login's own saved copy
+shown meanwhile, and the server's answer then refreshes it (or removes it, if access was
+withdrawn). An offline or slow device cannot discover a server-side permission change
+until the server answers. Offline storage remains local device data, not
 an encrypted vault against somebody with access to the browser profile or developer
 tools.

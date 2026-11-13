@@ -144,7 +144,7 @@ class TestServiceWorker:
         # guard on that branch.
         r = client.get("/sw.js")
         body = r.data.decode()
-        assert "_isSWRRoute(url)) return _privateNavigation(request)" in body
+        assert "_isSWRRoute(url)) return _privateNavigation(request, event)" in body
         assert "req.mode === 'navigate' && _isSWRRoute(url)" not in body
 
     def test_sw_js_handles_nav_cache_invalidation_message(self, client):
