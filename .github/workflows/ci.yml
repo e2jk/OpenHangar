@@ -186,7 +186,7 @@ jobs:
       - name: Run tests
         run: bash scripts/run-tests-with-coverage.sh
 
-      - name: Test reservation races on PostgreSQL
+      - name: Test races, locks and migrations on PostgreSQL
         env:
           TEST_POSTGRES_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:55432/reservation_test
         run: |
