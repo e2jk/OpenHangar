@@ -711,6 +711,10 @@ msgstr "Utilisateur introuvable."
 msgid "Password reset successfully. You can now log in."
 msgstr "Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter."
 
+#: app/config/routes.py:150
+msgid "Another backup is already running. Try again in a moment."
+msgstr "Une autre sauvegarde est déjà en cours. Réessayez dans un instant."
+
 #: app/config/routes.py:533
 msgid "Production"
 msgstr "Production"
