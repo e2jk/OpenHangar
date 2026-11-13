@@ -545,3 +545,82 @@ def test_login_expired_while_offline_is_retired_on_reconnect(
         page.goto(origin + path, wait_until="load")
         assert "ALPHA-PRIVATE" not in page.content()
     context.close()
+
+
+def _delay(app, path, seconds):
+    """Make the live test server answer `path` slowly (or normally: 0)."""
+    from flask import request
+
+    def slow():
+        if request.path == path:
+            time.sleep(seconds)
+
+    funcs = app.before_request_funcs.setdefault(None, [])
+    funcs[:] = [f for f in funcs if getattr(f, "_oh_delay", False) is False]
+    if seconds:
+        slow._oh_delay = True
+        funcs.insert(0, slow)
+
+
+def _cached_text(page, path):
+    return page.evaluate(
+        """path => caches.keys().then(names => Promise.all(names.filter(n => n.includes('-private-'))
+             .map(n => caches.open(n).then(c => c.match(location.origin + path))
+             .then(r => r ? r.text() : ''))))
+             .then(texts => texts.join(''))""",
+        path,
+    )
+
+
+def test_slow_network_shows_this_logins_cached_page_then_refreshes_it(
+    isolated_offline_server,
+    traced_browser,
+):
+    from models import Flight, db
+
+    app, origin, users, _, _, _ = isolated_offline_server
+    context = traced_browser.new_context(service_workers="allow")
+    page = context.new_page()
+    login(page, origin, "Alpha")  # ends on /pilot/logbook, now cached
+    wait_until(
+        page,
+        "() => caches.keys().then(n => Promise.all(n.filter(x => x.includes('-private-')).map(x => caches.open(x).then(c => c.match(location.origin + '/pilot/logbook'))))).then(f => f.some(Boolean))",
+    )
+    wait_for_settled_worker(page)
+    with app.app_context():
+        flight = Flight.query.filter_by(pic_user_id=users["Alpha"]).one()
+        flight.other_aircraft_registration = "ALPHA-FRESH"
+        db.session.commit()
+
+    _delay(app, "/pilot/logbook", 6)
+    try:
+        started = time.monotonic()
+        page.goto(origin + "/pilot/logbook", wait_until="commit")
+        page.wait_for_function(
+            "() => document.body && document.body.textContent.includes('ALPHA-PRIVATE')",
+            timeout=5000,
+        )
+        assert time.monotonic() - started < 5.5  # the cached copy, not the network
+        # The request carried on: the fresh page replaces the cached copy.
+        deadline = time.monotonic() + 15
+        while "ALPHA-FRESH" not in _cached_text(page, "/pilot/logbook"):
+            assert time.monotonic() < deadline, (
+                "the slow response never refreshed the cache"
+            )
+            page.wait_for_timeout(200)
+    finally:
+        _delay(app, "/pilot/logbook", 0)
+
+    # Another account: Alpha's copy is gone with the switch, so a slow
+    # network makes Bravo wait for the real page, never see Alpha's.
+    page.goto(origin + "/logout", wait_until="load")
+    login(page, origin, "Bravo")
+    wait_for_settled_worker(page)
+    _delay(app, "/pilot/logbook", 4)
+    try:
+        page.goto(origin + "/pilot/logbook?bravo=1", wait_until="load")
+        assert "ALPHA" not in page.content()
+        assert "BRAVO-PRIVATE" in page.content()
+    finally:
+        _delay(app, "/pilot/logbook", 0)
+    context.close()
