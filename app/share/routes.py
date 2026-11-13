@@ -65,6 +65,7 @@ def _get_aircraft_or_403(aircraft_id: int) -> Aircraft:
 
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
+        # Unreachable: require_role refuses a user without a membership first.
         abort(403)  # pragma: no cover
     ac = db.session.get(Aircraft, aircraft_id)
     if not ac or ac.tenant_id != tu.tenant_id:

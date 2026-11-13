@@ -524,9 +524,10 @@ def update_tenant_slug() -> ResponseReturnValue:
 
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
     tenant = db.session.get(Tenant, tu.tenant_id)
     if not tenant:
+        # Unreachable: the membership row's tenant FK guarantees it exists.
         abort(403)  # pragma: no cover
 
     raw = request.form.get("slug", "").strip().lower()
@@ -634,7 +635,7 @@ def update_profile() -> ResponseReturnValue:
 
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
 
     profile = TenantProfile.query.filter_by(tenant_id=tu.tenant_id).first()
     if not profile:
@@ -693,6 +694,7 @@ def test_email() -> ResponseReturnValue:
 
     user = db.session.get(User, session["user_id"])
     if not user:
+        # Unreachable: login validation (S02) refuses a deleted user first.
         abort(403)  # pragma: no cover
     try:
         send_email(
@@ -1317,7 +1319,7 @@ def renters_list() -> ResponseReturnValue:
 
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
 
     authorizations = (
         RenterAuthorization.query.filter_by(tenant_id=tu.tenant_id)
@@ -1481,7 +1483,7 @@ def renter_add() -> ResponseReturnValue:
 
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
 
     if request.method == "POST":
         return _save_renter_authorization(tu.tenant_id, None)
@@ -1497,7 +1499,7 @@ def renter_edit(auth_id: int) -> ResponseReturnValue:
 
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
     auth = _get_renter_auth_or_404(tu.tenant_id, auth_id)
 
     if request.method == "POST":
@@ -1514,7 +1516,7 @@ def renter_revoke(auth_id: int) -> ResponseReturnValue:
 
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
     auth = _get_renter_auth_or_404(tu.tenant_id, auth_id)
 
     auth.revoked_at = datetime.now(UTC)
@@ -1552,7 +1554,7 @@ def renter_account(user_id: int) -> ResponseReturnValue:
 
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
     renter_tu = TenantUser.query.filter_by(
         user_id=user_id, tenant_id=tu.tenant_id
     ).first()
@@ -1591,7 +1593,7 @@ def renter_record_payment(user_id: int) -> ResponseReturnValue:
 
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
     renter_tu = TenantUser.query.filter_by(
         user_id=user_id, tenant_id=tu.tenant_id
     ).first()
@@ -1658,7 +1660,7 @@ def renter_statement_csv(user_id: int) -> ResponseReturnValue:
 
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
     renter_tu = TenantUser.query.filter_by(
         user_id=user_id, tenant_id=tu.tenant_id
     ).first()

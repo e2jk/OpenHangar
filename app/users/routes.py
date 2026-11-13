@@ -66,6 +66,7 @@ ROLE_LABELS = {
 def _tenant_id() -> int:
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
+        # Unreachable: require_role refuses a user without a membership first (every caller).
         abort(403)  # pragma: no cover
     return int(tu.tenant_id)
 

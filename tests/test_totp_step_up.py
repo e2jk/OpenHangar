@@ -245,3 +245,11 @@ class TestDisable:
             },
         )
         assert _secret(app, uid) is None
+
+
+def test_an_unknown_profile_action_changes_nothing(app):
+    client, uid = _signed_in_without_totp(app)
+    response = client.post("/profile", data={"action": "bogus"})
+    assert response.status_code == 200
+    _no_profile_challenge(client)
+    assert _secret(app, uid) is None

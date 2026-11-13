@@ -96,6 +96,7 @@ def _safe_next(next_url: str, fallback: str) -> str:
 def _tenant_id() -> int:
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
+        # Unreachable: require_role refuses a user without a membership first (every caller).
         abort(403)  # pragma: no cover
     return tu.tenant_id
 
@@ -313,6 +314,7 @@ def _build_calendar_grid(year: int, month: int):
 def fleet_reservations():
     tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
     if not tu:
+        # Unreachable: require_role refuses a user without a membership first.
         abort(403)  # pragma: no cover
 
     role = tu.role
@@ -1806,7 +1808,7 @@ def my_account():
     uid = int(session["user_id"])
     tu = TenantUser.query.filter_by(user_id=uid).first()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
 
     account = BillingService.get_or_create_account(
         tu.tenant_id, uid, BillingAccountKind.RENTER
@@ -1836,7 +1838,7 @@ def my_account_statement_csv():
     uid = int(session["user_id"])
     tu = TenantUser.query.filter_by(user_id=uid).first()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
 
     account = BillingService.get_or_create_account(
         tu.tenant_id, uid, BillingAccountKind.RENTER

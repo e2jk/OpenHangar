@@ -19,6 +19,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     ExpenseType,
     Flight,
     LedgerEntry,
+    LedgerEntryType,
     LogbookEntryType,
     OperatingModel,
     Role,
@@ -682,3 +683,55 @@ class TestRunAllAircraft:
 
             run_daily_checks(app)
             assert mock_pass.called
+
+
+# ── Branches the ratchet found uncovered (audit T01) ─────────────────────────
+
+
+class TestLedgerBranches:
+    def test_a_source_back_in_scope_after_its_reversal_is_posted_again(self, app):
+        """Buy-in posted, then removed (reversed), then set again: the only
+        candidate entry is reversed, so a fresh one is posted — once."""
+        tid = _make_tenant(app)
+        uid = _make_user(app, tid, "back@example.com", "Back")
+        acid = _make_aircraft(app, tid, billing_start=date(2026, 1, 1))
+        oid = _add_owner(app, acid, uid, 100, buy_in=500)
+        _run_pass(app, acid)
+        for amount in ("0", "500"):
+            with app.app_context():
+                db.session.get(AircraftOwner, oid).buy_in_amount = Decimal(amount)
+                db.session.commit()
+            _run_pass(app, acid)
+        _run_pass(app, acid)  # idempotent
+        live = _live_entries(app, tid, uid, acid, "owner_buy_in")
+        assert [Decimal(e.amount) for e in live] == [Decimal("-500.00")]
+
+    def test_a_pass_without_owners_posts_nothing(self, app):
+        tid = _make_tenant(app)
+        acid = _make_aircraft(app, tid, billing_start=date(2026, 1, 1))
+        _add_expense(app, acid, 1200, date(2026, 2, 1))
+        _run_pass(app, acid)
+        with app.app_context():
+            assert LedgerEntry.query.count() == 0
+
+    def test_overdue_streak_starts_at_the_first_charge_into_debt(self, app):
+        from services.co_owner_billing import overdue_since
+
+        tid = _make_tenant(app)
+        uid = _make_user(app, tid, "debt@example.com", "Debt")
+        acid = _make_aircraft(app, tid, billing_start=date(2026, 1, 1))
+        _add_owner(app, acid, uid, 100)
+        with app.app_context():
+            acc = BillingService.get_or_create_account(
+                tid, uid, BillingAccountKind.CO_OWNER, aircraft_id=acid
+            )
+            for day in (5, 20):
+                BillingService.post(
+                    acc,
+                    LedgerEntryType.CHARGE,
+                    Decimal(100),
+                    "Charge",
+                    date(2026, 1, day),
+                )
+            db.session.commit()
+            assert overdue_since(acc) == date(2026, 1, 5)

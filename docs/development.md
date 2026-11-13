@@ -187,6 +187,27 @@ Bare selectors/options without `--targeted` are rejected instead of silently ign
 The pre-push hook (see below) checks `coverage.xml` if it was generated in the last 10 minutes,
 so running this shortly before `git push` is enough to satisfy it.
 
+**Branch coverage** — the 100% gate measures lines only. A separate run measures
+branches too, writes `htmlcov-branches/` and `coverage-branches.xml` (the missing
+arcs of every file), and checks a ratchet for the security- and money-critical
+modules listed in `scripts/branch-coverage-baseline.json`:
+
+```bash
+bash scripts/branch-coverage.sh                    # report + ratchet check
+bash scripts/branch-coverage.sh --update-baseline  # after tests improved
+```
+
+The ratchet fails when a listed module's branch coverage falls below its
+recorded value, printing the arcs now missing. `--update-baseline` only ever
+raises the recorded values; never lower one to make the check pass — add the
+test instead. It is not part of the pre-push hook (a second full run) and does
+not replace the line gate.
+
+**Coverage exclusions** — `# pragma: no cover` is for code that cannot run, and
+says why on the line above (`# Unreachable: …`). A guard that a real user can
+reach (for example an instance admin who belongs to no tenant) gets a test
+instead of an exclusion.
+
 ### Test layout
 
 ```
@@ -351,6 +372,10 @@ publishing a release.
   (`page.request.get(...)`) rather than direct DB queries for post-action checks.
 - Use `pw_expect(locator).to_be_visible()` / `to_be_hidden()` for visibility
   assertions; avoid class-string matching.
+- `page.wait_for_function()` does **not** await a returned Promise (a Promise
+  is truthy, so it returns at once). For anything asynchronous — service-worker
+  state, `caches`, IndexedDB — poll `page.evaluate()` instead (it does await),
+  like `wait_until()` in `tests/e2e/test_offline_account_isolation.py`.
 
 ---
 
