@@ -224,8 +224,8 @@ def test_aircraft_snapshot_empty_values_are_empty_strings(app, client):
     fields = client.get(f"/api/offline/aircraft/{ac_id}/logbook").get_json()["entries"][
         0
     ]["fields"]
-    assert fields.pop("date") == "2024-01-15"
-    assert set(fields.values()) == {""}
+    assert fields["date"] == "2024-01-15"
+    assert {value for key, value in fields.items() if key != "date"} == {""}
 
 
 def test_aircraft_snapshot_is_the_whole_logbook_in_date_order(app, client):

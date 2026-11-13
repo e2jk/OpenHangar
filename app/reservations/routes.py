@@ -1795,7 +1795,7 @@ def rental_charge(aircraft_id: int, res_id: int):
                 )
                 .execution_options(synchronize_session="fetch")
             )
-            if not cast("CursorResult[object]", claimed).rowcount:
+            if not cast(CursorResult, claimed).rowcount:
                 db.session.rollback()
                 flash(_("This charge has already been finalized."), "warning")
                 return redirect(
