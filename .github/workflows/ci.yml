@@ -931,6 +931,10 @@ jobs:
 
           # Backup folder is bind-mounted (not ephemeral container storage) so
           # the encrypted archive survives into the restore smoke test below.
+          # No background threads in these one-off CLI runs (here and in the
+          # restore below): the production-mode version check would write an
+          # app_settings row into the database while it is being dumped or
+          # restored, which the exact round-trip comparison rightly reports.
           output=$(docker run --rm --network backup-test-net \
             --entrypoint flask \
             -v "${CI_BACKUPS_DIR}:/tmp/backups" \
@@ -941,6 +945,7 @@ jobs:
             -e OPENHANGAR_BACKUP_ENCRYPTION_KEY=ci-test-key \
             -e FLASK_APP=init:create_app \
             -e OPENHANGAR_BACKUP_FOLDER=/tmp/backups \
+            -e OPENHANGAR_SKIP_BACKGROUND_THREADS=1 \
             openhangar:ci backup-now)
           echo "$output"
           if ! echo "$output" | grep -q "Backup OK:"; then
@@ -992,6 +997,7 @@ jobs:
             -e OPENHANGAR_SECRET_KEY=restoretest-ci-not-for-production-use-only \
             -e OPENHANGAR_RESTORE_ENCRYPTION_KEY=ci-test-key \
             -e FLASK_APP=init:create_app \
+            -e OPENHANGAR_SKIP_BACKGROUND_THREADS=1 \
             openhangar:ci restore-backup "/tmp/backups/${ARCHIVE_NAME}")
           echo "$output"
           if ! echo "$output" | grep -q "Restore complete."; then

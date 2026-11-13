@@ -89,6 +89,8 @@ _SKIP_GET_ENDPOINTS = {
     # a matching download has happened while it was current) — the generic "revision_id"
     # SEED key is shared with PersonalMinimumsRevision's own route and doesn't point at
     # one. Covered by tests/test_amp_export.py::TestDraftAndCanonicalPdf instead.
+    "offline.identity_check",  # empty 204 for the service worker, not a page
+    # (a browser navigation to a 204 is aborted) — tests/test_offline_identity.py
 }
 
 _SKIP_GET_RULES = {
