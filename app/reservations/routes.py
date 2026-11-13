@@ -309,6 +309,65 @@ def _build_calendar_grid(year: int, month: int):
 # ── Fleet reservations overview (admin/owner) ─────────────────────────────────
 
 
+# How far back the fleet overview shows past reservations by default.
+_FLEET_HISTORY_DAYS = 90
+
+
+def _overlapping_reservation_ids(reservations: list[Any]) -> set[int]:
+    """Ids of reservations overlapping another one on the same aircraft.
+
+    Sorted by start, each booking is compared only with the following ones
+    that start before it ends — the same pairs as comparing every pair
+    (touching bookings, end == next start, do not overlap), without the
+    quadratic work over an aircraft's whole history.
+    """
+    overlapping: set[int] = set()
+    by_aircraft: dict[int, list[Any]] = {}
+    for r in reservations:
+        by_aircraft.setdefault(r.aircraft_id, []).append(r)
+    for group in by_aircraft.values():
+        group.sort(key=lambda r: (r.start_dt, r.end_dt))
+        for i, first in enumerate(group):
+            for later in group[i + 1 :]:
+                if later.start_dt >= first.end_dt:
+                    break
+                overlapping.update((first.id, later.id))
+    return overlapping
+
+
+def _past_reservations_without_flight(past: list[Any]) -> set[int]:
+    """Ids of past reservations with no flight logged on that aircraft during
+    them (by date) — one query for all of them, not one per reservation."""
+    from bisect import bisect_left
+
+    from models import Flight  # pyright: ignore[reportMissingImports]
+
+    if not past:
+        return set()
+    rows = (
+        db.session.query(Flight.aircraft_id, Flight.date)
+        .filter(
+            Flight.aircraft_id.in_({r.aircraft_id for r in past}),
+            Flight.date >= min(r.start_dt for r in past).date(),
+            Flight.date <= max(r.end_dt for r in past).date(),
+        )
+        .distinct()
+        .all()
+    )
+    dates: dict[int, list[_date]] = {}
+    for aircraft_id, day in rows:
+        dates.setdefault(aircraft_id, []).append(day)
+    for days in dates.values():
+        days.sort()
+    missing: set[int] = set()
+    for r in past:
+        days = dates.get(r.aircraft_id, [])
+        i = bisect_left(days, r.start_dt.date())
+        if i == len(days) or days[i] > r.end_dt.date():
+            missing.add(r.id)
+    return missing
+
+
 @reservations_bp.route("/reservations/fleet/")
 @login_required
 @require_role(*_OWNER_ROLES)
@@ -342,22 +401,35 @@ def fleet_reservations():
 
     now = datetime.now(UTC)
     expired_cutoff = now - timedelta(days=60)
+    # History is bounded by default: the overview is about what is coming and
+    # what just happened, and an old fleet's lifetime of bookings would
+    # otherwise be loaded and compared on every visit. ?history=all shows it.
+    show_all_history = request.args.get("history") == "all"
+    history_cutoff = now - timedelta(days=_FLEET_HISTORY_DAYS)
 
+    filters = [
+        Reservation.aircraft_id.in_(aircraft_ids),
+        # Exclude expired-pending older than 60 days — they're just noise
+        db.or_(
+            Reservation.status != ReservationStatus.PENDING,
+            Reservation.start_dt >= expired_cutoff,
+        ),
+    ]
+    if not show_all_history:
+        filters.append(Reservation.end_dt >= history_cutoff)
     reservations = (
-        (
-            Reservation.query.filter(
-                Reservation.aircraft_id.in_(aircraft_ids),
-                # Exclude expired-pending older than 60 days — they're just noise
-                db.or_(
-                    Reservation.status != ReservationStatus.PENDING,
-                    Reservation.start_dt >= expired_cutoff,
-                ),
-            )
-            .order_by(Reservation.start_dt)
-            .all()
-        )
+        Reservation.query.filter(*filters).order_by(Reservation.start_dt).all()
         if aircraft_ids
         else []
+    )
+    older_count = (
+        Reservation.query.filter(
+            Reservation.aircraft_id.in_(aircraft_ids),
+            Reservation.end_dt < history_cutoff,
+            Reservation.status != ReservationStatus.PENDING,
+        ).count()
+        if aircraft_ids and not show_all_history
+        else 0
     )
 
     # SQLite returns naive datetimes even for DateTime(timezone=True) columns;
@@ -366,38 +438,11 @@ def fleet_reservations():
     if reservations and reservations[0].start_dt.tzinfo is None:
         now = now.replace(tzinfo=None)
 
-    # Detect overlapping confirmed reservations per aircraft
-    overlapping_ids: set[int] = set()
-    from itertools import combinations
-
     confirmed = [r for r in reservations if r.status == ReservationStatus.CONFIRMED]
-    by_aircraft: dict[int, list] = {}
-    for r in confirmed:
-        by_aircraft.setdefault(r.aircraft_id, []).append(r)
-    for group in by_aircraft.values():
-        for r1, r2 in combinations(group, 2):
-            if r1.start_dt < r2.end_dt and r1.end_dt > r2.start_dt:
-                overlapping_ids.add(r1.id)
-                overlapping_ids.add(r2.id)
-
-    # Find past confirmed reservations with no flight logged on that aircraft/date
-    from models import Flight  # pyright: ignore[reportMissingImports]
-
-    missing_flight_ids: set[int] = set()
-    for r in reservations:
-        if r.status == ReservationStatus.CONFIRMED and r.end_dt <= now:
-            start_date = r.start_dt.date()
-            end_date = r.end_dt.date()
-            has_flight = (
-                Flight.query.filter(
-                    Flight.aircraft_id == r.aircraft_id,
-                    Flight.date >= start_date,
-                    Flight.date <= end_date,
-                ).first()
-                is not None
-            )
-            if not has_flight:
-                missing_flight_ids.add(r.id)
+    overlapping_ids = _overlapping_reservation_ids(confirmed)
+    missing_flight_ids = _past_reservations_without_flight(
+        [r for r in confirmed if r.end_dt <= now]
+    )
 
     aircraft_map = {a.id: a for a in aircraft_list}
 
@@ -409,6 +454,9 @@ def fleet_reservations():
         missing_flight_ids=missing_flight_ids,
         now=now,
         ReservationStatus=ReservationStatus,
+        show_all_history=show_all_history,
+        history_days=_FLEET_HISTORY_DAYS,
+        older_count=older_count,
     )
 
 
