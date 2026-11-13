@@ -139,7 +139,12 @@ def test_backup_restore_document_round_trip(owner_env, app):
                 db.session.commit()
             upload_folder = app.config["UPLOAD_FOLDER"]
             for name in os.listdir(upload_folder):
-                os.unlink(os.path.join(upload_folder, name))
+                path = os.path.join(upload_folder, name)
+                # Folders too (e.g. _trash/ from a deleted document).
+                if os.path.isdir(path) and not os.path.islink(path):
+                    shutil.rmtree(path)
+                else:
+                    os.unlink(path)
 
             with (
                 patch.dict(app.config, {"SQLALCHEMY_DATABASE_URI": _FAKE_POSTGRES_URL}),
