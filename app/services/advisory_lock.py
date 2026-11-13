@@ -20,6 +20,7 @@ Lock id registry (pick a new one when adding a caller):
   7283910458 — EASA airworthiness sync (airworthiness_sync.py)
   7283910459 — document sync-watcher scan (sync_watcher.py)
   7283910460 — scheduled backup + retention (services/backup_scheduler.py)
+  7283910461 — any single backup run, whatever started it (config/routes.py run_backup)
 """
 
 from collections.abc import Iterator

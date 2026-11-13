@@ -4,11 +4,12 @@ Configuration blueprint — backup management, email settings, and future config
 
 import contextlib
 import hashlib
-import io
 import json
 import logging
 import os
+import secrets
 import subprocess  # nosec B404
+import threading
 import urllib.error
 import urllib.request
 import zipfile
@@ -64,8 +65,10 @@ def _derive_key(passphrase: str) -> bytes:
     ).derive(passphrase.encode())
 
 
-def _encrypt_bytes(plaintext: bytes, key: bytes) -> bytes:
-    """Encrypt *plaintext* with AES-256-GCM, prepending the 12-byte nonce."""
+def _encrypt_parts(plaintext: bytes, key: bytes) -> tuple[bytes, bytes]:
+    """AES-256-GCM: (12-byte nonce, ciphertext with tag). The archive format
+    is the two concatenated; keeping them apart lets a caller write them out
+    without a third full-size copy."""
     import os as _os
 
     from cryptography.hazmat.primitives.ciphers.aead import (
@@ -73,7 +76,12 @@ def _encrypt_bytes(plaintext: bytes, key: bytes) -> bytes:
     )
 
     nonce = _os.urandom(12)
-    ct = AESGCM(key).encrypt(nonce, plaintext, None)
+    return nonce, AESGCM(key).encrypt(nonce, plaintext, None)
+
+
+def _encrypt_bytes(plaintext: bytes, key: bytes) -> bytes:
+    """Encrypt *plaintext* with AES-256-GCM, prepending the 12-byte nonce."""
+    nonce, ct = _encrypt_parts(plaintext, key)
     return nonce + ct
 
 
@@ -101,6 +109,17 @@ def _parse_gatus_env() -> tuple[str, str, str | None] | None:
     return base_url, endpoint_key, auth_header
 
 
+class BackupInProgressError(RuntimeError):
+    """Another backup is being written right now (any process)."""
+
+
+# One backup at a time, whichever way it was started (button, pre-upgrade,
+# CLI, schedule): a process-local lock for threads, plus a PostgreSQL advisory
+# lock for other workers/processes (see services/advisory_lock.py).
+_BACKUP_THREAD_LOCK = threading.Lock()
+_BACKUP_ADVISORY_LOCK_ID = 7283910461
+
+
 def run_backup() -> BackupRecord:
     """
     Produce an encrypted ZIP backup of the PostgreSQL database and uploaded
@@ -113,9 +132,34 @@ def run_backup() -> BackupRecord:
     The ZIP is then AES-256-GCM encrypted and written to the backup folder.
     A ``BackupRecord`` row is committed and returned.
 
+    Only one backup runs at a time; a concurrent call raises
+    ``BackupInProgressError`` (a ``RuntimeError``) without writing anything.
+    The archive appears under its final name only once complete (written to a
+    hidden temporary file, then renamed), so an interrupted backup never looks
+    like a valid one. Memory: the ZIP is built in a temporary file; encrypting
+    it (one AES-GCM message, the archive format) needs the whole ZIP and its
+    encrypted copy in memory at once — about twice the archive size.
+
     Raises ``RuntimeError`` on failure; the record is still committed with
     ``status='failed'`` so operators can see the attempt.
     """
+    from services.advisory_lock import (  # pyright: ignore[reportMissingImports]
+        advisory_lock_scope,
+    )
+
+    busy = _("Another backup is already running. Try again in a moment.")
+    if not _BACKUP_THREAD_LOCK.acquire(blocking=False):
+        raise BackupInProgressError(busy)
+    try:
+        with advisory_lock_scope(db, _BACKUP_ADVISORY_LOCK_ID) as acquired:
+            if not acquired:
+                raise BackupInProgressError(busy)
+            return _run_backup_locked()
+    finally:
+        _BACKUP_THREAD_LOCK.release()
+
+
+def _run_backup_locked() -> BackupRecord:
     from flask import current_app  # pyright: ignore[reportMissingImports]
 
     backup_folder = current_app.config.get("BACKUP_FOLDER", "/data/backups")
@@ -125,15 +169,18 @@ def run_backup() -> BackupRecord:
 
     os.makedirs(backup_folder, exist_ok=True)
 
-    ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    now = datetime.now(UTC)
+    # Second-resolution time plus a random part: two backups can never share
+    # a name, even when started in the same second.
+    ts = now.strftime("%Y%m%dT%H%M%SZ")
     app_version = os.environ.get("OPENHANGAR_VERSION", "development")
-    filename = f"openhangar_backup_{ts}_{app_version}.zip.enc"
+    filename = f"openhangar_backup_{ts}_{secrets.token_hex(3)}_{app_version}.zip.enc"
     path = os.path.join(backup_folder, filename)
     alembic_head = _get_alembic_head()
     metadata = {
         "app_version": app_version,
         "alembic_head": alembic_head,
-        "created_at": datetime.now(UTC).isoformat(),
+        "created_at": now.isoformat(),
     }
 
     record = BackupRecord(
@@ -146,40 +193,63 @@ def run_backup() -> BackupRecord:
     db.session.add(record)
     db.session.flush()  # get an id without committing
 
+    # Hidden temporary files in the backup folder itself (same filesystem, so
+    # the final rename is atomic; normal file permissions, like the archive
+    # always had); removed whatever happens.
+    zip_tmp = os.path.join(backup_folder, f".{filename}.zip.partial")
+    out_tmp = zip_tmp
     try:
         sql_bytes = _pg_dump(database_url)
-
-        buf = io.BytesIO()
-        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        with (
+            open(zip_tmp, "xb") as raw,
+            zipfile.ZipFile(raw, "w", zipfile.ZIP_DEFLATED) as zf,
+        ):
             zf.writestr("openhangar.sql", sql_bytes)
+            del sql_bytes
             zf.writestr("metadata.json", json.dumps(metadata, indent=2))
             _add_uploads_to_zip(zf, upload_folder)
-        zip_bytes = buf.getvalue()
 
+        digest = hashlib.sha256()
         if encryption_key_raw:
             key = _derive_key(encryption_key_raw)
-            payload = _encrypt_bytes(zip_bytes, key)
+            with open(zip_tmp, "rb") as fh:
+                nonce, ciphertext = _encrypt_parts(fh.read(), key)
+            out_tmp = os.path.join(backup_folder, f".{filename}.partial")
+            with open(out_tmp, "xb") as fh:
+                for part in (nonce, ciphertext):
+                    fh.write(part)
+                    digest.update(part)
+                fh.flush()
+                os.fsync(fh.fileno())
+            size = len(nonce) + len(ciphertext)
+            del ciphertext
         else:
-            payload = zip_bytes
             log.warning(
                 "OPENHANGAR_BACKUP_ENCRYPTION_KEY not set — backup is unencrypted"
             )
+            with open(zip_tmp, "rb") as fh:
+                for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+                    digest.update(chunk)
+                os.fsync(fh.fileno())
+            size = os.path.getsize(zip_tmp)
 
-        with open(path, "wb") as fh:
-            fh.write(payload)
+        os.replace(out_tmp, path)  # complete archive, under its final name
 
         meta_path = path.replace(".zip.enc", ".meta")
         with open(meta_path, "w") as fh:
             json.dump(metadata, fh, indent=2)
 
-        sha256 = hashlib.sha256(payload).hexdigest()
-        record.size_bytes = len(payload)
-        record.sha256 = sha256
+        record.size_bytes = size
+        record.sha256 = digest.hexdigest()
         record.status = "ok"
     except Exception as exc:
         log.error("Backup failed: %s", exc)
         db.session.commit()
         raise RuntimeError(str(exc)) from exc
+    finally:
+        for leftover in {zip_tmp, out_tmp}:
+            with contextlib.suppress(FileNotFoundError):
+                os.remove(leftover)
 
     db.session.commit()
     return record

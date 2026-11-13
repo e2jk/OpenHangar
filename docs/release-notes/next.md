@@ -29,3 +29,4 @@
 
 **Maintenance**
 - Pages run a few fewer database queries: the signed-in user's organisation membership is looked up once per page instead of several times.
+- Backups use about a third less memory (the archive is built in a temporary file; encrypting it still needs about twice its size), only one backup runs at a time (a second one started meanwhile is refused instead of competing), and an interrupted backup never leaves a file that looks complete. Backup names gain a short random part.
