@@ -28,7 +28,7 @@ def component_hours(comp: Any) -> float:
 
     Engine/propeller TBO and life limits are an engine-hours metric, not
     flight (airborne) time — sums each flight's directly-logged engine_time
-    (set by the aircraft-log form/offline sync) over the engine counter
+    (set by the aircraft-log form) over the engine counter
     delta, matching how duration is resolved everywhere else an engine-hours
     total is displayed. A flight with no engine counters logged would
     otherwise silently not count towards the component's hours at all.

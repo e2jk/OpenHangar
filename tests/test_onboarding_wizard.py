@@ -311,6 +311,7 @@ class TestWizardCompleteFlows:
             [
                 {"name": "Alice", "email": "alice@example.com", "role": "owner"},
                 {"name": "Bob", "email": "bob@example.com", "role": "admin"},
+                {"name": "  ", "email": "", "role": "owner"},  # blank row: skipped
             ],
         )
         _step_summary(client)
@@ -896,3 +897,12 @@ class TestWizardCoverageGaps:
         assert r.status_code == 302
         with app.app_context():
             assert UserInvitation.query.count() == 0
+
+
+def test_an_unknown_setup_step_posted_is_not_acted_on(app, client):
+    """A POST naming no known step falls through to the page itself."""
+    _step_account(client)
+    response = client.post("/setup", data={"step": "bogus"})
+    assert response.status_code in (200, 302)
+    with app.app_context():
+        assert User.query.count() == 0

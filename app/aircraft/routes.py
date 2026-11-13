@@ -90,6 +90,7 @@ from utils import (
     accessible_aircraft,
     activity,
     compute_aircraft_statuses,
+    current_membership,
     get_aircraft_type_engine_info,
     login_required,
     require_role,
@@ -120,7 +121,7 @@ _PILOT_ROLES = (Role.ADMIN, Role.OWNER, Role.PILOT)
 
 def _tenant_id() -> int:
     """Return the tenant ID for the currently logged-in user."""
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         abort(403)
     return int(tu.tenant_id)
@@ -3581,20 +3582,18 @@ def upload_photo(aircraft_id: int) -> ResponseReturnValue:
 @aircraft_bp.route("/<aircraft_ref:aircraft_id>/photos/<int:photo_id>/img")
 @login_required
 def serve_photo(aircraft_id: int, photo_id: int) -> ResponseReturnValue:
-    from flask import send_from_directory  # pyright: ignore[reportMissingImports]
+    from services.safe_paths import send_inside
 
     ac = _get_aircraft_or_404(aircraft_id)
     photo = db.session.get(AircraftPhoto, photo_id)
     if not photo or photo.aircraft_id != ac.id:
         abort(404)
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
-    directory = os.path.join(folder, os.path.dirname(photo.filename))
-    fname = os.path.basename(photo.filename)
     # An unchanged photo can become inaccessible after logout or a grant is
     # revoked, so it is never served from cache without asking: the browser
     # revalidates (ETag), and every revisit passes the authorization checks
     # above before Werkzeug can answer 304. See init._REVALIDATED_PRIVATE_ENDPOINTS.
-    response = send_from_directory(directory, fname, max_age=None)
+    response = send_inside(folder, photo.filename, max_age=None)
     response.headers["Cache-Control"] = "private, no-cache"
     return response
 
@@ -3608,7 +3607,7 @@ def serve_photo_thumb(aircraft_id: int, photo_id: int) -> ResponseReturnValue:
     back to serving the original when no thumbnail file exists yet (a
     photo uploaded before this existed, or thumbnail generation failed at
     upload time), so every photo still displays either way."""
-    from flask import send_from_directory  # pyright: ignore[reportMissingImports]
+    from services.safe_paths import resolve_inside, send_inside
 
     ac = _get_aircraft_or_404(aircraft_id)
     photo = db.session.get(AircraftPhoto, photo_id)
@@ -3616,11 +3615,10 @@ def serve_photo_thumb(aircraft_id: int, photo_id: int) -> ResponseReturnValue:
         abort(404)
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
     thumb_relpath = thumb_path_for(photo.filename)
-    if not os.path.isfile(os.path.join(folder, thumb_relpath)):
+    thumb = resolve_inside(folder, thumb_relpath)
+    if thumb is None or not os.path.isfile(thumb):
         thumb_relpath = photo.filename
-    directory = os.path.join(folder, os.path.dirname(thumb_relpath))
-    fname = os.path.basename(thumb_relpath)
-    response = send_from_directory(directory, fname, max_age=None)
+    response = send_inside(folder, thumb_relpath, max_age=None)
     response.headers["Cache-Control"] = "private, no-cache"  # as serve_photo
     return response
 

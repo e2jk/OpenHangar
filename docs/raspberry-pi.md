@@ -296,7 +296,7 @@ in the address bar, which is expected here.
 There are two trade-offs to know about:
 
 - **No app install, no offline mode.** Browsers only allow installing
-  OpenHangar as an app on your phone's home screen, and editing your
+  OpenHangar as an app on your phone's home screen, and reading your
   logbook offline, when the site is served over HTTPS. Over plain HTTP,
   OpenHangar works normally in the browser, but only while you're
   connected.

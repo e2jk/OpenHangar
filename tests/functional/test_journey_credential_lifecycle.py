@@ -38,6 +38,7 @@ test_csrf.py; the single chained flow with real CSRF tokens is new.
 import re
 import tempfile
 import time as _time
+from unittest.mock import patch
 from urllib.parse import urlsplit
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
@@ -172,7 +173,12 @@ def test_credential_lifecycle_with_csrf_enabled(app, client):
     assert invitee.get("/").status_code == 200
 
     # Enable TOTP through the real profile flow; inspect its server-side challenge.
-    setup_resp = _post(client, "/profile", "/profile", {"action": "setup_totp"})
+    setup_resp = _post(
+        client,
+        "/profile",
+        "/profile",
+        {"action": "setup_totp", "current_password": _PASSWORD},
+    )
     totp_secret = challenge_payload(client, "profile_challenge")["secret"]
     confirm_resp = client.post(
         "/profile",
@@ -185,12 +191,18 @@ def test_credential_lifecycle_with_csrf_enabled(app, client):
     )
     assert b"text-bg-danger" not in confirm_resp.data, confirm_resp.data[:2000]
 
-    # Successive logins for the same user need distinct TOTP codes: the
-    # login route caches "already used" codes per user for 90s
-    # (auth.totp.replay guard), so calling pyotp.TOTP(secret).now() twice
-    # in quick succession would collide on the same 30s-window code.
-    def _next_code(offset_seconds):
-        return pyotp.TOTP(totp_secret).at(_time.time() + offset_seconds)
+    # Each TOTP time step can be used once per user (services/totp.py), and
+    # confirming the enrolment above used the current one: every later login
+    # here happens a minute further on, with that moment's code.
+    def _totp_login(c, minutes_later):
+        moment = _time.time() + 60 * minutes_later
+        with patch("services.totp._now", return_value=moment):
+            _post(
+                c,
+                "/login?step=totp",
+                "/login",
+                {"step": "totp", "totp_code": pyotp.TOTP(totp_secret).at(moment)},
+            )
 
     # A second, independent client logs in as the owner too, *before* the
     # password change below -- its session must be revoked afterwards
@@ -202,12 +214,7 @@ def test_credential_lifecycle_with_csrf_enabled(app, client):
         "/login",
         {"email": email, "password": _PASSWORD},
     )
-    _post(
-        other_session_client,
-        "/login?step=totp",
-        "/login",
-        {"step": "totp", "totp_code": _next_code(0)},
-    )
+    _totp_login(other_session_client, 1)
     assert other_session_client.get("/profile").status_code == 200
 
     client.get("/logout")
@@ -216,12 +223,7 @@ def test_credential_lifecycle_with_csrf_enabled(app, client):
     _post(client, "/login", "/login", {"email": email, "password": _PASSWORD})
     login_resp = client.get("/login?step=totp")
     assert login_resp.status_code == 200
-    _post(
-        client,
-        "/login?step=totp",
-        "/login",
-        {"step": "totp", "totp_code": _next_code(30)},
-    )
+    _totp_login(client, 2)
     assert client.get("/").status_code == 200
 
     # Change password.

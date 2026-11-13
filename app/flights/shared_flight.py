@@ -8,8 +8,7 @@ aircraft, who keep the aircraft log correct. Each slot's own name, role,
 function hours and personal remark ("personal fields") belong to the pilot
 in that slot alone.
 
-- ``can_edit_shared`` decides who may use the full flight form / offline
-  sync; everyone else linked to the flight is sent to the "my part of this
+- ``can_edit_shared`` decides who may use the full flight form; everyone else linked to the flight is sent to the "my part of this
   flight" page (``flights.crew_entry``) to edit their personal fields and
   *suggest* corrections to shared ones (``FlightCorrectionSuggestion``).
 - ``protect_other_pilots`` / ``restore_other_pilots`` wrap every shared-field

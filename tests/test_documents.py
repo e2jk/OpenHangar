@@ -2312,12 +2312,19 @@ class TestSlugRename:
         (tmp_path / "merge-old" / "file-a.pdf").write_bytes(b"a")
         (tmp_path / "merge-new").mkdir()
         (tmp_path / "merge-new" / "file-b.pdf").write_bytes(b"b")
+        # A link to a file outside the uploads folder is not moved along.
+        outside = tmp_path.parent / (tmp_path.name + "-outside.pdf")
+        outside.write_bytes(b"outside")
+        (tmp_path / "merge-old" / "linked.pdf").symlink_to(outside)
 
         client.post("/config/tenant-slug", data={"slug": "merge-new"})
 
         assert (tmp_path / "merge-new" / "file-a.pdf").exists()
         assert (tmp_path / "merge-new" / "file-b.pdf").exists()
         assert not (tmp_path / "merge-old").exists()
+        assert not os.path.lexists(tmp_path / "merge-new" / "linked.pdf")
+        assert outside.read_bytes() == b"outside"
+        outside.unlink()
 
     def test_rename_updates_aircraft_photo_filenames(self, app, client, tmp_path):
         """AircraftPhoto.filename is rewritten when the tenant slug changes."""
@@ -2567,6 +2574,9 @@ class TestRenameFolderEndpoint:
         correct = tmp_path / "rfm-hangar" / "OO-RM" / "maintenance"
         correct.mkdir(parents=True)
         (correct / "2024-02-01 - B.pdf").write_bytes(b"%PDF")
+        outside = tmp_path.parent / (tmp_path.name + "-outside.pdf")
+        outside.write_bytes(b"outside")
+        (typo / "2024-03-01 - Linked.pdf").symlink_to(outside)
 
         rv = client.post(
             "/documents/reconcile/rename-folder",
@@ -2583,6 +2593,9 @@ class TestRenameFolderEndpoint:
             tmp_path / "rfm-hangar" / "OO-RM" / "maintenance" / "2024-02-01 - B.pdf"
         ).exists()
         assert not (tmp_path / "rfm-hangar" / "OO-RM" / "Maintenance").exists()
+        assert not os.path.lexists(correct / "2024-03-01 - Linked.pdf")
+        assert outside.read_bytes() == b"outside"
+        outside.unlink()
 
     def test_rename_invalid_category_rejected(self, app, client, tmp_path):
         """Submitting an unrecognised new_category redirects with an error flash."""

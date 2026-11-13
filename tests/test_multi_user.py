@@ -791,7 +791,10 @@ class TestProfileTOTP:
     def test_setup_totp_stores_only_challenge_in_session(self, app, client):
         _, uid = _make_tenant_user(app, "user@test.com", Role.ADMIN)
         _login(client, uid)
-        client.post("/profile", data={"action": "setup_totp"})
+        client.post(
+            "/profile",
+            data={"action": "setup_totp", "current_password": "password-12-chars"},
+        )
         with client.session_transaction() as sess:
             assert "profile_challenge" in sess
             assert "profile_totp_secret" not in sess
@@ -799,7 +802,10 @@ class TestProfileTOTP:
     def test_setup_totp_renders_profile(self, app, client):
         _, uid = _make_tenant_user(app, "user@test.com", Role.ADMIN)
         _login(client, uid)
-        resp = client.post("/profile", data={"action": "setup_totp"})
+        resp = client.post(
+            "/profile",
+            data={"action": "setup_totp", "current_password": "password-12-chars"},
+        )
         assert resp.status_code == 200
 
     def test_confirm_totp_without_session_redirects(self, app, client):
@@ -817,7 +823,10 @@ class TestProfileTOTP:
     def test_confirm_totp_invalid_code_shows_error(self, app, client):
         _, uid = _make_tenant_user(app, "user@test.com", Role.ADMIN)
         _login(client, uid)
-        client.post("/profile", data={"action": "setup_totp"})
+        client.post(
+            "/profile",
+            data={"action": "setup_totp", "current_password": "password-12-chars"},
+        )
         resp = client.post(
             "/profile",
             data={
@@ -831,7 +840,10 @@ class TestProfileTOTP:
     def test_confirm_totp_success_enables_2fa(self, app, client):
         _, uid = _make_tenant_user(app, "user@test.com", Role.ADMIN)
         _login(client, uid)
-        client.post("/profile", data={"action": "setup_totp"})
+        client.post(
+            "/profile",
+            data={"action": "setup_totp", "current_password": "password-12-chars"},
+        )
         secret = challenge_payload(client, "profile_challenge")["secret"]
         valid_code = pyotp.TOTP(secret).now()
         client.post(
@@ -871,7 +883,7 @@ class TestProfileTOTP:
         )
         with app.app_context():
             user = db.session.get(User, uid)
-            user.totp_secret = pyotp.random_base32()
+            user.totp_secret = secret = pyotp.random_base32()
             db.session.commit()
         _login(client, uid)
         resp = client.post(
@@ -879,6 +891,7 @@ class TestProfileTOTP:
             data={
                 "action": "disable_totp",
                 "current_password": "correctpassword1",
+                "current_totp_code": pyotp.TOTP(secret).now(),
             },
             follow_redirects=True,
         )

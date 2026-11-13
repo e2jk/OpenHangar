@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import copy
 import csv
 import hashlib
@@ -20,6 +21,13 @@ from typing import Any
 import openpyxl  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 from flask_babel import pgettext  # pyright: ignore[reportMissingImports]
+from services.spreadsheet_limits import (  # pyright: ignore[reportMissingImports]
+    MAX_COLUMNS,
+    MAX_SHEETS_SCANNED,
+    bounded_csv_rows,
+    bounded_rows,
+    check_xlsx_archive,
+)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -304,23 +312,82 @@ def _trim_trailing_empty_cols(
 # ── Group-header detection ────────────────────────────────────────────────────
 
 
-def _merge_label_map(ws: Any) -> dict[tuple[int, int], str]:
+def _merge_label_map(
+    ranges: list[tuple[int, int, int, int]], rows: list[list[Any]]
+) -> dict[tuple[int, int], str]:
     """Return {(0-based row, 0-based col): group_label} for every merged region.
 
-    The label is the value of the top-left cell of each merged range.
-    Every cell in the range gets the same label so downstream code can do a
-    simple lookup without forward-fill.
+    `ranges` are (min_col, min_row, max_col, max_row), 1-based as in Excel.
+    The label is the value of the top-left cell of each merged range, read
+    from the already-loaded `rows`. Every cell in the range gets the same
+    label so downstream code can do a simple lookup without forward-fill.
+    Ranges are clipped to the rows and columns actually read, so a range
+    declared over a whole sheet costs nothing.
     """
     result: dict[tuple[int, int], str] = {}
-    for mc in ws.merged_cells.ranges:
-        val = ws.cell(mc.min_row, mc.min_col).value
+    for min_col, min_row, max_col, max_row in ranges:
+        if min_row > len(rows) or min_col > len(rows[min_row - 1]):
+            continue
+        val = rows[min_row - 1][min_col - 1]
         if val is None or not str(val).strip():
             continue
         label = str(val).strip()
-        for r in range(mc.min_row - 1, mc.max_row):
-            for c in range(mc.min_col - 1, mc.max_col):
+        for r in range(min_row - 1, min(max_row, len(rows))):
+            for c in range(min_col - 1, min(max_col, MAX_COLUMNS)):
                 result[(r, c)] = label
     return result
+
+
+def _local(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1]
+
+
+def _merged_ranges(data: bytes, sheet_name: str) -> list[tuple[int, int, int, int]]:
+    """The merged-cell ranges of one worksheet, read from its XML directly.
+
+    openpyxl only exposes merged cells after loading the whole workbook
+    again in full (not read-only) mode — every cell of every sheet in
+    memory. The ranges are a short list in the sheet's XML, read here with
+    defusedxml (safe against entity expansion), streaming past the cells.
+    """
+    import posixpath
+    import zipfile
+
+    import defusedxml.ElementTree as SafeET  # pyright: ignore[reportMissingImports]
+    from openpyxl.utils.cell import (  # pyright: ignore[reportMissingImports]
+        range_boundaries,
+    )
+
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        workbook = SafeET.fromstring(archive.read("xl/workbook.xml"))
+        rel_id = next(
+            value
+            for sheet in workbook.iter()
+            if _local(sheet.tag) == "sheet" and sheet.get("name") == sheet_name
+            for key, value in sheet.attrib.items()
+            if _local(key) == "id"
+        )
+        rels = SafeET.fromstring(archive.read("xl/_rels/workbook.xml.rels"))
+        target = next(
+            rel.get("Target", "")
+            for rel in rels.iter()
+            if _local(rel.tag) == "Relationship" and rel.get("Id") == rel_id
+        )
+        path = (
+            target.lstrip("/")
+            if target.startswith("/")
+            else posixpath.normpath(posixpath.join("xl", target))
+        )
+        ranges: list[tuple[int, int, int, int]] = []
+        with archive.open(path) as sheet_xml:
+            for _event, element in SafeET.iterparse(sheet_xml):
+                if _local(element.tag) == "mergeCell":
+                    min_col, min_row, max_col, max_row = range_boundaries(
+                        element.get("ref", "")
+                    )
+                    ranges.append((min_col, min_row, max_col, max_row))
+                element.clear()
+        return ranges
 
 
 def _group_labels_from_map(
@@ -400,6 +467,9 @@ def parse_file(data: bytes, filename: str) -> ParsedFile:
 # since they decide which sheet gets picked. Entries are deep-copied in
 # and out so a caller mutating its ParsedFile can never affect another's.
 _EXCEL_PARSE_CACHE_SIZE = 4
+# Size bound as well as entry count: a workbook with more cells than this is
+# not cached, so the cache holds at most 4 x 500k cells.
+_EXCEL_PARSE_CACHE_MAX_CELLS = 500_000
 _excel_parse_cache: OrderedDict[tuple[str, str, frozenset[str]], ParsedFile] = (
     OrderedDict()
 )
@@ -414,6 +484,8 @@ def _parse_excel_cached(data: bytes, filename: str) -> ParsedFile:
             _excel_parse_cache.move_to_end(key)
             return copy.deepcopy(cached)
     parsed = _parse_excel(data, filename)
+    if sum(len(row) for row in parsed.data_rows) > _EXCEL_PARSE_CACHE_MAX_CELLS:
+        return parsed  # too big to keep a copy of (S08): parsed again if needed
     with _excel_parse_cache_lock:
         _excel_parse_cache[key] = copy.deepcopy(parsed)
         while len(_excel_parse_cache) > _EXCEL_PARSE_CACHE_SIZE:
@@ -479,13 +551,13 @@ def _pick_best_excel_sheet(wb: Any) -> tuple[str, list[list[Any]]]:
     preferred = _preferred_sheet_names()
     for ws in wb.worksheets:
         if ws.title.strip().lower() in preferred:
-            return ws.title, [list(row) for row in ws.iter_rows(values_only=True)]
+            return ws.title, _read_rows(ws)
 
     best_name = wb.worksheets[0].title if wb.worksheets else ""
     best_score = -1
     best_rows: list[list[Any]] = []
-    for ws in wb.worksheets:
-        rows = [list(row) for row in ws.iter_rows(values_only=True)]
+    for ws in wb.worksheets[:MAX_SHEETS_SCANNED]:
+        rows = _read_rows(ws)
         trimmed = _trim_trailing_empty_cols(list(rows))
         hi = _find_header_row(trimmed)
         score = _header_alias_score(trimmed[hi]) if hi is not None else 0
@@ -496,22 +568,28 @@ def _pick_best_excel_sheet(wb: Any) -> tuple[str, list[list[Any]]]:
     return best_name, best_rows
 
 
+def _read_rows(ws: Any) -> list[list[Any]]:
+    """A read-only worksheet's rows, within the import budgets (S08)."""
+    return bounded_rows(ws.iter_rows(values_only=True, max_col=MAX_COLUMNS))
+
+
 def _parse_excel(data: bytes, filename: str) -> ParsedFile:
+    check_xlsx_archive(data)  # before openpyxl expands anything
     try:
         wb_ro = openpyxl.load_workbook(io.BytesIO(data), read_only=True, data_only=True)
     except Exception as exc:
         raise ValueError(f"Could not open Excel file: {exc}") from exc
-    sheet_name, all_rows = _pick_best_excel_sheet(wb_ro)
-    wb_ro.close()
-
-    # Second load (non-read-only) to access merged cell ranges for exact group labels.
-    excel_merge_map: dict[tuple[int, int], str] | None = None
     try:
-        wb_full = openpyxl.load_workbook(io.BytesIO(data), data_only=True)
-        excel_merge_map = _merge_label_map(wb_full[sheet_name])
-        wb_full.close()
-    except Exception:  # noqa: S110, BLE001  # fall back to heuristic in _build_parsed_file
-        pass
+        sheet_name, all_rows = _pick_best_excel_sheet(wb_ro)
+    finally:
+        wb_ro.close()
+
+    # Merged cell ranges give exact group labels (e.g. "Single pilot" over
+    # its SE/ME columns).
+    excel_merge_map: dict[tuple[int, int], str] | None = None
+    # Any problem reading them: fall back to the heuristic in _build_parsed_file.
+    with contextlib.suppress(Exception):
+        excel_merge_map = _merge_label_map(_merged_ranges(data, sheet_name), all_rows)
 
     return _build_parsed_file(all_rows, filename, excel_merge_map=excel_merge_map)
 
@@ -530,7 +608,7 @@ def _parse_csv(data: bytes, filename: str) -> ParsedFile:
 
     reader = csv.reader(io.StringIO(text), dialect)
     try:
-        all_rows: list[list[Any]] = list(reader)
+        all_rows: list[list[Any]] = bounded_csv_rows(reader)
     except csv.Error as exc:
         raise ValueError(f"Could not parse CSV file: {exc}") from exc
     return _build_parsed_file(all_rows, filename)

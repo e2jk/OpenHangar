@@ -4,11 +4,12 @@ Configuration blueprint — backup management, email settings, and future config
 
 import contextlib
 import hashlib
-import io
 import json
 import logging
 import os
+import secrets
 import subprocess  # nosec B404
+import threading
 import urllib.error
 import urllib.request
 import zipfile
@@ -34,6 +35,7 @@ from init import _env_or_file  # pyright: ignore[reportMissingImports]
 from models import AppSetting, BackupRecord, db  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
     activity,
+    current_membership,
     login_required,
     require_instance_admin,
     to_libpq_url,
@@ -63,8 +65,10 @@ def _derive_key(passphrase: str) -> bytes:
     ).derive(passphrase.encode())
 
 
-def _encrypt_bytes(plaintext: bytes, key: bytes) -> bytes:
-    """Encrypt *plaintext* with AES-256-GCM, prepending the 12-byte nonce."""
+def _encrypt_parts(plaintext: bytes, key: bytes) -> tuple[bytes, bytes]:
+    """AES-256-GCM: (12-byte nonce, ciphertext with tag). The archive format
+    is the two concatenated; keeping them apart lets a caller write them out
+    without a third full-size copy."""
     import os as _os
 
     from cryptography.hazmat.primitives.ciphers.aead import (
@@ -72,7 +76,12 @@ def _encrypt_bytes(plaintext: bytes, key: bytes) -> bytes:
     )
 
     nonce = _os.urandom(12)
-    ct = AESGCM(key).encrypt(nonce, plaintext, None)
+    return nonce, AESGCM(key).encrypt(nonce, plaintext, None)
+
+
+def _encrypt_bytes(plaintext: bytes, key: bytes) -> bytes:
+    """Encrypt *plaintext* with AES-256-GCM, prepending the 12-byte nonce."""
+    nonce, ct = _encrypt_parts(plaintext, key)
     return nonce + ct
 
 
@@ -100,6 +109,17 @@ def _parse_gatus_env() -> tuple[str, str, str | None] | None:
     return base_url, endpoint_key, auth_header
 
 
+class BackupInProgressError(RuntimeError):
+    """Another backup is being written right now (any process)."""
+
+
+# One backup at a time, whichever way it was started (button, pre-upgrade,
+# CLI, schedule): a process-local lock for threads, plus a PostgreSQL advisory
+# lock for other workers/processes (see services/advisory_lock.py).
+_BACKUP_THREAD_LOCK = threading.Lock()
+_BACKUP_ADVISORY_LOCK_ID = 7283910461
+
+
 def run_backup() -> BackupRecord:
     """
     Produce an encrypted ZIP backup of the PostgreSQL database and uploaded
@@ -112,9 +132,34 @@ def run_backup() -> BackupRecord:
     The ZIP is then AES-256-GCM encrypted and written to the backup folder.
     A ``BackupRecord`` row is committed and returned.
 
+    Only one backup runs at a time; a concurrent call raises
+    ``BackupInProgressError`` (a ``RuntimeError``) without writing anything.
+    The archive appears under its final name only once complete (written to a
+    hidden temporary file, then renamed), so an interrupted backup never looks
+    like a valid one. Memory: the ZIP is built in a temporary file; encrypting
+    it (one AES-GCM message, the archive format) needs the whole ZIP and its
+    encrypted copy in memory at once — about twice the archive size.
+
     Raises ``RuntimeError`` on failure; the record is still committed with
     ``status='failed'`` so operators can see the attempt.
     """
+    from services.advisory_lock import (  # pyright: ignore[reportMissingImports]
+        advisory_lock_scope,
+    )
+
+    busy = _("Another backup is already running. Try again in a moment.")
+    if not _BACKUP_THREAD_LOCK.acquire(blocking=False):
+        raise BackupInProgressError(busy)
+    try:
+        with advisory_lock_scope(db, _BACKUP_ADVISORY_LOCK_ID) as acquired:
+            if not acquired:
+                raise BackupInProgressError(busy)
+            return _run_backup_locked()
+    finally:
+        _BACKUP_THREAD_LOCK.release()
+
+
+def _run_backup_locked() -> BackupRecord:
     from flask import current_app  # pyright: ignore[reportMissingImports]
 
     backup_folder = current_app.config.get("BACKUP_FOLDER", "/data/backups")
@@ -124,15 +169,18 @@ def run_backup() -> BackupRecord:
 
     os.makedirs(backup_folder, exist_ok=True)
 
-    ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    now = datetime.now(UTC)
+    # Second-resolution time plus a random part: two backups can never share
+    # a name, even when started in the same second.
+    ts = now.strftime("%Y%m%dT%H%M%SZ")
     app_version = os.environ.get("OPENHANGAR_VERSION", "development")
-    filename = f"openhangar_backup_{ts}_{app_version}.zip.enc"
+    filename = f"openhangar_backup_{ts}_{secrets.token_hex(3)}_{app_version}.zip.enc"
     path = os.path.join(backup_folder, filename)
     alembic_head = _get_alembic_head()
     metadata = {
         "app_version": app_version,
         "alembic_head": alembic_head,
-        "created_at": datetime.now(UTC).isoformat(),
+        "created_at": now.isoformat(),
     }
 
     record = BackupRecord(
@@ -145,40 +193,63 @@ def run_backup() -> BackupRecord:
     db.session.add(record)
     db.session.flush()  # get an id without committing
 
+    # Hidden temporary files in the backup folder itself (same filesystem, so
+    # the final rename is atomic; normal file permissions, like the archive
+    # always had); removed whatever happens.
+    zip_tmp = os.path.join(backup_folder, f".{filename}.zip.partial")
+    out_tmp = zip_tmp
     try:
         sql_bytes = _pg_dump(database_url)
-
-        buf = io.BytesIO()
-        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        with (
+            open(zip_tmp, "xb") as raw,
+            zipfile.ZipFile(raw, "w", zipfile.ZIP_DEFLATED) as zf,
+        ):
             zf.writestr("openhangar.sql", sql_bytes)
+            del sql_bytes
             zf.writestr("metadata.json", json.dumps(metadata, indent=2))
             _add_uploads_to_zip(zf, upload_folder)
-        zip_bytes = buf.getvalue()
 
+        digest = hashlib.sha256()
         if encryption_key_raw:
             key = _derive_key(encryption_key_raw)
-            payload = _encrypt_bytes(zip_bytes, key)
+            with open(zip_tmp, "rb") as fh:
+                nonce, ciphertext = _encrypt_parts(fh.read(), key)
+            out_tmp = os.path.join(backup_folder, f".{filename}.partial")
+            with open(out_tmp, "xb") as fh:
+                for part in (nonce, ciphertext):
+                    fh.write(part)
+                    digest.update(part)
+                fh.flush()
+                os.fsync(fh.fileno())
+            size = len(nonce) + len(ciphertext)
+            del ciphertext
         else:
-            payload = zip_bytes
             log.warning(
                 "OPENHANGAR_BACKUP_ENCRYPTION_KEY not set — backup is unencrypted"
             )
+            with open(zip_tmp, "rb") as fh:
+                for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+                    digest.update(chunk)
+                os.fsync(fh.fileno())
+            size = os.path.getsize(zip_tmp)
 
-        with open(path, "wb") as fh:
-            fh.write(payload)
+        os.replace(out_tmp, path)  # complete archive, under its final name
 
         meta_path = path.replace(".zip.enc", ".meta")
         with open(meta_path, "w") as fh:
             json.dump(metadata, fh, indent=2)
 
-        sha256 = hashlib.sha256(payload).hexdigest()
-        record.size_bytes = len(payload)
-        record.sha256 = sha256
+        record.size_bytes = size
+        record.sha256 = digest.hexdigest()
         record.status = "ok"
     except Exception as exc:
         log.error("Backup failed: %s", exc)
         db.session.commit()
         raise RuntimeError(str(exc)) from exc
+    finally:
+        for leftover in {zip_tmp, out_tmp}:
+            with contextlib.suppress(FileNotFoundError):
+                os.remove(leftover)
 
     db.session.commit()
     return record
@@ -192,19 +263,20 @@ def _add_uploads_to_zip(zf: zipfile.ZipFile, upload_folder: str) -> None:
     spreadsheet or GPS log, left there by an import abandoned halfway, or a
     downloaded map tile, isn't data worth restoring.
     """
+    from services.safe_paths import regular_files  # pyright: ignore[reportMissingImports]
     from services.upload_layout import (  # pyright: ignore[reportMissingImports]
         NOT_BACKED_UP_DIRNAMES,
     )
 
     if not os.path.isdir(upload_folder):
         return
-    for dirpath, dirs, filenames in os.walk(upload_folder):
-        if dirpath == upload_folder:
-            dirs[:] = [d for d in dirs if d not in NOT_BACKED_UP_DIRNAMES]
-        for fname in filenames:
-            full_path = os.path.join(dirpath, fname)
-            rel_path = os.path.relpath(full_path, upload_folder)
-            zf.write(full_path, arcname=f"uploads/{rel_path}")
+    # Symbolic links are left out: a backup never copies a file from
+    # outside the uploads folder (services/safe_paths).
+    for full_path in regular_files(
+        upload_folder, skip_top_dirs=frozenset(NOT_BACKED_UP_DIRNAMES)
+    ):
+        rel_path = os.path.relpath(full_path, upload_folder)
+        zf.write(full_path, arcname=f"uploads/{rel_path}")
 
 
 def _pg_dump(database_url: str) -> bytes:
@@ -339,7 +411,7 @@ def index() -> ResponseReturnValue:
     from sqlalchemy import func  # pyright: ignore[reportMissingImports]
     from users.routes import ROLE_LABELS  # pyright: ignore[reportMissingImports]
 
-    tu_self = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu_self = current_membership()
     tid = tu_self.tenant_id if tu_self else None
     user_counts = []
     open_invitations = 0
@@ -395,10 +467,12 @@ def index() -> ResponseReturnValue:
     try:
         _upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
         if os.path.isdir(_upload_folder):
+            from services.safe_paths import (  # pyright: ignore[reportMissingImports]
+                regular_files,
+            )
+
             upload_size_bytes = sum(
-                os.path.getsize(os.path.join(dp, f))
-                for dp, _dirs, files in os.walk(_upload_folder)
-                for f in files
+                os.path.getsize(path) for path in regular_files(_upload_folder)
             )
     except Exception as exc:  # noqa: BLE001 -- best-effort dashboard stat, page must still render
         log.debug("Could not retrieve upload folder size: %s", exc)
@@ -516,14 +590,14 @@ def update_tenant_slug() -> ResponseReturnValue:
         Document,
         PendingReconcile,
         Tenant,
-        TenantUser,
     )
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
     tenant = db.session.get(Tenant, tu.tenant_id)
     if not tenant:
+        # Unreachable: the membership row's tenant FK guarantees it exists.
         abort(403)  # pragma: no cover
 
     raw = request.form.get("slug", "").strip().lower()
@@ -558,10 +632,10 @@ def update_tenant_slug() -> ResponseReturnValue:
                     dest_dir = os.path.join(new_dir, rel)
                     os.makedirs(dest_dir, exist_ok=True)
                     for fname in filenames:
-                        shutil.move(
-                            os.path.join(dirpath, fname),
-                            os.path.join(dest_dir, fname),
-                        )
+                        source = os.path.join(dirpath, fname)
+                        if os.path.islink(source):
+                            continue  # links are not followed or moved
+                        shutil.move(source, os.path.join(dest_dir, fname))
                 shutil.rmtree(old_dir, ignore_errors=True)
             else:
                 os.rename(old_dir, new_dir)
@@ -626,12 +700,11 @@ def update_profile() -> ResponseReturnValue:
         OperatingModel,
         Tenant,
         TenantProfile,
-        TenantUser,
     )
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
 
     profile = TenantProfile.query.filter_by(tenant_id=tu.tenant_id).first()
     if not profile:
@@ -690,6 +763,7 @@ def test_email() -> ResponseReturnValue:
 
     user = db.session.get(User, session["user_id"])
     if not user:
+        # Unreachable: login validation (S02) refuses a deleted user first.
         abort(403)  # pragma: no cover
     try:
         send_email(
@@ -1309,12 +1383,11 @@ def _get_renter_auth_or_404(tenant_id: int, auth_id: int) -> Any:
 def renters_list() -> ResponseReturnValue:
     from models import (  # pyright: ignore[reportMissingImports]
         RenterAuthorization,
-        TenantUser,
     )
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
 
     authorizations = (
         RenterAuthorization.query.filter_by(tenant_id=tu.tenant_id)
@@ -1474,11 +1547,10 @@ def _save_renter_authorization(tenant_id: int, auth: Any | None) -> ResponseRetu
 @config_bp.route("/renters/add", methods=["GET", "POST"])
 @login_required
 def renter_add() -> ResponseReturnValue:
-    from models import TenantUser  # pyright: ignore[reportMissingImports]
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
 
     if request.method == "POST":
         return _save_renter_authorization(tu.tenant_id, None)
@@ -1490,11 +1562,10 @@ def renter_add() -> ResponseReturnValue:
 @config_bp.route("/renters/<int:auth_id>/edit", methods=["GET", "POST"])
 @login_required
 def renter_edit(auth_id: int) -> ResponseReturnValue:
-    from models import TenantUser  # pyright: ignore[reportMissingImports]
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
     auth = _get_renter_auth_or_404(tu.tenant_id, auth_id)
 
     if request.method == "POST":
@@ -1507,11 +1578,10 @@ def renter_edit(auth_id: int) -> ResponseReturnValue:
 @config_bp.route("/renters/<int:auth_id>/revoke", methods=["POST"])
 @login_required
 def renter_revoke(auth_id: int) -> ResponseReturnValue:
-    from models import TenantUser  # pyright: ignore[reportMissingImports]
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
     auth = _get_renter_auth_or_404(tu.tenant_id, auth_id)
 
     auth.revoked_at = datetime.now(UTC)
@@ -1547,9 +1617,9 @@ def renter_account(user_id: int) -> ResponseReturnValue:
     )
     from services.billing import BillingService  # pyright: ignore[reportMissingImports]
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
     renter_tu = TenantUser.query.filter_by(
         user_id=user_id, tenant_id=tu.tenant_id
     ).first()
@@ -1586,9 +1656,9 @@ def renter_record_payment(user_id: int) -> ResponseReturnValue:
     )
     from services.billing import BillingService  # pyright: ignore[reportMissingImports]
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
     renter_tu = TenantUser.query.filter_by(
         user_id=user_id, tenant_id=tu.tenant_id
     ).first()
@@ -1653,9 +1723,9 @@ def renter_statement_csv(user_id: int) -> ResponseReturnValue:
     )
     from services.billing import BillingService  # pyright: ignore[reportMissingImports]
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
     renter_tu = TenantUser.query.filter_by(
         user_id=user_id, tenant_id=tu.tenant_id
     ).first()
@@ -1707,9 +1777,8 @@ def gatus_badge(badge_path: str) -> ResponseReturnValue:
 
 
 def _data_checks_tenant_id() -> int | None:
-    from models import TenantUser  # pyright: ignore[reportMissingImports]
 
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     return tu.tenant_id if tu else None
 
 

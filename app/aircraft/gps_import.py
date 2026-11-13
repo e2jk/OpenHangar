@@ -37,6 +37,27 @@ _FLIGHT_SUSTAIN_S = 30.0  # seconds above 30kt required to classify as "flight"
 _SEGMENT_GAP_S = 300.0  # 5 min of slow speed or time gap → segment break
 _MAX_ICAO_DIST_KM = 5.0  # max distance for nearest-airport match
 _MAX_TRACK_POINTS = 500  # downsample threshold for GeoJSON storage
+# Points read from one file at most (S08): 10 hours at 10 points a second is
+# 360 000. Checked while reading, so a crafted file never builds more.
+_MAX_POINTS_PER_FILE = 500_000
+
+
+def _check_point_budget(count: int) -> None:
+    if count > _MAX_POINTS_PER_FILE:
+        from flask_babel import (  # pyright: ignore[reportMissingImports]
+            format_number,
+            gettext,
+        )
+
+        raise ValueError(
+            gettext(
+                "This GPS file has too many points to import (more than "
+                "%(n)s). Split the recording into several files.",
+                n=format_number(_MAX_POINTS_PER_FILE),
+            )
+        )
+
+
 # How many days from a GPS segment's date a hand-entered logbook date may be
 # off (a typo) and the flight still be offered as its possible match.
 NEAR_DATE_DAYS = 2
@@ -434,6 +455,7 @@ def _parse_gpx(data: bytes, filename: str) -> ParsedGpsFile:
             continue
 
         points.append((lat, lon, alt_m, speed_kt, utc_dt))
+        _check_point_budget(len(points))
 
     points = _drop_bad_fixes(points)
     # GPX 1.1 has no speed element: many writers (e.g. ExifTool exporting
@@ -532,6 +554,7 @@ def _parse_garmin_csv(data: bytes, filename: str) -> ParsedGpsFile:
         trackpoints.append(
             TrackPoint(lat=lat, lon=lon, alt_m=alt_m, speed_kt=speed_kt, utc_dt=utc_dt)
         )
+        _check_point_budget(len(trackpoints))
 
     return ParsedGpsFile(
         trackpoints=trackpoints,
@@ -579,6 +602,7 @@ def _parse_kml(data: bytes, filename: str) -> ParsedGpsFile:
     coords: list[tuple[float, float, float]] = []
 
     for child in track_el:
+        _check_point_budget(max(len(whens), len(coords)))
         if child.tag == f"{{{_KML_NS}}}when":
             if child.text:
                 try:

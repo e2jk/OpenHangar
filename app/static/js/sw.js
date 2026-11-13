@@ -21,6 +21,7 @@ var PRECACHE = [
   '/static/js/pwa.js',
   '/static/js/offline_identity.js',
   '/static/js/offline_db.js',
+  '/static/js/offline_logbook.js',
   '/static/js/airport_autocomplete.js',
   '/static/js/aircraft_type_autocomplete.js',
   '/static/favicon.svg',
@@ -68,9 +69,9 @@ var SWR_ROUTES = [
  * W&B/tracks/reservations) — same read-mostly-hub reasoning as SWR_ROUTES
  * above, just keyed by regex since the aircraft ID varies. Prefetched from
  * within aircraft/detail.html for the aircraft currently being viewed.
- * Also covers offline logbook editing (Phase 38): aircraft logbook list,
- * workbench, and the offline-changes page get stale-while-revalidate so a
- * single online visit is enough to work fully offline afterwards. */
+ * Also covers the read-only offline logbooks: the aircraft logbook list and
+ * its offline page (with the pilot one in SWR_PATTERNS too) are cached so a
+ * single online visit is enough to read them offline afterwards. */
 /* The aircraft slot matches a numeric id OR a registration (e.g. OO-GRN) —
  * mirrors AircraftRefConverter (app/utils.py), which the app's own links
  * use to generate registration-based URLs by default. Registrations are
@@ -94,7 +95,6 @@ var SWR_PATTERNS = [
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/airworthiness\/adsb\/$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/airworthiness\/equipment\/$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/reservations\/$/,
-  /^\/offline\/changes$/,
   /^\/pilot\/logbook\/offline$/
 ];
 
@@ -263,26 +263,61 @@ function _cachePrivate(request, response) {
     if (version !== _revision || !_sameIdentity(identity, persisted)) return caches.delete(name);
   }).then(function () { return response; });
 }
-function _privateNavigation(request) {
+/* How long a private page may wait for the network before this login's own
+ * cached copy is shown instead (a slow but working connection, e.g. patchy
+ * airfield mobile data). The request carries on in the background. */
+var PRIVATE_NETWORK_TIMEOUT_MS = 3000;
+function _privateCacheKey(request) {
+  var url = new URL(request.url);
+  url.searchParams.delete('_swr_fresh');
+  return url.href;
+}
+function _cachedForCurrentLogin(request, identity, revision) {
+  /* Only this login's namespace, and only while it is still the current one:
+   * never another account's pages, nor a retired login's. */
+  if (!identity.owner || revision !== _revision || !_sameIdentity(identity, _identity)) {
+    return Promise.resolve(undefined);
+  }
+  return caches.open(_privateName(identity)).then(function (cache) {
+    return cache.match(_privateCacheKey(request));
+  });
+}
+function _privateNavigation(request, event) {
   /* Network-first proves the current cookie still owns this namespace before
-   * showing sensitive data online. Offline fallback remains automatic. */
-  return _network(request).then(function (response) {
+   * showing sensitive data online. If the network is slow, this login's own
+   * cached copy is shown after a short wait while the request completes in
+   * the background (it then refreshes or purges that copy). Offline fallback
+   * remains automatic. */
+  var identity = _identity;
+  var revision = _revision;
+  var network = _network(request).then(function (response) {
     if (response.status === 403 || response.status === 404) {
-      var denied = new URL(request.url);
-      denied.searchParams.delete('_swr_fresh');
       return caches.open(_privateName(_identity)).then(function (cache) {
-        return cache.delete(denied.href);
+        return cache.delete(_privateCacheKey(request));
       }).then(function () { return response; });
     }
     return _cachePrivate(request, response);
-  }).catch(function () {
+  });
+  var offline = network.catch(function () {
     if (!_identity.owner) return _fallback();
-    return caches.open(_privateName(_identity)).then(function (cache) {
-      var url = new URL(request.url);
-      url.searchParams.delete('_swr_fresh');
-      return cache.match(url.href).then(function (cached) { return cached || _fallback(); });
+    return _cachedForCurrentLogin(request, _identity, _revision).then(function (cached) {
+      return cached || _fallback();
     });
   });
+  /* A login has just been completed (?_swr_fresh): always wait for it. */
+  if (new URL(request.url).searchParams.has('_swr_fresh')) return offline;
+  /* Keep the worker alive until the background request has refreshed or
+   * purged the cached copy. */
+  if (event) event.waitUntil(offline.catch(function () {}));
+  var slow = new Promise(function (resolve) {
+    setTimeout(resolve, PRIVATE_NETWORK_TIMEOUT_MS);
+  }).then(function () {
+    return _cachedForCurrentLogin(request, identity, revision);
+  }).then(function (cached) {
+    /* Nothing cached for this login: keep waiting for the network. */
+    return cached || offline;
+  });
+  return Promise.race([offline, slow]);
 }
 function _senderMatches(data) {
   return data.owner === _identity.owner && data.session === _identity.session;
@@ -342,19 +377,12 @@ self.addEventListener('fetch', function (event) {
         return _network(request).catch(_fallback);
       });
     }
-    if (request.method === 'GET' && _isSWRRoute(url)) return _privateNavigation(request);
+    if (request.method === 'GET' && _isSWRRoute(url)) return _privateNavigation(request, event);
     return _network(request).catch(function (error) {
       if (request.mode === 'navigate') return _fallback();
       throw error;
     });
   }));
-});
-self.addEventListener('sync', function (event) {
-  if (event.tag === 'oh-flight-sync') {
-    event.waitUntil(self.clients.matchAll({ includeUncontrolled: true }).then(function (clients) {
-      clients.forEach(function (client) { client.postMessage({ type: 'OH_SYNC_REQUESTED' }); });
-    }));
-  }
 });
 self.addEventListener('message', function (event) {
   if (event.origin !== self.location.origin || !event.data) return;
@@ -365,7 +393,7 @@ self.addEventListener('message', function (event) {
       return;
     }
     if (data.type === 'OH_VERIFY_IDENTITY') {
-      return _network(new Request('/api/offline/csrf', { headers: _assertionHeaders(data), credentials: 'same-origin' })).catch(function () {});
+      return _network(new Request('/api/offline/identity', { headers: _assertionHeaders(data), credentials: 'same-origin' })).catch(function () {});
     }
     if (!_senderMatches(data)) return;
     if (data.type === 'OH_CLEAR_PRIVATE') return _changeIdentity({ owner: '', session: '' });

@@ -28,7 +28,7 @@
     _locked = true;
     document.dispatchEvent(new CustomEvent('oh-offline-identity-lost'));
     /* Remove already-rendered private data before an old tab can be interacted
-     * with. Keep IndexedDB intact: pending records remain with their owner. */
+     * with. The account's IndexedDB snapshots stay, for its own next login. */
     var label = document.body.dataset.ohOfflineChanged || '';
     document.body.replaceChildren();
     var message = document.createElement('p');

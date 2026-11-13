@@ -156,8 +156,22 @@ class TestPassengerCurrency:
         assert result["status"] == STATUS_WARNING
         assert result["expires_on"] == TODAY - timedelta(days=70) + timedelta(days=90)
 
+    # ── Night currency ────────────────────────────────────────────────────────────
 
-# ── Night currency ────────────────────────────────────────────────────────────
+    def test_warning_starts_exactly_at_the_threshold(self):
+        """30 days left is a warning; 31 is not (off-by-one guard)."""
+        from pilots.currency import CURRENCY_WARN_DAYS
+
+        expires_in = CURRENCY_WARN_DAYS
+        landed = 90 - expires_in  # the window is 90 days from the anchor landing
+        at = passenger_currency([_entry(landings_day=3, days_ago=landed)], TODAY)
+        assert at["days_left"] == CURRENCY_WARN_DAYS
+        assert at["status"] == STATUS_WARNING
+        before = passenger_currency(
+            [_entry(landings_day=3, days_ago=landed - 1)], TODAY
+        )
+        assert before["days_left"] == CURRENCY_WARN_DAYS + 1
+        assert before["status"] == STATUS_OK
 
 
 class TestNightCurrency:

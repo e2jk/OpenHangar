@@ -1343,14 +1343,31 @@ def require_instance_admin(f: Callable[..., Any]) -> Callable[..., Any]:
     return decorated
 
 
-def current_user_role() -> str | None:
-    """Return the Role of the current user in their tenant, or None."""
+def current_membership() -> Any:
+    """The signed-in user's TenantUser row (or None), looked up once per request.
+
+    Role, grant and tenant checks run many times in one request (decorators,
+    helpers, the template context): this keeps them to one query. The cache
+    lives on flask.g, so every new request reads the current row — a role or
+    grant change applies from the next request on, never later.
+    """
+    from flask import g
     from models import TenantUser
 
     user_id = session.get("user_id")
     if not user_id:
         return None
+    cached = g.get("_oh_membership")
+    if cached is not None and cached[0] == user_id:
+        return cached[1]
     tu = TenantUser.query.filter_by(user_id=user_id).first()
+    g._oh_membership = (user_id, tu)
+    return tu
+
+
+def current_user_role() -> str | None:
+    """Return the Role of the current user in their tenant, or None."""
+    tu = current_membership()
     return tu.role if tu else None
 
 
@@ -1517,7 +1534,7 @@ def user_can_access_aircraft(aircraft_id: int) -> bool:
     UserAllAircraftAccess row (all-planes grant) or a per-aircraft
     UserAircraftAccess row.
     """
-    from models import Role, TenantUser, UserAircraftAccess, UserAllAircraftAccess
+    from models import Role, UserAircraftAccess, UserAllAircraftAccess
 
     role = current_user_role()
     if role in (Role.ADMIN, Role.OWNER):
@@ -1525,7 +1542,7 @@ def user_can_access_aircraft(aircraft_id: int) -> bool:
     uid = session.get("user_id")
     if not uid:
         return False
-    tu = TenantUser.query.filter_by(user_id=uid).first()
+    tu = current_membership()
     if (
         tu
         and UserAllAircraftAccess.query.filter_by(

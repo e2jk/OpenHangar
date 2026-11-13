@@ -8,7 +8,6 @@ from flask import (  # pyright: ignore[reportMissingImports]
     redirect,
     render_template,
     request,
-    session,
     url_for,
 )
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
@@ -29,10 +28,10 @@ from models import (  # pyright: ignore[reportMissingImports]
     EquipmentWishlistItem,
     InstalledSTC,
     Role,
-    TenantUser,
     db,
 )
 from utils import (  # pyright: ignore[reportMissingImports]
+    current_membership,
     login_required,
     require_role,
     user_can_access_aircraft,
@@ -45,7 +44,7 @@ _CREW_ROLES = (Role.ADMIN, Role.OWNER, Role.PILOT, Role.MAINTENANCE)
 
 
 def _tenant_id() -> int:
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         abort(403)
     return int(tu.tenant_id)

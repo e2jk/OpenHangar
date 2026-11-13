@@ -51,7 +51,8 @@ class BillingService:
     ) -> BillingAccount:
         """Return the existing account for this (tenant, user, kind, aircraft)
         scope, or create it. Idempotent under a concurrent-request race —
-        the unique constraint is the source of truth, not a pre-check."""
+        the unique constraint is the source of truth, not a pre-check —
+        and the caller's pending writes survive a lost race."""
         from models import BillingAccount, db
         from sqlalchemy.exc import IntegrityError
 
@@ -64,11 +65,12 @@ class BillingService:
         account = BillingAccount(
             tenant_id=tenant_id, user_id=user_id, kind=kind, aircraft_id=aircraft_id
         )
-        db.session.add(account)
         try:
-            db.session.flush()
+            # A savepoint: losing the race undoes only this insert, never the
+            # caller's other pending writes (e.g. a charge being finalized).
+            with db.session.begin_nested():
+                db.session.add(account)
         except IntegrityError:
-            db.session.rollback()
             existing = BillingAccount.query.filter_by(
                 tenant_id=tenant_id,
                 user_id=user_id,
@@ -152,8 +154,11 @@ class BillingService:
     def reverse(entry: LedgerEntry, created_by: User | None, note: str) -> LedgerEntry:
         """Posts the mirror entry (same type, opposite amount) with
         reverses_id set. Refuses to reverse a reversal and refuses to
-        reverse the same entry twice."""
-        from models import LedgerEntry
+        reverse the same entry twice — also when two requests race: the
+        unique index on reverses_id lets one win, and the other's insert is
+        undone (savepoint only) and reported as already reversed."""
+        from models import LedgerEntry, db
+        from sqlalchemy.exc import IntegrityError
 
         if entry.reverses_id is not None:
             raise ValueError("Cannot reverse a reversal entry")
@@ -161,17 +166,21 @@ class BillingService:
         if already_reversed is not None:
             raise ValueError("This entry has already been reversed")
 
-        return BillingService._insert(
-            cast("BillingAccount", entry.account),
-            entry.entry_type,
-            -Decimal(entry.amount),
-            note,
-            entry.entry_date,
-            source_type=entry.source_type,
-            source_id=entry.source_id,
-            created_by=created_by,
-            reverses_id=entry.id,
-        )
+        try:
+            with db.session.begin_nested():
+                return BillingService._insert(
+                    cast("BillingAccount", entry.account),
+                    entry.entry_type,
+                    -Decimal(entry.amount),
+                    note,
+                    entry.entry_date,
+                    source_type=entry.source_type,
+                    source_id=entry.source_id,
+                    created_by=created_by,
+                    reverses_id=entry.id,
+                )
+        except IntegrityError:
+            raise ValueError("This entry has already been reversed") from None
 
     @staticmethod
     def balance(account: BillingAccount, as_of: date | None = None) -> Decimal:

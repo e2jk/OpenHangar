@@ -76,10 +76,10 @@ def test_assertions_bind_reads_and_writes_without_logging_out_another_account(
         for name in ("X-OH-Offline-Owner", "X-OH-Offline-Session")
     }
     assert all(headers.values())
-    assert client.get("/api/offline/csrf", headers=headers).status_code == 200
+    assert client.get("/api/offline/identity", headers=headers).status_code == 204
     assert (
         client.get(
-            "/api/offline/csrf",
+            "/api/offline/identity",
             headers={"X-OH-Offline-Owner": headers["X-OH-Offline-Owner"]},
         ).status_code
         == 409

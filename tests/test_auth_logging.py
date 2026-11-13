@@ -4,7 +4,6 @@ Tests for authentication failure logging (CWE-778), timing-safe login
 """
 
 import logging
-from datetime import UTC
 from unittest.mock import patch
 
 import bcrypt  # pyright: ignore[reportMissingImports]
@@ -241,48 +240,91 @@ class TestRehashOnLogin:
 # time.sleep is always patched — we test the logging/logic, not the actual delay.
 
 
+def _fail(client, email, ip="198.51.100.7", password="wrong"):
+    return client.post(
+        "/login",
+        data={"email": email, "password": password},
+        environ_base={"REMOTE_ADDR": ip},
+    )
+
+
 class TestIPBackoff:
+    """Repeated failures from one address are refused for a while (HTTP 429,
+    answered at once) instead of sleeping in the serving thread."""
+
     def test_backoff_logged_at_third_failure(self, app, client, caplog):
         _make_user(app, email="backoff@test.com")
-        with patch("auth.routes.time.sleep"):
-            for _ in range(2):
-                client.post(
-                    "/login", data={"email": "backoff@test.com", "password": "wrong"}
-                )
-            caplog.clear()
-            with caplog.at_level(logging.WARNING, logger="openhangar.auth"):
-                client.post(
-                    "/login", data={"email": "backoff@test.com", "password": "wrong"}
-                )
+        for _ in range(2):
+            _fail(client, "backoff@test.com")
+        caplog.clear()
+        with caplog.at_level(logging.WARNING, logger="openhangar.auth"):
+            assert _fail(client, "backoff@test.com").status_code == 200
         assert any(
             "auth.login.backoff" in r.message and "delay=2s" in r.message
             for r in caplog.records
         )
 
+    def test_blocked_address_is_refused_at_once_even_with_the_right_password(
+        self, app, client, caplog
+    ):
+        _make_user(app, email="refused@test.com")
+        for _ in range(3):
+            _fail(client, "refused@test.com")
+        with (
+            patch("pw_hash.verify", side_effect=AssertionError("not verified")),
+            caplog.at_level(logging.WARNING, logger="openhangar.auth"),
+        ):
+            resp = _fail(client, "refused@test.com", password="TestPassword1!")
+        assert resp.status_code == 429
+        assert b"Too many failed sign-in attempts" in resp.data
+        assert "auth.login.backoff_refused" in caplog.text
+        with client.session_transaction() as sess:
+            assert "user_id" not in sess
+        # Another address is unaffected.
+        resp = _fail(
+            client, "refused@test.com", ip="203.0.113.9", password="TestPassword1!"
+        )
+        assert resp.status_code == 302
+
+    def test_backoff_grows_and_ends(self, app, client):
+        from services import login_throttle
+
+        _make_user(app, email="grows@test.com")
+        waits = []
+        for _ in range(6):
+            _fail(client, "grows@test.com")
+            with app.app_context():
+                waits.append(login_throttle.blocked_for("ip:198.51.100.7"))
+                login_throttle.block("ip:198.51.100.7", 0)  # let the next try in
+        assert [w > 0 for w in waits] == [False, False, True, True, True, True]
+        assert waits[2] <= 2 < waits[3] <= 10 < waits[4] <= 30 < waits[5] <= 60
+
     def test_backoff_cleared_on_success(self, app, client, caplog):
+        from services import login_throttle
+
         _make_user(app, email="clearip@test.com")
-        with patch("auth.routes.time.sleep"):
-            for _ in range(3):
-                client.post(
-                    "/login", data={"email": "clearip@test.com", "password": "wrong"}
-                )
-            client.post(
-                "/login",
-                data={"email": "clearip@test.com", "password": "TestPassword1!"},
-            )
-            caplog.clear()
-            with caplog.at_level(logging.WARNING, logger="openhangar.auth"):
-                client.post(
-                    "/login", data={"email": "clearip@test.com", "password": "wrong"}
-                )
+        for _ in range(2):
+            _fail(client, "clearip@test.com")
+        _fail(client, "clearip@test.com", password="TestPassword1!")
+        caplog.clear()
+        with caplog.at_level(logging.WARNING, logger="openhangar.auth"):
+            _fail(client, "clearip@test.com")
         assert not any("auth.login.backoff" in r.message for r in caplog.records)
+        with app.app_context():
+            assert login_throttle.blocked_for("ip:198.51.100.7") == 0
+
+    def test_failed_burst_never_sleeps(self, app, client):
+        _make_user(app, email="nosleep@test.com")
+        with patch("time.sleep", side_effect=AssertionError("slept")):
+            for _ in range(8):
+                assert _fail(client, "nosleep@test.com").status_code in (200, 429)
 
 
 class TestAccountLockout:
     def _fail_n(self, client, email, n):
-        with patch("auth.routes.time.sleep"):
-            for _ in range(n):
-                client.post("/login", data={"email": email, "password": "wrong"})
+        # Distinct addresses: one address alone is stopped by its backoff first.
+        for i in range(n):
+            _fail(client, email, ip=f"192.0.2.{i + 1}")
 
     def test_account_locked_after_threshold(self, app, client, caplog):
         _make_user(app, email="lockme@test.com")
@@ -293,20 +335,15 @@ class TestAccountLockout:
     def test_locked_account_blocked_with_flash(self, app, client):
         _make_user(app, email="blocked@test.com")
         self._fail_n(client, "blocked@test.com", 10)
-        resp = client.post(
-            "/login",
-            data={"email": "blocked@test.com", "password": "wrong"},
-            follow_redirects=True,
-        )
+        resp = _fail(client, "blocked@test.com", ip="192.0.2.200")
+        assert resp.status_code == 429
         assert b"temporarily locked" in resp.data.lower()
 
     def test_locked_account_blocks_correct_password(self, app, client):
         _make_user(app, email="lockpw@test.com")
         self._fail_n(client, "lockpw@test.com", 10)
-        resp = client.post(
-            "/login",
-            data={"email": "lockpw@test.com", "password": "TestPassword1!"},
-            follow_redirects=True,
+        resp = _fail(
+            client, "lockpw@test.com", ip="192.0.2.201", password="TestPassword1!"
         )
         assert b"temporarily locked" in resp.data.lower()
 
@@ -315,25 +352,47 @@ class TestAccountLockout:
         self._fail_n(client, "logblock@test.com", 10)
         caplog.clear()
         with caplog.at_level(logging.WARNING, logger="openhangar.auth"):
-            client.post(
-                "/login", data={"email": "logblock@test.com", "password": "wrong"}
-            )
+            _fail(client, "logblock@test.com", ip="192.0.2.202")
         assert any("auth.login.account_blocked" in r.message for r in caplog.records)
 
-    def test_expired_lock_is_cleared_and_login_proceeds(self, app, client):
-        # Covers lines 95-97: lock exists in cache but timestamp has already passed
-        from datetime import datetime, timedelta
+    def test_lock_and_counts_are_shared_and_survive_a_restart(self, app, client):
+        """Stored in the database: a second app (another worker, or after a
+        restart) on the same database sees the lock."""
+        _make_user(app, email="shared@test.com")
+        self._fail_n(client, "shared@test.com", 10)
+        other = app.test_client()  # a fresh client: nothing in its cookies
+        resp = _fail(other, "shared@test.com", ip="192.0.2.203")
+        assert b"temporarily locked" in resp.data.lower()
 
-        from extensions import cache as _cache  # pyright: ignore[reportMissingImports]
+    def test_expired_lock_is_cleared_and_login_proceeds(self, app, client):
+        from services import login_throttle
 
         _make_user(app, email="explock@test.com")
-        expired = (datetime.now(UTC) - timedelta(minutes=1)).isoformat()
+        self._fail_n(client, "explock@test.com", 10)
         with app.app_context():
-            _cache.set("login_lock_acct:explock@test.com", expired, timeout=60)
-        # Expired lock must not block a valid login
-        resp = client.post(
-            "/login",
-            data={"email": "explock@test.com", "password": "TestPassword1!"},
+            from auth.routes import _account_key
+
+            login_throttle.block(_account_key("explock@test.com"), -60)
+        # An expired lock must not block a valid login.
+        resp = _fail(
+            client, "explock@test.com", ip="192.0.2.204", password="TestPassword1!"
         )
         assert resp.status_code == 302
         assert b"temporarily locked" not in resp.data
+
+    def test_lock_counts_from_zero_again_after_it_ends(self, app, client):
+        from services import login_throttle
+
+        _make_user(app, email="again@test.com")
+        self._fail_n(client, "again@test.com", 10)
+        with app.app_context():
+            from auth.routes import _account_key
+
+            key = _account_key("again@test.com")
+            login_throttle.block(key, -60)
+            assert len(key) < 80 and "again" not in key
+        _fail(client, "again@test.com", ip="192.0.2.205")
+        resp = _fail(
+            client, "again@test.com", ip="192.0.2.206", password="TestPassword1!"
+        )
+        assert resp.status_code == 302

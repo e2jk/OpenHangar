@@ -474,6 +474,38 @@ class TestFinalize:
             assert entries[0].source_type == "rental_charge"
             assert entries[0].source_id == charge.id
 
+    def test_finalization_claimed_by_another_request_is_refused(
+        self, app, client, monkeypatch
+    ):
+        """The lock showed a draft, but another request finalized it first:
+        the conditional DRAFT -> FINAL claim fails and nothing is posted."""
+        uid, tid, acid, res_id = self._setup_draft(app, client, "pilotrace@ex.com")
+        owner_uid, _ = _make_user(app, "ownerrace@ex.com", role=Role.OWNER)
+        with app.app_context():
+            db.session.add(
+                TenantUser(user_id=owner_uid, tenant_id=tid, role=Role.OWNER)
+            )
+            charge = RentalCharge.query.filter_by(reservation_id=res_id).one()
+            charge.status = "final"  # finalized meanwhile by the other request
+            db.session.commit()
+        monkeypatch.setattr(RentalCharge, "is_final", property(lambda self: False))
+        _login(app, client, owner_uid)
+        r = client.post(
+            f"/aircraft/{acid}/reservations/{res_id}/charge",
+            data={
+                "action": "finalize",
+                "billable_hours": "3.0",
+                "hourly_rate": "100.0",
+                "fuel_credit": "0",
+                "adjustment": "0",
+            },
+            follow_redirects=True,
+        )
+        assert b"already been finalized" in r.data
+        with app.app_context():
+            assert LedgerEntry.query.count() == 0
+            assert BillingAccount.query.filter_by(user_id=uid).count() == 0
+
     def test_refinalize_refused(self, app, client):
         uid, tid, acid, res_id = self._setup_draft(app, client, "pilotf2@ex.com")
         owner_uid, _ = _make_user(app, "ownerf2@ex.com", role=Role.OWNER)
