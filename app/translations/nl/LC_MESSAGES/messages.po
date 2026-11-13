@@ -65,6 +65,10 @@ msgstr "🎉 Vandaag is het de verjaardag van uw PPL!"
 msgid "This upload is too large (maximum %(mb)s MB in total). Please upload the files in smaller batches."
 msgstr "Deze upload is te groot (maximaal %(mb)s MB in totaal). Upload de bestanden in kleinere delen."
 
+#: app/init.py:1152
+msgid "The sign-in form had expired. Please sign in again."
+msgstr "Het aanmeldformulier was verlopen. Meld u opnieuw aan."
+
 #: app/models.py:855 app/templates/aircraft/flight_detail.html:114
 #: app/templates/aircraft/gps_import_review.html:67
 #: app/templates/flights/fleet.html:28
@@ -8769,9 +8773,25 @@ msgstr "Pagina niet gevonden"
 msgid "This page doesn't exist or has been moved."
 msgstr "Deze pagina bestaat niet of is verplaatst."
 
-#: app/templates/errors/404.html:31
+#: app/templates/errors/404.html:31 app/templates/errors/csrf.html:25
 msgid "Home"
 msgstr "Startpagina"
+
+#: app/templates/errors/csrf.html:3
+msgid "Form expired"
+msgstr "Formulier verlopen"
+
+#: app/templates/errors/csrf.html:14
+msgid "This form has expired"
+msgstr "Dit formulier is verlopen"
+
+#: app/templates/errors/csrf.html:17
+msgid "It was opened before your session changed (for example after signing in again, or in another tab), so it was not saved. Open the page again and resubmit it."
+msgstr "Het werd geopend voordat uw sessie veranderde (bijvoorbeeld na opnieuw aanmelden, of in een ander tabblad), dus het werd niet opgeslagen. Open de pagina opnieuw en verstuur het nogmaals."
+
+#: app/templates/errors/csrf.html:22
+msgid "Open the page again"
+msgstr "Pagina opnieuw openen"
 
 #: app/templates/expenses/cost_dashboard.html:17
 msgid "All expenses"
