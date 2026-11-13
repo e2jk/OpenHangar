@@ -873,12 +873,21 @@ docker pull ghcr.io/e2jk/openhangar:1.0.0
 The phased delivery plan with completion status is tracked in [docs/implementation_plan.md](implementation_plan.md).
 
 
-### PostgreSQL reservation concurrency tests
+### PostgreSQL lane: races, locks and migrations
 
-The normal coverage suite uses SQLite. Reservation race regressions also run in CI
-against PostgreSQL, with two authenticated requests on separate connections and an
-observer that verifies row-lock waiting. Each test creates and drops its own random
-schema; use a disposable database and never an operator database.
+The normal coverage suite uses SQLite. A separate lane runs in CI against
+PostgreSQL, for what SQLite cannot show:
+
+- reservation and ledger races (`tests/test_reservation_concurrency_postgres.py`,
+  `tests/test_billing_concurrency_postgres.py`): competing requests on separate
+  connections, exactly one intended effect;
+- advisory locks across real connections, including taking them again after an
+  error (`tests/test_postgres_locks_and_migrations.py`);
+- migrations run on a schema holding real rows, checking that values survive
+  (same file) — not just that a fresh database upgrades cleanly.
+
+Each test creates and drops its own random schema; use a disposable database and
+never an operator database.
 
 With a disposable PostgreSQL server available, run:
 
