@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import time
 from datetime import UTC, datetime
-from typing import cast
+from typing import Any, cast
 
 import pyotp
 from models import User, db
@@ -64,6 +64,6 @@ def use_code(user: User, code: str) -> str:
         .values(totp_last_step=step)
         .execution_options(synchronize_session=False)
     )
-    claimed = cast("CursorResult[object]", result).rowcount
+    claimed = cast(CursorResult[Any], result).rowcount
     db.session.commit()
     return ACCEPTED if claimed else REUSED

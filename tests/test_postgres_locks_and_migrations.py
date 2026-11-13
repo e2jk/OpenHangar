@@ -52,9 +52,13 @@ def test_advisory_lock_is_exclusive_and_reacquirable(app: Flask) -> None:
         with advisory_lock_scope(db, 99001) as again:
             assert again  # released at the end of the block
 
-        with pytest.raises(RuntimeError), advisory_lock_scope(db, 99001) as held:
-            assert held
-            raise RuntimeError("job failed")
+        def failing_job() -> None:
+            with advisory_lock_scope(db, 99001) as held:
+                assert held
+                raise RuntimeError("job failed")
+
+        with pytest.raises(RuntimeError):
+            failing_job()
         with advisory_lock_scope(db, 99001) as after_error:
             assert after_error  # an error never leaves the lock held
 

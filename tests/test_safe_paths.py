@@ -20,7 +20,7 @@ from tests.test_aircraft_photos import (
     _make_user_tenant,
 )
 
-SECRET = b"outside the uploads folder"
+OUTSIDE_BYTES = b"outside the uploads folder"
 
 
 @pytest.fixture
@@ -29,11 +29,11 @@ def tree(tmp_path: Path) -> tuple[Path, Path]:
     outside = tmp_path / "outside"
     (uploads / "tenant" / "OO-ABC" / "documents").mkdir(parents=True)
     outside.mkdir()
-    (outside / "secret.txt").write_bytes(SECRET)
+    (outside / "secret.txt").write_bytes(OUTSIDE_BYTES)
     (uploads / "tenant" / "OO-ABC" / "documents" / "kept.pdf").write_bytes(b"pdf")
     # A sibling whose name starts like the uploads folder's.
     (tmp_path / "uploads-other").mkdir()
-    (tmp_path / "uploads-other" / "x.txt").write_bytes(SECRET)
+    (tmp_path / "uploads-other" / "x.txt").write_bytes(OUTSIDE_BYTES)
     return uploads, outside
 
 
@@ -154,14 +154,14 @@ class TestApplicationBoundaries:
         photo = uploads / "photo-hangar" / "OO-PH" / "photos" / "01-abc123.jpg"
         assert client.get(f"/aircraft/{acid}/photos/{photo_id}/img").status_code == 200
         outside = uploads.parent / (uploads.name + "-outside.jpg")
-        outside.write_bytes(SECRET)
+        outside.write_bytes(OUTSIDE_BYTES)
         photo.unlink()
         _link(photo, outside)
         try:
             for suffix in ("img", "thumb"):
                 response = client.get(f"/aircraft/{acid}/photos/{photo_id}/{suffix}")
                 assert response.status_code == 404
-                assert SECRET not in response.data
+                assert OUTSIDE_BYTES not in response.data
         finally:
             outside.unlink()
 
@@ -176,7 +176,7 @@ class TestApplicationBoundaries:
             _add_uploads_to_zip(zf, str(uploads))
         with zipfile.ZipFile(buffer) as zf:
             assert zf.namelist() == ["uploads/tenant/OO-ABC/documents/kept.pdf"]
-            assert all(SECRET not in zf.read(name) for name in zf.namelist())
+            assert all(OUTSIDE_BYTES not in zf.read(name) for name in zf.namelist())
 
     def test_gps_archive_zip_skips_paths_leaving_the_folder(self, tree):
         from services.gps_archive import write_zip
