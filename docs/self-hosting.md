@@ -628,11 +628,11 @@ reference `docker/docker-compose.yml`.
 
 ### Layer 2 — Application-level IP backoff (per IP)
 
-In addition to the reverse-proxy limit, the application itself imposes a
-progressive **response delay** that grows with each consecutive failure from the
-same IP address:
+In addition to the reverse-proxy limit, the application itself makes a client
+address **wait** before it may try again, for longer after each consecutive
+failure from that address:
 
-| Consecutive failures from same IP | Delay before response |
+| Consecutive failures from same IP | Wait before the next attempt |
 |---|---|
 | 1–2 | none |
 | 3 | 2 seconds |
@@ -640,17 +640,24 @@ same IP address:
 | 5 | 30 seconds |
 | 6 or more | 60 seconds |
 
-The counter resets automatically after 15 minutes of silence from that IP, or
-immediately on a successful login. Each delay is logged as
-`[SECURITY] auth.login.backoff` with the failure count and delay applied.
+An attempt made during the wait is refused at once (HTTP 429, with the number
+of seconds left) without checking the password; nothing is held open while
+waiting, so a burst of failures cannot tie up the server. The counter resets
+after 15 minutes without failures from that address, or on a successful
+login. Each wait is logged as `[SECURITY] auth.login.backoff` with the failure
+count and delay, and each refused attempt as `auth.login.backoff_refused`.
 
 ### Layer 3 — Account lockout (per account)
 
 After **10 consecutive failed attempts** on the same e-mail address, the account
-is temporarily locked for **30 minutes**. The lock is cache-based and lifts
-automatically — no administrator action is required. Both the lock and any
-subsequent blocked attempt are logged as `[SECURITY] auth.login.account_locked`
-/ `auth.login.account_blocked`.
+is temporarily locked for **30 minutes**. The lock lifts automatically — no
+administrator action is required. Both the lock and any subsequent blocked
+attempt are logged as `[SECURITY] auth.login.account_locked` /
+`auth.login.account_blocked`.
+
+Layers 2 and 3 are stored in the database: every worker process shares them,
+and they survive a restart. A two-factor authentication code is likewise
+accepted only once, in any worker.
 
 A locked user sees a clear message explaining when they can try again. The
 30-minute window is enough to stop automated attacks while staying transparent

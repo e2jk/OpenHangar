@@ -94,16 +94,12 @@ else
     # slow request (GIF/PNG track rendering, GPS parsing, backup ZIP) doesn't
     # block a whole worker.
     #
-    # Default is 1 worker × 4 threads, not multiple workers. Rate-limit
-    # counters (Flask-Limiter) and the response cache (Flask-Caching) are
-    # in-memory and only shared *within* a process, not across processes —
-    # threads within a single worker share that memory correctly, but each
-    # additional worker process gets its own separate copy of both. Raising
-    # OPENHANGAR_WEB_WORKERS above 1 restores true multi-core parallelism for
-    # larger installs, but silently weakens rate limiting (e.g. a "10 per
-    # minute" login limit becomes ~10×N per minute) and multiplies cache
-    # misses. See docs/configuration.md#openhangar_web_workers before doing
-    # so.
+    # Default is 1 worker × 4 threads. Sign-in protection (failed-attempt
+    # counts, backoff, account locks, used TOTP codes) lives in the database
+    # and is shared by every worker; the per-route request limits
+    # (Flask-Limiter) and the response cache (Flask-Caching) are in memory
+    # per process, so each extra worker counts and caches on its own. See
+    # docs/configuration.md#openhangar_web_workers.
     WEB_WORKERS="${OPENHANGAR_WEB_WORKERS:-1}"
     WEB_THREADS="${OPENHANGAR_WEB_THREADS:-4}"
     case "${WEB_WORKERS}" in

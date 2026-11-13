@@ -1,12 +1,11 @@
+import hashlib
 import logging
 import os
-import time
 from datetime import UTC, datetime, timedelta
 
 import pw_hash as _pw
 import pyotp
 from extensions import _rate_limiting_disabled  # pyright: ignore[reportMissingImports]
-from extensions import cache as _cache
 from extensions import limiter as _limiter
 from flask import (
     Blueprint,
@@ -20,6 +19,7 @@ from flask import (
 )
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+from flask_babel import ngettext  # pyright: ignore[reportMissingImports]
 from markupsafe import Markup, escape
 from models import (
     OperatingModel,
@@ -33,6 +33,8 @@ from models import (
 )
 from services import auth_challenges as challenges
 from services import auth_sessions
+from services import login_throttle as throttle
+from services import totp as totp_codes
 from utils import login_required
 
 _log = logging.getLogger("openhangar.auth")
@@ -52,79 +54,38 @@ auth_bp = Blueprint("auth", __name__)
 _COMPLEX_MODELS = frozenset({"shared_ownership", "flight_club", "flight_school"})
 
 # ── Login brute-force protection ──────────────────────────────────────────────
-# Two independent layers:
-#   1. IP backoff   — progressive delay applied to any IP accumulating failures
-#   2. Account lock — 30-minute cache-based lock after 10 consecutive failures
-#                     on the same e-mail address (auto-unlocks, no admin needed)
+# Two independent layers, stored in the database (services/login_throttle.py)
+# so every worker shares them and they survive a restart:
+#   1. Address backoff — after repeated failures from one client address, its
+#                        next attempts are refused (HTTP 429) for a growing
+#                        while; nothing sleeps in the serving thread
+#   2. Account lock    — 30 minutes after 10 consecutive failures on the same
+#                        e-mail address (auto-unlocks, no admin needed)
 
-_IP_FAIL_TTL = 900  # reset IP counter if silent for 15 min
-_ACCT_FAIL_TTL = 1800  # reset account counter after 30 min
+_IP_FAIL_TTL = 900  # reset the address counter after 15 min without failures
+_ACCT_FAIL_TTL = 1800  # reset the account counter after 30 min
 _ACCT_LOCK_MINUTES = 30
 _ACCT_LOCK_TTL = _ACCT_LOCK_MINUTES * 60
 _ACCT_LOCK_THRESHOLD = 10
 
-# Delay (seconds) applied before returning a failed-login response, keyed on
-# the number of consecutive failures from the same IP address.
+# How long (seconds) an address must wait after its Nth consecutive failure.
 _IP_BACKOFF: dict[int, int] = {3: 2, 4: 10, 5: 30}
 _IP_BACKOFF_MAX = 60  # applied for 6 or more failures
 
 
-def _ip_backoff_delay(ip: str) -> int:
-    count: int = _cache.get(f"login_fail_ip:{ip}") or 0
+def _ip_backoff_delay(count: int) -> int:
     if count < 3:
         return 0
     return _IP_BACKOFF.get(count, _IP_BACKOFF_MAX)
 
 
-def _increment_ip_failures(ip: str) -> int:
-    count: int = (_cache.get(f"login_fail_ip:{ip}") or 0) + 1
-    _cache.set(f"login_fail_ip:{ip}", count, timeout=_IP_FAIL_TTL)
-    return count
+def _ip_key(ip: str) -> str:
+    return f"ip:{ip}"
 
 
-def _clear_ip_failures(ip: str) -> None:
-    _cache.delete(f"login_fail_ip:{ip}")
-
-
-def _check_account_locked(email: str) -> datetime | None:
-    """Return the lock-expiry datetime if the account is locked, else None."""
-    raw = _cache.get(f"login_lock_acct:{email}")
-    if not raw:
-        return None
-    locked_until = datetime.fromisoformat(raw)
-    if datetime.now(UTC) < locked_until:
-        return locked_until
-    # Expired — clean up
-    _cache.delete(f"login_lock_acct:{email}")
-    _cache.delete(f"login_fail_acct:{email}")
-    return None
-
-
-def _increment_account_failures(email: str) -> int:
-    count: int = (_cache.get(f"login_fail_acct:{email}") or 0) + 1
-    _cache.set(f"login_fail_acct:{email}", count, timeout=_ACCT_FAIL_TTL)
-    return count
-
-
-def _lock_account(email: str, ip: str) -> None:
-    locked_until = datetime.now(UTC) + timedelta(minutes=_ACCT_LOCK_MINUTES)
-    _cache.set(
-        f"login_lock_acct:{email}",
-        locked_until.isoformat(),
-        timeout=_ACCT_LOCK_TTL,
-    )
-    _cache.delete(f"login_fail_acct:{email}")
-    _log.warning(
-        "[SECURITY] auth.login.account_locked email=%s ip=%s locked_until=%s",
-        _sl(email),
-        _sl(ip),
-        _sl(locked_until.isoformat()),
-    )
-
-
-def _clear_account_failures(email: str) -> None:
-    _cache.delete(f"login_fail_acct:{email}")
-    _cache.delete(f"login_lock_acct:{email}")
+def _account_key(email: str) -> str:
+    # Hashed: bounded length, and no stored list of attempted addresses.
+    return "acct:" + hashlib.sha256(email.encode()).hexdigest()
 
 
 def _no_users() -> bool:
@@ -181,14 +142,25 @@ def _login_credentials() -> ResponseReturnValue:
     password = request.form.get("password", "")
     ip = _sl(request.remote_addr or "")
 
-    # ── Account lockout check (before any verification) ──────────────────────
-    locked_until = _check_account_locked(email)
-    if locked_until:
+    # ── Address backoff and account lock (before any verification) ───────────
+    wait = throttle.blocked_for(_ip_key(ip))
+    if wait:
+        _log.warning("[SECURITY] auth.login.backoff_refused ip=%s wait=%ss", ip, wait)
+        flash(
+            ngettext(
+                "Too many failed sign-in attempts. Try again in one second.",
+                "Too many failed sign-in attempts. Try again in %(n)s seconds.",
+                wait,
+                n=wait,
+            ),
+            "danger",
+        )
+        return render_template("auth/login.html", step="credentials"), 429
+    if throttle.blocked_for(_account_key(email)):
         _log.warning(
-            "[SECURITY] auth.login.account_blocked email=%s ip=%s locked_until=%s",
+            "[SECURITY] auth.login.account_blocked email=%s ip=%s",
             _sl(email),
             ip,
-            _sl(locked_until.isoformat()),
         )
         flash(
             _(
@@ -198,7 +170,7 @@ def _login_credentials() -> ResponseReturnValue:
             ),
             "danger",
         )
-        return render_template("auth/login.html", step="credentials")
+        return render_template("auth/login.html", step="credentials"), 429
 
     user = User.query.filter_by(email=email, is_active=True).first()
     password_hash = user.password_hash if user else _DUMMY_HASH
@@ -215,10 +187,11 @@ def _login_credentials() -> ResponseReturnValue:
             ip,
         )
 
-        # ── IP backoff ────────────────────────────────────────────────────────
-        ip_count = _increment_ip_failures(ip)
-        delay = _ip_backoff_delay(ip)
+        # ── Address backoff ───────────────────────────────────────────────────
+        ip_count = throttle.record_failure(_ip_key(ip), _IP_FAIL_TTL)
+        delay = _ip_backoff_delay(ip_count)
         if delay:
+            throttle.block(_ip_key(ip), delay)
             _log.warning(
                 "[SECURITY] auth.login.backoff ip=%s failures=%s delay=%ss",
                 ip,
@@ -227,19 +200,21 @@ def _login_credentials() -> ResponseReturnValue:
             )
 
         # ── Account failure tracking ──────────────────────────────────────────
-        acct_count = _increment_account_failures(email)
+        acct_count = throttle.record_failure(_account_key(email), _ACCT_FAIL_TTL)
         if acct_count >= _ACCT_LOCK_THRESHOLD:
-            _lock_account(email, ip)
-
-        if delay:
-            time.sleep(delay)
+            until = throttle.block(_account_key(email), _ACCT_LOCK_TTL, reset=True)
+            _log.warning(
+                "[SECURITY] auth.login.account_locked email=%s ip=%s locked_until=%s",
+                _sl(email),
+                ip,
+                _sl(datetime.fromtimestamp(until, UTC).isoformat()),
+            )
 
         flash(_("Invalid email or password."), "danger")
         return render_template("auth/login.html", step="credentials")
 
     # Credentials verified — clear failure counters for this IP and account.
-    _clear_ip_failures(ip)
-    _clear_account_failures(email)
+    throttle.clear(_ip_key(ip), _account_key(email))
 
     # Upgrade legacy bcrypt hashes to Argon2id transparently at login time.
     # Same password, so the user's other logins stay valid.
@@ -300,19 +275,11 @@ def _login_totp() -> ResponseReturnValue:
     user = User.query.filter_by(id=pending_id).one()
     totp_code = request.form.get("totp_code", "").strip()
 
-    _totp_cache_key = f"totp_used:{user.id}:{totp_code}"
-    if _cache.get(_totp_cache_key):
+    outcome = totp_codes.use_code(user, totp_code)
+    if outcome != totp_codes.ACCEPTED:
         _log.warning(
-            "[SECURITY] auth.totp.replay user_id=%s ip=%s",
-            _sl(pending_id),
-            _sl(request.remote_addr),
-        )
-        flash(_("Invalid authenticator code."), "danger")
-        return render_template("auth/login.html", step="totp")
-
-    if not pyotp.TOTP(str(user.totp_secret)).verify(totp_code, valid_window=1):
-        _log.warning(
-            "[SECURITY] auth.totp.failed user_id=%s ip=%s",
+            "[SECURITY] auth.totp.%s user_id=%s ip=%s",
+            "replay" if outcome == totp_codes.REUSED else "failed",
             _sl(pending_id),
             _sl(request.remote_addr),
         )
@@ -322,7 +289,6 @@ def _login_totp() -> ResponseReturnValue:
     if not challenges.consume(challenge):
         return redirect(url_for("auth.login"))
     db.session.commit()
-    _cache.set(_totp_cache_key, True, timeout=90)
 
     session.clear()
     auth_sessions.start(user)
@@ -344,7 +310,8 @@ def _login_totp_enrol() -> ResponseReturnValue:
     totp_secret = challenge.payload["secret"]
     totp_uri = challenge.payload["uri"]
     totp_code = request.form.get("totp_code", "").strip()
-    if not pyotp.TOTP(totp_secret).verify(totp_code, valid_window=1):
+    step = totp_codes.matching_step(totp_secret, totp_code)
+    if step is None:
         flash(_("Invalid code — please try again."), "danger")
         return render_template(
             "auth/login.html",
@@ -356,6 +323,7 @@ def _login_totp_enrol() -> ResponseReturnValue:
     if not challenges.consume(challenge):
         return redirect(url_for("auth.login"))
     user.totp_secret = totp_secret
+    user.totp_last_step = step  # the enrolment code cannot sign in again
     db.session.commit()
     _log.warning(
         "[SECURITY] auth.totp.enrolment_forced user_id=%s ip=%s",
@@ -596,7 +564,8 @@ def _setup_totp() -> ResponseReturnValue:
         challenge.payload = {**challenge.payload, "totp_to_save": None}
     else:
         totp_code = request.form.get("totp_code", "").strip()
-        if not pyotp.TOTP(str(totp_secret)).verify(totp_code, valid_window=1):
+        step = totp_codes.matching_step(str(totp_secret), totp_code)
+        if step is None:
             flash(_("Invalid code. Please try again."), "danger")
             return render_template(
                 "auth/setup.html",
@@ -606,7 +575,11 @@ def _setup_totp() -> ResponseReturnValue:
                 totp_secret=totp_secret,
                 provisioning_uri=provisioning_uri,
             )
-        challenge.payload = {**challenge.payload, "totp_to_save": totp_secret}
+        challenge.payload = {
+            **challenge.payload,
+            "totp_to_save": totp_secret,
+            "totp_step": step,
+        }
 
     db.session.commit()
     session["setup_totp_done"] = True
@@ -744,6 +717,7 @@ def _setup_finish() -> ResponseReturnValue:
         email=session["setup_email"],
         password_hash=challenge.payload["password_hash"],
         totp_secret=challenge.payload["totp_to_save"],
+        totp_last_step=challenge.payload.get("totp_step"),
         name=session.get("setup_name"),
         is_active=True,
         is_instance_admin=True,
@@ -907,15 +881,7 @@ def _profile_change_password(user: User) -> ResponseReturnValue:
 
 def _use_current_totp(user: User, code: str) -> bool:
     """Verify a code from the user's *current* authenticator, at most once."""
-    key = f"totp_used:{user.id}:{code}"
-    if (
-        not user.totp_secret
-        or _cache.get(key)
-        or not pyotp.TOTP(str(user.totp_secret)).verify(code, valid_window=1)
-    ):
-        return False
-    _cache.set(key, True, timeout=90)
-    return True
+    return totp_codes.use_code(user, code) == totp_codes.ACCEPTED
 
 
 def _profile_step_up(user: User, purpose: str) -> bool:
@@ -969,7 +935,8 @@ def _profile_confirm_totp(user: User) -> ResponseReturnValue:
     totp_secret = challenge.payload["secret"]
     totp_uri = challenge.payload["uri"]
     code = request.form.get("totp_code", "").strip()
-    if not pyotp.TOTP(totp_secret).verify(code, valid_window=1):
+    step = totp_codes.matching_step(totp_secret, code)
+    if step is None:
         flash(_("Invalid code. Please try again."), "danger")
         return render_template(
             "auth/profile.html", user=user, totp_secret=totp_secret, totp_uri=totp_uri
@@ -979,6 +946,7 @@ def _profile_confirm_totp(user: User) -> ResponseReturnValue:
         return redirect(url_for("auth.profile"))
     replaced = bool(user.totp_secret)
     user.totp_secret = totp_secret
+    user.totp_last_step = step  # the confirmation code cannot sign in again
     db.session.commit()
     auth_sessions.start(user)
     session.pop("profile_challenge", None)
@@ -1006,6 +974,7 @@ def _profile_disable_totp(user: User) -> ResponseReturnValue:
     if not _profile_step_up(user, "disable"):
         return redirect(url_for("auth.profile"))
     user.totp_secret = None
+    user.totp_last_step = None
     db.session.commit()
     auth_sessions.start(user)
     _log.warning(
@@ -1054,6 +1023,7 @@ def reset_password(token: str) -> ResponseReturnValue:
 
         user.password_hash = _pw.hash(new_pw)
         user.totp_secret = None  # clear TOTP so the user can re-enrol
+        user.totp_last_step = None
         prt.used_at = datetime.now(UTC)
         db.session.commit()
 
