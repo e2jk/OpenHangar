@@ -776,66 +776,6 @@ def create_app() -> Flask:
         response.headers["Service-Worker-Allowed"] = "/"
         return response
 
-    @app.route("/api/check-flight-duplicate")
-    def api_check_flight_duplicate() -> ResponseReturnValue:
-        from flask import jsonify as _jsonify
-
-        if not session.get("user_id"):
-            return _jsonify({"error": "unauthorized"}), 401
-        date_str = request.args.get("date", "")
-        aircraft_id_str = request.args.get("aircraft_id", "")
-        dep = request.args.get("departure_icao", "")
-        arr = request.args.get("arrival_icao", "")
-        exclude_flight_id_str = request.args.get("exclude_flight_id", "")
-        exclude_flight_id = (
-            int(exclude_flight_id_str) if exclude_flight_id_str.isdigit() else None
-        )
-        if not (date_str and dep and arr):
-            return _jsonify({"duplicate": False})
-        from models import Aircraft, Flight, TenantUser
-        from sqlalchemy import or_ as _or  # pyright: ignore[reportMissingImports]
-
-        uid = int(session["user_id"])
-        try:
-            from datetime import date as _date
-
-            flight_date = _date.fromisoformat(date_str)
-        except ValueError:
-            return _jsonify({"duplicate": False})
-
-        tu = TenantUser.query.filter_by(user_id=uid).first()
-
-        if tu and aircraft_id_str and aircraft_id_str.isdigit():
-            ac_id = int(aircraft_id_str)
-            # Scope by tenant: only match flights on an aircraft the caller's
-            # tenant owns, otherwise this leaks a cross-tenant existence oracle.
-            owned = Aircraft.query.filter_by(id=ac_id, tenant_id=tu.tenant_id).first()
-            if owned:
-                q = Flight.query.filter_by(
-                    aircraft_id=ac_id,
-                    date=flight_date,
-                    departure_icao=dep,
-                    arrival_icao=arr,
-                )
-                if exclude_flight_id:
-                    q = q.filter(Flight.id != exclude_flight_id)
-                if q.first():
-                    return _jsonify({"duplicate": True})
-
-        if tu:
-            q_pilot = Flight.query.filter(
-                _or(Flight.pic_user_id == uid, Flight.second_crew_user_id == uid),
-                Flight.date == flight_date,
-                Flight.departure_icao == dep,
-                Flight.arrival_icao == arr,
-            )
-            if exclude_flight_id:
-                q_pilot = q_pilot.filter(Flight.id != exclude_flight_id)
-            if q_pilot.first():
-                return _jsonify({"duplicate": True})
-
-        return _jsonify({"duplicate": False})
-
     @app.route("/api/banners")
     def api_banners() -> ResponseReturnValue:
         """Polled client-side by pwa.js — see _compute_banners' docstring

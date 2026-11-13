@@ -21,6 +21,7 @@ var PRECACHE = [
   '/static/js/pwa.js',
   '/static/js/offline_identity.js',
   '/static/js/offline_db.js',
+  '/static/js/offline_logbook.js',
   '/static/js/airport_autocomplete.js',
   '/static/js/aircraft_type_autocomplete.js',
   '/static/favicon.svg',
@@ -68,9 +69,9 @@ var SWR_ROUTES = [
  * W&B/tracks/reservations) — same read-mostly-hub reasoning as SWR_ROUTES
  * above, just keyed by regex since the aircraft ID varies. Prefetched from
  * within aircraft/detail.html for the aircraft currently being viewed.
- * Also covers offline logbook editing (Phase 38): aircraft logbook list,
- * workbench, and the offline-changes page get stale-while-revalidate so a
- * single online visit is enough to work fully offline afterwards. */
+ * Also covers the read-only offline logbooks: the aircraft logbook list and
+ * its offline page (with the pilot one in SWR_PATTERNS too) are cached so a
+ * single online visit is enough to read them offline afterwards. */
 /* The aircraft slot matches a numeric id OR a registration (e.g. OO-GRN) —
  * mirrors AircraftRefConverter (app/utils.py), which the app's own links
  * use to generate registration-based URLs by default. Registrations are
@@ -94,7 +95,6 @@ var SWR_PATTERNS = [
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/airworthiness\/adsb\/$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/airworthiness\/equipment\/$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/reservations\/$/,
-  /^\/offline\/changes$/,
   /^\/pilot\/logbook\/offline$/
 ];
 
@@ -349,13 +349,6 @@ self.addEventListener('fetch', function (event) {
     });
   }));
 });
-self.addEventListener('sync', function (event) {
-  if (event.tag === 'oh-flight-sync') {
-    event.waitUntil(self.clients.matchAll({ includeUncontrolled: true }).then(function (clients) {
-      clients.forEach(function (client) { client.postMessage({ type: 'OH_SYNC_REQUESTED' }); });
-    }));
-  }
-});
 self.addEventListener('message', function (event) {
   if (event.origin !== self.location.origin || !event.data) return;
   var data = event.data;
@@ -365,7 +358,7 @@ self.addEventListener('message', function (event) {
       return;
     }
     if (data.type === 'OH_VERIFY_IDENTITY') {
-      return _network(new Request('/api/offline/csrf', { headers: _assertionHeaders(data), credentials: 'same-origin' })).catch(function () {});
+      return _network(new Request('/api/offline/identity', { headers: _assertionHeaders(data), credentials: 'same-origin' })).catch(function () {});
     }
     if (!_senderMatches(data)) return;
     if (data.type === 'OH_CLEAR_PRIVATE') return _changeIdentity({ owner: '', session: '' });

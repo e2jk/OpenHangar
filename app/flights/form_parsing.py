@@ -1,9 +1,8 @@
 """Shared validation for the unified Flight editable field set (airframe side).
 
-``parse_flight_fields`` / ``apply_flight_fields`` are used by both the
-online flight form (``_handle_log_flight_post``) and the offline sync API
-(``offline/routes.py``) so the two paths can never diverge in validation.
-The field set matches ``offline.serialize.FLIGHT_EDITABLE_FIELDS`` exactly.
+``parse_flight_fields`` / ``apply_flight_fields`` hold the airframe-side
+validation used by the flight form (``_handle_log_flight_post``), so every
+save of these fields goes through the same rules.
 """
 
 import math
@@ -354,8 +353,8 @@ def parse_flight_fields(
 
     # Per tank, on an aircraft with several tanks (fields fuel_remaining_tank_<i>,
     # in the aircraft's tank order): when any is given, the total becomes
-    # their sum. Paths that don't send them (e.g. the offline workbench)
-    # leave this None — see apply_flight_fields for how that's reconciled.
+    # their sum. A save that doesn't send them
+    # leaves this None — see apply_flight_fields for how that's reconciled.
     fuel_remaining_by_tank: list[dict[str, Any]] | None = None
     tanks = list(getattr(ac, "fuel_tanks", None) or [])
     if len(tanks) > 1:
@@ -459,8 +458,8 @@ def reconcile_fuel_remaining_by_tank(
 ) -> list[dict[str, Any]] | None:
     """The per-tank fuel remaining to keep once a flight is saved: what was
     submitted per tank if anything; otherwise the existing breakdown while
-    it still adds up to the saved total (a save that didn't touch the fuel,
-    e.g. from the offline workbench, which only edits the total), else none
+    it still adds up to the saved total (a save that didn't touch the
+    per-tank fuel), else none
     — a breakdown that no longer matches its total would be misleading."""
     if submitted:
         return submitted

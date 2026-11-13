@@ -20,10 +20,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     Role,
     db,
 )
-from offline.serialize import (  # pyright: ignore[reportMissingImports]
-    canonical_entry,
-    canonical_pilot_entry,
-)
 
 from tests.test_crew_invites import (  # pyright: ignore[reportMissingImports]
     _add_flight,
@@ -105,30 +101,6 @@ class TestEditRights:
                 resp = method(url)
                 assert resp.status_code == 302
                 assert resp.headers["Location"].endswith(f"/flights/{fid}/my-part")
-
-    def test_offline_sync_refuses_non_logger(self, app, client):
-        _tid, kris, jan, _els, _owner, acid = _world_with_aircraft(app)
-        standalone = _shared(app, kris, jan)
-        managed = _shared(app, kris, jan, aircraft_id=acid)
-        _login(client, jan)
-        with app.app_context():
-            fe = db.session.get(Flight, managed)
-            base = canonical_entry(fe)
-            pe = db.session.get(Flight, standalone)
-            pbase = canonical_pilot_entry(pe)
-        resp = client.post(
-            f"/api/offline/flights/{managed}/sync",
-            json={"fields": {**base, "notes": "sneaky"}, "base": base},
-        )
-        assert resp.status_code == 400
-        assert "only they can change" in resp.get_json()["errors"][0]
-        resp = client.post(
-            f"/api/offline/pilot/logbook/{standalone}/sync",
-            json={"fields": {**pbase, "remarks": "sneaky"}, "base": pbase},
-        )
-        assert resp.status_code == 400
-        assert _flight(app, managed).notes is None
-        assert _flight(app, standalone).notes is None
 
 
 # ── The logger's saves never touch the other pilot's part ────────────────────
@@ -235,42 +207,6 @@ class TestOtherPilotProtected:
         assert fe.function_instructor == Decimal("1.5")
         assert (
             len(_dispatched(mock_dispatch, NotificationType.SHARED_FLIGHT_CHANGED)) == 1
-        )
-
-    def test_offline_sync_by_logger_keeps_other_pilot_fields(self, app, client):
-        _tid, kris, jan, _els, _owner, acid = _world_with_aircraft(app)
-        managed = _shared(app, kris, jan, aircraft_id=acid)
-        standalone = _shared(app, kris, jan)
-        with app.app_context():
-            base = canonical_entry(db.session.get(Flight, managed))
-            pbase = canonical_pilot_entry(db.session.get(Flight, standalone))
-        _login(client, kris)
-        with patch(DISPATCH) as mock_dispatch:
-            resp = client.post(
-                f"/api/offline/flights/{managed}/sync",
-                json={
-                    "fields": {**base, "notes": "Offline note", "crew_name_1": "X"},
-                    "base": base,
-                },
-            )
-            assert resp.status_code == 200, resp.get_json()
-            resp = client.post(
-                f"/api/offline/pilot/logbook/{standalone}/sync",
-                json={
-                    "fields": {
-                        **pbase,
-                        "remarks": "Offline",
-                        "function_instructor": "",
-                    },
-                    "base": pbase,
-                },
-            )
-            assert resp.status_code == 200, resp.get_json()
-        assert _flight(app, managed).notes == "Offline note"
-        assert _flight(app, managed).second_crew_name == "Jan Peeters"
-        assert _flight(app, standalone).function_instructor == Decimal("1.5")
-        assert (
-            len(_dispatched(mock_dispatch, NotificationType.SHARED_FLIGHT_CHANGED)) == 2
         )
 
     def test_saving_without_changes_sends_nothing(self, app):

@@ -323,12 +323,11 @@ def live_server():
         )
         db.session.add_all([fe_del1, fe_del2])
 
-        # ── E2E-only extras: pilot logbook offline entries (Phase 38h-38l) ────
+        # ── E2E-only extras: pilot logbook entries ────────────────────────────
         # In the unified Flight model there's no separate "linked pilot
         # entry" row to create — admin's own most-recent c172 flight
-        # (fe_flt) *is* the pilot-log row once pic_user_id is set on it, so
-        # the aircraft workbench's "My logbook" section has something to
-        # show/edit. Claim it in place (idempotent — the dev seed may
+        # (fe_flt) *is* the pilot-log row once pic_user_id is set on it.
+        # Claim it in place (idempotent — the dev seed may
         # already have done this via GPS-track linking, see
         # seed_gps_linked_pilot_logbook in _seed_helpers.py).
         if fe_flt.pic_user_id is None:
@@ -340,7 +339,7 @@ def live_server():
                 fe_flt.landings_day = fe_flt.landing_count or 1
         pe_linked = fe_flt
 
-        # A standalone FSTD session for the standalone pilot workbench test.
+        # A standalone FSTD session in the pilot logbook.
         pe_standalone_fstd = Flight(
             pic_user_id=admin.id,
             date=future,
