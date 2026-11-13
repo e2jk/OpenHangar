@@ -2526,6 +2526,23 @@ def _make_xlsx_with_merges(
 
 
 class TestMergeLabelMap:
+    @staticmethod
+    def _map(ws):
+        """Save the sheet as an .xlsx and read it back the way imports do:
+        rows read-only, merged ranges from the sheet's XML."""
+        import io
+
+        import openpyxl  # pyright: ignore[reportMissingImports]
+        from pilots.logbook_import import _merged_ranges, _read_rows
+
+        buffer = io.BytesIO()
+        ws.parent.save(buffer)
+        data = buffer.getvalue()
+        wb = openpyxl.load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+        rows = _read_rows(wb[ws.title])
+        wb.close()
+        return _merge_label_map(_merged_ranges(data, ws.title), rows)
+
     def _ws_with_merges(
         self, group_row: list[tuple[str, int]]
     ):  # returns openpyxl worksheet
@@ -2549,7 +2566,7 @@ class TestMergeLabelMap:
 
     def test_single_merged_region(self):
         ws = self._ws_with_merges([("DEPARTURE & ARRIVAL", 4)])
-        m = _merge_label_map(ws)
+        m = self._map(ws)
         assert m[(0, 0)] == "DEPARTURE & ARRIVAL"
         assert m[(0, 1)] == "DEPARTURE & ARRIVAL"
         assert m[(0, 2)] == "DEPARTURE & ARRIVAL"
@@ -2558,7 +2575,7 @@ class TestMergeLabelMap:
 
     def test_two_disjoint_merged_regions(self):
         ws = self._ws_with_merges([("GROUP A", 2), ("GROUP B", 3)])
-        m = _merge_label_map(ws)
+        m = self._map(ws)
         assert m[(0, 0)] == "GROUP A"
         assert m[(0, 1)] == "GROUP A"
         assert m[(0, 2)] == "GROUP B"
@@ -2567,7 +2584,7 @@ class TestMergeLabelMap:
 
     def test_empty_label_merge_excluded(self):
         ws = self._ws_with_merges([("", 3), ("LANDINGS", 2)])
-        m = _merge_label_map(ws)
+        m = self._map(ws)
         # Empty-label region excluded; only LANDINGS present (cols 3-4, 0-based)
         assert (0, 0) not in m
         assert (0, 1) not in m
@@ -2582,7 +2599,7 @@ class TestMergeLabelMap:
         ws = wb.active
         ws["A1"] = "DATE"
         ws["B1"] = "FROM"
-        m = _merge_label_map(ws)
+        m = self._map(ws)
         assert m == {}
 
     def test_merged_region_with_none_value_excluded(self):
@@ -2597,7 +2614,7 @@ class TestMergeLabelMap:
         ws["D1"] = "LANDINGS"
         ws.merge_cells("D1:E1")
 
-        m = _merge_label_map(ws)
+        m = self._map(ws)
         assert (0, 0) not in m
         assert (0, 1) not in m
         assert (0, 2) not in m

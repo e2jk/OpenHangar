@@ -46,6 +46,9 @@ from models import (
 from services.authorization import (
     AuthorizationService,  # pyright: ignore[reportMissingImports]
 )
+from services.spreadsheet_limits import (  # pyright: ignore[reportMissingImports]
+    check_xlsx_archive,
+)
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
     AMP_IMPORT_TMP_DIRNAME,
 )
@@ -784,6 +787,7 @@ def delete_amp_revision(aircraft_id: int, revision_id: int) -> ResponseReturnVal
 _AMP_IMPORT_SESSION_KEY = "amp_import"
 _ALLOWED_AMP_IMPORT_EXTS = {".xlsx"}
 _MAX_AMP_IMPORT_BYTES = 10 * 1024 * 1024  # 10 MB
+_MAX_AMP_EXPANDED_BYTES = 25 * 1024 * 1024  # once unzipped, all entries together
 
 
 def _amp_import_tmp_dir() -> str:
@@ -866,6 +870,10 @@ def import_amp_upload(aircraft_id: int) -> ResponseReturnValue:
         return render_template("maintenance/amp_import_upload.html", aircraft=ac), 422
 
     try:
+        # openpyxl loads every cell in full mode: bound what it may expand
+        # to before it starts (S08). The confirm step re-reads this same,
+        # already-checked file from its temporary copy.
+        check_xlsx_archive(data, max_expanded=_MAX_AMP_EXPANDED_BYTES)
         wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True)
         components = list(ac.components)
         rows = parse_amp_rows(wb, components)
