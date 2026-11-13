@@ -334,6 +334,47 @@ class TestReversal:
             with pytest.raises(ValueError, match="already been reversed"):
                 BillingService.reverse(charge, None, "second correction")
 
+    def test_a_racing_second_reversal_is_refused_by_the_database(
+        self, app, monkeypatch
+    ):
+        """Both requests passed the pre-check (here: the second one's is made
+        to miss); the unique index on reverses_id refuses the second, and only
+        its own insert is undone — the caller's other pending writes stay."""
+        from models import LedgerEntry, User
+        from sqlalchemy.orm import Query
+
+        uid, tid = _create_user_and_tenant(app)
+        with app.app_context():
+            account = BillingService.get_or_create_account(
+                tid, uid, BillingAccountKind.RENTER
+            )
+            charge = BillingService.post(
+                account, LedgerEntryType.CHARGE, 200, "flight", date(2026, 7, 1)
+            )
+            db.session.commit()
+            BillingService.reverse(charge, None, "first correction")
+            db.session.commit()
+
+            real_filter_by = Query.filter_by
+
+            class _Missed:
+                def first(self) -> None:
+                    return None
+
+            def missed_pre_check(self: Query, *args: Any, **kwargs: Any) -> Any:
+                if kwargs.get("reverses_id") == charge.id:
+                    return _Missed()
+                return real_filter_by(self, *args, **kwargs)
+
+            db.session.get(User, uid).name = "pending write"
+            monkeypatch.setattr(Query, "filter_by", missed_pre_check)
+            with pytest.raises(ValueError, match="already been reversed"):
+                BillingService.reverse(charge, None, "second correction")
+            monkeypatch.setattr(Query, "filter_by", real_filter_by)
+            db.session.commit()
+            assert LedgerEntry.query.filter_by(reverses_id=charge.id).count() == 1
+            assert db.session.get(User, uid).name == "pending write"
+
     def test_reversal_records_created_by(self, app):
         uid, tid = _create_user_and_tenant(app)
         admin_uid, _ = _create_user_and_tenant(app, "admin@example.com")

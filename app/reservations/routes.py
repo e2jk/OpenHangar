@@ -7,7 +7,7 @@ import calendar
 from datetime import UTC, datetime, time, timedelta
 from datetime import date as _date
 from decimal import Decimal, InvalidOperation
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urlparse
 
 from expenses.cost_dashboard import (  # pyright: ignore[reportMissingImports]
@@ -32,12 +32,15 @@ from models import (  # pyright: ignore[reportMissingImports]
     MaintenanceDowntime,
     RateBasis,
     RateType,
+    RentalCharge,
+    RentalChargeStatus,
     Reservation,
     ReservationStatus,
     Role,
     TenantUser,
     db,
 )
+from sqlalchemy import CursorResult, update  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
     login_required,
     require_role,
@@ -1644,6 +1647,15 @@ def rental_charge(aircraft_id: int, res_id: int):
     uid = int(session["user_id"])
 
     if request.method == "POST":
+        # Lock the charge until this request commits: a finalization racing
+        # an edit (or another finalization) then sees the other's outcome,
+        # instead of both acting on the draft it loaded.
+        charge = (
+            RentalCharge.query.filter_by(id=charge.id)
+            .populate_existing()
+            .with_for_update()
+            .one()
+        )
         if charge.is_final:
             flash(_("This charge has already been finalized."), "warning")
             return redirect(
@@ -1711,16 +1723,37 @@ def rental_charge(aircraft_id: int, res_id: int):
             from models import (
                 BillingAccountKind,
                 LedgerEntryType,
-                RentalChargeStatus,
                 User,
             )  # pyright: ignore[reportMissingImports]
             from services.billing import (
                 BillingService,  # pyright: ignore[reportMissingImports]
             )
 
-            charge.status = RentalChargeStatus.FINAL
-            charge.finalized_at = datetime.now(UTC)
-            charge.finalized_by_id = uid
+            # Claim DRAFT -> FINAL in one conditional UPDATE: only one request
+            # can make the transition, so only one ledger CHARGE is posted.
+            claimed = db.session.execute(
+                update(RentalCharge)
+                .where(
+                    RentalCharge.id == charge.id,
+                    RentalCharge.status == RentalChargeStatus.DRAFT,
+                )
+                .values(
+                    status=RentalChargeStatus.FINAL,
+                    finalized_at=datetime.now(UTC),
+                    finalized_by_id=uid,
+                )
+                .execution_options(synchronize_session="fetch")
+            )
+            if not cast("CursorResult[object]", claimed).rowcount:
+                db.session.rollback()
+                flash(_("This charge has already been finalized."), "warning")
+                return redirect(
+                    url_for(
+                        "reservations.reservation_detail",
+                        aircraft_id=ac.id,
+                        res_id=r.id,
+                    )
+                )
             account = BillingService.get_or_create_account(
                 ac.tenant_id, charge.renter_user_id, BillingAccountKind.RENTER
             )

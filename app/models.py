@@ -3836,7 +3836,12 @@ class LedgerEntry(db.Model):
     negative = the holder owes less. balance = sum(amount)."""
 
     __tablename__ = "ledger_entries"
-    __table_args__ = (db.Index("ix_ledger_entries_account_id", "account_id"),)
+    __table_args__ = (
+        db.Index("ix_ledger_entries_account_id", "account_id"),
+        # An entry is reversed at most once, even by concurrent requests.
+        # NULLs (every entry that is not a reversal) never conflict.
+        db.Index("uq_ledger_entries_reverses_id", "reverses_id", unique=True),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     account_id = db.Column(
