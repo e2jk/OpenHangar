@@ -1,4 +1,4 @@
-# Read-only offline logbooks; 2FA changes need re-authentication
+# Security fixes and read-only offline logbooks
 
 **Upgrade notes — please read before upgrading**
 - **Offline editing is removed.** Anyone who still has offline changes waiting on a device should open **Offline changes** on that device and sync them *before* you upgrade: the upgrade deletes changes that were never synced.
@@ -30,3 +30,4 @@
 **Maintenance**
 - Pages run a few fewer database queries: the signed-in user's organisation membership is looked up once per page instead of several times.
 - Backups use about a third less memory (the archive is built in a temporary file; encrypting it still needs about twice its size), only one backup runs at a time (a second one started meanwhile is refused instead of competing), and an interrupted backup never leaves a file that looks complete. Backup names gain a short random part.
+- Tests and CI: a branch-coverage report with a ratchet for the security- and money-critical code; PostgreSQL tests for locks, migrations on populated data and ledger races; tests that try hostile writes on real objects; a weekly security scan signed in as an admin and as a pilot; a backup → restore round trip that checks exact data and file bytes; Playwright traces kept for failed browser tests.
