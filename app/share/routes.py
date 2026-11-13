@@ -240,12 +240,9 @@ def showcase_view(token: str, registration: str | None = None) -> ResponseReturn
 
 @share_bp.route("/showcase/<token>/photos/<int:photo_id>/img")
 def showcase_photo(token: str, photo_id: int) -> ResponseReturnValue:
-    import os
 
-    from flask import (  # pyright: ignore[reportMissingImports]
-        current_app,
-        send_from_directory,
-    )
+    from flask import current_app  # pyright: ignore[reportMissingImports]
+    from services.safe_paths import send_inside
 
     st = ShareToken.query.filter_by(token=token, access_level="showcase").first()
     if not st or not st.is_active:
@@ -255,9 +252,7 @@ def showcase_photo(token: str, photo_id: int) -> ResponseReturnValue:
         abort(404)
 
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
-    directory = os.path.join(folder, os.path.dirname(photo.filename))
-    fname = os.path.basename(photo.filename)
     # Authorize above before Werkzeug handles any conditional file request.
-    response = send_from_directory(directory, fname, max_age=None)
+    response = send_inside(folder, photo.filename, max_age=None)
     response.headers["X-Robots-Tag"] = "noindex, nofollow"
     return response

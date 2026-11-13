@@ -29,6 +29,7 @@ import time
 from datetime import date as _date
 from typing import Any
 
+from services.safe_paths import regular_files  # pyright: ignore[reportMissingImports]
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
     is_app_managed,
 )
@@ -113,32 +114,32 @@ def _scan_once(app: Any) -> None:
                 for ac in Aircraft.query.filter_by(tenant_id=tenant.id).all()
             }
 
-            for dirpath, _dirs, filenames in os.walk(slug_dir):
-                for fname in filenames:
-                    if fname.startswith((".", "_")):
-                        continue
+            # Linked files and folders are skipped (services/safe_paths).
+            for full in regular_files(slug_dir):
+                fname = os.path.basename(full)
+                if fname.startswith((".", "_")):
+                    continue
 
-                    full = os.path.join(dirpath, fname)
-                    relpath = os.path.relpath(full, folder).replace("\\", "/")
+                relpath = os.path.relpath(full, folder).replace("\\", "/")
 
-                    if relpath in known_filenames or relpath in pending_filepaths:
-                        continue
-                    if is_app_managed(relpath):
-                        continue  # photos, original GPS logs — not documents
+                if relpath in known_filenames or relpath in pending_filepaths:
+                    continue
+                if is_app_managed(relpath):
+                    continue  # photos, original GPS logs — not documents
 
-                    _process_file(
-                        app,
-                        full,
-                        relpath,
-                        fname,
-                        tenant,
-                        aircraft_by_reg,
-                        known_filenames,
-                        pending_filepaths,
-                        db,
-                        Document,
-                        PendingReconcile,
-                    )
+                _process_file(
+                    app,
+                    full,
+                    relpath,
+                    fname,
+                    tenant,
+                    aircraft_by_reg,
+                    known_filenames,
+                    pending_filepaths,
+                    db,
+                    Document,
+                    PendingReconcile,
+                )
 
         db.session.commit()
 

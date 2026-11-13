@@ -590,6 +590,7 @@ The scan is idempotent: a file already tracked in `documents` or already in the 
 
 - **Renaming a file on a peer** — Syncthing treats rename as delete + add. The original `Document` row becomes a broken link and a new reconcile entry is created for the renamed file. Always rename documents through the OpenHangar UI to keep the database consistent.
 - **Pilot logbook attachments and aircraft photos** use a different storage path and are not auto-imported by the background scan.
+- **Symbolic links are not followed.** A link inside the uploads folder is never scanned, imported, served, backed up, moved or deleted through, so a link (made by a peer or on the host) can never expose or overwrite a file outside the uploads folder. Copy files into the synced folder instead of linking them.
 
 ---
 

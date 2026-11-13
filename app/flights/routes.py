@@ -31,7 +31,6 @@ from flask import (  # pyright: ignore[reportMissingImports]
     redirect,
     render_template,
     request,
-    send_from_directory,
     session,
     url_for,
 )
@@ -584,8 +583,10 @@ def serve_upload(filename: str) -> ResponseReturnValue:
         if fe is None:
             abort(404)
         _get_flight_or_404(fe.id)
+    from services.safe_paths import send_inside
+
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
-    return send_from_directory(folder, filename)
+    return send_inside(folder, filename)
 
 
 # ── Fleet logbook ─────────────────────────────────────────────────────────────
