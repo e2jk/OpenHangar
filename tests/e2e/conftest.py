@@ -323,12 +323,11 @@ def live_server():
         )
         db.session.add_all([fe_del1, fe_del2])
 
-        # ── E2E-only extras: pilot logbook offline entries (Phase 38h-38l) ────
+        # ── E2E-only extras: pilot logbook entries ────────────────────────────
         # In the unified Flight model there's no separate "linked pilot
         # entry" row to create — admin's own most-recent c172 flight
-        # (fe_flt) *is* the pilot-log row once pic_user_id is set on it, so
-        # the aircraft workbench's "My logbook" section has something to
-        # show/edit. Claim it in place (idempotent — the dev seed may
+        # (fe_flt) *is* the pilot-log row once pic_user_id is set on it.
+        # Claim it in place (idempotent — the dev seed may
         # already have done this via GPS-track linking, see
         # seed_gps_linked_pilot_logbook in _seed_helpers.py).
         if fe_flt.pic_user_id is None:
@@ -340,7 +339,7 @@ def live_server():
                 fe_flt.landings_day = fe_flt.landing_count or 1
         pe_linked = fe_flt
 
-        # A standalone FSTD session for the standalone pilot workbench test.
+        # A standalone FSTD session in the pilot logbook.
         pe_standalone_fstd = Flight(
             pic_user_id=admin.id,
             date=future,
@@ -527,6 +526,79 @@ def playwright_runtime():
 
     with sync_playwright() as playwright:
         yield playwright
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    """Keep each phase's report on the test item (rep_setup/rep_call/...),
+    so fixtures can tell at teardown whether the test failed."""
+    outcome = yield
+    report = outcome.get_result()
+    setattr(item, f"rep_{report.when}", report)
+
+
+TRACE_DIR = Path(__file__).resolve().parents[2] / "test-results" / "playwright-traces"
+
+
+@pytest.fixture
+def traced_browser(playwright_runtime, request, tmp_path):
+    """A Chromium browser whose contexts record a Playwright trace.
+
+    Every context's trace is saved when it (or the browser) closes; the files
+    are kept under test-results/playwright-traces/<test>/ only if the test
+    failed — open them with `playwright show-trace <file>`. CI uploads that
+    folder when the browser job fails.
+    """
+    browser = playwright_runtime.chromium.launch(headless=True)
+    open_contexts = []
+    saved = []
+
+    def stop_tracing(context):
+        if context in open_contexts:
+            open_contexts.remove(context)
+            path = tmp_path / f"trace-{len(saved) + 1}.zip"
+            try:
+                context.tracing.stop(path=str(path))
+                saved.append(path)
+            except Exception as exc:  # noqa: BLE001 — a trace is diagnostics only
+                print(f"Playwright trace not saved: {exc}")
+
+    real_new_context = browser.new_context
+    real_browser_close = browser.close
+
+    def new_context(*args, **kwargs):
+        context = real_new_context(*args, **kwargs)
+        context.tracing.start(screenshots=True, snapshots=True, sources=False)
+        open_contexts.append(context)
+        real_close = context.close
+
+        def close(*close_args, **close_kwargs):
+            stop_tracing(context)
+            return real_close(*close_args, **close_kwargs)
+
+        context.close = close
+        return context
+
+    def close_browser(*args, **kwargs):
+        while open_contexts:  # stop_tracing removes each one
+            stop_tracing(open_contexts[0])
+        return real_browser_close(*args, **kwargs)
+
+    browser.new_context = new_context
+    browser.close = close_browser
+    yield browser
+    if browser.is_connected():
+        browser.close()
+    failed = any(
+        getattr(getattr(request.node, f"rep_{phase}", None), "failed", False)
+        for phase in ("setup", "call")
+    )
+    if failed and saved:
+        target = TRACE_DIR / request.node.name
+        target.mkdir(parents=True, exist_ok=True)
+        for path in saved:
+            shutil.move(path, target / path.name)  # tmp may be another filesystem
+        print(f"Playwright traces kept in {target}")
 
 
 @pytest.fixture(scope="session")

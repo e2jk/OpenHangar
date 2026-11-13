@@ -18,11 +18,11 @@ from models import (  # pyright: ignore[reportMissingImports]
     ExpenseType,
     Refuel,
     Role,
-    TenantUser,
     db,
 )
 from utils import (  # pyright: ignore[reportMissingImports]
     activity,
+    current_membership,
     login_required,
     require_role,
     user_can_access_aircraft,
@@ -35,7 +35,7 @@ _UNITS = ["L", "gal"]
 
 
 def _tenant_id() -> int:
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
         abort(403)
     return int(tu.tenant_id)

@@ -21,7 +21,7 @@ from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImp
 from flask_babel import Babel  # pyright: ignore[reportMissingImports]
 from flask_babel import get_locale as _babel_get_locale
 from flask_migrate import Migrate
-from flask_wtf.csrf import CSRFProtect  # pyright: ignore[reportMissingImports]
+from flask_wtf.csrf import CSRFError, CSRFProtect  # pyright: ignore[reportMissingImports]
 from sqlalchemy import event  # pyright: ignore[reportMissingImports]
 from sqlalchemy.engine import Engine  # pyright: ignore[reportMissingImports]
 from werkzeug.middleware.proxy_fix import (
@@ -776,66 +776,6 @@ def create_app() -> Flask:
         response.headers["Service-Worker-Allowed"] = "/"
         return response
 
-    @app.route("/api/check-flight-duplicate")
-    def api_check_flight_duplicate() -> ResponseReturnValue:
-        from flask import jsonify as _jsonify
-
-        if not session.get("user_id"):
-            return _jsonify({"error": "unauthorized"}), 401
-        date_str = request.args.get("date", "")
-        aircraft_id_str = request.args.get("aircraft_id", "")
-        dep = request.args.get("departure_icao", "")
-        arr = request.args.get("arrival_icao", "")
-        exclude_flight_id_str = request.args.get("exclude_flight_id", "")
-        exclude_flight_id = (
-            int(exclude_flight_id_str) if exclude_flight_id_str.isdigit() else None
-        )
-        if not (date_str and dep and arr):
-            return _jsonify({"duplicate": False})
-        from models import Aircraft, Flight, TenantUser
-        from sqlalchemy import or_ as _or  # pyright: ignore[reportMissingImports]
-
-        uid = int(session["user_id"])
-        try:
-            from datetime import date as _date
-
-            flight_date = _date.fromisoformat(date_str)
-        except ValueError:
-            return _jsonify({"duplicate": False})
-
-        tu = TenantUser.query.filter_by(user_id=uid).first()
-
-        if tu and aircraft_id_str and aircraft_id_str.isdigit():
-            ac_id = int(aircraft_id_str)
-            # Scope by tenant: only match flights on an aircraft the caller's
-            # tenant owns, otherwise this leaks a cross-tenant existence oracle.
-            owned = Aircraft.query.filter_by(id=ac_id, tenant_id=tu.tenant_id).first()
-            if owned:
-                q = Flight.query.filter_by(
-                    aircraft_id=ac_id,
-                    date=flight_date,
-                    departure_icao=dep,
-                    arrival_icao=arr,
-                )
-                if exclude_flight_id:
-                    q = q.filter(Flight.id != exclude_flight_id)
-                if q.first():
-                    return _jsonify({"duplicate": True})
-
-        if tu:
-            q_pilot = Flight.query.filter(
-                _or(Flight.pic_user_id == uid, Flight.second_crew_user_id == uid),
-                Flight.date == flight_date,
-                Flight.departure_icao == dep,
-                Flight.arrival_icao == arr,
-            )
-            if exclude_flight_id:
-                q_pilot = q_pilot.filter(Flight.id != exclude_flight_id)
-            if q_pilot.first():
-                return _jsonify({"duplicate": True})
-
-        return _jsonify({"duplicate": False})
-
     @app.route("/api/banners")
     def api_banners() -> ResponseReturnValue:
         """Polled client-side by pwa.js — see _compute_banners' docstring
@@ -990,10 +930,11 @@ def create_app() -> Flask:
 
     @app.context_processor
     def inject_globals() -> dict[str, Any]:
-        from models import DemoSlot, Role, TenantProfile, TenantUser, User
+        from models import DemoSlot, Role, TenantProfile, User
         from utils import (
             check_legacy_logbook_data,
             check_update_available,
+            current_membership,
             current_user_role,
         )
 
@@ -1024,7 +965,7 @@ def create_app() -> Flask:
         _has_renter_account = False
         _nav_tenant_id: int | None = None
         if uid:
-            tu = TenantUser.query.filter_by(user_id=uid).first()
+            tu = current_membership()
             if tu:
                 _nav_tenant_id = tu.tenant_id
                 _tenant_profile = TenantProfile.query.filter_by(
@@ -1148,7 +1089,7 @@ def create_app() -> Flask:
         # over MAX_CONTENT_LENGTH in total, each file being within its own
         # per-file limit — send the user back to the form with a reason
         # instead of a bare error page.
-        from flask import flash, redirect, url_for
+        from flask import flash, redirect
         from flask_babel import gettext as _
 
         max_mb = round((app.config.get("MAX_CONTENT_LENGTH") or 0) / (1024 * 1024))
@@ -1160,8 +1101,13 @@ def create_app() -> Flask:
             ),
             "danger",
         )
-        # Back to the submitting page — on this host only, and as a relative
-        # path (same guard as the language switcher's ?next=).
+        return redirect(_submitting_page())
+
+    def _submitting_page() -> str:
+        """Back to the submitting page — on this host only, and as a relative
+        path (same guard as the language switcher's ?next=)."""
+        from flask import url_for
+
         ref = urlparse(request.referrer or "")
         back = ""
         if ref.netloc == request.host:
@@ -1176,7 +1122,42 @@ def create_app() -> Flask:
             or back.startswith("//")
         ):
             back = url_for("index")
-        return redirect(back)
+        return back
+
+    @app.errorhandler(CSRFError)
+    def csrf_failed(e: CSRFError) -> ResponseReturnValue:
+        """A form whose security token no longer matches the session.
+
+        Usually harmless: a page rendered before the session changed (a login
+        submitted twice, a sign-in in another tab, a page from an older app
+        version's cache). Sign-in forms are simply shown again — or skipped
+        when the first submission already signed the user in — and other forms
+        get a page explaining what to do, with ways back that also work in the
+        installed app (no browser navigation buttons there).
+        """
+        import logging
+
+        from flask import flash, redirect, url_for
+        from flask_babel import gettext as _
+        from utils import _sl
+
+        logging.getLogger("openhangar.auth").warning(
+            "[SECURITY] csrf.failed path=%s reason=%s ip=%s",
+            _sl(request.path),
+            _sl(e.description),
+            _sl(request.remote_addr),
+        )
+        if request.endpoint == "auth.login":
+            if session.get("user_id"):
+                return redirect(url_for("index"))
+            flash(_("The sign-in form had expired. Please sign in again."), "warning")
+            return redirect(url_for("auth.login"))
+        # Marked so ui.js lets HTMX show it: boosted forms ignore 4xx bodies.
+        return (
+            render_template("errors/csrf.html", back_url=_submitting_page()),
+            400,
+            {"X-OH-Form-Expired": "1"},
+        )
 
     @app.errorhandler(500)
     def internal_error(e: Exception) -> ResponseReturnValue:
@@ -1200,7 +1181,7 @@ def create_app() -> Flask:
 
     @app.route("/")
     def index() -> ResponseReturnValue:
-        from models import TenantUser, User
+        from models import User
         from services.track_overview import (  # pyright: ignore[reportMissingImports]
             in_flight_order,
             overview_geojson,
@@ -1222,9 +1203,13 @@ def create_app() -> Flask:
                 MaintenanceTrigger,
                 Snag,
             )
-            from utils import accessible_aircraft, compute_aircraft_statuses
+            from utils import (
+                accessible_aircraft,
+                compute_aircraft_statuses,
+                current_membership,
+            )
 
-            tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+            tu = current_membership()
             aircraft = accessible_aircraft(tu.tenant_id).all() if tu else []
             aircraft_ids = [ac.id for ac in aircraft]
             hobbs_by_aircraft = Aircraft.engine_hours_by_id(aircraft_ids)
@@ -1858,9 +1843,10 @@ def create_app() -> Flask:
         os.makedirs(upload_folder, exist_ok=True)
         os.makedirs(backup_folder, exist_ok=True)
 
-        _existing = [
-            (dp, f) for dp, _dirs, files in os.walk(upload_folder) for f in files
-        ]
+        from services.safe_paths import regular_files
+
+        # Links are left out: the snapshot never copies a file from outside.
+        _existing = list(regular_files(upload_folder))
         if _existing:
             from datetime import datetime
 
@@ -1872,8 +1858,7 @@ def create_app() -> Flask:
 
             _snap_buf = io.BytesIO()
             with zipfile.ZipFile(_snap_buf, "w", zipfile.ZIP_DEFLATED) as _zf:
-                for _dp, _fn in _existing:
-                    _fp = os.path.join(_dp, _fn)
+                for _fp in _existing:
                     _rel = os.path.relpath(_fp, upload_folder)
                     _zf.write(_fp, arcname=_rel)
             _snap_bytes = _snap_buf.getvalue()
@@ -1898,7 +1883,8 @@ def create_app() -> Flask:
             )
 
         for _item in os.scandir(upload_folder):
-            if _item.is_dir():
+            # A linked folder is removed as a link, never emptied through it.
+            if _item.is_dir(follow_symlinks=False):
                 _shutil.rmtree(_item.path, ignore_errors=True)
             else:
                 os.unlink(_item.path)

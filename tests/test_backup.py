@@ -1520,3 +1520,105 @@ class TestUpdateMapTiles:
             follow_redirects=True,
         )
         assert resp.status_code == 200
+
+
+# ── One backup at a time, never a half-written archive (audit P04) ───────────
+
+
+class TestBackupSafety:
+    def _run(self, app, **patches):
+        from config.routes import run_backup  # pyright: ignore[reportMissingImports]
+
+        app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
+        with patch(
+            "config.routes.subprocess.run",
+            return_value=TestRunBackup()._mock_pg_dump(),
+        ):
+            return run_backup()
+
+    def _files(self, app):
+        return sorted(os.listdir(app.config["BACKUP_FOLDER"]))
+
+    def test_a_backup_already_running_in_this_process_refuses_another(self, app):
+        from config import routes  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            assert routes._BACKUP_THREAD_LOCK.acquire(blocking=False)
+            try:
+                with pytest.raises(
+                    routes.BackupInProgressError, match="already running"
+                ):
+                    self._run(app)
+            finally:
+                routes._BACKUP_THREAD_LOCK.release()
+            assert self._files(app) == []
+            assert BackupRecord.query.count() == 0
+            self._run(app)  # and the lock is free again afterwards
+            assert BackupRecord.query.filter_by(status="ok").count() == 1
+
+    def test_a_backup_running_in_another_process_refuses_another(self, app):
+        from contextlib import contextmanager
+
+        from config import routes  # pyright: ignore[reportMissingImports]
+
+        @contextmanager
+        def held_elsewhere(_db, lock_id):
+            assert lock_id == routes._BACKUP_ADVISORY_LOCK_ID
+            yield False
+
+        with (
+            app.app_context(),
+            patch("services.advisory_lock.advisory_lock_scope", held_elsewhere),
+        ):
+            with pytest.raises(routes.BackupInProgressError):
+                self._run(app)
+            assert self._files(app) == []
+        assert routes._BACKUP_THREAD_LOCK.acquire(blocking=False)  # released
+        routes._BACKUP_THREAD_LOCK.release()
+
+    def test_two_backups_in_the_same_second_get_different_names(self, app):
+        with app.app_context():
+            first = self._run(app)
+            second = self._run(app)
+            assert first.filename != second.filename
+            assert os.path.exists(first.path) and os.path.exists(second.path)
+
+    @pytest.mark.parametrize("encrypted", [True, False])
+    def test_an_interrupted_backup_leaves_no_archive_and_no_temporary_file(
+        self, app, monkeypatch, encrypted
+    ):
+        from config import routes  # pyright: ignore[reportMissingImports]
+
+        if encrypted:
+            monkeypatch.setenv("OPENHANGAR_BACKUP_ENCRYPTION_KEY", "interrupt-key")
+            target = "config.routes._encrypt_parts"
+        else:
+            monkeypatch.delenv("OPENHANGAR_BACKUP_ENCRYPTION_KEY", raising=False)
+            target = "config.routes.os.replace"
+        with app.app_context(), patch(target, side_effect=OSError("disk full")):
+            with pytest.raises(RuntimeError, match="disk full"):
+                self._run(app)
+            assert self._files(app) == []  # nothing listed, nothing left behind
+            assert BackupRecord.query.one().status == "failed"
+        assert routes._BACKUP_THREAD_LOCK.acquire(blocking=False)
+        routes._BACKUP_THREAD_LOCK.release()
+
+    def test_the_archive_appears_complete_or_not_at_all(self, app, monkeypatch):
+        """At the moment the final name exists, the archive is whole: the
+        rename happens only after every byte was written and synced."""
+        monkeypatch.setenv("OPENHANGAR_BACKUP_ENCRYPTION_KEY", "atomic-key")
+        seen = []
+        real_replace = os.replace
+
+        def watch(src, dst):
+            seen.append((os.path.basename(src).startswith("."), os.path.exists(dst)))
+            return real_replace(src, dst)
+
+        with app.app_context(), patch("config.routes.os.replace", watch):
+            record = self._run(app)
+            path, size, sha256 = record.path, record.size_bytes, record.sha256
+        assert seen == [(True, False)]  # a hidden partial file, renamed once
+        with open(path, "rb") as fh:
+            data = fh.read()
+        assert len(data) == size
+        assert hashlib.sha256(data).hexdigest() == sha256

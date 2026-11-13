@@ -130,8 +130,23 @@
       </tbody>
     </table>
   </div>
+  {% endif %}
 
-  {% else %}
+  {% if show_all_history %}
+  <p class="mt-3 oh-fs-085">
+    <a href="{{ url_for('reservations.fleet_reservations') }}">
+      <i class="bi bi-funnel me-1"></i>{{ _('Show only the last %(n)s days', n=history_days) }}
+    </a>
+  </p>
+  {% elif older_count %}
+  <p class="mt-3 oh-fs-085">
+    <a href="{{ url_for('reservations.fleet_reservations', history='all') }}">
+      <i class="bi bi-clock-history me-1"></i>{{ ngettext('Show one older reservation', 'Show %(n)s older reservations', older_count, n=older_count) }}
+    </a>
+  </p>
+  {% endif %}
+
+  {% if not reservations and not older_count %}
   <div class="text-center py-5 text-muted">
     <i class="bi bi-calendar3 oh-fs-30 oh-opacity-03"></i>
     <p class="mt-3">{{ _('No reservations yet.') }}</p>

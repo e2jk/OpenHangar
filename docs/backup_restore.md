@@ -155,9 +155,26 @@ archives yourself):
 Each backup produces two files:
 
 ```
-openhangar_backup_<YYYYMMDDTHHMMSSZ>.zip.enc   ← encrypted archive
-openhangar_backup_<YYYYMMDDTHHMMSSZ>.meta      ← unencrypted version sidecar
+openhangar_backup_<YYYYMMDDTHHMMSSZ>_<random>_<version>.zip.enc   ← encrypted archive
+openhangar_backup_<YYYYMMDDTHHMMSSZ>_<random>_<version>.meta      ← unencrypted version sidecar
 ```
+
+The short random part keeps two backups started in the same second apart.
+Read the version from the `.meta` file, not from the name (backups made
+before November 2026 have no random part).
+
+Only one backup runs at a time, whichever way it was started (the button, the
+pre-upgrade backup, `flask backup-now`, the daily schedule): a second one is
+refused with "Another backup is already running" instead of competing. An
+archive appears under its final name only once it is complete — it is written
+to a hidden `.…partial` file first — so an interrupted backup never looks like
+a valid one.
+
+**Memory:** the archive is built in a temporary file, but encrypting it needs
+the whole archive and its encrypted copy in memory at once, so a backup briefly
+uses about **twice the archive's size** in RAM (measured: 110 MB for a 60 MB
+archive). On a small device, keep the uploads folder well below half the free
+memory, or back up the uploads separately (they are plain files).
 
 The `.meta` file contains version information in plain JSON so the restore
 script can read the backup's version without decrypting anything:

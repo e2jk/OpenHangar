@@ -99,12 +99,38 @@
         <div class="alert alert-success py-2 mb-3">
           <i class="bi bi-shield-check me-1"></i>{{ _('Two-factor authentication is enabled on your account.') }}
         </div>
+        <p class="form-text mb-3">{{ _('To replace your authenticator app or disable two-factor authentication, confirm with your password and a code from your current app. Lost access to it? Ask your administrator for a password reset link: it also removes two-factor authentication.') }}</p>
+        <form method="post">
+          <input type="hidden" name="action" value="setup_totp">
+          <div class="mb-3">
+            <label class="form-label" for="totp-replace-password">{{ _('Current password') }}</label>
+            <input type="password" name="current_password" id="totp-replace-password" class="form-control"
+                   required autocomplete="current-password">
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="totp-replace-code">{{ _('Code from your current authenticator app') }}</label>
+            <input type="text" name="current_totp_code" id="totp-replace-code" class="form-control totp-code-input"
+                   inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required
+                   autocomplete="one-time-code">
+          </div>
+          <button type="submit" class="btn btn-ac-secondary">
+            <i class="bi bi-arrow-repeat me-1"></i>{{ _('Replace authenticator') }}
+          </button>
+        </form>
+        <hr class="my-3">
         <form method="post"
               data-confirm="{{ _('Disable two-factor authentication? Your account will be less secure.') }}">
           <input type="hidden" name="action" value="disable_totp">
           <div class="mb-3">
-            <label class="form-label">{{ _('Current password (to confirm)') }}</label>
-            <input type="password" name="current_password" class="form-control" required>
+            <label class="form-label" for="totp-disable-password">{{ _('Current password') }}</label>
+            <input type="password" name="current_password" id="totp-disable-password" class="form-control"
+                   required autocomplete="current-password">
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="totp-disable-code">{{ _('Code from your current authenticator app') }}</label>
+            <input type="text" name="current_totp_code" id="totp-disable-code" class="form-control totp-code-input"
+                   inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required
+                   autocomplete="one-time-code">
           </div>
           <button type="submit" class="btn btn-ac-danger">
             <i class="bi bi-shield-x me-1"></i>{{ _('Disable 2FA') }}
@@ -118,6 +144,11 @@
         </div>
         <form method="post">
           <input type="hidden" name="action" value="setup_totp">
+          <div class="mb-3">
+            <label class="form-label" for="totp-setup-password">{{ _('Current password') }}</label>
+            <input type="password" name="current_password" id="totp-setup-password" class="form-control"
+                   required autocomplete="current-password">
+          </div>
           <button type="submit" class="btn btn-ac-primary">
             <i class="bi bi-shield-plus me-1"></i>{{ _('Set up 2FA') }}
           </button>

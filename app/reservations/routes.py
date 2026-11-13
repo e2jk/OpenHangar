@@ -7,7 +7,7 @@ import calendar
 from datetime import UTC, datetime, time, timedelta
 from datetime import date as _date
 from decimal import Decimal, InvalidOperation
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urlparse
 
 from expenses.cost_dashboard import (  # pyright: ignore[reportMissingImports]
@@ -32,13 +32,17 @@ from models import (  # pyright: ignore[reportMissingImports]
     MaintenanceDowntime,
     RateBasis,
     RateType,
+    RentalCharge,
+    RentalChargeStatus,
     Reservation,
     ReservationStatus,
     Role,
     TenantUser,
     db,
 )
+from sqlalchemy import CursorResult, update  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
+    current_membership,
     login_required,
     require_role,
     user_can_access_aircraft,
@@ -91,8 +95,9 @@ def _safe_next(next_url: str, fallback: str) -> str:
 
 
 def _tenant_id() -> int:
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
+        # Unreachable: require_role refuses a user without a membership first (every caller).
         abort(403)  # pragma: no cover
     return tu.tenant_id
 
@@ -304,12 +309,72 @@ def _build_calendar_grid(year: int, month: int):
 # ── Fleet reservations overview (admin/owner) ─────────────────────────────────
 
 
+# How far back the fleet overview shows past reservations by default.
+_FLEET_HISTORY_DAYS = 90
+
+
+def _overlapping_reservation_ids(reservations: list[Any]) -> set[int]:
+    """Ids of reservations overlapping another one on the same aircraft.
+
+    Sorted by start, each booking is compared only with the following ones
+    that start before it ends — the same pairs as comparing every pair
+    (touching bookings, end == next start, do not overlap), without the
+    quadratic work over an aircraft's whole history.
+    """
+    overlapping: set[int] = set()
+    by_aircraft: dict[int, list[Any]] = {}
+    for r in reservations:
+        by_aircraft.setdefault(r.aircraft_id, []).append(r)
+    for group in by_aircraft.values():
+        group.sort(key=lambda r: (r.start_dt, r.end_dt))
+        for i, first in enumerate(group):
+            for later in group[i + 1 :]:
+                if later.start_dt >= first.end_dt:
+                    break
+                overlapping.update((first.id, later.id))
+    return overlapping
+
+
+def _past_reservations_without_flight(past: list[Any]) -> set[int]:
+    """Ids of past reservations with no flight logged on that aircraft during
+    them (by date) — one query for all of them, not one per reservation."""
+    from bisect import bisect_left
+
+    from models import Flight  # pyright: ignore[reportMissingImports]
+
+    if not past:
+        return set()
+    rows = (
+        db.session.query(Flight.aircraft_id, Flight.date)
+        .filter(
+            Flight.aircraft_id.in_({r.aircraft_id for r in past}),
+            Flight.date >= min(r.start_dt for r in past).date(),
+            Flight.date <= max(r.end_dt for r in past).date(),
+        )
+        .distinct()
+        .all()
+    )
+    dates: dict[int, list[_date]] = {}
+    for aircraft_id, day in rows:
+        dates.setdefault(aircraft_id, []).append(day)
+    for days in dates.values():
+        days.sort()
+    missing: set[int] = set()
+    for r in past:
+        days = dates.get(r.aircraft_id, [])
+        i = bisect_left(days, r.start_dt.date())
+        if i == len(days) or days[i] > r.end_dt.date():
+            missing.add(r.id)
+    return missing
+
+
 @reservations_bp.route("/reservations/fleet/")
 @login_required
 @require_role(*_OWNER_ROLES)
 def fleet_reservations():
-    tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    tu = current_membership()
     if not tu:
+        # Unreachable: require_role refuses a user without a membership first.
         abort(403)  # pragma: no cover
 
     role = tu.role
@@ -336,22 +401,35 @@ def fleet_reservations():
 
     now = datetime.now(UTC)
     expired_cutoff = now - timedelta(days=60)
+    # History is bounded by default: the overview is about what is coming and
+    # what just happened, and an old fleet's lifetime of bookings would
+    # otherwise be loaded and compared on every visit. ?history=all shows it.
+    show_all_history = request.args.get("history") == "all"
+    history_cutoff = now - timedelta(days=_FLEET_HISTORY_DAYS)
 
+    filters = [
+        Reservation.aircraft_id.in_(aircraft_ids),
+        # Exclude expired-pending older than 60 days — they're just noise
+        db.or_(
+            Reservation.status != ReservationStatus.PENDING,
+            Reservation.start_dt >= expired_cutoff,
+        ),
+    ]
+    if not show_all_history:
+        filters.append(Reservation.end_dt >= history_cutoff)
     reservations = (
-        (
-            Reservation.query.filter(
-                Reservation.aircraft_id.in_(aircraft_ids),
-                # Exclude expired-pending older than 60 days — they're just noise
-                db.or_(
-                    Reservation.status != ReservationStatus.PENDING,
-                    Reservation.start_dt >= expired_cutoff,
-                ),
-            )
-            .order_by(Reservation.start_dt)
-            .all()
-        )
+        Reservation.query.filter(*filters).order_by(Reservation.start_dt).all()
         if aircraft_ids
         else []
+    )
+    older_count = (
+        Reservation.query.filter(
+            Reservation.aircraft_id.in_(aircraft_ids),
+            Reservation.end_dt < history_cutoff,
+            Reservation.status != ReservationStatus.PENDING,
+        ).count()
+        if aircraft_ids and not show_all_history
+        else 0
     )
 
     # SQLite returns naive datetimes even for DateTime(timezone=True) columns;
@@ -360,38 +438,11 @@ def fleet_reservations():
     if reservations and reservations[0].start_dt.tzinfo is None:
         now = now.replace(tzinfo=None)
 
-    # Detect overlapping confirmed reservations per aircraft
-    overlapping_ids: set[int] = set()
-    from itertools import combinations
-
     confirmed = [r for r in reservations if r.status == ReservationStatus.CONFIRMED]
-    by_aircraft: dict[int, list] = {}
-    for r in confirmed:
-        by_aircraft.setdefault(r.aircraft_id, []).append(r)
-    for group in by_aircraft.values():
-        for r1, r2 in combinations(group, 2):
-            if r1.start_dt < r2.end_dt and r1.end_dt > r2.start_dt:
-                overlapping_ids.add(r1.id)
-                overlapping_ids.add(r2.id)
-
-    # Find past confirmed reservations with no flight logged on that aircraft/date
-    from models import Flight  # pyright: ignore[reportMissingImports]
-
-    missing_flight_ids: set[int] = set()
-    for r in reservations:
-        if r.status == ReservationStatus.CONFIRMED and r.end_dt <= now:
-            start_date = r.start_dt.date()
-            end_date = r.end_dt.date()
-            has_flight = (
-                Flight.query.filter(
-                    Flight.aircraft_id == r.aircraft_id,
-                    Flight.date >= start_date,
-                    Flight.date <= end_date,
-                ).first()
-                is not None
-            )
-            if not has_flight:
-                missing_flight_ids.add(r.id)
+    overlapping_ids = _overlapping_reservation_ids(confirmed)
+    missing_flight_ids = _past_reservations_without_flight(
+        [r for r in confirmed if r.end_dt <= now]
+    )
 
     aircraft_map = {a.id: a for a in aircraft_list}
 
@@ -403,6 +454,9 @@ def fleet_reservations():
         missing_flight_ids=missing_flight_ids,
         now=now,
         ReservationStatus=ReservationStatus,
+        show_all_history=show_all_history,
+        history_days=_FLEET_HISTORY_DAYS,
+        older_count=older_count,
     )
 
 
@@ -672,7 +726,7 @@ def edit_reservation(aircraft_id: int, res_id: int):
     r = _get_reservation_or_404(ac, res_id)
 
     # Pilots may only edit their own pending reservations
-    role = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    role = current_membership()
     user_role = role.role if role else None
     is_owner_role = user_role in _OWNER_ROLES
     if not is_owner_role and (
@@ -711,7 +765,7 @@ def cancel_reservation(aircraft_id: int, res_id: int):
     ac = _get_aircraft_or_404(aircraft_id, for_update=request.method == "POST")
     r = _get_reservation_or_404(ac, res_id)
 
-    role = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+    role = current_membership()
     user_role = role.role if role else None
     is_owner_role = user_role in _OWNER_ROLES
     if not is_owner_role and r.pilot_user_id != session["user_id"]:
@@ -740,7 +794,7 @@ def cancel_reservation(aircraft_id: int, res_id: int):
                 dispatch,  # pyright: ignore[reportMissingImports]
             )
 
-            tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+            tu = current_membership()
             if tu:
                 dispatch(
                     NotificationType.RESERVATION_CANCELLED,
@@ -854,7 +908,7 @@ def confirm_reservation(aircraft_id: int, res_id: int):
                 dispatch,  # pyright: ignore[reportMissingImports]
             )
 
-            tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+            tu = current_membership()
             if tu:
                 dispatch(
                     NotificationType.RESERVATION_CONFIRMED,
@@ -1174,7 +1228,7 @@ def _save_reservation(
                 dispatch,  # pyright: ignore[reportMissingImports]
             )
 
-            tu = TenantUser.query.filter_by(user_id=session["user_id"]).first()
+            tu = current_membership()
             if tu:
                 details = [
                     (_l("Aircraft"), ac.registration),
@@ -1644,6 +1698,15 @@ def rental_charge(aircraft_id: int, res_id: int):
     uid = int(session["user_id"])
 
     if request.method == "POST":
+        # Lock the charge until this request commits: a finalization racing
+        # an edit (or another finalization) then sees the other's outcome,
+        # instead of both acting on the draft it loaded.
+        charge = (
+            RentalCharge.query.filter_by(id=charge.id)
+            .populate_existing()
+            .with_for_update()
+            .one()
+        )
         if charge.is_final:
             flash(_("This charge has already been finalized."), "warning")
             return redirect(
@@ -1711,16 +1774,37 @@ def rental_charge(aircraft_id: int, res_id: int):
             from models import (
                 BillingAccountKind,
                 LedgerEntryType,
-                RentalChargeStatus,
                 User,
             )  # pyright: ignore[reportMissingImports]
             from services.billing import (
                 BillingService,  # pyright: ignore[reportMissingImports]
             )
 
-            charge.status = RentalChargeStatus.FINAL
-            charge.finalized_at = datetime.now(UTC)
-            charge.finalized_by_id = uid
+            # Claim DRAFT -> FINAL in one conditional UPDATE: only one request
+            # can make the transition, so only one ledger CHARGE is posted.
+            claimed = db.session.execute(
+                update(RentalCharge)
+                .where(
+                    RentalCharge.id == charge.id,
+                    RentalCharge.status == RentalChargeStatus.DRAFT,
+                )
+                .values(
+                    status=RentalChargeStatus.FINAL,
+                    finalized_at=datetime.now(UTC),
+                    finalized_by_id=uid,
+                )
+                .execution_options(synchronize_session="fetch")
+            )
+            if not cast("CursorResult[object]", claimed).rowcount:
+                db.session.rollback()
+                flash(_("This charge has already been finalized."), "warning")
+                return redirect(
+                    url_for(
+                        "reservations.reservation_detail",
+                        aircraft_id=ac.id,
+                        res_id=r.id,
+                    )
+                )
             account = BillingService.get_or_create_account(
                 ac.tenant_id, charge.renter_user_id, BillingAccountKind.RENTER
             )
@@ -1773,7 +1857,7 @@ def my_account():
     uid = int(session["user_id"])
     tu = TenantUser.query.filter_by(user_id=uid).first()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
 
     account = BillingService.get_or_create_account(
         tu.tenant_id, uid, BillingAccountKind.RENTER
@@ -1803,7 +1887,7 @@ def my_account_statement_csv():
     uid = int(session["user_id"])
     tu = TenantUser.query.filter_by(user_id=uid).first()
     if not tu:
-        abort(403)  # pragma: no cover
+        abort(403)
 
     account = BillingService.get_or_create_account(
         tu.tenant_id, uid, BillingAccountKind.RENTER

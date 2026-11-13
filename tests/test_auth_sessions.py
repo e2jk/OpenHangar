@@ -1,5 +1,6 @@
 """Actual-cookie regressions for session revocation and current principal checks."""
 
+import time
 from datetime import UTC, datetime, timedelta
 
 import pyotp
@@ -85,7 +86,7 @@ def test_invalid_logins_cannot_read_or_write_even_after_reactivation(app, change
         db.session.commit()
     response = replay(app, cookie).get("/pilot/logbook")
     assert response.status_code == 302
-    assert replay(app, cookie).get("/api/offline/csrf").status_code == 401
+    assert replay(app, cookie).get("/api/offline/identity").status_code == 401
     response = replay(app, cookie).post(
         "/profile", data={"action": "update_name", "name": "Unauthorized"}
     )
@@ -151,7 +152,7 @@ def test_totp_enrolment_and_disable_revoke_other_sessions(app):
     make_user(app, required=False)
     client = logged_in(app)
     other = logged_in(app)
-    client.post("/profile", data={"action": "setup_totp"})
+    client.post("/profile", data={"action": "setup_totp", "current_password": PASSWORD})
     secret = challenge_payload(client, "profile_challenge")["secret"]
     client.post(
         "/profile",
@@ -161,7 +162,13 @@ def test_totp_enrolment_and_disable_revoke_other_sessions(app):
     assert other.get("/profile").status_code == 302
     old_cookie = saved_cookie(client)
     client.post(
-        "/profile", data={"action": "disable_totp", "current_password": PASSWORD}
+        "/profile",
+        data={
+            "action": "disable_totp",
+            "current_password": PASSWORD,
+            # The enrolment used the current time step; a code is single-use.
+            "current_totp_code": pyotp.TOTP(secret).at(time.time() + 30),
+        },
     )
     assert client.get("/profile").status_code == 200
     assert replay(app, old_cookie).get("/profile").status_code == 302

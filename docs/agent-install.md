@@ -150,7 +150,7 @@ browser.
 Help the user choose for question 1:
 
 - **Plain HTTP (a)** means the browser shows *Not secure*, the app can't be
-  installed on a phone's home screen, offline logbook editing is
+  installed on a phone's home screen, reading logbooks offline is
   unavailable, and passwords cross the local network unencrypted. That's
   acceptable on a private home network. If the machine sits on **shared
   Wi-Fi** (club, hangar, airfield), recommend (b).

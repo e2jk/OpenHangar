@@ -1,0 +1,16 @@
+{# Shared by both offline logbook pages: explains the read-only snapshot and
+   carries the translated strings offline_logbook.js needs. #}
+<div class="alert alert-warning d-none" role="status" aria-live="polite" data-oh-offline-banner>
+  <i class="bi bi-wifi-off me-1"></i>{{ _("You're offline — showing the copy saved on this device.") }}
+</div>
+
+<p class="text-muted oh-fs-085">
+  <i class="bi bi-info-circle me-1"></i>
+  {{ _('A read-only copy of this logbook, saved on this device so you can read it without a connection. It is updated each time you open the logbook while online. Changes need a connection.') }}
+  <span data-oh-offline-saved-at></span>
+</p>
+
+<script type="application/json" id="oh-offline-logbook-i18n">{{ {
+  'savedAt': _('Saved {when}.'),
+  'noEntries': _('No copy of this logbook on this device yet — open the logbook once while online.'),
+} | tojson }}</script>

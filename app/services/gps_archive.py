@@ -25,6 +25,10 @@ from typing import IO
 from flask import Response  # pyright: ignore[reportMissingImports]
 from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
 
+from services.safe_paths import (  # pyright: ignore[reportMissingImports]
+    regular_files,
+    resolve_inside,
+)
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
     GPS_ARCHIVE_DIRNAME,
     PILOT_ARCHIVE_ROOT,
@@ -157,8 +161,8 @@ def write_zip(upload_folder: str, relpaths: list[str], fileobj: IO[bytes]) -> in
     names: set[str] = set()
     with zipfile.ZipFile(fileobj, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         for rel in dict.fromkeys(relpaths):  # de-duplicated, order kept
-            full = os.path.join(upload_folder, *rel.split("/"))
-            if not os.path.isfile(full):
+            full = resolve_inside(upload_folder, *rel.split("/"))
+            if full is None or not os.path.isfile(full):
                 continue
             name = os.path.basename(full)
             if name in names:
@@ -176,14 +180,13 @@ def archive_stats(upload_folder: str) -> tuple[int, int]:
     count = size = 0
     if not os.path.isdir(upload_folder):
         return 0, 0
-    for dirpath, _dirs, files in os.walk(upload_folder):
-        if os.path.basename(dirpath) != GPS_ARCHIVE_DIRNAME:
+    for path in regular_files(upload_folder):
+        if os.path.basename(os.path.dirname(path)) != GPS_ARCHIVE_DIRNAME:
             continue
-        for name in files:
-            if name.startswith("."):
-                continue
-            count += 1
-            size += os.path.getsize(os.path.join(dirpath, name))
+        if os.path.basename(path).startswith("."):
+            continue
+        count += 1
+        size += os.path.getsize(path)
     return count, size
 
 
@@ -191,15 +194,9 @@ def send_archived_file(upload_folder: str, relpath: str) -> Response:
     """Flask response downloading one kept file (404 if it's gone). The
     path comes from the database (GpsTrack.source_files), never a request,
     and is still confined to the uploads folder."""
-    from flask import abort, send_from_directory  # pyright: ignore[reportMissingImports]
+    from services.safe_paths import send_inside
 
-    directory, _sep, name = relpath.rpartition("/")
-    full_dir = os.path.realpath(os.path.join(upload_folder, *directory.split("/")))
-    if not full_dir.startswith(os.path.realpath(upload_folder) + os.sep):
-        abort(404)
-    if not os.path.isfile(os.path.join(full_dir, name)):
-        abort(404)
-    return send_from_directory(full_dir, name, as_attachment=True)
+    return send_inside(upload_folder, relpath, as_attachment=True)
 
 
 def send_archive_zip(

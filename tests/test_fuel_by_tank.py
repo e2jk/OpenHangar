@@ -2,7 +2,6 @@
 Tests for fuel remaining per tank, on aircraft with several tanks:
   - the flight form's per-tank inputs (total = their sum) and the flight page
   - keeping a per-tank split consistent when only the total is saved
-    (e.g. from the offline workbench)
   - importing it from an airframe logbook column like "9/13"
 """
 

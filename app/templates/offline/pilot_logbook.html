@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Offline pilot logbook') }} — OpenHangar{% endblock %}
+
+{% block content %}
+<div class="container py-4" id="oh-offline-logbook" data-oh-offline-logbook="pilot" data-oh-pilot-logbook="1">
+
+  <div class="page-header mb-4">
+    <div>
+      <h1 class="page-title"><i class="bi bi-cloud-arrow-down me-2"></i>{{ _('Offline pilot logbook') }}</h1>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="{{ url_for('pilots.logbook') }}" class="btn btn-ac-ghost">
+        <i class="bi bi-arrow-left me-1"></i>{{ _('Back to logbook') }}
+      </a>
+    </div>
+  </div>
+
+  {% include "offline/_snapshot_notice.html" %}
+
+  <div class="ac-form-card p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 oh-fs-088">
+        <thead class="oh-bg-light">
+          <tr>
+            <th class="ps-3">{{ _('Date') }}</th>
+            <th>{{ _('Aircraft type') }}</th>
+            <th>{{ _('Registration') }}</th>
+            <th>{{ _('Route') }}</th>
+            <th>{{ _('UTC times') }}</th>
+            <th>{{ _('PIC name') }}</th>
+            <th class="text-end">{{ _('Total') }}</th>
+            <th class="text-end">{{ _('Sim') }}</th>
+            <th class="text-end">{{ _('Night') }}</th>
+            <th class="text-end">{{ _('Instr.') }}</th>
+            <th class="text-end">{{ _('Ldg D/N') }}</th>
+            <th class="text-end">{{ _('PIC') }}</th>
+            <th class="text-end">{{ _('Co-P') }}</th>
+            <th class="text-end">{{ _('Dual') }}</th>
+            <th class="text-end">{{ _('Inst.') }}</th>
+            <th class="pe-3">{{ _('Remarks') }}</th>
+          </tr>
+        </thead>
+        <tbody data-oh-offline-rows>
+          <tr><td colspan="16" class="text-center text-muted py-4">{{ _('Loading…') }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<template id="oh-offline-row">
+  <tr>
+    <td class="ps-3 text-nowrap" data-col="date"></td>
+    <td><span data-col="aircraft_type"></span> <span class="text-muted" data-col="fstd_type"></span></td>
+    <td data-col="registration"></td>
+    <td class="text-nowrap"><span data-col="departure_place"></span> → <span data-col="arrival_place"></span></td>
+    <td class="text-nowrap"><span data-col="departure_time"></span>–<span data-col="arrival_time"></span></td>
+    <td data-col="pic_name"></td>
+    <td class="text-end fw-semibold" data-col="total_time"></td>
+    <td class="text-end" data-col="fstd_duration"></td>
+    <td class="text-end" data-col="night_time"></td>
+    <td class="text-end" data-col="instrument_time"></td>
+    <td class="text-end text-nowrap"><span data-col="landings_day"></span> / <span data-col="landings_night"></span></td>
+    <td class="text-end" data-col="function_pic"></td>
+    <td class="text-end" data-col="function_copilot"></td>
+    <td class="text-end" data-col="function_dual"></td>
+    <td class="text-end" data-col="function_instructor"></td>
+    <td class="pe-3 oh-mw-160 overflow-hidden oh-text-ellipsis" data-col="remarks"></td>
+  </tr>
+</template>
+
+{% endblock %}
