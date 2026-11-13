@@ -1240,6 +1240,16 @@ jobs:
           echo "=== $E2E_DB logs ==="
           docker logs "$E2E_DB" || true
 
+      - name: Upload Playwright traces of failed tests
+        # Kept by the traced_browser fixture (tests/e2e/conftest.py) only for
+        # failed tests; open with `playwright show-trace <file>`.
+        if: failure() && hashFiles('test-results/playwright-traces/**') != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: playwright-traces-${{ matrix.suite }}
+          path: test-results/playwright-traces/
+          retention-days: 7
+
       - name: Tear down E2E environment
         if: always()
         run: |

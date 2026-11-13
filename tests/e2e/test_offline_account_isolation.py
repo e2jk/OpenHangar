@@ -193,10 +193,10 @@ def wait_for_settled_worker(page):
 
 def test_account_switch_never_shows_the_previous_accounts_logbook(
     isolated_offline_server,
-    playwright_runtime,
+    traced_browser,
 ):
     _app, origin, _users, _, _, _ = isolated_offline_server
-    browser = playwright_runtime.chromium.launch(headless=True)
+    browser = traced_browser
     try:
         context = browser.new_context(service_workers="allow")
         page = context.new_page()
@@ -233,10 +233,10 @@ def test_account_switch_never_shows_the_previous_accounts_logbook(
 
 def test_offline_pilot_logbook_reads_the_whole_logbook_without_a_connection(
     isolated_offline_server,
-    playwright_runtime,
+    traced_browser,
 ):
     _app, origin, _users, requests, _, _ = isolated_offline_server
-    browser = playwright_runtime.chromium.launch(headless=True)
+    browser = traced_browser
     try:
         context = browser.new_context(service_workers="allow")
         page = context.new_page()
@@ -262,10 +262,10 @@ def test_offline_pilot_logbook_reads_the_whole_logbook_without_a_connection(
 
 def test_upgrade_removes_offline_editing_data(
     isolated_offline_server,
-    playwright_runtime,
+    traced_browser,
 ):
     _app, origin, _users, _, _, _ = isolated_offline_server
-    browser = playwright_runtime.chromium.launch(headless=True)
+    browser = traced_browser
     try:
         context = browser.new_context(service_workers="allow")
         page = context.new_page()
@@ -311,13 +311,13 @@ def test_upgrade_removes_offline_editing_data(
 
 def test_logout_permission_loss_and_worker_upgrade_retire_private_cache(
     isolated_offline_server,
-    playwright_runtime,
+    traced_browser,
     monkeypatch,
 ):
     from models import User, db
 
     app, origin, users, _, _, _ = isolated_offline_server
-    browser = playwright_runtime.chromium.launch(headless=True)
+    browser = traced_browser
     try:
         context = browser.new_context(service_workers="allow")
         page = context.new_page()
@@ -361,11 +361,11 @@ def test_logout_permission_loss_and_worker_upgrade_retire_private_cache(
 
 def test_old_inflight_account_response_cannot_repopulate_a_retired_cache(
     isolated_offline_server,
-    playwright_runtime,
+    traced_browser,
 ):
 
     _, origin, _, _, entered, release = isolated_offline_server
-    browser = playwright_runtime.chromium.launch(headless=True)
+    browser = traced_browser
     try:
         context = browser.new_context(service_workers="allow")
         first = context.new_page()
@@ -374,19 +374,16 @@ def test_old_inflight_account_response_cannot_repopulate_a_retired_cache(
             "() => { window.heldResponse = fetch('/pilot/logbook?hold=1').then(r => r.text()).catch(() => 'retired'); }"
         )
         assert entered.wait(timeout=10)
-        # Retire the worker that owns the held response before changing
-        # accounts, not just the document that initiated the fetch.
-        first.evaluate("""async () => {
-          const old = await navigator.serviceWorker.getRegistration();
-          await old.unregister();
-          await navigator.serviceWorker.register('/sw.js?inflight-upgrade=1', {scope:'/'});
-        }""")
-        first.wait_for_function(
-            "() => navigator.serviceWorker.controller?.scriptURL.includes('inflight-upgrade=1')"
-        )
+        # The request stays held (server side) across the account switch and
+        # is released only once Bravo has signed in: the worker must not cache
+        # what a response started under Alpha's login brings back. (No worker
+        # swap here: the browser would not complete one while this request is
+        # still being answered, so the hold would time out first and the
+        # response arrive before the switch, testing nothing.)
         second = context.new_page()
         second.goto(origin + "/logout", wait_until="load")
         login(second, origin, "Bravo")
+        assert not release.is_set() and entered.is_set()  # still held
         release.set()
         first.evaluate("() => window.heldResponse")
         wait_until(
@@ -405,7 +402,7 @@ def test_old_inflight_account_response_cannot_repopulate_a_retired_cache(
 
 
 def test_aircraft_grant_loss_retires_cached_page_and_snapshot(
-    isolated_offline_server, playwright_runtime
+    isolated_offline_server, traced_browser
 ):
     from models import Aircraft, Flight, Role, TenantUser, UserAircraftAccess, db
 
@@ -434,7 +431,7 @@ def test_aircraft_grant_loss_retires_cached_page_and_snapshot(
             )
         )
         db.session.commit()
-    browser = playwright_runtime.chromium.launch(headless=True)
+    browser = traced_browser
     try:
         context = browser.new_context(service_workers="allow")
         page = context.new_page()
@@ -482,11 +479,11 @@ def test_aircraft_grant_loss_retires_cached_page_and_snapshot(
 
 def test_own_password_change_renews_context_without_a_login_dead_end(
     isolated_offline_server,
-    playwright_runtime,
+    traced_browser,
 ):
 
     _app, origin, _users, _, _, _ = isolated_offline_server
-    browser = playwright_runtime.chromium.launch(headless=True)
+    browser = traced_browser
     try:
         context = browser.new_context(service_workers="allow")
         page = context.new_page()
@@ -508,3 +505,43 @@ def test_own_password_change_renews_context_without_a_login_dead_end(
         context.close()
     finally:
         browser.close()
+
+
+def test_login_expired_while_offline_is_retired_on_reconnect(
+    isolated_offline_server,
+    traced_browser,
+):
+    """Offline, the device cannot know the login expired. Once it is back
+    online, the first private page proves it, and the account's cached
+    pages and snapshot stop being served — also offline afterwards."""
+    from models import AuthSession, db
+
+    app, origin, users, _, _, _ = isolated_offline_server
+    context = traced_browser.new_context(service_workers="allow")
+    page = context.new_page()
+    login(page, origin, "Alpha")
+    wait_for_offline_pilot_logbook(page, "ALPHA-PRIVATE")
+    context.set_offline(True)
+    page.goto(origin + "/pilot/logbook", wait_until="load")
+    assert "ALPHA-PRIVATE" in page.content()  # offline viewing still works
+
+    with app.app_context():
+        AuthSession.query.filter_by(user_id=users["Alpha"]).update(
+            {"expires_at": 1}, synchronize_session=False
+        )
+        db.session.commit()
+    context.set_offline(False)
+    page.goto(origin + "/pilot/logbook", wait_until="load")
+    assert "/login" in page.url
+    wait_until(
+        page,
+        "() => caches.keys().then(names => !names.some(n => n.includes('-private-')))",
+    )
+    assert page.evaluate("() => OhOffline.getPilotSnapshot()") is None
+
+    wait_for_settled_worker(page)
+    context.set_offline(True)
+    for path in ("/pilot/logbook", "/pilot/logbook/offline"):
+        page.goto(origin + path, wait_until="load")
+        assert "ALPHA-PRIVATE" not in page.content()
+    context.close()
