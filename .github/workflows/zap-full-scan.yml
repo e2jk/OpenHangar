@@ -211,7 +211,9 @@ jobs:
         # surface in that time.
         # -d: without it the scan script prints nothing until it ends (the
         # first run's log was silent for 2 h); with it, crawl and "Active
-        # Scan progress %" lines stream into this step's live log.
+        # Scan progress %" lines stream into this step's live log. The hook
+        # (.zap/quiet_progress_hook.py) only drops the HTTP library's lines
+        # behind each 5 s progress poll, which -d would otherwise also print.
         uses: zaproxy/action-full-scan@3c58388149901b9a03b7718852c5ba889646c27c # v0.13.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -221,7 +223,7 @@ jobs:
           allow_issue_writing: 'false'
           artifact_name: zap-authenticated-${{ matrix.user }}
           cmd_options: >-
-            -m 10 -d
+            -m 10 -d --hook=/zap/wrk/.zap/quiet_progress_hook.py
             -z "-config replacer.full_list(0).description=session
             -config replacer.full_list(0).enabled=true
             -config replacer.full_list(0).matchtype=REQ_HEADER
