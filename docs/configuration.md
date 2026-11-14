@@ -304,9 +304,11 @@ Set to any non-empty value to skip starting the background threads (backup
 scheduler, notification scheduler, EASA airworthiness sync, upload-folder
 sync watcher).
 
-- **Default**: unset — background threads start normally.
-- Intended for one-off CLI invocations (`flask` commands, maintenance
-  scripts) where the schedulers are unwanted; not needed in normal operation.
+- **Default**: unset — background threads start normally in the web server
+  (gunicorn, `python init.py`, `flask run`).
+- One-off `flask` commands (`backup-now`, `restore-backup`, `shell`, …) never
+  start them, whether or not this is set. Set it for other scripts that create
+  the app where the schedulers are unwanted; not needed in normal operation.
 
 ### `OPENHANGAR_VERSION`
 

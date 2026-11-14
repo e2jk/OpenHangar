@@ -428,6 +428,19 @@ def _start_notification_scheduler(app: Flask) -> None:
     t.start()
 
 
+def _is_one_off_cli_command() -> bool:
+    """True while a one-off ``flask <command>`` (backup-now, restore-backup,
+    shell…) creates the app. Such a run must not start the server's
+    schedulers: a restore would otherwise run next to a backup scheduler and
+    an update check writing to the database it is replacing. The servers
+    (gunicorn, ``python init.py``) create the app outside any click command;
+    ``flask run`` is a server too and keeps its background threads."""
+    import click
+
+    ctx = click.get_current_context(silent=True)
+    return ctx is not None and ctx.command.name != "run"
+
+
 def create_app() -> Flask:
     from security_alerts import (
         attach_to_logger,  # pyright: ignore[reportMissingImports]
@@ -1969,9 +1982,11 @@ def create_app() -> Flask:
     # Only run against a real PostgreSQL database (sqlite = dev/test), and only
     # when called from a long-running server process — not from init scripts such
     # as docker-init-db.py that run migrations before the schema exists.
-    if "sqlite" not in app.config.get(
-        "SQLALCHEMY_DATABASE_URI", ""
-    ) and not os.environ.get("OPENHANGAR_SKIP_BACKGROUND_THREADS"):
+    if (
+        "sqlite" not in app.config.get("SQLALCHEMY_DATABASE_URI", "")
+        and not os.environ.get("OPENHANGAR_SKIP_BACKGROUND_THREADS")
+        and not _is_one_off_cli_command()
+    ):
         # Only a production deployment is ever actually upgraded in place, so
         # only there does checking for updates mean anything. Demo wipes and
         # recreates its schema every few hours (see demo/refresh.sh) --
