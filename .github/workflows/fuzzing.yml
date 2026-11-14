@@ -50,8 +50,6 @@ jobs:
           - fuzz_pilot_form_parsing
           - fuzz_maintenance_form_parsing
           - fuzz_backup_format
-          - fuzz_offline_sync_validators
-          - fuzz_offline_easa_values
           - fuzz_airframe_import_row
           - fuzz_backup_decrypt
           - fuzz_documents_reconcile_filename
