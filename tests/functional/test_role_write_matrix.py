@@ -424,7 +424,8 @@ def test_role_write_matrix_over_full_url_map(app, role_world):
                 else:
                     assert resp.status_code == 403, (
                         f"{endpoint} {path}: role={role} expected to be denied "
-                        f"(403), got {resp.status_code}"
+                        f"(403), got {resp.status_code} "
+                        f"{resp.headers.get('Location', '')}"
                     )
 
     assert not unmapped, (

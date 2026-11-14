@@ -159,6 +159,13 @@ def second_user(
         {"email": email, "password": password, "password2": password},
     )
     submit(new_client, "/login", {"email": email, "password": password})
+    # Fail here, not somewhere in the caller's assertions, if the sign-in
+    # did not take (a refused login renders without a red error flash).
+    profile = new_client.get("/profile", follow_redirects=False)
+    assert profile.status_code == 200, (
+        f"{email} is not signed in after logging in: GET /profile -> "
+        f"{profile.status_code} {profile.headers.get('Location', '')}"
+    )
     return new_client
 
 
