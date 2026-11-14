@@ -742,6 +742,36 @@ class TestConfigVersionDisplay:
             create_app()
             mock_start.assert_called_once()
 
+    @pytest.mark.parametrize(
+        ("command", "started"),
+        [
+            ("backup-now", False),
+            ("restore-backup", False),
+            ("shell", False),
+            ("run", True),
+        ],
+    )
+    def test_one_off_flask_commands_start_no_background_threads(self, command, started):
+        # `flask restore-backup` must not run an update check (or a backup
+        # scheduler) next to the restore; `flask run` is a server and keeps them.
+        import click
+
+        with (
+            patch.dict(
+                "os.environ",
+                {
+                    "OPENHANGAR_DATABASE_URL": "postgresql://u:p@h/db",
+                    "OPENHANGAR_ENV": "production",
+                },
+            ),
+            patch("services.version_service.start_version_check_thread") as mock_start,
+            patch("services.backup_scheduler.start_backup_scheduler") as mock_backup,
+            click.Context(click.Command(command)),
+        ):
+            create_app()
+        assert mock_start.called is started
+        assert mock_backup.called is started
+
     @pytest.mark.parametrize("env", ["demo", "development", "test"])
     def test_thread_not_started_outside_production(self, env):
         # Only a production deployment is ever actually upgraded in place --
