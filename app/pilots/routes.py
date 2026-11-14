@@ -969,7 +969,8 @@ def _inject_logbook_list_url() -> dict[str, Any]:
 @require_pilot_access
 def logbook() -> ResponseReturnValue:
     uid = _current_user_id()
-    order = request.args.get("order", "desc")
+    # Only "asc" or "desc" — the value is echoed into links and hidden fields.
+    order = "asc" if request.args.get("order") == "asc" else "desc"
     page = request.args.get("page", 1, type=int)
     pp_raw = request.args.get("per_page", str(_DEFAULT_PER_PAGE))
     show_all = pp_raw == "all"
@@ -1027,7 +1028,7 @@ def logbook() -> ResponseReturnValue:
         pagination=pagination,
         totals=totals,
         order=order,
-        per_page=pp_raw,
+        per_page="all" if show_all else str(per_page),  # validated, never raw
         valid_per_page=_VALID_PER_PAGE,
         logbook_milestone=logbook_milestone,
         LogbookEntryType=LogbookEntryType,

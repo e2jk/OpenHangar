@@ -483,7 +483,7 @@ def list_documents(aircraft_id: int) -> ResponseReturnValue:
         aircraft=ac,
         docs=docs,
         pagination=pagination,
-        per_page=pp_raw,
+        per_page="all" if show_all else str(per_page),  # validated, never raw
         valid_per_page=_DOCS_VALID_PER_PAGE,
         total_count=total_count,
         show_sensitive=show_sensitive,

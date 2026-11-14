@@ -27,6 +27,7 @@ from sqlalchemy.engine import Engine  # pyright: ignore[reportMissingImports]
 from werkzeug.middleware.proxy_fix import (
     ProxyFix,  # pyright: ignore[reportMissingImports]
 )
+from werkzeug.wrappers import Response as WerkzeugResponse  # pyright: ignore[reportMissingImports]
 
 
 def _env_or_file(name: str) -> str:
@@ -426,6 +427,21 @@ def _start_notification_scheduler(app: Flask) -> None:
         name="notification-daily",
     )
     t.start()
+
+
+def _bare_redirect(location: str) -> "WerkzeugResponse":
+    """A redirect without Werkzeug's "Redirecting to <target>" HTML body.
+
+    Browsers only follow the Location header. With a long ``next=`` the body
+    (the target address, twice) made scanners report a "big redirect" that
+    might carry more than the header — it never did, but there is no reason
+    to send it.
+    """
+    from flask import redirect
+
+    response: WerkzeugResponse = redirect(location)
+    response.set_data(b"")
+    return response
 
 
 def _is_one_off_cli_command() -> bool:
@@ -1596,7 +1612,7 @@ def create_app() -> Flask:
 
     @app.route("/set-language/<lang>")
     def set_language(lang: str) -> ResponseReturnValue:
-        from flask import abort, redirect
+        from flask import abort
 
         if lang not in SUPPORTED_LOCALES:
             abort(400)
@@ -1626,11 +1642,11 @@ def create_app() -> Flask:
             or next_url.startswith("//")
         ):
             next_url = "/"
-        return redirect(next_url)
+        return _bare_redirect(next_url)
 
     @app.route("/set-theme/<theme>")
     def set_theme(theme: str) -> ResponseReturnValue:
-        from flask import abort, redirect
+        from flask import abort
 
         if theme not in ("light", "dark", "system"):
             abort(400)
@@ -1656,7 +1672,7 @@ def create_app() -> Flask:
             or next_url.startswith("//")
         ):
             next_url = "/"
-        return redirect(next_url)
+        return _bare_redirect(next_url)
 
     @app.route("/robots.txt")
     def robots_txt() -> ResponseReturnValue:
