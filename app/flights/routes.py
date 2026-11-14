@@ -721,7 +721,7 @@ def list_flights(aircraft_id: int) -> ResponseReturnValue:
         aircraft=ac,
         flights=flights,
         pagination=pagination,
-        per_page=pp_raw,
+        per_page="all" if show_all else str(per_page),  # validated, never raw
         valid_per_page=_FLIGHTS_VALID_PER_PAGE,
         total_count=total_count,
         total_hours=_flights_total_hours(ac.id),
