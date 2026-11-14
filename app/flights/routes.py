@@ -71,7 +71,10 @@ from utils import (
     activity,
     current_membership,
     current_user_role,
+    db_id,
+    list_index,
     login_required,
+    page_number,
     require_pilot_access,
     require_role,
     tenant_pilots,
@@ -678,7 +681,7 @@ def _inject_flights_list_url() -> dict[str, Any]:
 @login_required
 def list_flights(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
-    page = request.args.get("page", 1, type=int)
+    page = request.args.get("page", 1, type=page_number)
     pp_raw = request.args.get("per_page", str(_FLIGHTS_DEFAULT_PER_PAGE))
     show_all = pp_raw == "all"
     per_page = (
@@ -806,14 +809,14 @@ def log_flight() -> ResponseReturnValue:
     tid = _tenant_id()
     managed_aircraft = accessible_aircraft(tid).all()
     uid = int(session["user_id"])
-    preselect_id = request.args.get("aircraft_id", type=int)
+    preselect_id = request.args.get("aircraft_id", type=db_id)
 
     if request.method == "POST":
         return _handle_log_flight_post(managed_aircraft, uid, fe=None)
 
     gps_prefill = session.pop("gps_prefill", None)
-    gps_review_return_aircraft_id = request.args.get("gps_review_return", type=int)
-    gps_review_return_seg_idx = request.args.get("gps_seg", type=int)
+    gps_review_return_aircraft_id = request.args.get("gps_review_return", type=db_id)
+    gps_review_return_seg_idx = request.args.get("gps_seg", type=list_index)
     _u = db.session.get(User, uid)
     pilot_name_hint = _u.display_name if _u else ""
     nature_suggestions = _NATURE_SUGGESTIONS
@@ -1659,7 +1662,7 @@ def _suggested_aircraft_for_device(device_id: str | None) -> int | None:
 def _check_gps_duplicate(gps_data: dict[str, Any]) -> dict[str, Any] | None:
     """Return a duplicate summary dict if a matching entry exists, else None."""
     uid = int(session.get("user_id", 0))
-    aircraft_id = request.form.get("aircraft_id", type=int)
+    aircraft_id = request.form.get("aircraft_id", type=db_id)
     if aircraft_id is not None:
         ac = db.session.get(Aircraft, aircraft_id)
         if not ac or ac.tenant_id != _tenant_id():
@@ -1724,13 +1727,13 @@ def _handle_log_flight_post(
             )
         if fe:
             return redirect(url_for("flights.edit_flight", flight_id=fe.id))
-        aircraft_id = f.get("aircraft_id", type=int)
+        aircraft_id = f.get("aircraft_id", type=db_id)
         qs: dict[str, Any] = {"aircraft_id": aircraft_id} if aircraft_id else {}
         return redirect(url_for("flights.log_flight", **qs))
 
     # ── Determine aircraft ─────────────────────────────────────────────────────
     other_aircraft = f.get("other_aircraft") == "1"
-    aircraft_id_raw = f.get("aircraft_id", type=int)
+    aircraft_id_raw = f.get("aircraft_id", type=db_id)
     # When editing an existing flight, fall back to the flight's own aircraft_id
     # so the `if ac:` block is entered even when aircraft_id is absent from the form.
     if aircraft_id_raw is None and fe is not None:
@@ -2111,8 +2114,8 @@ def _handle_log_flight_post(
             ),
             "success",
         )
-        return_ac_id = f.get("gps_review_return_aircraft_id", type=int)
-        return_seg_idx = f.get("gps_review_return_seg_idx", type=int)
+        return_ac_id = f.get("gps_review_return_aircraft_id", type=db_id)
+        return_seg_idx = f.get("gps_review_return_seg_idx", type=list_index)
         if return_ac_id is not None:
             gps_state = session.get("gps_import", {})
             if (

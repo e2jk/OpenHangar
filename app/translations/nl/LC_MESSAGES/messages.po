@@ -18,54 +18,54 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: app/init.py:98
+#: app/init.py:99
 msgid "First flight of Concorde — André Turcat at the controls, Toulouse (1969)"
 msgstr "Eerste vlucht van de Concorde — André Turcat aan de besturing, Toulouse (1969)"
 
-#: app/init.py:104
+#: app/init.py:105
 msgid "Charles Lindbergh lands at Le Bourget — first solo transatlantic flight (1927)"
 msgstr "Charles Lindbergh landt op Le Bourget — eerste solo transatlantische vlucht (1927)"
 
-#: app/init.py:111
+#: app/init.py:112
 msgid "Louis Blériot crosses the English Channel — first crossing by airplane (1909)"
 msgstr "Louis Blériot steekt het Kanaal over — eerste oversteek per vliegtuig (1909)"
 
-#: app/init.py:118
+#: app/init.py:119
 msgid "Pilâtre de Rozier & d'Arlandes — first manned free balloon flight, Paris (1783)"
 msgstr "Pilâtre de Rozier en d'Arlandes — eerste bemande vrije ballonvlucht, Parijs (1783)"
 
-#: app/init.py:124
+#: app/init.py:125
 msgid "First flight: 17 Dec 1903 — 12 seconds, 37 metres. (Wright Brothers)"
 msgstr "Eerste vlucht: 17 december 1903 — 12 seconden, 37 meter. (gebroeders Wright)"
 
-#: app/init.py:181
+#: app/init.py:182
 #, python-format
 msgid "🎉 Today marks one year since your first solo flight!"
 msgid_plural "🎉 Today marks %(n)s years since your first solo flight!"
 msgstr[0] "🎉 Het is vandaag één jaar geleden dat u uw eerste solovlucht maakte!"
 msgstr[1] "🎉 Het is vandaag %(n)s jaar geleden dat u uw eerste solovlucht maakte!"
 
-#: app/init.py:188
+#: app/init.py:189
 msgid "🎉 Today is the anniversary of your first solo flight!"
 msgstr "🎉 Vandaag is het de verjaardag van uw eerste solovlucht!"
 
-#: app/init.py:194
+#: app/init.py:195
 #, python-format
 msgid "🎉 Today marks one year since you earned your PPL!"
 msgid_plural "🎉 Today marks %(n)s years since you earned your PPL!"
 msgstr[0] "🎉 Het is vandaag één jaar geleden dat u uw PPL behaalde!"
 msgstr[1] "🎉 Het is vandaag %(n)s jaar geleden dat u uw PPL behaalde!"
 
-#: app/init.py:200
+#: app/init.py:201
 msgid "🎉 Today is the anniversary of your PPL!"
 msgstr "🎉 Vandaag is het de verjaardag van uw PPL!"
 
-#: app/init.py:1098
+#: app/init.py:1134
 #, python-format
 msgid "This upload is too large (maximum %(mb)s MB in total). Please upload the files in smaller batches."
 msgstr "Deze upload is te groot (maximaal %(mb)s MB in totaal). Upload de bestanden in kleinere delen."
 
-#: app/init.py:1153
+#: app/init.py:1189
 msgid "The sign-in form had expired. Please sign in again."
 msgstr "Het aanmeldformulier was verlopen. Meld u opnieuw aan."
 
@@ -195,210 +195,210 @@ msgstr "Stel voor het reservefonds een bijdrage per uur óf per maand in, niet b
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Dit GPS-bestand bevat te veel punten om te importeren (meer dan %(n)s). Splits de opname op in meerdere bestanden."
 
-#: app/aircraft/routes.py:532
+#: app/aircraft/routes.py:533
 msgid "Registration is required."
 msgstr "Kenteken is verplicht."
 
-#: app/aircraft/routes.py:538
+#: app/aircraft/routes.py:539
 #, python-format
 msgid "%(reg)s is already used by another aircraft in this hangar (registrations that only differ by spaces or slashes still count as the same, since they'd otherwise share a URL)."
 msgstr "%(reg)s wordt al gebruikt door een ander vliegtuig in deze hangar (registraties die alleen verschillen door spaties of schuine strepen worden als identiek beschouwd, aangezien ze anders dezelfde URL zouden delen)."
 
-#: app/aircraft/routes.py:545 app/aircraft/routes.py:1356
+#: app/aircraft/routes.py:546 app/aircraft/routes.py:1357
 msgid "Manufacturer is required."
 msgstr "Fabrikant is verplicht."
 
-#: app/aircraft/routes.py:547 app/aircraft/routes.py:1358
+#: app/aircraft/routes.py:548 app/aircraft/routes.py:1359
 msgid "Model is required."
 msgstr "Model is verplicht."
 
-#: app/aircraft/routes.py:555
+#: app/aircraft/routes.py:556
 msgid "Year must be a valid 4-digit year."
 msgstr "Jaar moet een geldig 4-cijferig jaar zijn."
 
-#: app/aircraft/routes.py:564
+#: app/aircraft/routes.py:565
 msgid "Flight counter offset must be a non-negative number."
 msgstr "Vluchtteller-offset moet een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:573
+#: app/aircraft/routes.py:574
 msgid "Fuel consumption must be a non-negative number."
 msgstr "Brandstofverbruik moet een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:582
+#: app/aircraft/routes.py:583
 msgid "Overhaul reserve accrual must be a non-negative number."
 msgstr "De reservering voor revisie moet een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:592
+#: app/aircraft/routes.py:593
 msgid "Oil consumption warning threshold must be a non-negative number."
 msgstr "De waarschuwingsdrempel voor olieverbruik moet een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:610
+#: app/aircraft/routes.py:611
 msgid "Fuel tank capacity must be a positive number."
 msgstr "De brandstoftankcapaciteit moet een positief getal zijn."
 
-#: app/aircraft/routes.py:660
+#: app/aircraft/routes.py:661
 #, python-format
 msgid "%(reg)s saved."
 msgstr "%(reg)s opgeslagen."
 
-#: app/aircraft/routes.py:732
+#: app/aircraft/routes.py:733
 msgid "Ownership updated."
 msgstr "Eigendom bijgewerkt."
 
-#: app/aircraft/routes.py:935 app/config/routes.py:1678
+#: app/aircraft/routes.py:936 app/config/routes.py:1683
 msgid "Payment amount must be positive."
 msgstr "Het betalingsbedrag moet positief zijn."
 
-#: app/aircraft/routes.py:938 app/config/routes.py:1681
+#: app/aircraft/routes.py:939 app/config/routes.py:1686
 msgid "Invalid payment amount."
 msgstr "Ongeldig betalingsbedrag."
 
-#: app/aircraft/routes.py:945 app/config/routes.py:1688
+#: app/aircraft/routes.py:946 app/config/routes.py:1693
 msgid "Invalid payment date."
 msgstr "Ongeldige betalingsdatum."
 
-#: app/aircraft/routes.py:956
+#: app/aircraft/routes.py:957
 #, python-format
 msgid "Payment — %(note)s"
 msgstr "Betaling — %(note)s"
 
-#: app/aircraft/routes.py:956
+#: app/aircraft/routes.py:957
 msgid "Payment"
 msgstr "Betaling"
 
-#: app/aircraft/routes.py:967 app/config/routes.py:1711
+#: app/aircraft/routes.py:968 app/config/routes.py:1716
 msgid "Payment recorded."
 msgstr "Betaling geregistreerd."
 
-#: app/aircraft/routes.py:997
+#: app/aircraft/routes.py:998
 msgid "Payment reversed"
 msgstr "Betaling teruggedraaid"
 
-#: app/aircraft/routes.py:999
+#: app/aircraft/routes.py:1000
 msgid "Entry reversed."
 msgstr "Boeking teruggedraaid."
 
-#: app/aircraft/routes.py:1049
+#: app/aircraft/routes.py:1050
 msgid "Valuation snapshot recorded."
 msgstr "Waarderingsmoment vastgelegd."
 
-#: app/aircraft/routes.py:1196
+#: app/aircraft/routes.py:1197
 #, python-format
 msgid "%(reg)s has been archived — its history stays available, but it no longer appears in the active fleet."
 msgstr "%(reg)s is gearchiveerd — de geschiedenis blijft beschikbaar, maar het toestel verschijnt niet langer in de actieve vloot."
 
-#: app/aircraft/routes.py:1214
+#: app/aircraft/routes.py:1215
 #, python-format
 msgid "%(reg)s is back in the active fleet."
 msgstr "%(reg)s is terug in de actieve vloot."
 
-#: app/aircraft/routes.py:1239
+#: app/aircraft/routes.py:1240
 #, python-format
 msgid "%(reg)s and all its components have been deleted."
 msgstr "%(reg)s en alle onderdelen zijn verwijderd."
 
-#: app/aircraft/routes.py:1284
+#: app/aircraft/routes.py:1285
 #, python-format
 msgid "Engine and propeller added — fill in the details when ready."
 msgid_plural "%(n)s engines and propellers added — fill in the details when ready."
 msgstr[0] "Motor en propeller toegevoegd — vul de details in wanneer u klaar bent."
 msgstr[1] "%(n)s motoren en propellers toegevoegd — vul de details in wanneer u klaar bent."
 
-#: app/aircraft/routes.py:1354
+#: app/aircraft/routes.py:1355
 msgid "Component type is required."
 msgstr "Onderdeeltype is verplicht."
 
-#: app/aircraft/routes.py:1367
+#: app/aircraft/routes.py:1368
 msgid "Time at install must be a positive number."
 msgstr "Uren bij installatie moet een positief getal zijn."
 
-#: app/aircraft/routes.py:1376
+#: app/aircraft/routes.py:1377
 msgid "TBO must be a positive number of hours."
 msgstr "TBO moet een positief aantal uren zijn."
 
-#: app/aircraft/routes.py:1385
+#: app/aircraft/routes.py:1386
 msgid "Last overhaul hours must be a non-negative number."
 msgstr "De uren van de laatste revisie moeten een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:1394 app/refuels/routes.py:69 app/snags/routes.py:68
+#: app/aircraft/routes.py:1395 app/refuels/routes.py:69 app/snags/routes.py:68
 #, python-format
 msgid "%(label)s must be a valid date (YYYY-MM-DD)."
 msgstr "%(label)s moet een geldige datum zijn (JJJJ-MM-DD)."
 
-#: app/aircraft/routes.py:1441
+#: app/aircraft/routes.py:1442
 #, python-format
 msgid "%(make)s %(model)s saved."
 msgstr "%(make)s %(model)s opgeslagen."
 
-#: app/aircraft/routes.py:1465
+#: app/aircraft/routes.py:1466
 #, python-format
 msgid "%(label)s removed."
 msgstr "%(label)s verwijderd."
 
-#: app/aircraft/routes.py:1523
+#: app/aircraft/routes.py:1524
 #, python-format
 msgid "%(field)s must be a positive number."
 msgstr "%(field)s moet een positief getal zijn."
 
-#: app/aircraft/routes.py:1546
+#: app/aircraft/routes.py:1547
 msgid "At least one loading station is required."
 msgstr "Minimaal één laadpunt is vereist."
 
-#: app/aircraft/routes.py:1613
+#: app/aircraft/routes.py:1614
 msgid "W&B configuration saved."
 msgstr "W&B-configuratie opgeslagen."
 
-#: app/aircraft/routes.py:1627 app/aircraft/routes.py:1651
+#: app/aircraft/routes.py:1628 app/aircraft/routes.py:1652
 msgid "Configure W&B envelope first."
 msgstr "Configureer eerst de W&B-envelop."
 
-#: app/aircraft/routes.py:1670
+#: app/aircraft/routes.py:1671
 msgid "A valid date is required."
 msgstr "Een geldige datum is vereist."
 
-#: app/aircraft/routes.py:1685
+#: app/aircraft/routes.py:1686
 #, python-format
 msgid "Volume for %(station)s exceeds tank capacity."
 msgstr "Het volume voor %(station)s overschrijdt de tankinhoud."
 
-#: app/aircraft/routes.py:1693
+#: app/aircraft/routes.py:1694
 #, python-format
 msgid "Volume for %(station)s must be a non-negative number."
 msgstr "Het volume voor %(station)s moet een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:1707
+#: app/aircraft/routes.py:1708
 #, python-format
 msgid "Weight for %(station)s must be a non-negative number."
 msgstr "Het gewicht voor %(station)s moet een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:1756
+#: app/aircraft/routes.py:1757
 msgid "W&B calculation saved."
 msgstr "W&B-berekening opgeslagen."
 
-#: app/aircraft/routes.py:1785
+#: app/aircraft/routes.py:1786
 msgid "W&B calculation deleted."
 msgstr "W&B-berekening verwijderd."
 
-#: app/aircraft/routes.py:2098 app/pilots/routes.py:2408
+#: app/aircraft/routes.py:2099 app/pilots/routes.py:2411
 msgid "Please select at least one GPS log file."
 msgstr "Selecteer ten minste één GPS-logbestand."
 
-#: app/aircraft/routes.py:2114 app/pilots/routes.py:2437
+#: app/aircraft/routes.py:2115 app/pilots/routes.py:2440
 #, python-format
 msgid "%(fn)s: unsupported file type (use .gpx, .kml or .csv — SkyDemon's .gpx.bin exports work too)."
 msgstr "%(fn)s: niet-ondersteund bestandstype (gebruik .gpx, .kml of .csv — de .gpx.bin-exports van SkyDemon werken ook)."
 
-#: app/aircraft/routes.py:2122 app/pilots/routes.py:2444
+#: app/aircraft/routes.py:2123 app/pilots/routes.py:2447
 #, python-format
 msgid "%(fn)s: file too large (20 MB limit)."
 msgstr "%(fn)s: bestand te groot (limiet 20 MB)."
 
-#: app/aircraft/routes.py:2133 app/pilots/routes.py:2454
+#: app/aircraft/routes.py:2134 app/pilots/routes.py:2457
 #, python-format
 msgid "%(fn)s: %(err)s"
 msgstr "%(fn)s: %(err)s"
 
-#: app/aircraft/routes.py:2171 app/pilots/routes.py:2484
+#: app/aircraft/routes.py:2172 app/pilots/routes.py:2487
 #: app/templates/aircraft/gps_import_review.html:25
 #: app/templates/pilots/gps_import_review.html:24
 #, python-format
@@ -407,182 +407,182 @@ msgid_plural "%(n)s files skipped — no movement detected."
 msgstr[0] "één bestand overgeslagen — geen beweging gedetecteerd."
 msgstr[1] "%(n)s bestanden overgeslagen — geen beweging gedetecteerd."
 
-#: app/aircraft/routes.py:2180 app/pilots/routes.py:2492
+#: app/aircraft/routes.py:2181 app/pilots/routes.py:2495
 msgid "No valid GPS files to import."
 msgstr "Geen geldige GPS-bestanden om te importeren."
 
-#: app/aircraft/routes.py:2228 app/pilots/routes.py:2581
+#: app/aircraft/routes.py:2229 app/pilots/routes.py:2584
 #, python-format
 msgid "Could not read %(fn)s — please upload again."
 msgstr "Kan %(fn)s niet lezen — upload het bestand opnieuw."
 
-#: app/aircraft/routes.py:2522 app/aircraft/routes.py:2902
-#: app/aircraft/routes.py:3049 app/aircraft/routes.py:3114
-#: app/pilots/routes.py:2670 app/pilots/routes.py:2761
-#: app/pilots/routes.py:3038
+#: app/aircraft/routes.py:2523 app/aircraft/routes.py:2903
+#: app/aircraft/routes.py:3050 app/aircraft/routes.py:3115
+#: app/pilots/routes.py:2673 app/pilots/routes.py:2764
+#: app/pilots/routes.py:3041
 msgid "Session expired — please upload your GPS files again."
 msgstr "Sessie verlopen — upload uw GPS-bestanden opnieuw."
 
-#: app/aircraft/routes.py:2907 app/pilots/routes.py:3043
+#: app/aircraft/routes.py:2908 app/pilots/routes.py:3046
 msgid "No segments to import."
 msgstr "Geen segmenten om te importeren."
 
-#: app/aircraft/routes.py:2913 app/aircraft/routes.py:2917
-#: app/aircraft/routes.py:3119 app/pilots/routes.py:3049
-#: app/pilots/routes.py:3053
+#: app/aircraft/routes.py:2914 app/aircraft/routes.py:2918
+#: app/aircraft/routes.py:3120 app/pilots/routes.py:3052
+#: app/pilots/routes.py:3056
 msgid "Invalid segment index."
 msgstr "Ongeldig segmentindex."
 
-#: app/aircraft/routes.py:2922 app/pilots/routes.py:3058
+#: app/aircraft/routes.py:2923 app/pilots/routes.py:3061
 msgid "This segment has already been confirmed."
 msgstr "Dit segment is al bevestigd."
 
-#: app/aircraft/routes.py:2941 app/aircraft/routes.py:3008
-#: app/pilots/routes.py:3078 app/pilots/routes.py:3119
+#: app/aircraft/routes.py:2942 app/aircraft/routes.py:3009
+#: app/pilots/routes.py:3081 app/pilots/routes.py:3122
 #, python-format
 msgid "one flight imported successfully."
 msgid_plural "%(n)s flights imported successfully."
 msgstr[0] "één vlucht succesvol geïmporteerd."
 msgstr[1] "%(n)s vluchten succesvol geïmporteerd."
 
-#: app/aircraft/routes.py:2950 app/aircraft/routes.py:3019
-#: app/pilots/routes.py:3087
+#: app/aircraft/routes.py:2951 app/aircraft/routes.py:3020
+#: app/pilots/routes.py:3090
 #, python-format
 msgid "one segment skipped."
 msgid_plural "%(n)s segments skipped."
 msgstr[0] "één segment overgeslagen."
 msgstr[1] "%(n)s segmenten overgeslagen."
 
-#: app/aircraft/routes.py:2963 app/pilots/routes.py:3097
+#: app/aircraft/routes.py:2964 app/pilots/routes.py:3100
 msgid "Segment skipped."
 msgstr "Segment overgeslagen."
 
-#: app/aircraft/routes.py:3030 app/pilots/routes.py:3128
+#: app/aircraft/routes.py:3031 app/pilots/routes.py:3131
 msgid "Flight confirmed."
 msgstr "Vlucht bevestigd."
 
-#: app/aircraft/routes.py:3086 app/pilots/routes.py:2789
+#: app/aircraft/routes.py:3087 app/pilots/routes.py:2792
 #, python-format
 msgid "One flight linked to its GPS track."
 msgid_plural "%(n)d flights linked to their GPS tracks."
 msgstr[0] "Eén vlucht gekoppeld aan haar GPS-spoor."
 msgstr[1] "%(n)d vluchten gekoppeld aan hun GPS-sporen."
 
-#: app/aircraft/routes.py:3181
+#: app/aircraft/routes.py:3182
 msgid "No original GPS files are kept for this aircraft yet."
 msgstr "Voor dit vliegtuig zijn nog geen originele gps-bestanden bewaard."
 
-#: app/aircraft/routes.py:3243
+#: app/aircraft/routes.py:3244
 #, python-format
 msgid "Import undone: the flights it created are deleted and the GPS tracks it added removed. Their files are kept for one day in the removed GPS files."
 msgid_plural "Import undone: the flights it created are deleted and the GPS tracks it added removed. Their files are kept for %(n)s days in the removed GPS files."
 msgstr[0] "Import ongedaan gemaakt: de vluchten die hij aanmaakte zijn verwijderd en de GPS-tracks die hij toevoegde weggehaald. Hun bestanden worden één dag bewaard bij de weggehaalde GPS-bestanden."
 msgstr[1] "Import ongedaan gemaakt: de vluchten die hij aanmaakte zijn verwijderd en de GPS-tracks die hij toevoegde weggehaald. Hun bestanden worden %(n)s dagen bewaard bij de weggehaalde GPS-bestanden."
 
-#: app/aircraft/routes.py:3533
+#: app/aircraft/routes.py:3534
 msgid "No files selected."
 msgstr "Geen bestanden geselecteerd."
 
-#: app/aircraft/routes.py:3553
+#: app/aircraft/routes.py:3554
 #, python-format
 msgid "%(name)s: unsupported format (use JPEG, PNG, WEBP or HEIC)."
 msgstr "%(name)s: niet-ondersteund formaat (gebruik JPEG, PNG, WEBP of HEIC)."
 
-#: app/aircraft/routes.py:3575
+#: app/aircraft/routes.py:3576
 #, python-format
 msgid "one photo uploaded."
 msgid_plural "%(n)s photos uploaded."
 msgstr[0] "één foto geüpload."
 msgstr[1] "%(n)s foto's geüpload."
 
-#: app/aircraft/routes.py:3654
+#: app/aircraft/routes.py:3655
 msgid "Photo deleted."
 msgstr "Foto verwijderd."
 
-#: app/airworthiness/routes.py:236
+#: app/airworthiness/routes.py:237
 #, python-format
 msgid "Sync completed with errors on one node. Check logs."
 msgid_plural "Sync completed with errors on %(n)s nodes. Check logs."
 msgstr[0] "Synchronisatie voltooid met fouten op één knooppunt. Controleer de logboeken."
 msgstr[1] "Synchronisatie voltooid met fouten op %(n)s knooppunten. Controleer de logboeken."
 
-#: app/airworthiness/routes.py:246
+#: app/airworthiness/routes.py:247
 #, python-format
 msgid "One new document discovered."
 msgid_plural "%(n)s new documents discovered."
 msgstr[0] "Één nieuw document ontdekt."
 msgstr[1] "%(n)s nieuwe documenten ontdekt."
 
-#: app/airworthiness/routes.py:254
+#: app/airworthiness/routes.py:255
 msgid "No new documents found."
 msgstr "Geen nieuwe documenten gevonden."
 
-#: app/airworthiness/routes.py:288
+#: app/airworthiness/routes.py:289
 msgid "EASA source node added."
 msgstr "EASA-knooppunt toegevoegd."
 
-#: app/airworthiness/routes.py:311
+#: app/airworthiness/routes.py:312
 msgid "EASA source node removed."
 msgstr "EASA-knooppunt verwijderd."
 
-#: app/airworthiness/routes.py:355
+#: app/airworthiness/routes.py:356
 msgid "Document added."
 msgstr "Document toegevoegd."
 
-#: app/airworthiness/routes.py:376
+#: app/airworthiness/routes.py:377
 msgid "Only manually added documents can be deleted."
 msgstr "Alleen handmatig toegevoegde documenten kunnen worden verwijderd."
 
-#: app/airworthiness/routes.py:380 app/documents/routes.py:722
-#: app/documents/routes.py:946
+#: app/airworthiness/routes.py:381 app/documents/routes.py:724
+#: app/documents/routes.py:948
 msgid "Document deleted."
 msgstr "Document verwijderd."
 
-#: app/airworthiness/routes.py:419
+#: app/airworthiness/routes.py:420
 msgid "Status updated."
 msgstr "Status bijgewerkt."
 
-#: app/airworthiness/routes.py:455
+#: app/airworthiness/routes.py:456
 msgid "Installed STC added."
 msgstr "Geïnstalleerde STC toegevoegd."
 
-#: app/airworthiness/routes.py:472
+#: app/airworthiness/routes.py:473
 msgid "Installed STC removed."
 msgstr "Geïnstalleerde STC verwijderd."
 
-#: app/airworthiness/routes.py:519
+#: app/airworthiness/routes.py:520
 msgid "AD/SB item added."
 msgstr "AD/SB-item toegevoegd."
 
-#: app/airworthiness/routes.py:546
+#: app/airworthiness/routes.py:547
 msgid "AD/SB item updated."
 msgstr "AD/SB-item bijgewerkt."
 
-#: app/airworthiness/routes.py:565
+#: app/airworthiness/routes.py:566
 msgid "AD/SB item removed."
 msgstr "AD/SB-item verwijderd."
 
-#: app/airworthiness/routes.py:632
+#: app/airworthiness/routes.py:633
 msgid "Equipment unit added."
 msgstr "Uitrustingsonderdeel toegevoegd."
 
-#: app/airworthiness/routes.py:669
+#: app/airworthiness/routes.py:670
 msgid "Equipment unit updated."
 msgstr "Uitrustingsonderdeel bijgewerkt."
 
-#: app/airworthiness/routes.py:693
+#: app/airworthiness/routes.py:694
 msgid "Equipment unit removed."
 msgstr "Uitrustingsonderdeel verwijderd."
 
-#: app/airworthiness/routes.py:715
+#: app/airworthiness/routes.py:716
 msgid "Estimated cost must be a non-negative number."
 msgstr "Geschatte kosten moeten een niet-negatief getal zijn."
 
-#: app/airworthiness/routes.py:726
+#: app/airworthiness/routes.py:727
 msgid "Wish-list item added."
 msgstr "Verlanglijst-item toegevoegd."
 
-#: app/airworthiness/routes.py:745
+#: app/airworthiness/routes.py:746
 msgid "Wish-list item removed."
 msgstr "Verlanglijst-item verwijderd."
 
@@ -711,310 +711,310 @@ msgstr "Gebruiker niet gevonden."
 msgid "Password reset successfully. You can now log in."
 msgstr "Wachtwoord succesvol opnieuw ingesteld. U kunt nu inloggen."
 
-#: app/config/routes.py:150
+#: app/config/routes.py:153
 msgid "Another backup is already running. Try again in a moment."
 msgstr "Er loopt al een andere back-up. Probeer het zo meteen opnieuw."
 
-#: app/config/routes.py:533
+#: app/config/routes.py:536
 msgid "Production"
 msgstr "Productie"
 
-#: app/config/routes.py:534
+#: app/config/routes.py:537
 msgid "Development"
 msgstr "Ontwikkeling"
 
-#: app/config/routes.py:535
+#: app/config/routes.py:538
 msgid "Test"
 msgstr "Test"
 
-#: app/config/routes.py:605
+#: app/config/routes.py:608
 msgid "Hangar ID cannot be empty."
 msgstr "Het hangar-ID mag niet leeg zijn."
 
-#: app/config/routes.py:610
+#: app/config/routes.py:613
 msgid "Hangar ID must contain at least one letter or digit."
 msgstr "Het hangar-ID moet minimaal één letter of cijfer bevatten."
 
-#: app/config/routes.py:615
+#: app/config/routes.py:618
 msgid "That Hangar ID is already in use. Please choose another."
 msgstr "Dit hangar-ID is al in gebruik. Kies een ander."
 
-#: app/config/routes.py:658
+#: app/config/routes.py:661
 msgid "Hangar ID saved."
 msgstr "Hangar-ID opgeslagen."
 
-#: app/config/routes.py:674
+#: app/config/routes.py:677
 msgid "OpenAIP API key saved."
 msgstr "OpenAIP API-sleutel opgeslagen."
 
-#: app/config/routes.py:679
+#: app/config/routes.py:682
 msgid "OpenAIP API key removed."
 msgstr "OpenAIP API-sleutel verwijderd."
 
-#: app/config/routes.py:689
+#: app/config/routes.py:692
 #, python-format
 msgid "Backup completed: %(filename)s"
 msgstr "Back-up voltooid: %(filename)s"
 
-#: app/config/routes.py:691
+#: app/config/routes.py:694
 #, python-format
 msgid "Backup failed: %(error)s"
 msgstr "Back-up mislukt: %(error)s"
 
-#: app/config/routes.py:718
+#: app/config/routes.py:721
 msgid "Invalid operating model."
 msgstr "Ongeldig exploitatiemodel."
 
-#: app/config/routes.py:749
+#: app/config/routes.py:754
 msgid "Usage profile updated."
 msgstr "Gebruiksprofiel bijgewerkt."
 
-#: app/config/routes.py:777
+#: app/config/routes.py:782
 #, python-format
 msgid "Test email sent to %(email)s."
 msgstr "Test-e-mail verzonden naar %(email)s."
 
-#: app/config/routes.py:779
+#: app/config/routes.py:784
 #, python-format
 msgid "Email not configured: %(error)s"
 msgstr "E-mail niet geconfigureerd: %(error)s"
 
-#: app/config/routes.py:781
+#: app/config/routes.py:786
 #, python-format
 msgid "Email send failed: %(error)s"
 msgstr "Verzenden van e-mail mislukt: %(error)s"
 
-#: app/config/routes.py:814
+#: app/config/routes.py:819
 msgid "Version check refreshed."
 msgstr "Versiecontrole vernieuwd."
 
-#: app/config/routes.py:887
+#: app/config/routes.py:892
 msgid "An upgrade is already in progress."
 msgstr "Er is al een update bezig."
 
-#: app/config/routes.py:890
+#: app/config/routes.py:895
 msgid "Upgrade already triggered."
 msgstr "Update al geactiveerd."
 
-#: app/config/routes.py:902
+#: app/config/routes.py:907
 #, python-format
 msgid "Pre-upgrade backup failed, upgrade not triggered: %(error)s"
 msgstr "Backup vóór de upgrade is mislukt, upgrade niet gestart: %(error)s"
 
-#: app/config/routes.py:915
+#: app/config/routes.py:920
 #, python-format
 msgid "Backup created (%(filename)s). Upgrade triggered — the service will restart shortly."
 msgstr "Backup aangemaakt (%(filename)s). Upgrade gestart — de service wordt binnenkort opnieuw gestart."
 
-#: app/config/routes.py:1014
+#: app/config/routes.py:1019
 msgid "Tenant name is required."
 msgstr "Naam van de huurder is verplicht."
 
-#: app/config/routes.py:1017
+#: app/config/routes.py:1022
 msgid "Admin email is required."
 msgstr "E-mail van de beheerder is verplicht."
 
-#: app/config/routes.py:1048
+#: app/config/routes.py:1053
 #, python-format
 msgid "Tenant '%(name)s' created. Share this invite link with the owner: %(url)s"
 msgstr "Omgeving '%(name)s' aangemaakt. Deel deze uitnodigingslink met de eigenaar: %(url)s"
 
-#: app/config/routes.py:1074
+#: app/config/routes.py:1079
 #, python-format
 msgid "Tenant '%(name)s' reactivated."
 msgstr "Huurder '%(name)s' geheractiveerd."
 
-#: app/config/routes.py:1076
+#: app/config/routes.py:1081
 #, python-format
 msgid "Tenant '%(name)s' deactivated."
 msgstr "Huurder '%(name)s' gedeactiveerd."
 
-#: app/config/routes.py:1102
+#: app/config/routes.py:1107
 msgid "No user selected."
 msgstr "Geen gebruiker geselecteerd."
 
-#: app/config/routes.py:1173
+#: app/config/routes.py:1178
 msgid "Cannot save: no tenant associated."
 msgstr "Kan niet opslaan: geen groep gekoppeld."
 
-#: app/config/routes.py:1211
+#: app/config/routes.py:1216
 msgid "Notification preferences saved."
 msgstr "Meldingsvoorkeuren opgeslagen."
 
-#: app/config/routes.py:1294
+#: app/config/routes.py:1299
 #, python-format
 msgid "Back-fill complete: one of %(total)d entry resolved."
 msgid_plural "Back-fill complete: %(updated)d of %(total)d entries resolved."
 msgstr[0] "Aanvulling voltooid: één van %(total)d vermelding opgelost."
 msgstr[1] "Aanvulling voltooid: %(updated)d van %(total)d vermeldingen opgelost."
 
-#: app/config/routes.py:1330
+#: app/config/routes.py:1335
 #, python-format
 msgid "Back-fill complete: %(count)d entry linked to a managed aircraft."
 msgid_plural "Back-fill complete: %(count)d entries linked to a managed aircraft."
 msgstr[0] "Aanvulling voltooid: %(count)d vermelding gekoppeld aan een beheerd vliegtuig."
 msgstr[1] "Aanvulling voltooid: %(count)d vermeldingen gekoppeld aan een beheerd vliegtuig."
 
-#: app/config/routes.py:1462
+#: app/config/routes.py:1467
 msgid "Select a valid renter."
 msgstr "Selecteer een geldige huurder."
 
-#: app/config/routes.py:1469 app/config/routes.py:1474
+#: app/config/routes.py:1474 app/config/routes.py:1479
 msgid "Invalid aircraft selection."
 msgstr "Ongeldige toestelselectie."
 
-#: app/config/routes.py:1477
+#: app/config/routes.py:1482
 msgid "Granted date is required and must be a valid date."
 msgstr "De toekenningsdatum is verplicht en moet een geldige datum zijn."
 
-#: app/config/routes.py:1479
+#: app/config/routes.py:1484
 msgid "Expiry date cannot be before the granted date."
 msgstr "De vervaldatum mag niet vóór de toekenningsdatum liggen."
 
-#: app/config/routes.py:1493
+#: app/config/routes.py:1498
 msgid "This file type is not allowed for the rental agreement."
 msgstr "Dit bestandstype is niet toegestaan voor het huurcontract."
 
-#: app/config/routes.py:1537
+#: app/config/routes.py:1542
 msgid "Rental agreement"
 msgstr "Huurcontract"
 
-#: app/config/routes.py:1543
+#: app/config/routes.py:1548
 msgid "Renter authorization saved."
 msgstr "Huurautorisatie opgeslagen."
 
-#: app/config/routes.py:1589
+#: app/config/routes.py:1594
 msgid "Renter authorization revoked."
 msgstr "Huurautorisatie ingetrokken."
 
-#: app/config/routes.py:1705
+#: app/config/routes.py:1710
 msgid "Payment received"
 msgstr "Betaling ontvangen"
 
-#: app/config/routes.py:1821
+#: app/config/routes.py:1826
 msgid "Every flight with a GPS track was checked again."
 msgstr "Elke vlucht met een GPS-spoor is opnieuw gecontroleerd."
 
-#: app/config/routes.py:1850
+#: app/config/routes.py:1855
 msgid "This difference no longer applies."
 msgstr "Dit verschil is niet meer van toepassing."
 
-#: app/config/routes.py:1861
+#: app/config/routes.py:1866
 #, python-format
 msgid "Flight corrected: %(old)s → %(new)s. Nothing else was changed; the flight's notes record the paper logbook value."
 msgstr "Vlucht gecorrigeerd: %(old)s → %(new)s. Verder is niets gewijzigd; de notities van de vlucht vermelden de waarde uit het papieren logboek."
 
-#: app/config/routes.py:1897
+#: app/config/routes.py:1902
 msgid "Difference dismissed."
 msgstr "Verschil terzijde gelegd."
 
-#: app/documents/routes.py:82 app/templates/pilots/profile.html:233
+#: app/documents/routes.py:84 app/templates/pilots/profile.html:233
 msgid "Licence"
 msgstr "Bewijs"
 
-#: app/documents/routes.py:83 app/services/notification_service.py:761
+#: app/documents/routes.py:85 app/services/notification_service.py:761
 msgid "Medical certificate"
 msgstr "Medisch certificaat"
 
-#: app/documents/routes.py:87 app/documents/routes.py:832
+#: app/documents/routes.py:89 app/documents/routes.py:834
 msgid "Insurance Certificate"
 msgstr "Verzekeringscertificaat"
 
-#: app/documents/routes.py:88
+#: app/documents/routes.py:90
 msgid "Airworthiness Review Certificate (ARC)"
 msgstr "Certificaat van beoordeling van luchtwaardigheid (ARC)"
 
-#: app/documents/routes.py:97
+#: app/documents/routes.py:99
 msgid "No type set"
 msgstr "Geen type ingesteld"
 
-#: app/documents/routes.py:551 app/documents/routes.py:784
-#: app/documents/routes.py:889 app/flights/routes.py:2340
-#: app/maintenance/routes.py:859 app/pilots/routes.py:1406
+#: app/documents/routes.py:553 app/documents/routes.py:786
+#: app/documents/routes.py:891 app/flights/routes.py:2343
+#: app/maintenance/routes.py:859 app/pilots/routes.py:1409
 msgid "Please select a file to upload."
 msgstr "Selecteer een bestand om te uploaden."
 
-#: app/documents/routes.py:557 app/documents/routes.py:790
-#: app/documents/routes.py:896
+#: app/documents/routes.py:559 app/documents/routes.py:792
+#: app/documents/routes.py:898
 #, python-format
 msgid "File type '%(ext)s' is not allowed."
 msgstr "Bestandstype '%(ext)s' is niet toegestaan."
 
-#: app/documents/routes.py:561 app/documents/routes.py:669
-#: app/documents/routes.py:796 app/documents/routes.py:900
+#: app/documents/routes.py:563 app/documents/routes.py:671
+#: app/documents/routes.py:798 app/documents/routes.py:902
 msgid "'Valid from' must not be after 'Valid until'."
 msgstr "'Geldig vanaf' mag niet later zijn dan 'Geldig tot'."
 
-#: app/documents/routes.py:608 app/documents/routes.py:924
+#: app/documents/routes.py:610 app/documents/routes.py:926
 #: app/pwa/routes.py:345
 msgid "Document uploaded."
 msgstr "Document geüpload."
 
-#: app/documents/routes.py:686
+#: app/documents/routes.py:688
 msgid "Document updated."
 msgstr "Document bijgewerkt."
 
-#: app/documents/routes.py:818
+#: app/documents/routes.py:820
 msgid "Certificate uploaded."
 msgstr "Certificaat geüpload."
 
-#: app/documents/routes.py:846
+#: app/documents/routes.py:848
 msgid "Airworthiness Review Certificate"
 msgstr "Certificaat van beoordeling van luchtwaardigheid"
 
-#: app/documents/routes.py:1008
+#: app/documents/routes.py:1010
 msgid "Set a Hangar ID in Settings before scanning for files."
 msgstr "Stel een hangar-ID in via Instellingen voor het scannen van bestanden."
 
-#: app/documents/routes.py:1015
+#: app/documents/routes.py:1017
 #, python-format
 msgid "No files found in '%(slug)s/'. Mount your Syncthing folder and try again."
 msgstr "Geen bestanden gevonden in '%(slug)s/'. Koppel uw Syncthing-map en probeer opnieuw."
 
-#: app/documents/routes.py:1096
+#: app/documents/routes.py:1098
 #, python-format
 msgid "one new file queued for review"
 msgid_plural "%(n)s new files queued for review"
 msgstr[0] "één nieuw bestand in wachtrij voor beoordeling"
 msgstr[1] "%(n)s nieuwe bestanden in wachtrij voor beoordeling"
 
-#: app/documents/routes.py:1105
+#: app/documents/routes.py:1107
 #, python-format
 msgid "one missing file removed from queue"
 msgid_plural "%(n)s missing files removed from queue"
 msgstr[0] "één ontbrekend bestand uit de wachtrij verwijderd"
 msgstr[1] "%(n)s ontbrekende bestanden uit de wachtrij verwijderd"
 
-#: app/documents/routes.py:1113
+#: app/documents/routes.py:1115
 #, python-format
 msgid "Scan complete — %(details)s."
 msgstr "Scan voltooid — %(details)s."
 
-#: app/documents/routes.py:1116
+#: app/documents/routes.py:1118
 msgid "Scan complete — no new files found."
 msgstr "Scan voltooid — geen nieuwe bestanden gevonden."
 
-#: app/documents/routes.py:1137
+#: app/documents/routes.py:1139
 msgid "Invalid category."
 msgstr "Ongeldige categorie."
 
-#: app/documents/routes.py:1237
+#: app/documents/routes.py:1239
 #, python-format
 msgid "Folder renamed to '%(cat)s' — one file processed."
 msgid_plural "Folder renamed to '%(cat)s' — %(n)s files processed."
 msgstr[0] "Map hernoemd naar '%(cat)s' — één bestand verwerkt."
 msgstr[1] "Map hernoemd naar '%(cat)s' — %(n)s bestanden verwerkt."
 
-#: app/documents/routes.py:1300
+#: app/documents/routes.py:1302
 msgid "Document imported."
 msgstr "Document geïmporteerd."
 
-#: app/documents/routes.py:1314
+#: app/documents/routes.py:1316
 msgid "File ignored."
 msgstr "Bestand genegeerd."
 
 #: app/expenses/form_parsing.py:54 app/flights/form_parsing.py:104
-#: app/flights/shared_flight.py:181 app/pilots/form_parsing.py:122
+#: app/flights/shared_flight.py:181 app/pilots/form_parsing.py:125
 msgid "Date is required."
 msgstr "Datum is verplicht."
 
@@ -1078,23 +1078,23 @@ msgstr "Ongeldig formaat voor de einddatum van de herhaling."
 msgid "The recurrence end date must not be before the expense date."
 msgstr "De einddatum van de herhaling mag niet vóór de datum van de uitgave liggen."
 
-#: app/expenses/routes.py:228
+#: app/expenses/routes.py:226
 msgid "Expense recorded."
 msgstr "Uitgave geregistreerd."
 
-#: app/expenses/routes.py:264
+#: app/expenses/routes.py:262
 msgid "Expense updated."
 msgstr "Uitgave bijgewerkt."
 
-#: app/expenses/routes.py:294
+#: app/expenses/routes.py:292
 msgid "Expense deleted."
 msgstr "Uitgave verwijderd."
 
-#: app/expenses/routes.py:327
+#: app/expenses/routes.py:325
 msgid "This file type is not allowed for receipts."
 msgstr "Dit bestandstype is niet toegestaan voor bewijsstukken."
 
-#: app/expenses/routes.py:375
+#: app/expenses/routes.py:373
 #, python-format
 msgid "Expense receipt %(date)s"
 msgstr "Bewijsstuk uitgave %(date)s"
@@ -1237,7 +1237,7 @@ msgstr "Datum"
 msgid "Route"
 msgstr "Route"
 
-#: app/flights/crew_invites.py:496 app/reports/routes.py:115
+#: app/flights/crew_invites.py:496 app/reports/routes.py:113
 #: app/reservations/routes.py:817 app/reservations/routes.py:931
 #: app/reservations/routes.py:1234 app/services/notification_service.py:545
 #: app/services/notification_service.py:575
@@ -1371,339 +1371,339 @@ msgstr "De olie toegevoegd voor de vlucht moet een positief getal zijn."
 msgid "Oil added after the flight must be a non-negative number."
 msgstr "De olie toegevoegd na de vlucht moet een positief getal zijn."
 
-#: app/flights/routes.py:160
+#: app/flights/routes.py:163
 #, python-format
 msgid "One subtotal row skipped."
 msgid_plural "%(n)d subtotal rows skipped."
 msgstr[0] "Eén subtotaalrij overgeslagen."
 msgstr[1] "%(n)d subtotaalrijen overgeslagen."
 
-#: app/flights/routes.py:169
+#: app/flights/routes.py:172
 #, python-format
 msgid "One row could not be parsed."
 msgid_plural "%(n)d rows could not be parsed."
 msgstr[0] "Eén rij kon niet worden gelezen."
 msgstr[1] "%(n)d rijen konden niet worden gelezen."
 
-#: app/flights/routes.py:209
+#: app/flights/routes.py:212
 #, python-format
 msgid "🎉 You just crossed %(hours)s flight hours!"
 msgstr "🎉 Je hebt zojuist %(hours)s vlieguren overschreden!"
 
-#: app/flights/routes.py:958
+#: app/flights/routes.py:961
 msgid "Your part of this flight was saved."
 msgstr "Uw deel van deze vlucht is opgeslagen."
 
-#: app/flights/routes.py:966
+#: app/flights/routes.py:969
 msgid "Nothing to suggest — the values are unchanged."
 msgstr "Niets voor te stellen — de waarden zijn ongewijzigd."
 
-#: app/flights/routes.py:976
+#: app/flights/routes.py:979
 msgid "Correction sent. It is applied once the pilot who logged this flight accepts it."
 msgstr "Correctie verzonden. Ze wordt toegepast zodra de piloot die deze vlucht logde ze aanvaardt."
 
-#: app/flights/routes.py:1030 app/flights/routes.py:1048
+#: app/flights/routes.py:1033 app/flights/routes.py:1051
 msgid "This correction has already been handled."
 msgstr "Deze correctie is al behandeld."
 
-#: app/flights/routes.py:1038
+#: app/flights/routes.py:1041
 msgid "Correction applied to the flight."
 msgstr "Correctie toegepast op de vlucht."
 
-#: app/flights/routes.py:1053
+#: app/flights/routes.py:1056
 msgid "Correction rejected."
 msgstr "Correctie geweigerd."
 
-#: app/flights/routes.py:1092 app/flights/routes.py:1118
+#: app/flights/routes.py:1095 app/flights/routes.py:1121
 msgid "This request has already been handled."
 msgstr "Dit verzoek is al behandeld."
 
-#: app/flights/routes.py:1101
+#: app/flights/routes.py:1104
 #, python-format
 msgid "%(name)s was added to the flight."
 msgstr "%(name)s is aan de vlucht toegevoegd."
 
-#: app/flights/routes.py:1106
+#: app/flights/routes.py:1109
 msgid "That crew position has already been filled — nothing to approve."
 msgstr "Die bemanningsplaats is al ingevuld — er valt niets goed te keuren."
 
-#: app/flights/routes.py:1123
+#: app/flights/routes.py:1126
 msgid "Request declined."
 msgstr "Verzoek geweigerd."
 
-#: app/flights/routes.py:1141 app/flights/routes.py:1164
+#: app/flights/routes.py:1144 app/flights/routes.py:1167
 msgid "This flight invitation is no longer open."
 msgstr "Deze vluchtuitnodiging staat niet meer open."
 
-#: app/flights/routes.py:1149
+#: app/flights/routes.py:1152
 msgid "Flight confirmed — it's now in your pilot logbook."
 msgstr "Vlucht bevestigd — ze staat nu in uw pilotenlogboek."
 
-#: app/flights/routes.py:1152
+#: app/flights/routes.py:1155
 msgid "This flight's crew slot has already been filled — nothing to confirm."
 msgstr "Deze bemanningsplaats is al ingevuld — er valt niets te bevestigen."
 
-#: app/flights/routes.py:1169
+#: app/flights/routes.py:1172
 msgid "Flight invitation declined."
 msgstr "Vluchtuitnodiging geweigerd."
 
-#: app/flights/routes.py:1480
+#: app/flights/routes.py:1483
 msgid "The flight's GPS track changed meanwhile, so nothing was removed. Check it and try again."
 msgstr "De GPS-track van de vlucht is intussen gewijzigd, dus er is niets weggehaald. Controleer hem en probeer opnieuw."
 
-#: app/flights/routes.py:1496
+#: app/flights/routes.py:1499
 #, python-format
 msgid "GPS file removed from the flight. It's kept for one day in the removed GPS files, where you can restore it."
 msgid_plural "GPS file removed from the flight. It's kept for %(n)s days in the removed GPS files, where you can restore it."
 msgstr[0] "GPS-bestand van de vlucht weggehaald. Het wordt één dag bewaard bij de weggehaalde GPS-bestanden, waar u het kunt terugplaatsen."
 msgstr[1] "GPS-bestand van de vlucht weggehaald. Het wordt %(n)s dagen bewaard bij de weggehaalde GPS-bestanden, waar u het kunt terugplaatsen."
 
-#: app/flights/routes.py:1555
+#: app/flights/routes.py:1558
 msgid "This GPS file can no longer be restored."
 msgstr "Dit GPS-bestand kan niet meer worden teruggeplaatst."
 
-#: app/flights/routes.py:1560
+#: app/flights/routes.py:1563
 msgid "GPS file restored, and its track is back on the flight."
 msgstr "GPS-bestand teruggeplaatst, en de track staat weer bij de vlucht."
 
-#: app/flights/routes.py:1564
+#: app/flights/routes.py:1567
 msgid "GPS file restored to the archive. Its flight no longer exists, so import it again to link it to a flight."
 msgstr "GPS-bestand teruggeplaatst in het archief. De vlucht bestaat niet meer: importeer het opnieuw om het aan een vlucht te koppelen."
 
-#: app/flights/routes.py:1584 app/flights/routes.py:1594
-#: app/flights/routes.py:1723 app/templates/partials/_gps_upload.html:47
+#: app/flights/routes.py:1587 app/flights/routes.py:1597
+#: app/flights/routes.py:1726 app/templates/partials/_gps_upload.html:47
 msgid "Could not parse GPS file. Fill in the fields manually."
 msgstr "Kan GPS-bestand niet verwerken. Vul de velden handmatig in."
 
-#: app/flights/routes.py:1603 app/templates/flights/flight_form.html:171
+#: app/flights/routes.py:1606 app/templates/flights/flight_form.html:171
 #, python-format
 msgid "GPS file parsed: %(filename)s — fields pre-filled below. Review and save."
 msgstr "GPS-bestand %(filename)s verwerkt — velden zijn vooraf ingevuld. Controleer en sla op."
 
-#: app/flights/routes.py:1720
+#: app/flights/routes.py:1723
 msgid "GPS file parsed — fields pre-filled. Review and save."
 msgstr "GPS-bestand verwerkt — velden zijn vooraf ingevuld. Controleer en sla op."
 
-#: app/flights/routes.py:1789 app/pilots/routes.py:2500 app/pwa/routes.py:275
+#: app/flights/routes.py:1792 app/pilots/routes.py:2503 app/pwa/routes.py:275
 msgid "Please select an aircraft."
 msgstr "Selecteer een vliegtuig."
 
-#: app/flights/routes.py:1792
+#: app/flights/routes.py:1795
 msgid "Pilot role is required for other aircraft flights."
 msgstr "Pilotenrol is verplicht voor vluchten op een ander vliegtuig."
 
-#: app/flights/routes.py:1798
+#: app/flights/routes.py:1801
 msgid "Pilot name is required."
 msgstr "Naam van piloot is verplicht."
 
-#: app/flights/routes.py:1801
+#: app/flights/routes.py:1804
 msgid "Aircraft type (make/model) is required for other aircraft flights."
 msgstr "Vliegtuigtype (merk/model) is verplicht voor vluchten op andere vliegtuigen."
 
-#: app/flights/routes.py:1805
+#: app/flights/routes.py:1808
 msgid "Aircraft registration is required for other aircraft flights."
 msgstr "Vliegtuigregistratie is verplicht voor vluchten op andere vliegtuigen."
 
-#: app/flights/routes.py:1818
+#: app/flights/routes.py:1821
 #, python-format
 msgid "That crew position is already confirmed by %(name)s — pick your own role on this flight."
 msgstr "Die bemanningsplaats is al bevestigd door %(name)s — kies uw eigen rol op deze vlucht."
 
-#: app/flights/routes.py:1906
+#: app/flights/routes.py:1909
 msgid "Could not send the request — this flight can't be claimed."
 msgstr "Het verzoek kon niet verzonden worden — deze vlucht kan niet opgeëist worden."
 
-#: app/flights/routes.py:1915
+#: app/flights/routes.py:1918
 #, python-format
 msgid "Request sent to %(names)s. The flight appears in your logbook once they approve it."
 msgstr "Verzoek verzonden naar %(names)s. De vlucht verschijnt in uw logboek zodra het goedgekeurd is."
 
-#: app/flights/routes.py:1951
+#: app/flights/routes.py:1954
 msgid "GPS track linked to the existing flight entry."
 msgstr "GPS-track gekoppeld aan bestaande vluchtregistratie."
 
-#: app/flights/routes.py:1953
+#: app/flights/routes.py:1956
 msgid "Could not link GPS track — no matching entry found."
 msgstr "Kan GPS-track niet koppelen — geen overeenkomend item gevonden."
 
-#: app/flights/routes.py:2107
+#: app/flights/routes.py:2110
 #, python-format
 msgid "Flight %(dep)s→%(arr)s on %(date)s saved."
 msgstr "Vlucht %(dep)s→%(arr)s op %(date)s opgeslagen."
 
-#: app/flights/routes.py:2137
+#: app/flights/routes.py:2140
 #, python-format
 msgid "Flight %(dep)s→%(arr)s on %(date)s saved to your pilot logbook."
 msgstr "Vlucht %(dep)s→%(arr)s op %(date)s opgeslagen in vluchtlogboek."
 
-#: app/flights/routes.py:2217
+#: app/flights/routes.py:2220
 #, python-format
 msgid "Flight %(label)s removed from the aircraft log. It stays in the pilot logbook of the crew linked to it."
 msgstr "Vlucht %(label)s verwijderd uit het vliegtuiglogboek. Ze blijft in het pilotenlogboek van de gekoppelde bemanning staan."
 
-#: app/flights/routes.py:2234
+#: app/flights/routes.py:2237
 #, python-format
 msgid "Flight %(label)s deleted."
 msgstr "Vlucht %(label)s verwijderd."
 
-#: app/flights/routes.py:2347 app/pilots/routes.py:1412
+#: app/flights/routes.py:2350 app/pilots/routes.py:1415
 msgid "Unsupported format. Please upload a .csv or .xlsx file."
 msgstr "Ongeldig formaat. Upload een .csv- of .xlsx-bestand."
 
-#: app/flights/routes.py:2354 app/maintenance/routes.py:869
-#: app/pilots/routes.py:1419
+#: app/flights/routes.py:2357 app/maintenance/routes.py:869
+#: app/pilots/routes.py:1422
 msgid "File too large (maximum 10 MB)."
 msgstr "Bestand te groot (maximaal 10 MB)."
 
-#: app/flights/routes.py:2415 app/flights/routes.py:2792
-#: app/flights/routes.py:2870 app/flights/routes.py:3006
-#: app/maintenance/routes.py:927 app/pilots/routes.py:1474
-#: app/pilots/routes.py:1880 app/pilots/routes.py:1942
-#: app/pilots/routes.py:2061
+#: app/flights/routes.py:2418 app/flights/routes.py:2795
+#: app/flights/routes.py:2873 app/flights/routes.py:3009
+#: app/maintenance/routes.py:927 app/pilots/routes.py:1477
+#: app/pilots/routes.py:1883 app/pilots/routes.py:1945
+#: app/pilots/routes.py:2064
 msgid "Import session expired. Please upload the file again."
 msgstr "Importsessie verlopen. Upload het bestand opnieuw."
 
-#: app/flights/routes.py:2424 app/flights/routes.py:2797
-#: app/flights/routes.py:2888 app/flights/routes.py:3016
-#: app/maintenance/routes.py:933 app/pilots/routes.py:1483
-#: app/pilots/routes.py:1885 app/pilots/routes.py:1960
-#: app/pilots/routes.py:2071
+#: app/flights/routes.py:2427 app/flights/routes.py:2800
+#: app/flights/routes.py:2891 app/flights/routes.py:3019
+#: app/maintenance/routes.py:933 app/pilots/routes.py:1486
+#: app/pilots/routes.py:1888 app/pilots/routes.py:1963
+#: app/pilots/routes.py:2074
 msgid "Temporary file not found. Please upload the file again."
 msgstr "Tijdelijk bestand niet gevonden. Upload het bestand opnieuw."
 
-#: app/flights/routes.py:2445 app/pilots/routes.py:1495
+#: app/flights/routes.py:2448 app/pilots/routes.py:1498
 msgid "You must map at least one column to 'Date'."
 msgstr "U moet ten minste één kolom aan 'Datum' koppelen."
 
-#: app/flights/routes.py:2537
+#: app/flights/routes.py:2540
 #, python-format
 msgid "Fuel figures were added to one flight already in the log."
 msgid_plural "Fuel figures were added to %(n)d flights already in the log."
 msgstr[0] "Brandstofgegevens werden toegevoegd aan één vlucht die al in het logboek stond."
 msgstr[1] "Brandstofgegevens werden toegevoegd aan %(n)d vluchten die al in het logboek stonden."
 
-#: app/flights/routes.py:2555 app/pilots/routes.py:1772
+#: app/flights/routes.py:2558 app/pilots/routes.py:1775
 #, python-format
 msgid "One cell value could not be parsed and was imported as blank: %(examples)s"
 msgid_plural "%(n)d cell values could not be parsed and were imported as blank: %(examples)s"
 msgstr[0] "Één celwaarde kon niet worden verwerkt en is als leeg geïmporteerd: %(examples)s"
 msgstr[1] "%(n)d celwaarden konden niet worden verwerkt en zijn als leeg geïmporteerd: %(examples)s"
 
-#: app/flights/routes.py:2566
+#: app/flights/routes.py:2569
 msgid "Fuel left per tank was not imported: this aircraft has no fuel tanks configured. Add its tanks on the aircraft's edit page, in the same order as in the log, then import the file again."
 msgstr "De resterende brandstof per tank werd niet geïmporteerd: voor dit vliegtuig zijn geen tanks ingesteld. Voeg de tanks toe op de bewerkpagina van het vliegtuig, in dezelfde volgorde als in het logboek, en importeer het bestand opnieuw."
 
-#: app/flights/routes.py:2577
+#: app/flights/routes.py:2580
 msgid "Fuel left was not imported: this aircraft has no fuel tank capacity configured to convert it into litres. Add its tanks on the aircraft's edit page, then import the file again."
 msgstr "De resterende brandstof werd niet geïmporteerd: voor dit vliegtuig is geen tankinhoud ingesteld om ze naar liters om te rekenen. Voeg de tanks toe op de bewerkpagina van het vliegtuig en importeer het bestand opnieuw."
 
-#: app/flights/routes.py:2587
+#: app/flights/routes.py:2590
 #, python-format
 msgid "One row matched a flight already in a pilot logbook and was merged into it."
 msgid_plural "%(n)d rows matched a flight already in a pilot logbook and were merged into it."
 msgstr[0] "Eén rij kwam overeen met een vlucht die al in een pilotenlogboek stond en is ermee samengevoegd."
 msgstr[1] "%(n)d rijen kwamen overeen met vluchten die al in een pilotenlogboek stonden en zijn ermee samengevoegd."
 
-#: app/flights/routes.py:2615
+#: app/flights/routes.py:2618
 #, python-format
 msgid "%(imported)d flights imported so far. %(n)d rows look like they might already be in this aircraft's log with different data — please review them below."
 msgstr "%(imported)d vluchten tot nu toe geïmporteerd. %(n)d rijen lijken al met andere gegevens in het logboek van dit toestel te staan — controleer ze hieronder."
 
-#: app/flights/routes.py:2631 app/flights/routes.py:2698
+#: app/flights/routes.py:2634 app/flights/routes.py:2701
 #, python-format
 msgid "Rows already in this aircraft's log, skipped: %(detail)s"
 msgstr "Rijen die al in het logboek van dit toestel staan, overgeslagen: %(detail)s"
 
-#: app/flights/routes.py:2640 app/flights/routes.py:2722
-#: app/pilots/routes.py:1667 app/pilots/routes.py:1760
+#: app/flights/routes.py:2643 app/flights/routes.py:2725
+#: app/pilots/routes.py:1670 app/pilots/routes.py:1763
 #, python-format
 msgid "Skipped rows: %(detail)s"
 msgstr "Overgeslagen rijen: %(detail)s"
 
-#: app/flights/routes.py:2658
+#: app/flights/routes.py:2661
 msgid "All flights in this file were already in this aircraft's log — nothing new was imported."
 msgstr "Alle vluchten in dit bestand stonden al in het logboek van dit toestel — er is niets nieuws geïmporteerd."
 
-#: app/flights/routes.py:2668
+#: app/flights/routes.py:2671
 #, python-format
 msgid "Import complete: one new flight imported."
 msgid_plural "Import complete: %(n)d new flights imported."
 msgstr[0] "Import voltooid: één nieuwe vlucht geïmporteerd."
 msgstr[1] "Import voltooid: %(n)d nieuwe vluchten geïmporteerd."
 
-#: app/flights/routes.py:2674
+#: app/flights/routes.py:2677
 #, python-format
 msgid "One row was already in this aircraft's log and was skipped."
 msgid_plural "%(n)d rows were already in this aircraft's log and were skipped."
 msgstr[0] "Eén rij stond al in het logboek van dit toestel en werd overgeslagen."
 msgstr[1] "%(n)d rijen stonden al in het logboek van dit toestel en werden overgeslagen."
 
-#: app/flights/routes.py:2683
+#: app/flights/routes.py:2686
 #, python-format
 msgid "Import complete: one flight imported."
 msgid_plural "Import complete: %(n)d flights imported."
 msgstr[0] "Import voltooid: één vlucht geïmporteerd."
 msgstr[1] "Import voltooid: %(n)d vluchten geïmporteerd."
 
-#: app/flights/routes.py:2690
+#: app/flights/routes.py:2693
 msgid "Import complete: no flights imported."
 msgstr "Import voltooid: geen vluchten geïmporteerd."
 
-#: app/flights/routes.py:2706
+#: app/flights/routes.py:2709
 #, python-format
 msgid "row %(row)d: %(kind)s counter starts at %(got).1f but the previous entry ended at %(prev).1f"
 msgstr "regel %(row)d: de %(kind)s-teller begint op %(got).1f terwijl de vorige regel eindigde op %(prev).1f"
 
-#: app/flights/routes.py:2716
+#: app/flights/routes.py:2719
 #, python-format
 msgid " … and %(n)d more"
 msgstr " … en nog %(n)d"
 
-#: app/flights/routes.py:2717
+#: app/flights/routes.py:2720
 #, python-format
 msgid "Counter continuity warnings: %(detail)s"
 msgstr "Waarschuwingen tellercontinuïteit: %(detail)s"
 
-#: app/flights/routes.py:2765
+#: app/flights/routes.py:2768
 #, python-format
 msgid "Review complete: %(overwritten)d flights updated, %(new)d imported as new, %(kept)d left unchanged."
 msgstr "Controle voltooid: %(overwritten)d vluchten bijgewerkt, %(new)d als nieuw geïmporteerd, %(kept)d ongewijzigd gelaten."
 
-#: app/flights/routes.py:2880 app/flights/routes.py:2908
-#: app/pilots/routes.py:1952 app/pilots/routes.py:1980
+#: app/flights/routes.py:2883 app/flights/routes.py:2911
+#: app/pilots/routes.py:1955 app/pilots/routes.py:1983
 msgid "Invalid row number."
 msgstr "Ongeldig rijnummer."
 
-#: app/flights/routes.py:2884 app/pilots/routes.py:1956
+#: app/flights/routes.py:2887 app/pilots/routes.py:1959
 msgid "This row has already been resolved."
 msgstr "Deze rij is al verwerkt."
 
-#: app/flights/routes.py:2922 app/pilots/routes.py:1994
+#: app/flights/routes.py:2925 app/pilots/routes.py:1997
 msgid "Invalid selection."
 msgstr "Ongeldige keuze."
 
-#: app/flights/routes.py:2962 app/flights/routes.py:3011
-#: app/pilots/routes.py:2033 app/pilots/routes.py:2066
+#: app/flights/routes.py:2965 app/flights/routes.py:3014
+#: app/pilots/routes.py:2036 app/pilots/routes.py:2069
 msgid "Invalid decision."
 msgstr "Ongeldige beslissing."
 
-#: app/flights/routes.py:3060 app/pilots/routes.py:2113
+#: app/flights/routes.py:3063 app/pilots/routes.py:2116
 #, python-format
 msgid "One row's best match was already used by another row — please decide on it below."
 msgid_plural "%(n)d rows' best matches were already used by other rows — please decide on them below."
 msgstr[0] "De beste overeenkomst van één rij werd al door een andere rij gebruikt — beslis hieronder."
 msgstr[1] "De beste overeenkomsten van %(n)d rijen werden al door andere rijen gebruikt — beslis hieronder."
 
-#: app/flights/routes.py:3102
+#: app/flights/routes.py:3105
 #, python-format
 msgid "Import deleted: %(n)d flight entries removed."
 msgstr "Import verwijderd: %(n)d vluchtregels verwijderd."
 
-#: app/flights/routes.py:3133
+#: app/flights/routes.py:3136
 msgid "Import marked as historical: edits to its flights will no longer be blocked by validation on old, imprecise values."
 msgstr "Import gemarkeerd als historisch: wijzigingen aan de bijbehorende vluchten worden niet langer geblokkeerd door validatie van oude, onnauwkeurige waarden."
 
-#: app/flights/routes.py:3141
+#: app/flights/routes.py:3144
 msgid "Import no longer marked as historical: edits to its flights are now subject to the normal validation rules."
 msgstr "Import niet langer gemarkeerd als historisch: wijzigingen aan de bijbehorende vluchten zijn nu weer onderworpen aan de normale validatieregels."
 
@@ -1764,7 +1764,7 @@ msgstr "Opstijgtijd"
 msgid "Landing time"
 msgstr "Landingstijd"
 
-#: app/flights/shared_flight.py:152 app/reservations/routes.py:199
+#: app/flights/shared_flight.py:152 app/reservations/routes.py:202
 #: app/templates/aircraft/flight_detail.html:62
 #: app/templates/flights/flight_form.html:565
 #: app/templates/reservations/settings.html:84
@@ -2048,27 +2048,32 @@ msgstr "Geen opgeslagen PDF voor revisie '%(number)s' — deze is nooit gedownlo
 msgid "The saved PDF for revision '%(number)s' is missing on disk."
 msgstr "De opgeslagen PDF voor revisie '%(number)s' ontbreekt op de schijf."
 
-#: app/pilots/form_parsing.py:38
+#: app/pilots/form_parsing.py:39
 #, python-format
 msgid "%(field)s: enter a valid HH:MM time."
 msgstr "%(field)s: voer een geldige UU:MM-tijd in."
 
-#: app/pilots/form_parsing.py:48 app/pilots/form_parsing.py:53
+#: app/pilots/form_parsing.py:49 app/pilots/form_parsing.py:54
 #, python-format
 msgid "%(field)s: must be a number."
 msgstr "%(field)s: moet een getal zijn."
 
-#: app/pilots/form_parsing.py:50 app/pilots/form_parsing.py:63
+#: app/pilots/form_parsing.py:51 app/pilots/form_parsing.py:64
 #, python-format
 msgid "%(field)s: must be non-negative."
 msgstr "%(field)s: moet niet-negatief zijn."
 
 #: app/pilots/form_parsing.py:66
 #, python-format
+msgid "%(field)s: number too large."
+msgstr "%(field)s: getal te groot."
+
+#: app/pilots/form_parsing.py:69
+#, python-format
 msgid "%(field)s: must be a whole number."
 msgstr "%(field)s: moet een geheel getal zijn."
 
-#: app/pilots/form_parsing.py:76
+#: app/pilots/form_parsing.py:79
 #, python-format
 msgid "%(field)s: enter a valid date (YYYY-MM-DD)."
 msgstr "%(field)s: voer een geldige datum in (JJJJ-MM-DD)."
@@ -2251,207 +2256,207 @@ msgstr "Aanpassingen"
 msgid "If fatigued / unfamiliar aircraft / unfamiliar airport"
 msgstr "Bij vermoeidheid / onbekend toestel / onbekend veld"
 
-#: app/pilots/routes.py:165
+#: app/pilots/routes.py:167
 msgid "🎉 100th logbook entry — congratulations!"
 msgstr "🎉 100ste vluchtenboekregistratie — gefeliciteerd!"
 
-#: app/pilots/routes.py:178
+#: app/pilots/routes.py:180
 msgid "🌙 First night flight logged — well done!"
 msgstr "🌙 Eerste nachtvlucht geregistreerd — goed gedaan!"
 
-#: app/pilots/routes.py:199
+#: app/pilots/routes.py:201
 msgid "✈️ First cross-country flight logged — congratulations!"
 msgstr "✈️ Eerste navigatievlucht geregistreerd — gefeliciteerd!"
 
-#: app/pilots/routes.py:236
+#: app/pilots/routes.py:238
 msgid "First solo date"
 msgstr "Datum eerste solovlucht"
 
-#: app/pilots/routes.py:243 app/templates/pilots/profile.html:55
+#: app/pilots/routes.py:245 app/templates/pilots/profile.html:55
 msgid "PPL issue date"
 msgstr "Datum afgifte PPL"
 
-#: app/pilots/routes.py:264
+#: app/pilots/routes.py:266
 msgid "Profile saved."
 msgstr "Profiel opgeslagen."
 
-#: app/pilots/routes.py:404 app/pilots/routes.py:480
+#: app/pilots/routes.py:406 app/pilots/routes.py:482
 msgid "You already have a draft in progress."
 msgstr "U heeft al een concept in bewerking."
 
-#: app/pilots/routes.py:440
+#: app/pilots/routes.py:442
 msgid "Draft created."
 msgstr "Concept aangemaakt."
 
-#: app/pilots/routes.py:477
+#: app/pilots/routes.py:479
 msgid "No active revision to revise yet."
 msgstr "Nog geen actieve revisie om te herzien."
 
-#: app/pilots/routes.py:513
+#: app/pilots/routes.py:515
 msgid "Draft created from your active revision."
 msgstr "Concept aangemaakt op basis van uw actieve revisie."
 
-#: app/pilots/routes.py:536
+#: app/pilots/routes.py:538
 msgid "Unrecognized tag."
 msgstr "Niet-herkende tag."
 
-#: app/pilots/routes.py:543
+#: app/pilots/routes.py:545
 msgid "This tag requires a numeric value."
 msgstr "Deze tag vereist een numerieke waarde."
 
-#: app/pilots/routes.py:558 app/pilots/routes.py:584
+#: app/pilots/routes.py:560 app/pilots/routes.py:586
 msgid "Section title is required."
 msgstr "Sectietitel is verplicht."
 
-#: app/pilots/routes.py:572
+#: app/pilots/routes.py:574
 msgid "Section added."
 msgstr "Sectie toegevoegd."
 
-#: app/pilots/routes.py:588
+#: app/pilots/routes.py:590
 msgid "Section updated."
 msgstr "Sectie bijgewerkt."
 
-#: app/pilots/routes.py:600
+#: app/pilots/routes.py:602
 msgid "Section removed."
 msgstr "Sectie verwijderd."
 
-#: app/pilots/routes.py:661 app/pilots/routes.py:699
+#: app/pilots/routes.py:663 app/pilots/routes.py:701
 msgid "Item label is required."
 msgstr "Label van item is verplicht."
 
-#: app/pilots/routes.py:684
+#: app/pilots/routes.py:686
 msgid "Item added."
 msgstr "Item toegevoegd."
 
-#: app/pilots/routes.py:710
+#: app/pilots/routes.py:712
 msgid "Item updated."
 msgstr "Item bijgewerkt."
 
-#: app/pilots/routes.py:722
+#: app/pilots/routes.py:724
 msgid "Item removed."
 msgstr "Item verwijderd."
 
-#: app/pilots/routes.py:755
+#: app/pilots/routes.py:757
 msgid "No draft to publish."
 msgstr "Geen concept om te publiceren."
 
-#: app/pilots/routes.py:758
+#: app/pilots/routes.py:760
 msgid "Add at least one section before publishing."
 msgstr "Voeg minstens één sectie toe voor u publiceert."
 
-#: app/pilots/routes.py:770
+#: app/pilots/routes.py:772
 msgid "Personal minimums published."
 msgstr "Persoonlijke minima gepubliceerd."
 
-#: app/pilots/routes.py:790
+#: app/pilots/routes.py:792
 msgid "Draft discarded."
 msgstr "Concept verwijderd."
 
-#: app/pilots/routes.py:801
+#: app/pilots/routes.py:803
 msgid "No active personal minimums to print yet."
 msgstr "Nog geen actieve persoonlijke minima om af te drukken."
 
-#: app/pilots/routes.py:1154
+#: app/pilots/routes.py:1157
 msgid "Logbook entry saved."
 msgstr "Logboekvermelding opgeslagen."
 
-#: app/pilots/routes.py:1211
+#: app/pilots/routes.py:1214
 msgid "Logbook entry updated."
 msgstr "Logboekvermelding bijgewerkt."
 
-#: app/pilots/routes.py:1257
+#: app/pilots/routes.py:1260
 msgid "Flight removed from your logbook. It stays in the other pilot's logbook."
 msgstr "Vlucht verwijderd uit uw logboek. Ze blijft in het logboek van de andere piloot staan."
 
-#: app/pilots/routes.py:1278
+#: app/pilots/routes.py:1281
 msgid "Logbook entry deleted."
 msgstr "Logboekvermelding verwijderd."
 
-#: app/pilots/routes.py:1616
+#: app/pilots/routes.py:1619
 #, python-format
 msgid "One row matched a flight already in the aircraft log and was merged into it."
 msgid_plural "%(n)d rows matched a flight already in the aircraft log and were merged into it."
 msgstr[0] "Eén rij kwam overeen met een vlucht die al in het logboek van het toestel stond en is ermee samengevoegd."
 msgstr[1] "%(n)d rijen kwamen overeen met vluchten die al in het logboek van het toestel stonden en zijn ermee samengevoegd."
 
-#: app/pilots/routes.py:1644
+#: app/pilots/routes.py:1647
 #, python-format
 msgid "%(imported)d entries imported so far. %(n)d rows look like they might already be in your logbook with different data — please review them below."
 msgstr "%(imported)d vermeldingen tot nu toe geïmporteerd. %(n)d rijen lijken al met andere gegevens in uw logboek te staan — controleer ze hieronder."
 
-#: app/pilots/routes.py:1660 app/pilots/routes.py:1753
+#: app/pilots/routes.py:1663 app/pilots/routes.py:1756
 #, python-format
 msgid "Rows already in your logbook, skipped: %(detail)s"
 msgstr "Rijen die al in uw logboek staan, overgeslagen: %(detail)s"
 
-#: app/pilots/routes.py:1699
+#: app/pilots/routes.py:1702
 msgid "All entries in this file were already in your logbook — nothing new was imported."
 msgstr "Alle vermeldingen in dit bestand stonden al in uw logboek — er is niets nieuws geïmporteerd."
 
-#: app/pilots/routes.py:1711
+#: app/pilots/routes.py:1714
 #, python-format
 msgid "Import complete: one new entry imported."
 msgid_plural "Import complete: %(n)d new entries imported."
 msgstr[0] "Import voltooid: één nieuwe vermelding geïmporteerd."
 msgstr[1] "Import voltooid: %(n)d nieuwe vermeldingen geïmporteerd."
 
-#: app/pilots/routes.py:1717
+#: app/pilots/routes.py:1720
 #, python-format
 msgid "One row was already in your logbook and was skipped."
 msgid_plural "%(n)d rows were already in your logbook and were skipped."
 msgstr[0] "Eén rij stond al in uw logboek en werd overgeslagen."
 msgstr[1] "%(n)d rijen stonden al in uw logboek en werden overgeslagen."
 
-#: app/pilots/routes.py:1726
+#: app/pilots/routes.py:1729
 #, python-format
 msgid "Import complete: one entry imported."
 msgid_plural "Import complete: %(n)d entries imported."
 msgstr[0] "Import voltooid: één vermelding geïmporteerd."
 msgstr[1] "Import voltooid: %(n)d vermeldingen geïmporteerd."
 
-#: app/pilots/routes.py:1733
+#: app/pilots/routes.py:1736
 msgid "Import complete: no entries imported."
 msgstr "Import voltooid: geen vermeldingen geïmporteerd."
 
-#: app/pilots/routes.py:1738 app/pilots/routes.py:1862
+#: app/pilots/routes.py:1741 app/pilots/routes.py:1865
 #, python-format
 msgid "%(n)d aircraft log entry was also created for your managed aircraft."
 msgid_plural "%(n)d aircraft log entries were also created for your managed aircraft."
 msgstr[0] "%(n)d vliegtuiglogboekvermelding werd ook aangemaakt voor uw beheerd vliegtuig."
 msgstr[1] "%(n)d vliegtuiglogboekvermeldingen werden ook aangemaakt voor uw beheerd vliegtuig."
 
-#: app/pilots/routes.py:1785
+#: app/pilots/routes.py:1788
 #, python-format
 msgid "row %(row)d (source %(src).1f h, computed %(comp).1f h)"
 msgstr "rij %(row)d (bron: %(src).1f u, berekend: %(comp).1f u)"
 
-#: app/pilots/routes.py:1796
+#: app/pilots/routes.py:1799
 #, python-format
 msgid "One row has a total flight time that doesn't match the sum of its components — please review: %(examples)s"
 msgid_plural "%(n)d rows have a total flight time that doesn't match the sum of their components — please review: %(examples)s"
 msgstr[0] "Één rij heeft een totale vluchttijd die niet overeenkomt met de som van de onderdelen — controleer dit: %(examples)s"
 msgstr[1] "%(n)d rijen hebben een totale vluchttijd die niet overeenkomt met de som van de onderdelen — controleer dit: %(examples)s"
 
-#: app/pilots/routes.py:1851
+#: app/pilots/routes.py:1854
 #, python-format
 msgid "Review complete: %(overwritten)d entries updated, %(new)d imported as new, %(kept)d left unchanged."
 msgstr "Controle voltooid: %(overwritten)d vermeldingen bijgewerkt, %(new)d als nieuw geïmporteerd, %(kept)d ongewijzigd gelaten."
 
-#: app/pilots/routes.py:2172
+#: app/pilots/routes.py:2175
 #, python-format
 msgid "Import deleted: one entry removed."
 msgid_plural "Import deleted: all %(count)d entries removed."
 msgstr[0] "Importatie verwijderd: één vermelding verwijderd."
 msgstr[1] "Importatie verwijderd: %(count)d vermeldingen verwijderd."
 
-#: app/pilots/routes.py:2182
+#: app/pilots/routes.py:2185
 #, python-format
 msgid "One flight stays in another pilot's logbook; it was only removed from yours."
 msgid_plural "%(count)d flights stay in other pilots' logbooks; they were only removed from yours."
 msgstr[0] "Eén vlucht blijft in het logboek van een andere piloot staan; ze is alleen uit het uwe verwijderd."
 msgstr[1] "%(count)d vluchten blijven in de logboeken van andere piloten staan; ze zijn alleen uit het uwe verwijderd."
 
-#: app/pilots/routes.py:2378
+#: app/pilots/routes.py:2381
 msgid "No original GPS files are kept for your logbook yet."
 msgstr "Voor je logboek zijn nog geen originele gps-bestanden bewaard."
 
@@ -2571,53 +2576,53 @@ msgstr "Tankbeurt geregistreerd."
 msgid "Refuel deleted."
 msgstr "Tankbeurt verwijderd."
 
-#: app/reports/routes.py:113
+#: app/reports/routes.py:111
 msgid "all time"
 msgstr "alle tijd"
 
-#: app/reports/routes.py:114
+#: app/reports/routes.py:112
 msgid "to"
 msgstr "tot"
 
-#: app/reports/routes.py:116 app/templates/aircraft/owners_billing.html:45
+#: app/reports/routes.py:114 app/templates/aircraft/owners_billing.html:45
 #: app/templates/expenses/cost_dashboard.html:29
 #: app/templates/expenses/list.html:68 app/templates/refuels/list.html:36
 #: app/templates/reports/utilization.html:29
 msgid "Period"
 msgstr "Periode"
 
-#: app/reports/routes.py:117
+#: app/reports/routes.py:115
 msgid "Export date"
 msgstr "Exportdatum"
 
-#: app/reports/routes.py:122
+#: app/reports/routes.py:120
 msgid "Metric"
 msgstr "Metriek"
 
-#: app/reports/routes.py:122
+#: app/reports/routes.py:120
 msgid "This period"
 msgstr "Deze periode"
 
-#: app/reports/routes.py:124
+#: app/reports/routes.py:122
 msgid "Previous period"
 msgstr "Vorige periode"
 
-#: app/reports/routes.py:141 app/templates/maintenance/trigger_form.html:137
+#: app/reports/routes.py:139 app/templates/maintenance/trigger_form.html:137
 #: app/templates/reports/utilization.html:75
 msgid "Flight hours"
 msgstr "Vlieguren"
 
-#: app/reports/routes.py:142 app/templates/dashboard.html:402
+#: app/reports/routes.py:140 app/templates/dashboard.html:402
 #: app/templates/maintenance/trigger_form.html:129
 #: app/templates/reports/utilization.html:83
 msgid "Engine hours"
 msgstr "Motoruren"
 
-#: app/reports/routes.py:143
+#: app/reports/routes.py:141
 msgid "Number of flights"
 msgstr "Aantal vluchten"
 
-#: app/reports/routes.py:144 app/templates/aircraft/flight_detail.html:84
+#: app/reports/routes.py:142 app/templates/aircraft/flight_detail.html:84
 #: app/templates/flights/airframe_import_review.html:50
 #: app/templates/maintenance/fleet.html:194
 #: app/templates/maintenance/list.html:121
@@ -2628,31 +2633,31 @@ msgstr "Aantal vluchten"
 msgid "Landings"
 msgstr "Landingen"
 
-#: app/reports/routes.py:145 app/templates/aircraft/flight_detail.html:149
+#: app/reports/routes.py:143 app/templates/aircraft/flight_detail.html:149
 #: app/templates/refuels/list.html:56
 #: app/templates/reports/utilization.html:111
 msgid "Fuel added"
 msgstr "Brandstof toegevoegd"
 
-#: app/reports/routes.py:146 app/templates/reports/utilization.html:118
+#: app/reports/routes.py:144 app/templates/reports/utilization.html:118
 msgid "Oil added (L)"
 msgstr "Toegevoegde olie (L)"
 
-#: app/reservations/routes.py:197 app/templates/reservations/settings.html:70
+#: app/reservations/routes.py:200 app/templates/reservations/settings.html:70
 msgid "Wet"
 msgstr "Inclusief brandstof"
 
-#: app/reservations/routes.py:197 app/templates/reservations/settings.html:75
+#: app/reservations/routes.py:200 app/templates/reservations/settings.html:75
 msgid "Dry"
 msgstr "Exclusief brandstof"
 
-#: app/reservations/routes.py:199 app/templates/aircraft/flight_detail.html:68
+#: app/reservations/routes.py:202 app/templates/aircraft/flight_detail.html:68
 #: app/templates/flights/flight_form.html:533
 #: app/templates/reservations/settings.html:83
 msgid "Engine time"
 msgstr "Motortijd"
 
-#: app/reservations/routes.py:248
+#: app/reservations/routes.py:251
 #, python-format
 msgid "Your manual rate (%(manual)s EUR/h) differs from the computed cost-dashboard rate (%(computed)s EUR/h) by more than %(pct)s%% — consider reviewing it."
 msgstr "Uw handmatige tarief (%(manual)s EUR/u) wijkt meer dan %(pct)s%% af van het door het kostendashboard berekende tarief (%(computed)s EUR/u) — overweeg het bij te werken."

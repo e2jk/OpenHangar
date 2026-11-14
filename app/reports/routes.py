@@ -17,6 +17,7 @@ from services.csv_export import safe_csv_text
 from utils import (  # pyright: ignore[reportMissingImports]
     current_membership,
     login_required,
+    months_back,
     user_can_access_aircraft,
 )
 
@@ -68,10 +69,7 @@ def _resolve_report_range(
             if custom_start <= custom_end:
                 return custom_start, custom_end, None, from_raw, to_raw
 
-    try:
-        period_months = int(request.args.get("period", DEFAULT_PERIOD_MONTHS))
-    except ValueError:
-        period_months = DEFAULT_PERIOD_MONTHS
+    period_months = request.args.get("period", DEFAULT_PERIOD_MONTHS, type=months_back)
     period_start, period_end = resolve_period(period_months, today)
     return period_start, period_end, period_months, from_raw, to_raw
 

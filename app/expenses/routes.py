@@ -25,6 +25,7 @@ from models import (
 from utils import (  # pyright: ignore[reportMissingImports]
     current_membership,
     login_required,
+    months_back,
     require_role,
     user_can_access_aircraft,
 )
@@ -152,10 +153,7 @@ def list_expenses(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
 
     type_filter = request.args.get("type", "")
-    try:
-        period_months = int(request.args.get("period", _DEFAULT_PERIOD))
-    except ValueError:
-        period_months = _DEFAULT_PERIOD
+    period_months = request.args.get("period", _DEFAULT_PERIOD, type=months_back)
 
     query = Expense.query.filter_by(aircraft_id=ac.id)
 

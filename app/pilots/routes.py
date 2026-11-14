@@ -84,7 +84,9 @@ from services.upload_layout import (  # pyright: ignore[reportMissingImports]
 from sqlalchemy import case, func, or_  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
     current_user_role,
+    db_id,
     login_required,
+    page_number,
     require_pilot_access,
     tenant_pilot_names,
     user_can_access_aircraft,
@@ -649,7 +651,7 @@ def minimums_section_move_down(section_id: int) -> ResponseReturnValue:
 @require_pilot_access
 def minimums_item_add() -> ResponseReturnValue:
     uid = _current_user_id()
-    section_id = request.form.get("section_id", type=int)
+    section_id = request.form.get("section_id", type=db_id)
     section = _get_own_draft_section_or_404(section_id, uid) if section_id else None
     if section is None:
         abort(404)
@@ -971,7 +973,7 @@ def logbook() -> ResponseReturnValue:
     uid = _current_user_id()
     # Only "asc" or "desc" — the value is echoed into links and hidden fields.
     order = "asc" if request.args.get("order") == "asc" else "desc"
-    page = request.args.get("page", 1, type=int)
+    page = request.args.get("page", 1, type=page_number)
     pp_raw = request.args.get("per_page", str(_DEFAULT_PER_PAGE))
     show_all = pp_raw == "all"
     per_page = (
@@ -2496,7 +2498,7 @@ def pilot_gps_import_upload() -> ResponseReturnValue:
         )
 
     if mode == "one_aircraft":
-        aircraft_id = request.form.get("aircraft_id", type=int)
+        aircraft_id = request.form.get("aircraft_id", type=db_id)
         if not aircraft_id:
             flash(_("Please select an aircraft."), "warning")
             return render_template(

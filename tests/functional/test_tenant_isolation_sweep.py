@@ -36,6 +36,7 @@ from datetime import UTC, date, datetime, timedelta
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
+from werkzeug.routing import IntegerConverter
 
 # Converters that do not identify a tenant-scoped database object, so no
 # tenant-B id applies to them; excluded from the sweep with a reason each.
@@ -318,8 +319,10 @@ def _int_converter_args(rule) -> dict:
         converter = rule._converters.get(
             arg
         )  # werkzeug internal, stable enough for a test
-        converter_name = type(converter).__name__ if converter is not None else None
-        if converter_name in ("IntegerConverter", "AircraftRefConverter"):
+        # isinstance: the app's <int:...> is DbIdConverter, a capped subclass
+        if isinstance(converter, IntegerConverter) or (
+            type(converter).__name__ == "AircraftRefConverter"
+        ):
             result[arg] = "int"
     return result
 

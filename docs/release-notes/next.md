@@ -2,6 +2,7 @@
 
 - One-off `flask` commands (`backup-now`, `restore-backup`, `shell`, …) no longer start the web server's background jobs (backup schedule, update check, notifications, sync watcher). A restore no longer runs next to them; it previously did even inside the web container. The web server itself, including `flask run` in development, is unchanged.
 - The language and theme switches redirect without a page body, and the pilot logbook, flights and documents lists only repeat valid sort and page-size values in their links (both reported by the new signed-in security scan; neither was exploitable).
+- A number far too large for an id, page, year or period, in a page address or a form, is now ignored or answers "not found" instead of a server error (for example an id above 2,147,483,647, the database's limit); day/night landings that large are refused with a message. Reported by the signed-in security scan once it completed; not exploitable.
 
 **Maintenance**
 - Role-matrix test: a helper user that failed to sign in now fails at setup with the reason, and a wrong status shows where it redirected, so the rare unexplained failure seen once can be diagnosed if it recurs.

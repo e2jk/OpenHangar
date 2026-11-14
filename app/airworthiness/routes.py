@@ -32,6 +32,7 @@ from models import (  # pyright: ignore[reportMissingImports]
 )
 from utils import (  # pyright: ignore[reportMissingImports]
     current_membership,
+    db_id,
     login_required,
     require_role,
     user_can_access_aircraft,
@@ -269,7 +270,7 @@ def add_node(aircraft_id: int) -> ResponseReturnValue:
     components = [c for c in ac.components if not c.removed_at]  # type: ignore[attr-defined]
 
     if request.method == "POST":
-        component_id = request.form.get("component_id", type=int)
+        component_id = request.form.get("component_id", type=db_id)
         comp = db.session.get(Component, component_id)
         if not comp or comp.aircraft_id != aircraft_id:
             abort(400)
@@ -288,7 +289,7 @@ def add_node(aircraft_id: int) -> ResponseReturnValue:
         flash(_("EASA source node added."), "success")
         return redirect(url_for("airworthiness.dashboard", aircraft_id=aircraft_id))
 
-    preselect_component_id = request.args.get("component_id", type=int)
+    preselect_component_id = request.args.get("component_id", type=db_id)
     return render_template(
         "airworthiness/node_form.html",
         aircraft=ac,
@@ -326,7 +327,7 @@ def add_document(aircraft_id: int) -> ResponseReturnValue:
     components = [c for c in ac.components if not c.removed_at]  # type: ignore[attr-defined]
 
     if request.method == "POST":
-        component_id = request.form.get("component_id", type=int)
+        component_id = request.form.get("component_id", type=db_id)
         comp = db.session.get(Component, component_id)
         if not comp or comp.aircraft_id != aircraft_id:
             abort(400)

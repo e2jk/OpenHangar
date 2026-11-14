@@ -142,6 +142,11 @@ Weblate quality checks are also surfaced as Code Scanning alerts via
 - Type annotations required on all new functions. mypy is run in CI.
 - All security-sensitive code gets a bandit review (runs in CI). Avoid `# nosec` unless
   genuinely necessary and commented with a reason.
+- Numbers from the request: parse with the bounded parsers in `utils.py`, passed as
+  `type=` (`request.args.get("page", 1, type=page_number)`, `type=db_id` for an id),
+  never a bare `int()` / `type=int`: a huge number otherwise ends in a server error
+  (PostgreSQL rejects ids beyond its INTEGER range). `<int:...>` URL segments are
+  already capped (`DbIdConverter`).
 
 ### Naming conventions
 - Blueprint directories and URL prefixes match (e.g. blueprint `aircraft` → `/aircraft/`).
