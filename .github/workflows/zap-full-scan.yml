@@ -206,9 +206,14 @@ jobs:
         # Time: signed in, the crawl finds hundreds of pages (650 for the
         # admin on the first run), and an unbounded active scan of them all
         # ran into the job's 2 h limit without writing a report. The attack
-        # phase is capped at 60 min and each rule at 5, so a report is always
-        # produced; 4 scanner threads against 2 web workers fit more of the
-        # surface in that time.
+        # phase is capped at 90 min and each rule at 5, so a report is always
+        # produced (setup ~2 + crawl <=10 + 90 + report stays under 120); 4 scanner threads against 2 web workers fit more of the
+        # surface in that time. The second run reached only ~9% of its checks
+        # in 17 min, so generated downloads are left out too (url 3 and 4):
+        # track GIF/PNG renders, ZIP bundles, PDF/CSV/AMP exports — slow to
+        # build, binary, and their access rules are covered by the test
+        # suite's role sweeps. Plain file serving (uploads, GPS files,
+        # photos) stays in: it is fast, and worth path-traversal checks.
         # -d: without it the scan script prints nothing until it ends (the
         # first run's log was silent for 2 h); with it, crawl and "Active
         # Scan progress %" lines stream into this step's live log. The hook
@@ -236,7 +241,11 @@ jobs:
             -config globalexcludeurl.url_list.url(1).enabled=true
             -config globalexcludeurl.url_list.url(2).regex=.*/reset-password/.*
             -config globalexcludeurl.url_list.url(2).enabled=true
-            -config scanner.maxScanDurationInMins=60
+            -config globalexcludeurl.url_list.url(3).regex=^https?://[^/]+/.*\.(gif|png|zip|csv|pdf)([?#].*)?$
+            -config globalexcludeurl.url_list.url(3).enabled=true
+            -config globalexcludeurl.url_list.url(4).regex=^https?://[^/]+/.*/(download-all|amp/export(/pdf)?)([?#].*)?$
+            -config globalexcludeurl.url_list.url(4).enabled=true
+            -config scanner.maxScanDurationInMins=90
             -config scanner.maxRuleDurationInMins=5
             -config scanner.threadPerHost=4"
 
