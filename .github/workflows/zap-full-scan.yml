@@ -133,11 +133,13 @@ jobs:
             password: openhangar-dev-1
             totp: JBSWY3DPEHPK3PXP  # fixed dev-seed secret, not a credential
             evidence: '^/config/$ ^/config/users/$ ^/aircraft/[A-Z0-9-]+/expenses$'
+            aircraft: 'OO-PNH OO-ABC OO-GRN OO-TCH'  # the dev seed's fleet
           - user: pilot
             email: pilot@openhangar.dev
             password: openhangar-dev-3
             totp: ''
             evidence: '^/pilot/logbook$ ^/flights$ ^/pilot/profile$'
+            aircraft: 'OO-PNH OO-ABC'  # the two the seeded pilot may fly
     env:
       ZAP_DB: zap-db
       ZAP_WEB: zap-web
@@ -198,6 +200,25 @@ jobs:
           echo "::add-mask::${cookie#session=}"
           echo "ZAP_COOKIE=$cookie" >> "$GITHUB_ENV"
 
+      - name: Pick this run's sample (one aircraft, one last ID digit)
+        # Every aircraft has the same pages, and every flight, logbook entry
+        # and reservation the same few: scanning them all multiplied the
+        # work by four, then by ten, for the same code. Each run scans one
+        # aircraft and the IDs ending in one digit; both move on with the run
+        # number, so successive weekly runs cover the rest of the data.
+        env:
+          AIRCRAFT: ${{ matrix.aircraft }}
+          RUN: ${{ github.run_number }}
+        run: |
+          read -ra regs <<< "$AIRCRAFT"
+          keep=${regs[RUN % ${#regs[@]}]}
+          digit=$((RUN % 10))
+          others=$(printf '%s\n' "${regs[@]}" | grep -vxF "$keep" | paste -sd '|')
+          other_digits=$(printf '%s' 0123456789 | tr -d "$digit")
+          echo "Scanning aircraft $keep and IDs ending in $digit" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "ZAP_SKIP_AIRCRAFT=^https?://[^/]+/aircraft/($others)([/?#].*)?\$" >> "$GITHUB_ENV"
+          echo "ZAP_SKIP_IDS=^https?://[^/]+/(.*/)?(flights|logbook|reservations)/[0-9]*[$other_digits]([/?#].*)?\$" >> "$GITHUB_ENV"
+
       - name: OWASP ZAP full (active) scan, signed in
         # The session cookie is added to every request (replacer rule).
         # Logout and the account-security pages are excluded: they would end
@@ -219,6 +240,11 @@ jobs:
         # of a local signed-in crawl's requests and multiplied the attack
         # phase's work. Their off-site redirect guard has its own tests
         # (tests/test_i18n.py, test_query_values_not_echoed.py).
+        # Even so, the third run still reached only ~40%: most rules ran
+        # into their 5 min cap on ~1,400 pages (admin). Most of those were
+        # the same pages for each aircraft and each flight, logbook entry or
+        # reservation, so only a rotating sample is scanned (url 6 and 7,
+        # from the step above): about a quarter of the pages.
         # -d: without it the scan script prints nothing until it ends (the
         # first run's log was silent for 2 h); with it, crawl and "Active
         # Scan progress %" lines stream into this step's live log. The hook
@@ -252,6 +278,10 @@ jobs:
             -config globalexcludeurl.url_list.url(4).enabled=true
             -config globalexcludeurl.url_list.url(5).regex=^https?://[^/]+/set-(language|theme)/.*
             -config globalexcludeurl.url_list.url(5).enabled=true
+            -config globalexcludeurl.url_list.url(6).regex=${{ env.ZAP_SKIP_AIRCRAFT }}
+            -config globalexcludeurl.url_list.url(6).enabled=true
+            -config globalexcludeurl.url_list.url(7).regex=${{ env.ZAP_SKIP_IDS }}
+            -config globalexcludeurl.url_list.url(7).enabled=true
             -config scanner.maxScanDurationInMins=90
             -config scanner.maxRuleDurationInMins=5
             -config scanner.threadPerHost=4"
