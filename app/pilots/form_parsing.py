@@ -20,6 +20,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     FstdType,
     LogbookEntryType,
 )
+from utils import DB_INT_MAX  # pyright: ignore[reportMissingImports]
 
 
 def _parse_time(val: str, field: str) -> tuple[_time | None, str | None]:
@@ -61,6 +62,8 @@ def _parse_int(val: str, field: str) -> tuple[int | None, str | None]:
         n = int(val)
         if n < 0:
             return None, _("%(field)s: must be non-negative.", field=field)
+        if n > DB_INT_MAX:
+            return None, _("%(field)s: number too large.", field=field)
         return n, None
     except ValueError:
         return None, _("%(field)s: must be a whole number.", field=field)

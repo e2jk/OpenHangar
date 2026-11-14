@@ -93,6 +93,7 @@ from utils import (
     current_membership,
     get_aircraft_type_engine_info,
     login_required,
+    months_back,
     require_role,
     user_can_access_aircraft,
 )  # pyright: ignore[reportMissingImports]
@@ -744,10 +745,8 @@ def _co_owner_billing_period(period_months_raw: str | None) -> tuple[Any, Any]:
     from datetime import timedelta as _timedelta
 
     try:
-        period_months = int(period_months_raw) if period_months_raw else 12
+        period_months = months_back(period_months_raw or "12") or 12  # 0: default
     except ValueError:
-        period_months = 12
-    if period_months <= 0:
         period_months = 12
     end = _date.today()
     start = end - _timedelta(days=period_months * 30)

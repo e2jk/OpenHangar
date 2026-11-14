@@ -42,8 +42,11 @@ from models import (  # pyright: ignore[reportMissingImports]
 )
 from sqlalchemy import CursorResult, update  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
+    calendar_month,
+    calendar_year,
     current_membership,
     login_required,
+    months_back,
     require_role,
     user_can_access_aircraft,
 )
@@ -469,11 +472,8 @@ def calendar_view(aircraft_id: int):
     ac = _get_aircraft_or_404(aircraft_id)
     today = datetime.now(UTC).date()
 
-    try:
-        year = int(request.args.get("year", today.year))
-        month = int(request.args.get("month", today.month))
-    except ValueError:
-        year, month = today.year, today.month
+    year = request.args.get("year", today.year, type=calendar_year)
+    month = request.args.get("month", today.month, type=calendar_month)
 
     # Clamp to valid range
     if month < 1:
@@ -1838,10 +1838,8 @@ def rental_charge(aircraft_id: int, res_id: int):
 
 def _my_account_period(period_months_raw: str | None) -> tuple[_date, _date]:
     try:
-        period_months = int(period_months_raw) if period_months_raw else 12
+        period_months = months_back(period_months_raw or "12") or 12  # 0: default
     except ValueError:
-        period_months = 12
-    if period_months <= 0:
         period_months = 12
     end = _date.today()
     start = end - timedelta(days=period_months * 30)

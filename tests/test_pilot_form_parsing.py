@@ -79,3 +79,14 @@ class TestParseLinkedPilotFieldsErrors:
         assert any("Night landings" in e for e in errors)
         assert any("Multi-pilot time" in e for e in errors)
         assert any("Departure time" in e for e in errors)
+
+
+class TestParseIntOversized:
+    """Signed-in ZAP scan, "Integer Overflow Error": a whole number beyond
+    the database's INTEGER range is refused with a message rather than
+    failing the save."""
+
+    def test_landings_beyond_the_database_range_rejected(self):
+        values, errors = parse_pilot_fields({"landings_day": "9" * 20})
+        assert values["landings_day"] is None
+        assert any("Day landings" in e for e in errors)

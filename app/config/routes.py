@@ -34,9 +34,12 @@ from flask_babel import ngettext
 from init import _env_or_file  # pyright: ignore[reportMissingImports]
 from models import AppSetting, BackupRecord, db  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
+    DB_INT_MAX,
     activity,
     current_membership,
+    db_id,
     login_required,
+    months_back,
     require_instance_admin,
     to_libpq_url,
 )
@@ -722,7 +725,9 @@ def update_profile() -> ResponseReturnValue:
         profile.allows_rental = False
     else:
         try:
-            count = max(1, int(request.form.get("planned_aircraft_count") or 1))
+            count = max(
+                1, min(int(request.form.get("planned_aircraft_count") or 1), DB_INT_MAX)
+            )
         except (ValueError, TypeError):
             count = 1
         profile.planned_aircraft_count = count
@@ -736,7 +741,7 @@ def update_profile() -> ResponseReturnValue:
         overdue_raw = request.form.get("co_owner_overdue_days", "").strip()
         try:
             overdue_days = int(overdue_raw)
-            if overdue_days >= 1:
+            if 1 <= overdue_days <= DB_INT_MAX:
                 profile.co_owner_overdue_days = overdue_days
         except ValueError:
             pass  # non-numeric input — keep the existing setting unchanged
@@ -1097,7 +1102,7 @@ def tenant_reset_owner_password(tenant_id: int) -> ResponseReturnValue:
     if not tenant:
         abort(404)
 
-    owner_user_id = request.form.get("owner_user_id", type=int)
+    owner_user_id = request.form.get("owner_user_id", type=db_id)
     if not owner_user_id:
         flash(_("No user selected."), "danger")
         return redirect(url_for("config.tenant_list"))
@@ -1597,10 +1602,8 @@ def _renter_account_period(period_months_raw: str | None) -> tuple[Any, Any]:
     from datetime import date, timedelta
 
     try:
-        period_months = int(period_months_raw) if period_months_raw else 12
+        period_months = months_back(period_months_raw or "12") or 12  # 0: default
     except ValueError:
-        period_months = 12
-    if period_months <= 0:
         period_months = 12
     end = date.today()
     start = end - timedelta(days=period_months * 30)

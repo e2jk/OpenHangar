@@ -19,10 +19,63 @@ from flask import (  # pyright: ignore[reportMissingImports]
 )
 from werkzeug.routing import (  # pyright: ignore[reportMissingImports]
     BaseConverter,
+    IntegerConverter,
     ValidationError,
 )
 
 _log = logging.getLogger(__name__)
+
+# The largest PostgreSQL INTEGER, the type of every id column. A larger
+# number can never match a row, and PostgreSQL rejects it ("integer out of
+# range") instead of finding nothing, so it is turned away before any query.
+DB_INT_MAX = 2**31 - 1
+
+
+def int_in(lo: int, hi: int) -> Callable[[str], int]:
+    """A parser for a whole number from lo to hi, inclusive, raising
+    ValueError otherwise. Pass it as `type=` to `request.args.get()` (or
+    `.form` / `.values`), which then returns the default for a missing,
+    malformed or out-of-range value, rather than a number too large for
+    the database, a date or an offset.
+    """
+
+    def parse(value: str) -> int:
+        number = int(value)
+        if not lo <= number <= hi:
+            raise ValueError(f"{number} is outside {lo}..{hi}")
+        return number
+
+    return parse
+
+
+db_id = int_in(1, DB_INT_MAX)
+"""Parser for a record id from the request: a positive database INTEGER."""
+
+list_index = int_in(0, DB_INT_MAX)
+"""Parser for a position in a list kept by the app (0 is the first)."""
+
+page_number = int_in(1, DB_INT_MAX)
+"""Parser for a list's page number (its offset stays within a bigint)."""
+
+months_back = int_in(0, 1200)
+"""Parser for a "last N months" period: 0 (all time) up to 100 years."""
+
+calendar_year = int_in(2, 9998)
+"""Parser for a calendar's year, leaving room for the month before and after
+within what a date can hold (years 1 to 9999)."""
+
+calendar_month = int_in(0, 13)
+"""Parser for a calendar's month; 0 and 13 step into the year before/after."""
+
+
+class DbIdConverter(IntegerConverter):
+    """The app's `<int:...>` URL converter: a number above DB_INT_MAX is no
+    id at all, so the URL matches no route (404) instead of failing the
+    query with a server error."""
+
+    def __init__(self, map: Any, *args: Any, **kwargs: Any) -> None:
+        kwargs.setdefault("max", DB_INT_MAX)
+        super().__init__(map, *args, **kwargs)
 
 
 def to_libpq_url(database_url: str) -> str:
@@ -1280,6 +1333,8 @@ class AircraftRefConverter(BaseConverter):
 
     def to_python(self, value: str) -> int:
         if value.isdigit():
+            if int(value) > DB_INT_MAX:
+                raise ValidationError()
             return int(value)
 
         from models import Aircraft, db

@@ -50,7 +50,9 @@ from sqlalchemy.orm import joinedload  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
     activity,
     current_membership,
+    db_id,
     login_required,
+    page_number,
     require_role,
     user_can_access_aircraft,
 )
@@ -439,7 +441,7 @@ def list_documents(aircraft_id: int) -> ResponseReturnValue:
         query = query.filter_by(doc_type=filter_doc_type)
     query = query.order_by(Document.uploaded_at.desc())
 
-    page = request.args.get("page", 1, type=int)
+    page = request.args.get("page", 1, type=page_number)
     pp_raw = request.args.get("per_page", str(_DOCS_DEFAULT_PER_PAGE))
     show_all = pp_raw == "all"
     per_page = (
@@ -512,7 +514,7 @@ def upload_document(aircraft_id: int) -> ResponseReturnValue:
     # "Replace" on the documents list: the certificate being replaced, to
     # preselect its type and category and say what happens to it.
     replacing = None
-    replace_id = request.values.get("replace", type=int)
+    replace_id = request.values.get("replace", type=db_id)
     if replace_id:
         candidate = db.session.get(Document, replace_id)
         if candidate is not None and candidate.aircraft_id == ac.id:
@@ -858,7 +860,7 @@ def upload_pilot_document() -> ResponseReturnValue:
     # "Replace" on the profile's documents list: the document being
     # replaced, to preselect its type and say what happens to it.
     replacing = None
-    replace_id = request.values.get("replace", type=int)
+    replace_id = request.values.get("replace", type=db_id)
     if replace_id:
         candidate = db.session.get(Document, replace_id)
         if candidate is not None and candidate.pilot_user_id == uid:

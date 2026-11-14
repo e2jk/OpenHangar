@@ -465,6 +465,11 @@ def create_app() -> Flask:
     attach_to_logger()
 
     app = Flask(__name__)
+    from utils import DbIdConverter
+
+    # Before any route is added: every <int:...> segment is capped at the
+    # database's INTEGER range (see DbIdConverter).
+    app.url_map.converters["int"] = DbIdConverter
     from services.auth_sessions import RenewedLoginSafeSessions
 
     app.session_interface = RenewedLoginSafeSessions()
@@ -682,6 +687,8 @@ def create_app() -> Flask:
     from utils import (
         _load_aircraft_type_variants,
         _load_airport_names,
+        calendar_month,
+        calendar_year,
     )
 
     @app.template_filter("import_preview_cell")
@@ -1494,11 +1501,8 @@ def create_app() -> Flask:
             )
 
             # ── Fleet calendar widget ─────────────────────────────────────────
-            try:
-                cal_year = int(request.args.get("cal_year", today.year))
-                cal_month = int(request.args.get("cal_month", today.month))
-            except ValueError:
-                cal_year, cal_month = today.year, today.month
+            cal_year = request.args.get("cal_year", today.year, type=calendar_year)
+            cal_month = request.args.get("cal_month", today.month, type=calendar_month)
             if cal_month < 1:
                 cal_year -= 1
                 cal_month = 12
