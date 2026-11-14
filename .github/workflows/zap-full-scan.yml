@@ -214,6 +214,11 @@ jobs:
         # build, binary, and their access rules are covered by the test
         # suite's role sweeps. Plain file serving (uploads, GPS files,
         # photos) stays in: it is fast, and worth path-traversal checks.
+        # The language/theme switches are left out too (url 5): every page
+        # links to six of them with ?next=<that page>, so they made up ~70%
+        # of a local signed-in crawl's requests and multiplied the attack
+        # phase's work. Their off-site redirect guard has its own tests
+        # (tests/test_i18n.py, test_query_values_not_echoed.py).
         # -d: without it the scan script prints nothing until it ends (the
         # first run's log was silent for 2 h); with it, crawl and "Active
         # Scan progress %" lines stream into this step's live log. The hook
@@ -245,6 +250,8 @@ jobs:
             -config globalexcludeurl.url_list.url(3).enabled=true
             -config globalexcludeurl.url_list.url(4).regex=^https?://[^/]+/.*/(download-all|amp/export(/pdf)?)([?#].*)?$
             -config globalexcludeurl.url_list.url(4).enabled=true
+            -config globalexcludeurl.url_list.url(5).regex=^https?://[^/]+/set-(language|theme)/.*
+            -config globalexcludeurl.url_list.url(5).enabled=true
             -config scanner.maxScanDurationInMins=90
             -config scanner.maxRuleDurationInMins=5
             -config scanner.threadPerHost=4"
