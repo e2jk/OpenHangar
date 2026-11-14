@@ -179,6 +179,7 @@ jobs:
             -e OPENHANGAR_DATABASE_URL="$ZAP_DB_URL" -e OPENHANGAR_DB_HOST="$ZAP_DB" \
             -e OPENHANGAR_ENV=production -e OPENHANGAR_SECRET_KEY="$ZAP_SECRET" \
             -e OPENHANGAR_PROXY_HOPS=0 -e OPENHANGAR_ACCESS_LOG=1 \
+            -e OPENHANGAR_WEB_WORKERS=2 \
             openhangar:ci
           for _ in $(seq 120); do
             [ "$(docker inspect --format='{{.State.Health.Status}}' "$ZAP_WEB")" = healthy ] && exit 0
@@ -200,7 +201,17 @@ jobs:
       - name: OWASP ZAP full (active) scan, signed in
         # The session cookie is added to every request (replacer rule).
         # Logout and the account-security pages are excluded: they would end
-        # or renew the very session being scanned with.
+        # or renew the very session being scanned with. Only the account page
+        # itself (/profile at the root) — not /pilot/profile.
+        # Time: signed in, the crawl finds hundreds of pages (650 for the
+        # admin on the first run), and an unbounded active scan of them all
+        # ran into the job's 2 h limit without writing a report. The attack
+        # phase is capped at 60 min and each rule at 5, so a report is always
+        # produced; 4 scanner threads against 2 web workers fit more of the
+        # surface in that time.
+        # -d: without it the scan script prints nothing until it ends (the
+        # first run's log was silent for 2 h); with it, crawl and "Active
+        # Scan progress %" lines stream into this step's live log.
         uses: zaproxy/action-full-scan@3c58388149901b9a03b7718852c5ba889646c27c # v0.13.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -210,7 +221,7 @@ jobs:
           allow_issue_writing: 'false'
           artifact_name: zap-authenticated-${{ matrix.user }}
           cmd_options: >-
-            -m 10
+            -m 10 -d
             -z "-config replacer.full_list(0).description=session
             -config replacer.full_list(0).enabled=true
             -config replacer.full_list(0).matchtype=REQ_HEADER
@@ -219,10 +230,13 @@ jobs:
             -config replacer.full_list(0).replacement=${{ env.ZAP_COOKIE }}
             -config globalexcludeurl.url_list.url(0).regex=.*/logout.*
             -config globalexcludeurl.url_list.url(0).enabled=true
-            -config globalexcludeurl.url_list.url(1).regex=.*/profile$
+            -config globalexcludeurl.url_list.url(1).regex=^https?://[^/]+/profile([?#].*)?$
             -config globalexcludeurl.url_list.url(1).enabled=true
             -config globalexcludeurl.url_list.url(2).regex=.*/reset-password/.*
-            -config globalexcludeurl.url_list.url(2).enabled=true"
+            -config globalexcludeurl.url_list.url(2).enabled=true
+            -config scanner.maxScanDurationInMins=60
+            -config scanner.maxRuleDurationInMins=5
+            -config scanner.threadPerHost=4"
 
       - name: Prove the scan stayed signed in and reached signed-in pages
         if: always()
