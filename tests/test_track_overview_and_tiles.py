@@ -133,9 +133,14 @@ class TestTileCache:
             )
 
     def test_cache_dir_only_inside_the_app(self, app):
+        from concurrent.futures import ThreadPoolExecutor
+
         import utils
 
-        assert utils._tile_cache_dir() is None
+        # Checked in a fresh thread: Flask contexts do not carry over to it, so
+        # an app context another test left pushed on this worker cannot leak in.
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            assert pool.submit(utils._tile_cache_dir).result() is None
         with app.app_context():
             assert utils._tile_cache_dir().endswith("tile_cache")
 
