@@ -19,6 +19,7 @@ from datetime import date, timedelta
 from io import BytesIO
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
+import pytest
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     DocType,
@@ -573,9 +574,15 @@ class TestDownloadAllDocuments:
         with zipfile.ZipFile(buf) as zf:
             assert "manifest.txt" in zf.namelist()
 
-    def test_zip_excludes_sensitive_for_non_owner(self, app, client):
+    @pytest.mark.parametrize(
+        "role, included",
+        [(Role.PILOT, True), (Role.MAINTENANCE, True), (Role.VIEWER, False)],
+    )
+    def test_zip_has_sensitive_documents_as_the_list_does(
+        self, app, client, role, included
+    ):
+        # Same rule as the list: sensitive documents for every role but viewers.
         _uid, tid = _create_user_and_tenant(app)
-        # Add a pilot (non-owner) user with all-aircraft access
         with app.app_context():
             crew_user = User(
                 email="crew@x.com",
@@ -584,9 +591,7 @@ class TestDownloadAllDocuments:
             )
             db.session.add(crew_user)
             db.session.flush()
-            db.session.add(
-                TenantUser(user_id=crew_user.id, tenant_id=tid, role=Role.PILOT)
-            )
+            db.session.add(TenantUser(user_id=crew_user.id, tenant_id=tid, role=role))
             db.session.add(UserAllAircraftAccess(user_id=crew_user.id, tenant_id=tid))
             db.session.commit()
             crew_id = crew_user.id
@@ -605,9 +610,9 @@ class TestDownloadAllDocuments:
         assert rv.status_code == 200
         buf = io.BytesIO(rv.data)
         with zipfile.ZipFile(buf) as zf:
-            names = zf.namelist()
-            assert "manifest.txt" in names
-            assert not any("Secret" in n for n in names)
+            assert "manifest.txt" in zf.namelist()
+            manifest = zf.read("manifest.txt").decode()
+        assert ("Secret Cert" in manifest) is included
 
     def test_zip_includes_sensitive_for_owner(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
