@@ -1139,14 +1139,15 @@ def create_app() -> Flask:
         )
         return redirect(_submitting_page())
 
-    from models import NumberTooLarge
+    from models import DoesNotFitColumn, TextTooLong
 
-    @app.errorhandler(NumberTooLarge)
-    def number_too_large(e: NumberTooLarge) -> ResponseReturnValue:
-        # A number beyond its column's range (models.fits_column), from a
-        # form without its own check for that field: nothing is saved, and
-        # the user goes back to the form with a reason instead of a server
-        # error. Forms that check their own fields keep what was typed.
+    @app.errorhandler(DoesNotFitColumn)
+    def does_not_fit_column(e: DoesNotFitColumn) -> ResponseReturnValue:
+        # A number beyond its column's range, or a text longer than its
+        # column (models.fits_column), from a form without its own check for
+        # that field: nothing is saved, and the user goes back to the form
+        # with a reason instead of a server error. Forms that check their
+        # own fields keep what was typed.
         import logging
 
         from flask import flash, redirect
@@ -1155,13 +1156,17 @@ def create_app() -> Flask:
 
         db.session.rollback()
         logging.getLogger(__name__).warning("Refused to save %s", e)
-        flash(
-            _(
+        if isinstance(e, TextTooLong):
+            message = _(
+                "Some text entered is too long, so nothing was saved. "
+                "Please shorten it and try again."
+            )
+        else:
+            message = _(
                 "A number entered is far too large, so nothing was saved. "
                 "Please check the values and try again."
-            ),
-            "danger",
-        )
+            )
+        flash(message, "danger")
         return redirect(_submitting_page())
 
     def _submitting_page() -> str:
