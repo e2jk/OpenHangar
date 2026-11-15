@@ -121,7 +121,7 @@ jobs:
     # Never point it at an operator's live instance.
     name: ZAP authenticated scan (${{ matrix.user }})
     runs-on: ubuntu-26.04
-    timeout-minutes: 135  # setup ~2 + two 10 min crawls + 90 min attack + report
+    timeout-minutes: 135  # setup ~2 + crawls (10 + up to 20 min) + 90 min attack + report
     permissions:
       security-events: write  # ZAP SARIF upload
     strategy:
@@ -134,12 +134,30 @@ jobs:
             totp: JBSWY3DPEHPK3PXP  # fixed dev-seed secret, not a credential
             evidence: '^/config/$ ^/config/users/$ ^/aircraft/[A-Z0-9-]+/expenses$'
             aircraft: 'OO-PNH OO-ABC OO-GRN OO-TCH'  # the dev seed's fleet
+            # Browser crawl: minutes, and the pages it may start from ({reg}
+            # = this run's aircraft). The admin's crawl only got through ~9%
+            # of its queue in 10 min, so it gets 20 (the job then still ends
+            # well inside its limit: the admin leg took 71 of 135 min).
+            browser_minutes: 20
+            browser_entries: >-
+              / /aircraft/ /aircraft/{reg} /aircraft/{reg}/maintenance
+              /aircraft/{reg}/airworthiness/ /aircraft/{reg}/documents
+              /aircraft/{reg}/expenses /aircraft/{reg}/reservations/
+              /aircraft/{reg}/snags /aircraft/{reg}/wb/ /config/ /config/users/
+              /config/renters/ /flights /maintenance /reservations/fleet/
+              /pilot/logbook /pilot/minimums
           - user: pilot
             email: pilot@openhangar.dev
             password: openhangar-dev-3
             totp: ''
             evidence: '^/pilot/logbook$ ^/flights$ ^/pilot/profile$'
             aircraft: 'OO-PNH OO-ABC'  # the two the seeded pilot may fly
+            browser_minutes: 10  # the pilot's crawl finishes within 10 min
+            browser_entries: >-
+              / /aircraft/{reg} /aircraft/{reg}/reservations/
+              /aircraft/{reg}/snags /flights /reservations/fleet/
+              /pilot/logbook /pilot/profile /pilot/minimums /pilot/tracks
+              /pilot/stats
     env:
       ZAP_DB: zap-db
       ZAP_WEB: zap-web
@@ -200,15 +218,23 @@ jobs:
           echo "::add-mask::${cookie#session=}"
           echo "ZAP_COOKIE=$cookie" >> "$GITHUB_ENV"
 
-      - name: Pick this run's sample (one aircraft, one last ID digit)
+      - name: Pick this run's sample (one aircraft, one last ID digit, a browser start page)
         # Every aircraft has the same pages, and every flight, logbook entry
         # and reservation the same few: scanning them all multiplied the
         # work by four, then by ten, for the same code. Each run scans one
         # aircraft and the IDs ending in one digit; both move on with the run
         # number, so successive weekly runs cover the rest of the data.
+        # The browser crawl cannot cover everything in its time either, and
+        # it starts from the home page, so it would always cover the same
+        # part. Each run it starts from a page picked at random instead
+        # (written to the summary), read by .zap/scan_hook.py from
+        # zap-client-spider.json. A page that does not answer 200 for this
+        # user falls back to the home page.
         env:
           AIRCRAFT: ${{ matrix.aircraft }}
           RUN: ${{ github.run_number }}
+          BROWSER_MINUTES: ${{ matrix.browser_minutes }}
+          BROWSER_ENTRIES: ${{ matrix.browser_entries }}
         run: |
           read -ra regs <<< "$AIRCRAFT"
           keep=${regs[RUN % ${#regs[@]}]}
@@ -219,6 +245,17 @@ jobs:
           # Also by id: the browser crawl reaches /aircraft/<id>/..., the same pages.
           echo "ZAP_SKIP_AIRCRAFT=^https?://[^/]+/aircraft/($others|[0-9]+)([/?#].*)?\$" >> "$GITHUB_ENV"
           echo "ZAP_SKIP_IDS=^https?://[^/]+/(.*/)?(flights|logbook|reservations)/[0-9]*[$other_digits]([/?#].*)?\$" >> "$GITHUB_ENV"
+          read -ra entries <<< "$BROWSER_ENTRIES"
+          entry=${entries[RANDOM % ${#entries[@]}]}
+          entry=${entry//\{reg\}/$keep}
+          status=$(curl -s -o /dev/null -w '%{http_code}' -H "Cookie: $ZAP_COOKIE" "$BASE_URL$entry")
+          if [ "$status" != 200 ]; then
+            echo "::warning::browser start page $entry answered $status, starting from / instead"
+            entry=/
+          fi
+          echo "Browser crawl: $BROWSER_MINUTES min from $entry" | tee -a "$GITHUB_STEP_SUMMARY"
+          jq -n --arg url "$BASE_URL$entry" --argjson minutes "$BROWSER_MINUTES" \
+            '{url: $url, minutes: $minutes}' > zap-client-spider.json
 
       - name: OWASP ZAP full (active) scan, signed in
         # The session cookie is added to every request (replacer rule).
@@ -229,7 +266,7 @@ jobs:
         # admin on the first run), and an unbounded active scan of them all
         # ran into the job's 2 h limit without writing a report. The attack
         # phase is capped at 90 min and each rule at 5, so a report is always
-        # produced (setup ~2 + crawls <=20 + 90 + report stays under 135); 4 scanner threads against 2 web workers fit more of the
+        # produced (setup ~2 + crawls <=30 + 90 + report stays under 135); 4 scanner threads against 2 web workers fit more of the
         # surface in that time. The second run reached only ~9% of its checks
         # in 17 min, so generated downloads are left out too (url 3 and 4):
         # track GIF/PNG renders, ZIP bundles, PDF/CSV/AMP exports — slow to
@@ -253,12 +290,14 @@ jobs:
         # the aircraft page prefetches — two of which a pilot could read
         # but should not have. The browser does not honour the exclusions
         # the way the spiders do, so replacer rule 1 turns its sign-out
-        # request into the health check. It adds up to 10 min to the crawl.
+        # request into the health check. It adds up to 10 (pilot) or 20
+        # (admin) min to the crawl, from a random start page (sample step).
         # -d: without it the scan script prints nothing until it ends (the
         # first run's log was silent for 2 h); with it, crawl and "Active
         # Scan progress %" lines stream into this step's live log. The hook
-        # (.zap/quiet_progress_hook.py) only drops the HTTP library's lines
-        # behind each 5 s progress poll, which -d would otherwise also print.
+        # (.zap/scan_hook.py) drops the HTTP library's lines behind each 5 s
+        # progress poll, which -d would otherwise also print, and sets the
+        # browser crawl's start page and minutes.
         uses: zaproxy/action-full-scan@3c58388149901b9a03b7718852c5ba889646c27c # v0.13.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -268,7 +307,7 @@ jobs:
           allow_issue_writing: 'false'
           artifact_name: zap-authenticated-${{ matrix.user }}
           cmd_options: >-
-            -j -m 10 -d --hook=/zap/wrk/.zap/quiet_progress_hook.py
+            -j -m 10 -d --hook=/zap/wrk/.zap/scan_hook.py
             -z "-config replacer.full_list(0).description=session
             -config replacer.full_list(0).enabled=true
             -config replacer.full_list(0).matchtype=REQ_HEADER
