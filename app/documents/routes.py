@@ -766,13 +766,13 @@ def delete_document(aircraft_id: int, document_id: int) -> ResponseReturnValue:
 @login_required
 def download_all_documents(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
-    role = _current_role()
-    include_sensitive = role in _OWNER_ROLES
-
-    query = visible_documents(Document.query.filter_by(aircraft_id=ac.id), role)
-    if not include_sensitive:
-        query = query.filter_by(is_sensitive=False)
-    docs = query.order_by(Document.uploaded_at.asc()).all()
+    # Everything this role may see, sensitive documents included (the list
+    # shows them too, behind "Show sensitive").
+    docs = (
+        visible_documents(Document.query.filter_by(aircraft_id=ac.id), _current_role())
+        .order_by(Document.uploaded_at.asc())
+        .all()
+    )
 
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
     buf = io.BytesIO()
