@@ -1,0 +1,180 @@
+name: ZAP browser crawl (signed in)
+
+# A trial of ZAP's browser-based crawler (the Client Spider, which drives a
+# headless Firefox: clicks, menus, pages built by JavaScript or HTMX), next
+# to the traditional link-following spider used by zap-full-scan.yml. ZAP
+# suggests it for modern web apps (alert 10109). This run only crawls and
+# scans passively, then lists the pages only the browser found: if that
+# list holds pages worth attacking, the browser crawl can join the weekly
+# active scan. Run by hand; same disposable seeded instance and sign-in as
+# the authenticated scan.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read  # checkout; nothing here writes
+
+concurrency:
+  group: zap-browser-crawl
+  cancel-in-progress: true
+
+jobs:
+  zap-browser-crawl:
+    name: ZAP browser crawl (${{ matrix.user }})
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - user: admin
+            email: admin@openhangar.dev
+            password: openhangar-dev-1
+            totp: JBSWY3DPEHPK3PXP  # fixed dev-seed secret, not a credential
+          - user: pilot
+            email: pilot@openhangar.dev
+            password: openhangar-dev-3
+            totp: ''
+    env:
+      ZAP_DB: zap-db
+      ZAP_WEB: zap-web
+      ZAP_DB_URL: postgresql://zapuser:zappass@zap-db:5432/zapdb
+      ZAP_SECRET: zap-ci-secret-not-for-production-use-only-0123456789
+      BASE_URL: http://localhost:5001
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build Docker image (linux/amd64)
+        run: |
+          docker buildx build \
+            --platform linux/amd64 \
+            -f docker/Dockerfile \
+            -t openhangar:ci \
+            --load .
+
+      - name: Start a disposable, seeded, production-mode instance
+        run: |
+          docker network create zap-net
+          docker run -d --name "$ZAP_DB" --network zap-net \
+            -e POSTGRES_DB=zapdb -e POSTGRES_USER=zapuser -e POSTGRES_PASSWORD=zappass \
+            postgres:18-alpine
+          until docker exec "$ZAP_DB" pg_isready -U zapuser >/dev/null 2>&1; do sleep 1; done
+          docker run --rm --network zap-net --entrypoint python \
+            -e OPENHANGAR_DATABASE_URL="$ZAP_DB_URL" -e OPENHANGAR_DB_HOST="$ZAP_DB" \
+            -e OPENHANGAR_ENV=development \
+            -e OPENHANGAR_SECRET_KEY="$ZAP_SECRET" \
+            openhangar:ci docker-init-db.py
+          docker run -d --name "$ZAP_WEB" --network zap-net -p 5001:5000 \
+            -e OPENHANGAR_DATABASE_URL="$ZAP_DB_URL" -e OPENHANGAR_DB_HOST="$ZAP_DB" \
+            -e OPENHANGAR_ENV=production -e OPENHANGAR_SECRET_KEY="$ZAP_SECRET" \
+            -e OPENHANGAR_PROXY_HOPS=0 -e OPENHANGAR_ACCESS_LOG=1 \
+            -e OPENHANGAR_WEB_WORKERS=2 \
+            openhangar:ci
+          for _ in $(seq 120); do
+            [ "$(docker inspect --format='{{.State.Health.Status}}' "$ZAP_WEB")" = healthy ] && exit 0
+            sleep 1
+          done
+          docker logs "$ZAP_WEB"
+          exit 1
+
+      - name: Sign the scan user in
+        env:
+          USER_EMAIL: ${{ matrix.email }}
+          USER_PASSWORD: ${{ matrix.password }}
+          USER_TOTP: ${{ matrix.totp }}
+        run: |
+          cookie=$(python3 .github/scripts/zap_auth_session.py login "$BASE_URL" "$USER_EMAIL" "$USER_PASSWORD" "$USER_TOTP")
+          echo "::add-mask::${cookie#session=}"
+          echo "ZAP_COOKIE=$cookie" >> "$GITHUB_ENV"
+
+      - name: ZAP baseline scan with the browser crawler, signed in
+        # -j adds the Client Spider after the traditional spider (10 min
+        # each, -m 10); the hook records the URLs before and after it.
+        # Replacer rule 0 adds the session cookie to every request, the
+        # browser's included. A browser does not honour ZAP's exclusions the
+        # way the spiders do, so rule 1 turns its sign-out link into the
+        # health check: following it would end the session being scanned
+        # with. The exclusions are the authenticated scan's (sign-out,
+        # account security, generated downloads, language/theme switches),
+        # without its sampling: this run is about what can be found.
+        uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 # v0.15.0
+        with:
+          target: 'http://localhost:5001/'
+          rules_file_name: '.zap/rules-authenticated.tsv'
+          fail_action: 'false'
+          allow_issue_writing: 'false'
+          artifact_name: zap-browser-crawl-${{ matrix.user }}
+          cmd_options: >-
+            -j -m 10 -d --hook=/zap/wrk/.zap/browser_crawl_hook.py
+            -z "-config replacer.full_list(0).description=session
+            -config replacer.full_list(0).enabled=true
+            -config replacer.full_list(0).matchtype=REQ_HEADER
+            -config replacer.full_list(0).matchstr=Cookie
+            -config replacer.full_list(0).regex=false
+            -config replacer.full_list(0).replacement=${{ env.ZAP_COOKIE }}
+            -config replacer.full_list(1).description=keep-signed-in
+            -config replacer.full_list(1).enabled=true
+            -config replacer.full_list(1).matchtype=REQ_HEADER_STR
+            -config replacer.full_list(1).matchstr=/logout HTTP/
+            -config replacer.full_list(1).regex=false
+            -config replacer.full_list(1).replacement=/health HTTP/
+            -config globalexcludeurl.url_list.url(0).regex=.*/logout.*
+            -config globalexcludeurl.url_list.url(0).enabled=true
+            -config globalexcludeurl.url_list.url(1).regex=^https?://[^/]+/profile([?#].*)?$
+            -config globalexcludeurl.url_list.url(1).enabled=true
+            -config globalexcludeurl.url_list.url(2).regex=.*/reset-password/.*
+            -config globalexcludeurl.url_list.url(2).enabled=true
+            -config globalexcludeurl.url_list.url(3).regex=^https?://[^/]+/.*\.(gif|png|zip|csv|pdf)([?#].*)?$
+            -config globalexcludeurl.url_list.url(3).enabled=true
+            -config globalexcludeurl.url_list.url(4).regex=^https?://[^/]+/.*/(download-all|amp/export(/pdf)?)([?#].*)?$
+            -config globalexcludeurl.url_list.url(4).enabled=true
+            -config globalexcludeurl.url_list.url(5).regex=^https?://[^/]+/set-(language|theme)/.*
+            -config globalexcludeurl.url_list.url(5).enabled=true"
+
+      - name: List what only the browser found
+        if: always()
+        env:
+          SCAN_USER: ${{ matrix.user }}
+        run: |
+          for f in crawl-traditional.txt crawl-browser-only.txt; do
+            [ -f "$f" ] || { echo "::error::$f missing: the browser crawl did not run"; exit 1; }
+          done
+          # One line per page shape: ids and registrations folded together.
+          shape() { sed -E 's#^https?://[^/]+##; s#\?.*##; s#/[0-9]+(/|$)#/<id>\1#g; s#/[0-9]+(/|$)#/<id>\1#g; s#/OO-[A-Z]{3}(/|$)#/<reg>\1#g' "$1" | sort -u; }
+          shape crawl-traditional.txt > shapes-traditional.txt
+          shape crawl-browser-only.txt | comm -23 - shapes-traditional.txt > shapes-browser-only.txt
+          {
+            echo "### Browser crawl ($SCAN_USER)"
+            echo "URLs from the traditional spider: $(wc -l < crawl-traditional.txt)"
+            echo "URLs only the browser found: $(wc -l < crawl-browser-only.txt)"
+            echo "Page shapes only the browser found: $(wc -l < shapes-browser-only.txt)"
+            echo '```'
+            cat shapes-browser-only.txt
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          # Still signed in at the end? Otherwise the browser's pages are the
+          # signed-out ones, and the list says little.
+          python3 .github/scripts/zap_auth_session.py verify "$BASE_URL" "$ZAP_COOKIE"
+
+      - name: Keep the URL lists
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: zap-browser-crawl-urls-${{ matrix.user }}
+          path: |
+            crawl-*.txt
+            shapes-*.txt
+          if-no-files-found: ignore
+
+      - name: Remove the disposable instance
+        if: always()
+        run: |
+          docker rm -f "$ZAP_WEB" "$ZAP_DB" >/dev/null 2>&1 || true
+          docker network rm zap-net >/dev/null 2>&1 || true
