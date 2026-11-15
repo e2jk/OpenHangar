@@ -560,6 +560,12 @@ def serve_upload(filename: str) -> ResponseReturnValue:
     # Verify the requesting user may see this file before serving it.
     doc = Document.query.filter_by(filename=filename).first()
     if doc is not None:
+        from documents.routes import (  # pyright: ignore[reportMissingImports]
+            may_see_document,
+        )
+
+        if doc.pilot_user_id is None and not may_see_document(doc, current_user_role()):
+            abort(404)
         if doc.aircraft_id is not None:
             # Covers aircraft docs and component docs (which always carry aircraft_id too).
             _get_aircraft_or_404(

@@ -192,6 +192,7 @@ def public_view(token: str, registration: str | None = None) -> ResponseReturnVa
         )
         recent_documents = (
             Document.query.filter_by(aircraft_id=ac.id, is_sensitive=False)
+            .filter(Document.expense_id.is_(None))  # receipts: owners only
             .order_by(Document.uploaded_at.desc())
             .limit(10)
             .all()

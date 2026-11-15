@@ -374,6 +374,33 @@ class TestPublicView:
         resp = client.get("/share/ful12345")
         assert b"101.5" in resp.data
 
+    def test_full_lists_documents_but_not_expense_receipts(self, app, client):
+        from models import Document, Expense
+
+        _uid, _tid, acid = _setup(app)
+        with app.app_context():
+            expense = Expense(
+                aircraft_id=acid, date=datetime(2026, 1, 1).date(), amount=99
+            )
+            db.session.add(expense)
+            db.session.flush()
+            for title, expense_id in (("POH scan", None), ("Fuel invoice", expense.id)):
+                db.session.add(
+                    Document(
+                        aircraft_id=acid,
+                        filename=f"{title}.pdf",
+                        original_filename=f"{title}.pdf",
+                        mime_type="application/pdf",
+                        title=title,
+                        expense_id=expense_id,
+                    )
+                )
+            db.session.commit()
+        _add_token(app, acid, "doc12345", access_level="full")
+        resp = client.get("/share/doc12345")
+        assert b"POH scan" in resp.data
+        assert b"Fuel invoice" not in resp.data
+
     def test_full_shows_recent_flights(self, app, client):
         _uid, _tid, acid = _setup(app)
         with app.app_context():

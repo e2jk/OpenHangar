@@ -8,6 +8,7 @@ import uuid
 import zipfile
 from datetime import UTC, datetime
 from datetime import date as _date
+from typing import Any
 
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
@@ -362,6 +363,33 @@ def _current_role() -> Role | None:
     return tu.role if tu else None
 
 
+def _sees_sensitive(role: str | None) -> bool:
+    # The user guide: sensitive documents are hidden from viewers.
+    return role is not None and role != Role.VIEWER
+
+
+def may_see_document(doc: Document, role: str | None) -> bool:
+    """Whether *role* may see this aircraft document, beyond aircraft access.
+
+    An expense receipt belongs with the expenses, which only owners and
+    admins see; a sensitive document is not for viewers. A pilot's own
+    documents are checked by owner instead (flights.serve_upload).
+    """
+    if doc.expense_id is not None and role not in _OWNER_ROLES:
+        return False
+    return not doc.is_sensitive or _sees_sensitive(role)
+
+
+def visible_documents(query: Any, role: str | None) -> Any:
+    """*query* of aircraft documents, narrowed to what *role* may see
+    (same rules as may_see_document)."""
+    if role not in _OWNER_ROLES:
+        query = query.filter(Document.expense_id.is_(None))
+    if not _sees_sensitive(role):
+        query = query.filter(Document.is_sensitive.is_(False))
+    return query
+
+
 def _doc_broken(doc: Document) -> bool:
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
     return not os.path.exists(os.path.join(folder, doc.filename))
@@ -428,7 +456,10 @@ def list_documents(aircraft_id: int) -> ResponseReturnValue:
     filter_doc_type = request.args.get("doc_type") or None
     if filter_doc_type not in doc_type_labels:
         filter_doc_type = None
-    query = Document.query.filter_by(aircraft_id=ac.id).options(
+    role = _current_role()
+    query = visible_documents(
+        Document.query.filter_by(aircraft_id=ac.id), role
+    ).options(
         joinedload(Document.component),  # type: ignore[arg-type]
         joinedload(Document.flight_entry),  # type: ignore[arg-type]
         joinedload(Document.expense),  # type: ignore[arg-type]
@@ -462,10 +493,13 @@ def list_documents(aircraft_id: int) -> ResponseReturnValue:
         docs = pagination.items
         total_count = pagination.total
 
-    sensitive_count = Document.query.filter_by(
-        aircraft_id=ac.id, is_sensitive=True
-    ).count()
-    role = _current_role()
+    sensitive_count = (
+        visible_documents(
+            Document.query.filter_by(aircraft_id=ac.id, is_sensitive=True), role
+        ).count()
+        if _sees_sensitive(role)
+        else 0
+    )
     is_owner = role in _OWNER_ROLES
     broken_ids = {doc.id for doc in docs if _doc_broken(doc)}
     # One active document per doc_type actually present in this list --
@@ -735,7 +769,7 @@ def download_all_documents(aircraft_id: int) -> ResponseReturnValue:
     role = _current_role()
     include_sensitive = role in _OWNER_ROLES
 
-    query = Document.query.filter_by(aircraft_id=ac.id)
+    query = visible_documents(Document.query.filter_by(aircraft_id=ac.id), role)
     if not include_sensitive:
         query = query.filter_by(is_sensitive=False)
     docs = query.order_by(Document.uploaded_at.asc()).all()

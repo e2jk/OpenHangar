@@ -1,7 +1,6 @@
-# Security fix: expenses and costs visible to owners only
+# Security fix: expense receipts and sensitive documents
 
-- **Security:** an aircraft's expense list and cost dashboard are now limited to owners and admins, as the aircraft page already showed them. Before, any user assigned to the aircraft (pilot, maintenance, viewer) could open them by their address, and the aircraft page had their browser fetch both in the background for offline use. Found by the new browser-based crawl of the signed-in security scan.
-- A decimal or whole number too large for where it is stored (for example 1,000 hours of night time in one logbook entry, or an extra digit in an engine counter) is now refused with a message instead of a server error; the pilot logbook and flight forms keep what was typed, other forms go back with nothing saved.
+- **Security:** expense receipts are now shown to owners and admins only, like the expenses themselves since v3.48.0: they are stored with the aircraft's documents, so pilots, maintenance users and viewers could still open them there, and a full-access share page listed their titles. Sensitive documents are now hidden from viewers, as the user guide says; before, the documents list showed them to anyone with "Show sensitive", and their files opened for anyone assigned to the aircraft.
 
 **Maintenance**
-- Security scan: a new, manually run workflow tries ZAP's browser-based crawler (a headless Firefox that clicks through pages built by JavaScript and HTMX) on the signed-in app, and lists the pages only it finds, to decide whether it should join the weekly signed-in scan.
+- Signed-in security scan: the weekly scan now also uses the browser-based crawler, which reaches the offline data endpoints and the pages the aircraft page fetches in the background (its trial found the expense pages fixed in v3.48.0).
