@@ -324,7 +324,9 @@ be visible when reading the raw CSV; the records in OpenHangar are unchanged.
 
 Upload any PDF, image, or document from the Aircraft or Component detail page.
 Mark a document **sensitive** at upload time to hide it from renter/viewer roles
-while keeping it visible to owners and admins.
+while keeping it visible to owners and admins. An expense's receipt is listed
+with the aircraft's documents too, but only owners and admins see it, as they
+alone see the expenses.
 
 Backups, SMTP settings, and usage profile are managed from the **Configuration** page (administrators only):
 
