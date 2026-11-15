@@ -1,9 +1,8 @@
 # ZAP rule overrides for the AUTHENTICATED full scan (zap-full-scan.yml,
 # zap-authenticated-scan job). Same suppressions as .zap/rules.tsv, reviewed
 # against a signed-in crawl — except:
-#   - 90027 Cookie Slack Detector is NOT ignored here: its rules.tsv reason
-#     ("the crawl never authenticates") does not hold for this scan, so its
-#     findings must be triaged, not suppressed.
+#   - 90027 Cookie Slack Detector is ignored for a different reason than in
+#     rules.tsv (see the entry at the end of this file).
 # Keep the two files in step when a suppression is added or removed.
 #
 # These are CI-specific suppressions for the plain-HTTP CI containers.
@@ -39,3 +38,17 @@
 # the rule's path tricks and other headers report on other URLs, and still
 # count.
 40038	OUTOFSCOPE	^https?://[^/]+/$
+
+# Cookie Slack Detector (90027), ignored (2026-11-15) because it cannot give a
+# meaningful result on a signed-in page. The rule drops one cookie at a time
+# and compares the answers, but its cookie list also takes the cookies the
+# response sets, and every signed-in page renews the session cookie
+# (Set-Cookie: session=..., sliding 30-day sign-in): it holds two "session"
+# cookies, drops one, sends the other, and the page never changes. Checked in
+# ZAP's source and against an echo server; running the rule in its own pass
+# without the session-cookie replacer still alarmed on every page. What the
+# rule is after — a page served without the session cookie — is checked
+# instead by tests/functional/test_signed_out_sweep.py: every signed-in route
+# answers a request without the cookie with a redirect to sign-in, a 401
+# (the JSON APIs) or a 404 (an unknown share or invite token).
+90027	IGNORE	Cookie Slack Detector: cannot work signed in (the response renews the session cookie it tries to drop); covered by tests/functional/test_signed_out_sweep.py

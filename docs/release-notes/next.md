@@ -5,3 +5,4 @@
 
 **Maintenance**
 - Signed-in security scan: the "Bypassing 403" check no longer reports the home page answering a request that carries an `X-Original-URL` header — a signed-in user's home page always answers, and nothing in OpenHangar reads that header (a test checks it). Every other way that check tries to get past a 403 is still reported.
+- Signed-in security scan: the "Cookie Slack Detector" check is now ignored, so the weekly scan is no longer red for it. Signed in, it cannot give a meaningful answer here (every page renews the session cookie it tries to remove); a test already checks that no signed-in page is served without that cookie.
