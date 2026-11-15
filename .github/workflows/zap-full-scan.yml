@@ -121,7 +121,7 @@ jobs:
     # Never point it at an operator's live instance.
     name: ZAP authenticated scan (${{ matrix.user }})
     runs-on: ubuntu-26.04
-    timeout-minutes: 120
+    timeout-minutes: 135  # setup ~2 + two 10 min crawls + 90 min attack + report
     permissions:
       security-events: write  # ZAP SARIF upload
     strategy:
@@ -216,7 +216,8 @@ jobs:
           others=$(printf '%s\n' "${regs[@]}" | grep -vxF "$keep" | paste -sd '|')
           other_digits=$(printf '%s' 0123456789 | tr -d "$digit")
           echo "Scanning aircraft $keep and IDs ending in $digit" | tee -a "$GITHUB_STEP_SUMMARY"
-          echo "ZAP_SKIP_AIRCRAFT=^https?://[^/]+/aircraft/($others)([/?#].*)?\$" >> "$GITHUB_ENV"
+          # Also by id: the browser crawl reaches /aircraft/<id>/..., the same pages.
+          echo "ZAP_SKIP_AIRCRAFT=^https?://[^/]+/aircraft/($others|[0-9]+)([/?#].*)?\$" >> "$GITHUB_ENV"
           echo "ZAP_SKIP_IDS=^https?://[^/]+/(.*/)?(flights|logbook|reservations)/[0-9]*[$other_digits]([/?#].*)?\$" >> "$GITHUB_ENV"
 
       - name: OWASP ZAP full (active) scan, signed in
@@ -228,7 +229,7 @@ jobs:
         # admin on the first run), and an unbounded active scan of them all
         # ran into the job's 2 h limit without writing a report. The attack
         # phase is capped at 90 min and each rule at 5, so a report is always
-        # produced (setup ~2 + crawl <=10 + 90 + report stays under 120); 4 scanner threads against 2 web workers fit more of the
+        # produced (setup ~2 + crawls <=20 + 90 + report stays under 135); 4 scanner threads against 2 web workers fit more of the
         # surface in that time. The second run reached only ~9% of its checks
         # in 17 min, so generated downloads are left out too (url 3 and 4):
         # track GIF/PNG renders, ZIP bundles, PDF/CSV/AMP exports — slow to
@@ -245,6 +246,14 @@ jobs:
         # the same pages for each aircraft and each flight, logbook entry or
         # reservation, so only a rotating sample is scanned (url 6 and 7,
         # from the step above): about a quarter of the pages.
+        # -j: after the link-following spider, the browser-based crawler
+        # (Client Spider, headless Firefox) clicks through the pages too, and
+        # reaches what only JavaScript links to: its first trial
+        # (zap-browser-crawl.yml) found the offline JSON API and the pages
+        # the aircraft page prefetches — two of which a pilot could read
+        # but should not have. The browser does not honour the exclusions
+        # the way the spiders do, so replacer rule 1 turns its sign-out
+        # request into the health check. It adds up to 10 min to the crawl.
         # -d: without it the scan script prints nothing until it ends (the
         # first run's log was silent for 2 h); with it, crawl and "Active
         # Scan progress %" lines stream into this step's live log. The hook
@@ -259,13 +268,19 @@ jobs:
           allow_issue_writing: 'false'
           artifact_name: zap-authenticated-${{ matrix.user }}
           cmd_options: >-
-            -m 10 -d --hook=/zap/wrk/.zap/quiet_progress_hook.py
+            -j -m 10 -d --hook=/zap/wrk/.zap/quiet_progress_hook.py
             -z "-config replacer.full_list(0).description=session
             -config replacer.full_list(0).enabled=true
             -config replacer.full_list(0).matchtype=REQ_HEADER
             -config replacer.full_list(0).matchstr=Cookie
             -config replacer.full_list(0).regex=false
             -config replacer.full_list(0).replacement=${{ env.ZAP_COOKIE }}
+            -config replacer.full_list(1).description=keep-signed-in
+            -config replacer.full_list(1).enabled=true
+            -config replacer.full_list(1).matchtype=REQ_HEADER_STR
+            -config replacer.full_list(1).matchstr=/logout HTTP/
+            -config replacer.full_list(1).regex=false
+            -config replacer.full_list(1).replacement=/health HTTP/
             -config globalexcludeurl.url_list.url(0).regex=.*/logout.*
             -config globalexcludeurl.url_list.url(0).enabled=true
             -config globalexcludeurl.url_list.url(1).regex=^https?://[^/]+/profile([?#].*)?$
