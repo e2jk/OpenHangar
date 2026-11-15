@@ -1139,6 +1139,31 @@ def create_app() -> Flask:
         )
         return redirect(_submitting_page())
 
+    from models import NumberTooLarge
+
+    @app.errorhandler(NumberTooLarge)
+    def number_too_large(e: NumberTooLarge) -> ResponseReturnValue:
+        # A number beyond its column's range (models.fits_column), from a
+        # form without its own check for that field: nothing is saved, and
+        # the user goes back to the form with a reason instead of a server
+        # error. Forms that check their own fields keep what was typed.
+        import logging
+
+        from flask import flash, redirect
+        from flask_babel import gettext as _
+        from models import db
+
+        db.session.rollback()
+        logging.getLogger(__name__).warning("Refused to save %s", e)
+        flash(
+            _(
+                "A number entered is far too large, so nothing was saved. "
+                "Please check the values and try again."
+            ),
+            "danger",
+        )
+        return redirect(_submitting_page())
+
     def _submitting_page() -> str:
         """Back to the submitting page — on this host only, and as a relative
         path (same guard as the language switcher's ?next=)."""

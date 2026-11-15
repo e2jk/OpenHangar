@@ -27,6 +27,7 @@ from pilots.personal_minimums import (  # pyright: ignore[reportMissingImports]
     STARTER_LIGHT,
     recency_breaches,
 )
+from sqlalchemy import update as sa_update  # pyright: ignore[reportMissingImports]
 
 
 def _make_user(app, email, role=Role.PILOT):
@@ -1105,8 +1106,16 @@ class TestRecencyBreaches:
             rev = PersonalMinimumsRevision.query.filter_by(
                 user_id=uid, status=PersonalMinimumsStatus.ACTIVE
             ).one()
-            rev.sections[0].items[0].numeric_value = float("inf")
+            # Written past the ORM: a flush now refuses it (models.fits_column).
+            item = rev.sections[0].items[0]
+            db.session.execute(
+                sa_update(type(item))
+                .where(type(item).id == item.id)
+                .values(numeric_value=float("inf"))
+            )
             db.session.commit()
+            db.session.expire_all()
+            assert rev.sections[0].items[0].numeric_value == float("inf")
             assert recency_breaches(rev, uid) == []
 
 

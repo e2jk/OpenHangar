@@ -27,6 +27,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     CrewRole,
     Flight,
     db,
+    fits_column,
 )
 from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
     parse_duration_value,
@@ -448,6 +449,17 @@ def parse_flight_fields(
         if crew_role_1_raw in CrewRole.ALL
         else CrewRole.COPILOT,
     }
+    columns = Flight.__table__.c
+    if any(
+        key in columns and not fits_column(columns[key], value)
+        for key, value in values.items()
+    ):  # e.g. a counter typed with extra digits, or the time derived from it
+        errors.append(
+            _(
+                "A number entered is far too large, so nothing was saved. "
+                "Please check the values and try again."
+            )
+        )
     return values, errors
 
 
