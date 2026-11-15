@@ -12,6 +12,7 @@ from sqlalchemy import (
     Integer,
     Numeric,
     SmallInteger,
+    String,
     event,
     inspect,
     select,
@@ -4022,13 +4023,14 @@ def _revoke_removed_membership(
 
 
 # ---------------------------------------------------------------------------
-# Numbers too large for their column
+# Numbers too large, and text too long, for their column
 # ---------------------------------------------------------------------------
 # PostgreSQL refuses a number beyond its column's range ("numeric field
-# overflow", "integer out of range") and the request ends in a server error;
-# SQLite stores it anyway. Refusing it before the flush gives every form the
-# same outcome on both: the change is not saved and the user is told why
-# (the NumberTooLarge handler in init.py).
+# overflow", "integer out of range") and a text longer than its column
+# ("value too long for type character varying(n)"), and the request ends in
+# a server error; SQLite stores either anyway. Refusing them before the
+# flush gives every form the same outcome on both: the change is not saved
+# and the user is told why (the DoesNotFitColumn handler in init.py).
 
 _INTEGER_LIMITS: dict[type, int] = {
     SmallInteger: 2**15 - 1,
@@ -4037,20 +4039,33 @@ _INTEGER_LIMITS: dict[type, int] = {
 _INTEGER_LIMIT = 2**31 - 1
 
 
-class NumberTooLarge(Exception):
-    """A number does not fit the column it is being saved to."""
+class DoesNotFitColumn(Exception):
+    """A value does not fit the column it is being saved to."""
+
+    problem = "does not fit"
 
     def __init__(self, column: Column[Any]) -> None:
         self.column = column
-        super().__init__(f"{column.table.name}.{column.name} is too large")
+        super().__init__(f"{column.table.name}.{column.name} {self.problem}")
+
+
+class NumberTooLarge(DoesNotFitColumn):
+    problem = "is too large"
+
+
+class TextTooLong(DoesNotFitColumn):
+    problem = "is too long"
 
 
 def fits_column(column: Column[Any], value: Any) -> bool:
-    """Whether *value* can be stored in *column* (numbers only; anything
-    else is left to the column type)."""
+    """Whether *value* can be stored in *column* (numbers and text only;
+    anything else is left to the column type)."""
+    col_type = column.type
+    if isinstance(value, str):
+        length = col_type.length if isinstance(col_type, String) else None
+        return length is None or len(value) <= length
     if isinstance(value, bool) or not isinstance(value, int | float | Decimal):
         return True
-    col_type = column.type
     if isinstance(col_type, Integer):
         limit = _INTEGER_LIMITS.get(type(col_type), _INTEGER_LIMIT)
         return -limit - 1 <= value <= limit
@@ -4072,7 +4087,7 @@ def fits_column(column: Column[Any], value: Any) -> bool:
 
 
 @event.listens_for(Session, "before_flush")
-def _refuse_numbers_too_large(session: Session, _context: Any, _instances: Any) -> None:
+def _refuse_values_too_large(session: Session, _context: Any, _instances: Any) -> None:
     for obj in (*session.new, *session.dirty):
         state = inspect(obj)
         loaded = state.dict  # only what is loaded: never triggers a query
@@ -4080,7 +4095,8 @@ def _refuse_numbers_too_large(session: Session, _context: Any, _instances: Any) 
             if attr.key not in loaded:
                 continue
             for column in attr.columns:
-                if isinstance(column, Column) and not fits_column(
-                    column, loaded[attr.key]
-                ):
-                    raise NumberTooLarge(column)
+                value = loaded[attr.key]
+                if isinstance(column, Column) and not fits_column(column, value):
+                    raise (TextTooLong if isinstance(value, str) else NumberTooLarge)(
+                        column
+                    )

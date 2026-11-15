@@ -6,8 +6,10 @@ PostgreSQL rejects an id beyond its INTEGER range ("integer out of range")
 rather than finding nothing, and the test database (SQLite) rejects one
 beyond 64 bits; dates and offsets have their own limits. The same goes
 for a decimal beyond its NUMERIC(precision, scale) column ("numeric field
-overflow"), which SQLite stores anyway: models.fits_column refuses both
-before the flush, so the outcome is the same on both databases.
+overflow"), and for a text longer than its String(n) column ("value too
+long for type character varying"), both of which SQLite stores anyway:
+models.fits_column refuses them before the flush, so the outcome is the
+same on both databases.
 """
 
 import re
@@ -22,6 +24,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     Expense,
     Flight,
     NumberTooLarge,
+    TextTooLong,
     db,
     fits_column,
 )
@@ -36,6 +39,7 @@ from sqlalchemy import (  # pyright: ignore[reportMissingImports]
     Numeric,
     SmallInteger,
     String,
+    Text,
 )
 from utils import DB_INT_MAX, int_in  # pyright: ignore[reportMissingImports]
 from werkzeug.exceptions import NotFound
@@ -135,6 +139,7 @@ def test_int_in_accepts_its_bounds_and_nothing_beyond():
 
 
 TOO_LARGE = b"A number entered is far too large, so nothing was saved."
+TOO_LONG = b"Some text entered is too long, so nothing was saved."
 
 
 @pytest.mark.parametrize(
@@ -163,6 +168,11 @@ TOO_LARGE = b"A number entered is far too large, so nothing was saved."
         (Integer(), True, True),  # a bool is not a number here
         (Numeric(4, 1), "12345", True),  # left to the column type
         (String(5), 10**9, True),
+        (String(5), "abcde", True),
+        (String(5), "abcdef", False),
+        (String(5), "éèàùç", True),  # characters, not bytes
+        (String(), "x" * 10_000, True),  # unbounded
+        (Text(), "x" * 10_000, True),
     ],
 )
 def test_fits_column(col_type, value, fits):
@@ -176,6 +186,37 @@ def test_saving_a_number_too_large_is_refused(owner_env, app):
         with pytest.raises(NumberTooLarge, match="flights.night_time"):
             db.session.flush()
         db.session.rollback()
+
+
+def test_saving_a_text_too_long_is_refused(owner_env, app):
+    with app.app_context():
+        db.session.add(Flight(date=date(2026, 1, 1), departure_icao="X" * 65))
+        with pytest.raises(TextTooLong, match="flights.departure_icao is too long"):
+            db.session.flush()
+        db.session.rollback()
+
+
+def test_a_form_says_why_a_text_too_long_was_not_saved(owner_env, app):
+    form_page = f"/aircraft/{owner_env.aircraft_id}/expenses/add"
+    resp = owner_env.client.post(
+        form_page,
+        data={
+            "date": "2026-01-15",
+            "expense_type": "other",
+            "expense_category": "fixed",
+            "amount": "10",
+            "currency": "EUR",
+            "description": "x" * 256,  # String(255)
+        },
+        headers={"Referer": f"http://localhost{form_page}"},
+    )
+    assert resp.status_code == 302
+    assert resp.headers["Location"] == form_page
+    page = owner_env.client.get(form_page).data
+    assert TOO_LONG in page
+    assert TOO_LARGE not in page
+    with app.app_context():
+        assert Expense.query.count() == 0
 
 
 def test_a_form_without_its_own_check_says_why_nothing_was_saved(owner_env, app):

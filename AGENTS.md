@@ -147,9 +147,10 @@ Weblate quality checks are also surfaced as Code Scanning alerts via
   never a bare `int()` / `type=int`: a huge number otherwise ends in a server error
   (PostgreSQL rejects ids beyond its INTEGER range). `<int:...>` URL segments are
   already capped (`DbIdConverter`).
-  Numbers saved to the database are checked against their column's range before
-  every flush (`models.fits_column`); a form that checks its own fields with it keeps
-  what was typed, anything else is refused by the `NumberTooLarge` handler.
+  Numbers and text saved to the database are checked against their column (range,
+  `String(n)` length) before every flush (`models.fits_column`); a form that checks
+  its own fields with it keeps what was typed, anything else is refused by the
+  `DoesNotFitColumn` handler.
 
 ### Naming conventions
 - Blueprint directories and URL prefixes match (e.g. blueprint `aircraft` → `/aircraft/`).
