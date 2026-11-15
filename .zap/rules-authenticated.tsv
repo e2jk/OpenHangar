@@ -28,3 +28,14 @@
 
 # False positives confirmed after first ZAP full (active) scan run (2026-07-22)
 10104	IGNORE	User Agent Fuzzer: informational-only self-documentation of the check ZAP ran (tries a few old-IE User-Agent strings); no evidence of an actual behavioural difference was reported, and ZAP's own risk gate already treats it as PASS, not WARN/FAIL
+
+# Bypassing 403 (40038), one technique only (2026-11-15). For a page that
+# answers 403 the rule also requests the home page with "X-Original-URL:
+# <that page>" and reports a bypass when the answer is 200; the home page of
+# a signed-in user always answers 200 (their dashboard), so that technique
+# always alarms here. Nothing in the app or behind it serves the page the
+# header names (tests/functional/test_rewrite_headers_ignored.py). Only that
+# report is out of scope — it is the only one raised on the bare home page:
+# the rule's path tricks and other headers report on other URLs, and still
+# count.
+40038	OUTOFSCOPE	^https?://[^/]+/$
