@@ -149,6 +149,7 @@ def _compute_stats(
 
 @expenses_bp.route("/aircraft/<aircraft_ref:aircraft_id>/expenses")
 @login_required
+@require_role(*_OWNER_ROLES)
 def list_expenses(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
 
@@ -188,6 +189,7 @@ def list_expenses(aircraft_id: int) -> ResponseReturnValue:
 
 @expenses_bp.route("/aircraft/<aircraft_ref:aircraft_id>/costs")
 @login_required
+@require_role(*_OWNER_ROLES)
 def cost_dashboard(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
 

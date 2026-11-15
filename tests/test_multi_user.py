@@ -484,6 +484,38 @@ class TestRoleEnforcementExpenses:
         resp = client.get(f"/aircraft/{ac_id}/expenses/add")
         assert resp.status_code != 403
 
+    # Found by the signed-in browser crawl (2026-11-15): the list and the
+    # cost dashboard checked only aircraft access, so any user assigned to
+    # the aircraft could read its expenses by address; the aircraft page
+    # also listed both for the offline prefetch, for every role.
+    @pytest.mark.parametrize("role", [Role.PILOT, Role.MAINTENANCE, Role.VIEWER])
+    @pytest.mark.parametrize("page", ["expenses", "costs"])
+    def test_other_roles_cannot_read_expenses(self, app, client, role, page):
+        from models import UserAllAircraftAccess
+
+        tid, uid = _make_tenant_user(app, "crew@test.com", role)
+        ac_id = _make_aircraft(app, tid)
+        with app.app_context():
+            db.session.add(UserAllAircraftAccess(user_id=uid, tenant_id=tid))
+            db.session.commit()
+        _login(client, uid)
+        assert client.get(f"/aircraft/{ac_id}").status_code == 200  # has access
+        assert (
+            f"/aircraft/OO-TST/{page}".encode()
+            not in client.get(f"/aircraft/{ac_id}").data
+        )
+        assert client.get(f"/aircraft/{ac_id}/{page}").status_code == 403
+
+    @pytest.mark.parametrize("page", ["expenses", "costs"])
+    def test_owner_reads_expenses(self, app, client, page):
+        tid, uid = _make_tenant_user(app, "owner@test.com", Role.OWNER)
+        ac_id = _make_aircraft(app, tid)
+        _login(client, uid)
+        assert (
+            f"/aircraft/OO-TST/{page}".encode() in client.get(f"/aircraft/{ac_id}").data
+        )
+        assert client.get(f"/aircraft/{ac_id}/{page}").status_code == 200
+
 
 # ── Role enforcement: documents (OWNER only) ──────────────────────────────────
 
