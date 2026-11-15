@@ -520,6 +520,95 @@ class TestRoleEnforcementExpenses:
 # ── Role enforcement: documents (OWNER only) ──────────────────────────────────
 
 
+def _aircraft_document(app, ac_id, fname, title, *, sensitive=False, receipt=False):
+    """An aircraft document with its file on disk (optionally sensitive, or
+    the receipt of an expense)."""
+    import os
+    from datetime import date
+
+    from models import Document, Expense
+
+    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+    with open(os.path.join(app.config["UPLOAD_FOLDER"], fname), "wb") as f:
+        f.write(b"%PDF-1.4 document")
+    with app.app_context():
+        expense_id = None
+        if receipt:
+            expense = Expense(aircraft_id=ac_id, date=date(2026, 1, 15), amount=2400)
+            db.session.add(expense)
+            db.session.flush()
+            expense_id = expense.id
+        db.session.add(
+            Document(
+                aircraft_id=ac_id,
+                filename=fname,
+                original_filename=fname,
+                mime_type="application/pdf",
+                title=title,
+                is_sensitive=sensitive,
+                expense_id=expense_id,
+            )
+        )
+        db.session.commit()
+
+
+def _assigned_user(app, client, role):
+    from models import UserAllAircraftAccess
+
+    tid, uid = _make_tenant_user(app, "crew@test.com", role)
+    ac_id = _make_aircraft(app, tid)
+    with app.app_context():
+        db.session.add(UserAllAircraftAccess(user_id=uid, tenant_id=tid))
+        db.session.commit()
+    _login(client, uid)
+    return ac_id
+
+
+def _sees(client, ac_id, fname, title):
+    """Whether the documents list (sensitive ones shown) lists *title*, and
+    whether its file is served."""
+    listing = client.get(f"/aircraft/{ac_id}/documents?sensitive=1").data
+    with client.get(f"/uploads/{fname}") as resp:
+        return title.encode() in listing, resp.status_code == 200
+
+
+class TestDocumentVisibility:
+    # Found while checking the browser crawl's findings (2026-11-15). An
+    # expense receipt is stored as an aircraft document, so it stayed
+    # readable once the expenses were limited to owners, and was listed on a
+    # full-access share page. And a sensitive document, which the user guide
+    # hides from viewers, was listed (?sensitive=1) and served to them.
+    @pytest.mark.parametrize("role", [Role.PILOT, Role.MAINTENANCE, Role.VIEWER])
+    def test_expense_receipts_are_for_owners_only(self, app, client, role):
+        ac_id = _assigned_user(app, client, role)
+        _aircraft_document(app, ac_id, "receipt.pdf", "Fuel invoice", receipt=True)
+        assert _sees(client, ac_id, "receipt.pdf", "Fuel invoice") == (False, False)
+
+    def test_sensitive_documents_are_not_for_viewers(self, app, client):
+        ac_id = _assigned_user(app, client, Role.VIEWER)
+        _aircraft_document(app, ac_id, "policy.pdf", "Policy", sensitive=True)
+        assert b"Show sensitive" not in client.get(f"/aircraft/{ac_id}/documents").data
+        assert _sees(client, ac_id, "policy.pdf", "Policy") == (False, False)
+
+    @pytest.mark.parametrize("role", [Role.PILOT, Role.MAINTENANCE])
+    def test_crew_still_see_sensitive_documents(self, app, client, role):
+        # e.g. the insurance and ARC certificates, always stored sensitive and
+        # linked from the aircraft page for every role.
+        ac_id = _assigned_user(app, client, role)
+        _aircraft_document(app, ac_id, "policy.pdf", "Policy", sensitive=True)
+        assert _sees(client, ac_id, "policy.pdf", "Policy") == (True, True)
+
+    def test_owner_sees_both(self, app, client):
+        tid, uid = _make_tenant_user(app, "owner@test.com", Role.OWNER)
+        ac_id = _make_aircraft(app, tid)
+        _login(client, uid)
+        _aircraft_document(app, ac_id, "receipt.pdf", "Fuel invoice", receipt=True)
+        _aircraft_document(app, ac_id, "policy.pdf", "Policy", sensitive=True)
+        assert b"Show sensitive" in client.get(f"/aircraft/{ac_id}/documents").data
+        assert _sees(client, ac_id, "receipt.pdf", "Fuel invoice") == (True, True)
+        assert _sees(client, ac_id, "policy.pdf", "Policy") == (True, True)
+
+
 class TestRoleEnforcementDocuments:
     def test_pilot_cannot_upload_document(self, app, client):
         tid, uid = _make_tenant_user(app, "pilot@test.com", Role.PILOT)

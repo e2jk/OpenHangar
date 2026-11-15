@@ -91,6 +91,7 @@ from utils import (
     activity,
     compute_aircraft_statuses,
     current_membership,
+    current_user_role,
     get_aircraft_type_engine_info,
     login_required,
     months_back,
@@ -327,13 +328,20 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
 
     recent_refuels = build_fuel_log(ac.id, None, _date.today())[:3]
     fuel_on_board = current_fuel_on_board(ac)
+    from documents.routes import (  # pyright: ignore[reportMissingImports]
+        visible_documents,
+    )
+
+    role_docs = visible_documents(
+        Document.query.filter_by(aircraft_id=ac.id), current_user_role()
+    )
     recent_documents = (
-        Document.query.filter_by(aircraft_id=ac.id, is_sensitive=False)
+        role_docs.filter_by(is_sensitive=False)
         .order_by(Document.uploaded_at.desc())
         .limit(3)
         .all()
     )
-    document_count = Document.query.filter_by(aircraft_id=ac.id).count()
+    document_count = role_docs.count()
     from datetime import date as _cert_date
 
     from documents.routes import (  # pyright: ignore[reportMissingImports]
