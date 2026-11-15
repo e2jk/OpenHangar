@@ -65,11 +65,15 @@ msgstr "🎉 Aujourd'hui, c'est l'anniversaire de l'obtention de votre PPL !"
 msgid "This upload is too large (maximum %(mb)s MB in total). Please upload the files in smaller batches."
 msgstr "Cet envoi est trop volumineux (maximum %(mb)s Mo au total). Veuillez envoyer les fichiers en plusieurs fois."
 
-#: app/init.py:1189
+#: app/flights/form_parsing.py:459 app/init.py:1160
+msgid "A number entered is far too large, so nothing was saved. Please check the values and try again."
+msgstr "Un nombre saisi est beaucoup trop grand, rien n’a donc été enregistré. Veuillez vérifier les valeurs et réessayer."
+
+#: app/init.py:1214
 msgid "The sign-in form had expired. Please sign in again."
 msgstr "Le formulaire de connexion avait expiré. Veuillez vous reconnecter."
 
-#: app/models.py:870 app/templates/aircraft/flight_detail.html:114
+#: app/models.py:884 app/templates/aircraft/flight_detail.html:114
 #: app/templates/aircraft/gps_import_review.html:67
 #: app/templates/flights/fleet.html:28
 #: app/templates/flights/flight_form.html:313
@@ -83,7 +87,7 @@ msgstr "Le formulaire de connexion avait expiré. Veuillez vous reconnecter."
 msgid "PIC"
 msgstr "PIC"
 
-#: app/models.py:871 app/templates/pilots/entry_detail.html:98
+#: app/models.py:885 app/templates/pilots/entry_detail.html:98
 #: app/templates/pilots/entry_form.html:298
 #: app/templates/pilots/import_map.html:151
 #: app/templates/users/permissions.html:59
@@ -91,19 +95,19 @@ msgstr "PIC"
 msgid "Instructor"
 msgstr "Instructeur"
 
-#: app/models.py:872
+#: app/models.py:886
 msgid "Safety Pilot"
 msgstr "Pilote de sécurité"
 
-#: app/models.py:873
+#: app/models.py:887
 msgid "Co-Pilot"
 msgstr "Copilote"
 
-#: app/models.py:874
+#: app/models.py:888
 msgid "Student"
 msgstr "Élève"
 
-#: app/models.py:2270 app/pilots/personal_minimums.py:55
+#: app/models.py:2284 app/pilots/personal_minimums.py:55
 #: app/templates/aircraft/wb_config.html:163
 #: app/templates/aircraft/wb_config.html:195
 #: app/templates/aircraft/wb_config.html:244
@@ -111,41 +115,41 @@ msgstr "Élève"
 msgid "Fuel"
 msgstr "Carburant"
 
-#: app/models.py:2271
+#: app/models.py:2285
 msgid "Parts & Maintenance"
 msgstr "Pièces et entretien"
 
-#: app/models.py:2272 app/pwa/routes.py:101 app/templates/dashboard.html:406
+#: app/models.py:2286 app/pwa/routes.py:101 app/templates/dashboard.html:406
 msgid "Insurance"
 msgstr "Assurance"
 
-#: app/models.py:2273 app/pwa/routes.py:106 app/templates/dashboard.html:164
+#: app/models.py:2287 app/pwa/routes.py:106 app/templates/dashboard.html:164
 #: app/templates/maintenance/list.html:77
 #: app/templates/maintenance/trigger_form.html:69
 msgid "Other"
 msgstr "Autre"
 
-#: app/models.py:3210
+#: app/models.py:3224
 msgid "AD"
 msgstr "AD"
 
-#: app/models.py:3211
+#: app/models.py:3225
 msgid "Mandatory SB"
 msgstr "SB obligatoire"
 
-#: app/models.py:3212
+#: app/models.py:3226
 msgid "SB"
 msgstr "SB"
 
-#: app/models.py:3213
+#: app/models.py:3227
 msgid "SIB"
 msgstr "SIB"
 
-#: app/models.py:3214 app/templates/dashboard.html:417
+#: app/models.py:3228 app/templates/dashboard.html:417
 msgid "ARC"
 msgstr "ARC"
 
-#: app/models.py:3215
+#: app/models.py:3229
 msgid "Manual"
 msgstr "Manuel"
 
@@ -204,11 +208,11 @@ msgstr "L'immatriculation est obligatoire."
 msgid "%(reg)s is already used by another aircraft in this hangar (registrations that only differ by spaces or slashes still count as the same, since they'd otherwise share a URL)."
 msgstr "%(reg)s est déjà utilisé par un autre avion de ce hangar (les immatriculations qui ne diffèrent que par des espaces ou des barres obliques sont considérées comme identiques, car elles partageraient sinon la même URL)."
 
-#: app/aircraft/routes.py:546 app/aircraft/routes.py:1357
+#: app/aircraft/routes.py:546 app/aircraft/routes.py:1355
 msgid "Manufacturer is required."
 msgstr "Le fabricant est obligatoire."
 
-#: app/aircraft/routes.py:548 app/aircraft/routes.py:1359
+#: app/aircraft/routes.py:548 app/aircraft/routes.py:1357
 msgid "Model is required."
 msgstr "Le modèle est obligatoire."
 
@@ -245,160 +249,160 @@ msgstr "%(reg)s enregistré."
 msgid "Ownership updated."
 msgstr "Propriété mise à jour."
 
-#: app/aircraft/routes.py:936 app/config/routes.py:1683
+#: app/aircraft/routes.py:934 app/config/routes.py:1681
 msgid "Payment amount must be positive."
 msgstr "Le montant du paiement doit être positif."
 
-#: app/aircraft/routes.py:939 app/config/routes.py:1686
+#: app/aircraft/routes.py:937 app/config/routes.py:1684
 msgid "Invalid payment amount."
 msgstr "Montant de paiement invalide."
 
-#: app/aircraft/routes.py:946 app/config/routes.py:1693
+#: app/aircraft/routes.py:944 app/config/routes.py:1691
 msgid "Invalid payment date."
 msgstr "Date de paiement invalide."
 
-#: app/aircraft/routes.py:957
+#: app/aircraft/routes.py:955
 #, python-format
 msgid "Payment — %(note)s"
 msgstr "Paiement — %(note)s"
 
-#: app/aircraft/routes.py:957
+#: app/aircraft/routes.py:955
 msgid "Payment"
 msgstr "Paiement"
 
-#: app/aircraft/routes.py:968 app/config/routes.py:1716
+#: app/aircraft/routes.py:966 app/config/routes.py:1714
 msgid "Payment recorded."
 msgstr "Paiement enregistré."
 
-#: app/aircraft/routes.py:998
+#: app/aircraft/routes.py:996
 msgid "Payment reversed"
 msgstr "Paiement annulé"
 
-#: app/aircraft/routes.py:1000
+#: app/aircraft/routes.py:998
 msgid "Entry reversed."
 msgstr "Écriture annulée."
 
-#: app/aircraft/routes.py:1050
+#: app/aircraft/routes.py:1048
 msgid "Valuation snapshot recorded."
 msgstr "Instantané de valorisation enregistré."
 
-#: app/aircraft/routes.py:1197
+#: app/aircraft/routes.py:1195
 #, python-format
 msgid "%(reg)s has been archived — its history stays available, but it no longer appears in the active fleet."
 msgstr "%(reg)s a été archivé — son historique reste disponible, mais il n'apparaît plus dans la flotte active."
 
-#: app/aircraft/routes.py:1215
+#: app/aircraft/routes.py:1213
 #, python-format
 msgid "%(reg)s is back in the active fleet."
 msgstr "%(reg)s est de retour dans la flotte active."
 
-#: app/aircraft/routes.py:1240
+#: app/aircraft/routes.py:1238
 #, python-format
 msgid "%(reg)s and all its components have been deleted."
 msgstr "%(reg)s et tous ses composants ont été supprimés."
 
-#: app/aircraft/routes.py:1285
+#: app/aircraft/routes.py:1283
 #, python-format
 msgid "Engine and propeller added — fill in the details when ready."
 msgid_plural "%(n)s engines and propellers added — fill in the details when ready."
 msgstr[0] "Moteur et hélice ajoutés — complétez les détails quand vous êtes prêt."
 msgstr[1] "%(n)s moteurs et hélices ajoutés — complétez les détails quand vous êtes prêt."
 
-#: app/aircraft/routes.py:1355
+#: app/aircraft/routes.py:1353
 msgid "Component type is required."
 msgstr "Le type de composant est obligatoire."
 
-#: app/aircraft/routes.py:1368
+#: app/aircraft/routes.py:1366
 msgid "Time at install must be a positive number."
 msgstr "Le temps à l'installation doit être un nombre positif."
 
-#: app/aircraft/routes.py:1377
+#: app/aircraft/routes.py:1375
 msgid "TBO must be a positive number of hours."
 msgstr "Le TBO doit être un nombre d'heures positif."
 
-#: app/aircraft/routes.py:1386
+#: app/aircraft/routes.py:1384
 msgid "Last overhaul hours must be a non-negative number."
 msgstr "Les heures de la dernière révision générale doivent être un nombre positif ou nul."
 
-#: app/aircraft/routes.py:1395 app/refuels/routes.py:69 app/snags/routes.py:68
+#: app/aircraft/routes.py:1393 app/refuels/routes.py:69 app/snags/routes.py:68
 #, python-format
 msgid "%(label)s must be a valid date (YYYY-MM-DD)."
 msgstr "%(label)s doit être une date valide (AAAA-MM-JJ)."
 
-#: app/aircraft/routes.py:1442
+#: app/aircraft/routes.py:1440
 #, python-format
 msgid "%(make)s %(model)s saved."
 msgstr "%(make)s %(model)s enregistré."
 
-#: app/aircraft/routes.py:1466
+#: app/aircraft/routes.py:1464
 #, python-format
 msgid "%(label)s removed."
 msgstr "%(label)s supprimé."
 
-#: app/aircraft/routes.py:1524
+#: app/aircraft/routes.py:1522
 #, python-format
 msgid "%(field)s must be a positive number."
 msgstr "%(field)s doit être un nombre positif."
 
-#: app/aircraft/routes.py:1547
+#: app/aircraft/routes.py:1545
 msgid "At least one loading station is required."
 msgstr "Au moins un point de chargement est requis."
 
-#: app/aircraft/routes.py:1614
+#: app/aircraft/routes.py:1612
 msgid "W&B configuration saved."
 msgstr "Configuration centrage/masse enregistrée."
 
-#: app/aircraft/routes.py:1628 app/aircraft/routes.py:1652
+#: app/aircraft/routes.py:1626 app/aircraft/routes.py:1650
 msgid "Configure W&B envelope first."
 msgstr "Configurez d'abord l'enveloppe de centrage/masse."
 
-#: app/aircraft/routes.py:1671
+#: app/aircraft/routes.py:1669
 msgid "A valid date is required."
 msgstr "Une date valide est requise."
 
-#: app/aircraft/routes.py:1686
+#: app/aircraft/routes.py:1684
 #, python-format
 msgid "Volume for %(station)s exceeds tank capacity."
 msgstr "Le volume pour %(station)s dépasse la capacité du réservoir."
 
-#: app/aircraft/routes.py:1694
+#: app/aircraft/routes.py:1692
 #, python-format
 msgid "Volume for %(station)s must be a non-negative number."
 msgstr "Le volume pour %(station)s doit être un nombre positif ou nul."
 
-#: app/aircraft/routes.py:1708
+#: app/aircraft/routes.py:1706
 #, python-format
 msgid "Weight for %(station)s must be a non-negative number."
 msgstr "La masse pour %(station)s doit être un nombre positif ou nul."
 
-#: app/aircraft/routes.py:1757
+#: app/aircraft/routes.py:1755
 msgid "W&B calculation saved."
 msgstr "Calcul centrage/masse enregistré."
 
-#: app/aircraft/routes.py:1786
+#: app/aircraft/routes.py:1784
 msgid "W&B calculation deleted."
 msgstr "Calcul centrage/masse supprimé."
 
-#: app/aircraft/routes.py:2099 app/pilots/routes.py:2411
+#: app/aircraft/routes.py:2097 app/pilots/routes.py:2411
 msgid "Please select at least one GPS log file."
 msgstr "Veuillez sélectionner au moins un fichier journal GPS."
 
-#: app/aircraft/routes.py:2115 app/pilots/routes.py:2440
+#: app/aircraft/routes.py:2113 app/pilots/routes.py:2440
 #, python-format
 msgid "%(fn)s: unsupported file type (use .gpx, .kml or .csv — SkyDemon's .gpx.bin exports work too)."
 msgstr "%(fn)s : type de fichier non pris en charge (utilisez .gpx, .kml ou .csv — les exports .gpx.bin de SkyDemon fonctionnent aussi)."
 
-#: app/aircraft/routes.py:2123 app/pilots/routes.py:2447
+#: app/aircraft/routes.py:2121 app/pilots/routes.py:2447
 #, python-format
 msgid "%(fn)s: file too large (20 MB limit)."
 msgstr "%(fn)s : fichier trop volumineux (limite 20 Mo)."
 
-#: app/aircraft/routes.py:2134 app/pilots/routes.py:2457
+#: app/aircraft/routes.py:2132 app/pilots/routes.py:2457
 #, python-format
 msgid "%(fn)s: %(err)s"
 msgstr "%(fn)s : %(err)s"
 
-#: app/aircraft/routes.py:2172 app/pilots/routes.py:2487
+#: app/aircraft/routes.py:2170 app/pilots/routes.py:2487
 #: app/templates/aircraft/gps_import_review.html:25
 #: app/templates/pilots/gps_import_review.html:24
 #, python-format
@@ -407,37 +411,37 @@ msgid_plural "%(n)s files skipped — no movement detected."
 msgstr[0] "un fichier ignoré — aucun mouvement détecté."
 msgstr[1] "%(n)s fichiers ignorés — aucun mouvement détecté."
 
-#: app/aircraft/routes.py:2181 app/pilots/routes.py:2495
+#: app/aircraft/routes.py:2179 app/pilots/routes.py:2495
 msgid "No valid GPS files to import."
 msgstr "Aucun fichier GPS valide à importer."
 
-#: app/aircraft/routes.py:2229 app/pilots/routes.py:2584
+#: app/aircraft/routes.py:2227 app/pilots/routes.py:2584
 #, python-format
 msgid "Could not read %(fn)s — please upload again."
 msgstr "Impossible de lire %(fn)s — veuillez retéléverser le fichier."
 
-#: app/aircraft/routes.py:2523 app/aircraft/routes.py:2903
-#: app/aircraft/routes.py:3050 app/aircraft/routes.py:3115
+#: app/aircraft/routes.py:2521 app/aircraft/routes.py:2901
+#: app/aircraft/routes.py:3048 app/aircraft/routes.py:3113
 #: app/pilots/routes.py:2673 app/pilots/routes.py:2764
 #: app/pilots/routes.py:3041
 msgid "Session expired — please upload your GPS files again."
 msgstr "Session expirée — veuillez retéléverser vos fichiers GPS."
 
-#: app/aircraft/routes.py:2908 app/pilots/routes.py:3046
+#: app/aircraft/routes.py:2906 app/pilots/routes.py:3046
 msgid "No segments to import."
 msgstr "Aucun segment à importer."
 
-#: app/aircraft/routes.py:2914 app/aircraft/routes.py:2918
-#: app/aircraft/routes.py:3120 app/pilots/routes.py:3052
+#: app/aircraft/routes.py:2912 app/aircraft/routes.py:2916
+#: app/aircraft/routes.py:3118 app/pilots/routes.py:3052
 #: app/pilots/routes.py:3056
 msgid "Invalid segment index."
 msgstr "Index de segment invalide."
 
-#: app/aircraft/routes.py:2923 app/pilots/routes.py:3061
+#: app/aircraft/routes.py:2921 app/pilots/routes.py:3061
 msgid "This segment has already been confirmed."
 msgstr "Ce segment a déjà été confirmé."
 
-#: app/aircraft/routes.py:2942 app/aircraft/routes.py:3009
+#: app/aircraft/routes.py:2940 app/aircraft/routes.py:3007
 #: app/pilots/routes.py:3081 app/pilots/routes.py:3122
 #, python-format
 msgid "one flight imported successfully."
@@ -445,7 +449,7 @@ msgid_plural "%(n)s flights imported successfully."
 msgstr[0] "un vol importé avec succès."
 msgstr[1] "%(n)s vols importés avec succès."
 
-#: app/aircraft/routes.py:2951 app/aircraft/routes.py:3020
+#: app/aircraft/routes.py:2949 app/aircraft/routes.py:3018
 #: app/pilots/routes.py:3090
 #, python-format
 msgid "one segment skipped."
@@ -453,49 +457,49 @@ msgid_plural "%(n)s segments skipped."
 msgstr[0] "un segment ignoré."
 msgstr[1] "%(n)s segments ignorés."
 
-#: app/aircraft/routes.py:2964 app/pilots/routes.py:3100
+#: app/aircraft/routes.py:2962 app/pilots/routes.py:3100
 msgid "Segment skipped."
 msgstr "Segment ignoré."
 
-#: app/aircraft/routes.py:3031 app/pilots/routes.py:3131
+#: app/aircraft/routes.py:3029 app/pilots/routes.py:3131
 msgid "Flight confirmed."
 msgstr "Vol confirmé."
 
-#: app/aircraft/routes.py:3087 app/pilots/routes.py:2792
+#: app/aircraft/routes.py:3085 app/pilots/routes.py:2792
 #, python-format
 msgid "One flight linked to its GPS track."
 msgid_plural "%(n)d flights linked to their GPS tracks."
 msgstr[0] "Un vol lié à sa trace GPS."
 msgstr[1] "%(n)d vols liés à leurs traces GPS."
 
-#: app/aircraft/routes.py:3182
+#: app/aircraft/routes.py:3180
 msgid "No original GPS files are kept for this aircraft yet."
 msgstr "Aucun fichier GPS d'origine n'est encore conservé pour cet appareil."
 
-#: app/aircraft/routes.py:3244
+#: app/aircraft/routes.py:3242
 #, python-format
 msgid "Import undone: the flights it created are deleted and the GPS tracks it added removed. Their files are kept for one day in the removed GPS files."
 msgid_plural "Import undone: the flights it created are deleted and the GPS tracks it added removed. Their files are kept for %(n)s days in the removed GPS files."
 msgstr[0] "Import annulé : les vols qu’il a créés sont supprimés et les traces GPS qu’il a ajoutées retirées. Leurs fichiers sont conservés un jour dans les fichiers GPS retirés."
 msgstr[1] "Import annulé : les vols qu’il a créés sont supprimés et les traces GPS qu’il a ajoutées retirées. Leurs fichiers sont conservés %(n)s jours dans les fichiers GPS retirés."
 
-#: app/aircraft/routes.py:3534
+#: app/aircraft/routes.py:3532
 msgid "No files selected."
 msgstr "Aucun fichier sélectionné."
 
-#: app/aircraft/routes.py:3554
+#: app/aircraft/routes.py:3552
 #, python-format
 msgid "%(name)s: unsupported format (use JPEG, PNG, WEBP or HEIC)."
 msgstr "%(name)s : format non pris en charge (utilisez JPEG, PNG, WEBP ou HEIC)."
 
-#: app/aircraft/routes.py:3576
+#: app/aircraft/routes.py:3574
 #, python-format
 msgid "one photo uploaded."
 msgid_plural "%(n)s photos uploaded."
 msgstr[0] "une photo téléversée."
 msgstr[1] "%(n)s photos téléversées."
 
-#: app/aircraft/routes.py:3655
+#: app/aircraft/routes.py:3653
 msgid "Photo deleted."
 msgstr "Photo supprimée."
 
@@ -887,24 +891,24 @@ msgstr "Autorisation de location enregistrée."
 msgid "Renter authorization revoked."
 msgstr "Autorisation de location révoquée."
 
-#: app/config/routes.py:1710
+#: app/config/routes.py:1708
 msgid "Payment received"
 msgstr "Paiement reçu"
 
-#: app/config/routes.py:1826
+#: app/config/routes.py:1824
 msgid "Every flight with a GPS track was checked again."
 msgstr "Chaque vol ayant une trace GPS a été revérifié."
 
-#: app/config/routes.py:1855
+#: app/config/routes.py:1853
 msgid "This difference no longer applies."
 msgstr "Cette différence ne s’applique plus."
 
-#: app/config/routes.py:1866
+#: app/config/routes.py:1864
 #, python-format
 msgid "Flight corrected: %(old)s → %(new)s. Nothing else was changed; the flight's notes record the paper logbook value."
 msgstr "Vol corrigé : %(old)s → %(new)s. Rien d’autre n’a été modifié ; les notes du vol indiquent la valeur du carnet papier."
 
-#: app/config/routes.py:1902
+#: app/config/routes.py:1900
 msgid "Difference dismissed."
 msgstr "Différence écartée."
 
@@ -1013,8 +1017,8 @@ msgstr "Document importé."
 msgid "File ignored."
 msgstr "Fichier ignoré."
 
-#: app/expenses/form_parsing.py:54 app/flights/form_parsing.py:104
-#: app/flights/shared_flight.py:181 app/pilots/form_parsing.py:125
+#: app/expenses/form_parsing.py:54 app/flights/form_parsing.py:105
+#: app/flights/shared_flight.py:181 app/pilots/form_parsing.py:133
 msgid "Date is required."
 msgstr "La date est obligatoire."
 
@@ -1284,90 +1288,90 @@ msgid_plural "%(num)d flights stay in pilots' logbooks as flights on another air
 msgstr[0] "Un vol reste dans le carnet de vol d’un pilote comme vol sur un autre aéronef ; il a seulement été retiré du carnet de route de cet aéronef."
 msgstr[1] "%(num)d vols restent dans les carnets de vol des pilotes comme vols sur un autre aéronef ; ils ont seulement été retirés du carnet de route de cet aéronef."
 
-#: app/flights/form_parsing.py:109
+#: app/flights/form_parsing.py:110
 msgid "Date must be a valid date (YYYY-MM-DD)."
 msgstr "La date doit être une date valide (AAAA-MM-JJ)."
 
-#: app/flights/form_parsing.py:114
+#: app/flights/form_parsing.py:115
 msgid "Departure airfield is required."
 msgstr "Le terrain de départ est obligatoire."
 
-#: app/flights/form_parsing.py:116
+#: app/flights/form_parsing.py:117
 msgid "Arrival airfield is required."
 msgstr "Le terrain d'arrivée est obligatoire."
 
-#: app/flights/form_parsing.py:123
+#: app/flights/form_parsing.py:124
 msgid "Pilot (crew 1) name is required."
 msgstr "Le nom du pilote (équipage 1) est obligatoire."
 
-#: app/flights/form_parsing.py:133
+#: app/flights/form_parsing.py:134
 msgid "Departure time must be a valid UTC time (HH:MM)."
 msgstr "L'heure de départ doit être une heure UTC valide (HH:MM)."
 
-#: app/flights/form_parsing.py:138
+#: app/flights/form_parsing.py:139
 msgid "Arrival time must be a valid UTC time (HH:MM)."
 msgstr "L'heure d'arrivée doit être une heure UTC valide (HH:MM)."
 
-#: app/flights/form_parsing.py:150
+#: app/flights/form_parsing.py:151
 msgid "Takeoff time must be a valid UTC time (HH:MM)."
 msgstr "L'heure de décollage doit être une heure UTC valide (HH:MM)."
 
-#: app/flights/form_parsing.py:155
+#: app/flights/form_parsing.py:156
 msgid "Landing time must be a valid UTC time (HH:MM)."
 msgstr "L'heure d'atterrissage doit être une heure UTC valide (HH:MM)."
 
-#: app/flights/form_parsing.py:175
+#: app/flights/form_parsing.py:176
 msgid "Counter value must be a positive number (decimal hours or H:MM)."
 msgstr "La valeur du compteur doit être un nombre positif (heures décimales ou H:MM)."
 
-#: app/flights/form_parsing.py:194
+#: app/flights/form_parsing.py:195
 msgid "Flight counter end must not be less than flight counter start."
 msgstr "La fin du compteur de vol ne doit pas être inférieure à son début."
 
-#: app/flights/form_parsing.py:202
+#: app/flights/form_parsing.py:203
 msgid "Engine counter end must not be less than engine counter start."
 msgstr "La fin du compteur moteur ne doit pas être inférieure à son début."
 
-#: app/flights/form_parsing.py:226
+#: app/flights/form_parsing.py:227
 #, python-format
 msgid "Engine time from the counters (%(counters)s h) doesn't match the departure/arrival times (%(clock)s h) — check for a data entry mistake."
 msgstr "Le temps moteur calculé à partir des compteurs (%(counters)s h) ne correspond pas aux heures de départ/arrivée (%(clock)s h) — vérifiez qu'il n'y a pas d'erreur de saisie."
 
-#: app/flights/form_parsing.py:278
+#: app/flights/form_parsing.py:279
 #, python-format
 msgid "Flight time from the counters (%(counters)s h) doesn't match the takeoff/landing times (%(clock)s h) — check for a data entry mistake."
 msgstr "Le temps de vol calculé à partir des compteurs (%(counters)s h) ne correspond pas aux heures de décollage/atterrissage (%(clock)s h) — vérifiez qu'il n'y a pas d'erreur de saisie."
 
-#: app/flights/form_parsing.py:300
+#: app/flights/form_parsing.py:301
 msgid "Passenger count must be a non-negative integer."
 msgstr "Le nombre de passagers doit être un entier positif ou nul."
 
-#: app/flights/form_parsing.py:311
+#: app/flights/form_parsing.py:312
 msgid "Landing count must be a non-negative integer."
 msgstr "Le nombre d'atterrissages doit être un entier positif ou nul."
 
-#: app/flights/form_parsing.py:324
+#: app/flights/form_parsing.py:325
 msgid "Fuel quantity added before the flight must be a non-negative number."
 msgstr "La quantité de carburant ajoutée avant le vol doit être un nombre positif ou nul."
 
-#: app/flights/form_parsing.py:339
+#: app/flights/form_parsing.py:340
 msgid "Fuel quantity added after the flight must be a non-negative number."
 msgstr "La quantité de carburant ajoutée après le vol doit être un nombre positif ou nul."
 
-#: app/flights/form_parsing.py:352
+#: app/flights/form_parsing.py:353
 msgid "Fuel remaining must be a non-negative number."
 msgstr "Le carburant restant doit être un nombre positif ou nul."
 
-#: app/flights/form_parsing.py:373
+#: app/flights/form_parsing.py:374
 #, python-format
 msgid "Fuel remaining in tank %(tank)s must be a non-negative number."
 msgstr "Le carburant restant dans le réservoir %(tank)s doit être un nombre positif ou nul."
 
-#: app/flights/form_parsing.py:393
+#: app/flights/form_parsing.py:394
 msgid "Oil added before the flight must be a non-negative number."
 msgstr "L'huile ajoutée avant le vol doit être un nombre positif ou nul."
 
-#: app/flights/form_parsing.py:406
+#: app/flights/form_parsing.py:407
 msgid "Oil added after the flight must be a non-negative number."
 msgstr "L'huile ajoutée après le vol doit être un nombre positif ou nul."
 
@@ -2048,32 +2052,32 @@ msgstr "Aucun PDF enregistré pour la révision « %(number)s » — elle n'a ja
 msgid "The saved PDF for revision '%(number)s' is missing on disk."
 msgstr "Le PDF enregistré pour la révision « %(number)s » est introuvable sur le disque."
 
-#: app/pilots/form_parsing.py:39
+#: app/pilots/form_parsing.py:40
 #, python-format
 msgid "%(field)s: enter a valid HH:MM time."
 msgstr "%(field)s : saisissez une heure valide (HH:MM)."
 
-#: app/pilots/form_parsing.py:49 app/pilots/form_parsing.py:54
+#: app/pilots/form_parsing.py:55 app/pilots/form_parsing.py:62
 #, python-format
 msgid "%(field)s: must be a number."
 msgstr "%(field)s : doit être un nombre."
 
-#: app/pilots/form_parsing.py:51 app/pilots/form_parsing.py:64
+#: app/pilots/form_parsing.py:57 app/pilots/form_parsing.py:72
 #, python-format
 msgid "%(field)s: must be non-negative."
 msgstr "%(field)s : doit être positif ou nul."
 
-#: app/pilots/form_parsing.py:66
+#: app/pilots/form_parsing.py:59 app/pilots/form_parsing.py:74
 #, python-format
 msgid "%(field)s: number too large."
 msgstr "%(field)s : nombre trop grand."
 
-#: app/pilots/form_parsing.py:69
+#: app/pilots/form_parsing.py:77
 #, python-format
 msgid "%(field)s: must be a whole number."
 msgstr "%(field)s : doit être un nombre entier."
 
-#: app/pilots/form_parsing.py:79
+#: app/pilots/form_parsing.py:87
 #, python-format
 msgid "%(field)s: enter a valid date (YYYY-MM-DD)."
 msgstr "%(field)s : saisissez une date valide (AAAA-MM-JJ)."

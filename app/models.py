@@ -1,10 +1,24 @@
 import enum
 import secrets
 from datetime import UTC, date, datetime
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Any, ClassVar
 
 from flask_sqlalchemy import SQLAlchemy  # pyright: ignore[reportMissingImports]
-from sqlalchemy import event, inspect, select, text, update
+from sqlalchemy import (
+    BigInteger,
+    Column,
+    Float,
+    Integer,
+    Numeric,
+    SmallInteger,
+    event,
+    inspect,
+    select,
+    text,
+    update,
+)
+from sqlalchemy.orm import Session
 
 db = SQLAlchemy()
 
@@ -4005,3 +4019,68 @@ def _revoke_removed_membership(
         .where(User.id == membership.user_id, User.is_instance_admin.is_(False))
         .values(auth_version=secrets.token_hex(16))
     )
+
+
+# ---------------------------------------------------------------------------
+# Numbers too large for their column
+# ---------------------------------------------------------------------------
+# PostgreSQL refuses a number beyond its column's range ("numeric field
+# overflow", "integer out of range") and the request ends in a server error;
+# SQLite stores it anyway. Refusing it before the flush gives every form the
+# same outcome on both: the change is not saved and the user is told why
+# (the NumberTooLarge handler in init.py).
+
+_INTEGER_LIMITS: dict[type, int] = {
+    SmallInteger: 2**15 - 1,
+    BigInteger: 2**63 - 1,
+}
+_INTEGER_LIMIT = 2**31 - 1
+
+
+class NumberTooLarge(Exception):
+    """A number does not fit the column it is being saved to."""
+
+    def __init__(self, column: Column[Any]) -> None:
+        self.column = column
+        super().__init__(f"{column.table.name}.{column.name} is too large")
+
+
+def fits_column(column: Column[Any], value: Any) -> bool:
+    """Whether *value* can be stored in *column* (numbers only; anything
+    else is left to the column type)."""
+    if isinstance(value, bool) or not isinstance(value, int | float | Decimal):
+        return True
+    col_type = column.type
+    if isinstance(col_type, Integer):
+        limit = _INTEGER_LIMITS.get(type(col_type), _INTEGER_LIMIT)
+        return -limit - 1 <= value <= limit
+    if isinstance(col_type, Float) or not isinstance(col_type, Numeric):
+        return True
+    if col_type.precision is None:
+        return True
+    number = Decimal(str(value)) if isinstance(value, float) else Decimal(value)
+    if not number.is_finite():
+        return False
+    scale = col_type.scale or 0
+    limit = Decimal(10) ** (col_type.precision - scale)
+    if abs(number) >= limit:  # before rounding: a huge one cannot be quantized
+        return False
+    # The database rounds to the column's scale: 999.95 in NUMERIC(4, 1)
+    # becomes 1000.0, which no longer fits.
+    rounded = number.quantize(Decimal(1).scaleb(-scale), rounding=ROUND_HALF_UP)
+    return abs(rounded) < limit
+
+
+@event.listens_for(Session, "before_flush")
+def _refuse_numbers_too_large(session: Session, _context: Any, _instances: Any) -> None:
+    for obj in (*session.new, *session.dirty):
+        state = inspect(obj)
+        loaded = state.dict  # only what is loaded: never triggers a query
+        for attr in state.mapper.column_attrs:
+            if attr.key not in loaded:
+                continue
+            for column in attr.columns:
+                if isinstance(column, Column) and not fits_column(
+                    column, loaded[attr.key]
+                ):
+                    raise NumberTooLarge(column)

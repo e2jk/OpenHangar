@@ -19,6 +19,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     Flight,
     FstdType,
     LogbookEntryType,
+    fits_column,
 )
 from utils import DB_INT_MAX  # pyright: ignore[reportMissingImports]
 
@@ -39,6 +40,11 @@ def _parse_time(val: str, field: str) -> tuple[_time | None, str | None]:
         return None, _("%(field)s: enter a valid HH:MM time.", field=field)
 
 
+# Every hours field of this form has the same column type (NUMERIC(4, 1):
+# up to 999.9 h); tests check that they still do.
+_HOURS_COLUMN = Flight.__table__.c.night_time
+
+
 def _parse_decimal(val: str, field: str) -> tuple[float | None, str | None]:
     val = val.strip()
     if not val:
@@ -49,6 +55,8 @@ def _parse_decimal(val: str, field: str) -> tuple[float | None, str | None]:
             return None, _("%(field)s: must be a number.", field=field)
         if n < 0:
             return None, _("%(field)s: must be non-negative.", field=field)
+        if not fits_column(_HOURS_COLUMN, n):
+            return None, _("%(field)s: number too large.", field=field)
         return n, None
     except ValueError:
         return None, _("%(field)s: must be a number.", field=field)
