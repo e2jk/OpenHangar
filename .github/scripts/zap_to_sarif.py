@@ -10,7 +10,10 @@ Instances are grouped into one result per (rule, mapped file); the scanned
 URLs are listed in the message and preserved in logicalLocations.
 
 Rules marked IGNORE in .zap/rules.tsv are excluded from the SARIF output so
-they do not clutter the GitHub Security tab.
+they do not clutter the GitHub Security tab. OUTOFSCOPE lines (rule id, or
+"*" for every rule, then a regex) drop the instances whose URL the regex
+matches from the start, as ZAP's scan script does for pass/fail — without
+this, ZAP's JSON report still lists them and they reached the Security tab.
 
 Usage:
     python3 zap_to_sarif.py [zap_json] [output_sarif] [rules_tsv] [tool_name]
@@ -55,26 +58,43 @@ def _url_to_file(url: str) -> str:
     return _FALLBACK_FILE
 
 
-def _load_ignored_rules(rules_tsv: str) -> set[str]:
-    """Return the set of rule IDs marked IGNORE in a ZAP rules.tsv file."""
+def _load_rules(rules_tsv: str) -> tuple[set[str], dict[str, list[re.Pattern[str]]]]:
+    """Return the rule IDs marked IGNORE in a ZAP rules.tsv file, and the
+    OUTOFSCOPE URL patterns per rule ID ("*" = every rule)."""
     ignored: set[str] = set()
+    out_of_scope: dict[str, list[re.Pattern[str]]] = {}
     if not os.path.exists(rules_tsv):
-        return ignored
+        return ignored, out_of_scope
     with open(rules_tsv) as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith("#"):
                 continue
             parts = line.split("\t")
-            if len(parts) >= 2 and parts[1].strip().upper() == "IGNORE":
+            if len(parts) < 2:
+                continue
+            action = parts[1].strip().upper()
+            if action == "IGNORE":
                 ignored.add(parts[0].strip())
-    return ignored
+            elif action == "OUTOFSCOPE" and len(parts) >= 3:
+                out_of_scope.setdefault(parts[0].strip(), []).append(
+                    re.compile(parts[2].strip())
+                )
+    return ignored, out_of_scope
+
+
+def _out_of_scope(
+    rule_id: str, url: str, patterns: dict[str, list[re.Pattern[str]]]
+) -> bool:
+    """Whether an OUTOFSCOPE line covers this URL for this rule (ZAP uses
+    ``match``, anchored at the start of the URL)."""
+    return any(p.match(url) for key in (rule_id, "*") for p in patterns.get(key, []))
 
 
 def convert(
     zap_json_path: str, sarif_path: str, rules_tsv: str, tool_name: str = "ZAP"
 ) -> None:
-    ignored = _load_ignored_rules(rules_tsv)
+    ignored, out_of_scope = _load_rules(rules_tsv)
 
     with open(zap_json_path) as f:
         zap = json.load(f)
@@ -93,6 +113,16 @@ def convert(
                 skipped += len(alert.get("instances", []))
                 continue
 
+            kept = []
+            for inst in alert.get("instances", []):
+                url = inst.get("uri", site.get("@name", ""))
+                if _out_of_scope(rule_id, url, out_of_scope):
+                    skipped += 1
+                else:
+                    kept.append((inst, url))
+            if not kept:
+                continue
+
             risk = int(alert.get("riskcode", "0"))
             level = _RISK_TO_LEVEL.get(risk, "note")
 
@@ -109,8 +139,7 @@ def convert(
                     }
                 )
 
-            for inst in alert.get("instances", []):
-                url = inst.get("uri", site.get("@name", ""))
+            for inst, url in kept:
                 group = groups.setdefault(
                     (rule_id, _url_to_file(url)),
                     {
