@@ -1246,6 +1246,16 @@ logged flights stamp the airfields automatically.
   off (heliports, seaplane bases, closed airfields, airport size…).
 - Add airfields one at a time by ICAO code or name (the existing airport
   search), or paste a whole list of ICAO codes.
+- Import from a web page: known sources are found automatically (the
+  current Landegutscheinheft edition, see below), or the pilot enters any
+  URL. The ICAO codes found there are shown as a list and on a map, to
+  confirm before the passport is created. Codes are matched against the
+  bundled list; anything unknown is listed for the pilot to fix or drop.
+  Fetching a URL from the server needs the usual guards: http(s) only, no
+  private or local addresses (checked after every redirect), size and time
+  limits. Many such pages build their list with JavaScript, so a known
+  source may need its own small adapter (the Landegutscheinheft site loads
+  a JSON list).
 - Gap: OurAirports has no military or ULM flag, and most ULM-only fields
   have no ICAO code, so they are not in the bundled list. Those filters need
   another source (OpenAIP, already used for the map overlay, has these
@@ -1260,16 +1270,32 @@ logged flights stamp the airfields automatically.
   only A, so B and C need a manual stamp, or could be found from the
   flight's GPS track (the GPS import already resolves points to the nearest
   airfield; it would need to tell a full stop from a touch-and-go).
-- Manual stamp for a visit not logged here (date, note).
-- Each passport says whether flights from before it was created count.
+- Manual stamp, "visited, not logged here" (date, optional note).
+- By default every logged flight counts, however old; a passport can set a
+  start date (only flights from then on count).
 - A stamp shows the first visit's date, aircraft and a link to the flight,
   with an optional photo as the "stamp".
 
 **Map and stats**
 - A map per passport: visited airfields highlighted, the rest shown, with
   "visited X of Y (Z %)".
-- "Where next": unvisited airfields nearest the home base, or within the
-  aircraft's range, and the list of those still missing.
+
+**Where next**
+- Unvisited airfields within reach of a starting point: the aircraft's
+  home airfield by default, or any airfield the pilot picks (on holiday
+  somewhere). The pilot's latest landing airfield, when it is not the home
+  airfield, is offered as a one-click choice.
+- A slider limits the search by flight time (e.g. 1 h) or distance (nm),
+  up to the aircraft's range.
+- Home airfield: not stored today. Add it to the aircraft, filled in by
+  the owner when setting the aircraft up (and a default one on the pilot
+  profile, for pilots who fly several aircraft). No guessing it from the
+  logbook: an aircraft is normally set up before its logbook is imported,
+  so that code would rarely run.
+- Range: endurance can come from the fuel tanks' capacity
+  (`AircraftFuelTank`) and the aircraft's `fuel_flow`, minus a reserve.
+  Cruise speed is not stored: add it, or derive it from logged flights
+  (distance between departure and arrival over flight time, or GPS tracks).
 - Does the aircraft fit: runway length and maximum weight against the
   aircraft (e.g. a 600 m grass strip limited to 2,000 kg). Not in the
   bundled list; OpenAIP has runways.
@@ -1278,25 +1304,57 @@ logged flights stamp the airfields automatically.
 Some passports are yearly booklets of landing vouchers, such as the German
 Landegutscheinheft (2027 edition: 80 airfields, 69 in Germany, 6 in Austria,
 3 in Denmark, 2 in the Netherlands, every one with an ICAO code and present
-in the bundled list, so pasting the codes builds it). For these:
+in the bundled list). For these:
 - Validity dates: only flights inside them count.
 - Vouchers per airfield (e.g. 3 free landings), how many are used and left,
   landing fees saved, a reminder before the edition expires.
 - An archive of past editions, with comparisons ("last year: X airfields,
   Y %; this year so far: …"), and next year's edition created from last
-  year's list, then adjusted.
-- Their publisher's airfield data (opening hours, PPR, frequencies,
-  runways) is published without a stated licence: use pasted ICAO codes,
-  never bundle or download their data unless they agree.
+  year's list (or imported again), then adjusted.
+- Their publisher's details per airfield (opening hours, PPR, frequencies,
+  runways) come without a stated licence: import only the list of ICAO
+  codes, never store or show their other data unless they agree.
 
-**Sharing and export**
-- A public share link to the passport map (reusing share links).
+**Club passports (a group, not all on this instance)**
+One passport shared by a group, for example 13 pilots who bought the same
+edition together, with a shared map of who has visited what.
+- Pilots with an account here: their stamps come from their logbook as
+  above.
+- Pilots without an account (and not wanting one): each gets a personal
+  link to tick airfields off (date, optional note), without logging
+  flights. Their stamps count on the shared map like everyone else's. The
+  link is secret, can be renewed or revoked by the passport's owner, and
+  is limited to that passport. Design to settle: this is a participant of
+  one passport, not a new user role, and the instance's other data stays
+  out of reach.
+- That form is as quick as possible (pick the airfield, the date, done),
+  and works well on a phone. Without getting in the way, it shows what else
+  is there: "you could also keep your whole logbook here", with a glimpse
+  of the electronic logbook and a clear note that their data can be
+  exported at any time, so trying it commits them to nothing.
+- Shared map and stats: per pilot and for the group (airfields visited by
+  at least one of us, by everyone…), and a leaderboard.
+
+**Public view and export**
+- A public share link to the passport map (reusing share links), with less
+  identifying detail: month and year instead of the date, no aircraft
+  registration, no flight links. Photos only if chosen.
 - A printable passport.
 - The unvisited airfields as GPX/KML, to load into SkyDemon or another
   navigation app.
 
-**Later**
-- Club passports: one passport shared across a flight club, with a club map
-  and a leaderboard.
-- Airfields that close or change ICAO code: the stamp stays, the passport
-  flags the airfield.
+**Later: federated club passports**
+A participant who runs their own OpenHangar instance could link it to the
+club passport on another instance: their instance then sends each new stamp
+to their personal link automatically, as they would by hand. Not needed
+yet (nobody in the current group runs an instance); worth keeping the
+personal link's submission simple and stable so it can later be called by
+another instance as well as by the form.
+
+**Airfields that close or change their ICAO code**
+- A stamp belongs to the airfield, not to the code: when a code changes
+  (a newer `airports.csv`), the stamp and the passport follow it, and
+  flights logged with the old code still count.
+- A closed airfield stays on the passport, flagged closed: a stamp already
+  earned stays, and an unvisited closed airfield no longer counts towards
+  the total (it can no longer be visited).
