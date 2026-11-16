@@ -1227,3 +1227,76 @@ Done means: a tested compose variant, a "Local HTTPS" section in
 `docs/raspberry-pi.md` (replacing or complementing the current pointer to
 the self-hosting guide), and a reminder to drop
 `OPENHANGAR_SESSION_COOKIE_SECURE=false` once on HTTPS.
+
+---
+
+## Pilot: airfield passports
+
+A "fly passport" is a list of airfields to visit, often a paper booklet
+stamped at each airfield, with the goal of visiting them all in a country
+or region. In OpenHangar a pilot builds one or more passports (for example
+Belgium, the Netherlands, North of France), sees them on a map, and their
+logged flights stamp the airfields automatically.
+
+**Building a passport**
+- Pick an area: country or region. The bundled OurAirports list
+  (`app/data/airports.csv`) has `iso_country` and `iso_region`
+  (`BE-VLG` Flanders, `FR-HDF` Hauts-de-France…). The builder proposes every
+  airfield in it, to tick on or off, with filters that can be switched on or
+  off (heliports, seaplane bases, closed airfields, airport size…).
+- Add airfields one at a time by ICAO code or name (the existing airport
+  search), or paste a whole list of ICAO codes.
+- Gap: OurAirports has no military or ULM flag, and most ULM-only fields
+  have no ICAO code, so they are not in the bundled list. Those filters need
+  another source (OpenAIP, already used for the map overlay, has these
+  types) or are set by hand per airfield.
+
+**Stamps**
+- One stamp per airfield: the first full-stop landing there. Later visits
+  change nothing. A touch-and-go or low approach never counts (in the paper
+  version you have to get out of the aircraft for the stamp).
+- From the pilot logbook: each flight's arrival airfield is a full stop. A
+  flight logged as one leg with landings in between (A → B → C → A) records
+  only A, so B and C need a manual stamp, or could be found from the
+  flight's GPS track (the GPS import already resolves points to the nearest
+  airfield; it would need to tell a full stop from a touch-and-go).
+- Manual stamp for a visit not logged here (date, note).
+- Each passport says whether flights from before it was created count.
+- A stamp shows the first visit's date, aircraft and a link to the flight,
+  with an optional photo as the "stamp".
+
+**Map and stats**
+- A map per passport: visited airfields highlighted, the rest shown, with
+  "visited X of Y (Z %)".
+- "Where next": unvisited airfields nearest the home base, or within the
+  aircraft's range, and the list of those still missing.
+- Does the aircraft fit: runway length and maximum weight against the
+  aircraft (e.g. a 600 m grass strip limited to 2,000 kg). Not in the
+  bundled list; OpenAIP has runways.
+
+**Time-limited editions (voucher booklets)**
+Some passports are yearly booklets of landing vouchers, such as the German
+Landegutscheinheft (2027 edition: 80 airfields, 69 in Germany, 6 in Austria,
+3 in Denmark, 2 in the Netherlands, every one with an ICAO code and present
+in the bundled list, so pasting the codes builds it). For these:
+- Validity dates: only flights inside them count.
+- Vouchers per airfield (e.g. 3 free landings), how many are used and left,
+  landing fees saved, a reminder before the edition expires.
+- An archive of past editions, with comparisons ("last year: X airfields,
+  Y %; this year so far: …"), and next year's edition created from last
+  year's list, then adjusted.
+- Their publisher's airfield data (opening hours, PPR, frequencies,
+  runways) is published without a stated licence: use pasted ICAO codes,
+  never bundle or download their data unless they agree.
+
+**Sharing and export**
+- A public share link to the passport map (reusing share links).
+- A printable passport.
+- The unvisited airfields as GPX/KML, to load into SkyDemon or another
+  navigation app.
+
+**Later**
+- Club passports: one passport shared across a flight club, with a club map
+  and a leaderboard.
+- Airfields that close or change ICAO code: the stamp stays, the passport
+  flags the airfield.
