@@ -9,6 +9,8 @@ schema and drops it afterwards.
 - Migrations are run on a schema holding real rows, not only on an empty
   database: values must survive, and the logbook-unification migration's
   "legacy data present" branch must keep both old tables and raise its flag.
+- The migrations, run from scratch, build exactly the schema the models
+  describe (the rest of the test suite builds it from the models instead).
 """
 
 import datetime as dt
@@ -302,3 +304,32 @@ def test_this_releases_migrations_apply_to_existing_rows(
             ),
             {"a": account, "c": charge},
         )
+
+
+# ── Migrations build what the models describe ─────────────────────────────────
+
+
+def test_migrations_build_the_schema_the_models_describe(
+    empty_schema: tuple[Flask, Engine],
+) -> None:
+    """The test suite builds its tables from the models (``create_all``);
+    every real install builds them by running the migrations. Any difference
+    — a missing table, column, index or unique constraint, another column
+    type or nullability, a foreign key without its ``ondelete`` — would pass
+    every other test and only show in production. Column server defaults are
+    not compared: the models set their defaults in Python."""
+    from alembic.autogenerate import compare_metadata
+    from alembic.migration import MigrationContext
+    from models import db
+
+    app, engine = empty_schema
+    _upgrade(app, "head")
+
+    with engine.connect() as conn:
+        context = MigrationContext.configure(conn, opts={"compare_type": True})
+        differences = compare_metadata(context, db.metadata)
+
+    assert differences == [], (
+        "migrations at head differ from app/models.py; add a migration "
+        "(or fix the model):\n" + "\n".join(repr(d) for d in differences)
+    )
