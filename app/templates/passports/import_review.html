@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% set no_history_cache = true %}
+{% block title %}{{ _('Review source import') }} — OpenHangar{% endblock %}
+{% block content %}
+<div class="container py-4" id="passport-builder">
+<h1>{{ _('Review source import') }}</h1>
+{% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+<p>{{ _('Source') }}: <a href="{{ preview.source.url }}" hx-boost="false" rel="noreferrer">{{ preview.source.url }}</a> · {{ _('Retrieved') }}: {{ format_datetime(source_retrieved_at) }}</p>
+<p>{{ _('Candidate codes can contain unrelated words. Review matches and resolve or explicitly drop unknown codes before saving. The edition label is your confirmation of the source edition.') }}</p>
+<dl><dt>{{ _('Extracted codes') }}</dt><dd>{{ preview.codes|length }}</dd><dt>{{ _('Matched airfields') }}</dt><dd>{{ fields|length }}</dd><dt>{{ _('Unknown or ambiguous codes') }}</dt><dd>{{ preview.unknown|length }}</dd></dl>
+<details><summary>{{ _('Extracted codes') }}</summary><p class="text-break">{{ preview.codes|join(', ') }}</p></details>
+{% if preview.unknown %}<h2 class="h5">{{ _('Unknown or ambiguous codes') }}</h2><p class="text-break">{{ preview.unknown|join(', ') }}</p>{% endif %}
+<ul>{% for field in fields %}<li>{{ field.ident or '—' }} — {{ field.name }}</li>{% endfor %}</ul>
+{% include "passports/_selection_map.html" %}
+<form method="post" class="d-flex flex-wrap gap-2 mt-3"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="draft" value="{{ token }}"><input type="hidden" name="revision" value="{{ draft.revision }}">
+<button class="btn btn-ac-ghost" name="action" value="cancel_import">{{ _('Cancel import') }}</button><button class="btn btn-ac-primary" name="action" value="import_merge">{{ _('Add imported list to selection') }}</button><button class="btn btn-outline-warning" name="action" value="import_replace">{{ _('Replace selection with imported list') }}</button>
+</form>
+<p>{{ _('Replacing an imported list keeps airfields with saved visits or photos. The final review shows additions and removals. Delete protected history separately in the builder only if you intend to remove it.') }}</p>
+</div>
+{% endblock %}

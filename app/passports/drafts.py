@@ -66,6 +66,15 @@ def new_draft(
         expires_at=now + DRAFT_TTL,
         payload={
             "metadata": metadata,
+            "source": {
+                "url": passport.source_url,
+                "retrieved_at": passport.source_retrieved_at.isoformat(),
+            }
+            if passport is not None
+            and passport.source_url
+            and passport.source_retrieved_at
+            else None,
+            "import_preview": None,
             "selected": selected,
             "custom": {},
             "classifications": {},

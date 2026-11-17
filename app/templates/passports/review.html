@@ -5,6 +5,7 @@
 <div class="container py-4" id="passport-builder">
 <h1 class="page-title">{{ _('Review passport') }}</h1>
 {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+{% if impact.source.source_url %}<p>{{ _('Source') }}: <a href="{{ impact.source.source_url }}" hx-boost="false" rel="noreferrer">{{ impact.source.source_url }}</a> · {{ _('Retrieved') }}: {{ format_datetime(impact.source.source_retrieved_at) }}</p>{% endif %}
 <h2 class="h4">{{ impact.metadata.title }}</h2><p>{{ impact.metadata.description or '' }}</p>
 <dl><dt>{{ _('Start date') }}</dt><dd>{{ impact.metadata.start_date or '—' }}</dd><dt>{{ _('End date') }}</dt><dd>{{ impact.metadata.end_date or '—' }}</dd></dl>
 <p>{{ ngettext('one selected airfield', '%(n)s selected airfields', impact.fields|length, n=impact.fields|length) }}</p>

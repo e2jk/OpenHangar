@@ -1,5 +1,7 @@
 """Live, batched own-logbook evidence, shared by previews and passport views.
 
+The pilot logbook is personal across organisations (the same identity-slot policy
+as pilots._my_entries_query); passport/alias/manual-visit scope remains tenant-bound.
 No automatic stamps are persisted. A logged arrival is presumed a full stop;
 participants can exclude it without changing their logbook. Unknown durations
 on historical flights remain eligible. Date-only visits sort after timed arrivals

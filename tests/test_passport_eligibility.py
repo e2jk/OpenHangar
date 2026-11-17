@@ -217,3 +217,31 @@ def test_evidence_queries_do_not_grow_per_marker(
             assert result["visited"] == 20
         finally:
             event.remove(db.engine, "before_cursor_execute", record)
+
+
+def test_own_logbook_evidence_spans_organisations(
+    app: Flask, owner: dict[str, int]
+) -> None:
+    from models import Aircraft, Tenant
+
+    with app.app_context():
+        other_tenant = Tenant(name="Another organisation")
+        db.session.add(other_tenant)
+        db.session.flush()
+        aircraft = Aircraft(
+            tenant_id=other_tenant.id,
+            registration="OO-OTHER",
+            make="Cessna",
+            model="172",
+        )
+        db.session.add(aircraft)
+        db.session.flush()
+        own = flight(owner["user"], aircraft_id=aircraft.id)
+        flight(owner["other"], aircraft_id=aircraft.id)
+        db.session.commit()
+        passport = db.session.get(Passport, owner["passport"])
+        evidence = passport_progress(passport, owner["user"])["rows"][0]
+        assert evidence["count"] == 1 and evidence["first"]["aircraft"] == "OO-OTHER"
+        db.session.delete(own)
+        db.session.commit()
+        assert passport_progress(passport, owner["user"])["visited"] == 0

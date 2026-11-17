@@ -8,6 +8,8 @@
 <a class="btn btn-ac-ghost my-2" href="{{ url_for('passports.where_next', passport_id=passport.id) }}">{{ _('Where next?') }}</a>
 {% if can_manage %}<div class="d-flex flex-wrap gap-2 my-3">{% if not passport.archived_at %}<a class="btn btn-ac-primary" href="{{ url_for('passports.edit_passport', passport_id=passport.id) }}">{{ _('Edit passport') }}</a>{% endif %}<a class="btn btn-ac-ghost" href="{{ url_for('passports.archive_passport', passport_id=passport.id) }}">{{ _('Reopen passport') if passport.archived_at else _('Archive passport') }}</a><a class="btn btn-outline-danger" href="{{ url_for('passports.delete_passport', passport_id=passport.id) }}">{{ _('Delete passport') }}</a></div>{% endif %}
 {% if passport.archived_at %}<span class="badge bg-secondary">{{ _('Archived') }}</span>{% endif %}
+{% if passport.edition_label %}<p>{{ _('Edition label') }}: {{ passport.edition_label }}</p>{% endif %}
+{% if passport.source_url %}<p>{{ _('Source') }}: <a href="{{ passport.source_url }}" hx-boost="false" rel="noreferrer">{{ passport.source_url }}</a>{% if passport.source_retrieved_at %} · {{ _('Retrieved') }}: {{ format_datetime(passport.source_retrieved_at) }}{% endif %}</p>{% endif %}
 {% if passport.description %}<p>{{ passport.description }}</p>{% endif %}
 {% if passport.start_date %}<dl><dt>{{ _('From') }}</dt><dd>{{ passport.start_date }}</dd></dl>{% endif %}
 {% if passport.end_date %}<dl><dt>{{ _('Until') }}</dt><dd>{{ passport.end_date }}</dd></dl>{% endif %}
