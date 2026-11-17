@@ -190,8 +190,16 @@ Only the owner can edit, archive, reopen or delete a passport. Editing previews
 changes to your completion; removing an airfield with saved visits or stamp photos
 requires confirmation. Deleting a passport keeps your flight logbook. The builder
 supports normal forms without JavaScript and keeps its draft on the server for
-two hours. Automatic stamp/visit maps and group invitations follow in later
-increments. See [the passport guide](airfield_passports.md).
+two hours.
+
+Your own logbook arrivals fill the passport automatically; dates, crew membership
+and edits are checked live. Arrivals are assumed full-stop: open an airfield to
+exclude a touch-and-go or low approach. You can also record a dated manual visit,
+optionally linked to your own flight, and upload a private stamp photo. Photos do
+not earn credit. The default map gives every visited field equal weight; **Show
+visit frequency** sizes markers by recorded visit counts. Closed unvisited fields
+remain visible but are excluded from the achievable total. Group invitations and
+combined edition views follow in later increments. See [the passport guide](airfield_passports.md).
 
 ### Personal minimums
 

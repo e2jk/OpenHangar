@@ -1,7 +1,7 @@
 # Airfield passports
 
-Phases 41a/41b provide the data foundation, owner-only builder and airfield
-selection map. Visit/stamp maps and invitations follow in later increments of
+Phases 41a–41c provide the data foundation, owner-only builder, live stamps,
+visit map, manual visits and private stamp photos. Group invitations follow in later increments of
 [Phase 41](implementation_plan.md#phase-41--airfield-passports).
 
 ## Read access
@@ -101,3 +101,58 @@ this code (restart the development web container to run its migration entrypoint
 Validation covers PostgreSQL migration/model parity and upgrade/downgrade/re-upgrade
 on a disposable schema with existing users and tenants, as well as the normal full
 coverage gate.
+
+
+## Visits, stamps and progress
+
+Each viewer sees their own recorded visits. Automatic evidence comes from their
+PIC or accepted second-crew logbook slots, including unmanaged aircraft. Owning
+or administering an aircraft gives no visit credit. FSTD sessions, future flights,
+and explicit zero-airborne/no-landing ground runs are excluded. Historical entries
+with unknown duration can still count; cancelled/no-takeoff reservations are not
+logbook flights. A logged arrival is presumed a full stop: on the airfield's page,
+use **Exclude this arrival** for a touch-and-go, low approach or other nonqualifying
+arrival. **Restore arrival credit** reverses that choice. Departure codes and
+landing totals never infer intermediate destinations.
+
+Date boundaries are inclusive and use the logged date. The first eligible evidence
+wins: date, known arrival time (timed arrivals before date-only visits that day),
+evidence kind, then stable ID. Date-only visits keep their unknown time. Flights
+are evaluated live; edits, deletion/import undo, crew changes, aliases and passport
+date changes immediately update stamps and counts. Ambiguous aliases across all
+tenant identities never earn an automatic stamp, even if only one is selected.
+
+Open an airfield from the map or list to read your evidence, add a dated manual
+visit and optional note, or delete your manual visit. An optional supporting flight
+must be from your own logbook on that date; this also records intermediate stops
+on a multi-stop flight. Linking a manual visit to the same flight/airfield as an
+arrival avoids counting it twice. Independent manual visits count separately.
+Manual evidence survives flight changes; a flight link is shown only while you
+still occupy one of its logbook slots. The forms and progress work without JS.
+GPS stop suggestions remain a later enhancement: proximity alone awards no credit.
+
+The normal map is a checklist with equal marker size for all destinations.
+**Show visit frequency** adds bounded logarithmic radii (6 px for zero, 8 px for
+one, maximum 18 px), with exact counts in the list and popups. Counts represent
+recorded full-stop events, not landing totals or stamps. Two arrivals on one day
+count twice; repeat-visit data is only as complete as the recorded evidence.
+This increment shows only your counts. Participant/group scope, edition colours
+and published aggregates are integrated with the corresponding later group,
+series and public-sharing subphases; no other pilot's flight details are exposed.
+
+Completion is stamped targets / (open targets + stamped closed targets). Closed
+unvisited fields remain visible but excluded, and original/excluded target counts
+are displayed separately. No achievable targets means no percentage. Reopened
+fields rejoin the denominator. Fields without coordinates remain in the list.
+
+## Private stamp photos
+
+Each participant may keep one photo per target, independently of which evidence
+earns the stamp. Upload JPEG, PNG or WebP up to 10 MB and 20 megapixels. Actual image
+content is decoded and re-encoded as a bounded JPEG with EXIF/GPS metadata removed;
+the upload name is replaced with a random filename. A photo itself earns no credit.
+Photo endpoints require your active passport participation and return no-store
+responses. Photos are visible only to their participant, even to other accepted
+members or the owner. Replacements/deletions remove old files after commit;
+failed database saves remove the new file and retain the old one. Publication
+is a separate, explicit later workflow; uploads never enable public consent.
