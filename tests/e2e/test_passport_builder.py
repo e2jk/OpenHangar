@@ -207,6 +207,10 @@ def test_passport_destination_discovery(
     value = option.get_attribute("value")
     assert value is not None
     page.locator("#discovery-origin").select_option(value)
+    # The search reloaded the page (an htmx swap): the new airfield option
+    # shows before passport_discovery.js re-attaches its slider/number sync
+    # on htmx:afterSettle. Pressing Home in that gap moved only the slider.
+    expect(page.locator("#passport-discovery")).to_have_attribute("data-oh-inited", "1")
     page.locator("#discovery-slider").press("Home")
     expect(page.locator("#discovery-limit")).to_have_value("1")
     page.locator("#discovery-limit").fill("100")
