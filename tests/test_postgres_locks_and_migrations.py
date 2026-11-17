@@ -440,3 +440,79 @@ def test_passport_builder_round_trip_on_postgres(app: Flask) -> None:
     assert client.post(path, data=form(response, "save")).status_code == 302
     with app.app_context():
         assert db.session.get(Passport, pid).end_date == dt.date(2027, 12, 31)
+
+
+def test_discovery_home_migration_round_trip(
+    empty_schema: tuple[Flask, Engine],
+) -> None:
+    from flask_migrate import downgrade
+    from sqlalchemy import inspect
+
+    app, engine = empty_schema
+    previous = "8e862ec0a689"
+    _upgrade(app, previous)
+    tid = _insert(engine, "tenants", name="Existing home defaults")
+    uid = _insert(engine, "users", email="home@migration.test", password_hash="unused")
+    aid = _insert(
+        engine,
+        "aircraft",
+        tenant_id=tid,
+        registration="OO-HOME",
+        make="Cessna",
+        model="172",
+    )
+    profile_id = _insert(engine, "pilot_profiles", user_id=uid)
+    _upgrade(app, "head")
+    fid = _insert(
+        engine,
+        "passport_airfield_identities",
+        tenant_id=tid,
+        source="manual",
+        name="Home",
+    )
+    with engine.begin() as conn:
+        assert conn.execute(
+            text(
+                "SELECT home_airfield_id, cruise_speed_knots FROM aircraft WHERE id=:id"
+            ),
+            {"id": aid},
+        ).one() == (None, None)
+        conn.execute(
+            text(
+                "UPDATE aircraft SET home_airfield_id=:field, cruise_speed_knots=120 WHERE id=:id"
+            ),
+            {"field": fid, "id": aid},
+        )
+        conn.execute(
+            text("UPDATE pilot_profiles SET home_airfield_id=:field WHERE id=:id"),
+            {"field": fid, "id": profile_id},
+        )
+        conn.execute(
+            text("DELETE FROM passport_airfield_identities WHERE id=:id"), {"id": fid}
+        )
+        assert (
+            conn.execute(
+                text("SELECT home_airfield_id FROM aircraft WHERE id=:id"), {"id": aid}
+            ).scalar_one()
+            is None
+        )
+        assert (
+            conn.execute(
+                text("SELECT home_airfield_id FROM pilot_profiles WHERE id=:id"),
+                {"id": profile_id},
+            ).scalar_one()
+            is None
+        )
+    with app.app_context():
+        downgrade(directory=MIGRATIONS, revision=previous)
+    assert "home_airfield_id" not in {
+        column["name"] for column in inspect(engine).get_columns("aircraft")
+    }
+    with engine.connect() as conn:
+        assert (
+            conn.execute(
+                text("SELECT registration FROM aircraft WHERE id=:id"), {"id": aid}
+            ).scalar_one()
+            == "OO-HOME"
+        )
+    _upgrade(app, "head")

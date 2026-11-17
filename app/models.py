@@ -439,6 +439,15 @@ class Aircraft(db.Model):
     fuel_flow = db.Column(
         db.Numeric(6, 2), nullable=True
     )  # typical fuel consumption in L/h
+    home_airfield_id = db.Column(
+        db.Integer,
+        db.ForeignKey("passport_airfield_identities.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    cruise_speed_knots = db.Column(db.Numeric(6, 2), nullable=True)
+    home_airfield = db.relationship(
+        "PassportAirfieldIdentity", foreign_keys=[home_airfield_id]
+    )
     fuel_type = db.Column(
         db.String(8), nullable=False, default="avgas"
     )  # "avgas" | "jet_a1"
@@ -1473,6 +1482,14 @@ class PilotProfile(db.Model):
         db.ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         unique=True,
+    )
+    home_airfield_id = db.Column(
+        db.Integer,
+        db.ForeignKey("passport_airfield_identities.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    home_airfield = db.relationship(
+        "PassportAirfieldIdentity", foreign_keys=[home_airfield_id]
     )
     license_number = db.Column(db.String(64), nullable=True)
     medical_expiry = db.Column(db.Date, nullable=True)

@@ -19,6 +19,7 @@
   <div class="ac-form-card p-4">
     <form method="POST" action="{{ url_for('pilots.profile') }}">
 
+      <div class="mb-3"><label class="form-label" for="home_airfield">{{ _('Home airfield (optional)') }}</label><input class="form-control" id="home_airfield" name="home_airfield" maxlength="80" value="{{ request.form.get('home_airfield', home_airfield_value) }}" data-airport-ac="{{ url_for('airport_search') }}"><div class="form-text">{{ _('Enter an airfield code or a saved field reference such as field:123. Never inferred from flight history.') }}</div></div>
       <div class="row g-3 mb-3">
         <div class="col-md-4">
           <label class="form-label" for="license_number">{{ _('Licence number') }}</label>
