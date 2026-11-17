@@ -17,6 +17,7 @@ import os
 import shutil
 import uuid
 from datetime import UTC, date, datetime, time, timedelta
+from typing import Any
 
 from models import (
     Aircraft,
@@ -41,6 +42,9 @@ from models import (
     InstalledSTC,
     MaintenanceTrigger,
     OperatingModel,
+    PassportAirfield,
+    PassportArrivalExclusion,
+    PassportParticipant,
     PersonalMinimumsItem,
     PersonalMinimumsRevision,
     PersonalMinimumsSection,
@@ -3620,3 +3624,199 @@ def seed_shared_ownership_on_existing_aircraft(
     ac.co_owner_billing_start = date.today() - timedelta(days=180)
     ac.reserve_contribution_hourly = Decimal("15.00")
     _seed_co_owner_billing_data(tenant_id, ac, user_ids)
+
+
+# ── Airfield passports (Phase 41) ────────────────────────────────────────────
+
+# Home airfields and cruise speeds (kt) for seed_fleet's four aircraft.
+_PASSPORT_AIRCRAFT_HOMES = {
+    "OO-PNH": ("EBCI", 115),
+    "OO-ABC": ("EBAW", 160),
+    "OO-GRN": ("EBNM", 125),
+    "OO-TCH": ("EBST", 100),
+}
+_PASSPORT_PILOT_HOME = "EBCI"
+# A fictional voucher booklet: small fields around Belgium, so the seeded
+# logbook arrival at EBKT and the manual visits below fall inside it.
+_PASSPORT_BOOKLET_CODES = [
+    "EBAM",
+    "EBAW",
+    "EBDT",
+    "EBKH",
+    "EBKT",
+    "EBLE",
+    "EBNM",
+    "EBSG",
+    "EBSH",
+    "EBSP",
+    "EBST",
+    "EBTN",
+    "EBZR",
+    "EBZW",
+]
+# Every target here has a seeded logbook arrival: a completed passport.
+_PASSPORT_TRAINING_CODES = ["EBCI", "EBKT", "EBNM", "EBOS"]
+# Manual visits (no matching logbook flight): (code, days ago, note).
+# All within the last 60 days, so they also fall inside the booklet edition.
+_PASSPORT_MANUAL_VISITS = [
+    ("EBSP", 45, "Lunch stop on a friend's aircraft. Grass runway, lovely views."),
+    ("EBSH", 20, None),
+    ("EBSG", 12, "Intermediate stop on a flight logged by the other pilot."),
+]
+
+
+def passport_booklet_year(today: date) -> int:
+    """The booklet edition's year: that of the date 60 days ago. Early in
+    January this is last year's edition, which already holds visits, rather
+    than a new one that would only start to fill up weeks later."""
+    return (today - timedelta(days=60)).year
+
+
+def seed_passports(tenant_id: int, user_id: int, aircraft: list) -> None:
+    """Airfield passports for the main seeded pilot, plus home airfields and
+    cruise speeds for "Where next?".
+
+    Stamps aren't stored: they're calculated live from the logbook that
+    seed_pilot_profiles created, so call this after it. Three passports with
+    contrasting states: a lifetime one, partly visited, with a closed and a
+    coordinate-less custom field; a dated booklet edition for the year of the
+    date 60 days ago (so in early January it is last year's, never an empty
+    new one); and a fully visited one.
+    """
+    from passports import catalogue as cat  # pyright: ignore[reportMissingImports]
+    from passports import evidence  # pyright: ignore[reportMissingImports]
+    from passports.management import (  # pyright: ignore[reportMissingImports]
+        create_personal,
+    )
+    from werkzeug.datastructures import FileStorage
+
+    by_ident = {row.ident: row for row in cat.load_catalogue()}
+    fields: dict[str, Any] = {}
+
+    def field(code: str) -> Any:
+        if code not in fields:
+            fields[code] = cat.materialise(tenant_id, by_ident[code])
+        return fields[code]
+
+    # Home airfields and cruise speeds.
+    for ac in aircraft:
+        home = _PASSPORT_AIRCRAFT_HOMES.get(ac.registration)
+        if home:
+            ac.home_airfield_id = field(home[0]).id
+            ac.cruise_speed_knots = home[1]
+    profile = PilotProfile.query.filter_by(user_id=user_id).first()
+    if profile is not None:
+        profile.home_airfield_id = field(_PASSPORT_PILOT_HOME).id
+
+    def passport(metadata: dict, targets: list) -> tuple:
+        p = create_personal(tenant_id, user_id, metadata)
+        ordered = sorted(targets, key=lambda f: cat.effective_airfield(f)["name"])
+        for order, target in enumerate(ordered):
+            db.session.add(
+                PassportAirfield(
+                    tenant_id=tenant_id,
+                    passport_id=p.id,
+                    airfield_id=target.id,
+                    display_order=order,
+                )
+            )
+        db.session.flush()
+        participant = PassportParticipant.query.filter_by(
+            passport_id=p.id, user_id=user_id
+        ).one()
+        return p, participant
+
+    def target_id(p: Any, code: str) -> int:
+        return int(
+            PassportAirfield.query.filter_by(
+                passport_id=p.id, airfield_id=field(code).id
+            )
+            .one()
+            .id
+        )
+
+    def visits(p: Any, participant: Any) -> None:
+        for code, days_ago, note in _PASSPORT_MANUAL_VISITS:
+            evidence.add_visit(
+                p,
+                participant,
+                target_id(p, code),
+                {
+                    "visit_date": (date.today() - timedelta(days=days_ago)).isoformat(),
+                    "note": note or "",
+                },
+            )
+
+    # 1. Lifetime passport: Belgian airports and airfields (not heliports),
+    # plus two custom fields — a closed one and one without coordinates.
+    belgian = [
+        field(row.ident)
+        for row in by_ident.values()
+        if row.country == "BE"
+        and row.airfield_type in {"small_airport", "medium_airport", "large_airport"}
+        and not row.is_closed
+    ]
+    closed = cat.create_custom(
+        tenant_id, "Former grass strip (closed)", latitude=50.62, longitude=4.98
+    )
+    cat.correct_airfield(closed, {"is_closed": True})
+    no_coordinates = cat.create_custom(tenant_id, "Farm strip (location to confirm)")
+    lifetime, participant = passport(
+        {
+            "title": "Belgian airfields",
+            "description": "Every airport and airfield in Belgium.",
+        },
+        [*belgian, closed, no_coordinates],
+    )
+    visits(lifetime, participant)
+    # The first EBCI arrival was a touch-and-go: set aside, so the stamp
+    # comes from the next full-stop landing there.
+    first_ebci = (
+        Flight.query.filter(
+            db.or_(
+                Flight.pic_user_id == user_id, Flight.second_crew_user_id == user_id
+            ),
+            Flight.arrival_icao == "EBCI",
+        )
+        .order_by(Flight.date, Flight.id)
+        .first()
+    )
+    if first_ebci is not None:
+        db.session.add(
+            PassportArrivalExclusion(
+                participant_id=participant.id, flight_id=first_ebci.id
+            )
+        )
+    photo_src = os.path.join(_SEED_DOCS_DIR, "oo-grn-taxiing.jpg")
+    if os.path.exists(photo_src):
+        with open(photo_src, "rb") as stream:
+            filename = evidence.save_photo(
+                FileStorage(stream=stream, filename="oo-grn-taxiing.jpg")
+            )
+        evidence.replace_photo(
+            lifetime, participant, target_id(lifetime, "EBSP"), filename
+        )
+
+    # 2. Dated booklet edition, for the year of the date 60 days ago.
+    year = passport_booklet_year(date.today())
+    booklet, participant = passport(
+        {
+            "title": f"Landing voucher booklet {year}",
+            "description": "A fictional voucher booklet edition.",
+            "edition_label": str(year),
+            "start_date": date(year, 1, 1),
+            "end_date": date(year, 12, 31),
+        },
+        [field(code) for code in _PASSPORT_BOOKLET_CODES],
+    )
+    visits(booklet, participant)
+
+    # 3. Fully visited: every target has a seeded logbook arrival.
+    passport(
+        {
+            "title": "Training airfields",
+            "description": "Where I learned to fly and built my first hours.",
+        },
+        [field(code) for code in _PASSPORT_TRAINING_CODES],
+    )
+    db.session.flush()

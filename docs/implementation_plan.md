@@ -2612,10 +2612,13 @@ downgrades and show localised retrieval timestamps.
   the existing offline-submit guard until deliberately made offline-aware; do not
   imply offline writes are supported merely because the app is a PWA.
 - [ ] Backups/restores include passport tables, aliases, visits, voucher ledgers
-  and photo files. No remote fetch needed to read a restored passport. Demo seed:
-  lifetime personal passport, dated edition, mixed pilot/passport-only group, closed
-  field, missing-coordinate field and contrasting completion states; never expose
-  real invitation links in documentation/screenshots.
+  and photo files. No remote fetch needed to read a restored passport.
+- [x] Demo/dev seed, personal passports (`seed_passports` in `_seed_helpers.py`):
+  lifetime personal passport, dated edition, closed field, missing-coordinate
+  field and contrasting completion states, stamped live from the seeded logbook;
+  aircraft/pilot home airfields and cruise speeds; documentation screenshots.
+- [ ] Demo/dev seed, group passport (with 41g): mixed pilot/passport-only group;
+  never expose real invitation links in documentation/screenshots.
 - [ ] Unit/route tests: date boundaries, both crew slots, invalid flight kinds,
   arrival exclusions, first-visit ties, rollback/edit/delete recalculation, alias
   reuse/ambiguity, closure/reopening, no-target denominator, duplicate imports,

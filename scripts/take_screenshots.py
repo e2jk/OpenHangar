@@ -159,6 +159,32 @@ def _resolve_renter_user_id(page: Page, base_url: str, name_contains: str) -> st
     return user_id
 
 
+def _resolve_passport_id(page: Page, base_url: str, title_prefix: str) -> str:
+    """Return the DB ID of the passport on /passports/ whose title starts
+    with `title_prefix` (a prefix, so a dated edition's year needn't be
+    hard-coded)."""
+    page.goto(f"{base_url}/passports/")
+    page.wait_for_load_state("networkidle")
+
+    passport_id: str | None = page.evaluate(
+        """(prefix) => {
+            const links = document.querySelectorAll('a[href^="/passports/"]');
+            for (const link of links) {
+                const m = link.getAttribute('href').match(/^\\/passports\\/(\\d+)\\/$/);
+                if (m && link.textContent.trim().startsWith(prefix)) return m[1];
+            }
+            return null;
+        }""",
+        title_prefix,
+    )
+
+    if not passport_id:
+        raise ValueError(
+            f"Could not find a passport titled {title_prefix!r}… on /passports/"
+        )
+    return passport_id
+
+
 # ── Screenshot ────────────────────────────────────────────────────────────────
 
 
@@ -205,10 +231,20 @@ def _take(
                 )
             fmt_args["renter_user_id"] = id_cache[cache_key]
 
+        passport_title = entry.get("resolve_passport_title")
+        if passport_title:
+            cache_key = f"passport:{passport_title}"
+            if cache_key not in id_cache:
+                id_cache[cache_key] = _resolve_passport_id(
+                    page, base_url, passport_title
+                )
+            fmt_args["passport_id"] = id_cache[cache_key]
+
         if not fmt_args:
             raise ValueError(
                 f"url_template requires a resolve_aircraft / "
-                f"resolve_renter_name key in entry {entry['id']!r}"
+                f"resolve_renter_name / resolve_passport_title key in entry "
+                f"{entry['id']!r}"
             )
         url = base_url + entry["url_template"].format(**fmt_args)
     else:

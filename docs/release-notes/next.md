@@ -11,6 +11,8 @@ An airfield passport is a list of airfields you'd like to fly to: every airfield
 - **Where next?**: list the airfields you haven't visited yet that are near your home airfield, any airfield you search for, or wherever you last landed. Filter them by distance or flying time; an optional estimate of how far you can fly uses the usable fuel, fuel flow and reserve you enter. This helps you choose a destination; it's not fuel planning, and it can't tell you whether a runway suits your aircraft.
 - **Home airfield and cruise speed**: aircraft and pilot profiles can now record a home airfield, and aircraft an optional cruise speed. "Where next?" uses them as its starting point and its flying-time estimate.
 
+On the demo, the owner account comes with three example passports, already stamped from its logbook: every Belgian airfield, a dated edition of a fictional voucher booklet, and one that's complete.
+
 Passports are personal for now. Group passports shared with friends (with or without their own OpenHangar account), dated voucher editions, public sharing and exports will follow.
 
 **Privacy**

@@ -8,7 +8,11 @@ else in the suite calls this function to completion.
 """
 
 from demo_seed import seed  # pyright: ignore[reportMissingImports]
-from models import DemoSlot  # pyright: ignore[reportMissingImports]
+from models import (  # pyright: ignore[reportMissingImports]
+    DemoSlot,
+    Passport,
+    PassportAirfieldIdentity,
+)
 
 
 class TestDemoSeedEndToEnd:
@@ -38,3 +42,12 @@ class TestDemoSeedEndToEnd:
             seed()
             seed()
             assert DemoSlot.query.count() == 1
+            # The wipe removes the first run's passports and airfield
+            # identities (referenced by aircraft home airfields) with its
+            # tenant: only the new slot's three passports remain.
+            slot = DemoSlot.query.one()
+            assert Passport.query.count() == 3
+            assert {p.tenant_id for p in Passport.query} == {slot.tenant_id}
+            assert {f.tenant_id for f in PassportAirfieldIdentity.query} == {
+                slot.tenant_id
+            }

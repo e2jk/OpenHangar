@@ -70,3 +70,76 @@ class TestDevSeedEndToEnd:
             sess["user_id"] = uid
         r = client.get(f"/aircraft/{acid}/owners/billing")
         assert r.status_code == 200
+
+    def test_passports_seeded_with_contrasting_progress(self, app, client, monkeypatch):
+        """Phase 41: three passports for the admin, stamped live from the
+        seeded logbook (partly visited, dated edition, complete), plus home
+        airfields for "Where next?"; every passport page renders."""
+        from models import Passport, PilotProfile  # pyright: ignore[reportMissingImports]
+        from passports.eligibility import (  # pyright: ignore[reportMissingImports]
+            passport_progress,
+        )
+
+        monkeypatch.setenv("OPENHANGAR_ENV", "development")
+        with app.app_context():
+            seed()
+            admin = User.query.filter_by(email="admin@openhangar.dev").first()
+            uid = admin.id
+            passports = {
+                p.title.split(" 2")[0]: p
+                for p in Passport.query.filter_by(owner_user_id=uid).all()
+            }
+            assert set(passports) == {
+                "Belgian airfields",
+                "Landing voucher booklet",
+                "Training airfields",
+            }
+            lifetime = passport_progress(passports["Belgian airfields"], uid)
+            booklet = passport_progress(passports["Landing voucher booklet"], uid)
+            training = passport_progress(passports["Training airfields"], uid)
+            assert 0 < lifetime["visited"] < lifetime["total"]
+            assert lifetime["excluded_closed"] == 1
+            assert any(row.get("latitude") is None for row in lifetime["rows"])
+            visited = {row["ident"] for row in booklet["rows"] if row["visited"]}
+            assert {"EBKT", "EBSP", "EBSH", "EBSG"} <= visited
+            assert training["percent"] == 100
+            # The set-aside first EBCI arrival moves its stamp to the next one.
+            ebci = next(r for r in lifetime["rows"] if r["ident"] == "EBCI")
+            assert any(e["excluded"] for e in ebci["events"])
+            assert ebci["first"]["date"] > min(e["date"] for e in ebci["events"])
+            homes = {
+                ac.registration: ac.home_airfield.ident
+                for ac in Aircraft.query.filter(Aircraft.home_airfield_id.isnot(None))
+            }
+            assert homes == {
+                "OO-PNH": "EBCI",
+                "OO-ABC": "EBAW",
+                "OO-GRN": "EBNM",
+                "OO-TCH": "EBST",
+            }
+            profile = PilotProfile.query.filter_by(user_id=uid).one()
+            assert profile.home_airfield.ident == "EBCI"
+            ids = [p.id for p in passports.values()]
+            lifetime_id = passports["Belgian airfields"].id
+        with client.session_transaction() as sess:
+            sess["user_id"] = uid
+        assert client.get("/passports/").status_code == 200
+        for pid in ids:
+            assert client.get(f"/passports/{pid}/").status_code == 200
+            assert client.get(f"/passports/{pid}/where-next").status_code == 200
+        assert client.get(f"/passports/{lifetime_id}/?frequency=1").status_code == 200
+
+
+def test_passport_booklet_year_looks_back_60_days():
+    """Early in January the seeded booklet is last year's edition (which
+    already holds visits); from March on it is the current year's."""
+    from datetime import date
+
+    from _seed_helpers import (  # pyright: ignore[reportMissingImports]
+        passport_booklet_year,
+    )
+
+    assert passport_booklet_year(date(2027, 1, 5)) == 2026
+    assert passport_booklet_year(date(2027, 3, 1)) == 2026
+    assert passport_booklet_year(date(2027, 3, 2)) == 2027
+    assert passport_booklet_year(date(2026, 11, 17)) == 2026
