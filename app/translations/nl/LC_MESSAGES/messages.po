@@ -1886,6 +1886,50 @@ msgstr "Geen opgeslagen PDF voor revisie '%(number)s' — deze is nooit gedownlo
 msgid "The saved PDF for revision '%(number)s' is missing on disk."
 msgstr "De opgeslagen PDF voor revisie '%(number)s' ontbreekt op de schijf."
 
+#: app/passports/drafts.py:100 app/passports/drafts.py:112
+msgid "This passport draft has expired. Start again."
+msgstr "Dit paspoortconcept is verlopen. Begin opnieuw."
+
+#: app/passports/drafts.py:115
+msgid "This draft changed in another tab. Reopen the builder."
+msgstr "Dit concept is in een ander tabblad gewijzigd. Open de samensteller opnieuw."
+
+#: app/passports/drafts.py:126
+msgid "This passport selection is too large. Narrow your selection."
+msgstr "Deze paspoortselectie is te groot. Beperk uw selectie."
+
+#: app/passports/management.py:45
+msgid "You cannot manage passports with this account."
+msgstr "U kunt met dit account geen paspoorten beheren."
+
+#: app/passports/management.py:51
+msgid "Pilot access is required to create a passport."
+msgstr "Piloottoegang is vereist om een paspoort aan te maken."
+
+#: app/passports/management.py:67
+msgid "Passport not found."
+msgstr "Paspoort niet gevonden."
+
+#: app/passports/management.py:69
+msgid "Reopen this passport before editing it."
+msgstr "Heropen dit paspoort voordat u het bewerkt."
+
+#: app/passports/management.py:81
+msgid "Enter valid passport dates."
+msgstr "Voer geldige paspoortdatums in."
+
+#: app/passports/management.py:86
+msgid "A passport field is too long."
+msgstr "Een paspoortveld is te lang."
+
+#: app/passports/management.py:89
+msgid "Enter a passport name."
+msgstr "Voer een paspoortnaam in."
+
+#: app/passports/management.py:95
+msgid "The passport end date must not precede its start date."
+msgstr "De einddatum van het paspoort mag niet vóór de begindatum liggen."
+
 #: app/pilots/form_parsing.py:40
 #, python-format
 msgid "%(field)s: enter a valid HH:MM time."

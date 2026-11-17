@@ -4164,6 +4164,36 @@ class Passport(db.Model):
     )
 
 
+class PassportDraft(db.Model):
+    """Bounded, expiring builder state; browsers receive only an opaque token."""
+
+    __tablename__ = "passport_drafts"
+
+    token_hash = db.Column(db.String(64), primary_key=True)
+    tenant_id = db.Column(
+        db.Integer,
+        db.ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    passport_id = db.Column(
+        db.Integer,
+        db.ForeignKey("passports.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    base_fingerprint = db.Column(db.String(64), nullable=False)
+    revision = db.Column(db.Integer, nullable=False, default=0)
+    expires_at = db.Column(db.BigInteger, nullable=False, index=True)
+    payload = db.Column(db.JSON, nullable=False)
+
+
 class PassportAirfield(db.Model):
     __tablename__ = "passport_airfields"
     __table_args__ = (

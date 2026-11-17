@@ -1886,6 +1886,50 @@ msgstr "Aucun PDF enregistré pour la révision « %(number)s » — elle n'a ja
 msgid "The saved PDF for revision '%(number)s' is missing on disk."
 msgstr "Le PDF enregistré pour la révision « %(number)s » est introuvable sur le disque."
 
+#: app/passports/drafts.py:100 app/passports/drafts.py:112
+msgid "This passport draft has expired. Start again."
+msgstr "Ce brouillon de passeport a expiré. Recommencez."
+
+#: app/passports/drafts.py:115
+msgid "This draft changed in another tab. Reopen the builder."
+msgstr "Ce brouillon a changé dans un autre onglet. Rouvrez l’éditeur."
+
+#: app/passports/drafts.py:126
+msgid "This passport selection is too large. Narrow your selection."
+msgstr "Cette sélection de passeport est trop grande. Réduisez votre sélection."
+
+#: app/passports/management.py:45
+msgid "You cannot manage passports with this account."
+msgstr "Vous ne pouvez pas gérer les passeports avec ce compte."
+
+#: app/passports/management.py:51
+msgid "Pilot access is required to create a passport."
+msgstr "Un accès pilote est nécessaire pour créer un passeport."
+
+#: app/passports/management.py:67
+msgid "Passport not found."
+msgstr "Passeport introuvable."
+
+#: app/passports/management.py:69
+msgid "Reopen this passport before editing it."
+msgstr "Rouvrez ce passeport avant de le modifier."
+
+#: app/passports/management.py:81
+msgid "Enter valid passport dates."
+msgstr "Saisissez des dates de passeport valides."
+
+#: app/passports/management.py:86
+msgid "A passport field is too long."
+msgstr "Un champ du passeport est trop long."
+
+#: app/passports/management.py:89
+msgid "Enter a passport name."
+msgstr "Saisissez un nom de passeport."
+
+#: app/passports/management.py:95
+msgid "The passport end date must not precede its start date."
+msgstr "La date de fin du passeport ne doit pas précéder sa date de début."
+
 #: app/pilots/form_parsing.py:40
 #, python-format
 msgid "%(field)s: enter a valid HH:MM time."
