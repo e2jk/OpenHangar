@@ -1652,7 +1652,7 @@ core shared with Phases 38/39).
 **Rental charges & settlement:**
 - [x] `RentalCharge` model — reservation FK, renter FK, billable hours, rate snapshot, fuel credits, manual adjustments, total; drafted automatically at check-in from the counter delta and rate settings; owner reviews and finalizes
 - [x] Renter account: running balance per renter (finalized charges − payments); payments recorded manually and immutable once saved — corrections via counter-entry (same principle as Phase 39 reconciliation)
-- [x] Renter statement export — CSV per renter per period: opening balance, itemised charges by flight, fuel credits, payments, closing balance; PDF with the same content if a PDF pipeline exists by then (Phase 46) (CSV only — no PDF pipeline exists yet)
+- [x] Renter statement export — CSV per renter per period: opening balance, itemised charges by flight, fuel credits, payments, closing balance; PDF with the same content if a PDF pipeline exists by then (Phase 47) (CSV only — no PDF pipeline exists yet)
 - [x] Renter-facing view: a renter sees their own charges, payments, and balance; owners/admins see all renters
 
 **Availability guards (benefit all operating models, not only rental):**
@@ -1800,7 +1800,7 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 - [x] Manual reconciliation: record a payment against a co-owner's capital account (amount, date, free-text note, recorded-by user); adjusts the account balance immediately
 - [x] Payments are immutable once saved; corrections are made by recording a counter-entry
 
-**Reserve / overhaul fund (stretch goal — may slip to Phase 41):**
+**Reserve / overhaul fund (stretch goal — may slip to Phase 42):**
 - [x] `CoOwnerReserveFund` — per-aircraft fund with a configurable per-hour or per-month contribution rate; each co-owner's share of contributions deducted from their capital account; fund balance visible on the dashboard
 - [x] Intended to cover large scheduled expenses (engine overhaul, propeller) without special assessments
 
@@ -1989,7 +1989,7 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
   chrome/Bootstrap dependency) render the same shared template partials
   (`_amp_export_body.html`/`_amp_export_style.html`), so there's one source of truth
   for the document content, matching the round-trip design principle above. This
-  supersedes the originally-planned "defer to Phase 46" browser-print-only approach —
+  supersedes the originally-planned "defer to Phase 47" browser-print-only approach —
   built directly into this phase instead once a working WeasyPrint pipeline was
   validated end-to-end.
 - [x] Blocks 1–3 rendered from `Aircraft`/`Component`/`AmpDeclaration`: registration,
@@ -2067,7 +2067,586 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
 
 ---
 
-## Phase 41 — Flying Club
+## Phase 41 — Airfield Passports
+
+Goal: let a pilot build collections of airfields to visit, collect stamps from
+full-stop landings, and choose where to fly next. Support personal challenges,
+time-limited voucher booklets, and a passport shared by a group whose members
+need not all have OpenHangar accounts. Available in every operating model with
+pilot features; a group passport does not depend on the Flying Club phase.
+
+**Delivery order:** 41a → 41b → 41c gives a usable personal passport. Add discovery
+(41d), source imports (41e), voucher editions (41f), group participation (41g),
+and public sharing/export (41h), then complete the integration gate (41i).
+Each increment includes its own tests, translations and documentation before
+moving on. All boxes below describe planned work, not functionality already shipped.
+
+### 41a — Airfield identity and passport data
+
+- [ ] Add a `passports` blueprint (`/passports/`), service modules for catalogue,
+  eligibility, discovery and imports, and templates under `templates/passports/`.
+  Keep calculations independent of routes. Use the existing pilot-access policy
+  for pilot functionality and a separate passport-membership guard for passport-only
+  accounts; passport navigation must be available without `is_pilot`. No new
+  operating model or user role.
+- [ ] Introduce stable airfield identities for referenced fields, with a local PK,
+  source/source ID (OurAirports numeric `id` where available), current ident,
+  nullable ICAO code, name, coordinates, country, region, type, closure status,
+  and provenance/update timestamp. Preserve manually entered fields separately
+  from source-owned values. An OurAirports `ident` is not necessarily an ICAO code.
+- [ ] Read country/region/type choices from the bundled `airports.csv`, including
+  fields without ICAO codes. Materialise referenced identities as needed rather
+  than copying the entire catalogue into the database on every startup. Allow a
+  pilot to add a missing field by name and optional code/coordinates; missing
+  coordinates prevent map/export placement, not passport membership or stamping.
+- [ ] Store historical code aliases against stable identities. Catalogue refresh
+  matches source IDs first, preserves old codes, and updates closure/name/location
+  metadata without deleting targets or stamps. Ambiguous aliases, reused codes,
+  source-ID replacements and merges require explicit review; never match solely
+  by proximity or silently redirect historical flights to another airfield.
+  Allow dated aliases where a code was reused. A missing source row is not proof
+  of closure. Provide a manual correction/reconciliation path for custom fields.
+- [ ] Add `Passport`: tenant, owner, title, description, optional inclusive start/
+  end dates, edition label, optional series FK, source provenance,
+  archive timestamp, creation/update timestamps. Validate start ≤ end; no dates
+  means lifetime eligibility. Archiving makes an edition read-only until reopened;
+  it does not freeze derived logbook evidence into an immutable historical copy.
+- [ ] Add `PassportAirfield`: passport FK, stable airfield FK, display order,
+  optional target note, unique per passport/airfield. Selection is an explicit
+  saved list: catalogue updates never silently add new destinations to an edition.
+- [ ] Add `PassportParticipant` from the outset: passport FK, display name,
+  required user FK, active status, accepted membership timestamp. A personal
+  passport has its owner as its sole participant; all group participants also have
+  an account. Enforce uniqueness of a user per passport. No anonymous participants
+  or individual secret-link accounts.
+- [ ] Add `PassportVisit` for manually asserted visits: participant, airfield,
+  visit date, optional note, optional flight reference, evidence kind (manual or
+  confirmed GPS suggestion), timestamps and author. Allow multiple visit events;
+  calculate one earned stamp from the earliest eligible evidence. Add explicit
+  per-participant flight-arrival exclusions so a pilot can reject an inferred
+  stamp without altering their flight record or another crew member's passport.
+- [ ] Attach optional stamp photos to the participant/target, independently of the
+  earliest-flight choice. Store uploader and explicit public-photo consent;
+  changing which flight earns the stamp must not silently discard the photograph.
+- [ ] Add migrations with random revision IDs, FKs, uniqueness/check constraints
+  and indexes for ownership, participant/date and airfield lookups. Define deletion
+  behaviour: deleting a passport removes its own records/files, never flights;
+  deleting a flight nulls optional evidence links and removes its automatic credit;
+  deleting a user removes private participation data and membership. Owner deletion removes owned passports unless ownership
+  was explicitly transferred first. Shared catalogue identities survive.
+
+### 41b — Passport builder and management
+
+- [ ] Add list/create/detail/edit/archive/delete flows for personal passports.
+  Owner-only management; confirmation before deletion. Private by default.
+- [ ] Builder: choose one or more countries/regions, preview matching airfields,
+  tick entries on/off, and filter airport size/type, heliports, seaplane bases
+  and closed fields. Show selection on a map and as an accessible list.
+- [ ] Add individual targets through code/name search and accept pasted lists of
+  codes with whitespace/comma/semicolon separators. Normalise case, deduplicate,
+  display unknown/ambiguous tokens, and require correction or explicit dropping.
+  Never silently guess a field from free-text logbook places such as `ZZZZ`.
+- [ ] Preserve builder selections and validation errors across preview/confirmation;
+  use bounded server-side staging rather than putting large lists into session
+  cookies. Revalidate ownership, staged content and catalogue references on commit.
+- [ ] Let owners add/remove targets and edit date limits after creation, with a
+  preview of changes to completion. Warn before removing a target with manual
+  visits/photos/voucher activity; do not cascade away that history silently.
+- [ ] Military/ULM classification is explicitly unknown when the source has no
+  such field. Support manual classification with provenance; an unknown value
+  must not be presented as "not military" or "not ULM". OpenAIP enrichment is
+  optional and depends on available data and permitted reuse, not merely on the
+  existing raster map-overlay integration.
+
+### 41c — Stamps, map and completion
+
+- [ ] Implement one eligibility service shared by list/map/detail/exports: registered
+  participants use only flights in their own pilot logbook (PIC or accepted second
+  crew under the existing logbook policy), including unmanaged aircraft. Merely
+  administering or owning the aircraft is not visit evidence. Exclude FSTD,
+  future-dated records, cancelled/no-takeoff and ground-only entries; do not require
+  a populated duration on an otherwise valid historical flight.
+- [ ] A logged arrival is presumed a full stop unless explicitly excluded by that
+  participant. Departure alone, touch-and-go, low approach and intermediate
+  destinations inferred only from landing counts never earn automatic stamps.
+  Document this assumption and provide the exclusion control beside the evidence.
+- [ ] Apply passport date limits inclusively using the logged flight/visit date.
+  Choose earliest eligible arrival/manual visit; break same-day ties consistently
+  using available arrival time and stable evidence IDs, without inventing a time
+  for date-only visits. Display provenance, first date, aircraft and an authorised
+  flight link. Manual visits require a date and accept an optional note.
+- [ ] Calculate automatic stamps from current flights, not permanently copied rows.
+  Flight edits/deletions, import rollback, crew reassignment, alias corrections and
+  passport date changes must immediately change credit and select the next earliest
+  eligible visit. Manual evidence stays independent. Batch queries across a
+  passport's participants and targets; avoid a query per marker or flight.
+- [ ] Show visited/unvisited/closed markers, filters and corresponding list rows;
+  popups open target details and visit evidence. Include empty states, missing
+  coordinates, all-complete and all-closed cases. Do not require JS to record a
+  manual visit or read progress.
+- [ ] Default map is a checklist: one qualifying visit checks off an airfield,
+  and further visits do not increase its marker emphasis or completion credit.
+  A once-visited destination and a frequently visited home base have equal weight
+  in this default mode. Add an independent "Show visit frequency" toggle for
+  personal, shared, single-edition and combined multi-year maps.
+- [ ] Frequency mode sizes markers (or adds an equivalent visual weight) by the
+  number of distinct qualifying full-stop visits within the displayed passport/
+  edition scope. Use a bounded, monotonic scale with a visible size/count legend
+  so a busy home base cannot obscure the map; keep zero-visit targets visible.
+  Show exact counts in popups and the accessible list. Preserve visit-state
+  icons/outlines, closure badges and year colours; frequency does not replace
+  "visited by you / others / nobody" or the newest/oldest year toggle.
+- [ ] Count visit events, not earned stamps, departures, landing_count totals or
+  redeemed vouchers. Separate arrivals on the same day count separately. Deduplicate
+  a manual/GPS-confirmed visit linked to the same flight/airfield as an automatic
+  arrival, and overlapping edition representations of the same visit; independent
+  manual visits remain countable. Explain that frequency reflects recorded visits,
+  so someone who records only a first stamp may have incomplete repeat-visit data.
+  Flight edits/deletions and eligibility changes recalculate counts as well as stamps.
+- [ ] Personal frequency uses the viewer's visits. In shared maps default to the
+  viewer's counts, with an explicit participant/group selector for other scopes;
+  label the scope and never mix the viewer's count with others' counts implicitly.
+  Group totals count participant-visits (one flight with two participating pilots
+  contributes one visit for each), not unique aircraft movements. Public frequency
+  is limited to aggregates explicitly authorised for publication; it must not
+  disclose private repeat-visit patterns by default.
+- [ ] Completion per participant: numerator = stamped targets; denominator = all
+  open targets plus stamped closed targets. Closed unvisited targets remain visible
+  but are excluded from the achievable total. Show the excluded count and avoid
+  division by zero (no eligible targets means no percentage). If a field reopens,
+  it returns to the denominator. Keep original target count visible separately.
+- [ ] Photo upload/delete uses existing image validation/storage conventions, bounded
+  sizes, authorised image endpoints, and metadata stripping for public derivatives.
+  Photos remain private unless explicitly selected for publication.
+- [ ] Intermediate stops on an A → B → C → A flight can be added manually with
+  the flight as supporting evidence. GPS detection is a later enhancement within
+  this phase: propose candidate stops using position/speed/dwell evidence and show
+  the evidence for confirmation. Proximity alone or a low-speed point must never
+  award a stamp. Test touch-and-go, taxi, GPS gaps/noise and nearby parallel fields.
+
+### 41d — Where next
+
+- [ ] Add explicit optional home-airfield references to Aircraft and PilotProfile,
+  editable through the respective existing permission checks and setup/edit forms.
+  Add optional positive cruise speed in knots to Aircraft. No guessing the home
+  field from imported history; pilots on unmanaged aircraft can supply session-only
+  speed/range inputs without creating an Aircraft record.
+- [ ] Starting point defaults to the selected aircraft's home, then the pilot's
+  home; otherwise ask for one. Offer any searched airfield and the latest eligible
+  logged arrival as one-click alternatives. Never reveal another pilot's itinerary.
+- [ ] Filter open, unvisited targets by great-circle distance in nm or estimated
+  still-air flight time using the entered cruise speed. Offer a slider plus numeric
+  input; missing speed leaves distance mode usable. Display assumptions, sort by
+  distance/time, and show the selected radius on the map.
+- [ ] Optional theoretical range: use explicitly usable fuel (not blindly total
+  tank capacity), compatible fuel-flow units, cruise speed and a displayed reserve.
+  Reuse the pilot's existing reserve preference if applicable, otherwise require
+  an explicit reserve. Distinguish one-way from return-without-refuelling radius
+  (return mode budgets both legs). Missing/invalid inputs mean range unknown,
+  never zero or unlimited. This is destination discovery, not fuel dispatch advice.
+- [ ] Optional suitability comparison: user-entered runway length/surface/weight
+  requirements against licensed runway/restriction data, with source/date shown.
+  Mark missing values "unknown"; do not imply operational suitability from aircraft
+  weight or runway length alone. The map remains usable without OpenAIP access.
+
+### 41e — Imported lists and known sources
+
+- [ ] Add source selection/discovery for known booklet editions, initially a
+  Landegutscheinheft adapter, plus a URL-entry flow for other pages. Verify the
+  current source endpoints/data format during implementation; do not hardcode the
+  backlog's historical edition counts as expected live data.
+- [ ] Known adapters parse the publisher's list/JSON; generic imports extract
+  candidate ICAO codes from fetched content without executing remote JavaScript.
+  Unsupported/dynamic pages get a clear fallback to pasted codes. Show extracted,
+  matched, unknown and ambiguous codes on a list/map before saving anything.
+- [ ] Server-side fetcher: HTTP(S) only, no URL credentials, restricted ports,
+  public routable IPv4/IPv6 destinations only; reject private/local/link-local and
+  reserved destinations on the initial request and every redirect. Bind the
+  connection to a validated address while preserving TLS hostname verification
+  to prevent DNS rebinding. Bound redirects, connect/read/total time, decoded
+  bytes, result count and staged lifetime; do not forward cookies/credentials.
+- [ ] Never render remote HTML or fetch page-linked resources automatically. Escape
+  labels, bound extraction, rate-limit fetching, and test compression bombs,
+  redirect loops, alternate IP notation, IPv6 and mixed DNS answers. Use fixtures
+  in tests rather than contacting live publishers.
+- [ ] Store source URL, edition label and retrieval date for provenance; import
+  only airfield identifiers. Do not retain/show publisher descriptions, opening
+  hours, PPR, frequencies or runway data without permission. Reimport previews
+  additions/removals and requires confirmation, preserving existing visit evidence.
+
+### 41f — Voucher editions and history
+
+- [ ] Keep linked editions simple: `PassportSeries` groups passports via an
+  optional `Passport.series_id` FK. Each passport remains independently named,
+  with its own optional start/end dates, targets, participants, visits and voucher
+  allocations. The series supplies the shared group context, edition selector and
+  combined map; a passport outside a series works on its own. Do not infer links
+  from similar names or require a previous/next-edition chain.
+- [ ] No recurrence engine, schedule rules, automatic renewal or scheduled balance
+  resets. "Create next edition" is an explicit copy-and-review action, followed
+  by entering its name/dates and confirming its targets/allocations. Explicit dates
+  determine eligibility, not an edition year field. Yearly, monthly, seasonal and
+  irregular editions use the same relationship and date fields; undated personal
+  passports remain supported. Preserve historical passports instead of renaming
+  an old edition or moving its dates to reset its visits/vouchers.
+- [ ] Group series has persistent group membership, separate from participation in
+  each linked passport. Initial use case: Landegutscheinheft 2027 and 2028, each
+  dated 1 January–31 December, in the same series. Retain the same accounts and
+  group identity; joining 2028 does not enrol a friend retrospectively in 2027 or
+  allocate historical vouchers. These annual dates are a setup choice, not a
+  constraint on other series.
+- [ ] Opening a series defaults to the currently valid, non-archived participating
+  edition, determined by its explicit date range. If several overlap, choose the
+  latest start date with a stable ID tie-break and keep the others selectable.
+  If none is current, show that clearly and offer the latest participating edition
+  (or an edition selector if none), without creating a passport automatically or
+  labelling an old edition as current. Undated passports have no timed-edition
+  priority and remain selectable. Offer an available current edition's join action
+  when the viewer has not participated in it.
+- [ ] Default group history to "Editions I participated in", with "Include earlier
+  editions I didn't participate in" adding earlier passports from the same series
+  to the selector and combined map. Clearly distinguish participation from read-only
+  history access; never require joining an old passport just to view its shared map.
+  Use generic "All editions" labels, with "All years" and year labels where useful
+  for a series such as Landegutscheinheft. Other edition names, such as "November
+  2027" or "Summer 2027", remain intact; do not collapse editions sharing a year.
+- [ ] Active group members, including passport-only friends, can opt into the
+  group's earlier edition maps and shared visit history without owner-prepared
+  individual invitations. History access is scoped to that group series and uses
+  the same group-visible fields/consent as ordinary shared maps: airfields, shared
+  participant names/dates and permitted photos, never private notes, flight links,
+  aircraft details or personal voucher ledgers. Shared-history consent must explain
+  that later group members may see these past visits. No access to unrelated
+  groups, personal passports or private evidence merely because editions are linked.
+- [ ] Included non-participating editions contribute their targets and group visits to
+  the combined map, edition colours and authorised group-frequency totals. The viewer
+  has no own stamp in those editions: historical visits by friends get the
+  "visited by others" emphasis. Do not backfill the viewer's old flights into editions
+  they did not join, change their completion denominator, add them to historical
+  leaderboards/"everyone" totals, or enable historical edits/redemptions. Label
+  per-edition participation and the selected history scope in map, list and statistics.
+- [ ] Add edition archive/comparison and "create next edition" flows: copy targets,
+  settings and optional voucher allocations, or import a replacement list and
+  review changes. Never copy visits, redeemed vouchers, group invitations or public
+  links. Participants must accept a new group edition before logbook sharing starts.
+- [ ] Add voucher allocations per participant/target (quantity and optional validity
+  override bounded by edition dates) and explicit redemption events (date, quantity,
+  optional flight, actual saving amount/currency, note). Default entitlement is
+  per participant; offer an explicitly selected shared pool when a booklet is
+  shared. Never multiply a shared pool by group membership.
+- [ ] Visits and redemptions are independent: arriving earns a stamp, not an
+  assumed free landing. Enforce remaining quantity transactionally under concurrent
+  submissions, provide correction/undo, and show used/remaining counts. Savings
+  are summed by currency, with no implicit conversion or invented landing fee.
+- [ ] Compare participant/group coverage across linked editions using stable airfield
+  identities, showing both target-set changes and each edition's own percentage.
+- [ ] "All editions" combines the union of targets from all accessible editions in
+  the series, including fields removed from the current edition and archived
+  editions. One marker/list row per stable airfield identity, not per code/year;
+  show which editions included it, and the eligible visit history per edition.
+  Visits count only within the dates and target list of their own edition: a
+  historical stamp must not activate an unvisited current-edition target.
+- [ ] Combined-edition frequency sums distinct eligible visits across the editions being
+  viewed, counting an event only once per participant/airfield even if represented
+  in overlapping editions. Choosing newest/oldest edition changes the marker's edition
+  colour, not the frequency period: a field visited once in 2026 and three times
+  in 2027 has weight four in "All years" under either priority, and weight three
+  in the 2027-only view. Show per-year counts in the popup alongside the total.
+- [ ] Use a consistent colour per linked passport, with an edition-name legend and
+  text/icon alternatives. For yearly editions this is a year colour. Order dated
+  editions by start date (stable ID tie-break); undated linked passports use an
+  explicit display order. Default marker edition is the most recent in which the
+  viewer earned a stamp. A "Newest visits / Oldest visits" toggle instead selects
+  the earliest stamped edition when requested. Editions within the same year keep
+  distinct colours/labels. For example, a field stamped in
+  both 2026 and 2027 appears as 2027 by default and 2026 in oldest-first mode;
+  merely belonging to the 2027 list does not override a sole 2026 stamp. Popups
+  retain all visit years regardless of display priority. Never alter stamp data,
+  per-edition progress or voucher accounting when switching presentation.
+- [ ] Combine year colour with the shared-map hierarchy in 41g: the viewer's own
+  stamps retain strongest emphasis; fields visited only by others retain intermediate
+  emphasis and use newest/oldest eligible group-visit year; nobody visited stays
+  muted with no earned year colour. Other members' visits never override the
+  viewer's own selected stamp year. Public aggregate views apply the same year
+  priority only to evidence authorised for publication. Closure and "not in the
+  current edition" are separate badges, not replacements for visit/year styling.
+  Cross-year group totals must state their participant/edition scope; membership
+  grants only the shared series-history access described above, never access to
+  another edition's private evidence.
+- [ ] Add an opt-in expiry reminder through the notification framework, with user
+  preferences, capability visibility, deduplication and a clear edition link.
+  Passport-only accounts use the same opt-in preferences; their form also shows
+  expiry status.
+
+### 41g — Group passports and invitation-based accounts
+
+- [ ] Owner creates one shareable invitation link bound to that specific group
+  passport (and edition), suitable for posting in a WhatsApp group. Friends enrol
+  themselves; the owner does not pre-create accounts or individual links. The
+  invitation grants permission to join, not an identity or access to anyone else's
+  account. Keep it separate from public read-only share links.
+  For linked group editions, enrolment also establishes membership of the parent
+  group series, allowing the previous-edition history option in 41f. Accepting a
+  subsequent linked edition reuses the account/group membership and adds only
+  that edition's participation; creating it never silently enrols all former members.
+- [ ] New visitor flow: open invitation → see the named passport → enter display
+  name, email and password → verify email → automatically enrol in that passport
+  and open their personalised map. Existing accounts sign in and are enrolled in
+  the same context. Registration/sign-in clearly says it joins this passport and
+  explains the limited sharing of eligible visits. No passport search, code entry,
+  second invitation or owner approval needed in the normal flow. Signed-in users
+  have a single CSRF-protected "Join this passport" action; GET requests/link
+  previews must not create accounts or memberships.
+- [ ] Preserve the validated invitation context server-side through registration,
+  login, email verification, password recovery and any enabled 2FA, then recheck
+  the invitation and passport before enrolment. Use only local allowlisted return
+  destinations. Joining is transactional/idempotent with one membership per user;
+  reopening the invitation as an existing member opens that passport. Never bind
+  membership to an unverified email or an arbitrary submitted passport ID.
+- [ ] New invitees get a real passport-only account: own passports, manual visits,
+  profile/security settings, recovery and data export. Add an explicit account
+  capability/access restriction enforced on all relevant server routes as well as
+  navigation; do not assign a broad default tenant role (including VIEWER) that
+  exposes unrelated instance data. Retain existing authentication, password hashing,
+  email verification, login rate limits and 2FA support. Invitation registration
+  is narrowly enabled for an active passport invitation, not general tenant signup.
+- [ ] Offer "Start my pilot logbook" as a later activation on the same account,
+  preserving identity, visits and group membership. Respect the instance owner's
+  pilot-activation policy; enabling personal pilot features does not grant aircraft,
+  reservation, maintenance or other pilots' logbook access. No account duplication
+  or migration of anonymous/secret-link visits is needed.
+- [ ] Invitations use high-entropy tokens hashed at rest, with owner copy/replace/
+  disable controls and optional expiry. Redact tokens from logs, avoid referrer
+  leakage, indexing and caching, and rate-limit registration/join attempts. Recheck
+  revocation/expiry after authentication/verification, including an in-flight join.
+  Link replacement blocks new joins without removing existing participants. Explain
+  that forwarding an active invitation lets its recipient join this passport.
+- [ ] Owner can remove members and transfer ownership to an accepting participant;
+  participants can leave. Removal revokes passport access and cannot be bypassed
+  by reusing the same shared invitation: require explicit owner reinstatement.
+  Group membership is passport-scoped, independent of aircraft permissions and
+  club membership. Joining discloses only eligible passport visits, not unrelated
+  routes, notes or flights.
+  For a group series, distinguish leaving one annual edition from leaving/removal
+  from the group: the former ends that edition's participation/access as applicable
+  but leaves shared series-history access; the latter revokes all group-derived
+  access, including optional previous-edition views. History endpoints recheck group
+  membership server-side; a UI toggle alone never grants access.
+- [ ] Members see their own full evidence; other members/owner see target,
+  participant display name and visit date, with private notes, aircraft, flight
+  links and photos hidden unless separately authorised/shared. Owners manage the
+  group, not another pilot's underlying flights or manual evidence.
+- [ ] Airfield popup/detail includes "Friends who have been here": list each
+  friend with an eligible shared visit in the selected edition/history scope,
+  using their group display name and visit year(s), deduplicated across visits.
+  Make this available from both "visited by others" and the viewer's own markers,
+  so a member knows whom to ask about a destination. Respect series-history access
+  and membership/visibility rules; no automatic disclosure of email, telephone,
+  flight links or other contact information, and no in-app messaging required.
+- [ ] Add a group-visible airfield discussion, separate from private visit notes
+  and Flight.notes. Categories cover flying/airfield experience (approach complexity,
+  practical timing, arrival procedures) and nearby recommendations (restaurants,
+  hotels, transport, places to visit). A comment does not require a stamp: members
+  can also ask questions before visiting. Display author, posted/edited timestamps,
+  optional experience date and category; distinguish personal experience from an
+  official operational source, with dated information rather than an authoritative
+  replacement for current airfield publications.
+- [ ] Store comments against stable airfield identity and group series (or the
+  standalone group passport), not solely a flight or annual participant row.
+  Carry the discussion across 2027/2028 and later editions without copying it.
+  Show it on the airfield detail independently of the selected visit years; allow
+  category/date filtering. Comments on fields absent from the current edition
+  remain accessible through the authorised historical field detail. Archived
+  editions remain read-only; an active group's continuing airfield discussion can
+  receive new comments without editing historical edition records.
+- [ ] Clearly label the audience "Visible to members of this group" in the composer.
+  All active group members, including passport-only accounts and later joiners,
+  can read/post in that group's discussion; other groups on the same airfield
+  have separate discussions. Authors edit/delete their own comments; owners can
+  moderate/remove comments without silently rewriting the author's words. Recheck
+  membership on read/write, bound and escape text, use CSRF/rate limits and paginate.
+  On account deletion remove the author's comments; leaving/removal revokes access
+  while existing comments retain their stated group audience until deleted under
+  the documented retention policy. Group deletion removes its discussion.
+- [ ] Keep visitor-name lists and comments out of internet-public passport pages,
+  public JSON/photo/print/export endpoints and shared-link caches, even if other
+  passport information is publicly shared. Participant data export includes their
+  own comments. Never automatically publish private flight/visit notes into a
+  discussion; future debrief sharing requires an explicit audience-selected action
+  (see the Flight Debriefs & Shared Experience backlog entry). Phase 41 does
+  not depend on building the full debrief feature.
+- [ ] Minimal mobile visit form: choose target, date, save; optional note and
+  edit/delete own manual visits. No access to unrelated instance users, logbooks,
+  aircraft or other participants' private evidence; closed/out-of-window visits are
+  explained rather than credited. Accessible without a map or complex JS. Below
+  the form, unobtrusively offer a glimpse of the electronic logbook and explain
+  portable data export and the optional pilot-activation path.
+- [ ] Default shared map is personalised to the signed-in viewing participant, showing every passport target with
+  coordinates together in three distinct states:
+  - Not visited by any active participant: muted/greyed-out, visibly not yet activated.
+  - Visited by others, but not by the viewer: activated, with intermediate emphasis.
+  - Visited by the viewer, whether or not others have also visited: strongest emphasis.
+  Own-visit styling takes precedence when both the viewer and others have stamps.
+  Derive these states from eligible stamps, not voucher redemption or raw flight
+  counts. Keep all three visible by default; filtering is an optional action.
+  Provide a legend, distinct icons/outlines as well as colour, and equivalent
+  labels in the list/popups. Closure is a separate badge/overlay, not a replacement
+  for visit state; fields without coordinates remain in the corresponding list.
+  A participant filter does not silently change who "you" refers to. Public viewers
+  without a participant identity get aggregate visited/unvisited styling (41h),
+  never an assumed member identity or access to private visit evidence.
+- [ ] Shared map/stats: participant filter, visited by anyone/everyone, per-pilot
+  coverage and leaderboard with tied ranks. Use a common group denominator of open
+  targets plus closed targets stamped by any active participant; explain closure
+  adjustments. "Everyone" means all active accepted participants (including passport-only accounts);
+  empty groups have no percentage. Removal changes live aggregates, not an archived
+  snapshot. Ownership alone never grants access to underlying flights.
+
+### 41h — Public view and exports
+
+- [ ] Dedicated revocable read-only passport share tokens, independently enabled
+  by the owner. Public map/list shows aggregate progress, month/year instead of
+  exact dates, no aircraft registrations, flight IDs/links, private notes, invitation
+  tokens or member contact details. Individual names/photos require that
+  participant's explicit publication choice; default to aggregate group progress.
+- [ ] Build a separate allowlisted public representation for HTML, JSON, print and
+  photos; do not send private marker data and merely hide it with CSS. Public image
+  requests recheck active token/consent. Rotation, revocation and participant
+  withdrawal invalidate access immediately, including cached responses.
+- [ ] Printable passport with targets, completion, stamp dates and chosen photos;
+  private and public versions follow their respective field permissions. Use
+  print-friendly HTML first, reusing the established PDF pipeline if a downloadable
+  PDF is included; no dependency on completing Advanced Reporting.
+- [ ] GPX/KML export of unvisited open fields with names/codes/coordinates, escaped
+  XML and correct MIME types/filenames; list omitted fields without coordinates.
+  Support the current participant/discovery selection and never include flight
+  tracks or private evidence. Verify files against navigation-app-compatible
+  waypoint fixtures. Set `hx-boost="false"` on file download links.
+- [ ] Provide participant data export (visits, notes, voucher events and photo
+  references/files) in a documented portable format, scoped to their own data;
+  passport-only members export through their authenticated account. Owner export of a group
+  must not bypass participant evidence privacy.
+
+### 41i — Integration, validation and documentation
+
+- [ ] External `passports.js` in the always-load list in base.html, IIFE/root guard,
+  DOMContentLoaded + htmx:afterSettle initialisation, Jinja JSON/data bridges and
+  correct Leaflet cleanup on swaps. No executable inline child-template scripts.
+- [ ] Explicit service-worker classification for every new route. Invitation/authentication/token,
+  private evidence and write responses stay out of caches; membership-management
+  pages with email addresses opt out of HTMX history. Personal stamp forms use
+  the existing offline-submit guard until deliberately made offline-aware; do not
+  imply offline writes are supported merely because the app is a PWA.
+- [ ] Backups/restores include passport tables, aliases, visits, voucher ledgers
+  and photo files. No remote fetch needed to read a restored passport. Demo seed:
+  lifetime personal passport, dated edition, mixed pilot/passport-only group, closed
+  field, missing-coordinate field and contrasting completion states; never expose
+  real invitation links in documentation/screenshots.
+- [ ] Unit/route tests: date boundaries, both crew slots, invalid flight kinds,
+  arrival exclusions, first-visit ties, rollback/edit/delete recalculation, alias
+  reuse/ambiguity, closure/reopening, no-target denominator, duplicate imports,
+  participant lifecycle, mixed currencies and concurrent voucher redemption.
+- [ ] Access tests: cross-owner/tenant and guessed IDs, invitations before acceptance,
+  member versus owner evidence, passport-only writes/CSRF, expired/rotated/revoked
+  links, public HTML/JSON/photos/export leakage, publication withdrawal, staging
+  tampering, malicious URLs and upload validation. Include route write-matrix and
+  service-worker/history-privacy tests where applicable.
+- [ ] Invitation/account tests: shared-link signup and existing-account login land
+  in the correct passport after verification/2FA; link previews do not enrol;
+  repeated/concurrent joins are idempotent; wrong-passport tampering and open
+  redirects fail; expired/replaced links fail even mid-registration; existing
+  membership survives invitation rotation; removed members cannot self-rejoin;
+  passport-only accounts cannot reach unrelated routes; pilot activation preserves
+  identity and requires the configured permission without granting aircraft access.
+- [ ] Shared-map tests: the same target appears as "visited by you" to its visitor
+  and "visited by others" to another member; targets nobody visited stay muted.
+  Cover viewer-and-others precedence, pilot and passport-only viewers, filters,
+  closure overlays, evidence edits/removals, and public aggregate fallback; verify
+  legend/list accessibility without relying on colour alone.
+- [ ] Airfield-social tests: visitor-name list follows edition/history scope and
+  deduplicates friends; comments persist across editions/code aliases, accept
+  questions from unvisited members and remain separate across groups. Cover
+  author editing/deletion, owner moderation, membership revocation, later-joiner
+  visibility, archived-edition versus live discussion behaviour, XSS/CSRF, pagination,
+  account/group deletion, own-data export and exclusion from public responses.
+- [ ] Edition-history tests: date-based current-edition selection and fallback,
+  yearly/monthly/custom dates, overlapping periods and stable selection, undated
+  passports, several distinct editions in one year, archived access, changing lists,
+  stable identity across code changes, newest/oldest priority for repeated visits,
+  current-year inclusion without a visit, all-years unvisited markers, combined
+  viewer/group emphasis and year styling, and per-edition access restrictions.
+  Verify the toggle changes only presentation, with matching map/list/legend and
+  unchanged edition stamps, progress and voucher balances.
+- [ ] Group-series history tests: 2027 founder continuing into 2028, friend first
+  joining in 2028, default participating-years view, opt-in read-only 2027 map,
+  current-year join offer, shared marker/year/frequency behaviour across both years,
+  and unchanged historical vouchers/leaderboards/own completion. Verify membership
+  reuse without duplicate accounts, group removal revoking history access, and
+  privacy boundaries for older participants' evidence and unrelated series.
+- [ ] Frequency tests: checklist markers stay equally weighted after repeat visits;
+  toggle on/off, zero/one/many visits, busy-home-base scaling, separate same-day
+  arrivals, linked-evidence deduplication, overlapping editions, yearly versus
+  combined totals, independent year priority, viewer/group scope and public privacy.
+  Confirm counts recalculate after evidence changes and neither toggle alters
+  completion percentages or voucher balances; map/list/legend agree.
+- [ ] Browser tests: builder preview/confirmation, map/list agreement, manual stamp,
+  HTMX away/back, narrow-screen invitation enrolment and visit submission, filters and exports. Exercise
+  keyboard/no-JS fallbacks and visible failure states. Add representative screenshots
+  to the screenshot manifest and user guide.
+- [ ] Run sanctioned i18n extraction/update, fill all fr/nl strings, compile and
+  validate completeness; review French typography and ngettext singulars. Update
+  user guide, data/import provenance documentation and release notes per increment.
+- [ ] Pass ruff/format, mypy, bandit, migration-chain and translation checks plus
+  the full 100% coverage gate; validate migration upgrade and model parity against
+  PostgreSQL and browser flows through the established e2e runner. Tick checkboxes
+  per increment; mark Phase 41 complete only when all agreed scope above is done.
+
+**Outside this phase:** automatic cross-instance federation. Keep visit submission
+in a small service with stable validation/idempotency semantics so a future
+explicitly authenticated integration can reuse it. Use separate integration credentials rather than browser invitation tokens
+for any future federation protocol. A future integration would need explicit
+participant consent, versioned submissions with stable airfield identities and
+provenance, and idempotent updates/retractions when source flights change or
+vanish. Keep this future direction here; it is not part of Phase 41 delivery.
+
+### 41j — Stretch goal: passport-only instance
+
+Optional extension after the core phase, not a prerequisite for marking its
+agreed core scope complete. An operator could run OpenHangar solely as a passport
+completion service, without setting up aircraft, maintenance, reservations or a
+pilot logbook. Example: propose a publisher-operated instance to LandeGut, where
+Landegutscheinheft customers maintain a map of their own visits across editions.
+This is a possible offering, not an existing publisher partnership.
+
+- [ ] Provide an explicit passport-only instance setup/presentation using the same
+  passport/account/series implementation. Onboarding and the home page lead straight
+  to editions and personal progress; hide unrelated navigation and enforce the
+  corresponding server-side access limits. No aircraft or full pilot profile is
+  required to register visits. Decide the configuration mechanism before building;
+  adding a new operating model requires operator agreement under AGENTS.md.
+- [ ] Operator manages the catalogue, linked editions and customer enrolment.
+  Reuse passport-scoped invitations initially; any purchase verification, publisher
+  customer-account integration or open registration is separately specified before
+  implementation. No payment/e-commerce system required for the stretch goal.
+- [ ] Customer experience: select an enrolled edition, record visits on a phone,
+  see the personal map fill, and browse their previous/combined editions. Retain
+  export, account security and independent private completion records.
+- [ ] Optional customer community: pilots can choose to share visits and airfield
+  comments/tips with authenticated members of the defined publisher community.
+  Personal tracking works without opting in. Distinguish viewing community content
+  from consenting to share one's own activity; do not automatically turn every
+  customer into a publicly ranked participant or share private history. Define
+  publisher-community versus smaller friends-group audiences explicitly, with
+  withdrawal and moderation controls. No internet-public publication by default.
+- [ ] Validate fresh passport-only setup, registration/enrolment, manual stamping,
+  edition history, community opt-in/withdrawal, cross-customer privacy, moderation,
+  export/backup/restore and disabled-feature access. Document deployment and add
+  representative demo/screenshots. Optional later pilot activation must follow
+  the instance policy rather than exposing fleet features automatically.
+
+---
+
+## Phase 42 — Flying Club
 
 Goal: support the flying-club operating model, where the club is the sole aircraft owner and members share access under a common membership structure.
 
@@ -2089,7 +2668,7 @@ Goal: support the flying-club operating model, where the club is the sole aircra
 
 ---
 
-## Phase 42 — Flying School
+## Phase 43 — Flying School
 
 Goal: support the flight-school operating model, where instructors deliver dual-instruction flights to students, with per-student progress tracking and instructor-specific permissions. The same model covers independent instructors operating on a single aircraft with a small number of private students — no formal school structure required.
 
@@ -2119,7 +2698,7 @@ Goal: support the flight-school operating model, where instructors deliver dual-
 
 ---
 
-## Phase 43 — Pilot Logbook Auto-population
+## Phase 44 — Pilot Logbook Auto-population
 
 Goal: auto-populate the pilot logbook from aircraft logbook entries so that
 logging a flight on the aircraft form fills both logbooks in one step.
@@ -2152,7 +2731,7 @@ logging a flight on the aircraft form fills both logbooks in one step.
 
 ---
 
-## Phase 44 — Photo EXIF & Arrival Time Auto-fill
+## Phase 45 — Photo EXIF & Arrival Time Auto-fill
 
 Goal: extract the arrival time automatically from counter photos so pilots
 don't need to type it in after every flight.
@@ -2169,7 +2748,7 @@ don't need to type it in after every flight.
 
 ---
 
-## Phase 45 — External Integrations
+## Phase 46 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -2183,7 +2762,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 46 — Advanced Reporting & Exports
+## Phase 47 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -2205,7 +2784,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 47 — Hosted SaaS & Advanced RBAC
+## Phase 48 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 
