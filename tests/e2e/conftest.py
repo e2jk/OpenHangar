@@ -59,15 +59,17 @@ def _serialize_wsgi_requests(app):
     """Force fully sequential request handling for a SQLite-backed in-process
     e2e server.
 
-    app.run(..., use_reloader=False) doesn't pass threaded=True, which
-    *should* already guarantee this — but this fixture's SQLite database has
-    intermittently thrown `sqlite3.InterfaceError: bad parameter or other
-    API misuse` under real browser load (multiple parallel requests, e.g.
-    a page's several <link rel="prefetch"> tags firing at once), the classic
-    symptom of two threads touching the same SQLite connection concurrently.
-    Rather than depend on Werkzeug's dev-server internals never changing,
-    wrap the WSGI app in an explicit lock so only one request is ever
-    in-flight at a time, regardless of how the server dispatches connections.
+    Flask's app.run() starts a threaded server by default, and both
+    in-process servers share one SQLite connection between all threads
+    (StaticPool, which does not serialize anything by itself). Under real
+    browser load (several prefetches and service-worker fetches at once)
+    two threads then use that connection together: first seen as
+    `sqlite3.InterfaceError: bad parameter or other API misuse`, and on
+    Python 3.14 with SQLite 3.54 as a segmentation fault inside SQLAlchemy's
+    row processing (2026-11-17, test_htmx_boost.py / test_ui_interactions.py).
+    Wrap the WSGI app in a lock so only one request is ever in flight,
+    whatever the server does with connections. CI serves these suites from
+    the Docker image on PostgreSQL, so it never hit this.
     """
     _lock = threading.Lock()
     _wsgi_app = app.wsgi_app
@@ -214,6 +216,10 @@ def live_server():
 
     upload_dir = tempfile.mkdtemp()
     db_file = os.path.join(upload_dir, "e2e_test.db")
+    # As CI's containers do: the global rate limit reads this when the app is
+    # created, so RATELIMIT_ENABLED=False set on the config afterwards does not
+    # turn it off, and a browser test clicking through pages ran into 429s.
+    os.environ["OPENHANGAR_RATELIMIT_ENABLED"] = "false"
     app = create_app()
     app.config.update(
         TESTING=True,
@@ -222,8 +228,8 @@ def live_server():
         # Disable Secure cookie flag so the browser sends it over http:// in E2E tests
         SESSION_COOKIE_SECURE=False,
         # File-based SQLite + StaticPool: a single shared connection, reused
-        # across every thread the dev server touches, with SQLAlchemy's own
-        # pool-checkout lock serializing access. NullPool (independent raw
+        # across every thread the dev server touches; _serialize_wsgi_requests
+        # (applied below) makes sure only one request uses it at a time. NullPool (independent raw
         # connections per checkout) let genuinely concurrent requests — e.g.
         # several <link rel="prefetch"> firing at once — hit the same SQLite
         # file simultaneously, which surfaced as sqlite3.InterfaceError:
@@ -422,6 +428,8 @@ def live_server():
                 "auth_id": _renter_auth.id if _renter_auth else None,
             }
         )
+
+    _serialize_wsgi_requests(app)
 
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
@@ -805,6 +813,10 @@ def fresh_server():
     upload_dir = tempfile.mkdtemp()
     db_file = os.path.join(upload_dir, "fresh_e2e.db")
 
+    # As CI's containers do: the global rate limit reads this when the app is
+    # created, so RATELIMIT_ENABLED=False set on the config afterwards does not
+    # turn it off, and a browser test clicking through pages ran into 429s.
+    os.environ["OPENHANGAR_RATELIMIT_ENABLED"] = "false"
     app = create_app()
     app.config.update(
         TESTING=True,
