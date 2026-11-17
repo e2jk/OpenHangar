@@ -250,7 +250,10 @@ def test_preview_and_removal_protection(app: Flask, owner: dict[str, int]) -> No
         assert protected_targets(p.id, {owner["target"]}) == {owner["target"]}
         assert (
             completion_preview(
-                None, owner["user"], [{"key": "first", "ident": "TEST"}], {}
+                None,
+                owner["user"],
+                [{"id": owner["field"], "key": "first", "ident": "TEST"}],
+                {},
             )["visited"]
             == 1
         )
