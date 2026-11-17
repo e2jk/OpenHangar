@@ -10,14 +10,24 @@
       if (field.latitude === null || field.longitude === null) return;
       var radius = root.dataset.frequency === '1' ? (field.count ? Math.min(18, 8 + 2 * Math.log2(field.count)) : 6) : 7;
       var popup = document.createElement('div');
-      var link = document.createElement('a');
+      var link = document.createElement(root.dataset.targetUrl ? 'a' : 'strong');
       link.textContent = (field.ident ? field.ident + ' — ' : '') + field.name;
-      link.href = root.dataset.targetUrl.replace(/\/0$/, '/' + field.target_id);
+      if (root.dataset.targetUrl) link.href = root.dataset.targetUrl.replace(/\/0$/, '/' + field.target_id);
       popup.appendChild(link);
       var info = document.createElement('p');
       info.textContent = (field.visited ? root.dataset.visited : root.dataset.unvisited) + ' · ' + root.dataset.visits + ': ' + field.count + (field.is_closed ? ' · ' + root.dataset.closed : '');
       popup.appendChild(info);
-      L.circleMarker([field.latitude, field.longitude], { radius: radius, color: field.visited ? '#0d6efd' : '#6c757d', fillOpacity: field.visited ? 0.8 : 0.25, weight: field.visited ? 3 : 1, dashArray: field.is_closed ? '4 4' : null }).bindPopup(popup).addTo(map);
+      (field.editions || []).forEach(function (edition) {
+        var line = document.createElement('div');
+        line.textContent = edition.label + ': ' + edition.count;
+        popup.appendChild(line);
+      });
+      if (field.current === false && root.dataset.notCurrent) {
+        var badge = document.createElement('p');
+        badge.textContent = root.dataset.notCurrent;
+        popup.appendChild(badge);
+      }
+      L.circleMarker([field.latitude, field.longitude], { radius: radius, color: field.visited ? (field.colour || '#0d6efd') : '#6c757d', fillOpacity: field.visited ? 0.8 : 0.25, weight: field.visited ? 3 : 1, dashArray: field.is_closed ? '4 4' : null }).bindPopup(popup).addTo(map);
       positions.push([field.latitude, field.longitude]);
     });
     if (positions.length) map.fitBounds(positions, { padding: [25, 25], maxZoom: 12 });

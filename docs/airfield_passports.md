@@ -281,3 +281,44 @@ The immutable CSV is already cached once per worker by `load_catalogue`; merged
 search views are rebuilt to reflect current tenant corrections, without rereading
 the CSV from disk. List-page batching across passports remains tracked in 41g
 before enabling large groups; the current list still evaluates each passport.
+
+## Linked editions (41f, personal edition views)
+
+Use **Link editions** on a passport to create or choose a series you own. A series
+is a relationship between independent passports, not a renewal schedule. Names
+need not match; dates may describe a calendar year, a month, a season or any
+other period, and undated passports remain supported. Linking never moves visits.
+
+**Linked editions** opens the current non-archived edition you participate in.
+Overlapping editions use the latest start date, then stable ID; when none is
+current, the page says so and offers your latest edition. All editions remain
+selectable, including archived editions. Undated editions have no timed priority;
+their explicit order is assigned when linked (relinking places one last).
+
+**All editions** combines targets by stable airfield identity, including destinations
+removed from later lists. Each edition retains its own completion and visit dates.
+The comparison shows targets added or removed since the preceding edition. A stamp
+from an old edition never checks off the same destination in the current one.
+Choose **Newest visits / Oldest visits** to select the marker's earned-edition
+colour; exact edition names and visit counts remain in the list and popups.
+**Show visit frequency** counts a flight only once per airfield across overlapping
+editions. Changing colour priority does not change frequency or any saved evidence.
+
+**Create next edition** copies a target selection into a fresh builder draft. Enter
+the name and dates, review the targets (including any replacement import), then
+save. The draft may be cancelled without creating an edition or series. Source
+provenance is retained when available, but visits, photos and other participants
+are never copied. A concurrent source change requires starting the copy again.
+Existing manual visit evidence remains solely in the original passport; the new
+personal edition evaluates its owner's logbook independently within its new dates.
+
+These first series views are owner-only and contain only the viewer's evidence.
+Series membership, consented group history and voucher accounting are subsequent
+41f increments; group invitations and account registration follow in 41g. A series
+relationship does not grant access to any other pilot's personal passport.
+
+The collection list and series map batch the viewer's logbook, aliases, participants,
+targets, exclusions and manual visits. Evidence snapshots are request-local and
+explicitly bound to one tenant and viewer; no cross-request cache of flight data
+is created. Other organisations' own crew-slot flights retain the personal-logbook
+policy described above; administering an aircraft never grants a stamp.

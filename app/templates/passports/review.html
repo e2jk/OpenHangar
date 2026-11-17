@@ -6,6 +6,7 @@
 <h1 class="page-title">{{ _('Review passport') }}</h1>
 {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
 {% if impact.source.source_url %}<p>{{ _('Source') }}: <a href="{{ impact.source.source_url }}" hx-boost="false" rel="noreferrer">{{ impact.source.source_url }}</a> · {{ _('Retrieved') }}: {{ format_datetime(impact.source.source_retrieved_at) }}</p>{% endif %}
+{% if impact.edition_copy %}<p class="alert alert-info">{{ _('This will create a new linked edition. The original passport and its evidence stay intact.') }}</p>{% endif %}
 <h2 class="h4">{{ impact.metadata.title }}</h2><p>{{ impact.metadata.description or '' }}</p>
 <dl><dt>{{ _('Start date') }}</dt><dd>{{ impact.metadata.start_date or '—' }}</dd><dt>{{ _('End date') }}</dt><dd>{{ impact.metadata.end_date or '—' }}</dd></dl>
 <p>{{ ngettext('one selected airfield', '%(n)s selected airfields', impact.fields|length, n=impact.fields|length) }}</p>
@@ -15,7 +16,7 @@
 {% if impact.removed %}<p class="text-warning">{{ ngettext('one airfield will be removed.', '%(n)s airfields will be removed.', impact.removed, n=impact.removed) }}</p>{% endif %}
 <ul>{% for field in impact.fields %}<li>{{ field.ident or '—' }} — {{ field.name }}{% if field.latitude is none %} ({{ _('No coordinates') }}){% endif %}</li>{% endfor %}</ul>
 {% include "passports/_selection_map.html" %}
-<form method="post" class="mt-3"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="draft" value="{{ token }}"><input type="hidden" name="revision" value="{{ draft.revision }}">
+<form action="{{ url_for('passports.edit_passport', passport_id=passport.id) if passport else url_for('passports.new_passport') }}" method="post" class="mt-3"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="draft" value="{{ token }}"><input type="hidden" name="revision" value="{{ draft.revision }}">
 {% if impact.protected %}<label class="form-check mb-3"><input class="form-check-input" type="checkbox" name="confirm_removal"><span class="form-check-label">{{ _('I understand that removing these airfields deletes their saved visits and stamp photos from this passport.') }}</span></label>{% endif %}
 <button class="btn btn-ac-ghost" name="action" value="back">{{ _('Back to selection') }}</button><button class="btn btn-ac-primary" name="action" value="save">{{ _('Save passport') }}</button></form>
 </div>

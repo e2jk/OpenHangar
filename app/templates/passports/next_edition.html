@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% set no_history_cache = true %}
+{% block title %}{{ _('Create next edition') }} — OpenHangar{% endblock %}
+{% block content %}
+<div class="container py-4"><h1>{{ _('Create next edition') }}</h1><p>{{ _('Copy the target selection from this passport, then review it in the builder. Visits and photos stay in the original edition. Enter the new dates explicitly; no renewal is scheduled.') }}</p><p>{{ _('Source') }}: {{ passport.title }}</p>
+{% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+<form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label class="form-label" for="next-title">{{ _('Name') }}</label><input class="form-control mb-3" id="next-title" name="title" required maxlength="128" value="{{ request.form.get('title', '') }}">
+<label class="form-label" for="next-label">{{ _('Edition label') }}</label><input class="form-control mb-3" id="next-label" name="edition_label" maxlength="128" value="{{ request.form.get('edition_label', '') }}">
+<label class="form-label" for="next-start">{{ _('Start date') }}</label><input class="form-control mb-3" type="date" id="next-start" name="start_date" value="{{ request.form.get('start_date', '') }}">
+<label class="form-label" for="next-end">{{ _('End date') }}</label><input class="form-control mb-3" type="date" id="next-end" name="end_date" value="{{ request.form.get('end_date', '') }}">
+<label class="form-label" for="next-description">{{ _('Description') }}</label><textarea class="form-control mb-3" id="next-description" name="description" maxlength="8000">{{ request.form.get('description', passport.description or '') }}</textarea>
+<button class="btn btn-ac-primary">{{ _('Copy and review targets') }}</button> <a href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ _('Cancel') }}</a>
+</form></div>
+{% endblock %}

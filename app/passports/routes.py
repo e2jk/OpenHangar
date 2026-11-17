@@ -38,6 +38,7 @@ from passports import (
     evidence,
     lifecycle,  # Register transaction-safe file cleanup.
     passports_bp,
+    series_routes,  # Register linked-edition views.
 )
 from passports.access import accessible_passports, require_passport
 from passports.catalogue import AirfieldConflict, catalogue_choices
@@ -58,7 +59,7 @@ from passports.management import (
     set_archived,
 )
 
-__all__ = ["lifecycle", "passports_bp"]
+__all__ = ["lifecycle", "passports_bp", "series_routes"]
 
 
 @passports_bp.route("/")

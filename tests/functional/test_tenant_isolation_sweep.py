@@ -73,6 +73,7 @@ class TenantWorld:
     tenant_id: int
     admin_user_id: int
     passport_id: int
+    series_id: int
     target_id: int
     aircraft_id: int
     component_id: int
@@ -103,6 +104,7 @@ def _build_tenant_world(app, client_factory, suffix: str) -> TenantWorld:
             Passport,
             PassportAirfield,
             PassportAirfieldIdentity,
+            PassportSeries,
             RenterAuthorization,
             Reservation,
             ReservationStatus,
@@ -272,7 +274,15 @@ def _build_tenant_world(app, client_factory, suffix: str) -> TenantWorld:
             function_pic=1.0,
         )
         db.session.add(pilot_entry)
+        series = PassportSeries(
+            tenant_id=tenant.id,
+            owner_user_id=admin.id,
+            title=f"Private series {suffix}",
+        )
+        db.session.add(series)
+        db.session.flush()
         passport = Passport(
+            series_id=series.id,
             tenant_id=tenant.id,
             owner_user_id=admin.id,
             title=f"Private passport {suffix}",
@@ -293,6 +303,7 @@ def _build_tenant_world(app, client_factory, suffix: str) -> TenantWorld:
             "tenant_id": tenant.id,
             "admin_user_id": admin.id,
             "passport_id": passport.id,
+            "series_id": series.id,
             "target_id": target.id,
             "aircraft_id": aircraft.id,
             "component_id": component.id,
