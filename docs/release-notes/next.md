@@ -13,9 +13,11 @@ An airfield passport is a list of airfields you'd like to fly to: every airfield
 
 - **Keep editions together**: link successive booklets or challenges into a series. Open the current edition, revisit an archived one, or show all editions on a single map—including airfields that disappeared from later lists. Colours show the newest or oldest edition in which you visited; the optional frequency view still counts each visit just once. To start another edition, copy its targets into the builder and review the new name, dates and list. The original stays intact.
 
+- **Track your own booklet vouchers**: give each person their own allowance at every airfield. Record a voucher when you actually use it, see what you have left, and correct or undo an entry. A visit earns a stamp without spending a voucher, and using yours leaves your friends’ balances untouched. You can record actual savings in each currency and explicitly carry fresh allowances into the next edition.
+
 On the demo, the owner account comes with three example passports, already stamped from its logbook: every Belgian airfield, a dated edition of a fictional voucher booklet, and one that's complete.
 
-Passports are personal for now. Group passports shared with friends (with or without their own OpenHangar account), voucher balances, public sharing and exports will follow.
+Passports are personal for now. Group passports shared with friends (with or without their own OpenHangar account), public sharing and exports will follow.
 
 **Privacy**
 - The pages you visited are no longer left in the browser tab after you sign out. For an instant Back button, the app keeps a copy of the last pages visited in the tab; that copy is now dropped as soon as a page loads signed out or under another account. Pages showing other people's email addresses (user management, permissions, the fleet reservations list, setup, the AMP declaration) are never kept in it.

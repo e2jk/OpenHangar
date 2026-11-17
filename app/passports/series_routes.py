@@ -91,6 +91,7 @@ def next_edition(passport_id: int) -> ResponseReturnValue:
                 "source_id": source.id,
                 "fingerprint": fingerprint(source),
                 "series_title": source.title,
+                "copy_allocations": request.form.get("copy_allocations") == "yes",
             }
             save_draft(draft, state)
             db.session.commit()

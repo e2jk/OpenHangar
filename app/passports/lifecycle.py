@@ -17,11 +17,12 @@ from models import (
     PassportParticipant,
     PassportSeries,
     PassportStampPhoto,
+    PassportVoucherRedemption,
     Tenant,
     User,
     db,
 )
-from sqlalchemy import event, inspect, select
+from sqlalchemy import event, inspect, select, update
 from sqlalchemy.orm import Session
 
 
@@ -102,3 +103,31 @@ def remove_passport_files(session: Session) -> None:
 @event.listens_for(Session, "after_soft_rollback")
 def retain_passport_files(session: Session, previous_transaction: Any) -> None:
     session.info.get("passport_deleted_photos", {}).pop(previous_transaction, None)
+
+
+@event.listens_for(Session, "before_flush")
+def anonymize_voucher_history(session: Session, _context: Any, _instances: Any) -> None:
+    """Keep shared consumption without retaining a removed participant's private data."""
+    filters = []
+    for obj in session.deleted:
+        if isinstance(obj, PassportParticipant):
+            filters.append(PassportVoucherRedemption.participant_id == obj.id)
+        elif isinstance(obj, User):
+            filters.append(
+                PassportVoucherRedemption.participant_id.in_(
+                    select(PassportParticipant.id).where(
+                        PassportParticipant.user_id == obj.id
+                    )
+                )
+            )
+    if filters:
+        session.execute(
+            update(PassportVoucherRedemption)
+            .where(db.or_(*filters))
+            .values(
+                note=None,
+                saving_amount=None,
+                currency=None,
+                flight_id=None,
+            )
+        )

@@ -31,6 +31,7 @@ from passports.management import (
     create_personal,
     fingerprint,
     metadata_values,
+    owned_passport,
     protected_targets,
 )
 
@@ -148,6 +149,10 @@ def matching_fields(tenant_id: int, state: dict[str, Any]) -> list[dict[str, Any
 
 
 def update_form(state: dict[str, Any], form: MultiDict[str, str]) -> None:
+    if state.get("edition_copy") and form.get("edition_copy_options") == "yes":
+        state["edition_copy"]["copy_allocations"] = (
+            form.get("copy_allocations") == "yes"
+        )
     for key in METADATA_FIELDS:
         if key in form:
             if len(form[key]) > 10000:
@@ -279,6 +284,10 @@ def review(
 
         validate_copy(tenant_id, user_id, state["edition_copy"])
     metadata = metadata_values(state["metadata"])
+    if passport is not None:
+        from passports.vouchers import validate_dates
+
+        validate_dates(passport, metadata["start_date"], metadata["end_date"])
     fields = selected_fields(tenant_id, state)
     old_targets = (
         PassportAirfield.query.filter_by(passport_id=passport.id).all()
@@ -300,6 +309,16 @@ def review(
             )
         ).all()
     ]
+    if passport is not None:
+        from passports.vouchers import protected_targets as voucher_targets
+
+        if voucher_targets(passport.id, {target.id for target in removed}):
+            raise BuilderError(
+                _(
+                    "Keep airfields with voucher allocations. Archive this edition or delete unused allocations first."
+                ),
+                409,
+            )
     before = (
         completion_preview(
             passport,
@@ -311,9 +330,31 @@ def review(
         else None
     )
     after = completion_preview(passport, user_id, fields, metadata, tenant_id=tenant_id)
+    allocation_preview = []
+    voucher_default = 0
+    if state.get("edition_copy", {}).get("copy_allocations"):
+        from passports.vouchers import copy_preview
+
+        source = owned_passport(
+            tenant_id, user_id, state["edition_copy"]["source_id"], archived_ok=True
+        )
+        voucher_default = source.default_voucher_quantity
+        allocation_preview = copy_preview(
+            source, [field["id"] for field in fields if field.get("id")]
+        )
+        names = {
+            field["id"]: ((str(field["ident"]) + " — ") if field.get("ident") else "")
+            + field["name"]
+            for field in fields
+            if field.get("id")
+        }
+        for row in allocation_preview:
+            row["airfield_name"] = names[row["airfield_id"]]
     result = {
         "metadata": metadata,
         "edition_copy": state.get("edition_copy"),
+        "voucher_allocations": allocation_preview,
+        "voucher_default": voucher_default,
         "source": imports.source_values(state),
         "fields": fields,
         "removed": len(removed),
@@ -403,6 +444,19 @@ def commit_selection(
     for identity_id, target in old_targets.items():
         if identity_id not in kept:
             db.session.delete(target)
+    db.session.flush()
+    if state.get("edition_copy", {}).get("copy_allocations"):
+        from passports.vouchers import copy_allocations
+
+        # finish_copy linked the source, so validate its owner rather than its
+        # pre-link fingerprint again; review already locked and validated it.
+        source = owned_passport(
+            tenant_id, user_id, state["edition_copy"]["source_id"], archived_ok=True
+        )
+        copy_allocations(source, passport, user_id)
+    from passports.vouchers import _provision_defaults
+
+    _provision_defaults(passport)
     db.session.delete(draft)
     db.session.flush()
     return passport

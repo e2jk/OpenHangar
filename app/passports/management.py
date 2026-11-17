@@ -57,6 +57,7 @@ def owned_passport(
             id=passport_id, tenant_id=tenant_id, owner_user_id=user_id
         )
         .with_for_update()
+        .populate_existing()
         .first()
     )
     if passport is None:
@@ -101,10 +102,27 @@ def fingerprint(passport: Passport | None) -> str:
         .order_by(PassportAirfield.id)
         .all()
     ]
+    from models import PassportVoucherAllocation
+
+    allocations = [
+        (
+            pool.id,
+            pool.target_id,
+            pool.personal_user_id,
+            pool.quantity,
+            pool.valid_from,
+            pool.valid_until,
+        )
+        for pool in PassportVoucherAllocation.query.filter_by(passport_id=passport.id)
+        .order_by(PassportVoucherAllocation.id)
+        .all()
+    ]
     data = [
+        allocations,
         passport.owner_user_id,
         passport.tenant_id,
         passport.series_id,
+        passport.default_voucher_quantity,
         passport.archived_at,
         passport.updated_at,
         *[getattr(passport, key) for key in METADATA_FIELDS],
@@ -132,8 +150,11 @@ def protected_targets(passport_id: int, target_ids: set[int]) -> set[int]:
         )
         .all()
     )
-    # Voucher allocations/redemptions will join this check when introduced in 41f.
-    return {row[0] for row in visits + photos}
+    from passports.vouchers import protected_targets as voucher_targets
+
+    return {row[0] for row in visits + photos} | voucher_targets(
+        passport_id, target_ids
+    )
 
 
 def completion_preview(

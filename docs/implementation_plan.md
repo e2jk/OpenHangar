@@ -2347,7 +2347,7 @@ downgrades and show localised retrieval timestamps.
   the existing builder, date-based default selection, archived edition access,
   stable-identity combined map, independent completion/target comparison and
   newest/oldest visit colours with deduplicated frequency. Request-local collection
-  evidence is batched. Group history, voucher accounting and reminders below remain
+  evidence is batched. Group history and reminders below remain
   outstanding; this subphase is not complete.
 
 - [ ] Keep linked editions simple: `PassportSeries` groups passports via an
@@ -2403,12 +2403,13 @@ downgrades and show localised retrieval timestamps.
   settings and optional voucher allocations, or import a replacement list and
   review changes. Never copy visits, redeemed vouchers, group invitations or public
   links. Participants must accept a new group edition before logbook sharing starts.
-- [ ] Add voucher allocations per participant/target (quantity and optional validity
+- [x] Add voucher allocations per participant/target (quantity and optional validity
   override bounded by edition dates) and explicit redemption events (date, quantity,
   optional flight, actual saving amount/currency, note). Default entitlement is
-  per participant; offer an explicitly selected shared pool when a booklet is
-  shared. Never multiply a shared pool by group membership.
-- [ ] Visits and redemptions are independent: arriving earns a stamp, not an
+  per participant (one independent allowance per person/airfield for the
+  Landegutschein use case); offer an explicitly selected shared pool only when a
+  physical booklet is deliberately shared. Never multiply a shared pool by group membership.
+- [x] Visits and redemptions are independent: arriving earns a stamp, not an
   assumed free landing. Enforce remaining quantity transactionally under concurrent
   submissions, provide correction/undo, and show used/remaining counts. Savings
   are summed by currency, with no implicit conversion or invented landing fee.
