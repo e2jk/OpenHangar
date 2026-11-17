@@ -1,4 +1,4 @@
-# Discover your next passport destination
+# Import airfield passport lists
 
 **Privacy**
 - The pages you visited are no longer left in the browser tab after you sign out. For an instant Back button, the app keeps a copy of the last pages visited in the tab; that copy is now dropped as soon as a page loads signed out or under another account. Pages showing other people's email addresses (user management, permissions, the fleet reservations list, setup, the AMP declaration) are never kept in it.
@@ -21,3 +21,4 @@
 
 - Fix airfield alias lookup on PostgreSQL without requiring equality comparisons on JSON data.
 - Correct the agent guide’s JSON data-bridge examples: HTMX strips JSON script tags as well as executable scripts; escaped data attributes survive navigation.
+- Prepare bounded public source fetching with two worker-shared admission slots, DNS-pinned sockets, verified TLS, redirect/address checks, decompression limits and an absolute deadline. Runtime fetch-lock files stay out of backups and are retained for safe worker coordination.
