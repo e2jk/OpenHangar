@@ -72,6 +72,7 @@ The navbar provides access to:
 | **Log a flight** | Unified flight entry that fills the aircraft and pilot logbooks in one step |
 | **Maintenance** | Fleet-wide maintenance overview and per-aircraft triggers |
 | **Pilot** | Personal logbook, pilot profile & documents, logbook import |
+| **Airfield passports** | Read-only access to passports you own or have accepted membership in; creation and visit maps are planned in later increments |
 | **Configuration** | Users & permissions, notifications, backups, email, tenants *(administrators)* |
 
 The per-aircraft booking calendar (**Reservations**) is reached from the

@@ -333,3 +333,52 @@ def test_migrations_build_the_schema_the_models_describe(
         "migrations at head differ from app/models.py; add a migration "
         "(or fix the model):\n" + "\n".join(repr(d) for d in differences)
     )
+
+
+def test_passport_migration_round_trip(empty_schema: tuple[Flask, Engine]) -> None:
+    from flask_migrate import downgrade
+    from models import Passport, PassportSeries, Tenant, User, db
+    from sqlalchemy import inspect
+
+    app, engine = empty_schema
+    previous = "febde4fa83c5"
+    _upgrade(app, previous)
+    tid = _insert(engine, "tenants", name="Existing organisation")
+    uid = _insert(
+        engine, "users", email="existing@migration.test", password_hash="unused"
+    )
+    _upgrade(app, "head")
+    with app.app_context():
+        assert db.session.get(Tenant, tid).name == "Existing organisation"
+        series = PassportSeries(
+            tenant_id=tid, owner_user_id=uid, title="Linked editions"
+        )
+        db.session.add(series)
+        db.session.flush()
+        passport = Passport(
+            tenant_id=tid,
+            owner_user_id=uid,
+            series_id=series.id,
+            title="2027",
+            start_date=dt.date(2027, 1, 1),
+            end_date=dt.date(2027, 12, 31),
+        )
+        db.session.add(passport)
+        db.session.commit()
+        pid = passport.id
+        db.session.delete(series)
+        db.session.commit()
+        assert db.session.get(Passport, pid).series_id is None
+        assert db.session.get(User, uid) is not None
+        db.session.remove()
+        downgrade(directory=MIGRATIONS, revision=previous)
+    assert "passports" not in inspect(engine).get_table_names()
+    with engine.connect() as connection:
+        assert (
+            connection.execute(
+                text("SELECT name FROM tenants WHERE id = :id"), {"id": tid}
+            ).scalar_one()
+            == "Existing organisation"
+        )
+    _upgrade(app, "head")
+    assert "passport_stamp_photos" in inspect(engine).get_table_names()

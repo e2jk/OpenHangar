@@ -4022,6 +4022,303 @@ def _revoke_removed_membership(
     )
 
 
+# ── Airfield passports ──────────────────────────────────────────────────────
+
+
+class PassportAirfieldIdentity(db.Model):
+    """A referenced airfield, independent of its current code or any passport."""
+
+    __tablename__ = "passport_airfield_identities"
+    __table_args__ = (
+        db.UniqueConstraint("tenant_id", "source", "source_id"),
+        db.UniqueConstraint("tenant_id", "id"),
+        db.CheckConstraint("latitude BETWEEN -90 AND 90"),
+        db.CheckConstraint("longitude BETWEEN -180 AND 180"),
+        db.CheckConstraint("(latitude IS NULL) = (longitude IS NULL)"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(
+        db.Integer,
+        db.ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    source = db.Column(db.String(32), nullable=False)
+    source_id = db.Column(db.String(64), nullable=True)
+    ident = db.Column(db.String(64), nullable=True)
+    icao_code = db.Column(db.String(16), nullable=True)
+    name = db.Column(db.String(255), nullable=False)
+    latitude = db.Column(db.Numeric(10, 7), nullable=True)
+    longitude = db.Column(db.Numeric(11, 7), nullable=True)
+    country = db.Column(db.String(2), nullable=True)
+    region = db.Column(db.String(32), nullable=True)
+    airfield_type = db.Column(db.String(32), nullable=True)
+    is_closed = db.Column(db.Boolean, nullable=False, default=False)
+    # User corrections never overwrite source-owned values on a refresh.
+    overrides = db.Column(db.JSON, nullable=False, default=dict)
+    source_url = db.Column(db.String(512), nullable=True)
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+
+class PassportAirfieldAlias(db.Model):
+    """Dated code history; collisions remain explicit rather than guessed."""
+
+    __tablename__ = "passport_airfield_aliases"
+    __table_args__ = (
+        db.CheckConstraint(
+            "valid_from IS NULL OR valid_until IS NULL OR valid_from <= valid_until"
+        ),
+        db.Index("ix_passport_alias_code_dates", "code", "valid_from", "valid_until"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    airfield_id = db.Column(
+        db.Integer,
+        db.ForeignKey("passport_airfield_identities.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    code = db.Column(db.String(64), nullable=False)
+    valid_from = db.Column(db.Date, nullable=True)
+    valid_until = db.Column(db.Date, nullable=True)
+
+
+class PassportSeries(db.Model):
+    """A simple relationship between independent passports, not a schedule."""
+
+    __tablename__ = "passport_series"
+    __table_args__ = (db.UniqueConstraint("tenant_id", "id"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(
+        db.Integer,
+        db.ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    owner_user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    title = db.Column(db.String(128), nullable=False)
+
+
+class Passport(db.Model):
+    __tablename__ = "passports"
+    __table_args__ = (
+        db.CheckConstraint(
+            "start_date IS NULL OR end_date IS NULL OR start_date <= end_date"
+        ),
+        db.UniqueConstraint("tenant_id", "id"),
+        db.ForeignKeyConstraint(
+            ["tenant_id", "series_id"],
+            ["passport_series.tenant_id", "passport_series.id"],
+            ondelete="NO ACTION",
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(
+        db.Integer,
+        db.ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    owner_user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # Series deletion detaches editions; it never destroys their evidence.
+    series_id = db.Column(
+        db.Integer,
+        db.ForeignKey("passport_series.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    title = db.Column(db.String(128), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    start_date = db.Column(db.Date, nullable=True)
+    end_date = db.Column(db.Date, nullable=True)
+    edition_label = db.Column(db.String(128), nullable=True)
+    source_url = db.Column(db.String(512), nullable=True)
+    source_retrieved_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    archived_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+
+class PassportAirfield(db.Model):
+    __tablename__ = "passport_airfields"
+    __table_args__ = (
+        db.UniqueConstraint("passport_id", "airfield_id"),
+        db.UniqueConstraint("passport_id", "id"),
+        db.ForeignKeyConstraint(
+            ["tenant_id", "passport_id"],
+            ["passports.tenant_id", "passports.id"],
+            ondelete="CASCADE",
+        ),
+        db.ForeignKeyConstraint(
+            ["tenant_id", "airfield_id"],
+            [
+                "passport_airfield_identities.tenant_id",
+                "passport_airfield_identities.id",
+            ],
+            ondelete="CASCADE",
+        ),
+        db.CheckConstraint("display_order >= 0"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(db.Integer, nullable=False)
+    passport_id = db.Column(db.Integer, nullable=False, index=True)
+    airfield_id = db.Column(db.Integer, nullable=False, index=True)
+    display_order = db.Column(db.Integer, nullable=False, default=0)
+    note = db.Column(db.Text, nullable=True)
+
+
+class PassportParticipant(db.Model):
+    __tablename__ = "passport_participants"
+    __table_args__ = (
+        db.UniqueConstraint("passport_id", "user_id"),
+        db.UniqueConstraint("passport_id", "id"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    passport_id = db.Column(
+        db.Integer,
+        db.ForeignKey("passports.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    display_name = db.Column(db.String(128), nullable=False)
+    is_active = db.Column(db.Boolean, nullable=False, default=True)
+    accepted_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+
+class PassportVisit(db.Model):
+    __tablename__ = "passport_visits"
+    __table_args__ = (
+        db.ForeignKeyConstraint(
+            ["passport_id", "participant_id"],
+            ["passport_participants.passport_id", "passport_participants.id"],
+            ondelete="CASCADE",
+        ),
+        db.ForeignKeyConstraint(
+            ["passport_id", "target_id"],
+            ["passport_airfields.passport_id", "passport_airfields.id"],
+            ondelete="CASCADE",
+        ),
+        db.CheckConstraint("evidence_kind IN ('manual', 'confirmed_gps')"),
+        db.Index("ix_passport_visits_participant_date", "participant_id", "visit_date"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    passport_id = db.Column(db.Integer, nullable=False, index=True)
+    participant_id = db.Column(db.Integer, nullable=False)
+    target_id = db.Column(db.Integer, nullable=False, index=True)
+    visit_date = db.Column(db.Date, nullable=False)
+    note = db.Column(db.Text, nullable=True)
+    flight_id = db.Column(
+        db.Integer,
+        db.ForeignKey("flights.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    author_user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    evidence_kind = db.Column(db.String(32), nullable=False, default="manual")
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+
+class PassportArrivalExclusion(db.Model):
+    __tablename__ = "passport_arrival_exclusions"
+    __table_args__ = (db.UniqueConstraint("participant_id", "flight_id"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    participant_id = db.Column(
+        db.Integer,
+        db.ForeignKey("passport_participants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    flight_id = db.Column(
+        db.Integer,
+        db.ForeignKey("flights.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+
+class PassportStampPhoto(db.Model):
+    """Attached to participant/target, never to whichever flight earns a stamp."""
+
+    __tablename__ = "passport_stamp_photos"
+    __table_args__ = (
+        db.UniqueConstraint("participant_id", "target_id"),
+        db.ForeignKeyConstraint(
+            ["passport_id", "participant_id"],
+            ["passport_participants.passport_id", "passport_participants.id"],
+            ondelete="CASCADE",
+        ),
+        db.ForeignKeyConstraint(
+            ["passport_id", "target_id"],
+            ["passport_airfields.passport_id", "passport_airfields.id"],
+            ondelete="CASCADE",
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    passport_id = db.Column(db.Integer, nullable=False, index=True)
+    participant_id = db.Column(db.Integer, nullable=False, index=True)
+    target_id = db.Column(db.Integer, nullable=False, index=True)
+    uploader_user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    filename = db.Column(db.String(128), nullable=False, unique=True)
+    public_consent = db.Column(db.Boolean, nullable=False, default=False)
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+
+
 # ---------------------------------------------------------------------------
 # Numbers too large, and text too long, for their column
 # ---------------------------------------------------------------------------
