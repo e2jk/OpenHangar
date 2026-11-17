@@ -2079,61 +2079,70 @@ pilot features; a group passport does not depend on the Flying Club phase.
 (41d), source imports (41e), voucher editions (41f), group participation (41g),
 and public sharing/export (41h), then complete the integration gate (41i).
 Each increment includes its own tests, translations and documentation before
-moving on. All boxes below describe planned work, not functionality already shipped.
+moving on. Unchecked boxes below describe remaining work; completed increments
+are ticked.
 
 ### 41a — Airfield identity and passport data
 
-- [ ] Add a `passports` blueprint (`/passports/`), service modules for catalogue,
+- [x] Add a `passports` blueprint (`/passports/`), service modules for catalogue,
   eligibility, discovery and imports, and templates under `templates/passports/`.
   Keep calculations independent of routes. Use the existing pilot-access policy
   for pilot functionality and a separate passport-membership guard for passport-only
   accounts; passport navigation must be available without `is_pilot`. No new
   operating model or user role.
-- [ ] Introduce stable airfield identities for referenced fields, with a local PK,
+- [x] Introduce stable airfield identities for referenced fields, with a local PK,
   source/source ID (OurAirports numeric `id` where available), current ident,
   nullable ICAO code, name, coordinates, country, region, type, closure status,
-  and provenance/update timestamp. Preserve manually entered fields separately
-  from source-owned values. An OurAirports `ident` is not necessarily an ICAO code.
-- [ ] Read country/region/type choices from the bundled `airports.csv`, including
+  and provenance/update timestamp. Materialised identities are tenant-scoped, so
+  one organisation's manual corrections cannot affect another's passports. Preserve
+  manually entered fields separately from source-owned values. An OurAirports `ident` is not necessarily an ICAO code.
+- [x] Read country/region/type choices from the bundled `airports.csv`, including
   fields without ICAO codes. Materialise referenced identities as needed rather
   than copying the entire catalogue into the database on every startup. Allow a
   pilot to add a missing field by name and optional code/coordinates; missing
   coordinates prevent map/export placement, not passport membership or stamping.
-- [ ] Store historical code aliases against stable identities. Catalogue refresh
+- [x] Store historical code aliases against stable identities. Catalogue refresh
   matches source IDs first, preserves old codes, and updates closure/name/location
   metadata without deleting targets or stamps. Ambiguous aliases, reused codes,
   source-ID replacements and merges require explicit review; never match solely
   by proximity or silently redirect historical flights to another airfield.
   Allow dated aliases where a code was reused. A missing source row is not proof
   of closure. Provide a manual correction/reconciliation path for custom fields.
-- [ ] Add `Passport`: tenant, owner, title, description, optional inclusive start/
+- [x] Add `Passport`: tenant, owner, title, description, optional inclusive start/
   end dates, edition label, optional series FK, source provenance,
   archive timestamp, creation/update timestamps. Validate start ≤ end; no dates
   means lifetime eligibility. Archiving makes an edition read-only until reopened;
   it does not freeze derived logbook evidence into an immutable historical copy.
-- [ ] Add `PassportAirfield`: passport FK, stable airfield FK, display order,
+- [x] Add `PassportAirfield`: passport FK, stable airfield FK, display order,
   optional target note, unique per passport/airfield. Selection is an explicit
   saved list: catalogue updates never silently add new destinations to an edition.
-- [ ] Add `PassportParticipant` from the outset: passport FK, display name,
+- [x] Add `PassportParticipant` from the outset: passport FK, display name,
   required user FK, active status, accepted membership timestamp. A personal
   passport has its owner as its sole participant; all group participants also have
   an account. Enforce uniqueness of a user per passport. No anonymous participants
   or individual secret-link accounts.
-- [ ] Add `PassportVisit` for manually asserted visits: participant, airfield,
+- [x] Add `PassportVisit` for manually asserted visits: participant, airfield,
   visit date, optional note, optional flight reference, evidence kind (manual or
-  confirmed GPS suggestion), timestamps and author. Allow multiple visit events;
-  calculate one earned stamp from the earliest eligible evidence. Add explicit
+  confirmed GPS suggestion), timestamps and author. Allow multiple visit events
+  to support the earliest-eligible-stamp calculation in 41c. Add explicit
   per-participant flight-arrival exclusions so a pilot can reject an inferred
   stamp without altering their flight record or another crew member's passport.
-- [ ] Attach optional stamp photos to the participant/target, independently of the
+- [x] Attach optional stamp photos to the participant/target, independently of the
   earliest-flight choice. Store uploader and explicit public-photo consent;
   changing which flight earns the stamp must not silently discard the photograph.
-- [ ] Add migrations with random revision IDs, FKs, uniqueness/check constraints
+- [x] Add migrations with random revision IDs, FKs, uniqueness/check constraints
   and indexes for ownership, participant/date and airfield lookups. Define deletion
   behaviour: deleting a passport removes its own records/files, never flights;
   deleting a flight nulls optional evidence links and removes its automatic credit;
-  deleting a user removes private participation data and membership. Owner deletion removes owned passports unless ownership
-  was explicitly transferred first. Shared catalogue identities survive.
+  deleting a user removes private participation data and membership. Owner deletion
+  removes owned passports unless ownership was explicitly transferred first. Shared catalogue identities survive.
+
+**Delivered foundation:** registered blueprint with protected read-only list/detail
+pages; catalogue search/filter/materialisation and explicit correction/reconciliation
+services; data models, migration, constraints and transaction-safe photo cleanup.
+Discovery and publisher-import module boundaries are reserved for 41d/41e, not
+implemented there yet. The builder, map, automatic stamp calculation and photo
+upload controls remain in 41b/41c. See [foundation notes](airfield_passports.md).
 
 ### 41b — Passport builder and management
 

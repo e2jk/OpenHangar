@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% set no_history_cache = true %}
+{% block title %}{{ _('Airfield passports') }} — OpenHangar{% endblock %}
+{% block content %}
+<div class="container py-4">
+<a href="{{ url_for('passports.index') }}">{{ _('Airfield passports') }}</a>
+<h1>{{ passport.title }}</h1>
+{% if passport.archived_at %}<span class="badge bg-secondary">{{ _('Archived') }}</span>{% endif %}
+{% if passport.description %}<p>{{ passport.description }}</p>{% endif %}
+{% if passport.start_date %}<dl><dt>{{ _('From') }}</dt><dd>{{ passport.start_date }}</dd></dl>{% endif %}
+{% if passport.end_date %}<dl><dt>{{ _('Until') }}</dt><dd>{{ passport.end_date }}</dd></dl>{% endif %}
+{% if targets %}<ul>{% for target in targets %}<li>{{ target.overrides.get('name', target.name) }}{% if target.ident %} ({{ target.ident }}){% endif %}</li>{% endfor %}</ul>
+{% else %}<p>{{ _('No airfields selected yet.') }}</p>{% endif %}
+</div>
+{% endblock %}

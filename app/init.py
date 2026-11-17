@@ -870,6 +870,10 @@ def create_app() -> Flask:
 
     app.register_blueprint(auth_bp)
 
+    from passports.routes import passports_bp
+
+    app.register_blueprint(passports_bp)
+
     from aircraft.routes import aircraft_bp
 
     app.register_blueprint(aircraft_bp)
@@ -1069,7 +1073,12 @@ def create_app() -> Flask:
         else:
             _nav_crew_invite_count = 0
 
+        from passports.access import accessible_passports
+
+        _has_passports = bool(uid and accessible_passports().first())
+
         return {
+            "has_passports": _has_passports,
             "logged_in": bool(uid),
             "has_users": User.query.count() > 0,
             "flask_env": flask_env,
