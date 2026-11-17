@@ -72,7 +72,11 @@ def _login(page: Page, base_url: str, creds: dict) -> None:
 
 
 def _resolve_aircraft_id(page: Page, base_url: str, registration: str) -> str:
-    """Return the DB ID for an aircraft with the given registration."""
+    """Return the URL segment of the aircraft with the given registration,
+    as linked from /aircraft/: its registration (``/aircraft/OO-PNH``, the
+    form the list links now use) or its numeric ID. Aircraft routes accept
+    either (AircraftRefConverter), so the result fits every
+    ``/aircraft/{aircraft_id}/…`` template."""
     page.goto(f"{base_url}/aircraft/")
     page.wait_for_load_state("networkidle")
 
@@ -80,12 +84,15 @@ def _resolve_aircraft_id(page: Page, base_url: str, registration: str) -> str:
         """(reg) => {
             const links = document.querySelectorAll('a[href^="/aircraft/"]');
             for (const link of links) {
-                const href = link.getAttribute('href');
-                if (!/^\\/aircraft\\/\\d+$/.test(href)) continue;
-                const section = link.closest('tr, .card, li, .aircraft-row')
-                                || link.parentElement;
-                if (section && section.textContent.includes(reg)) {
-                    return href.match(/\\/aircraft\\/(\\d+)$/)[1];
+                const m = link.getAttribute('href').match(/^\\/aircraft\\/([^/?#]+)$/);
+                if (!m) continue;
+                const segment = decodeURIComponent(m[1]);
+                if (/^\\d+$/.test(segment)) {
+                    const section = link.closest('tr, .card, li, .aircraft-row')
+                                    || link.parentElement;
+                    if (section && section.textContent.includes(reg)) return segment;
+                } else if (segment.toUpperCase() === reg.toUpperCase()) {
+                    return segment;
                 }
             }
             return null;
