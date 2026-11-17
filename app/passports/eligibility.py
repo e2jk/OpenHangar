@@ -8,6 +8,7 @@ on historical flights remain eligible. Date-only visits sort after timed arrival
 on the same day; no time is invented for them.
 """
 
+from dataclasses import dataclass
 from datetime import date, time
 from typing import Any
 
@@ -65,26 +66,133 @@ def participant_for(passport_id: int, user_id: int) -> PassportParticipant | Non
     return participant
 
 
-def target_fields(passport: Passport) -> list[dict[str, Any]]:
-    rows = (
+def _target_rows(passport_ids: list[int]) -> Any:
+    return (
         db.session.query(PassportAirfield, PassportAirfieldIdentity)
         .join(
             PassportAirfieldIdentity,
             PassportAirfield.airfield_id == PassportAirfieldIdentity.id,
         )
-        .filter(PassportAirfield.passport_id == passport.id)
+        .filter(PassportAirfield.passport_id.in_(passport_ids))
         .order_by(PassportAirfield.display_order, PassportAirfield.id)
         .all()
     )
+
+
+def _field(
+    target: PassportAirfield, identity: PassportAirfieldIdentity
+) -> dict[str, Any]:
+    return {
+        **effective_airfield(identity),
+        "id": identity.id,
+        "key": str(identity.id),
+        "target_id": target.id,
+    }
+
+
+def target_fields(passport: Passport) -> list[dict[str, Any]]:
     return [
-        {
-            **effective_airfield(field),
-            "id": field.id,
-            "key": str(field.id),
-            "target_id": target.id,
-        }
-        for target, field in rows
+        _field(target, identity) for target, identity in _target_rows([passport.id])
     ]
+
+
+def _aliases(tenant_id: int) -> list[PassportAirfieldAlias]:
+    return (
+        db.session.query(PassportAirfieldAlias)
+        .join(PassportAirfieldIdentity)
+        .filter(PassportAirfieldIdentity.tenant_id == tenant_id)
+        .all()
+    )
+
+
+def _flights(user_id: int) -> list[Flight]:
+    flights: list[Flight] = (
+        Flight.query.options(selectinload(Flight.aircraft))  # type: ignore[arg-type]
+        .filter(
+            db.or_(
+                Flight.pic_user_id == user_id, Flight.second_crew_user_id == user_id
+            ),
+            Flight.date <= date.today(),
+        )
+        .all()
+    )
+
+    return flights
+
+
+@dataclass
+class EvidenceSnapshot:
+    """Request-local, explicit viewer scope; never stored or shared between requests."""
+
+    tenant_id: int
+    user_id: int
+    aliases: list[PassportAirfieldAlias]
+    flights: list[Flight]
+    exclusions: dict[int, set[int]]
+    visits: dict[int, list[tuple[PassportVisit, int]]]
+
+
+def progress_many(passports: list[Passport], user_id: int) -> dict[int, dict[str, Any]]:
+    """Batch evidence across editions, including empty/nonparticipating passports.
+
+    Only the supplied passports are evaluated; a series relationship is never
+    permission to read a linked passport or to give a nonparticipant a stamp.
+    Callers supply their access-checked collection.
+    """
+    if not passports:
+        return {}
+    tenant_id = passports[0].tenant_id
+    if any(passport.tenant_id != tenant_id for passport in passports):
+        raise ValueError("A passport snapshot must belong to one tenant")
+    ids = [passport.id for passport in passports]
+    participants = {
+        participant.passport_id: participant
+        for participant in PassportParticipant.query.filter(
+            PassportParticipant.passport_id.in_(ids),
+            PassportParticipant.user_id == user_id,
+            PassportParticipant.is_active.is_(True),
+            PassportParticipant.accepted_at.is_not(None),
+        ).all()
+    }
+    participant_ids = [participant.id for participant in participants.values()]
+    snapshot = EvidenceSnapshot(
+        tenant_id,
+        user_id,
+        _aliases(tenant_id),
+        _flights(user_id) if participant_ids else [],
+        {},
+        {},
+    )
+    for exclusion in PassportArrivalExclusion.query.filter(
+        PassportArrivalExclusion.participant_id.in_(participant_ids)
+    ).all():
+        snapshot.exclusions.setdefault(exclusion.participant_id, set()).add(
+            exclusion.flight_id
+        )
+    for visit, airfield_id in (
+        db.session.query(PassportVisit, PassportAirfield.airfield_id)
+        .join(PassportAirfield, PassportVisit.target_id == PassportAirfield.id)
+        .filter(PassportVisit.participant_id.in_(participant_ids))
+        .all()
+    ):
+        snapshot.visits.setdefault(visit.participant_id, []).append(
+            (visit, airfield_id)
+        )
+    fields: dict[int, list[dict[str, Any]]] = {pid: [] for pid in ids}
+    for target, identity in _target_rows(ids):
+        fields[target.passport_id].append(_field(target, identity))
+    return {
+        passport.id: evaluate(
+            tenant_id,
+            user_id,
+            fields[passport.id],
+            passport.start_date,
+            passport.end_date,
+            participants.get(passport.id),
+            snapshot=snapshot,
+        )
+        for passport in passports
+    }
 
 
 def evaluate(
@@ -96,6 +204,7 @@ def evaluate(
     participant: PassportParticipant | None,
     *,
     preview: bool = False,
+    snapshot: EvidenceSnapshot | None = None,
 ) -> dict[str, Any]:
     """A fixed query count regardless of targets/flights; only the viewer's evidence.
 
@@ -106,12 +215,12 @@ def evaluate(
     """
     fields_by_id = {f["id"]: f for f in fields if f.get("id")}
     codes: dict[str, list[tuple[str, date | None, date | None]]] = {}
-    aliases = (
-        db.session.query(PassportAirfieldAlias)
-        .join(PassportAirfieldIdentity)
-        .filter(PassportAirfieldIdentity.tenant_id == tenant_id)
-        .all()
-    )
+    if snapshot is not None and (snapshot.tenant_id, snapshot.user_id) != (
+        tenant_id,
+        user_id,
+    ):
+        raise ValueError("Passport evidence snapshot scope mismatch")
+    aliases = snapshot.aliases if snapshot is not None else _aliases(tenant_id)
     for alias in aliases:
         key = (
             fields_by_id[alias.airfield_id]["key"]
@@ -132,30 +241,21 @@ def evaluate(
                     (field["key"], None, None)
                 )
     evidence: dict[str, list[dict[str, Any]]] = {f["key"]: [] for f in fields}
-    excluded = (
-        {
-            e.flight_id
-            for e in PassportArrivalExclusion.query.filter_by(
-                participant_id=participant.id
-            ).all()
-        }
-        if participant
-        else set()
-    )
+    excluded: set[int] = set()
+    if participant:
+        excluded = (
+            snapshot.exclusions.get(participant.id, set())
+            if snapshot is not None
+            else {
+                e.flight_id
+                for e in PassportArrivalExclusion.query.filter_by(
+                    participant_id=participant.id
+                ).all()
+            }
+        )
     flights: list[Flight] = []
     if participant is not None or preview:
-        flights = (
-            Flight.query.options(
-                selectinload(Flight.aircraft)  # type: ignore[arg-type]
-            )
-            .filter(
-                db.or_(
-                    Flight.pic_user_id == user_id, Flight.second_crew_user_id == user_id
-                ),
-                Flight.date <= date.today(),
-            )
-            .all()
-        )
+        flights = snapshot.flights if snapshot is not None else _flights(user_id)
         for flight in flights:
             if not eligible_flight(flight) or not _in_range(flight.date, start, end):
                 continue
@@ -191,10 +291,14 @@ def evaluate(
     own_flight_ids = {flight.id for flight in flights}
     if participant:
         visits = (
-            db.session.query(PassportVisit, PassportAirfield.airfield_id)
-            .join(PassportAirfield, PassportVisit.target_id == PassportAirfield.id)
-            .filter(PassportVisit.participant_id == participant.id)
-            .all()
+            snapshot.visits.get(participant.id, [])
+            if snapshot is not None
+            else (
+                db.session.query(PassportVisit, PassportAirfield.airfield_id)
+                .join(PassportAirfield, PassportVisit.target_id == PassportAirfield.id)
+                .filter(PassportVisit.participant_id == participant.id)
+                .all()
+            )
         )
         for visit, airfield_id in visits:
             if airfield_id not in fields_by_id:

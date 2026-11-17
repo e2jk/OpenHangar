@@ -2447,7 +2447,7 @@ downgrades and show localised retrieval timestamps.
 
 ### 41g — Group passports and invitation-based accounts
 
-- [ ] Before enabling large group collections, batch list-page eligibility across
+- [x] Before enabling large group collections, batch list-page eligibility across
   passports: load the viewer's logbook once per request and reuse the snapshot,
   then batch participant/target evidence as appropriate. Add query-count tests
   proving logbook reads do not grow with the number of passports. Preserve the

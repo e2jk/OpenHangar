@@ -203,7 +203,7 @@ msgstr "Stel voor het reservefonds een bijdrage per uur óf per maand in, niet b
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Dit GPS-bestand bevat te veel punten om te importeren (meer dan %(n)s). Splits de opname op in meerdere bestanden."
 
-#: app/aircraft/routes.py:555 app/passports/routes.py:572
+#: app/aircraft/routes.py:555 app/passports/routes.py:569
 msgid "cruise speed"
 msgstr "kruissnelheid"
 
@@ -2130,7 +2130,7 @@ msgstr "Onbekende actie in de paspoortsamensteller."
 msgid "Enter a valid %(label)s."
 msgstr "Voer een geldige waarde in voor %(label)s."
 
-#: app/passports/discovery.py:55 app/passports/discovery.py:80
+#: app/passports/discovery.py:55 app/passports/discovery.py:81
 msgid "Choose an unambiguous airfield code or a saved field reference."
 msgstr "Kies een eenduidige vliegveldcode of een opgeslagen veldreferentie."
 
@@ -2242,75 +2242,75 @@ msgstr "Voer een paspoortnaam in."
 msgid "The passport end date must not precede its start date."
 msgstr "De einddatum van het paspoort mag niet vóór de begindatum liggen."
 
-#: app/passports/routes.py:153
+#: app/passports/routes.py:150
 msgid "Small airfields"
 msgstr "Kleine vliegvelden"
 
-#: app/passports/routes.py:154
+#: app/passports/routes.py:151
 msgid "Medium airports"
 msgstr "Middelgrote luchthavens"
 
-#: app/passports/routes.py:155
+#: app/passports/routes.py:152
 msgid "Large airports"
 msgstr "Grote luchthavens"
 
-#: app/passports/routes.py:156
+#: app/passports/routes.py:153
 msgid "Heliports"
 msgstr "Helihavens"
 
-#: app/passports/routes.py:157
+#: app/passports/routes.py:154
 msgid "Seaplane bases"
 msgstr "Watervliegbases"
 
-#: app/passports/routes.py:158
+#: app/passports/routes.py:155
 msgid "Balloon ports"
 msgstr "Ballonhavens"
 
-#: app/passports/routes.py:159
+#: app/passports/routes.py:156
 msgid "Closed airfields"
 msgstr "Gesloten vliegvelden"
 
-#: app/passports/routes.py:268
+#: app/passports/routes.py:265
 msgid "Passport saved."
 msgstr "Paspoort opgeslagen."
 
-#: app/passports/routes.py:309
+#: app/passports/routes.py:306
 msgid "An airfield code conflicts with an existing identity. Review or remove that selection."
 msgstr "Een vliegveldcode conflicteert met een bestaande identiteit. Controleer of verwijder die selectie."
 
-#: app/passports/routes.py:372
+#: app/passports/routes.py:369
 msgid "Passport deleted."
 msgstr "Paspoort verwijderd."
 
-#: app/passports/routes.py:545
+#: app/passports/routes.py:542
 msgid "Choose a starting airfield from the search results."
 msgstr "Kies een vertrekveld uit de zoekresultaten."
 
-#: app/passports/routes.py:548
+#: app/passports/routes.py:545
 msgid "This starting airfield has no coordinates. Choose another."
 msgstr "Dit vertrekveld heeft geen coördinaten. Kies een ander veld."
 
-#: app/passports/routes.py:573
+#: app/passports/routes.py:570
 msgid "distance/time limit"
 msgstr "afstands-/tijdslimiet"
 
-#: app/passports/routes.py:574
+#: app/passports/routes.py:571
 msgid "usable fuel"
 msgstr "bruikbare brandstof"
 
-#: app/passports/routes.py:575
+#: app/passports/routes.py:572
 msgid "fuel flow"
 msgstr "brandstofverbruik"
 
-#: app/passports/routes.py:576
+#: app/passports/routes.py:573
 msgid "reserve minutes"
 msgstr "reserve in minuten"
 
-#: app/passports/routes.py:588
+#: app/passports/routes.py:585
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Voer een kruissnelheid in voor de tijdsmodus of gebruik de afstandsmodus."
 
-#: app/passports/routes.py:597
+#: app/passports/routes.py:594
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "Het theoretische bereik is onbekend. Voer bruikbare brandstof, verbruik, snelheid en een expliciete reserve in die positieve vliegtijd overlaten. Het afstands-/tijdfilter blijft van toepassing."
 
@@ -13780,3 +13780,4 @@ msgstr "Eigenaren en beheerders hebben altijd volledige toegang tot de vloot —
 #: app/users/routes.py:548
 msgid "Permissions updated."
 msgstr "Machtigingen bijgewerkt."
+
