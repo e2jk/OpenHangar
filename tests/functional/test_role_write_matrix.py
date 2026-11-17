@@ -287,6 +287,7 @@ _EXCLUDED_ENDPOINTS = {
     "passports.next_edition": "passport-owner scoped; creation capability and draft ownership covered by edition tests",
     "passports.edit_passport": "passport-owner scoped, independent of tenant role; covered by passport builder tests",
     "passports.archive_passport": "passport-owner scoped, independent of tenant role; covered by passport builder tests",
+    "passports.voucher_ledger": "participant-owned private redemptions, owner-only allocations; covered by voucher privacy and PostgreSQL race tests",
     "passports.target_detail": "participant-owned evidence; covered by passport stamp privacy tests",
     "passports.delete_passport": "passport-owner scoped, independent of tenant role; covered by passport builder tests",
     "auth.login": "pre-auth, no tenant role exists yet",

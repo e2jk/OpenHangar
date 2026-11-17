@@ -3,7 +3,7 @@
 {% block title %}{{ _('Airfield passports') }} — OpenHangar{% endblock %}
 {% block content %}
 <div class="container py-4"><h1 class="page-title">{{ passport.title }}</h1>
-{% if deleting %}<p>{{ _('Delete this passport and its visits and stamp photos? Your flights will be kept.') }}</p>{% elif passport.archived_at %}<p>{{ _('Reopen this passport for editing?') }}</p>{% else %}<p>{{ _('Archive this passport? You can still view it and reopen it later.') }}</p>{% endif %}
+{% if deleting %}<p>{{ _('Delete this passport and its visits, stamp photos and voucher records? Your flights will be kept.') }}</p>{% elif passport.archived_at %}<p>{{ _('Reopen this passport for editing?') }}</p>{% else %}<p>{{ _('Archive this passport? You can still view it and reopen it later.') }}</p>{% endif %}
 <form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="confirm" value="yes"><input type="hidden" name="operation" value="{{ 'reopen' if passport.archived_at else 'archive' }}">
 <a class="btn btn-ac-ghost" href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ _('Cancel') }}</a><button class="btn {{ 'btn-danger' if deleting else 'btn-ac-primary' }}">{{ _('Delete passport') if deleting else (_('Reopen passport') if passport.archived_at else _('Archive passport')) }}</button></form></div>
 {% endblock %}

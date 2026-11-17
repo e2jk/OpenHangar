@@ -411,3 +411,94 @@ def test_linked_editions_copy_combined_map_and_no_js(
         page.get_by_role("button", name="Delete passport", exact=True).click()
         page.wait_for_url(live_server_url + "/passports/")
     assert not errors, errors
+
+
+def test_individual_vouchers_stay_separate_from_stamps_and_work_without_js(
+    passport_page: Page, live_server_url: str
+) -> None:
+    page = passport_page
+    errors: list[str] = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    title = "Own voucher " + uuid4().hex[:8]
+    destination = "Voucher field " + uuid4().hex[:8]
+    page.goto(live_server_url + "/passports/new")
+    page.locator("#passport-title").fill(title)
+    page.get_by_text("Add a missing airfield", exact=True).click()
+    page.locator("#custom-name").fill(destination)
+    page.locator("#custom-latitude").fill("50.4")
+    page.locator("#custom-longitude").fill("4.7")
+    page.get_by_role("button", name="Add custom airfield", exact=True).click()
+    expect(page.locator("#passport-builder table")).to_contain_text(destination)
+    page.get_by_role("button", name="Review passport", exact=True).click()
+    page.get_by_role("button", name="Save passport", exact=True).click()
+    page.wait_for_url(re.compile(r"/passports/\d+/$"))
+    passport_url = page.url
+    page.get_by_role("link", name="Vouchers", exact=True).click()
+    expect(page.get_by_role("heading", name="Vouchers", exact=True)).to_be_visible()
+    page.wait_for_url(re.compile(r"/passports/\d+/vouchers$"))
+    voucher_url = page.url
+    page.locator("#voucher-default-quantity").fill("1")
+    page.get_by_role("button", name="Set individual allowances", exact=True).click()
+    expect(
+        page.get_by_text("Each participant has one voucher per airfield.", exact=False)
+    ).to_be_visible()
+    page.locator("#voucher-date").fill("2025-01-01")
+    page.locator("#voucher-saving").fill("12.00")
+    page.locator("#voucher-currency").fill("EUR")
+    page.locator("#voucher-note").fill("Own voucher use")
+    page.get_by_role("button", name="Save voucher use", exact=True).click()
+    expect(page.get_by_text("Own voucher use", exact=True)).to_be_visible()
+    page.get_by_role("link", name=title, exact=True).click()
+    expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()
+    expect(page.locator("table tbody")).to_contain_text("Not visited")
+    page.get_by_role("link", name="Vouchers", exact=True).click()
+    expect(page.get_by_role("heading", name="Vouchers", exact=True)).to_be_visible()
+    page.get_by_role("link", name="Correct voucher use", exact=True).click()
+    expect(
+        page.get_by_role("button", name="Save correction", exact=True)
+    ).to_be_visible()
+    page.locator("#voucher-saving").fill("15.50")
+    page.locator("#voucher-note").fill("Corrected own voucher")
+    page.get_by_role("button", name="Save correction", exact=True).click()
+    expect(page.get_by_text("Corrected own voucher", exact=True)).to_be_visible()
+    page.get_by_role("button", name="Undo voucher use", exact=True).click()
+    expect(
+        page.get_by_role("button", name="Undo voucher use", exact=True)
+    ).to_have_count(0)
+    page.get_by_role("link", name=title, exact=True).click()
+    expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()
+    page.locator("table tbody a").first.click()
+    page.locator("#visit-date").fill("2025-03-01")
+    page.locator("#visit-note").fill("Visit without voucher use")
+    page.get_by_role("button", name="Save visit", exact=True).click()
+    expect(page.get_by_text("Visit without voucher use", exact=True)).to_be_visible()
+    page.get_by_role("link", name=title, exact=True).click()
+    expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()
+    page.get_by_role("link", name="Vouchers", exact=True).click()
+    expect(page.get_by_role("heading", name="Vouchers", exact=True)).to_be_visible()
+    expect(page.locator("table").first.locator("tbody tr td").nth(3)).to_have_text("1")
+    page.set_viewport_size({"width": 390, "height": 844})
+    assert page.evaluate(
+        "document.documentElement.scrollWidth <= window.innerWidth + 1"
+    )
+    browser = page.context.browser
+    assert browser is not None
+    context = browser.new_context(java_script_enabled=False, service_workers="block")
+    context.add_cookies(page.context.cookies())
+    try:
+        plain = context.new_page()
+        plain.goto(voucher_url)
+        plain.locator("#voucher-date").fill("2025-02-01")
+        plain.locator("#voucher-note").fill("No-JS personal voucher")
+        plain.get_by_role("button", name="Save voucher use", exact=True).click()
+        expect(plain.get_by_text("No-JS personal voucher", exact=True)).to_be_visible()
+        expect(plain.locator("table").first.locator("tbody tr td").nth(3)).to_have_text(
+            "0"
+        )
+    finally:
+        context.close()
+    page.goto(passport_url)
+    page.get_by_role("link", name="Delete passport", exact=True).click()
+    page.get_by_role("button", name="Delete passport", exact=True).click()
+    page.wait_for_url(live_server_url + "/passports/")
+    assert not errors, errors

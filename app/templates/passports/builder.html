@@ -12,6 +12,7 @@
     <input type="hidden" name="revision" value="{{ draft.revision }}">
     <section class="ac-form-card p-3 mb-3">
       <h2 class="h5">{{ _('Passport details') }}</h2>
+      {% if state.get('edition_copy') %}<input type="hidden" name="edition_copy_options" value="yes"><label class="form-check mb-3"><input class="form-check-input" type="checkbox" name="copy_allocations" value="yes" {{ 'checked' if state.edition_copy.get('copy_allocations') }}><span class="form-check-label">{{ _('Copy voucher quantities and personal/shared allocation settings. Validity will follow the new edition dates; redeemed vouchers and participants are never copied.') }}</span></label>{% endif %}
       <label class="form-label" for="passport-title">{{ _('Name') }}</label>
       <input class="form-control mb-2" id="passport-title" name="title" maxlength="128" value="{{ state.metadata.title }}">
       <label class="form-label" for="passport-description">{{ _('Description') }}</label>

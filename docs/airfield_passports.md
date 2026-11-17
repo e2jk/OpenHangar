@@ -313,7 +313,7 @@ Existing manual visit evidence remains solely in the original passport; the new
 personal edition evaluates its owner's logbook independently within its new dates.
 
 These first series views are owner-only and contain only the viewer's evidence.
-Series membership, consented group history and voucher accounting are subsequent
+Series membership and consented group history are subsequent
 41f increments; group invitations and account registration follow in 41g. A series
 relationship does not grant access to any other pilot's personal passport.
 
@@ -322,3 +322,48 @@ targets, exclusions and manual visits. Evidence snapshots are request-local and
 explicitly bound to one tenant and viewer; no cross-request cache of flight data
 is created. Other organisations' own crew-slot flights retain the personal-logbook
 policy described above; administering an aircraft never grants a stamp.
+
+## Each person's vouchers
+
+Open **Vouchers** on a passport to track booklet use separately from visits. For
+Landegutscheinheft, each person has their own voucher at each airfield: using
+yours never reduces a friend's allowance. The owner sets **Vouchers per person
+and airfield** (normally one). Each accepted participant gets an independent
+allowance; new friends receive theirs when they accept that edition. Membership
+of a series or reading an older map alone never grants historical vouchers.
+
+Existing quantities and recorded uses stay intact when the default changes.
+Use an individual override for a different quantity at a particular airfield.
+Optional validity overrides must fall within the edition dates. The remaining
+quantity is the allocation minus its active redemption events, not a count of
+landings. A landing earns a stamp without spending a voucher; recording voucher
+use earns no stamp. Record the actual date and quantity, with an optional own
+supporting flight, private note and actual **total** saving for that use. Savings
+are added separately by currency, without estimating fees or exchange rates.
+
+**Correct voucher use** keeps the original as corrected and records the replacement;
+**Undo voucher use** restores its quantity while retaining history. Duplicate
+submissions cannot spend the same form twice. Row locks prevent two sessions
+from overspending the same person's allowance. Two different friends can each
+spend their own final voucher independently. Expired allowances still permit
+recording an actual past use within their validity; archived editions must be
+reopened before editing.
+
+The advanced **Individual overrides and shared booklets** section also supports
+an explicitly shared physical booklet. This is optional and is not the normal
+friends-group setup. Only that deliberately shared pool has one combined balance.
+Neither group ownership nor sharing a pool exposes another participant's notes,
+supporting flights, individual uses or savings. On removal of a participant or
+account, private financial details are cleared; spent units in an optional shared
+pool remain consumed instead of becoming available again.
+
+Copying allowances into a new edition is an explicit choice in **Create next
+edition**, which can also be changed in the builder. Review the new dates,
+common personal allowance and individual exceptions. Fresh quantities inherit
+the new dates; old uses, participants and invitation links are not copied.
+Unchanged common allowances are established only when a friend accepts the new
+edition. Up to 5,000 individual/shared exceptions can be reviewed in a copy.
+Removing targets with voucher records is refused; archive the old edition, or
+remove unused allocations before removing their targets. Date changes cannot
+invalidate saved voucher validity or redemption history. None of this changes
+the underlying flight logbook.

@@ -39,6 +39,7 @@ from passports import (
     lifecycle,  # Register transaction-safe file cleanup.
     passports_bp,
     series_routes,  # Register linked-edition views.
+    voucher_routes,  # Register private voucher accounting.
 )
 from passports.access import accessible_passports, require_passport
 from passports.catalogue import AirfieldConflict, catalogue_choices
@@ -59,7 +60,7 @@ from passports.management import (
     set_archived,
 )
 
-__all__ = ["lifecycle", "passports_bp", "series_routes"]
+__all__ = ["lifecycle", "passports_bp", "series_routes", "voucher_routes"]
 
 
 @passports_bp.route("/")

@@ -4132,6 +4132,7 @@ class Passport(db.Model):
     __tablename__ = "passports"
     __table_args__ = (
         db.CheckConstraint("series_display_order >= 0"),
+        db.CheckConstraint("default_voucher_quantity BETWEEN 0 AND 100000"),
         db.CheckConstraint(
             "start_date IS NULL OR end_date IS NULL OR start_date <= end_date"
         ),
@@ -4164,6 +4165,9 @@ class Passport(db.Model):
         index=True,
     )
     series_display_order = db.Column(
+        db.Integer, nullable=False, default=0, server_default="0"
+    )
+    default_voucher_quantity = db.Column(
         db.Integer, nullable=False, default=0, server_default="0"
     )
     title = db.Column(db.String(128), nullable=False)
@@ -4313,6 +4317,125 @@ class PassportVisit(db.Model):
         nullable=False,
         default=lambda: datetime.now(UTC),
         onupdate=lambda: datetime.now(UTC),
+    )
+
+
+class PassportVoucherAllocation(db.Model):
+    """One personal entitlement or explicitly shared pool for a target."""
+
+    __tablename__ = "passport_voucher_allocations"
+    __table_args__ = (
+        db.UniqueConstraint("passport_id", "id"),
+        db.UniqueConstraint("passport_id", "target_id", "personal_user_id"),
+        db.ForeignKeyConstraint(
+            ["passport_id", "target_id"],
+            ["passport_airfields.passport_id", "passport_airfields.id"],
+            ondelete="CASCADE",
+        ),
+        db.CheckConstraint("quantity BETWEEN 0 AND 100000"),
+        db.CheckConstraint(
+            "valid_from IS NULL OR valid_until IS NULL OR valid_from <= valid_until"
+        ),
+        db.Index(
+            "uq_passport_voucher_shared",
+            "passport_id",
+            "target_id",
+            unique=True,
+            postgresql_where=db.text("personal_user_id IS NULL"),
+            sqlite_where=db.text("personal_user_id IS NULL"),
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    passport_id = db.Column(
+        db.Integer,
+        db.ForeignKey("passports.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    target_id = db.Column(db.Integer, nullable=False, index=True)
+    personal_user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    quantity = db.Column(db.Integer, nullable=False)
+    valid_from = db.Column(db.Date, nullable=True)
+    valid_until = db.Column(db.Date, nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+
+
+class PassportVoucherRedemption(db.Model):
+    """Explicit use, independent of stamps. Corrections void rather than erase."""
+
+    __tablename__ = "passport_voucher_redemptions"
+    # Let identity SET NULL actions run before validating composite scope.
+    __table_args__ = (
+        db.UniqueConstraint("passport_id", "id"),
+        db.ForeignKeyConstraint(
+            ["passport_id", "replaces_id"],
+            [
+                "passport_voucher_redemptions.passport_id",
+                "passport_voucher_redemptions.id",
+            ],
+            ondelete="NO ACTION",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        db.ForeignKeyConstraint(
+            ["passport_id", "allocation_id"],
+            [
+                "passport_voucher_allocations.passport_id",
+                "passport_voucher_allocations.id",
+            ],
+            ondelete="CASCADE",
+        ),
+        db.ForeignKeyConstraint(
+            ["passport_id", "participant_id"],
+            ["passport_participants.passport_id", "passport_participants.id"],
+            ondelete="NO ACTION",
+            deferrable=True,
+            initially="DEFERRED",
+        ),
+        db.CheckConstraint("quantity BETWEEN 1 AND 100000"),
+        db.CheckConstraint("saving_amount IS NULL OR saving_amount >= 0"),
+        db.CheckConstraint("(saving_amount IS NULL) = (currency IS NULL)"),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    passport_id = db.Column(db.Integer, nullable=False, index=True)
+    allocation_id = db.Column(db.Integer, nullable=False, index=True)
+    # Preserve consumed shared vouchers when a participant/account is removed.
+    participant_id = db.Column(
+        db.Integer,
+        db.ForeignKey("passport_participants.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    redemption_date = db.Column(db.Date, nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    flight_id = db.Column(
+        db.Integer,
+        db.ForeignKey("flights.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    saving_amount = db.Column(db.Numeric(12, 2), nullable=True)
+    currency = db.Column(db.String(3), nullable=True)
+    note = db.Column(db.Text, nullable=True)
+    request_key = db.Column(db.String(32), nullable=False, unique=True)
+    replaces_id = db.Column(
+        db.Integer,
+        db.ForeignKey("passport_voucher_redemptions.id", ondelete="SET NULL"),
+        nullable=True,
+        unique=True,
+    )
+    voided_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )
 
 
