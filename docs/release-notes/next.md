@@ -20,5 +20,6 @@ Passports are personal for now. Group passports shared with friends (with or wit
 - Airfield passports are planned in stages in the implementation plan, as the next phase; the later phases were renumbered. A stretch goal for a passport-only instance, possibly run by a voucher publisher, was added to the roadmap.
 - Airfields in a passport keep a stable identity, so renamed or reused airfield codes and manual corrections don't move stamps to another field. Fixed a lookup of those codes that failed on PostgreSQL.
 - Imports from the web only reach public addresses and refuse anything that could reach the server's own network. Downloads are limited in time and size, and at most two run at once.
+- HTTPS list imports explicitly require TLS 1.2 or newer.
 - Browser tests use Playwright 1.65.2, which no longer depends on pyee, so pyee is gone from the test requirements (its updates kept clashing with Playwright's version limits). The CI cache of the test browser now follows the Playwright version, instead of downloading the browser again on every run.
 - Corrected the agent guide's examples for passing data from templates to JavaScript.

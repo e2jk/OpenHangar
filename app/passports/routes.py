@@ -136,7 +136,7 @@ def _owner(passport_id: int, *, archived_ok: bool = False) -> Passport:
     try:
         return owned_passport(tenant_id, user_id, passport_id, archived_ok=archived_ok)
     except BuilderError as exc:
-        abort(exc.status, description=str(exc))
+        return abort(exc.status, description=str(exc))
 
 
 def _render_builder(
@@ -466,7 +466,7 @@ def target_detail(passport_id: int, target_id: int) -> ResponseReturnValue:
         evidence.writable_participant(passport, session["user_id"])
         can_record = True
     except BuilderError:
-        pass
+        can_record = False
     return _builder_response(
         render_template(
             "passports/target.html",

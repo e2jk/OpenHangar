@@ -218,9 +218,9 @@ class PinnedConnection(http.client.HTTPConnection):
         # socket after HTTPConnection closes its reference, including during TLS.
         self.abort_socket = self.sock.dup()
         if self.target.secure:
-            self.sock = ssl.create_default_context().wrap_socket(
-                self.sock, server_hostname=self.host
-            )
+            context = ssl.create_default_context()
+            context.minimum_version = ssl.TLSVersion.TLSv1_2
+            self.sock = context.wrap_socket(self.sock, server_hostname=self.host)
 
     def abort(self) -> None:
         transport = self.abort_socket or self.sock
