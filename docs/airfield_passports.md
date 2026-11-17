@@ -1,7 +1,7 @@
-# Airfield passports: data foundation
+# Airfield passports
 
-Phase 41a provides the data foundation and read-only pages. Passport creation,
-editing, maps, stamps and invitations are delivered by later increments in
+Phases 41a/41b provide the data foundation, owner-only builder and airfield
+selection map. Visit/stamp maps and invitations follow in later increments of
 [Phase 41](implementation_plan.md#phase-41--airfield-passports).
 
 ## Read access
@@ -14,6 +14,40 @@ someone else's passport. Pending/inactive membership grants no access.
 
 Both pages opt out of HTMX history and service-worker caching. No passport-only
 registration or broader account-permission changes are enabled by this increment.
+
+## Build and manage a passport
+
+Choose **Airfield passports → Create passport**, enter a name and optional dates,
+then search by countries, regions, airfield types, code or name. Tick results and
+apply them, or add all matches (up to 5,000 targets). The first 500 matches are
+listed; narrow the search to inspect more. Paste codes separated by spaces,
+commas, semicolons or new lines. Unknown/ambiguous codes must be corrected or
+explicitly dropped before saving. Missing fields can be entered manually, with
+optional coordinates; coordinate-less fields remain in the list.
+
+Military and ULM filters preserve an explicit unknown state. Manual classification
+is saved with author/time provenance and shared across passports in this tenant;
+it is not copied into the source dataset. The builder's blue markers are selected
+fields and grey markers are unselected search results. The lists and forms also
+work without JavaScript.
+
+**Review passport** shows the selected list/map and how date/target changes affect
+your own completion. It never reads other members' private flights. Removing a
+target with saved visit/photo evidence needs explicit acknowledgement before those
+passport records are removed. Your flight logbook remains independent. Save is
+atomic and refuses an outdated passport, changed review or stale draft revision.
+
+Owners can edit a passport, archive it to keep it read-only, reopen it, or delete
+it through a confirmation page. Membership/admin status does not grant ownership.
+View-only users cannot mutate passports. A newly created personal passport includes
+its owner as an accepted participant.
+
+Draft selections are stored in `passport_drafts`, bound to the user/tenant and
+optional edited passport; cookies do not hold selection lists. Drafts expire after
+two hours, with at most ten per user/tenant, 5,000 targets and a 2 MB JSON payload.
+Starting a builder prunes expired/old drafts. Final save consumes the draft so a
+replayed submission cannot create a duplicate passport. Cancelling leaves only
+an expiring draft, not a partially created passport or selected airfield records.
 
 ## Airfield identity
 

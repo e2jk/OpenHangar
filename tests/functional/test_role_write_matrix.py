@@ -88,6 +88,7 @@ _ANY_ROLE = set(ALL_ROLES)  # login_required only, no role gate
 # entry is identical.
 
 ENDPOINT_TABLE: dict[str, set[str]] = {
+    "passports.new_passport": _PILOT_ACCESS_ROLES,
     # aircraft_bp
     "aircraft.new_aircraft": _OWNER_ROLES,
     "aircraft.edit_aircraft": _OWNER_ROLES,
@@ -282,6 +283,9 @@ _EXCLUDED_ENDPOINTS = {
         "require_instance_admin, not a tenant role"
     ),
     # Pre-auth / token-based flows: no tenant role exists yet at request time.
+    "passports.edit_passport": "passport-owner scoped, independent of tenant role; covered by passport builder tests",
+    "passports.archive_passport": "passport-owner scoped, independent of tenant role; covered by passport builder tests",
+    "passports.delete_passport": "passport-owner scoped, independent of tenant role; covered by passport builder tests",
     "auth.login": "pre-auth, no tenant role exists yet",
     "auth.setup": "pre-auth first-run tenant creation",
     "auth.reset_password": "token-based pre-auth password reset",

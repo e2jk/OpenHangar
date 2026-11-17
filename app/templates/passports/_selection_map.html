@@ -1,0 +1,3 @@
+<div id="passport-selection-map" class="border rounded passport-selection-map" aria-label="{{ _('Selected airfields map') }}" role="region"></div>
+<p class="form-text">{{ _('Blue markers are selected; grey markers are search results. The list remains available without JavaScript.') }}</p>
+<div id="passport-map-data" data-map="{{ {'fields': map_fields, 'selected': state.selected}|tojson|forceescape }}" hidden></div>

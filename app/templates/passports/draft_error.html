@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% set no_history_cache = true %}
+{% block title %}{{ _('Airfield passports') }} — OpenHangar{% endblock %}
+{% block content %}
+<div class="container py-4"><h1>{{ _('Build an airfield passport') }}</h1>
+<div class="alert alert-warning" role="alert">{{ message }}</div>
+<a class="btn btn-ac-primary" href="{{ restart_url }}">{{ _('Start again') }}</a></div>
+{% endblock %}

@@ -72,7 +72,7 @@ The navbar provides access to:
 | **Log a flight** | Unified flight entry that fills the aircraft and pilot logbooks in one step |
 | **Maintenance** | Fleet-wide maintenance overview and per-aircraft triggers |
 | **Pilot** | Personal logbook, pilot profile & documents, logbook import |
-| **Airfield passports** | Read-only access to passports you own or have accepted membership in; creation and visit maps are planned in later increments |
+| **Airfield passports** | Build and manage personal airfield collections with a selection map; view passports you own or have accepted membership in |
 | **Configuration** | Users & permissions, notifications, backups, email, tenants *(administrators)* |
 
 The per-aircraft booking calendar (**Reservations**) is reached from the
@@ -177,6 +177,21 @@ Every import is recorded on the **Pilot → Import history** page.  If you impor
 ![Pilot logbook import history](screenshots/pilot_logbook_import_history.png)
 
 ---
+
+### Airfield passports
+
+Open **Airfield passports → Create passport**. Name the passport and optionally
+limit its dates, then choose countries/regions, search by name or code, paste
+codes, or add a missing airfield. Check the selected list and map, choose
+**Review passport**, then save. Unknown codes require correction or explicit
+removal. Military/ULM classification can remain unknown or be entered manually.
+
+Only the owner can edit, archive, reopen or delete a passport. Editing previews
+changes to your completion; removing an airfield with saved visits or stamp photos
+requires confirmation. Deleting a passport keeps your flight logbook. The builder
+supports normal forms without JavaScript and keeps its draft on the server for
+two hours. Automatic stamp/visit maps and group invitations follow in later
+increments. See [the passport guide](airfield_passports.md).
 
 ### Personal minimums
 

@@ -382,3 +382,61 @@ def test_passport_migration_round_trip(empty_schema: tuple[Flask, Engine]) -> No
         )
     _upgrade(app, "head")
     assert "passport_stamp_photos" in inspect(engine).get_table_names()
+
+
+def test_passport_builder_round_trip_on_postgres(app: Flask) -> None:
+    """Exercise draft consumption and edit fingerprints on the production DB type."""
+    import re
+
+    from models import Passport, PassportParticipant, Role, Tenant, TenantUser, User, db
+    from werkzeug.test import TestResponse
+
+    with app.app_context():
+        tenant = Tenant(name="Passport PostgreSQL club")
+        user = User(email="passport-builder@postgres.test", password_hash="unused")
+        db.session.add_all([tenant, user])
+        db.session.flush()
+        db.session.add(
+            TenantUser(tenant_id=tenant.id, user_id=user.id, role=Role.PILOT)
+        )
+        db.session.commit()
+        uid = user.id
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess["user_id"] = uid
+
+    def form(response: TestResponse, action: str, **values: str) -> dict[str, str]:
+        result = {"action": action, **values}
+        for name in ("draft", "revision"):
+            match = re.search(r'name="' + name + r'" value="([^"]*)"', response.text)
+            assert match is not None
+            result[name] = match[1]
+        return result
+
+    response = client.get("/passports/new")
+    response = client.post(
+        "/passports/new",
+        data=form(response, "add_codes", title="PostgreSQL passport", codes="EBNM"),
+    )
+    assert response.status_code == 200
+    response = client.post("/passports/new", data=form(response, "review"))
+    final_form = form(response, "save")
+    saved = client.post("/passports/new", data=final_form)
+    assert saved.status_code == 302
+    assert client.post("/passports/new", data=final_form).status_code == 404
+    with app.app_context():
+        passport = Passport.query.filter_by(title="PostgreSQL passport").one()
+        pid = passport.id
+        assert (
+            PassportParticipant.query.filter_by(passport_id=pid, user_id=uid)
+            .one()
+            .accepted_at
+            is not None
+        )
+    path = f"/passports/{pid}/edit"
+    response = client.get(path)
+    response = client.post(path, data=form(response, "review", end_date="2027-12-31"))
+    assert response.status_code == 200
+    assert client.post(path, data=form(response, "save")).status_code == 302
+    with app.app_context():
+        assert db.session.get(Passport, pid).end_date == dt.date(2027, 12, 31)

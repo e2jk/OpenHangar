@@ -237,3 +237,7 @@ tr.clickable-row { cursor: pointer; }
    app's shell normally provides). Kept self-contained there rather than
    here so the PDF template needs no fetch back into this app's static
    assets during rendering. */
+
+/* Passport builder: keep layout in CSS so strict CSP works after body swaps. */
+.passport-selection-map { height: 24rem; }
+.passport-airfield-results { max-height: 24rem; }

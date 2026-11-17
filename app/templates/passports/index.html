@@ -3,7 +3,7 @@
 {% block title %}{{ _('Airfield passports') }} — OpenHangar{% endblock %}
 {% block content %}
 <div class="container py-4">
-<h1>{{ _('Airfield passports') }}</h1>
+<div class="page-header mb-4"><h1 class="page-title">{{ _('Airfield passports') }}</h1>{% if is_pilot %}<a class="btn btn-ac-primary" href="{{ url_for('passports.new_passport') }}">{{ _('Create passport') }}</a>{% endif %}</div>
 {% if passports %}
 <ul>{% for passport in passports %}<li><a href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ passport.title }}</a></li>{% endfor %}</ul>
 {% else %}<p>{{ _('No passports yet.') }}</p>{% endif %}
