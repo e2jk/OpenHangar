@@ -274,6 +274,10 @@ def review(
         raise BuilderError(
             _("Correct the unknown or ambiguous codes, or explicitly drop them.")
         )
+    if state.get("edition_copy"):
+        from passports.editions import validate_copy
+
+        validate_copy(tenant_id, user_id, state["edition_copy"])
     metadata = metadata_values(state["metadata"])
     fields = selected_fields(tenant_id, state)
     old_targets = (
@@ -309,6 +313,7 @@ def review(
     after = completion_preview(passport, user_id, fields, metadata, tenant_id=tenant_id)
     result = {
         "metadata": metadata,
+        "edition_copy": state.get("edition_copy"),
         "source": imports.source_values(state),
         "fields": fields,
         "removed": len(removed),
@@ -339,6 +344,10 @@ def commit_selection(
         )
     if passport is None:
         passport = create_personal(tenant_id, user_id, impact["metadata"])
+        if state.get("edition_copy"):
+            from passports.editions import finish_copy
+
+            finish_copy(passport, user_id, state["edition_copy"])
     else:
         for key, value in impact["metadata"].items():
             setattr(passport, key, value)

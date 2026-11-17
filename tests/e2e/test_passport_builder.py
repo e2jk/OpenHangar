@@ -333,3 +333,81 @@ def test_passport_source_import_review_and_no_javascript(
     page.get_by_role("button", name="Delete passport", exact=True).click()
     page.wait_for_url(live_server_url + "/passports/")
     assert not errors, errors
+
+
+def test_linked_editions_copy_combined_map_and_no_js(
+    passport_page: Page, live_server_url: str
+) -> None:
+    page = passport_page
+    errors: list[str] = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    title = "Edition source " + uuid4().hex[:8]
+    next_title = "Next " + uuid4().hex[:8]
+    page.goto(live_server_url + "/passports/new")
+    page.locator("#passport-title").fill(title)
+    page.locator("#passport-codes").fill("EBNM")
+    page.get_by_role("button", name="Review passport", exact=True).click()
+    page.get_by_role("button", name="Save passport", exact=True).click()
+    page.wait_for_url(re.compile(r"/passports/\d+/$"))
+    source_url = page.url
+    page.locator("table tbody a").first.click()
+    page.locator("#visit-date").fill("2025-01-01")
+    page.locator("#visit-note").fill("Private edition evidence")
+    page.get_by_role("button", name="Save visit", exact=True).click()
+    expect(page.get_by_text("Private edition evidence", exact=True)).to_be_visible()
+    page.get_by_role("link", name=title, exact=True).click()
+    expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()
+    page.get_by_role("link", name="Create next edition", exact=True).click()
+    page.locator("#next-title").fill(next_title)
+    page.locator("#next-start").fill("2027-05-01")
+    page.locator("#next-end").fill("2027-08-31")
+    page.get_by_role("button", name="Copy and review targets", exact=True).click()
+    expect(page.locator("#passport-builder table")).to_contain_text("EBNM")
+    page.get_by_role("button", name="Review passport", exact=True).click()
+    page.get_by_role("button", name="Save passport", exact=True).click()
+    page.wait_for_url(re.compile(r"/passports/\d+/$"))
+    new_url = page.url
+    page.get_by_role("link", name="Linked editions", exact=True).click()
+    page.wait_for_url(re.compile(r"/passports/series/\d+/$"))
+    series_url = page.url
+    expect(page.locator("#edition-selector")).not_to_have_value("all")
+    page.locator("#edition-selector").select_option("all")
+    page.locator("#passport-frequency").check()
+    page.get_by_role("button", name="Apply", exact=True).click()
+    expect(page.locator("#passport-progress-map .leaflet-map-pane")).to_have_count(1)
+    expect(
+        page.locator("#passport-progress-map .leaflet-overlay-pane path")
+    ).to_have_count(1)
+    page.locator("#passport-progress-map .leaflet-overlay-pane path").click(force=True)
+    expect(page.locator(".leaflet-popup-content")).to_contain_text(next_title)
+    expect(page.locator(".leaflet-popup-content")).not_to_contain_text(
+        "Private edition evidence"
+    )
+    page.locator("#edition-priority").select_option("oldest")
+    page.get_by_role("button", name="Apply", exact=True).click()
+    expect(page.locator("#passport-progress-map .leaflet-map-pane")).to_have_count(1)
+    page.set_viewport_size({"width": 390, "height": 844})
+    assert page.evaluate(
+        "document.documentElement.scrollWidth <= window.innerWidth + 1"
+    )
+    browser = page.context.browser
+    assert browser is not None
+    context = browser.new_context(java_script_enabled=False, service_workers="block")
+    context.add_cookies(page.context.cookies())
+    try:
+        plain = context.new_page()
+        plain.goto(series_url)
+        plain.locator("#edition-selector").select_option("all")
+        plain.get_by_role("button", name="Apply", exact=True).click()
+        expect(
+            plain.get_by_role("heading", name="Compare editions", exact=True)
+        ).to_be_visible()
+        expect(plain.locator("table").first).to_contain_text("EBNM")
+    finally:
+        context.close()
+    for url in (source_url, new_url):
+        page.goto(url)
+        page.get_by_role("link", name="Delete passport", exact=True).click()
+        page.get_by_role("button", name="Delete passport", exact=True).click()
+        page.wait_for_url(live_server_url + "/passports/")
+    assert not errors, errors

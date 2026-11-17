@@ -5,7 +5,7 @@
 <div class="container py-4">
 <div class="page-header mb-4"><h1 class="page-title">{{ _('Airfield passports') }}</h1>{% if is_pilot %}<a class="btn btn-ac-primary" href="{{ url_for('passports.new_passport') }}">{{ _('Create passport') }}</a>{% endif %}</div>
 {% if passports %}
-<ul>{% for passport in passports %}<li><a href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ passport.title }}</a> — {{ summaries[passport.id].visited }} / {{ summaries[passport.id].total }}</li>{% endfor %}</ul>
+<ul>{% for passport in passports %}<li><a href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ passport.title }}</a>{% if passport.series_id and passport.owner_user_id == session.get('user_id') %} · <a href="{{ url_for('passports.series_detail', series_id=passport.series_id) }}">{{ _('Linked editions') }}</a>{% endif %} — {{ summaries[passport.id].visited }} / {{ summaries[passport.id].total }}</li>{% endfor %}</ul>
 {% else %}<p>{{ _('No passports yet.') }}</p>{% endif %}
 </div>
 {% endblock %}

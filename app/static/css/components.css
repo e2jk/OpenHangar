@@ -241,3 +241,13 @@ tr.clickable-row { cursor: pointer; }
 /* Passport builder: keep layout in CSS so strict CSP works after body swaps. */
 .passport-selection-map { height: 24rem; }
 .passport-airfield-results { max-height: 24rem; }
+
+/* Edition names accompany the palette for colour-independent navigation. */
+.passport-edition-colour-0 { color: #0072b2; }
+.passport-edition-colour-1 { color: #d55e00; }
+.passport-edition-colour-2 { color: #009e73; }
+.passport-edition-colour-3 { color: #cc79a7; }
+.passport-edition-colour-4 { color: #e69f00; }
+.passport-edition-colour-5 { color: #56b4e9; }
+.passport-edition-colour-6 { color: #332288; }
+.passport-edition-colour-7 { color: #882255; }

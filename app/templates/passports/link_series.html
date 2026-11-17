@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% set no_history_cache = true %}
+{% block title %}{{ _('Link editions') }} — OpenHangar{% endblock %}
+{% block content %}
+<div class="container py-4"><h1>{{ _('Link editions') }}</h1><p>{{ passport.title }}</p>
+<p>{{ _('A series links independent passports, such as successive editions of a voucher booklet. Linking keeps each edition’s dates, targets and visits intact.') }}</p>
+{% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+<form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label class="form-label" for="edition-series">{{ _('Existing series') }}</label><select class="form-select mb-3" id="edition-series" name="series_id"><option value="">{{ _('Create a new series') }}</option>{% for series in series_list %}<option value="{{ series.id }}" {{ 'selected' if request.form.get('series_id', passport.series_id|string if passport.series_id else '') == series.id|string }}>{{ series.title }}</option>{% endfor %}</select>
+<label class="form-label" for="series-title">{{ _('New series name') }}</label><input class="form-control mb-3" id="series-title" name="title" maxlength="128" value="{{ request.form.get('title', passport.title) }}">
+<button class="btn btn-ac-primary">{{ _('Link editions') }}</button> <a href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ _('Cancel') }}</a>
+</form></div>
+{% endblock %}

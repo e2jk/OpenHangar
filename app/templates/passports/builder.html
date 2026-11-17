@@ -5,7 +5,8 @@
 <div class="container py-4" id="passport-builder">
   <div class="page-header mb-4"><h1 class="page-title">{{ _('Build an airfield passport') }}</h1><a href="{{ url_for('passports.detail', passport_id=passport.id) if passport else url_for('passports.index') }}">{{ _('Cancel') }}</a></div>
   {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
-  <form method="post">
+  {% if state.get('edition_copy') %}<p class="alert alert-info">{{ _('This will create a new linked edition. The original passport and its evidence stay intact.') }}</p>{% endif %}
+<form action="{{ url_for('passports.edit_passport', passport_id=passport.id) if passport else url_for('passports.new_passport') }}" method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="draft" value="{{ token }}">
     <input type="hidden" name="revision" value="{{ draft.revision }}">

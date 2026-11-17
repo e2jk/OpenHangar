@@ -2343,6 +2343,13 @@ downgrades and show localised retrieval timestamps.
 
 ### 41f — Voucher editions and history
 
+- [x] Personal-edition increment: owner-managed series links, copy-and-review through
+  the existing builder, date-based default selection, archived edition access,
+  stable-identity combined map, independent completion/target comparison and
+  newest/oldest visit colours with deduplicated frequency. Request-local collection
+  evidence is batched. Group history, voucher accounting and reminders below remain
+  outstanding; this subphase is not complete.
+
 - [ ] Keep linked editions simple: `PassportSeries` groups passports via an
   optional `Passport.series_id` FK. Each passport remains independently named,
   with its own optional start/end dates, targets, participants, visits and voucher

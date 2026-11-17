@@ -4131,6 +4131,7 @@ class PassportSeries(db.Model):
 class Passport(db.Model):
     __tablename__ = "passports"
     __table_args__ = (
+        db.CheckConstraint("series_display_order >= 0"),
         db.CheckConstraint(
             "start_date IS NULL OR end_date IS NULL OR start_date <= end_date"
         ),
@@ -4161,6 +4162,9 @@ class Passport(db.Model):
         db.ForeignKey("passport_series.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
+    )
+    series_display_order = db.Column(
+        db.Integer, nullable=False, default=0, server_default="0"
     )
     title = db.Column(db.String(128), nullable=False)
     description = db.Column(db.Text, nullable=True)
