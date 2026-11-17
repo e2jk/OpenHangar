@@ -13,3 +13,5 @@
 - Add the passport schema migration, tenant/membership isolation checks, and photo cleanup that preserves files on transaction rollback.
 
 - Prepare owner-only passport management and expiring, user-scoped builder drafts, with bounded selections and private completion-impact previews.
+
+- Fix airfield alias lookup on PostgreSQL without requiring equality comparisons on JSON data.
