@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{# Shows other people's email addresses: never kept in htmx's back-button cache. #}
+{% set no_history_cache = true %}
 
 {% block title %}{{ _('AMP Declaration') }} — {{ aircraft.registration }} — OpenHangar{% endblock %}
 

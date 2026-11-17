@@ -3,6 +3,12 @@
 (function () {
   'use strict';
   var KEY = 'oh-offline-active-identity';
+  /* htmx keeps the last pages visited in this tab's sessionStorage for an
+   * instant Back, and that copy outlives a sign-out. Record which account
+   * and login the copy belongs to, per tab (another tab's login must not
+   * vouch for it), and drop it on a signed-out page or a different one. */
+  var HISTORY_CACHE = 'htmx-history-cache';
+  var HISTORY_OWNER = 'oh-history-cache-owner';
   var _current = null;
   var _locked = false;
 
@@ -23,7 +29,20 @@
         owner: _current ? _current.owner : '', session: _current ? _current.session : '' });
     }
   }
+  function forgetHistory() {
+    try { sessionStorage.removeItem(HISTORY_CACHE); sessionStorage.removeItem(HISTORY_OWNER); }
+    catch (e) { /* no storage: nothing kept either */ }
+  }
+  function keepHistoryFor(next) {
+    var who = next.owner ? next.owner + ':' + next.session : '';
+    try {
+      if (who && sessionStorage.getItem(HISTORY_OWNER) === who) return;
+      forgetHistory();
+      if (who) sessionStorage.setItem(HISTORY_OWNER, who);
+    } catch (e) { /* no storage: nothing kept either */ }
+  }
   function lock() {
+    forgetHistory();
     if (_locked) return;
     _locked = true;
     document.dispatchEvent(new CustomEvent('oh-offline-identity-lost'));
@@ -88,6 +107,7 @@
   }
   function init() {
     var next = fromBody();
+    keepHistoryFor(next);
     var stored = readStored();
     if (_current && next.owner === _current.owner && next.session === _current.session &&
         !same(_current, stored)) { lock(); return; }

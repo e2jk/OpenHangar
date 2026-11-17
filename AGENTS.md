@@ -287,6 +287,14 @@ unconditionally (the always-load list, after `wb_config.js`). Each file:
 | `/health` status link | Returns JSON, not HTML |
 | Binary download links (zip, GIF, etc.) | Non-HTML response |
 
+### htmx's back-button cache
+htmx keeps the last pages visited in the tab's sessionStorage, and that copy
+outlives a sign-out (`offline_identity.js` drops it on a signed-out page or
+another account). A page that shows other people's contact details (email
+addresses) must stay out of it: put `{% set no_history_cache = true %}` right
+after its `{% extends "base.html" %}`. `tests/functional/test_history_cache_privacy.py`
+fails for a page that shows another user's address without it.
+
 ### Three questions to ask before finishing any template change
 1. Does the change introduce a `<script nonce>` block? → Extract to a `.js` file in
    `app/static/js/`, add it to the always-load list in `base.html`, add `htmx:afterSettle` init.
