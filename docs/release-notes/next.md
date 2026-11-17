@@ -19,6 +19,7 @@ Passports are personal for now. Group passports shared with friends (with or wit
 - The pages you visited are no longer left in the browser tab after you sign out. For an instant Back button, the app keeps a copy of the last pages visited in the tab; that copy is now dropped as soon as a page loads signed out or under another account. Pages showing other people's email addresses (user management, permissions, the fleet reservations list, setup, the AMP declaration) are never kept in it.
 
 **Maintenance**
+- Opening your passport collection now reads your logbook once, keeping the page responsive as you collect more passports. Each passport still applies its own dates and visit exclusions.
 - Airfield passports are planned in stages in the implementation plan, as the next phase; the later phases were renumbered. A stretch goal for a passport-only instance, possibly run by a voucher publisher, was added to the roadmap.
 - Airfields in a passport keep a stable identity, so renamed or reused airfield codes and manual corrections don't move stamps to another field. Fixed a lookup of those codes that failed on PostgreSQL.
 - Imports from the web only reach public addresses and refuse anything that could reach the server's own network. Downloads are limited in time and size, and at most two run at once.

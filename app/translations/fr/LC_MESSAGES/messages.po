@@ -203,7 +203,7 @@ msgstr "Définissez soit une contribution horaire, soit une contribution mensuel
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Ce fichier GPS contient trop de points pour être importé (plus de %(n)s). Découpez l'enregistrement en plusieurs fichiers."
 
-#: app/aircraft/routes.py:555 app/passports/routes.py:572
+#: app/aircraft/routes.py:555 app/passports/routes.py:569
 msgid "cruise speed"
 msgstr "vitesse de croisière"
 
@@ -2130,7 +2130,7 @@ msgstr "Action inconnue dans l’éditeur de passeport."
 msgid "Enter a valid %(label)s."
 msgstr "Saisissez une valeur valide pour %(label)s."
 
-#: app/passports/discovery.py:55 app/passports/discovery.py:80
+#: app/passports/discovery.py:55 app/passports/discovery.py:81
 msgid "Choose an unambiguous airfield code or a saved field reference."
 msgstr "Choisissez un code d’aérodrome non ambigu ou une référence de terrain enregistrée."
 
@@ -2242,75 +2242,75 @@ msgstr "Saisissez un nom de passeport."
 msgid "The passport end date must not precede its start date."
 msgstr "La date de fin du passeport ne doit pas précéder sa date de début."
 
-#: app/passports/routes.py:153
+#: app/passports/routes.py:150
 msgid "Small airfields"
 msgstr "Petits aérodromes"
 
-#: app/passports/routes.py:154
+#: app/passports/routes.py:151
 msgid "Medium airports"
 msgstr "Aéroports moyens"
 
-#: app/passports/routes.py:155
+#: app/passports/routes.py:152
 msgid "Large airports"
 msgstr "Grands aéroports"
 
-#: app/passports/routes.py:156
+#: app/passports/routes.py:153
 msgid "Heliports"
 msgstr "Héliports"
 
-#: app/passports/routes.py:157
+#: app/passports/routes.py:154
 msgid "Seaplane bases"
 msgstr "Hydrobases"
 
-#: app/passports/routes.py:158
+#: app/passports/routes.py:155
 msgid "Balloon ports"
 msgstr "Bases de ballons"
 
-#: app/passports/routes.py:159
+#: app/passports/routes.py:156
 msgid "Closed airfields"
 msgstr "Aérodromes fermés"
 
-#: app/passports/routes.py:268
+#: app/passports/routes.py:265
 msgid "Passport saved."
 msgstr "Passeport enregistré."
 
-#: app/passports/routes.py:309
+#: app/passports/routes.py:306
 msgid "An airfield code conflicts with an existing identity. Review or remove that selection."
 msgstr "Un code d’aérodrome entre en conflit avec une identité existante. Vérifiez ou retirez cette sélection."
 
-#: app/passports/routes.py:372
+#: app/passports/routes.py:369
 msgid "Passport deleted."
 msgstr "Passeport supprimé."
 
-#: app/passports/routes.py:545
+#: app/passports/routes.py:542
 msgid "Choose a starting airfield from the search results."
 msgstr "Choisissez un aérodrome de départ dans les résultats."
 
-#: app/passports/routes.py:548
+#: app/passports/routes.py:545
 msgid "This starting airfield has no coordinates. Choose another."
 msgstr "Cet aérodrome de départ n’a pas de coordonnées. Choisissez-en un autre."
 
-#: app/passports/routes.py:573
+#: app/passports/routes.py:570
 msgid "distance/time limit"
 msgstr "limite de distance/durée"
 
-#: app/passports/routes.py:574
+#: app/passports/routes.py:571
 msgid "usable fuel"
 msgstr "carburant utilisable"
 
-#: app/passports/routes.py:575
+#: app/passports/routes.py:572
 msgid "fuel flow"
 msgstr "consommation"
 
-#: app/passports/routes.py:576
+#: app/passports/routes.py:573
 msgid "reserve minutes"
 msgstr "réserve en minutes"
 
-#: app/passports/routes.py:588
+#: app/passports/routes.py:585
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Saisissez une vitesse de croisière pour le mode durée, ou utilisez le mode distance."
 
-#: app/passports/routes.py:597
+#: app/passports/routes.py:594
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "L’autonomie théorique est inconnue. Saisissez le carburant utilisable, la consommation, la vitesse et une réserve explicite laissant une durée de vol positive. Le filtre distance/durée reste appliqué."
 
@@ -13780,3 +13780,4 @@ msgstr "Les propriétaires et administrateurs ont toujours accès à toute la fl
 #: app/users/routes.py:548
 msgid "Permissions updated."
 msgstr "Permissions mises à jour."
+

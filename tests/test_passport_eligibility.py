@@ -245,3 +245,116 @@ def test_own_logbook_evidence_spans_organisations(
         db.session.delete(own)
         db.session.commit()
         assert passport_progress(passport, owner["user"])["visited"] == 0
+
+
+def test_collection_snapshot_equivalence_and_query_bounds(
+    app: Flask, owner: dict[str, int]
+) -> None:
+    from datetime import UTC, datetime
+
+    from passports.eligibility import progress_many
+    from sqlalchemy import event
+
+    with app.app_context():
+        original = db.session.get(Passport, owner["passport"])
+        arrival = flight(owner["user"])
+        db.session.flush()
+        participant = PassportParticipant.query.filter_by(passport_id=original.id).one()
+        db.session.add_all(
+            [
+                PassportArrivalExclusion(
+                    participant_id=participant.id, flight_id=arrival.id
+                ),
+                PassportVisit(
+                    passport_id=original.id,
+                    participant_id=participant.id,
+                    target_id=owner["target"],
+                    author_user_id=owner["user"],
+                    visit_date=date(2025, 1, 2),
+                    note="Private visit",
+                ),
+            ]
+        )
+        editions = [original]
+        for index in range(20):
+            passport = Passport(
+                tenant_id=owner["tenant"],
+                owner_user_id=owner["user"],
+                title=f"Edition {index}",
+                start_date=date(2025, 1, 1),
+                end_date=date(2025, 12, 31),
+            )
+            db.session.add(passport)
+            db.session.flush()
+            db.session.add(
+                PassportAirfield(
+                    tenant_id=owner["tenant"],
+                    passport_id=passport.id,
+                    airfield_id=owner["field"],
+                )
+            )
+            if index != 19:
+                db.session.add(
+                    PassportParticipant(
+                        passport_id=passport.id,
+                        user_id=owner["user"],
+                        display_name="Pilot",
+                        accepted_at=datetime.now(UTC),
+                        is_active=index != 18,
+                    )
+                )
+            editions.append(passport)
+        db.session.commit()
+        expected = {p.id: passport_progress(p, owner["user"]) for p in editions}
+        statements: list[str] = []
+
+        def record(
+            _conn: Any,
+            _cursor: Any,
+            statement: str,
+            _parameters: Any,
+            _context: Any,
+            _many: Any,
+        ) -> None:
+            statements.append(statement)
+
+        event.listen(db.engine, "before_cursor_execute", record)
+        try:
+            assert progress_many([], owner["user"]) == {}
+            assert statements == []
+            progress_many([original], owner["user"])
+            baseline = len(statements)
+            statements.clear()
+            actual = progress_many(editions, owner["user"])
+            assert len(statements) == baseline
+            assert sum("FROM flights" in sql for sql in statements) == 1
+            assert actual == expected
+            assert actual[original.id]["rows"][0]["first"]["note"] == "Private visit"
+            assert actual[editions[-1].id]["visited"] == 0
+            assert actual[editions[-2].id]["visited"] == 0
+            statements.clear()
+            assert (
+                progress_many([editions[-1]], owner["user"])[editions[-1].id]["visited"]
+                == 0
+            )
+            assert not any("FROM flights" in sql for sql in statements)
+        finally:
+            event.remove(db.engine, "before_cursor_execute", record)
+        editions[-1].tenant_id = owner["tenant"] + 1
+        import pytest
+
+        with pytest.raises(ValueError, match="one tenant"):
+            progress_many(editions, owner["user"])
+        db.session.rollback()
+
+
+def test_snapshot_scope_rejected(app: Flask, owner: dict[str, int]) -> None:
+    import pytest
+    from passports.eligibility import EvidenceSnapshot
+
+    with app.app_context():
+        snapshot = EvidenceSnapshot(owner["tenant"], owner["user"], [], [], {}, {})
+        with pytest.raises(ValueError, match="scope mismatch"):
+            evaluate(
+                owner["tenant"], owner["other"], [], None, None, None, snapshot=snapshot
+            )

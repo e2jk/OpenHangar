@@ -48,7 +48,7 @@ from passports.drafts import (
     new_draft,
     save_draft,
 )
-from passports.eligibility import participant_for, passport_progress
+from passports.eligibility import participant_for, passport_progress, progress_many
 from passports.imports import PUBLISHER_LIST_URL, source_values
 from passports.management import (
     METADATA_FIELDS,
@@ -68,10 +68,7 @@ def index() -> ResponseReturnValue:
     return render_template(
         "passports/index.html",
         passports=passports,
-        summaries={
-            passport.id: passport_progress(passport, session["user_id"])
-            for passport in passports
-        },
+        summaries=progress_many(passports, session["user_id"]),
     )
 
 
