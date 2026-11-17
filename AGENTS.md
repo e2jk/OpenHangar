@@ -271,11 +271,14 @@ unconditionally (the always-load list, after `wb_config.js`). Each file:
   ```html
   <div id="my-widget" data-aircraft-id="{{ aircraft.id }}">
   ```
-- **Objects / arrays**: a `<script type="application/json">` block with an `id`.
-  These are non-executable (no nonce needed) and read with `JSON.parse(el.textContent)`.
+- **Objects / arrays**: an escaped JSON `data-*` attribute on a normal element.
+  With `allowScriptTags: false`, HTMX strips **all** script tags, including
+  `type="application/json"`, from boosted responses. A data attribute survives.
   ```html
-  <script type="application/json" id="my-data">{{ my_dict | tojson }}</script>
+  <div id="my-data" data-payload="{{ my_dict | tojson | forceescape }}" hidden></div>
   ```
+  Read it with `JSON.parse(el.dataset.payload)`. JSON script blocks are suitable
+  only for standalone pages that never go through an HTMX body swap.
 - **Translated row templates**: `<template id="row-tpl">` rendered by Jinja (translated
   labels baked in), cloned by JS with `tmpl.content.cloneNode(true)`.
 
@@ -300,7 +303,7 @@ fails for a page that shows another user's address without it.
    `app/static/js/`, add it to the always-load list in `base.html`, add `htmx:afterSettle` init.
 2. Does any new link/button serve a non-HTML response or needs to clear session? → Add
    `hx-boost="false"`.
-3. Do any Jinja values need to reach JS? → Use a JSON data block or `data-*` attribute.
+3. Do any Jinja values need to reach JS? → Use an escaped JSON `data-*` attribute.
 
 ### Role and operating-model gating
 - Use the `@require_role(Role.PILOT, Role.ADMIN, …)` decorator (from `utils.py`) on routes.
@@ -568,18 +571,18 @@ manifest entry is broken.
 
 ### Passing a translated dict to JS
 ```html
-<!-- In template (no nonce needed — type="application/json" is non-executable) -->
-<script type="application/json" id="status-labels">{{ {
+<!-- In template: survives hx-boost body swaps; no executable script -->
+<div id="status-labels" data-labels="{{ {
   'active': _('Active'),
   'retired': _('Retired')
-} | tojson }}</script>
+} | tojson | forceescape }}" hidden></div>
 ```
 ```javascript
 // In app/static/js/my_feature.js
 var dataEl = document.getElementById('status-labels');
 if (dataEl && !dataEl.dataset.ohInited) {
   dataEl.dataset.ohInited = '1';
-  var labels = JSON.parse(dataEl.textContent);
+  var labels = JSON.parse(dataEl.dataset.labels);
 }
 ```
 

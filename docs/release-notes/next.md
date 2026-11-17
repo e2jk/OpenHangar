@@ -16,3 +16,4 @@
 - Prepare owner-only passport management and expiring, user-scoped builder drafts, with bounded selections and private completion-impact previews.
 
 - Fix airfield alias lookup on PostgreSQL without requiring equality comparisons on JSON data.
+- Correct the agent guide’s JSON data-bridge examples: HTMX strips JSON script tags as well as executable scripts; escaped data attributes survive navigation.
