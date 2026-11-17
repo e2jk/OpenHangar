@@ -203,7 +203,7 @@ msgstr "Stel voor het reservefonds een bijdrage per uur óf per maand in, niet b
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Dit GPS-bestand bevat te veel punten om te importeren (meer dan %(n)s). Splits de opname op in meerdere bestanden."
 
-#: app/aircraft/routes.py:555 app/passports/routes.py:515
+#: app/aircraft/routes.py:555 app/passports/routes.py:572
 msgid "cruise speed"
 msgstr "kruissnelheid"
 
@@ -2060,68 +2060,68 @@ msgstr "Geen opgeslagen PDF voor revisie '%(number)s' — deze is nooit gedownlo
 msgid "The saved PDF for revision '%(number)s' is missing on disk."
 msgstr "De opgeslagen PDF voor revisie '%(number)s' ontbreekt op de schijf."
 
-#: app/passports/builder.py:40
+#: app/passports/builder.py:42
 msgid "Choose yes, no or unknown for each classification."
 msgstr "Kies ja, nee of onbekend voor elke classificatie."
 
-#: app/passports/builder.py:88 app/passports/builder.py:431
+#: app/passports/builder.py:90 app/passports/builder.py:462
 msgid "An airfield reference is invalid. Reopen the builder."
 msgstr "Een vliegveldverwijzing is ongeldig. Open de samensteller opnieuw."
 
-#: app/passports/builder.py:96 app/passports/builder.py:350
+#: app/passports/builder.py:98 app/passports/builder.py:359
 msgid "An airfield is no longer available. Review your selection."
 msgstr "Een vliegveld is niet meer beschikbaar. Controleer uw selectie."
 
-#: app/passports/builder.py:152 app/passports/management.py:82
+#: app/passports/builder.py:154 app/passports/management.py:82
 msgid "A passport field is too long."
 msgstr "Een paspoortveld is te lang."
 
-#: app/passports/builder.py:157
+#: app/passports/builder.py:159
 msgid "An airfield selection was not offered by this draft."
 msgstr "Een geselecteerd vliegveld werd niet aangeboden in dit concept."
 
-#: app/passports/builder.py:178
+#: app/passports/builder.py:180
 msgid "Choose valid catalogue filters."
 msgstr "Kies geldige catalogusfilters."
 
-#: app/passports/builder.py:182
+#: app/passports/builder.py:184
 msgid "The airfield search is too long."
 msgstr "De vliegveldzoekopdracht is te lang."
 
-#: app/passports/builder.py:193
+#: app/passports/builder.py:195
 msgid "The pasted airfield list is too long."
 msgstr "De geplakte vliegveldenlijst is te lang."
 
-#: app/passports/builder.py:216 app/passports/builder.py:418
-#: app/passports/builder.py:444 app/passports/drafts.py:126
+#: app/passports/builder.py:222 app/passports/builder.py:449
+#: app/passports/builder.py:475 app/passports/drafts.py:135
 msgid "This passport selection is too large. Narrow your selection."
 msgstr "Deze paspoortselectie is te groot. Beperk uw selectie."
 
-#: app/passports/builder.py:229
+#: app/passports/builder.py:235
 msgid "Enter a valid custom airfield name and optional code."
 msgstr "Voer een geldige naam en optionele code voor het eigen vliegveld in."
 
-#: app/passports/builder.py:236
+#: app/passports/builder.py:242
 msgid "Enter both valid coordinates, or leave both empty."
 msgstr "Voer beide geldige coördinaten in of laat beide leeg."
 
-#: app/passports/builder.py:264
+#: app/passports/builder.py:270
 msgid "This passport changed while you were editing it. Reopen the builder."
 msgstr "Dit paspoort is gewijzigd terwijl u het bewerkte. Open de samensteller opnieuw."
 
-#: app/passports/builder.py:269
+#: app/passports/builder.py:275
 msgid "Correct the unknown or ambiguous codes, or explicitly drop them."
 msgstr "Corrigeer de onbekende of dubbelzinnige codes of verwijder ze uitdrukkelijk."
 
-#: app/passports/builder.py:328
+#: app/passports/builder.py:335
 msgid "Review this selection again before saving."
 msgstr "Controleer deze selectie opnieuw voordat u opslaat."
 
-#: app/passports/builder.py:331
+#: app/passports/builder.py:338
 msgid "Confirm removal of airfields with saved visits or photos."
 msgstr "Bevestig het verwijderen van vliegvelden met opgeslagen bezoeken of foto's."
 
-#: app/passports/builder.py:441
+#: app/passports/builder.py:472
 msgid "Unknown passport builder action."
 msgstr "Onbekende actie in de paspoortsamensteller."
 
@@ -2134,11 +2134,11 @@ msgstr "Voer een geldige waarde in voor %(label)s."
 msgid "Choose an unambiguous airfield code or a saved field reference."
 msgstr "Kies een eenduidige vliegveldcode of een opgeslagen veldreferentie."
 
-#: app/passports/drafts.py:100 app/passports/drafts.py:112
+#: app/passports/drafts.py:109 app/passports/drafts.py:121
 msgid "This passport draft has expired. Start again."
 msgstr "Dit paspoortconcept is verlopen. Begin opnieuw."
 
-#: app/passports/drafts.py:115
+#: app/passports/drafts.py:124
 msgid "This draft changed in another tab. Reopen the builder."
 msgstr "Dit concept is in een ander tabblad gewijzigd. Open de samensteller opnieuw."
 
@@ -2178,6 +2178,46 @@ msgstr "Foto’s mogen maximaal 10 MB groot zijn."
 msgid "Upload a valid JPEG, PNG or WebP photo (up to 20 megapixels)."
 msgstr "Upload een geldige JPEG-, PNG- of WebP-foto (maximaal 20 megapixels)."
 
+#: app/passports/imports.py:59
+msgid "The source format is unsupported. Paste the airfield codes instead."
+msgstr "Het bronformaat wordt niet ondersteund. Plak in plaats daarvan de vliegveldcodes."
+
+#: app/passports/imports.py:68
+msgid "No candidate airfield codes were found. For dynamic or unsupported pages, paste the codes instead."
+msgstr "Geen mogelijke vliegveldcodes gevonden. Plak de codes bij dynamische of niet-ondersteunde pagina’s."
+
+#: app/passports/imports.py:73
+msgid "The source contains too many airfield codes. Use a smaller list."
+msgstr "De bron bevat te veel vliegveldcodes. Gebruik een kleinere lijst."
+
+#: app/passports/imports.py:98
+msgid "The publisher list format changed. Paste a verified list instead."
+msgstr "Het formaat van de uitgeverslijst is gewijzigd. Plak een gecontroleerde lijst."
+
+#: app/passports/imports.py:108
+msgid "The publisher list contains a missing or unsupported code. Paste a verified list instead."
+msgstr "De uitgeverslijst bevat een ontbrekende of niet-ondersteunde code. Plak een gecontroleerde lijst."
+
+#: app/passports/imports.py:123
+msgid "Enter the booklet edition label before importing. Verify the edition with the publisher."
+msgstr "Voer vóór het importeren de editie van het boekje in. Controleer de editie bij de uitgever."
+
+#: app/passports/imports.py:130
+msgid "The publisher has not released its current participant list. Paste a list you have verified, or try again later."
+msgstr "De uitgever heeft de huidige deelnemerslijst nog niet vrijgegeven. Plak een gecontroleerde lijst of probeer het later opnieuw."
+
+#: app/passports/imports.py:139
+msgid "Choose a supported import source."
+msgstr "Kies een ondersteunde importbron."
+
+#: app/passports/imports.py:159
+msgid "Preview the imported list before applying it."
+msgstr "Bekijk eerst een voorbeeld van de geïmporteerde lijst."
+
+#: app/passports/imports.py:184
+msgid "The import provenance is invalid. Preview the source again."
+msgstr "De herkomstgegevens van de import zijn ongeldig. Bekijk de bron opnieuw."
+
 #: app/passports/management.py:41
 msgid "You cannot manage passports with this account."
 msgstr "U kunt met dit account geen paspoorten beheren."
@@ -2202,77 +2242,93 @@ msgstr "Voer een paspoortnaam in."
 msgid "The passport end date must not precede its start date."
 msgstr "De einddatum van het paspoort mag niet vóór de begindatum liggen."
 
-#: app/passports/routes.py:151
+#: app/passports/routes.py:153
 msgid "Small airfields"
 msgstr "Kleine vliegvelden"
 
-#: app/passports/routes.py:152
+#: app/passports/routes.py:154
 msgid "Medium airports"
 msgstr "Middelgrote luchthavens"
 
-#: app/passports/routes.py:153
+#: app/passports/routes.py:155
 msgid "Large airports"
 msgstr "Grote luchthavens"
 
-#: app/passports/routes.py:154
+#: app/passports/routes.py:156
 msgid "Heliports"
 msgstr "Helihavens"
 
-#: app/passports/routes.py:155
+#: app/passports/routes.py:157
 msgid "Seaplane bases"
 msgstr "Watervliegbases"
 
-#: app/passports/routes.py:156
+#: app/passports/routes.py:158
 msgid "Balloon ports"
 msgstr "Ballonhavens"
 
-#: app/passports/routes.py:157
+#: app/passports/routes.py:159
 msgid "Closed airfields"
 msgstr "Gesloten vliegvelden"
 
-#: app/passports/routes.py:239
+#: app/passports/routes.py:268
 msgid "Passport saved."
 msgstr "Paspoort opgeslagen."
 
-#: app/passports/routes.py:268
+#: app/passports/routes.py:309
 msgid "An airfield code conflicts with an existing identity. Review or remove that selection."
 msgstr "Een vliegveldcode conflicteert met een bestaande identiteit. Controleer of verwijder die selectie."
 
-#: app/passports/routes.py:315
+#: app/passports/routes.py:372
 msgid "Passport deleted."
 msgstr "Paspoort verwijderd."
 
-#: app/passports/routes.py:488
+#: app/passports/routes.py:545
 msgid "Choose a starting airfield from the search results."
 msgstr "Kies een vertrekveld uit de zoekresultaten."
 
-#: app/passports/routes.py:491
+#: app/passports/routes.py:548
 msgid "This starting airfield has no coordinates. Choose another."
 msgstr "Dit vertrekveld heeft geen coördinaten. Kies een ander veld."
 
-#: app/passports/routes.py:516
+#: app/passports/routes.py:573
 msgid "distance/time limit"
 msgstr "afstands-/tijdslimiet"
 
-#: app/passports/routes.py:517
+#: app/passports/routes.py:574
 msgid "usable fuel"
 msgstr "bruikbare brandstof"
 
-#: app/passports/routes.py:518
+#: app/passports/routes.py:575
 msgid "fuel flow"
 msgstr "brandstofverbruik"
 
-#: app/passports/routes.py:519
+#: app/passports/routes.py:576
 msgid "reserve minutes"
 msgstr "reserve in minuten"
 
-#: app/passports/routes.py:531
+#: app/passports/routes.py:588
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Voer een kruissnelheid in voor de tijdsmodus of gebruik de afstandsmodus."
 
-#: app/passports/routes.py:540
+#: app/passports/routes.py:597
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "Het theoretische bereik is onbekend. Voer bruikbare brandstof, verbruik, snelheid en een expliciete reserve in die positieve vliegtijd overlaten. Het afstands-/tijdfilter blijft van toepassing."
+
+#: app/passports/source_fetch.py:47
+msgid "The source could not be fetched safely. Paste the airfield codes instead."
+msgstr "De bron kon niet veilig worden opgehaald. Plak de vliegveldcodes."
+
+#: app/passports/source_fetch.py:54
+msgid "The source response is too large or unsupported. Paste the airfield codes instead."
+msgstr "De bronreactie is te groot of wordt niet ondersteund. Plak de vliegveldcodes."
+
+#: app/passports/source_fetch.py:70
+msgid "Other source imports are busy. Try again shortly or paste the codes."
+msgstr "Er lopen andere bronimports. Probeer het zo opnieuw of plak de codes."
+
+#: app/passports/source_fetch.py:141
+msgid "Only public HTTP(S) source URLs on standard ports are supported."
+msgstr "Alleen openbare HTTP(S)-bron-URL’s op standaardpoorten worden ondersteund."
 
 #: app/pilots/form_parsing.py:40
 #, python-format
@@ -3835,7 +3891,7 @@ msgstr "open-source vliegtuigbeheer"
 #: app/templates/maintenance/fleet.html:281
 #: app/templates/maintenance/fleet.html:341
 #: app/templates/maintenance/list.html:98
-#: app/templates/passports/detail.html:22
+#: app/templates/passports/detail.html:24
 #: app/templates/pilots/minimums_history.html:25
 #: app/templates/reservations/charge.html:34
 #: app/templates/reservations/detail.html:38
@@ -4354,7 +4410,7 @@ msgstr "Notities"
 #: app/templates/partials/_crew_claims.html:51
 #: app/templates/partials/_crew_invites.html:53
 #: app/templates/partials/_flight_corrections.html:18
-#: app/templates/passports/builder.html:51
+#: app/templates/passports/builder.html:60
 #: app/templates/pilots/import_history.html:38
 #: app/templates/pilots/minimums_history.html:28
 #: app/templates/reservations/calendar.html:140
@@ -4881,7 +4937,7 @@ msgstr "Capaciteit"
 #: app/templates/aircraft/wb_config.html:199
 #: app/templates/aircraft/wb_config.html:248
 #: app/templates/aircraft/wb_config.html:268
-#: app/templates/passports/builder.html:52
+#: app/templates/passports/builder.html:61
 #: app/templates/reservations/calendar.html:159
 #: app/templates/reservations/downtime_form.html:78
 msgid "Remove"
@@ -5442,8 +5498,8 @@ msgid "Fuel on board"
 msgstr "Brandstof aan boord"
 
 #: app/templates/aircraft/detail.html:746
-#: app/templates/passports/builder.html:31
-#: app/templates/passports/builder.html:52
+#: app/templates/passports/builder.html:40
+#: app/templates/passports/builder.html:61
 #: app/templates/passports/where_next.html:26
 #: app/templates/passports/where_next.html:34
 msgid "Unknown"
@@ -6732,10 +6788,10 @@ msgstr "Onderdeelnummer controleren"
 #: app/templates/airworthiness/adsb_board.html:39
 #: app/templates/airworthiness/adsb_form.html:39
 #: app/templates/airworthiness/adsb_print.html:28
-#: app/templates/passports/builder.html:38
-#: app/templates/passports/detail.html:17
-#: app/templates/passports/detail.html:20
-#: app/templates/passports/detail.html:22 app/templates/passports/target.html:9
+#: app/templates/passports/builder.html:47
+#: app/templates/passports/detail.html:19
+#: app/templates/passports/detail.html:22
+#: app/templates/passports/detail.html:24 app/templates/passports/target.html:9
 msgid "Closed"
 msgstr "Afgesloten"
 
@@ -6925,7 +6981,7 @@ msgstr[1] "%(n)s documenten totaal"
 #: app/templates/airworthiness/dashboard.html:68
 #: app/templates/documents/list.html:102 app/templates/documents/list.html:104
 #: app/templates/flights/list.html:105 app/templates/flights/list.html:107
-#: app/templates/passports/detail.html:17 app/templates/pilots/logbook.html:142
+#: app/templates/passports/detail.html:19 app/templates/pilots/logbook.html:142
 #: app/templates/pilots/logbook.html:144 app/templates/users/list.html:74
 msgid "All"
 msgstr "Alle"
@@ -9546,7 +9602,7 @@ msgid "This is a different flight — import it as a new entry"
 msgstr "Dit is een andere vlucht — als nieuwe vermelding importeren"
 
 #: app/templates/flights/airframe_import_review.html:150
-#: app/templates/passports/detail.html:18
+#: app/templates/passports/detail.html:20
 #: app/templates/pilots/import_review.html:158
 #: app/templates/reports/utilization.html:54
 msgid "Apply"
@@ -11181,7 +11237,7 @@ msgid "Ground movement only ({start}–{end} UTC): saving adds it to the flight'
 msgstr "Alleen grondbeweging ({start}–{end} UTC): bij opslaan wordt ze als taxideel aan de GPS-track van de vlucht toegevoegd; de gegevens van de vlucht blijven zoals ingevoerd."
 
 #: app/templates/partials/_list_filters.html:15
-#: app/templates/passports/builder.html:31
+#: app/templates/passports/builder.html:40
 msgid "Any"
 msgstr "Om het even"
 
@@ -11198,7 +11254,7 @@ msgid "Since"
 msgstr "Sinds"
 
 #: app/templates/partials/_list_filters.html:25
-#: app/templates/passports/detail.html:13
+#: app/templates/passports/detail.html:15
 msgid "Until"
 msgstr "Tot en met"
 
@@ -11271,16 +11327,17 @@ msgid "Passport details"
 msgstr "Paspoortgegevens"
 
 #: app/templates/passports/builder.html:18
+#: app/templates/passports/detail.html:11
 msgid "Edition label"
 msgstr "Editienaam"
 
 #: app/templates/passports/builder.html:20
-#: app/templates/passports/review.html:9
+#: app/templates/passports/review.html:10
 msgid "Start date"
 msgstr "Begindatum"
 
 #: app/templates/passports/builder.html:21
-#: app/templates/passports/review.html:9
+#: app/templates/passports/review.html:10
 msgid "End date"
 msgstr "Einddatum"
 
@@ -11288,161 +11345,209 @@ msgstr "Einddatum"
 msgid "Leave dates empty for a lifetime passport."
 msgstr "Laat de datums leeg voor een paspoort zonder tijdslimiet."
 
+#: app/templates/passports/builder.html:24
+msgid "Import an airfield list"
+msgstr "Een vliegveldenlijst importeren"
+
 #: app/templates/passports/builder.html:25
+msgid "Preview candidate codes from a public source. Nothing is saved to the passport until you review and save the final selection. Remote descriptions, images and operational information are not imported."
+msgstr "Bekijk mogelijke codes uit een openbare bron. Er wordt niets in het paspoort opgeslagen voordat je de definitieve selectie controleert en opslaat. Beschrijvingen, afbeeldingen en operationele informatie uit de bron worden niet geïmporteerd."
+
+#: app/templates/passports/builder.html:27
+msgid "Import source"
+msgstr "Importbron"
+
+#: app/templates/passports/builder.html:27
+msgid "Public page or JSON / text list"
+msgstr "Openbare pagina of JSON-/tekstlijst"
+
+#: app/templates/passports/builder.html:27
+msgid "Landegutscheinheft — current publisher list"
+msgstr "Landegutscheinheft — huidige uitgeverslijst"
+
+#: app/templates/passports/builder.html:28
+msgid "Public source URL"
+msgstr "URL van de openbare bron"
+
+#: app/templates/passports/builder.html:29
+msgid "For Landegutscheinheft, enter the edition label above and verify it with the publisher. Its publication status is checked; no year is inferred. The URL field is used only for other public sources."
+msgstr "Voer voor het Landegutscheinheft hierboven de editie in en controleer die bij de uitgever. De publicatiestatus wordt gecontroleerd; er wordt geen jaar afgeleid. Het URL-veld wordt alleen gebruikt voor andere openbare bronnen."
+
+#: app/templates/passports/builder.html:30
+msgid "Preview source import"
+msgstr "Bronimport bekijken"
+
+#: app/templates/passports/builder.html:31
+#: app/templates/passports/detail.html:12
+#: app/templates/passports/import_review.html:8
+#: app/templates/passports/review.html:8
+msgid "Source"
+msgstr "Bron"
+
+#: app/templates/passports/builder.html:31
+#: app/templates/passports/detail.html:12
+#: app/templates/passports/import_review.html:8
+#: app/templates/passports/review.html:8
+msgid "Retrieved"
+msgstr "Opgehaald"
+
+#: app/templates/passports/builder.html:34
 msgid "Choose airfields"
 msgstr "Vliegvelden kiezen"
 
-#: app/templates/passports/builder.html:26
+#: app/templates/passports/builder.html:35
 msgid "Countries"
 msgstr "Landen"
 
-#: app/templates/passports/builder.html:27
+#: app/templates/passports/builder.html:36
 msgid "Regions"
 msgstr "Regio's"
 
-#: app/templates/passports/builder.html:28
+#: app/templates/passports/builder.html:37
 msgid "Find an airfield by code or name"
 msgstr "Een vliegveld zoeken op code of naam"
 
-#: app/templates/passports/builder.html:29
+#: app/templates/passports/builder.html:38
 msgid "Airfield types"
 msgstr "Vliegveldtypen"
 
-#: app/templates/passports/builder.html:29
+#: app/templates/passports/builder.html:38
 msgid "Other airfield types"
 msgstr "Andere vliegveldtypen"
 
-#: app/templates/passports/builder.html:30
+#: app/templates/passports/builder.html:39
 msgid "Include closed airfields"
 msgstr "Gesloten vliegvelden opnemen"
 
-#: app/templates/passports/builder.html:31
-#: app/templates/passports/builder.html:51
-#: app/templates/passports/builder.html:52
+#: app/templates/passports/builder.html:40
+#: app/templates/passports/builder.html:60
+#: app/templates/passports/builder.html:61
 msgid "Military"
 msgstr "Militair"
 
-#: app/templates/passports/builder.html:31
-#: app/templates/passports/builder.html:51
-#: app/templates/passports/builder.html:52
+#: app/templates/passports/builder.html:40
+#: app/templates/passports/builder.html:60
+#: app/templates/passports/builder.html:61
 msgid "ULM"
 msgstr "ULM"
 
-#: app/templates/passports/builder.html:31
-#: app/templates/passports/builder.html:52
+#: app/templates/passports/builder.html:40
+#: app/templates/passports/builder.html:61
 msgid "Yes"
 msgstr "Ja"
 
-#: app/templates/passports/builder.html:31
-#: app/templates/passports/builder.html:52 app/templates/snags/list.html:78
+#: app/templates/passports/builder.html:40
+#: app/templates/passports/builder.html:61 app/templates/snags/list.html:78
 msgid "No"
 msgstr "Nee"
 
-#: app/templates/passports/builder.html:32
+#: app/templates/passports/builder.html:41
 msgid "Military and ULM status are unknown unless classified manually; unknown does not mean no."
 msgstr "Militaire en ULM-status zijn onbekend zonder handmatige classificatie; onbekend betekent niet nee."
 
-#: app/templates/passports/builder.html:33
+#: app/templates/passports/builder.html:42
 #: app/templates/passports/where_next.html:14
 msgid "Search airfields"
 msgstr "Vliegvelden zoeken"
 
-#: app/templates/passports/builder.html:35
+#: app/templates/passports/builder.html:44
 #, python-format
 msgid "one matching airfield"
 msgid_plural "%(n)s matching airfields"
 msgstr[0] "één overeenkomend vliegveld"
 msgstr[1] "%(n)s overeenkomende vliegvelden"
 
-#: app/templates/passports/builder.html:36
+#: app/templates/passports/builder.html:45
 msgid "Only the first 500 results are listed. Refine the filters or add all matching airfields."
 msgstr "Alleen de eerste 500 resultaten worden getoond. Verfijn de filters of voeg alle overeenkomende vliegvelden toe."
 
-#: app/templates/passports/builder.html:37
+#: app/templates/passports/builder.html:46
 msgid "Add all matching airfields"
 msgstr "Alle overeenkomende vliegvelden toevoegen"
 
-#: app/templates/passports/builder.html:39
+#: app/templates/passports/builder.html:48
 msgid "Apply checked airfields"
 msgstr "Aangevinkte vliegvelden toepassen"
 
-#: app/templates/passports/builder.html:40
+#: app/templates/passports/builder.html:49
 msgid "Choose an area or enter at least two search characters."
 msgstr "Kies een gebied of voer minstens twee zoektekens in."
 
-#: app/templates/passports/builder.html:42
+#: app/templates/passports/builder.html:51
 msgid "Paste airfield codes"
 msgstr "Vliegveldcodes plakken"
 
-#: app/templates/passports/builder.html:42
+#: app/templates/passports/builder.html:51
 msgid "Separate codes with spaces, commas, semicolons or new lines."
 msgstr "Scheid codes met spaties, komma's, puntkomma's of nieuwe regels."
 
-#: app/templates/passports/builder.html:42
+#: app/templates/passports/builder.html:51
 msgid "Add codes"
 msgstr "Codes toevoegen"
 
-#: app/templates/passports/builder.html:43
+#: app/templates/passports/builder.html:52
+#: app/templates/passports/import_review.html:10
+#: app/templates/passports/import_review.html:12
 msgid "Unknown or ambiguous codes"
 msgstr "Onbekende of dubbelzinnige codes"
 
-#: app/templates/passports/builder.html:43
+#: app/templates/passports/builder.html:52
 msgid "Drop these unresolved codes"
 msgstr "Deze onopgeloste codes verwijderen"
 
-#: app/templates/passports/builder.html:44
+#: app/templates/passports/builder.html:53
 msgid "Add a missing airfield"
 msgstr "Een ontbrekend vliegveld toevoegen"
 
-#: app/templates/passports/builder.html:45
+#: app/templates/passports/builder.html:54
 msgid "Airfield name"
 msgstr "Naam van het vliegveld"
 
-#: app/templates/passports/builder.html:46
+#: app/templates/passports/builder.html:55
 msgid "Optional airfield code"
 msgstr "Optionele vliegveldcode"
 
-#: app/templates/passports/builder.html:47
+#: app/templates/passports/builder.html:56
 msgid "Latitude"
 msgstr "Breedtegraad"
 
-#: app/templates/passports/builder.html:47
+#: app/templates/passports/builder.html:56
 msgid "Longitude"
 msgstr "Lengtegraad"
 
-#: app/templates/passports/builder.html:48
+#: app/templates/passports/builder.html:57
 msgid "Coordinates are optional. Airfields without coordinates remain in the list."
 msgstr "Coördinaten zijn optioneel. Vliegvelden zonder coördinaten blijven in de lijst."
 
-#: app/templates/passports/builder.html:48
+#: app/templates/passports/builder.html:57
 msgid "Add custom airfield"
 msgstr "Eigen vliegveld toevoegen"
 
-#: app/templates/passports/builder.html:50
+#: app/templates/passports/builder.html:59
 msgid "Selected airfields"
 msgstr "Geselecteerde vliegvelden"
 
-#: app/templates/passports/builder.html:51
-#: app/templates/passports/detail.html:22
+#: app/templates/passports/builder.html:60
+#: app/templates/passports/detail.html:24
 #: app/templates/passports/where_next.html:34
 msgid "Airfield"
 msgstr "Vliegveld"
 
-#: app/templates/passports/builder.html:52
-#: app/templates/passports/review.html:15
+#: app/templates/passports/builder.html:61
+#: app/templates/passports/review.html:16
 msgid "No coordinates"
 msgstr "Geen coördinaten"
 
-#: app/templates/passports/builder.html:52
+#: app/templates/passports/builder.html:61
 msgid "Manual classifications are shared with other passports in this organisation."
 msgstr "Handmatige classificaties worden gedeeld met andere paspoorten in deze organisatie."
 
-#: app/templates/passports/builder.html:52
-#: app/templates/passports/detail.html:23
+#: app/templates/passports/builder.html:61
+#: app/templates/passports/detail.html:25
 msgid "No airfields selected yet."
 msgstr "Nog geen vliegvelden geselecteerd."
 
-#: app/templates/passports/builder.html:55
+#: app/templates/passports/builder.html:64
 #: app/templates/passports/review.html:3 app/templates/passports/review.html:6
 msgid "Review passport"
 msgstr "Paspoort controleren"
@@ -11481,88 +11586,122 @@ msgstr "Waarheen nu?"
 msgid "Edit passport"
 msgstr "Paspoort bewerken"
 
-#: app/templates/passports/detail.html:12
+#: app/templates/passports/detail.html:14
 #: app/templates/reports/utilization.html:44
 msgid "From"
 msgstr "Van"
 
-#: app/templates/passports/detail.html:14
+#: app/templates/passports/detail.html:16
 msgid "Your progress"
 msgstr "Je voortgang"
 
-#: app/templates/passports/detail.html:14
+#: app/templates/passports/detail.html:16
 msgid "Original targets"
 msgstr "Oorspronkelijke doelen"
 
-#: app/templates/passports/detail.html:14
+#: app/templates/passports/detail.html:16
 msgid "Closed unvisited targets excluded"
 msgstr "Uitgesloten gesloten, onbezochte velden"
 
-#: app/templates/passports/detail.html:15
+#: app/templates/passports/detail.html:17
 msgid "No achievable targets yet."
 msgstr "Nog geen haalbare doelen."
 
-#: app/templates/passports/detail.html:15
+#: app/templates/passports/detail.html:17
 msgid "Passport complete!"
 msgstr "Paspoort voltooid!"
 
-#: app/templates/passports/detail.html:17
+#: app/templates/passports/detail.html:19
 msgid "Show airfields"
 msgstr "Toon vliegvelden"
 
-#: app/templates/passports/detail.html:17
-#: app/templates/passports/detail.html:20
-#: app/templates/passports/detail.html:22 app/templates/passports/target.html:9
+#: app/templates/passports/detail.html:19
+#: app/templates/passports/detail.html:22
+#: app/templates/passports/detail.html:24 app/templates/passports/target.html:9
 msgid "Visited"
 msgstr "Bezocht"
 
-#: app/templates/passports/detail.html:17
-#: app/templates/passports/detail.html:20
-#: app/templates/passports/detail.html:22 app/templates/passports/target.html:9
+#: app/templates/passports/detail.html:19
+#: app/templates/passports/detail.html:22
+#: app/templates/passports/detail.html:24 app/templates/passports/target.html:9
 msgid "Not visited"
 msgstr "Niet bezocht"
 
-#: app/templates/passports/detail.html:18
+#: app/templates/passports/detail.html:20
 msgid "Show visit frequency"
 msgstr "Toon bezoekfrequentie"
 
-#: app/templates/passports/detail.html:19
+#: app/templates/passports/detail.html:21
 msgid "Counts show your recorded full-stop visits in this passport. Repeat-visit data may be incomplete."
 msgstr "De aantallen tonen je vastgelegde bezoeken met een volledige stop binnen dit paspoort. Herhaalbezoeken kunnen onvolledig zijn."
 
-#: app/templates/passports/detail.html:20
-#: app/templates/passports/detail.html:22 app/templates/passports/target.html:9
+#: app/templates/passports/detail.html:22
+#: app/templates/passports/detail.html:24 app/templates/passports/target.html:9
 msgid "Recorded visits"
 msgstr "Vastgelegde bezoeken"
 
-#: app/templates/passports/detail.html:20
+#: app/templates/passports/detail.html:22
 msgid "Passport visit map"
 msgstr "Bezoekkaart van het paspoort"
 
-#: app/templates/passports/detail.html:21
+#: app/templates/passports/detail.html:23
 msgid "Blue: visited by you. Grey: not visited. Dashed outline: closed."
 msgstr "Blauw: door jou bezocht. Grijs: niet bezocht. Onderbroken rand: gesloten."
 
-#: app/templates/passports/detail.html:21
+#: app/templates/passports/detail.html:23
 msgid "Marker radius: 6 px for no visits, 8 px for one, increasing to at most 18 px for frequent visits. Exact counts are in the list and map popups."
 msgstr "Markeerstraal: 6 px zonder bezoeken, 8 px bij één bezoek, oplopend tot maximaal 18 px bij veel bezoeken. Exacte aantallen staan in de lijst en kaartpop-ups."
 
-#: app/templates/passports/detail.html:22
+#: app/templates/passports/detail.html:24
 #: app/templates/passports/target.html:10
 msgid "First visit"
 msgstr "Eerste bezoek"
 
-#: app/templates/passports/detail.html:22
+#: app/templates/passports/detail.html:24
 msgid "No coordinates — shown in the list only."
 msgstr "Geen coördinaten — alleen in de lijst getoond."
 
-#: app/templates/passports/detail.html:23
+#: app/templates/passports/detail.html:25
 msgid "No airfields match this view."
 msgstr "Geen vliegvelden komen overeen met deze weergave."
 
 #: app/templates/passports/draft_error.html:7
 msgid "Start again"
 msgstr "Opnieuw beginnen"
+
+#: app/templates/passports/import_review.html:3
+#: app/templates/passports/import_review.html:6
+msgid "Review source import"
+msgstr "Bronimport controleren"
+
+#: app/templates/passports/import_review.html:9
+msgid "Candidate codes can contain unrelated words. Review matches and resolve or explicitly drop unknown codes before saving. The edition label is your confirmation of the source edition."
+msgstr "Mogelijke codes kunnen ook niet-gerelateerde woorden bevatten. Controleer de overeenkomsten en los onbekende codes op of verwijder ze expliciet voordat je opslaat. Met de editie bevestig je welke broneditie je gebruikt."
+
+#: app/templates/passports/import_review.html:10
+#: app/templates/passports/import_review.html:11
+msgid "Extracted codes"
+msgstr "Gevonden codes"
+
+#: app/templates/passports/import_review.html:10
+msgid "Matched airfields"
+msgstr "Gevonden vliegvelden"
+
+#: app/templates/passports/import_review.html:16
+msgid "Cancel import"
+msgstr "Import annuleren"
+
+#: app/templates/passports/import_review.html:16
+msgid "Add imported list to selection"
+msgstr "Geïmporteerde lijst aan selectie toevoegen"
+
+#: app/templates/passports/import_review.html:16
+msgid "Replace selection with imported list"
+msgstr "Selectie vervangen door geïmporteerde lijst"
+
+#: app/templates/passports/import_review.html:18
+msgid "Replacing an imported list keeps airfields with saved visits or photos. The final review shows additions and removals. Delete protected history separately in the builder only if you intend to remove it."
+msgstr "Bij het vervangen van een geïmporteerde lijst blijven vliegvelden met opgeslagen bezoeken of foto’s behouden. De eindcontrole toont toevoegingen en verwijderingen. Verwijder beschermde historie alleen apart in de bouwer als je dat wilt."
 
 #: app/templates/passports/index.html:6
 msgid "Create passport"
@@ -11572,41 +11711,41 @@ msgstr "Paspoort aanmaken"
 msgid "No passports yet."
 msgstr "Nog geen paspoorten."
 
-#: app/templates/passports/review.html:10
+#: app/templates/passports/review.html:11
 #, python-format
 msgid "one selected airfield"
 msgid_plural "%(n)s selected airfields"
 msgstr[0] "één geselecteerd vliegveld"
 msgstr[1] "%(n)s geselecteerde vliegvelden"
 
-#: app/templates/passports/review.html:11
+#: app/templates/passports/review.html:12
 msgid "Your completion before this change"
 msgstr "Uw voortgang vóór deze wijziging"
 
-#: app/templates/passports/review.html:12
+#: app/templates/passports/review.html:13
 msgid "Your completion after this change"
 msgstr "Uw voortgang na deze wijziging"
 
-#: app/templates/passports/review.html:13
+#: app/templates/passports/review.html:14
 msgid "Preview uses your logged arrivals and saved visits within the selected dates. Other pilots’ private flights are not shown."
 msgstr "Het voorbeeld gebruikt uw gelogde aankomsten en opgeslagen bezoeken binnen de geselecteerde datums. Privévluchten van andere piloten worden niet getoond."
 
-#: app/templates/passports/review.html:14
+#: app/templates/passports/review.html:15
 #, python-format
 msgid "one airfield will be removed."
 msgid_plural "%(n)s airfields will be removed."
 msgstr[0] "één vliegveld wordt verwijderd."
 msgstr[1] "%(n)s vliegvelden worden verwijderd."
 
-#: app/templates/passports/review.html:18
+#: app/templates/passports/review.html:19
 msgid "I understand that removing these airfields deletes their saved visits and stamp photos from this passport."
 msgstr "Ik begrijp dat het verwijderen van deze vliegvelden hun opgeslagen bezoeken en stempelfoto's uit dit paspoort verwijdert."
 
-#: app/templates/passports/review.html:19
+#: app/templates/passports/review.html:20
 msgid "Back to selection"
 msgstr "Terug naar de selectie"
 
-#: app/templates/passports/review.html:19
+#: app/templates/passports/review.html:20
 msgid "Save passport"
 msgstr "Paspoort opslaan"
 

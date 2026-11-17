@@ -708,6 +708,7 @@ class TestTemporaryFiles:
 
         _put(tmp_path, "import_tmp/a.xlsx")
         _put(tmp_path, "gps_import_tmp/b.gpx")
+        _put(tmp_path, "passport_fetch_locks/slot-0.lock")
         _put(tmp_path, "club/OO-ARC/gps_logs/c.csv")
         _put(tmp_path, "club/import_tmp/not-top-level.txt")
         buf = io.BytesIO()
