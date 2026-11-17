@@ -285,6 +285,7 @@ _EXCLUDED_ENDPOINTS = {
     # Pre-auth / token-based flows: no tenant role exists yet at request time.
     "passports.edit_passport": "passport-owner scoped, independent of tenant role; covered by passport builder tests",
     "passports.archive_passport": "passport-owner scoped, independent of tenant role; covered by passport builder tests",
+    "passports.target_detail": "participant-owned evidence; covered by passport stamp privacy tests",
     "passports.delete_passport": "passport-owner scoped, independent of tenant role; covered by passport builder tests",
     "auth.login": "pre-auth, no tenant role exists yet",
     "auth.setup": "pre-auth first-run tenant creation",

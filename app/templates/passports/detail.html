@@ -4,13 +4,21 @@
 {% block content %}
 <div class="container py-4">
 <a href="{{ url_for('passports.index') }}">{{ _('Airfield passports') }}</a>
-<h1>{{ passport.title }}</h1>
+<h1 class="text-break">{{ passport.title }}</h1>
 {% if can_manage %}<div class="d-flex flex-wrap gap-2 my-3">{% if not passport.archived_at %}<a class="btn btn-ac-primary" href="{{ url_for('passports.edit_passport', passport_id=passport.id) }}">{{ _('Edit passport') }}</a>{% endif %}<a class="btn btn-ac-ghost" href="{{ url_for('passports.archive_passport', passport_id=passport.id) }}">{{ _('Reopen passport') if passport.archived_at else _('Archive passport') }}</a><a class="btn btn-outline-danger" href="{{ url_for('passports.delete_passport', passport_id=passport.id) }}">{{ _('Delete passport') }}</a></div>{% endif %}
 {% if passport.archived_at %}<span class="badge bg-secondary">{{ _('Archived') }}</span>{% endif %}
 {% if passport.description %}<p>{{ passport.description }}</p>{% endif %}
 {% if passport.start_date %}<dl><dt>{{ _('From') }}</dt><dd>{{ passport.start_date }}</dd></dl>{% endif %}
 {% if passport.end_date %}<dl><dt>{{ _('Until') }}</dt><dd>{{ passport.end_date }}</dd></dl>{% endif %}
-{% if targets %}<ul>{% for target in targets %}<li>{{ target.overrides.get('name', target.name) }}{% if target.ident %} ({{ target.ident }}){% endif %}</li>{% endfor %}</ul>
-{% else %}<p>{{ _('No airfields selected yet.') }}</p>{% endif %}
+<p>{{ _('Your progress') }}: <strong>{{ progress.visited }} / {{ progress.total }}</strong>{% if progress.percent is not none %} ({{ progress.percent }}%){% endif %} · {{ _('Original targets') }}: {{ progress.original }} · {{ _('Closed unvisited targets excluded') }}: {{ progress.excluded_closed }}</p>
+{% if progress.total == 0 %}<p>{{ _('No achievable targets yet.') }}</p>{% elif progress.visited == progress.total %}<p>{{ _('Passport complete!') }}</p>{% endif %}
+<form method="get" class="d-flex flex-wrap gap-3 align-items-end my-3">
+<div><label for="passport-state" class="form-label">{{ _('Show airfields') }}</label><select class="form-select" id="passport-state" name="state">{% for value, label in [('all', _('All')), ('visited', _('Visited')), ('unvisited', _('Not visited')), ('closed', _('Closed'))] %}<option value="{{ value }}" {% if state == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+<div class="form-check"><input class="form-check-input" type="checkbox" name="frequency" value="1" id="passport-frequency" {% if frequency %}checked{% endif %}><label class="form-check-label" for="passport-frequency">{{ _('Show visit frequency') }}</label></div><button class="btn btn-ac-ghost">{{ _('Apply') }}</button></form>
+<p>{{ _('Counts show your recorded full-stop visits in this passport. Repeat-visit data may be incomplete.') }}</p>
+<div id="passport-progress" data-frequency="{{ '1' if frequency else '0' }}" data-fields="{{ map_rows | tojson | forceescape }}" data-target-url="{{ url_for('passports.target_detail', passport_id=passport.id, target_id=0) }}" data-visited="{{ _('Visited') }}" data-unvisited="{{ _('Not visited') }}" data-closed="{{ _('Closed') }}" data-visits="{{ _('Recorded visits') }}"><div id="passport-progress-map" class="passport-selection-map border rounded" role="region" aria-label="{{ _('Passport visit map') }}"></div></div>
+<p>{{ _('Blue: visited by you. Grey: not visited. Dashed outline: closed.') }} {% if frequency %}{{ _('Marker radius: 6 px for no visits, 8 px for one, increasing to at most 18 px for frequent visits. Exact counts are in the list and map popups.') }}{% endif %}</p>
+{% if targets %}<div class="table-responsive"><table class="table"><thead><tr><th>{{ _('Airfield') }}</th><th>{{ _('Status') }}</th><th>{{ _('First visit') }}</th><th>{{ _('Recorded visits') }}</th></tr></thead><tbody>{% for target in targets %}<tr><td><a href="{{ url_for('passports.target_detail', passport_id=passport.id, target_id=target.target_id) }}">{{ target.name }}{% if target.ident %} ({{ target.ident }}){% endif %}</a>{% if target.latitude is none or target.longitude is none %}<br><small>{{ _('No coordinates — shown in the list only.') }}</small>{% endif %}</td><td>{{ _('Visited') if target.visited else _('Not visited') }}{% if target.is_closed %} · {{ _('Closed') }}{% endif %}</td><td>{{ target.first.date if target.first else '—' }}</td><td>{{ target.count }}</td></tr>{% endfor %}</tbody></table></div>
+{% else %}<p>{{ _('No airfields match this view.') if progress.original else _('No airfields selected yet.') }}</p>{% endif %}
 </div>
 {% endblock %}

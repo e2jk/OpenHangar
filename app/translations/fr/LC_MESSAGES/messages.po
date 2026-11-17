@@ -1898,7 +1898,7 @@ msgstr "Une référence d’aérodrome est invalide. Rouvrez l’éditeur."
 msgid "An airfield is no longer available. Review your selection."
 msgstr "Un aérodrome n’est plus disponible. Vérifiez votre sélection."
 
-#: app/passports/builder.py:152 app/passports/management.py:86
+#: app/passports/builder.py:152 app/passports/management.py:82
 msgid "A passport field is too long."
 msgstr "Un champ du passeport est trop long."
 
@@ -1958,71 +1958,103 @@ msgstr "Ce brouillon de passeport a expiré. Recommencez."
 msgid "This draft changed in another tab. Reopen the builder."
 msgstr "Ce brouillon a changé dans un autre onglet. Rouvrez l’éditeur."
 
-#: app/passports/management.py:45
-msgid "You cannot manage passports with this account."
-msgstr "Vous ne pouvez pas gérer les passeports avec ce compte."
+#: app/passports/evidence.py:35
+msgid "Join this passport before recording visits."
+msgstr "Rejoignez ce passeport avant d’enregistrer des visites."
 
-#: app/passports/management.py:51
-msgid "Pilot access is required to create a passport."
-msgstr "Un accès pilote est nécessaire pour créer un passeport."
-
-#: app/passports/management.py:67
-msgid "Passport not found."
-msgstr "Passeport introuvable."
-
-#: app/passports/management.py:69
+#: app/passports/evidence.py:37 app/passports/management.py:65
 msgid "Reopen this passport before editing it."
 msgstr "Rouvrez ce passeport avant de le modifier."
 
-#: app/passports/management.py:81
+#: app/passports/evidence.py:47
+msgid "Enter a valid visit date."
+msgstr "Saisissez une date de visite valide."
+
+#: app/passports/evidence.py:50
+msgid "The visit must be within the passport dates and not in the future."
+msgstr "La visite doit respecter les dates du passeport et ne pas être dans le futur."
+
+#: app/passports/evidence.py:54
+msgid "The visit note is too long."
+msgstr "La note de visite est trop longue."
+
+#: app/passports/evidence.py:61 app/passports/evidence.py:72
+msgid "Choose a flight from your own logbook on the visit date."
+msgstr "Choisissez un vol de votre propre carnet à la date de la visite."
+
+#: app/passports/evidence.py:93
+msgid "Choose a photo to upload."
+msgstr "Choisissez une photo à téléverser."
+
+#: app/passports/evidence.py:96
+msgid "Photos must be at most 10 MB."
+msgstr "Les photos ne doivent pas dépasser 10 Mo."
+
+#: app/passports/evidence.py:123
+msgid "Upload a valid JPEG, PNG or WebP photo (up to 20 megapixels)."
+msgstr "Téléversez une photo JPEG, PNG ou WebP valide (20 mégapixels maximum)."
+
+#: app/passports/management.py:41
+msgid "You cannot manage passports with this account."
+msgstr "Vous ne pouvez pas gérer les passeports avec ce compte."
+
+#: app/passports/management.py:47
+msgid "Pilot access is required to create a passport."
+msgstr "Un accès pilote est nécessaire pour créer un passeport."
+
+#: app/passports/management.py:63
+msgid "Passport not found."
+msgstr "Passeport introuvable."
+
+#: app/passports/management.py:77
 msgid "Enter valid passport dates."
 msgstr "Saisissez des dates de passeport valides."
 
-#: app/passports/management.py:89
+#: app/passports/management.py:85
 msgid "Enter a passport name."
 msgstr "Saisissez un nom de passeport."
 
-#: app/passports/management.py:95
+#: app/passports/management.py:91
 msgid "The passport end date must not precede its start date."
 msgstr "La date de fin du passeport ne doit pas précéder sa date de début."
 
-#: app/passports/routes.py:112
+#: app/passports/routes.py:151
 msgid "Small airfields"
 msgstr "Petits aérodromes"
 
-#: app/passports/routes.py:113
+#: app/passports/routes.py:152
 msgid "Medium airports"
 msgstr "Aéroports moyens"
 
-#: app/passports/routes.py:114
+#: app/passports/routes.py:153
 msgid "Large airports"
 msgstr "Grands aéroports"
 
-#: app/passports/routes.py:115
+#: app/passports/routes.py:154
 msgid "Heliports"
 msgstr "Héliports"
 
-#: app/passports/routes.py:116
+#: app/passports/routes.py:155
 msgid "Seaplane bases"
 msgstr "Hydrobases"
 
-#: app/passports/routes.py:117
+#: app/passports/routes.py:156
 msgid "Balloon ports"
 msgstr "Bases de ballons"
 
-#: app/passports/routes.py:118
+#: app/passports/routes.py:157
 msgid "Closed airfields"
 msgstr "Aérodromes fermés"
 
-#: app/passports/routes.py:200
+#: app/passports/routes.py:239
 msgid "Passport saved."
 msgstr "Passeport enregistré."
 
-#: app/passports/routes.py:229
+#: app/passports/routes.py:268
 msgid "An airfield code conflicts with an existing identity. Review or remove that selection."
 msgstr "Un code d’aérodrome entre en conflit avec une identité existante. Vérifiez ou retirez cette sélection."
 
-#: app/passports/routes.py:276
+#: app/passports/routes.py:315
 msgid "Passport deleted."
 msgstr "Passeport supprimé."
 
@@ -3357,7 +3389,7 @@ msgstr "les données sont effacées périodiquement et toute modification sera p
 msgid "The demo environment is being reset. Please wait — the page will reload automatically when ready."
 msgstr "L'environnement de démonstration est en cours de réinitialisation. Veuillez patienter — la page se rechargera automatiquement dès qu'elle sera prête."
 
-#: app/templates/base.html:170 app/templates/base.html:172 app/templates/base.html:420
+#: app/templates/base.html:170 app/templates/base.html:172 app/templates/base.html:421
 msgid "Install app"
 msgstr "Installer l'application"
 
@@ -3369,7 +3401,7 @@ msgstr "Ajoutez OpenHangar à votre écran d'accueil pour un accès rapide."
 msgid "Not now"
 msgstr "Pas maintenant"
 
-#: app/templates/base.html:181 app/templates/base.html:419
+#: app/templates/base.html:181 app/templates/base.html:420
 msgid "Offline"
 msgstr "Hors ligne"
 
@@ -3429,7 +3461,7 @@ msgstr "Veuillez ouvrir un ticket si vous avez besoin d'aide pour les extraire."
 msgid "open-source aircraft ops"
 msgstr "gestion d'avions open source"
 
-#: app/templates/airworthiness/adsb_board.html:61 app/templates/airworthiness/adsb_form.html:34 app/templates/airworthiness/adsb_print.html:38 app/templates/airworthiness/avionics_unit_form.html:47 app/templates/airworthiness/dashboard.html:95 app/templates/airworthiness/equipment_board.html:50 app/templates/airworthiness/status_form.html:21 app/templates/base.html:356 app/templates/config/renters_list.html:33 app/templates/config/settings.html:291 app/templates/config/settings.html:390 app/templates/config/tenant_list.html:33 app/templates/flights/removed_gps_files.html:27 app/templates/maintenance/amp_import_review.html:44 app/templates/maintenance/fleet.html:176 app/templates/maintenance/fleet.html:281 app/templates/maintenance/fleet.html:341 app/templates/maintenance/list.html:98 app/templates/pilots/minimums_history.html:25 app/templates/reservations/charge.html:34 app/templates/reservations/detail.html:38 app/templates/reservations/detail.html:142 app/templates/reservations/fleet.html:36 app/templates/share/public.html:25 app/templates/users/permissions.html:41
+#: app/templates/airworthiness/adsb_board.html:61 app/templates/airworthiness/adsb_form.html:34 app/templates/airworthiness/adsb_print.html:38 app/templates/airworthiness/avionics_unit_form.html:47 app/templates/airworthiness/dashboard.html:95 app/templates/airworthiness/equipment_board.html:50 app/templates/airworthiness/status_form.html:21 app/templates/base.html:356 app/templates/config/renters_list.html:33 app/templates/config/settings.html:291 app/templates/config/settings.html:390 app/templates/config/tenant_list.html:33 app/templates/flights/removed_gps_files.html:27 app/templates/maintenance/amp_import_review.html:44 app/templates/maintenance/fleet.html:176 app/templates/maintenance/fleet.html:281 app/templates/maintenance/fleet.html:341 app/templates/maintenance/list.html:98 app/templates/passports/detail.html:21 app/templates/pilots/minimums_history.html:25 app/templates/reservations/charge.html:34 app/templates/reservations/detail.html:38 app/templates/reservations/detail.html:142 app/templates/reservations/fleet.html:36 app/templates/share/public.html:25 app/templates/users/permissions.html:41
 msgid "Status"
 msgstr "Statut"
 
@@ -3441,59 +3473,59 @@ msgstr "Annuler"
 msgid "Confirm"
 msgstr "Confirmer"
 
-#: app/templates/base.html:421
+#: app/templates/base.html:422
 msgid "You're offline — this can't be saved right now. Reconnect and try again."
 msgstr "Vous êtes hors ligne — cela ne peut pas être enregistré pour le moment. Reconnectez-vous et réessayez."
 
-#: app/templates/base.html:424
+#: app/templates/base.html:425
 msgid "Please fill out this field."
 msgstr "Veuillez renseigner ce champ."
 
-#: app/templates/base.html:425
+#: app/templates/base.html:426
 msgid "Please select an item in the list."
 msgstr "Veuillez sélectionner un élément dans la liste."
 
-#: app/templates/base.html:426
+#: app/templates/base.html:427
 msgid "Please check this box if you want to proceed."
 msgstr "Veuillez cocher cette case pour continuer."
 
-#: app/templates/base.html:427
+#: app/templates/base.html:428
 msgid "Please select one of these options."
 msgstr "Veuillez sélectionner une de ces options."
 
-#: app/templates/base.html:428
+#: app/templates/base.html:429
 msgid "Please enter a valid email address."
 msgstr "Veuillez saisir une adresse e-mail valide."
 
-#: app/templates/base.html:429
+#: app/templates/base.html:430
 msgid "Please enter a valid URL."
 msgstr "Veuillez saisir une URL valide."
 
-#: app/templates/base.html:430
+#: app/templates/base.html:431
 msgid "Please match the requested format."
 msgstr "Veuillez respecter le format demandé."
 
-#: app/templates/base.html:431
+#: app/templates/base.html:432
 #, python-brace-format
 msgid "Please use at least {min} characters (currently {n})."
 msgstr "Veuillez utiliser au moins {min} caractères (actuellement {n})."
 
-#: app/templates/base.html:432
+#: app/templates/base.html:433
 #, python-brace-format
 msgid "Please use no more than {max} characters (currently {n})."
 msgstr "Veuillez utiliser au maximum {max} caractères (actuellement {n})."
 
-#: app/templates/base.html:433
+#: app/templates/base.html:434
 #, python-brace-format
 msgid "Value must be {min} or more."
 msgstr "La valeur doit être supérieure ou égale à {min}."
 
-#: app/templates/base.html:434
+#: app/templates/base.html:435
 #, python-brace-format
 msgid "Value must be {max} or less."
 msgstr "La valeur doit être inférieure ou égale à {max}."
 
-#: app/templates/base.html:435
+#: app/templates/base.html:436
 msgid "Please enter a valid value."
 msgstr "Veuillez saisir une valeur valide."
 
@@ -5441,7 +5473,7 @@ msgstr "Solde du capital"
 msgid "Record payment"
 msgstr "Enregistrer le paiement"
 
-#: app/templates/aircraft/owners_billing.html:101 app/templates/aircraft/owners_billing.html:158
+#: app/templates/aircraft/owners_billing.html:101 app/templates/aircraft/owners_billing.html:158 app/templates/passports/target.html:19
 msgid "Note (optional)"
 msgstr "Note (facultatif)"
 
@@ -5724,7 +5756,7 @@ msgstr "Conditionnel"
 msgid "Verify part number"
 msgstr "Vérifier la référence pièce"
 
-#: app/templates/airworthiness/adsb_board.html:39 app/templates/airworthiness/adsb_form.html:39 app/templates/airworthiness/adsb_print.html:28 app/templates/passports/builder.html:38
+#: app/templates/airworthiness/adsb_board.html:39 app/templates/airworthiness/adsb_form.html:39 app/templates/airworthiness/adsb_print.html:28 app/templates/passports/builder.html:38 app/templates/passports/detail.html:16 app/templates/passports/detail.html:19 app/templates/passports/detail.html:21 app/templates/passports/target.html:9
 msgid "Closed"
 msgstr "Clos"
 
@@ -5872,7 +5904,7 @@ msgid_plural "%(n)s documents total"
 msgstr[0] "un document au total"
 msgstr[1] "%(n)s documents au total"
 
-#: app/templates/airworthiness/dashboard.html:68 app/templates/documents/list.html:102 app/templates/documents/list.html:104 app/templates/flights/list.html:105 app/templates/flights/list.html:107 app/templates/pilots/logbook.html:142 app/templates/pilots/logbook.html:144 app/templates/users/list.html:74
+#: app/templates/airworthiness/dashboard.html:68 app/templates/documents/list.html:102 app/templates/documents/list.html:104 app/templates/flights/list.html:105 app/templates/flights/list.html:107 app/templates/passports/detail.html:16 app/templates/pilots/logbook.html:142 app/templates/pilots/logbook.html:144 app/templates/users/list.html:74
 msgid "All"
 msgstr "Tout"
 
@@ -8301,7 +8333,7 @@ msgstr "Conserver le carnet de cet appareil tel quel — ne pas importer cette l
 msgid "This is a different flight — import it as a new entry"
 msgstr "Il s'agit d'un vol différent — l'importer comme une nouvelle entrée"
 
-#: app/templates/flights/airframe_import_review.html:150 app/templates/pilots/import_review.html:158 app/templates/reports/utilization.html:54
+#: app/templates/flights/airframe_import_review.html:150 app/templates/passports/detail.html:17 app/templates/pilots/import_review.html:158 app/templates/reports/utilization.html:54
 msgid "Apply"
 msgstr "Appliquer"
 
@@ -10008,7 +10040,7 @@ msgstr "Ajouter l’aérodrome personnalisé"
 msgid "Selected airfields"
 msgstr "Aérodromes sélectionnés"
 
-#: app/templates/passports/builder.html:51
+#: app/templates/passports/builder.html:51 app/templates/passports/detail.html:21
 msgid "Airfield"
 msgstr "Aérodrome"
 
@@ -10020,7 +10052,7 @@ msgstr "Sans coordonnées"
 msgid "Manual classifications are shared with other passports in this organisation."
 msgstr "Les classifications manuelles sont partagées avec les autres passeports de cette organisation."
 
-#: app/templates/passports/builder.html:52 app/templates/passports/detail.html:14
+#: app/templates/passports/builder.html:52 app/templates/passports/detail.html:22
 msgid "No airfields selected yet."
 msgstr "Aucun aérodrome sélectionné pour le moment."
 
@@ -10059,6 +10091,74 @@ msgstr "Modifier le passeport"
 #: app/templates/passports/detail.html:11 app/templates/reports/utilization.html:44
 msgid "From"
 msgstr "De"
+
+#: app/templates/passports/detail.html:13
+msgid "Your progress"
+msgstr "Votre progression"
+
+#: app/templates/passports/detail.html:13
+msgid "Original targets"
+msgstr "Objectifs d’origine"
+
+#: app/templates/passports/detail.html:13
+msgid "Closed unvisited targets excluded"
+msgstr "Terrains fermés non visités exclus"
+
+#: app/templates/passports/detail.html:14
+msgid "No achievable targets yet."
+msgstr "Aucun objectif réalisable pour le moment."
+
+#: app/templates/passports/detail.html:14
+msgid "Passport complete!"
+msgstr "Passeport terminé !"
+
+#: app/templates/passports/detail.html:16
+msgid "Show airfields"
+msgstr "Afficher les aérodromes"
+
+#: app/templates/passports/detail.html:16 app/templates/passports/detail.html:19 app/templates/passports/detail.html:21 app/templates/passports/target.html:9
+msgid "Visited"
+msgstr "Visité"
+
+#: app/templates/passports/detail.html:16 app/templates/passports/detail.html:19 app/templates/passports/detail.html:21 app/templates/passports/target.html:9
+msgid "Not visited"
+msgstr "Non visité"
+
+#: app/templates/passports/detail.html:17
+msgid "Show visit frequency"
+msgstr "Afficher la fréquence des visites"
+
+#: app/templates/passports/detail.html:18
+msgid "Counts show your recorded full-stop visits in this passport. Repeat-visit data may be incomplete."
+msgstr "Les nombres correspondent à vos visites enregistrées avec arrêt complet dans ce passeport. Les visites répétées peuvent être incomplètes."
+
+#: app/templates/passports/detail.html:19 app/templates/passports/detail.html:21 app/templates/passports/target.html:9
+msgid "Recorded visits"
+msgstr "Visites enregistrées"
+
+#: app/templates/passports/detail.html:19
+msgid "Passport visit map"
+msgstr "Carte des visites du passeport"
+
+#: app/templates/passports/detail.html:20
+msgid "Blue: visited by you. Grey: not visited. Dashed outline: closed."
+msgstr "Bleu : visité par vous. Gris : non visité. Contour pointillé : fermé."
+
+#: app/templates/passports/detail.html:20
+msgid "Marker radius: 6 px for no visits, 8 px for one, increasing to at most 18 px for frequent visits. Exact counts are in the list and map popups."
+msgstr "Rayon des marqueurs : 6 px sans visite, 8 px pour une visite, jusqu’à 18 px pour les visites fréquentes. Les nombres exacts figurent dans la liste et les fenêtres de la carte."
+
+#: app/templates/passports/detail.html:21 app/templates/passports/target.html:10
+msgid "First visit"
+msgstr "Première visite"
+
+#: app/templates/passports/detail.html:21
+msgid "No coordinates — shown in the list only."
+msgstr "Sans coordonnées — affiché uniquement dans la liste."
+
+#: app/templates/passports/detail.html:22
+msgid "No airfields match this view."
+msgstr "Aucun aérodrome ne correspond à cette vue."
 
 #: app/templates/passports/draft_error.html:7
 msgid "Start again"
@@ -10109,6 +10209,90 @@ msgstr "Retour à la sélection"
 #: app/templates/passports/review.html:19
 msgid "Save passport"
 msgstr "Enregistrer le passeport"
+
+#: app/templates/passports/target.html:11
+msgid "A logged arrival is presumed a full stop. Exclude touch-and-go, low approach or other arrivals that should not earn credit. Departures and landing totals alone do not earn stamps."
+msgstr "Une arrivée enregistrée est présumée avec arrêt complet. Excluez les touchers-décollers, approches basses ou autres arrivées ne devant pas compter. Les départs et nombres d’atterrissages seuls ne donnent pas de tampon."
+
+#: app/templates/passports/target.html:12
+msgid "Visit evidence"
+msgstr "Justificatifs de visite"
+
+#: app/templates/passports/target.html:14
+msgid "Logged arrival"
+msgstr "Arrivée du carnet de vol"
+
+#: app/templates/passports/target.html:14
+msgid "Confirmed GPS visit"
+msgstr "Visite GPS confirmée"
+
+#: app/templates/passports/target.html:14
+msgid "Manual visit"
+msgstr "Visite manuelle"
+
+#: app/templates/passports/target.html:14
+msgid "Excluded from credit"
+msgstr "Exclu du décompte"
+
+#: app/templates/passports/target.html:16
+msgid "View flight"
+msgstr "Voir le vol"
+
+#: app/templates/passports/target.html:17
+msgid "Restore arrival credit"
+msgstr "Rétablir le décompte de cette arrivée"
+
+#: app/templates/passports/target.html:17
+msgid "Exclude this arrival"
+msgstr "Exclure cette arrivée"
+
+#: app/templates/passports/target.html:17
+msgid "Delete manual visit"
+msgstr "Supprimer la visite manuelle"
+
+#: app/templates/passports/target.html:18
+msgid "No qualifying visits recorded yet."
+msgstr "Aucune visite admissible enregistrée pour le moment."
+
+#: app/templates/passports/target.html:19
+msgid "Record a manual visit"
+msgstr "Enregistrer une visite manuelle"
+
+#: app/templates/passports/target.html:19
+msgid "Visit date"
+msgstr "Date de visite"
+
+#: app/templates/passports/target.html:19
+msgid "Supporting flight (optional, latest 200 eligible flights)"
+msgstr "Vol justificatif (facultatif, les 200 derniers vols admissibles)"
+
+#: app/templates/passports/target.html:19
+msgid "Independent manual visit"
+msgstr "Visite manuelle indépendante"
+
+#: app/templates/passports/target.html:19
+msgid "Save visit"
+msgstr "Enregistrer la visite"
+
+#: app/templates/passports/target.html:20 app/templates/passports/target.html:21
+msgid "Private stamp photo"
+msgstr "Photo privée du tampon"
+
+#: app/templates/passports/target.html:20
+msgid "This photo is visible only to you. Uploading it does not earn a visit or publish it."
+msgstr "Cette photo n’est visible que par vous. Son téléversement ne valide aucune visite et ne la publie pas."
+
+#: app/templates/passports/target.html:21
+msgid "Delete photo"
+msgstr "Supprimer la photo"
+
+#: app/templates/passports/target.html:22
+msgid "JPEG, PNG or WebP, up to 10 MB and 20 megapixels"
+msgstr "JPEG, PNG ou WebP, 10 Mo et 20 mégapixels maximum"
+
+#: app/templates/passports/target.html:22
+msgid "Upload photo"
+msgstr "Téléverser la photo"
 
 #: app/templates/pilots/entry_detail.html:19 app/templates/pilots/entry_form.html:58
 msgid "FSTD / Simulator"

@@ -73,6 +73,7 @@ class TenantWorld:
     tenant_id: int
     admin_user_id: int
     passport_id: int
+    target_id: int
     aircraft_id: int
     component_id: int
     flight_id: int
@@ -100,6 +101,8 @@ def _build_tenant_world(app, client_factory, suffix: str) -> TenantWorld:
             MaintenanceDowntime,
             MaintenanceTrigger,
             Passport,
+            PassportAirfield,
+            PassportAirfieldIdentity,
             RenterAuthorization,
             Reservation,
             ReservationStatus,
@@ -275,13 +278,22 @@ def _build_tenant_world(app, client_factory, suffix: str) -> TenantWorld:
             title=f"Private passport {suffix}",
         )
         db.session.add(passport)
-
+        field = PassportAirfieldIdentity(
+            tenant_id=tenant.id, source="manual", name="Private field"
+        )
+        db.session.add(field)
+        db.session.flush()
+        target = PassportAirfield(
+            tenant_id=tenant.id, passport_id=passport.id, airfield_id=field.id
+        )
+        db.session.add(target)
         db.session.commit()
 
         world_ids = {
             "tenant_id": tenant.id,
             "admin_user_id": admin.id,
             "passport_id": passport.id,
+            "target_id": target.id,
             "aircraft_id": aircraft.id,
             "component_id": component.id,
             "flight_id": flight.id,

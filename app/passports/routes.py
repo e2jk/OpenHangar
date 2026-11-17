@@ -10,6 +10,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_file,
     session,
     url_for,
 )
@@ -17,15 +18,23 @@ from flask.typing import ResponseReturnValue
 from flask_babel import gettext as _
 from models import (
     Passport,
-    PassportAirfield,
-    PassportAirfieldIdentity,
+    PassportArrivalExclusion,
     PassportDraft,
+    PassportStampPhoto,
+    PassportVisit,
     db,
 )
-from utils import current_membership, list_index, login_required, require_pilot_access
+from utils import (
+    current_membership,
+    db_id,
+    list_index,
+    login_required,
+    require_pilot_access,
+)
 
 from passports import (
     builder,
+    evidence,
     lifecycle,  # Register transaction-safe file cleanup.
     passports_bp,
 )
@@ -38,6 +47,7 @@ from passports.drafts import (
     new_draft,
     save_draft,
 )
+from passports.eligibility import participant_for, passport_progress
 from passports.management import (
     METADATA_FIELDS,
     BuilderError,
@@ -53,23 +63,48 @@ __all__ = ["lifecycle", "passports_bp"]
 @login_required
 def index() -> ResponseReturnValue:
     passports = accessible_passports().order_by("title", "id").all()
-    return render_template("passports/index.html", passports=passports)
+    return render_template(
+        "passports/index.html",
+        passports=passports,
+        summaries={
+            passport.id: passport_progress(passport, session["user_id"])
+            for passport in passports
+        },
+    )
 
 
 @passports_bp.route("/<int:passport_id>/")
 @login_required
 def detail(passport_id: int) -> ResponseReturnValue:
     passport = require_passport(passport_id)
-    targets = (
-        db.session.query(PassportAirfieldIdentity)
-        .join(
-            PassportAirfield,
-            PassportAirfield.airfield_id == PassportAirfieldIdentity.id,
-        )
-        .filter(PassportAirfield.passport_id == passport.id)
-        .order_by(PassportAirfield.display_order, PassportAirfield.id)
-        .all()
-    )
+    progress = passport_progress(passport, session["user_id"])
+    state = request.args.get("state", "all")
+    rows = [
+        row
+        for row in progress["rows"]
+        if state not in {"visited", "unvisited", "closed"}
+        or (state == "visited" and row["visited"])
+        or (state == "unvisited" and not row["visited"])
+        or (state == "closed" and row.get("is_closed"))
+    ]
+    map_rows = [
+        {
+            key: float(row[key])
+            if key in {"latitude", "longitude"} and row.get(key) is not None
+            else row.get(key)
+            for key in (
+                "target_id",
+                "name",
+                "ident",
+                "latitude",
+                "longitude",
+                "visited",
+                "count",
+                "is_closed",
+            )
+        }
+        for row in rows
+    ]
     can_manage = passport.owner_user_id == session.get("user_id")
     try:
         require_actor(passport.tenant_id, session["user_id"])
@@ -78,7 +113,11 @@ def detail(passport_id: int) -> ResponseReturnValue:
     return render_template(
         "passports/detail.html",
         passport=passport,
-        targets=targets,
+        targets=rows,
+        progress=progress,
+        map_rows=map_rows,
+        state=state,
+        frequency=request.args.get("frequency") == "1",
         can_manage=can_manage,
     )
 
@@ -276,3 +315,127 @@ def delete_passport(passport_id: int) -> ResponseReturnValue:
         flash(_("Passport deleted."), "success")
         return redirect(url_for("passports.index"))
     return render_template("passports/confirm.html", passport=passport, deleting=True)
+
+
+@passports_bp.route(
+    "/<int:passport_id>/airfields/<int:target_id>", methods=["GET", "POST"]
+)
+@login_required
+def target_detail(passport_id: int, target_id: int) -> ResponseReturnValue:
+    passport = require_passport(passport_id)
+    progress = passport_progress(passport, session["user_id"])
+    target = next(
+        (row for row in progress["rows"] if row["target_id"] == target_id), None
+    )
+    if target is None:
+        abort(404)
+    participant = participant_for(passport.id, session["user_id"])
+    error = None
+    status = 200
+    if request.method == "POST":
+        try:
+            participant = evidence.writable_participant(passport, session["user_id"])
+            action = request.form.get("action")
+            if action == "visit":
+                evidence.add_visit(passport, participant, target_id, request.form)
+            elif action == "delete_visit":
+                visit = PassportVisit.query.filter_by(
+                    id=request.form.get("visit_id", type=db_id),
+                    participant_id=participant.id,
+                    target_id=target_id,
+                ).first_or_404()
+                db.session.delete(visit)
+            elif action == "arrival":
+                flight_id = request.form.get("flight_id", type=db_id)
+                event = next(
+                    (
+                        event
+                        for event in target["events"]
+                        if event["kind"] == "arrival"
+                        and event["flight_id"] == flight_id
+                    ),
+                    None,
+                )
+                if event is None:
+                    abort(404)
+                exclusion = PassportArrivalExclusion.query.filter_by(
+                    participant_id=participant.id, flight_id=flight_id
+                ).first()
+                if request.form.get("exclude") == "yes":
+                    if exclusion is None:
+                        db.session.add(
+                            PassportArrivalExclusion(
+                                participant_id=participant.id, flight_id=flight_id
+                            )
+                        )
+                elif exclusion is not None:
+                    db.session.delete(exclusion)
+            elif action == "photo":
+                filename = evidence.save_photo(request.files.get("photo"))
+                try:
+                    evidence.replace_photo(passport, participant, target_id, filename)
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
+                    evidence.photo_path(filename).unlink(missing_ok=True)
+                    raise
+            elif action == "delete_photo":
+                photo = PassportStampPhoto.query.filter_by(
+                    participant_id=participant.id, target_id=target_id
+                ).first_or_404()
+                db.session.delete(photo)
+            else:
+                abort(400)
+            db.session.commit()
+            return redirect(
+                url_for(
+                    "passports.target_detail",
+                    passport_id=passport.id,
+                    target_id=target_id,
+                )
+            )
+        except BuilderError as exc:
+            db.session.rollback()
+            error, status = str(exc), exc.status
+    photo = (
+        PassportStampPhoto.query.filter_by(
+            participant_id=participant.id, target_id=target_id
+        ).first()
+        if participant
+        else None
+    )
+    can_record = False
+    try:
+        evidence.writable_participant(passport, session["user_id"])
+        can_record = True
+    except BuilderError:
+        pass
+    return _builder_response(
+        render_template(
+            "passports/target.html",
+            passport=passport,
+            target=target,
+            supporting_flights=progress["supporting_flights"],
+            photo=photo,
+            can_record=can_record,
+            error=error,
+        ),
+        status,
+    )
+
+
+@passports_bp.route("/<int:passport_id>/photos/<int:photo_id>")
+@login_required
+def stamp_photo(passport_id: int, photo_id: int) -> ResponseReturnValue:
+    passport = require_passport(passport_id)
+    participant = participant_for(passport.id, session["user_id"])
+    if participant is None:
+        abort(404)
+    photo = PassportStampPhoto.query.filter_by(
+        id=photo_id, passport_id=passport.id, participant_id=participant.id
+    ).first_or_404()
+    response = send_file(
+        evidence.photo_path(photo.filename), mimetype="image/jpeg", max_age=0
+    )
+    response.headers["Cache-Control"] = "private, no-store"
+    return response

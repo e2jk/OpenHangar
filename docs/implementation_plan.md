@@ -2180,69 +2180,83 @@ working with the strict CSP and HTMX script stripping.
 
 ### 41c — Stamps, map and completion
 
-- [ ] Implement one eligibility service shared by list/map/detail/exports: registered
+- [x] Implement one eligibility service shared by list/map/detail/exports: registered
   participants use only flights in their own pilot logbook (PIC or accepted second
   crew under the existing logbook policy), including unmanaged aircraft. Merely
   administering or owning the aircraft is not visit evidence. Exclude FSTD,
   future-dated records, cancelled/no-takeoff and ground-only entries; do not require
   a populated duration on an otherwise valid historical flight.
-- [ ] A logged arrival is presumed a full stop unless explicitly excluded by that
+- [x] A logged arrival is presumed a full stop unless explicitly excluded by that
   participant. Departure alone, touch-and-go, low approach and intermediate
   destinations inferred only from landing counts never earn automatic stamps.
   Document this assumption and provide the exclusion control beside the evidence.
-- [ ] Apply passport date limits inclusively using the logged flight/visit date.
+- [x] Apply passport date limits inclusively using the logged flight/visit date.
   Choose earliest eligible arrival/manual visit; break same-day ties consistently
   using available arrival time and stable evidence IDs, without inventing a time
   for date-only visits. Display provenance, first date, aircraft and an authorised
   flight link. Manual visits require a date and accept an optional note.
-- [ ] Calculate automatic stamps from current flights, not permanently copied rows.
+- [x] Calculate automatic stamps from current flights, not permanently copied rows.
   Flight edits/deletions, import rollback, crew reassignment, alias corrections and
   passport date changes must immediately change credit and select the next earliest
   eligible visit. Manual evidence stays independent. Batch queries across a
   passport's participants and targets; avoid a query per marker or flight.
-- [ ] Show visited/unvisited/closed markers, filters and corresponding list rows;
+- [x] Show visited/unvisited/closed markers, filters and corresponding list rows;
   popups open target details and visit evidence. Include empty states, missing
   coordinates, all-complete and all-closed cases. Do not require JS to record a
   manual visit or read progress.
-- [ ] Default map is a checklist: one qualifying visit checks off an airfield,
+- [x] Default map is a checklist: one qualifying visit checks off an airfield,
   and further visits do not increase its marker emphasis or completion credit.
   A once-visited destination and a frequently visited home base have equal weight
   in this default mode. Add an independent "Show visit frequency" toggle for
-  personal, shared, single-edition and combined multi-year maps.
-- [ ] Frequency mode sizes markers (or adds an equivalent visual weight) by the
+  personal/single-edition maps. Shared and combined-edition integration follows
+  with 41e/41f.
+- [x] Frequency mode sizes markers (or adds an equivalent visual weight) by the
   number of distinct qualifying full-stop visits within the displayed passport/
   edition scope. Use a bounded, monotonic scale with a visible size/count legend
   so a busy home base cannot obscure the map; keep zero-visit targets visible.
   Show exact counts in popups and the accessible list. Preserve visit-state
   icons/outlines, closure badges and year colours; frequency does not replace
-  "visited by you / others / nobody" or the newest/oldest year toggle.
-- [ ] Count visit events, not earned stamps, departures, landing_count totals or
+  "visited by you / others / nobody" or the newest/oldest year toggle when
+  those shared/combined views are introduced in 41e/41f.
+- [x] Count visit events, not earned stamps, departures, landing_count totals or
   redeemed vouchers. Separate arrivals on the same day count separately. Deduplicate
   a manual/GPS-confirmed visit linked to the same flight/airfield as an automatic
-  arrival, and overlapping edition representations of the same visit; independent
-  manual visits remain countable. Explain that frequency reflects recorded visits,
+  arrival; independent manual visits remain countable. Combined-edition
+  deduplication is integrated in 41f. Explain that frequency reflects recorded visits,
   so someone who records only a first stamp may have incomplete repeat-visit data.
   Flight edits/deletions and eligibility changes recalculate counts as well as stamps.
-- [ ] Personal frequency uses the viewer's visits. In shared maps default to the
+- [x] Personal frequency uses the viewer's visits.
+- [ ] Integration with shared/public maps (41e/41h): in shared maps default to the
   viewer's counts, with an explicit participant/group selector for other scopes;
   label the scope and never mix the viewer's count with others' counts implicitly.
   Group totals count participant-visits (one flight with two participating pilots
   contributes one visit for each), not unique aircraft movements. Public frequency
   is limited to aggregates explicitly authorised for publication; it must not
   disclose private repeat-visit patterns by default.
-- [ ] Completion per participant: numerator = stamped targets; denominator = all
+- [x] Completion per participant: numerator = stamped targets; denominator = all
   open targets plus stamped closed targets. Closed unvisited targets remain visible
   but are excluded from the achievable total. Show the excluded count and avoid
   division by zero (no eligible targets means no percentage). If a field reopens,
   it returns to the denominator. Keep original target count visible separately.
-- [ ] Photo upload/delete uses existing image validation/storage conventions, bounded
+- [x] Photo upload/delete uses existing image validation/storage conventions, bounded
   sizes, authorised image endpoints, and metadata stripping for public derivatives.
   Photos remain private unless explicitly selected for publication.
-- [ ] Intermediate stops on an A → B → C → A flight can be added manually with
-  the flight as supporting evidence. GPS detection is a later enhancement within
-  this phase: propose candidate stops using position/speed/dwell evidence and show
+- [x] Intermediate stops on an A → B → C → A flight can be added manually with
+  the flight as supporting evidence.
+- [ ] Later GPS enhancement: propose candidate stops using position/speed/dwell evidence and show
   the evidence for confirmation. Proximity alone or a low-speed point must never
   award a stamp. Test touch-and-go, taxi, GPS gaps/noise and nearby parallel fields.
+
+**Delivered personal-passport core:** shared live eligibility/counting service for
+builder previews, lists, map and evidence pages; manual visits with optional owned
+flight links, participant-specific arrival exclusions, completion rules and private
+normalised photo uploads. Evidence queries are batched across targets/flights.
+Checklist/frequency maps retain closed and coordinate-less targets in the list;
+normal forms also work without JavaScript. Group/participant frequency selectors
+will be wired with shared maps in 41e, combined-edition deduplication/year styling in
+41f, and publication consent/aggregates in 41h. The current UI always labels and
+uses the viewer's own visits; private logbook evidence is never shared implicitly.
+GPS candidate detection remains the explicitly later enhancement above.
 
 ### 41d — Where next
 

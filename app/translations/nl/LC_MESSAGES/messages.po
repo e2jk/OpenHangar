@@ -1898,7 +1898,7 @@ msgstr "Een vliegveldverwijzing is ongeldig. Open de samensteller opnieuw."
 msgid "An airfield is no longer available. Review your selection."
 msgstr "Een vliegveld is niet meer beschikbaar. Controleer uw selectie."
 
-#: app/passports/builder.py:152 app/passports/management.py:86
+#: app/passports/builder.py:152 app/passports/management.py:82
 msgid "A passport field is too long."
 msgstr "Een paspoortveld is te lang."
 
@@ -1958,71 +1958,103 @@ msgstr "Dit paspoortconcept is verlopen. Begin opnieuw."
 msgid "This draft changed in another tab. Reopen the builder."
 msgstr "Dit concept is in een ander tabblad gewijzigd. Open de samensteller opnieuw."
 
-#: app/passports/management.py:45
-msgid "You cannot manage passports with this account."
-msgstr "U kunt met dit account geen paspoorten beheren."
+#: app/passports/evidence.py:35
+msgid "Join this passport before recording visits."
+msgstr "Neem deel aan dit paspoort voordat je bezoeken vastlegt."
 
-#: app/passports/management.py:51
-msgid "Pilot access is required to create a passport."
-msgstr "Piloottoegang is vereist om een paspoort aan te maken."
-
-#: app/passports/management.py:67
-msgid "Passport not found."
-msgstr "Paspoort niet gevonden."
-
-#: app/passports/management.py:69
+#: app/passports/evidence.py:37 app/passports/management.py:65
 msgid "Reopen this passport before editing it."
 msgstr "Heropen dit paspoort voordat u het bewerkt."
 
-#: app/passports/management.py:81
+#: app/passports/evidence.py:47
+msgid "Enter a valid visit date."
+msgstr "Voer een geldige bezoekdatum in."
+
+#: app/passports/evidence.py:50
+msgid "The visit must be within the passport dates and not in the future."
+msgstr "Het bezoek moet binnen de paspoortperiode vallen en mag niet in de toekomst liggen."
+
+#: app/passports/evidence.py:54
+msgid "The visit note is too long."
+msgstr "De bezoeknotitie is te lang."
+
+#: app/passports/evidence.py:61 app/passports/evidence.py:72
+msgid "Choose a flight from your own logbook on the visit date."
+msgstr "Kies een vlucht uit je eigen logboek op de bezoekdatum."
+
+#: app/passports/evidence.py:93
+msgid "Choose a photo to upload."
+msgstr "Kies een foto om te uploaden."
+
+#: app/passports/evidence.py:96
+msgid "Photos must be at most 10 MB."
+msgstr "Foto’s mogen maximaal 10 MB groot zijn."
+
+#: app/passports/evidence.py:123
+msgid "Upload a valid JPEG, PNG or WebP photo (up to 20 megapixels)."
+msgstr "Upload een geldige JPEG-, PNG- of WebP-foto (maximaal 20 megapixels)."
+
+#: app/passports/management.py:41
+msgid "You cannot manage passports with this account."
+msgstr "U kunt met dit account geen paspoorten beheren."
+
+#: app/passports/management.py:47
+msgid "Pilot access is required to create a passport."
+msgstr "Piloottoegang is vereist om een paspoort aan te maken."
+
+#: app/passports/management.py:63
+msgid "Passport not found."
+msgstr "Paspoort niet gevonden."
+
+#: app/passports/management.py:77
 msgid "Enter valid passport dates."
 msgstr "Voer geldige paspoortdatums in."
 
-#: app/passports/management.py:89
+#: app/passports/management.py:85
 msgid "Enter a passport name."
 msgstr "Voer een paspoortnaam in."
 
-#: app/passports/management.py:95
+#: app/passports/management.py:91
 msgid "The passport end date must not precede its start date."
 msgstr "De einddatum van het paspoort mag niet vóór de begindatum liggen."
 
-#: app/passports/routes.py:112
+#: app/passports/routes.py:151
 msgid "Small airfields"
 msgstr "Kleine vliegvelden"
 
-#: app/passports/routes.py:113
+#: app/passports/routes.py:152
 msgid "Medium airports"
 msgstr "Middelgrote luchthavens"
 
-#: app/passports/routes.py:114
+#: app/passports/routes.py:153
 msgid "Large airports"
 msgstr "Grote luchthavens"
 
-#: app/passports/routes.py:115
+#: app/passports/routes.py:154
 msgid "Heliports"
 msgstr "Helihavens"
 
-#: app/passports/routes.py:116
+#: app/passports/routes.py:155
 msgid "Seaplane bases"
 msgstr "Watervliegbases"
 
-#: app/passports/routes.py:117
+#: app/passports/routes.py:156
 msgid "Balloon ports"
 msgstr "Ballonhavens"
 
-#: app/passports/routes.py:118
+#: app/passports/routes.py:157
 msgid "Closed airfields"
 msgstr "Gesloten vliegvelden"
 
-#: app/passports/routes.py:200
+#: app/passports/routes.py:239
 msgid "Passport saved."
 msgstr "Paspoort opgeslagen."
 
-#: app/passports/routes.py:229
+#: app/passports/routes.py:268
 msgid "An airfield code conflicts with an existing identity. Review or remove that selection."
 msgstr "Een vliegveldcode conflicteert met een bestaande identiteit. Controleer of verwijder die selectie."
 
-#: app/passports/routes.py:276
+#: app/passports/routes.py:315
 msgid "Passport deleted."
 msgstr "Paspoort verwijderd."
 
@@ -3357,7 +3389,7 @@ msgstr "gegevens worden periodiek gewist en alle wijzigingen gaan verloren."
 msgid "The demo environment is being reset. Please wait — the page will reload automatically when ready."
 msgstr "De demo-omgeving wordt opnieuw ingesteld. Even geduld — de pagina wordt automatisch herladen zodra ze gereed is."
 
-#: app/templates/base.html:170 app/templates/base.html:172 app/templates/base.html:420
+#: app/templates/base.html:170 app/templates/base.html:172 app/templates/base.html:421
 msgid "Install app"
 msgstr "App installeren"
 
@@ -3369,7 +3401,7 @@ msgstr "Voeg OpenHangar toe aan uw startscherm voor snelle toegang."
 msgid "Not now"
 msgstr "Niet nu"
 
-#: app/templates/base.html:181 app/templates/base.html:419
+#: app/templates/base.html:181 app/templates/base.html:420
 msgid "Offline"
 msgstr "Offline"
 
@@ -3429,7 +3461,7 @@ msgstr "Open een issue als u hulp nodig heeft om deze gegevens te extraheren."
 msgid "open-source aircraft ops"
 msgstr "open-source vliegtuigbeheer"
 
-#: app/templates/airworthiness/adsb_board.html:61 app/templates/airworthiness/adsb_form.html:34 app/templates/airworthiness/adsb_print.html:38 app/templates/airworthiness/avionics_unit_form.html:47 app/templates/airworthiness/dashboard.html:95 app/templates/airworthiness/equipment_board.html:50 app/templates/airworthiness/status_form.html:21 app/templates/base.html:356 app/templates/config/renters_list.html:33 app/templates/config/settings.html:291 app/templates/config/settings.html:390 app/templates/config/tenant_list.html:33 app/templates/flights/removed_gps_files.html:27 app/templates/maintenance/amp_import_review.html:44 app/templates/maintenance/fleet.html:176 app/templates/maintenance/fleet.html:281 app/templates/maintenance/fleet.html:341 app/templates/maintenance/list.html:98 app/templates/pilots/minimums_history.html:25 app/templates/reservations/charge.html:34 app/templates/reservations/detail.html:38 app/templates/reservations/detail.html:142 app/templates/reservations/fleet.html:36 app/templates/share/public.html:25 app/templates/users/permissions.html:41
+#: app/templates/airworthiness/adsb_board.html:61 app/templates/airworthiness/adsb_form.html:34 app/templates/airworthiness/adsb_print.html:38 app/templates/airworthiness/avionics_unit_form.html:47 app/templates/airworthiness/dashboard.html:95 app/templates/airworthiness/equipment_board.html:50 app/templates/airworthiness/status_form.html:21 app/templates/base.html:356 app/templates/config/renters_list.html:33 app/templates/config/settings.html:291 app/templates/config/settings.html:390 app/templates/config/tenant_list.html:33 app/templates/flights/removed_gps_files.html:27 app/templates/maintenance/amp_import_review.html:44 app/templates/maintenance/fleet.html:176 app/templates/maintenance/fleet.html:281 app/templates/maintenance/fleet.html:341 app/templates/maintenance/list.html:98 app/templates/passports/detail.html:21 app/templates/pilots/minimums_history.html:25 app/templates/reservations/charge.html:34 app/templates/reservations/detail.html:38 app/templates/reservations/detail.html:142 app/templates/reservations/fleet.html:36 app/templates/share/public.html:25 app/templates/users/permissions.html:41
 msgid "Status"
 msgstr "Status"
 
@@ -3441,59 +3473,59 @@ msgstr "Annuleren"
 msgid "Confirm"
 msgstr "Bevestigen"
 
-#: app/templates/base.html:421
+#: app/templates/base.html:422
 msgid "You're offline — this can't be saved right now. Reconnect and try again."
 msgstr "U bent offline — dit kan nu niet worden opgeslagen. Maak opnieuw verbinding en probeer het opnieuw."
 
-#: app/templates/base.html:424
+#: app/templates/base.html:425
 msgid "Please fill out this field."
 msgstr "Vul dit veld in."
 
-#: app/templates/base.html:425
+#: app/templates/base.html:426
 msgid "Please select an item in the list."
 msgstr "Selecteer een item in de lijst."
 
-#: app/templates/base.html:426
+#: app/templates/base.html:427
 msgid "Please check this box if you want to proceed."
 msgstr "Vink dit vakje aan om door te gaan."
 
-#: app/templates/base.html:427
+#: app/templates/base.html:428
 msgid "Please select one of these options."
 msgstr "Selecteer een van deze opties."
 
-#: app/templates/base.html:428
+#: app/templates/base.html:429
 msgid "Please enter a valid email address."
 msgstr "Voer een geldig e-mailadres in."
 
-#: app/templates/base.html:429
+#: app/templates/base.html:430
 msgid "Please enter a valid URL."
 msgstr "Voer een geldige URL in."
 
-#: app/templates/base.html:430
+#: app/templates/base.html:431
 msgid "Please match the requested format."
 msgstr "Gebruik de gevraagde opmaak."
 
-#: app/templates/base.html:431
+#: app/templates/base.html:432
 #, python-brace-format
 msgid "Please use at least {min} characters (currently {n})."
 msgstr "Gebruik ten minste {min} tekens (momenteel {n})."
 
-#: app/templates/base.html:432
+#: app/templates/base.html:433
 #, python-brace-format
 msgid "Please use no more than {max} characters (currently {n})."
 msgstr "Gebruik maximaal {max} tekens (momenteel {n})."
 
-#: app/templates/base.html:433
+#: app/templates/base.html:434
 #, python-brace-format
 msgid "Value must be {min} or more."
 msgstr "De waarde moet {min} of hoger zijn."
 
-#: app/templates/base.html:434
+#: app/templates/base.html:435
 #, python-brace-format
 msgid "Value must be {max} or less."
 msgstr "De waarde moet {max} of lager zijn."
 
-#: app/templates/base.html:435
+#: app/templates/base.html:436
 msgid "Please enter a valid value."
 msgstr "Voer een geldige waarde in."
 
@@ -5441,7 +5473,7 @@ msgstr "Kapitaalsaldo"
 msgid "Record payment"
 msgstr "Betaling registreren"
 
-#: app/templates/aircraft/owners_billing.html:101 app/templates/aircraft/owners_billing.html:158
+#: app/templates/aircraft/owners_billing.html:101 app/templates/aircraft/owners_billing.html:158 app/templates/passports/target.html:19
 msgid "Note (optional)"
 msgstr "Notitie (optioneel)"
 
@@ -5724,7 +5756,7 @@ msgstr "Voorwaardelijk"
 msgid "Verify part number"
 msgstr "Onderdeelnummer controleren"
 
-#: app/templates/airworthiness/adsb_board.html:39 app/templates/airworthiness/adsb_form.html:39 app/templates/airworthiness/adsb_print.html:28 app/templates/passports/builder.html:38
+#: app/templates/airworthiness/adsb_board.html:39 app/templates/airworthiness/adsb_form.html:39 app/templates/airworthiness/adsb_print.html:28 app/templates/passports/builder.html:38 app/templates/passports/detail.html:16 app/templates/passports/detail.html:19 app/templates/passports/detail.html:21 app/templates/passports/target.html:9
 msgid "Closed"
 msgstr "Afgesloten"
 
@@ -5872,7 +5904,7 @@ msgid_plural "%(n)s documents total"
 msgstr[0] "één document totaal"
 msgstr[1] "%(n)s documenten totaal"
 
-#: app/templates/airworthiness/dashboard.html:68 app/templates/documents/list.html:102 app/templates/documents/list.html:104 app/templates/flights/list.html:105 app/templates/flights/list.html:107 app/templates/pilots/logbook.html:142 app/templates/pilots/logbook.html:144 app/templates/users/list.html:74
+#: app/templates/airworthiness/dashboard.html:68 app/templates/documents/list.html:102 app/templates/documents/list.html:104 app/templates/flights/list.html:105 app/templates/flights/list.html:107 app/templates/passports/detail.html:16 app/templates/pilots/logbook.html:142 app/templates/pilots/logbook.html:144 app/templates/users/list.html:74
 msgid "All"
 msgstr "Alle"
 
@@ -8301,7 +8333,7 @@ msgstr "Het logboek van dit toestel ongewijzigd laten — deze rij niet importer
 msgid "This is a different flight — import it as a new entry"
 msgstr "Dit is een andere vlucht — als nieuwe vermelding importeren"
 
-#: app/templates/flights/airframe_import_review.html:150 app/templates/pilots/import_review.html:158 app/templates/reports/utilization.html:54
+#: app/templates/flights/airframe_import_review.html:150 app/templates/passports/detail.html:17 app/templates/pilots/import_review.html:158 app/templates/reports/utilization.html:54
 msgid "Apply"
 msgstr "Toepassen"
 
@@ -10008,7 +10040,7 @@ msgstr "Eigen vliegveld toevoegen"
 msgid "Selected airfields"
 msgstr "Geselecteerde vliegvelden"
 
-#: app/templates/passports/builder.html:51
+#: app/templates/passports/builder.html:51 app/templates/passports/detail.html:21
 msgid "Airfield"
 msgstr "Vliegveld"
 
@@ -10020,7 +10052,7 @@ msgstr "Geen coördinaten"
 msgid "Manual classifications are shared with other passports in this organisation."
 msgstr "Handmatige classificaties worden gedeeld met andere paspoorten in deze organisatie."
 
-#: app/templates/passports/builder.html:52 app/templates/passports/detail.html:14
+#: app/templates/passports/builder.html:52 app/templates/passports/detail.html:22
 msgid "No airfields selected yet."
 msgstr "Nog geen vliegvelden geselecteerd."
 
@@ -10059,6 +10091,74 @@ msgstr "Paspoort bewerken"
 #: app/templates/passports/detail.html:11 app/templates/reports/utilization.html:44
 msgid "From"
 msgstr "Van"
+
+#: app/templates/passports/detail.html:13
+msgid "Your progress"
+msgstr "Je voortgang"
+
+#: app/templates/passports/detail.html:13
+msgid "Original targets"
+msgstr "Oorspronkelijke doelen"
+
+#: app/templates/passports/detail.html:13
+msgid "Closed unvisited targets excluded"
+msgstr "Uitgesloten gesloten, onbezochte velden"
+
+#: app/templates/passports/detail.html:14
+msgid "No achievable targets yet."
+msgstr "Nog geen haalbare doelen."
+
+#: app/templates/passports/detail.html:14
+msgid "Passport complete!"
+msgstr "Paspoort voltooid!"
+
+#: app/templates/passports/detail.html:16
+msgid "Show airfields"
+msgstr "Toon vliegvelden"
+
+#: app/templates/passports/detail.html:16 app/templates/passports/detail.html:19 app/templates/passports/detail.html:21 app/templates/passports/target.html:9
+msgid "Visited"
+msgstr "Bezocht"
+
+#: app/templates/passports/detail.html:16 app/templates/passports/detail.html:19 app/templates/passports/detail.html:21 app/templates/passports/target.html:9
+msgid "Not visited"
+msgstr "Niet bezocht"
+
+#: app/templates/passports/detail.html:17
+msgid "Show visit frequency"
+msgstr "Toon bezoekfrequentie"
+
+#: app/templates/passports/detail.html:18
+msgid "Counts show your recorded full-stop visits in this passport. Repeat-visit data may be incomplete."
+msgstr "De aantallen tonen je vastgelegde bezoeken met een volledige stop binnen dit paspoort. Herhaalbezoeken kunnen onvolledig zijn."
+
+#: app/templates/passports/detail.html:19 app/templates/passports/detail.html:21 app/templates/passports/target.html:9
+msgid "Recorded visits"
+msgstr "Vastgelegde bezoeken"
+
+#: app/templates/passports/detail.html:19
+msgid "Passport visit map"
+msgstr "Bezoekkaart van het paspoort"
+
+#: app/templates/passports/detail.html:20
+msgid "Blue: visited by you. Grey: not visited. Dashed outline: closed."
+msgstr "Blauw: door jou bezocht. Grijs: niet bezocht. Onderbroken rand: gesloten."
+
+#: app/templates/passports/detail.html:20
+msgid "Marker radius: 6 px for no visits, 8 px for one, increasing to at most 18 px for frequent visits. Exact counts are in the list and map popups."
+msgstr "Markeerstraal: 6 px zonder bezoeken, 8 px bij één bezoek, oplopend tot maximaal 18 px bij veel bezoeken. Exacte aantallen staan in de lijst en kaartpop-ups."
+
+#: app/templates/passports/detail.html:21 app/templates/passports/target.html:10
+msgid "First visit"
+msgstr "Eerste bezoek"
+
+#: app/templates/passports/detail.html:21
+msgid "No coordinates — shown in the list only."
+msgstr "Geen coördinaten — alleen in de lijst getoond."
+
+#: app/templates/passports/detail.html:22
+msgid "No airfields match this view."
+msgstr "Geen vliegvelden komen overeen met deze weergave."
 
 #: app/templates/passports/draft_error.html:7
 msgid "Start again"
@@ -10109,6 +10209,90 @@ msgstr "Terug naar de selectie"
 #: app/templates/passports/review.html:19
 msgid "Save passport"
 msgstr "Paspoort opslaan"
+
+#: app/templates/passports/target.html:11
+msgid "A logged arrival is presumed a full stop. Exclude touch-and-go, low approach or other arrivals that should not earn credit. Departures and landing totals alone do not earn stamps."
+msgstr "Een vastgelegde aankomst geldt als een volledige stop. Sluit touch-and-go’s, lage naderingen of andere aankomsten uit die niet mogen meetellen. Vertrekken en landingstotalen alleen leveren geen stempels op."
+
+#: app/templates/passports/target.html:12
+msgid "Visit evidence"
+msgstr "Bezoekbewijs"
+
+#: app/templates/passports/target.html:14
+msgid "Logged arrival"
+msgstr "Vastgelegde aankomst"
+
+#: app/templates/passports/target.html:14
+msgid "Confirmed GPS visit"
+msgstr "Bevestigd GPS-bezoek"
+
+#: app/templates/passports/target.html:14
+msgid "Manual visit"
+msgstr "Handmatig bezoek"
+
+#: app/templates/passports/target.html:14
+msgid "Excluded from credit"
+msgstr "Telt niet mee"
+
+#: app/templates/passports/target.html:16
+msgid "View flight"
+msgstr "Vlucht bekijken"
+
+#: app/templates/passports/target.html:17
+msgid "Restore arrival credit"
+msgstr "Aankomst weer laten meetellen"
+
+#: app/templates/passports/target.html:17
+msgid "Exclude this arrival"
+msgstr "Deze aankomst uitsluiten"
+
+#: app/templates/passports/target.html:17
+msgid "Delete manual visit"
+msgstr "Handmatig bezoek verwijderen"
+
+#: app/templates/passports/target.html:18
+msgid "No qualifying visits recorded yet."
+msgstr "Nog geen geldige bezoeken vastgelegd."
+
+#: app/templates/passports/target.html:19
+msgid "Record a manual visit"
+msgstr "Handmatig bezoek vastleggen"
+
+#: app/templates/passports/target.html:19
+msgid "Visit date"
+msgstr "Bezoekdatum"
+
+#: app/templates/passports/target.html:19
+msgid "Supporting flight (optional, latest 200 eligible flights)"
+msgstr "Ondersteunende vlucht (optioneel, laatste 200 geldige vluchten)"
+
+#: app/templates/passports/target.html:19
+msgid "Independent manual visit"
+msgstr "Onafhankelijk handmatig bezoek"
+
+#: app/templates/passports/target.html:19
+msgid "Save visit"
+msgstr "Bezoek opslaan"
+
+#: app/templates/passports/target.html:20 app/templates/passports/target.html:21
+msgid "Private stamp photo"
+msgstr "Privéfoto van de stempel"
+
+#: app/templates/passports/target.html:20
+msgid "This photo is visible only to you. Uploading it does not earn a visit or publish it."
+msgstr "Deze foto is alleen voor jou zichtbaar. Uploaden telt niet als bezoek en maakt de foto niet openbaar."
+
+#: app/templates/passports/target.html:21
+msgid "Delete photo"
+msgstr "Foto verwijderen"
+
+#: app/templates/passports/target.html:22
+msgid "JPEG, PNG or WebP, up to 10 MB and 20 megapixels"
+msgstr "JPEG, PNG of WebP, maximaal 10 MB en 20 megapixels"
+
+#: app/templates/passports/target.html:22
+msgid "Upload photo"
+msgstr "Foto uploaden"
 
 #: app/templates/pilots/entry_detail.html:19 app/templates/pilots/entry_form.html:58
 msgid "FSTD / Simulator"

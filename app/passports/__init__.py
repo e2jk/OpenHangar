@@ -1,4 +1,4 @@
-"""Airfield passports; builder, maps and invitations follow the data foundation."""
+"""Private airfield passports, builder and live visit evidence."""
 
 from flask import Blueprint
 

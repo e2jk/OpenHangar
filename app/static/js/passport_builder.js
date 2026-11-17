@@ -8,7 +8,7 @@
     if (!mapEl || !dataEl || typeof L === 'undefined') return;
     var data = JSON.parse(dataEl.dataset.map);
     var selected = new Set(data.selected);
-    var map = L.map(mapEl).setView([50.5, 5], 5);
+    var map = L.map(mapEl, { zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false }).setView([50.5, 5], 5);
     window.ohAddBaseLayers(map, null);
     var markers = new Map();
     var positions = [];

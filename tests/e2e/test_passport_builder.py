@@ -121,8 +121,58 @@ def test_passport_builder_without_javascript(
         page.get_by_role("button", name="Save passport", exact=True).click()
         page.wait_for_url(re.compile(r"/passports/\d+/$"))
         expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()
+        page.locator("table tbody a").first.click()
+        page.locator("#visit-date").fill("2025-01-01")
+        page.get_by_role("button", name="Save visit", exact=True).click()
+        expect(
+            page.get_by_role("button", name="Delete manual visit", exact=True)
+        ).to_be_visible()
+        page.get_by_role("link", name=title, exact=True).click()
+        expect(page.locator("table tbody")).to_contain_text("Visited")
         page.get_by_role("link", name="Delete passport", exact=True).click()
         page.get_by_role("button", name="Delete passport", exact=True).click()
         page.wait_for_url(live_server_url + "/passports/")
     finally:
         context.close()
+
+
+def test_passport_visits_frequency_and_htmx_map(
+    passport_page: Page, live_server_url: str
+) -> None:
+    page = passport_page
+    errors: list[str] = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    title = "Visit passport " + uuid4().hex[:8]
+    page.goto(live_server_url + "/passports/new")
+    page.locator("#passport-title").fill(title)
+    page.locator("#passport-codes").fill("EBNM")
+    page.get_by_role("button", name="Review passport", exact=True).click()
+    page.get_by_role("button", name="Save passport", exact=True).click()
+    page.wait_for_url(re.compile(r"/passports/\d+/$"))
+    passport_url = page.url
+    expect(page.locator("#passport-progress-map .leaflet-map-pane")).to_have_count(1)
+    page.locator("table tbody a").first.click()
+    page.locator("#visit-date").fill("2025-01-01")
+    page.locator("#visit-note").fill("Browser visit")
+    page.get_by_role("button", name="Save visit", exact=True).click()
+    expect(page.get_by_text("Browser visit", exact=True)).to_be_visible()
+    page.get_by_role("link", name=title, exact=True).click()
+    expect(
+        page.locator("#passport-progress-map .leaflet-overlay-pane path")
+    ).to_have_count(1)
+    page.locator("#passport-frequency").check()
+    page.get_by_role("button", name="Apply", exact=True).click()
+    expect(page.locator("#passport-progress")).to_have_attribute("data-frequency", "1")
+    page.locator("#passport-progress-map .leaflet-overlay-pane path").click(force=True)
+    expect(page.locator(".leaflet-popup-content a")).to_be_visible()
+    page.locator(".leaflet-popup-content a").click()
+    expect(page.get_by_text("Browser visit", exact=True)).to_be_visible()
+    page.goto(passport_url)
+    page.set_viewport_size({"width": 390, "height": 844})
+    assert page.evaluate(
+        "document.documentElement.scrollWidth <= window.innerWidth + 1"
+    )
+    page.get_by_role("link", name="Delete passport", exact=True).click()
+    page.get_by_role("button", name="Delete passport", exact=True).click()
+    page.wait_for_url(live_server_url + "/passports/")
+    assert not errors, errors
