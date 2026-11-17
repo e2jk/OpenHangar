@@ -4,6 +4,7 @@
 - The pages you visited are no longer left in the browser tab after you sign out. For an instant Back button, the app keeps a copy of the last pages visited in the tab; that copy is now dropped as soon as a page loads signed out or under another account. Pages showing other people's email addresses (user management, permissions, the fleet reservations list, setup, the AMP declaration) are never kept in it.
 
 **Airfield passports**
+- Calculate passport stamps and visit counts directly from the viewer’s own logbook and manual evidence. Builder completion previews use the same rules, including dated aliases, full-stop exclusions and closed-airfield totals.
 - Build and edit personal passports by area, airfield name/code, pasted lists or custom fields, with a map and review before saving. Owners can archive, reopen or delete passports; removing saved visits/photos requires confirmation. Military/ULM classifications remain explicitly unknown until entered.
 - Add the first data foundation for airfield passports: protected list/detail pages, stable airfield identities and historical code aliases. Catalogue selections include fields without ICAO codes; manual corrections survive catalogue refreshes. Visit/stamp maps and group invitations follow in later increments.
 

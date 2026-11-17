@@ -13,12 +13,8 @@ from typing import Any
 
 from flask_babel import gettext as _
 from models import (
-    Flight,
-    LogbookEntryType,
     Passport,
     PassportAirfield,
-    PassportAirfieldAlias,
-    PassportArrivalExclusion,
     PassportParticipant,
     PassportStampPhoto,
     PassportVisit,
@@ -145,107 +141,28 @@ def completion_preview(
     user_id: int,
     fields: list[dict[str, Any]],
     metadata: dict[str, Any],
+    *,
+    tenant_id: int | None = None,
 ) -> dict[str, int | None]:
-    """Own-logbook coverage preview; no other member's private flights are read."""
-    today = date.today()
-    start, end = metadata.get("start_date"), metadata.get("end_date")
+    """Use the live stamp engine for both staged and saved selections."""
+    from passports.eligibility import evaluate, participant_for
 
-    def eligible(day: date) -> bool:
-        return (
-            day <= today
-            and (start is None or day >= start)
-            and (end is None or day <= end)
-        )
-
-    participant = (
-        PassportParticipant.query.filter_by(
-            passport_id=passport.id, user_id=user_id, is_active=True
-        )
-        .filter(PassportParticipant.accepted_at.is_not(None))
+    result = evaluate(
+        passport.tenant_id
+        if passport
+        else tenant_id
+        or TenantUser.query.filter_by(user_id=user_id)
+        .order_by(TenantUser.tenant_id)
         .first()
-        if passport is not None
-        else None
+        .tenant_id,
+        user_id,
+        fields,
+        metadata.get("start_date"),
+        metadata.get("end_date"),
+        participant_for(passport.id, user_id) if passport else None,
+        preview=passport is None,
     )
-    stamped: set[str] = set()
-    codes: dict[str, list[tuple[str, date | None, date | None]]] = {}
-    field_keys = {field["id"]: field["key"] for field in fields if field.get("id")}
-    for field in fields:
-        if not field.get("id"):
-            for code in {field.get("ident"), field.get("icao_code")} - {
-                None,
-                "",
-                "ZZZZ",
-            }:
-                codes.setdefault(str(code), []).append((field["key"], None, None))
-    if field_keys:
-        aliases = PassportAirfieldAlias.query.filter(
-            PassportAirfieldAlias.airfield_id.in_(field_keys)
-        ).all()
-        for alias in aliases:
-            codes.setdefault(alias.code, []).append(
-                (field_keys[alias.airfield_id], alias.valid_from, alias.valid_until)
-            )
-    excluded = (
-        {
-            row.flight_id
-            for row in PassportArrivalExclusion.query.filter_by(
-                participant_id=participant.id
-            ).all()
-        }
-        if participant
-        else set()
-    )
-    if participant is not None or passport is None:
-        flights = Flight.query.filter(
-            db.or_(
-                Flight.pic_user_id == user_id, Flight.second_crew_user_id == user_id
-            ),
-            Flight.entry_type == LogbookEntryType.FLIGHT,
-            Flight.date <= today,
-        ).all()
-        for flight in flights:
-            if flight.id in excluded or not eligible(flight.date):
-                continue
-            # Explicit zero airborne time with no landings is a ground run;
-            # unknown time on a historical flight is not evidence of no takeoff.
-            if (
-                flight.flight_time is not None
-                and flight.flight_time <= 0
-                and not (
-                    flight.landing_count or flight.landings_day or flight.landings_night
-                )
-            ):
-                continue
-            matches = {
-                key
-                for key, first, last in codes.get(
-                    (flight.arrival_icao or "").strip().upper(), []
-                )
-                if (first is None or flight.date >= first)
-                and (last is None or flight.date <= last)
-            }
-            if len(matches) == 1:
-                stamped.update(matches)
-    if participant:
-        visits = (
-            db.session.query(PassportVisit.visit_date, PassportAirfield.airfield_id)
-            .join(PassportAirfield, PassportVisit.target_id == PassportAirfield.id)
-            .filter(PassportVisit.participant_id == participant.id)
-            .all()
-        )
-        stamped.update(
-            field_keys[airfield_id]
-            for day, airfield_id in visits
-            if airfield_id in field_keys and eligible(day)
-        )
-    denominator = sum(
-        not field.get("is_closed") or field["key"] in stamped for field in fields
-    )
-    return {
-        "visited": len(stamped),
-        "total": denominator,
-        "percent": round(100 * len(stamped) / denominator) if denominator else None,
-    }
+    return {key: result[key] for key in ("visited", "total", "percent")}
 
 
 def create_personal(tenant_id: int, user_id: int, metadata: dict[str, Any]) -> Passport:

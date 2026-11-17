@@ -300,7 +300,7 @@ def review(
         if passport
         else None
     )
-    after = completion_preview(passport, user_id, fields, metadata)
+    after = completion_preview(passport, user_id, fields, metadata, tenant_id=tenant_id)
     result = {
         "metadata": metadata,
         "fields": fields,
