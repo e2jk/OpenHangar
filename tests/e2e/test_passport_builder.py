@@ -211,6 +211,16 @@ def test_passport_destination_discovery(
     expect(page.locator("#discovery-limit")).to_have_value("1")
     page.locator("#discovery-limit").fill("100")
     expect(page.locator("#discovery-slider")).to_have_value("100")
+    # The slider spans a practical range per mode (nm, then minutes), not the
+    # server's 21,600-minute cap, so 100 nm isn't stuck at its far left.
+    expect(page.locator("#discovery-slider")).to_have_attribute("max", "500")
+    page.locator("#discovery-mode").select_option("time")
+    expect(page.locator("#discovery-slider")).to_have_attribute("max", "300")
+    page.locator("#discovery-slider").press("End")
+    expect(page.locator("#discovery-limit")).to_have_value("300")
+    page.locator("#discovery-mode").select_option("distance")
+    page.locator("#discovery-limit").fill("100")
+    expect(page.locator("#discovery-slider")).to_have_value("100")
     page.get_by_role("button", name="Find destinations", exact=True).click()
     expect(page.locator("table tbody")).to_contain_text(destination)
     expect(
