@@ -2298,28 +2298,48 @@ suitability is unknown rather than deriving it from location data.
 
 ### 41e — Imported lists and known sources
 
-- [ ] Add source selection/discovery for known booklet editions, initially a
+- [x] Add source selection/discovery for known booklet editions, initially a
   Landegutscheinheft adapter, plus a URL-entry flow for other pages. Verify the
   current source endpoints/data format during implementation; do not hardcode the
   backlog's historical edition counts as expected live data.
-- [ ] Known adapters parse the publisher's list/JSON; generic imports extract
+- [x] Known adapters parse the publisher's list/JSON; generic imports extract
   candidate ICAO codes from fetched content without executing remote JavaScript.
   Unsupported/dynamic pages get a clear fallback to pasted codes. Show extracted,
   matched, unknown and ambiguous codes on a list/map before saving anything.
-- [ ] Server-side fetcher: HTTP(S) only, no URL credentials, restricted ports,
+- [x] Server-side fetcher: HTTP(S) only, no URL credentials, restricted ports,
   public routable IPv4/IPv6 destinations only; reject private/local/link-local and
   reserved destinations on the initial request and every redirect. Bind the
   connection to a validated address while preserving TLS hostname verification
   to prevent DNS rebinding. Bound redirects, connect/read/total time, decoded
   bytes, result count and staged lifetime; do not forward cookies/credentials.
-- [ ] Never render remote HTML or fetch page-linked resources automatically. Escape
+- [x] Never render remote HTML or fetch page-linked resources automatically. Escape
   labels, bound extraction, rate-limit fetching, and test compression bombs,
   redirect loops, alternate IP notation, IPv6 and mixed DNS answers. Use fixtures
   in tests rather than contacting live publishers.
-- [ ] Store source URL, edition label and retrieval date for provenance; import
+- [x] Store source URL, edition label and retrieval date for provenance; import
   only airfield identifiers. Do not retain/show publisher descriptions, opening
   hours, PPR, frequencies or runway data without permission. Reimport previews
   additions/removals and requires confirmation, preserving existing visit evidence.
+
+**Delivered imports:** the existing owner-only builder now stages public HTML/JSON/
+text sources and a Landegutscheinheft adapter. Source previews show extracted,
+matched and unknown/ambiguous codes plus a map; merge/replace is explicit, unknown
+codes must be resolved or dropped, and final review/save remains mandatory. Reimport
+replacement retains targets with saved visits/photos. Provenance (final source URL,
+retrieval timestamp, user-confirmed edition label) is saved only with the passport.
+No remote descriptions or operational data are retained.
+
+The publisher's current public endpoints were verified on 2026-11-17: list status
+at `https://www.landegut.de/api/airfields/list-state` and identifiers at
+`https://www.landegut.de/api/airfields/public`. The status currently disables its
+unreleased final list. The adapter respects this, never infers a year or falls back
+to a historical cached participant count, and offers pasted codes instead. Tests
+use synthetic fixtures, not live publisher responses. The fetcher uses verified
+TLS with DNS-pinned sockets, validates every redirect/address, and bounds resolver
+concurrency, the full 15-second operation, redirects, bytes and result count.
+A worker-shared two-fetch admission cap prevents request-thread starvation; create
+and edit share the fetch quota. Imports batch tenant alias lookups, reject HTTPS
+downgrades and show localised retrieval timestamps.
 
 ### 41f — Voucher editions and history
 
@@ -2426,6 +2446,13 @@ suitability is unknown rather than deriving it from location data.
   expiry status.
 
 ### 41g — Group passports and invitation-based accounts
+
+- [ ] Before enabling large group collections, batch list-page eligibility across
+  passports: load the viewer's logbook once per request and reuse the snapshot,
+  then batch participant/target evidence as appropriate. Add query-count tests
+  proving logbook reads do not grow with the number of passports. Preserve the
+  existing personal-across-organisations crew-slot policy; administration alone
+  never grants visit credit.
 
 - [ ] Owner creates one shareable invitation link bound to that specific group
   passport (and edition), suitable for posting in a WhatsApp group. Friends enrol

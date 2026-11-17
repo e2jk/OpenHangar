@@ -2,6 +2,7 @@
 
 import re
 from collections.abc import Iterator
+from typing import Any
 from uuid import uuid4
 
 import pytest
@@ -237,6 +238,83 @@ def test_passport_destination_discovery(
     finally:
         context.close()
     page.goto(passport_url)
+    page.get_by_role("link", name="Delete passport", exact=True).click()
+    page.get_by_role("button", name="Delete passport", exact=True).click()
+    page.wait_for_url(live_server_url + "/passports/")
+    assert not errors, errors
+
+
+def test_passport_source_import_review_and_no_javascript(
+    passport_page: Page,
+    live_server_url: str,
+    live_server: tuple[Any, ...],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    if live_server[1] is None:
+        pytest.skip("Source fixtures require the in-process browser server")
+    from passports import imports
+    from passports.source_fetch import Fetched
+
+    def fetched(url: str, **kwargs: Any) -> Fetched:
+        return Fetched(
+            "https://source.example/list",
+            "text/html",
+            b"<p>EBNM ZZZZ</p><script>EVIL</script>",
+        )
+
+    monkeypatch.setattr(imports, "fetch", fetched)
+    page = passport_page
+    errors: list[str] = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    title = "Imported " + uuid4().hex[:8]
+    page.goto(live_server_url + "/passports/new")
+    page.locator("#passport-title").fill(title)
+    page.locator("#import-url").fill("https://source.example/list")
+    page.get_by_role("button", name="Preview source import", exact=True).click()
+    expect(
+        page.get_by_role("heading", name="Review source import", exact=True)
+    ).to_be_visible()
+    expect(
+        page.locator("#passport-selection-map .leaflet-overlay-pane path")
+    ).to_have_count(1)
+    expect(page.get_by_role("button", name="Save passport", exact=True)).to_have_count(
+        0
+    )
+    page.get_by_role(
+        "button", name="Add imported list to selection", exact=True
+    ).click()
+    expect(page.locator("#passport-codes")).to_have_value("ZZZZ")
+    page.get_by_role("button", name="Drop these unresolved codes", exact=True).click()
+    expect(page.locator("#passport-codes")).to_have_value("")
+    page.get_by_role("button", name="Review passport", exact=True).click()
+    page.get_by_role("button", name="Save passport", exact=True).click()
+    page.wait_for_url(re.compile(r"/passports/\d+/$"))
+    passport_url = page.url
+    expect(
+        page.get_by_role("link", name="https://source.example/list", exact=True)
+    ).to_be_visible()
+    browser = page.context.browser
+    assert browser is not None
+    context = browser.new_context(java_script_enabled=False, service_workers="block")
+    context.add_cookies(page.context.cookies())
+    try:
+        plain = context.new_page()
+        plain.goto(passport_url + "edit")
+        plain.get_by_role("button", name="Preview source import", exact=True).click()
+        expect(
+            plain.get_by_role("heading", name="Review source import", exact=True)
+        ).to_be_visible()
+        plain.get_by_role(
+            "button", name="Replace selection with imported list", exact=True
+        ).click()
+        plain.get_by_role(
+            "button", name="Drop these unresolved codes", exact=True
+        ).click()
+        plain.get_by_role("button", name="Review passport", exact=True).click()
+        plain.get_by_role("button", name="Save passport", exact=True).click()
+        plain.wait_for_url(passport_url)
+    finally:
+        context.close()
     page.get_by_role("link", name="Delete passport", exact=True).click()
     page.get_by_role("button", name="Delete passport", exact=True).click()
     page.wait_for_url(live_server_url + "/passports/")

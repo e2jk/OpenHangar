@@ -105,7 +105,11 @@ coverage gate.
 
 ## Visits, stamps and progress
 
-Each viewer sees their own recorded visits. Automatic evidence comes from their
+Each viewer sees their own recorded visits. Like the existing pilot logbook, flight
+evidence is personal across organisations: only the viewer’s own crew slots count,
+including flights on another organisation’s or an unmanaged aircraft. Owning/administering
+an aircraft is insufficient. Passports, aliases and manual visits remain tenant-bound.
+Automatic evidence comes from their
 PIC or accepted second-crew logbook slots, including unmanaged aircraft. Owning
 or administering an aircraft gives no visit credit. FSTD sessions, future flights,
 and explicit zero-airborne/no-landing ground runs are excluded. Historical entries
@@ -201,3 +205,79 @@ No licensed runway/restriction dataset is currently loaded, so suitability is
 explicitly unknown. No airfield is marked suitable merely from length, weight or
 its map position. Licensed suitability comparison remains the optional later item
 in the implementation plan.
+
+
+## Imported lists and known sources
+
+In the builder, open **Import an airfield list**. Choose a public page/JSON/text
+URL or the Landegutscheinheft publisher adapter. The latter uses the publisher's
+current list; enter and verify its edition label yourself. No year is inferred
+from the current date, an old product URL or the number of records. The publisher
+now serves a JavaScript storefront, so the adapter uses its explicit public JSON
+endpoints, not a browser or a scraped bundle. The list-status endpoint must mark
+the list released before identifiers are imported. As verified on 2026-11-17 it
+still marks the final list unreleased; use a verified pasted list or try later.
+
+**Preview source import** fetches identifiers into your expiring, actor-bound
+builder draft. It does not change the passport or create airfield identities.
+Review candidate counts, local catalogue matches, unknown/ambiguous codes and the
+map. Generic sources extract uppercase four-character alphanumeric candidate codes containing a letter from visible
+HTML or JSON/text, ignoring scripts, styles and templates; unrelated uppercase
+words can be candidates. Names/coordinates shown in review come from the local
+catalogue, never remote descriptions. Unknown/dynamic formats, failed requests or
+unreleased publisher lists produce a clear pasted-code fallback.
+
+Choose **Add imported list to selection**, **Replace selection with imported list**,
+or **Cancel import**. Replacement keeps saved-visit/photo targets even if omitted
+by the new list. You can explicitly remove those separately in the builder, with
+the existing final deletion acknowledgement. Other removals/additions and progress
+impact appear in the final passport review. Unknown codes still require correction
+or explicit dropping. The normal final **Save passport** is mandatory, including
+after a reimport. The flow works without JavaScript and survives HTMX navigation.
+
+Saved provenance is the final fetched URL, UTC retrieval timestamp and the edition
+label you confirmed. Existing provenance survives ordinary edits. Remote HTML,
+publisher names/descriptions, photos, hours, PPR, frequencies and runway information
+are not stored. The source link is shown as provenance, not rendered or embedded.
+Publisher source verification: [list status](https://www.landegut.de/api/airfields/list-state)
+and [public identifiers](https://www.landegut.de/api/airfields/public).
+
+### Fetch boundaries
+
+- HTTP port 80 or HTTPS port 443 only; no credentials, control characters, proxy
+  environment, forwarded cookies or authentication. URLs are bounded to 512 chars.
+- All resolved IPv4/IPv6 addresses must be public, non-reserved and non-multicast.
+  Local/link-local/shared/reserved destinations, IPv4-mapped and transition IPv6
+  are refused. Connections use an already validated IP without a second hostname
+  lookup; HTTPS retains the original hostname for certificate verification/SNI.
+- Every redirect is revalidated; at most three redirects and no redirect loops.
+  HTTPS-to-HTTP redirects are refused.
+  No page-linked scripts, images, stylesheets or other resources are fetched.
+- A 15-second absolute deadline covers DNS, connect, TLS, headers and streaming body
+  (shared across the adapter's status/list requests). Connect/read waits are also
+  bounded. A separate socket shutdown handle interrupts even a body handed off to
+  the HTTP response. At most two DNS lookups can remain outstanding per worker.
+- At most 1,000,000 encoded bytes and 2,000,000 decoded bytes per response. Gzip/deflate decoding
+  is bounded; truncated/concatenated compressed bodies and unsupported encodings or
+  content types fail closed. At most 5,000 candidate codes are staged.
+- At most two fetches may run at once across the instance's workers. Nonblocking
+  file locks in `UPLOAD_FOLDER/passport_fetch_locks` (left out of backups) share admission across worker
+  processes and release automatically on worker exit. Excess fetches fail fast;
+  they do not wait on a semaphore and occupy another request thread. Keep uploads
+  storage shared when running several workers/replicas. A local semaphore also
+  bounds standalone/non-Flask client use.
+- Fetch actions share one five-per-minute quota per IP across create/edit endpoints
+  (using the app's limiter backend, in-memory per worker by default). Normal selection
+  and confirmation actions do not consume that quota. Existing two-hour draft
+  expiry, ten-draft cap, revision checks and payload/selection caps still apply.
+
+
+### Import lookup cost
+
+Code lists resolve tenant aliases in one batch, regardless of list length. A
+regression test verifies that resolving 5,000 codes uses two selection queries
+(materialised identities plus aliases), retaining ambiguity and tenant checks.
+The immutable CSV is already cached once per worker by `load_catalogue`; merged
+search views are rebuilt to reflect current tenant corrections, without rereading
+the CSV from disk. List-page batching across passports remains tracked in 41g
+before enabling large groups; the current list still evaluates each passport.

@@ -21,6 +21,15 @@
       <div class="col-sm-6"><label class="form-label" for="passport-end">{{ _('End date') }}</label><input class="form-control" id="passport-end" name="end_date" type="date" value="{{ state.metadata.end_date }}"></div></div>
       <p class="form-text">{{ _('Leave dates empty for a lifetime passport.') }}</p>
     </section>
+    <section class="ac-form-card p-3 mb-3"><h2 class="h5">{{ _('Import an airfield list') }}</h2>
+      <p>{{ _('Preview candidate codes from a public source. Nothing is saved to the passport until you review and save the final selection. Remote descriptions, images and operational information are not imported.') }}</p>
+      {% set import_source = request.form.get('import_source', 'landegutscheinheft' if state.get('source') and state.source.url == publisher_list_url else 'generic') %}
+      <label class="form-label" for="import-source">{{ _('Import source') }}</label><select class="form-select" name="import_source" id="import-source"><option value="generic" {% if import_source == 'generic' %}selected{% endif %}>{{ _('Public page or JSON / text list') }}</option><option value="landegutscheinheft" {% if import_source == 'landegutscheinheft' %}selected{% endif %}>{{ _('Landegutscheinheft — current publisher list') }}</option></select>
+      <label class="form-label" for="import-url">{{ _('Public source URL') }}</label><input class="form-control" type="url" name="import_url" id="import-url" maxlength="512" value="{{ request.form.get('import_url', state.source.url if state.get('source') else '') }}">
+      <p class="form-text">{{ _('For Landegutscheinheft, enter the edition label above and verify it with the publisher. Its publication status is checked; no year is inferred. The URL field is used only for other public sources.') }}</p>
+      <button class="btn btn-ac-ghost" name="action" value="preview_import">{{ _('Preview source import') }}</button>
+      {% if state.get('source') %}<p>{{ _('Source') }}: <a href="{{ state.source.url }}" hx-boost="false" rel="noreferrer">{{ state.source.url }}</a> · {{ _('Retrieved') }}: {{ format_datetime(source_retrieved_at) }}</p>{% endif %}
+    </section>
     <section class="ac-form-card p-3 mb-3">
       <h2 class="h5">{{ _('Choose airfields') }}</h2>
       <div class="row"><div class="col-sm-6"><label class="form-label" for="passport-countries">{{ _('Countries') }}</label><select class="form-select" id="passport-countries" name="countries" multiple size="5">{% for country in choices.country %}<option value="{{ country }}" {{ 'selected' if country in state.filters.countries }}>{{ country }}</option>{% endfor %}</select></div>

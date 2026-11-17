@@ -14,6 +14,7 @@ from flask_babel import gettext as _
 from models import (
     Passport,
     PassportAirfield,
+    PassportAirfieldAlias,
     PassportAirfieldIdentity,
     PassportDraft,
     db,
@@ -21,6 +22,7 @@ from models import (
 from werkzeug.datastructures import MultiDict
 
 from passports import catalogue as cat
+from passports import imports
 from passports.drafts import MAX_TARGETS, save_draft
 from passports.management import (
     METADATA_FIELDS,
@@ -196,17 +198,21 @@ def add_codes(tenant_id: int, state: dict[str, Any], raw: str) -> None:
         for code in (field.get("ident"), field.get("icao_code")):
             if code:
                 by_code.setdefault(code.upper(), set()).add(field["key"])
+    aliases: dict[str, set[str]] = {}
+    for code, airfield_id in (
+        db.session.query(PassportAirfieldAlias.code, PassportAirfieldAlias.airfield_id)
+        .join(PassportAirfieldIdentity)
+        .filter(PassportAirfieldIdentity.tenant_id == tenant_id)
+        .all()
+    ):
+        aliases.setdefault(code, set()).add(f"field:{airfield_id}")
     selected, unresolved = set(state["selected"]), []
     for code in dict.fromkeys(re.split(r"[\s,;]+", raw.strip().upper())):
         if not code:
             continue
         matches = by_code.get(code, set())
-        try:
-            alias = cat.resolve_code(tenant_id, code)
-            if alias:
-                matches = matches | {f"field:{alias.id}"}
-        except cat.AirfieldConflict:
-            matches = set()
+        alias_matches = aliases.get(code, set())
+        matches = matches | alias_matches if len(alias_matches) <= 1 else set()
         if len(matches) == 1 and code != "ZZZZ":
             selected.update(matches)
         else:
@@ -303,6 +309,7 @@ def review(
     after = completion_preview(passport, user_id, fields, metadata, tenant_id=tenant_id)
     result = {
         "metadata": metadata,
+        "source": imports.source_values(state),
         "fields": fields,
         "removed": len(removed),
         "protected": len(protected),
@@ -335,6 +342,8 @@ def commit_selection(
     else:
         for key, value in impact["metadata"].items():
             setattr(passport, key, value)
+    for key, value in impact["source"].items():
+        setattr(passport, key, value)
     old_targets = {
         target.airfield_id: target
         for target in PassportAirfield.query.filter_by(passport_id=passport.id).all()
@@ -407,7 +416,29 @@ def advance(
             tenant_id, user_id, passport, draft, state, "confirm_removal" in form
         )
     state["review"] = None
-    if action == "filter":
+    if action == "preview_import":
+        imports.prepare(
+            tenant_id,
+            state,
+            form.get("import_source", "generic"),
+            form.get("import_url", ""),
+        )
+    elif action in {"import_merge", "import_replace"}:
+        retained = set()
+        if passport is not None and action == "import_replace":
+            targets = PassportAirfield.query.filter_by(passport_id=passport.id).all()
+            protected = protected_targets(
+                passport.id, {target.id for target in targets}
+            )
+            retained = {
+                f"field:{target.airfield_id}"
+                for target in targets
+                if target.id in protected
+            }
+        imports.apply(state, replace=action == "import_replace", retained=retained)
+    elif action == "cancel_import":
+        state["import_preview"] = None
+    elif action == "filter":
         set_filters(state, form)
     elif action == "select_all":
         combined = set(state["selected"]) | {
@@ -445,7 +476,7 @@ def advance(
         )
     state["visible"] = (
         []
-        if state["review"]
+        if state["review"] or state.get("import_preview")
         else [
             field["key"] for field in matching_fields(tenant_id, state)[:VISIBLE_LIMIT]
         ]

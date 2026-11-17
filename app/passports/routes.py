@@ -3,6 +3,7 @@
 import copy
 import json
 
+from extensions import _rate_limiting_disabled, limiter
 from flask import (
     abort,
     flash,
@@ -48,6 +49,7 @@ from passports.drafts import (
     save_draft,
 )
 from passports.eligibility import participant_for, passport_progress
+from passports.imports import PUBLISHER_LIST_URL, source_values
 from passports.management import (
     METADATA_FIELDS,
     BuilderError,
@@ -157,6 +159,31 @@ def _render_builder(
         "closed": _("Closed airfields"),
     }
 
+    if state.get("import_preview"):
+        preview = state["import_preview"]
+        matched_fields = builder.selected_fields(
+            draft.tenant_id,
+            {**state, "selected": preview["matched"]},
+            allow_missing=True,
+        )
+        return _builder_response(
+            render_template(
+                "passports/import_review.html",
+                token=token,
+                draft=draft,
+                passport=passport,
+                state=state,
+                preview=preview,
+                source_retrieved_at=source_values({"source": preview["source"]})[
+                    "source_retrieved_at"
+                ],
+                fields=matched_fields,
+                map_fields=matched_fields,
+                map_selected=preview["matched"],
+                error=error,
+            ),
+            status,
+        )
     if state["review"]:
         impact = builder.review(draft.tenant_id, draft.user_id, passport, draft, state)
         return _builder_response(
@@ -184,6 +211,8 @@ def _render_builder(
             matches=matches[: builder.VISIBLE_LIMIT],
             match_count=len(matches),
             choices=choices,
+            publisher_list_url=PUBLISHER_LIST_URL,
+            source_retrieved_at=source_values(state)["source_retrieved_at"],
             type_labels=type_labels,
             error=error,
             map_fields=list(
@@ -242,7 +271,19 @@ def _builder_page(passport: Passport | None) -> ResponseReturnValue:
         return _render_builder(token, draft, passport)
     except (BuilderError, AirfieldConflict) as exc:
         db.session.rollback()
-        draft = load_draft(token, tenant_id, user_id, passport.id if passport else None)
+        try:
+            draft = load_draft(
+                token, tenant_id, user_id, passport.id if passport else None, revision
+            )
+        except BuilderError as recovery_error:
+            return _builder_response(
+                render_template(
+                    "passports/draft_error.html",
+                    message=str(recovery_error),
+                    restart_url=request.path,
+                ),
+                recovery_error.status,
+            )
         # Keep typed metadata and pasted codes, but never retain unvalidated
         # selections/actions or an oversized request payload after an error.
         if (
@@ -277,15 +318,31 @@ def _builder_page(passport: Passport | None) -> ResponseReturnValue:
         )
 
 
+def _import_limit_exempt() -> bool:
+    return _rate_limiting_disabled() or request.form.get("action") != "preview_import"
+
+
 @passports_bp.route("/new", methods=["GET", "POST"])
 @login_required
 @require_pilot_access
+@limiter.shared_limit(
+    "5 per minute",
+    scope="passport-source-import",
+    methods=["POST"],
+    exempt_when=_import_limit_exempt,
+)
 def new_passport() -> ResponseReturnValue:
     return _builder_page(None)
 
 
 @passports_bp.route("/<int:passport_id>/edit", methods=["GET", "POST"])
 @login_required
+@limiter.shared_limit(
+    "5 per minute",
+    scope="passport-source-import",
+    methods=["POST"],
+    exempt_when=_import_limit_exempt,
+)
 def edit_passport(passport_id: int) -> ResponseReturnValue:
     return _builder_page(_owner(passport_id))
 

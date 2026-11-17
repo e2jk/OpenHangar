@@ -183,7 +183,11 @@ Every import is recorded on the **Pilot → Import history** page.  If you impor
 Open **Airfield passports → Create passport**. Name the passport and optionally
 limit its dates, then choose countries/regions, search by name or code, paste
 codes, or add a missing airfield. Check the selected list and map, choose
-**Review passport**, then save. Unknown codes require correction or explicit
+**Review passport**, then save. You can also preview a public list URL or the
+Landegutscheinheft publisher source in the builder, then merge or replace the
+selection. Imported replacements keep saved visit/photo targets. Source URLs and
+retrieval dates are retained as provenance; publisher descriptions are not imported.
+Unreleased or unsupported sources offer a pasted-code fallback. Unknown codes require correction or explicit
 removal. Military/ULM classification can remain unknown or be entered manually.
 
 Only the owner can edit, archive, reopen or delete a passport. Editing previews
