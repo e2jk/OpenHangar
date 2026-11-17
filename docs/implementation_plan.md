@@ -2146,26 +2146,37 @@ upload controls remain in 41b/41c. See [foundation notes](airfield_passports.md)
 
 ### 41b — Passport builder and management
 
-- [ ] Add list/create/detail/edit/archive/delete flows for personal passports.
+- [x] Add list/create/detail/edit/archive/delete flows for personal passports.
   Owner-only management; confirmation before deletion. Private by default.
-- [ ] Builder: choose one or more countries/regions, preview matching airfields,
+- [x] Builder: choose one or more countries/regions, preview matching airfields,
   tick entries on/off, and filter airport size/type, heliports, seaplane bases
   and closed fields. Show selection on a map and as an accessible list.
-- [ ] Add individual targets through code/name search and accept pasted lists of
+- [x] Add individual targets through code/name search and accept pasted lists of
   codes with whitespace/comma/semicolon separators. Normalise case, deduplicate,
   display unknown/ambiguous tokens, and require correction or explicit dropping.
   Never silently guess a field from free-text logbook places such as `ZZZZ`.
-- [ ] Preserve builder selections and validation errors across preview/confirmation;
+- [x] Preserve builder selections and validation errors across preview/confirmation;
   use bounded server-side staging rather than putting large lists into session
   cookies. Revalidate ownership, staged content and catalogue references on commit.
-- [ ] Let owners add/remove targets and edit date limits after creation, with a
+- [x] Let owners add/remove targets and edit date limits after creation, with a
   preview of changes to completion. Warn before removing a target with manual
   visits/photos/voucher activity; do not cascade away that history silently.
-- [ ] Military/ULM classification is explicitly unknown when the source has no
+- [x] Military/ULM classification is explicitly unknown when the source has no
   such field. Support manual classification with provenance; an unknown value
   must not be presented as "not military" or "not ULM". OpenAIP enrichment is
   optional and depends on available data and permitted reuse, not merely on the
   existing raster map-overlay integration.
+
+**Delivered builder:** owner-only create/edit/review/save and archive/reopen/delete
+flows; country/region/type/name/code selection, pasted-code resolution, custom
+fields, manual classification with provenance, and a Leaflet selection preview.
+Drafts are actor-bound database records with a two-hour expiry, ten-draft cap,
+5,000-target cap, payload bounds and revision checks. Final save revalidates the
+passport fingerprint, catalogue identities and completion/removal preview. Removing
+saved visits/photos requires explicit acknowledgement. Voucher-history removal
+checks extend this guard when voucher accounting is introduced in 41f. Map data
+uses escaped data attributes, so boosted navigation and validation responses keep
+working with the strict CSP and HTMX script stripping.
 
 ### 41c — Stamps, map and completion
 

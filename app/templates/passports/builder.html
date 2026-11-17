@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% set no_history_cache = true %}
+{% block title %}{{ _('Build an airfield passport') }} — OpenHangar{% endblock %}
+{% block content %}
+<div class="container py-4" id="passport-builder">
+  <div class="page-header mb-4"><h1 class="page-title">{{ _('Build an airfield passport') }}</h1><a href="{{ url_for('passports.detail', passport_id=passport.id) if passport else url_for('passports.index') }}">{{ _('Cancel') }}</a></div>
+  {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="draft" value="{{ token }}">
+    <input type="hidden" name="revision" value="{{ draft.revision }}">
+    <section class="ac-form-card p-3 mb-3">
+      <h2 class="h5">{{ _('Passport details') }}</h2>
+      <label class="form-label" for="passport-title">{{ _('Name') }}</label>
+      <input class="form-control mb-2" id="passport-title" name="title" maxlength="128" value="{{ state.metadata.title }}">
+      <label class="form-label" for="passport-description">{{ _('Description') }}</label>
+      <textarea class="form-control mb-2" id="passport-description" name="description" maxlength="8000">{{ state.metadata.description }}</textarea>
+      <label class="form-label" for="passport-edition">{{ _('Edition label') }}</label>
+      <input class="form-control mb-2" id="passport-edition" name="edition_label" maxlength="128" value="{{ state.metadata.edition_label }}">
+      <div class="row"><div class="col-sm-6"><label class="form-label" for="passport-start">{{ _('Start date') }}</label><input class="form-control" id="passport-start" name="start_date" type="date" value="{{ state.metadata.start_date }}"></div>
+      <div class="col-sm-6"><label class="form-label" for="passport-end">{{ _('End date') }}</label><input class="form-control" id="passport-end" name="end_date" type="date" value="{{ state.metadata.end_date }}"></div></div>
+      <p class="form-text">{{ _('Leave dates empty for a lifetime passport.') }}</p>
+    </section>
+    <section class="ac-form-card p-3 mb-3">
+      <h2 class="h5">{{ _('Choose airfields') }}</h2>
+      <div class="row"><div class="col-sm-6"><label class="form-label" for="passport-countries">{{ _('Countries') }}</label><select class="form-select" id="passport-countries" name="countries" multiple size="5">{% for country in choices.country %}<option value="{{ country }}" {{ 'selected' if country in state.filters.countries }}>{{ country }}</option>{% endfor %}</select></div>
+      <div class="col-sm-6"><label class="form-label" for="passport-regions">{{ _('Regions') }}</label><select class="form-select" id="passport-regions" name="regions" multiple size="5">{% for region in choices.region %}<option value="{{ region }}" {{ 'selected' if region in state.filters.regions }}>{{ region }}</option>{% endfor %}</select></div></div>
+      <label class="form-label mt-2" for="passport-query">{{ _('Find an airfield by code or name') }}</label><input class="form-control mb-2" name="query" id="passport-query" maxlength="255" value="{{ state.filters.query }}">
+      <fieldset><legend class="h6">{{ _('Airfield types') }}</legend>{% for type in choices.airfield_type %}<label class="form-check form-check-inline"><input class="form-check-input" type="checkbox" name="types" value="{{ type }}" {{ 'checked' if type in state.filters.types }}><span class="form-check-label">{{ type_labels.get(type, _('Other airfield types')) }}</span></label>{% endfor %}</fieldset>
+      <label class="form-check"><input class="form-check-input" type="checkbox" name="closed" {{ 'checked' if state.filters.closed }}><span class="form-check-label">{{ _('Include closed airfields') }}</span></label>
+      <div class="row my-2">{% for category,label in [('military',_('Military')),('ulm',_('ULM'))] %}<div class="col-sm-6"><label for="filter-{{ category }}" class="form-label">{{ label }}</label><select class="form-select" id="filter-{{ category }}" name="filter_{{ category }}">{% for value,text in [('any',_('Any')),('unknown',_('Unknown')),('yes',_('Yes')),('no',_('No'))] %}<option value="{{ value }}" {{ 'selected' if state.filters[category] == value }}>{{ text }}</option>{% endfor %}</select></div>{% endfor %}</div>
+      <p class="form-text">{{ _('Military and ULM status are unknown unless classified manually; unknown does not mean no.') }}</p>
+      <button class="btn btn-ac-ghost" name="action" value="filter">{{ _('Search airfields') }}</button>
+      {% if matches %}
+        <p class="mt-3">{{ ngettext('one matching airfield', '%(n)s matching airfields', match_count, n=match_count) }}</p>
+        {% if match_count > matches|length %}<p class="text-warning">{{ _('Only the first 500 results are listed. Refine the filters or add all matching airfields.') }}</p>{% endif %}
+        <button class="btn btn-ac-ghost mb-2" name="action" value="select_all">{{ _('Add all matching airfields') }}</button>
+        <div class="border rounded p-2 overflow-auto passport-airfield-results">{% for field in matches %}<label class="form-check"><input type="checkbox" class="form-check-input" name="choices" value="{{ field.key }}" {{ 'checked' if field.key in state.selected }}><span class="form-check-label">{{ field.ident or '—' }} — {{ field.name }}{% if field.is_closed %} ({{ _('Closed') }}){% endif %}</span></label>{% endfor %}</div>
+        <button class="btn btn-ac-ghost mt-2" name="action" value="selection">{{ _('Apply checked airfields') }}</button>
+      {% else %}<p class="mt-3 text-muted">{{ _('Choose an area or enter at least two search characters.') }}</p>{% endif %}
+    </section>
+    <section class="ac-form-card p-3 mb-3"><h2 class="h5">{{ _('Paste airfield codes') }}</h2><label class="form-label" for="passport-codes">{{ _('Separate codes with spaces, commas, semicolons or new lines.') }}</label><textarea class="form-control" name="codes" id="passport-codes" maxlength="50000">{{ state.codes }}</textarea><button class="btn btn-ac-ghost mt-2" name="action" value="add_codes">{{ _('Add codes') }}</button>
+    {% if state.unresolved %}<div class="alert alert-warning mt-2"><p>{{ _('Unknown or ambiguous codes') }}</p><ul>{% for code in state.unresolved %}<li>{{ code }}</li>{% endfor %}</ul><button class="btn btn-ac-ghost" name="action" value="drop_unknown">{{ _('Drop these unresolved codes') }}</button></div>{% endif %}</section>
+    <details class="ac-form-card p-3 mb-3"><summary>{{ _('Add a missing airfield') }}</summary>
+      <label class="form-label mt-2" for="custom-name">{{ _('Airfield name') }}</label><input class="form-control" id="custom-name" name="custom_name" maxlength="255" value="{{ request.form.get('custom_name','') }}">
+      <label class="form-label" for="custom-code">{{ _('Optional airfield code') }}</label><input class="form-control" id="custom-code" name="custom_code" maxlength="64" value="{{ request.form.get('custom_code','') }}">
+      <div class="row"><div class="col-sm-6"><label class="form-label" for="custom-latitude">{{ _('Latitude') }}</label><input class="form-control" id="custom-latitude" name="custom_latitude" value="{{ request.form.get('custom_latitude','') }}"></div><div class="col-sm-6"><label class="form-label" for="custom-longitude">{{ _('Longitude') }}</label><input class="form-control" id="custom-longitude" name="custom_longitude" value="{{ request.form.get('custom_longitude','') }}"></div></div>
+      <p class="form-text">{{ _('Coordinates are optional. Airfields without coordinates remain in the list.') }}</p><button class="btn btn-ac-ghost mt-2" name="action" value="add_custom">{{ _('Add custom airfield') }}</button>
+    </details>
+    <section class="ac-form-card p-3 mb-3"><h2 class="h5">{{ _('Selected airfields') }} ({{ fields|length }})</h2>
+    {% if fields %}<div class="table-responsive"><table class="table"><thead><tr><th>{{ _('Airfield') }}</th><th>{{ _('Military') }}</th><th>{{ _('ULM') }}</th><th>{{ _('Actions') }}</th></tr></thead><tbody>
+    {% for field in fields %}<tr><td>{{ field.ident or '—' }} — {{ field.name }}{% if field.latitude is none %}<small class="d-block text-muted">{{ _('No coordinates') }}</small>{% endif %}</td>{% for category,label in [('military',_('Military')),('ulm',_('ULM'))] %}<td><select class="form-select" name="{{ category }}_{{ field.key }}" aria-label="{{ label }} — {{ field.name }}">{% for value,text in [('unknown',_('Unknown')),('yes',_('Yes')),('no',_('No'))] %}<option value="{{ value }}" {{ 'selected' if (value == 'unknown' and field[category] is none) or (value == 'yes' and field[category] == true) or (value == 'no' and field[category] == false) }}>{{ text }}</option>{% endfor %}</select></td>{% endfor %}<td><button class="btn btn-sm btn-ac-ghost" name="action" value="remove:{{ field.key }}">{{ _('Remove') }}</button></td></tr>{% endfor %}</tbody></table></div><p class="form-text">{{ _('Manual classifications are shared with other passports in this organisation.') }}</p>{% else %}<p>{{ _('No airfields selected yet.') }}</p>{% endif %}
+    </section>
+    {% include "passports/_selection_map.html" %}
+    <button class="btn btn-ac-primary mt-3" name="action" value="review">{{ _('Review passport') }}</button>
+  </form>
+</div>
+{% endblock %}
