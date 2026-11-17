@@ -1167,11 +1167,21 @@ jobs:
           python -m venv .venv
           .venv/bin/pip install --quiet --require-hashes -r requirements/ci.txt
 
+      - name: Read the pinned Playwright version
+        # The browser cache below is keyed on it: a fixed key (it said
+        # 1.61.0 through three upgrades) is always found and so never saved
+        # again, and every run downloaded the current browser on top.
+        id: playwright-version
+        run: |
+          version=$(sed -n 's/^playwright==\([0-9.]*\).*/\1/p' requirements/ci.txt)
+          [ -n "$version" ] || { echo "::error::no playwright pin in requirements/ci.txt"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Cache Playwright browsers
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-1.61.0
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
 
       - name: Install Playwright Chromium browser and OS dependencies
         # With a warm cache the browser download is a no-op; only the (fast,
@@ -1358,11 +1368,21 @@ jobs:
           python -m venv .venv
           .venv/bin/pip install --quiet --require-hashes -r requirements/ci.txt
 
+      - name: Read the pinned Playwright version
+        # The browser cache below is keyed on it: a fixed key (it said
+        # 1.61.0 through three upgrades) is always found and so never saved
+        # again, and every run downloaded the current browser on top.
+        id: playwright-version
+        run: |
+          version=$(sed -n 's/^playwright==\([0-9.]*\).*/\1/p' requirements/ci.txt)
+          [ -n "$version" ] || { echo "::error::no playwright pin in requirements/ci.txt"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
       - name: Cache Playwright browsers
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-1.61.0
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
 
       - name: Install Playwright Chromium browser and OS dependencies
         # With a warm cache the browser download is a no-op; only the (fast,
