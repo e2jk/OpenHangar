@@ -55,6 +55,12 @@
 {% set offline_owner, offline_session = offline_identity() %}
 <body hx-boost="true" data-oh-offline-owner="{{ offline_owner }}" data-oh-offline-session="{{ offline_session }}"
       data-oh-offline-sign-in="{{ _('Log in') }}" data-oh-offline-changed="{{ _('Your account session changed. Sign in again to continue.') }}">
+{% if no_history_cache is defined and no_history_cache %}
+  <!-- Keeps this page out of htmx's back-button cache (sessionStorage), which
+       outlives a sign-out: pages showing other people's contact details set
+       no_history_cache (tests/functional/test_history_cache_privacy.py). -->
+  <div hx-history="false" hidden></div>
+{% endif %}
 
   <!-- Prefetch main nav pages during idle time so the SW cache is warm before
        the first click (see sw.js SWR_ROUTES for which pages this covers).

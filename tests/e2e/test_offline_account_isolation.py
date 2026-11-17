@@ -624,3 +624,44 @@ def test_slow_network_shows_this_logins_cached_page_then_refreshes_it(
     finally:
         _delay(app, "/pilot/logbook", 0)
     context.close()
+
+
+def _boosted_visit(page, path):
+    """Leave the current page through an htmx-boosted link, as a click in the
+    app does: htmx saves the page being left into its back-button cache."""
+    page.evaluate(
+        """path => { const a = document.createElement('a'); a.href = path;
+             a.id = 'oh-test-boosted-link'; a.textContent = path;
+             document.body.appendChild(a); htmx.process(a); }""",
+        path,
+    )
+    page.locator("#oh-test-boosted-link").click()
+    page.wait_for_url("**" + path)
+    page.wait_for_load_state("load")
+
+
+def test_back_button_cache_does_not_outlive_the_account(
+    isolated_offline_server, traced_browser
+):
+    """htmx's back-button copy of visited pages (sessionStorage) is dropped on
+    a signed-out page, and another account starts the tab without it."""
+    _, origin, _, _, _, _ = isolated_offline_server
+    browser = traced_browser
+    history = "() => sessionStorage.getItem('htmx-history-cache') || ''"
+    try:
+        context = browser.new_context(service_workers="allow")
+        page = context.new_page()
+        login(page, origin, "Alpha")  # ends on /pilot/logbook
+        _boosted_visit(page, "/pilot/minimums")
+        assert "ALPHA-PRIVATE" in page.evaluate(history)  # the cache is in use
+
+        page.goto(origin + "/logout", wait_until="load")
+        assert page.evaluate(history) == ""
+
+        login(page, origin, "Bravo")
+        _boosted_visit(page, "/pilot/minimums")
+        cached = page.evaluate(history)
+        assert "BRAVO-PRIVATE" in cached and "ALPHA-PRIVATE" not in cached
+        context.close()
+    finally:
+        browser.close()
