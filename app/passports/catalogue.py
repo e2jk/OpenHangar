@@ -133,16 +133,11 @@ def resolve_code(
     tenant_id: int, code: str, on_date: date | None = None
 ) -> PassportAirfieldIdentity | None:
     """Resolve only explicit aliases; ambiguous/reused codes are never guessed."""
-    query = (
-        db.session.query(PassportAirfieldIdentity)
-        .join(PassportAirfieldAlias)
-        .filter(
-            PassportAirfieldIdentity.tenant_id == tenant_id,
-            PassportAirfieldAlias.code == code.strip().upper(),
-        )
+    aliases = db.select(PassportAirfieldAlias.airfield_id).where(
+        PassportAirfieldAlias.code == code.strip().upper()
     )
     if on_date is not None:
-        query = query.filter(
+        aliases = aliases.where(
             db.or_(
                 PassportAirfieldAlias.valid_from.is_(None),
                 PassportAirfieldAlias.valid_from <= on_date,
@@ -152,7 +147,12 @@ def resolve_code(
                 PassportAirfieldAlias.valid_until >= on_date,
             ),
         )
-    matches = query.distinct().all()
+    # Select identities by ID: DISTINCT over the entire row would compare its
+    # JSON overrides, for which PostgreSQL deliberately has no equality operator.
+    matches = PassportAirfieldIdentity.query.filter(
+        PassportAirfieldIdentity.tenant_id == tenant_id,
+        PassportAirfieldIdentity.id.in_(aliases),
+    ).all()
     if len(matches) > 1:
         raise AirfieldConflict("Ambiguous airfield code; review its dated aliases")
     return matches[0] if matches else None
