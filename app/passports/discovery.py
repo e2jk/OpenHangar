@@ -75,6 +75,7 @@ def resolve_home(
         if len(matches) == 1 and value.upper() != "ZZZZ":
             return matches[0]
     except (ValueError, cat.AirfieldConflict):
+        # All invalid or ambiguous inputs use the same user-facing error below.
         pass
     raise BuilderError(
         _("Choose an unambiguous airfield code or a saved field reference.")

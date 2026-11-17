@@ -154,6 +154,7 @@ def test_pinned_socket_and_verified_tls() -> None:
         context.wrap_socket.assert_called_once_with(
             sock, server_hostname="source.example"
         )
+        assert context.minimum_version == f.ssl.TLSVersion.TLSv1_2
         request = sock.sendall.call_args.args[0]
         assert b"Host: source.example" in request and b"8.8.8.8" not in request
         connection.abort()
