@@ -14,6 +14,7 @@ import shutil
 import pw_hash as _pw  # pyright: ignore[reportMissingImports]
 from _seed_helpers import (
     seed_fleet,
+    seed_passports,
     seed_pilot_profiles,
     seed_reservations,
     seed_shared_ownership_tenant,
@@ -153,6 +154,7 @@ def seed() -> None:
         seed_reservations(aircraft, [owner_user.id, pilot_user.id])
         seed_pilot_profiles(owner_user.id)
         seed_pilot_profiles(pilot_user.id)
+        seed_passports(tenant.id, owner_user.id, aircraft)
 
         # ── Sole-pilot sub-tenant (logbook only, no fleet) ────────────────────
         sp_tenant = Tenant(
