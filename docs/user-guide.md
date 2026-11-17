@@ -198,7 +198,10 @@ exclude a touch-and-go or low approach. You can also record a dated manual visit
 optionally linked to your own flight, and upload a private stamp photo. Photos do
 not earn credit. The default map gives every visited field equal weight; **Show
 visit frequency** sizes markers by recorded visit counts. Closed unvisited fields
-remain visible but are excluded from the achievable total. Group invitations and
+remain visible but are excluded from the achievable total. Use **Where next?** to find open unvisited fields within a distance or still-air
+time limit. You can save a home airfield on your pilot profile and a home/cruise
+speed on an aircraft, or use session-only inputs. Optional range estimates need
+explicit usable fuel, flow and reserve assumptions. Group invitations and
 combined edition views follow in later increments. See [the passport guide](airfield_passports.md).
 
 ### Personal minimums
