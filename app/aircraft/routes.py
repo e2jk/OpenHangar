@@ -511,7 +511,13 @@ def edit_aircraft(aircraft_id: int) -> ResponseReturnValue:
     ac = _get_aircraft_or_404(aircraft_id)
     if request.method == "POST":
         return _save_aircraft(ac)
-    return render_template("aircraft/aircraft_form.html", aircraft=ac)
+    from passports.discovery import home_value
+
+    return render_template(
+        "aircraft/aircraft_form.html",
+        aircraft=ac,
+        home_airfield_value=home_value(ac, _tenant_id()),
+    )
 
 
 def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
@@ -536,7 +542,19 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     if logbook_time_precision not in ("tenth_hour", "minute"):
         logbook_time_precision = "tenth_hour"
 
+    from passports.discovery import home_value, positive, resolve_home, store_home
+    from passports.management import BuilderError
+
     errors = []
+    home = None
+    cruise = ac.cruise_speed_knots if ac else None
+    try:
+        if "home_airfield" in request.form:
+            home = resolve_home(_tenant_id(), request.form["home_airfield"])
+        if "cruise_speed_knots" in request.form:
+            cruise = positive(request.form["cruise_speed_knots"], _("cruise speed"))
+    except BuilderError as exc:
+        errors.append(str(exc))
     if not registration:
         errors.append(_("Registration is required."))
     elif _registration_taken(
@@ -623,12 +641,17 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     if errors:
         for msg in errors:
             flash(msg, "danger")
-        return render_template("aircraft/aircraft_form.html", aircraft=ac)
+        return render_template(
+            "aircraft/aircraft_form.html",
+            aircraft=ac,
+            home_airfield_value=home_value(ac, _tenant_id()),
+        )
 
     if ac is None:
         ac = Aircraft(tenant_id=_tenant_id())
         db.session.add(ac)
 
+    ac.cruise_speed_knots = cruise
     ac.registration = registration
     ac.make = make
     ac.model = model
@@ -641,6 +664,8 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     ac.reserve_hourly_rate = reserve_hourly_rate
     ac.oil_warning_lph = oil_warning_lph
     ac.showcase_blurb = showcase_blurb
+    if "home_airfield" in request.form:
+        ac.home_airfield_id = store_home(home, _tenant_id())
     db.session.commit()
 
     # Replace fuel tanks (same "delete all, recreate" strategy as W&B stations)

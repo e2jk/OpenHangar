@@ -211,9 +211,22 @@ def _check_logbook_milestone(entry: Flight, uid: int) -> None:
 def profile() -> ResponseReturnValue:
     uid = _current_user_id()
     p = _get_or_create_profile(uid)
+    from passports.discovery import home_value, resolve_home, store_home
+    from passports.management import BuilderError
+    from utils import current_membership
+
+    membership = current_membership()
+    assert membership is not None
+    tenant_id = membership.tenant_id
 
     if request.method == "POST":
         errors = []
+        home = None
+        if "home_airfield" in request.form:
+            try:
+                home = resolve_home(tenant_id, request.form["home_airfield"])
+            except BuilderError as exc:
+                errors.append(str(exc))
 
         p.license_number = request.form.get("license_number", "").strip() or None
 
@@ -255,6 +268,7 @@ def profile() -> ResponseReturnValue:
                 render_template(
                     "pilots/profile.html",
                     profile=p,
+                    home_airfield_value=home_value(p, tenant_id),
                     pilot_docs=[],
                     currency=None,
                     **_pilot_doc_context(uid),
@@ -262,6 +276,8 @@ def profile() -> ResponseReturnValue:
                 422,
             )
 
+        if "home_airfield" in request.form:
+            p.home_airfield_id = store_home(home, tenant_id)
         db.session.commit()
         flash(_("Profile saved."), "success")
         return redirect(url_for("pilots.profile"))
@@ -284,6 +300,7 @@ def profile() -> ResponseReturnValue:
     return render_template(
         "pilots/profile.html",
         profile=p,
+        home_airfield_value=home_value(p, tenant_id),
         pilot_docs=pilot_docs,
         currency=currency,
         **_pilot_doc_context(uid),

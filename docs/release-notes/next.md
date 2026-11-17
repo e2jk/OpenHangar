@@ -1,9 +1,10 @@
-# Track personal airfield passport visits
+# Discover your next passport destination
 
 **Privacy**
 - The pages you visited are no longer left in the browser tab after you sign out. For an instant Back button, the app keeps a copy of the last pages visited in the tab; that copy is now dropped as soon as a page loads signed out or under another account. Pages showing other people's email addresses (user management, permissions, the fleet reservations list, setup, the AMP declaration) are never kept in it.
 
 **Airfield passports**
+- Set explicit home airfields on aircraft and pilot profiles, and an optional aircraft cruise speed. Discovery calculations use great-circle distance, still-air estimates and explicit fuel/reserve assumptions.
 - Follow your passport progress on a checklist map or an optional visit-frequency map. Open an airfield to record manual visits, exclude non-full-stop arrivals, review evidence and keep a private stamp photo. Closed unvisited fields are excluded from the achievable total.
 - Calculate passport stamps and visit counts directly from the viewer’s own logbook and manual evidence. Builder completion previews use the same rules, including dated aliases, full-stop exclusions and closed-airfield totals.
 - Build and edit personal passports by area, airfield name/code, pasted lists or custom fields, with a map and review before saving. Owners can archive, reopen or delete passports; removing saved visits/photos requires confirmation. Military/ULM classifications remain explicitly unknown until entered.
