@@ -1,25 +1,24 @@
-# Import airfield passport lists
+# Airfield passports: collect stamps for the airfields you fly to
+
+**New: airfield passports**
+
+An airfield passport is a list of airfields you'd like to fly to: every airfield in your country, a few favourite regions, or the airfields taking part in a landing-voucher booklet such as the German Landegutscheinheft. Landing at one of them earns a stamp. Stamps come from the flights in your own pilot logbook, so the passport fills itself in as you log flights. Open **Airfield passports** in the menu to start one.
+
+- **Build a passport**: pick countries or regions, search for airfields by name or code, paste a list of codes, or add an airfield that isn't in the built-in list. A map and a review step show what you're about to save. Codes that aren't recognised are never guessed: you correct them or drop them.
+- **Import a published list**: fetch the current Landegutscheinheft list, or the airfield codes from another public web page, and check them before adding them. Only the codes are kept, with the address the list came from and when it was fetched.
+- **Track your progress**: a map and a list show which airfields you have already visited and how far along you are. Airfields that have closed don't count against you unless you landed there. An optional view sizes each airfield by how often you've landed there.
+- **Record visits yourself**: add a visit that isn't in your logbook (for example an intermediate stop), set aside a logged arrival that wasn't a full-stop landing, and add a photo for each stamp. Visits and photos are private to you.
+- **Where next?**: list the airfields you haven't visited yet that are near your home airfield, any airfield you search for, or wherever you last landed. Filter them by distance or flying time; an optional estimate of how far you can fly uses the usable fuel, fuel flow and reserve you enter. This helps you choose a destination; it's not fuel planning, and it can't tell you whether a runway suits your aircraft.
+- **Home airfield and cruise speed**: aircraft and pilot profiles can now record a home airfield, and aircraft an optional cruise speed. "Where next?" uses them as its starting point and its flying-time estimate.
+
+Passports are personal for now. Group passports shared with friends (with or without their own OpenHangar account), dated voucher editions, public sharing and exports will follow.
 
 **Privacy**
 - The pages you visited are no longer left in the browser tab after you sign out. For an instant Back button, the app keeps a copy of the last pages visited in the tab; that copy is now dropped as soon as a page loads signed out or under another account. Pages showing other people's email addresses (user management, permissions, the fleet reservations list, setup, the AMP declaration) are never kept in it.
 
-**Airfield passports**
-- Preview public airfield lists or the Landegutscheinheft publisher source before merging/replacing a passport selection. Unknown codes require review, saved visit/photo targets are retained, and source URL, edition label and retrieval time are recorded. Imports share a fetch quota, batch alias lookups and refuse unreleased publisher lists.
-- Find open, unvisited passport destinations with “Where next?”: choose a home, searched airfield or your latest logged arrival, filter by distance or still-air time, and view the radius on a map. Optional range estimates use explicit usable fuel and reserves; suitability stays unknown without licensed runway/restriction data.
-- Set explicit home airfields on aircraft and pilot profiles, and an optional aircraft cruise speed. Discovery calculations use great-circle distance, still-air estimates and explicit fuel/reserve assumptions.
-- Follow your passport progress on a checklist map or an optional visit-frequency map. Open an airfield to record manual visits, exclude non-full-stop arrivals, review evidence and keep a private stamp photo. Closed unvisited fields are excluded from the achievable total.
-- Calculate passport stamps and visit counts directly from the viewer’s own logbook and manual evidence. Builder completion previews use the same rules, including dated aliases, full-stop exclusions and closed-airfield totals.
-- Build and edit personal passports by area, airfield name/code, pasted lists or custom fields, with a map and review before saving. Owners can archive, reopen or delete passports; removing saved visits/photos requires confirmation. Military/ULM classifications remain explicitly unknown until entered.
-- Add the first data foundation for airfield passports: protected list/detail pages, stable airfield identities and historical code aliases. Catalogue selections include fields without ICAO codes; manual corrections survive catalogue refreshes. Group invitations and combined edition views follow in later increments.
-
 **Maintenance**
-- Add a passport-only instance stretch goal to the roadmap, including a possible publisher-operated voucher service with personal maps and opt-in customer community sharing. Planning only.
-- Plan airfield passports as the next development phase, with staged delivery for personal and group passports, voucher editions, destination discovery and exports; renumber the following roadmap phases. Shared maps distinguish fields nobody has visited, those visited by others, and the viewer's own visits. Related passports use a simple series relationship and explicit dates, supporting annual or other editions without a recurrence engine; combined maps offer newest/oldest edition styling. An optional frequency view weights markers by repeat visits while default completion still counts each airfield once. Group-specific invitation links enrol friends through self-service passport-only accounts, with optional later pilot activation. Group series retain annual participation and offer an optional read-only map of earlier editions a member did not join. Airfield details will identify friends who visited and support group-only experience/recommendation comments; flight debriefs remain a separate backlog idea to expand later. This is planning only.
+- Airfield passports are planned in stages in the implementation plan, as the next phase; the later phases were renumbered. A stretch goal for a passport-only instance, possibly run by a voucher publisher, was added to the roadmap.
+- Airfields in a passport keep a stable identity, so renamed or reused airfield codes and manual corrections don't move stamps to another field. Fixed a lookup of those codes that failed on PostgreSQL.
+- Imports from the web only reach public addresses and refuse anything that could reach the server's own network. Downloads are limited in time and size, and at most two run at once.
 - Browser tests use Playwright 1.65.2, which no longer depends on pyee, so pyee is gone from the test requirements (its updates kept clashing with Playwright's version limits). The CI cache of the test browser now follows the Playwright version, instead of downloading the browser again on every run.
-- Add the passport schema migration, tenant/membership isolation checks, and photo cleanup that preserves files on transaction rollback.
-
-- Prepare owner-only passport management and expiring, user-scoped builder drafts, with bounded selections and private completion-impact previews.
-
-- Fix airfield alias lookup on PostgreSQL without requiring equality comparisons on JSON data.
-- Correct the agent guide’s JSON data-bridge examples: HTMX strips JSON script tags as well as executable scripts; escaped data attributes survive navigation.
-- Prepare bounded public source fetching with two worker-shared admission slots, DNS-pinned sockets, verified TLS, redirect/address checks, decompression limits and an absolute deadline. Runtime fetch-lock files stay out of backups and are retained for safe worker coordination.
+- Corrected the agent guide's examples for passing data from templates to JavaScript.
