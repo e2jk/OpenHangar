@@ -1,5 +1,6 @@
 """Discovery defaults, distances, explicit fuel assumptions and permission boundaries."""
 
+import re
 from datetime import date
 from typing import Any
 
@@ -171,3 +172,22 @@ def test_discovery_uses_published_reserve_and_new_aircraft_home(
         f"/passports/{owner['passport']}/where-next", query_string={"aircraft": aid}
     )
     assert response.status_code == 200 and "published personal minimum" in response.text
+
+
+def test_discovery_slider_range_follows_mode(
+    client: FlaskClient, owner: dict[str, int]
+) -> None:
+    """The slider covers a practical range for each mode (500 nm or 300
+    minutes) rather than the 21,600-minute server cap, which pinned 100 nm
+    to its far left. The number field keeps the server's wider limit."""
+    signin(client, owner["user"])
+    path = f"/passports/{owner['passport']}/where-next"
+    for mode, maximum in [("distance", "500"), ("time", "300")]:
+        html = client.get(path, query_string={"mode": mode}).text
+        slider = re.search(r'<input[^>]*id="discovery-slider"[^>]*>', html)
+        assert slider is not None
+        assert f'max="{maximum}"' in slider.group(0)
+        assert 'data-max-distance="500"' in slider.group(0)
+        assert 'data-max-time="300"' in slider.group(0)
+        limit = re.search(r'<input[^>]*id="discovery-limit"[^>]*>', html)
+        assert limit is not None and 'max="21600"' in limit.group(0)

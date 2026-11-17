@@ -5,8 +5,16 @@
     root.dataset.ohInited = '1';
     var slider = document.getElementById('discovery-slider');
     var limit = document.getElementById('discovery-limit');
+    var mode = document.getElementById('discovery-mode');
+    // The slider covers a practical range for the mode (nm or minutes); the
+    // number field still accepts larger values, pinning the slider at its end.
+    function setSliderRange() {
+      slider.max = mode && mode.value === 'time' ? slider.dataset.maxTime : slider.dataset.maxDistance;
+      slider.value = limit.value;
+    }
     slider.addEventListener('input', function () { limit.value = slider.value; });
     limit.addEventListener('input', function () { slider.value = limit.value; });
+    if (mode) mode.addEventListener('change', setSliderRange);
     if (typeof L === 'undefined') return;
     var data = JSON.parse(root.dataset.map);
     var map = L.map('passport-discovery-map', { zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false }).setView([50.5, 5], 5);
