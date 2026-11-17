@@ -2209,7 +2209,7 @@ working with the strict CSP and HTMX script stripping.
   A once-visited destination and a frequently visited home base have equal weight
   in this default mode. Add an independent "Show visit frequency" toggle for
   personal/single-edition maps. Shared and combined-edition integration follows
-  with 41e/41f.
+  with 41g/41f.
 - [x] Frequency mode sizes markers (or adds an equivalent visual weight) by the
   number of distinct qualifying full-stop visits within the displayed passport/
   edition scope. Use a bounded, monotonic scale with a visible size/count legend
@@ -2217,7 +2217,7 @@ working with the strict CSP and HTMX script stripping.
   Show exact counts in popups and the accessible list. Preserve visit-state
   icons/outlines, closure badges and year colours; frequency does not replace
   "visited by you / others / nobody" or the newest/oldest year toggle when
-  those shared/combined views are introduced in 41e/41f.
+  those shared/combined views are introduced in 41g/41f.
 - [x] Count visit events, not earned stamps, departures, landing_count totals or
   redeemed vouchers. Separate arrivals on the same day count separately. Deduplicate
   a manual/GPS-confirmed visit linked to the same flight/airfield as an automatic
@@ -2226,7 +2226,7 @@ working with the strict CSP and HTMX script stripping.
   so someone who records only a first stamp may have incomplete repeat-visit data.
   Flight edits/deletions and eligibility changes recalculate counts as well as stamps.
 - [x] Personal frequency uses the viewer's visits.
-- [ ] Integration with shared/public maps (41e/41h): in shared maps default to the
+- [ ] Integration with shared/public maps (41g/41h): in shared maps default to the
   viewer's counts, with an explicit participant/group selector for other scopes;
   label the scope and never mix the viewer's count with others' counts implicitly.
   Group totals count participant-visits (one flight with two participating pilots
@@ -2253,26 +2253,26 @@ flight links, participant-specific arrival exclusions, completion rules and priv
 normalised photo uploads. Evidence queries are batched across targets/flights.
 Checklist/frequency maps retain closed and coordinate-less targets in the list;
 normal forms also work without JavaScript. Group/participant frequency selectors
-will be wired with shared maps in 41e, combined-edition deduplication/year styling in
+will be wired with shared maps in 41g, combined-edition deduplication/year styling in
 41f, and publication consent/aggregates in 41h. The current UI always labels and
 uses the viewer's own visits; private logbook evidence is never shared implicitly.
 GPS candidate detection remains the explicitly later enhancement above.
 
 ### 41d — Where next
 
-- [ ] Add explicit optional home-airfield references to Aircraft and PilotProfile,
+- [x] Add explicit optional home-airfield references to Aircraft and PilotProfile,
   editable through the respective existing permission checks and setup/edit forms.
   Add optional positive cruise speed in knots to Aircraft. No guessing the home
   field from imported history; pilots on unmanaged aircraft can supply session-only
   speed/range inputs without creating an Aircraft record.
-- [ ] Starting point defaults to the selected aircraft's home, then the pilot's
+- [x] Starting point defaults to the selected aircraft's home, then the pilot's
   home; otherwise ask for one. Offer any searched airfield and the latest eligible
   logged arrival as one-click alternatives. Never reveal another pilot's itinerary.
-- [ ] Filter open, unvisited targets by great-circle distance in nm or estimated
+- [x] Filter open, unvisited targets by great-circle distance in nm or estimated
   still-air flight time using the entered cruise speed. Offer a slider plus numeric
   input; missing speed leaves distance mode usable. Display assumptions, sort by
   distance/time, and show the selected radius on the map.
-- [ ] Optional theoretical range: use explicitly usable fuel (not blindly total
+- [x] Optional theoretical range: use explicitly usable fuel (not blindly total
   tank capacity), compatible fuel-flow units, cruise speed and a displayed reserve.
   Reuse the pilot's existing reserve preference if applicable, otherwise require
   an explicit reserve. Distinguish one-way from return-without-refuelling radius
@@ -2282,6 +2282,19 @@ GPS candidate detection remains the explicitly later enhancement above.
   requirements against licensed runway/restriction data, with source/date shown.
   Mark missing values "unknown"; do not imply operational suitability from aircraft
   weight or runway length alone. The map remains usable without OpenAIP access.
+
+**Delivered discovery core:** explicit home-airfield references on aircraft and pilot
+profiles, optional aircraft cruise speed, and a private “Where next?” view. Aircraft
+homes/speeds use the aircraft editor's existing permissions; pilot homes use the
+profile editor. Session-only overrides support unmanaged aircraft. Origin search
+also offers home/latest eligible own arrival shortcuts. Open unvisited targets are
+sorted by great-circle distance, with distance/still-air time bounds and a radius
+map. Optional range requires usable litres, litres/hour, speed and an explicit
+reserve (defaulting to a published personal minimum when available); return mode
+halves the still-air one-way budget. Invalid/missing range inputs remain unknown
+and never override the explicit distance/time limit. No tank-capacity inference.
+Licensed runway/restriction comparison remains optional and pending; the UI states
+suitability is unknown rather than deriving it from location data.
 
 ### 41e — Imported lists and known sources
 

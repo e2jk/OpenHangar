@@ -176,3 +176,68 @@ def test_passport_visits_frequency_and_htmx_map(
     page.get_by_role("button", name="Delete passport", exact=True).click()
     page.wait_for_url(live_server_url + "/passports/")
     assert not errors, errors
+
+
+def test_passport_destination_discovery(
+    passport_page: Page, live_server_url: str
+) -> None:
+    page = passport_page
+    errors: list[str] = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    title = "Discovery " + uuid4().hex[:8]
+    destination = "Discovery field " + uuid4().hex[:8]
+    page.goto(live_server_url + "/passports/new")
+    page.locator("#passport-title").fill(title)
+    page.get_by_text("Add a missing airfield", exact=True).click()
+    page.locator("#custom-name").fill(destination)
+    page.locator("#custom-latitude").fill("50.4")
+    page.locator("#custom-longitude").fill("4.7")
+    page.get_by_role("button", name="Add custom airfield", exact=True).click()
+    expect(page.locator("#passport-builder table")).to_contain_text(destination)
+    page.get_by_role("button", name="Review passport", exact=True).click()
+    page.get_by_role("button", name="Save passport", exact=True).click()
+    page.wait_for_url(re.compile(r"/passports/\d+/$"))
+    passport_url = page.url
+    page.get_by_role("link", name="Where next?", exact=True).click()
+    page.locator("#discovery-query").fill("EBNM")
+    page.get_by_role("button", name="Search airfields", exact=True).click()
+    option = page.locator("#discovery-origin option").filter(has_text="EBNM").first
+    expect(option).to_have_count(1)
+    value = option.get_attribute("value")
+    assert value is not None
+    page.locator("#discovery-origin").select_option(value)
+    page.locator("#discovery-slider").press("Home")
+    expect(page.locator("#discovery-limit")).to_have_value("1")
+    page.locator("#discovery-limit").fill("100")
+    expect(page.locator("#discovery-slider")).to_have_value("100")
+    page.get_by_role("button", name="Find destinations", exact=True).click()
+    expect(page.locator("table tbody")).to_contain_text(destination)
+    expect(
+        page.locator("#passport-discovery-map .leaflet-overlay-pane path")
+    ).to_have_count(3)
+    page.set_viewport_size({"width": 390, "height": 844})
+    assert page.evaluate(
+        "document.documentElement.scrollWidth <= window.innerWidth + 1"
+    )
+    browser = page.context.browser
+    assert browser is not None
+    context = browser.new_context(java_script_enabled=False, service_workers="block")
+    context.add_cookies(page.context.cookies())
+    try:
+        plain = context.new_page()
+        plain.goto(page.url)
+        expect(plain.locator("table tbody")).to_contain_text(destination)
+        plain.locator("#discovery-limit").fill("1")
+        plain.get_by_role("button", name="Find destinations", exact=True).click()
+        expect(
+            plain.get_by_text(
+                "No open, unvisited airfields match these inputs.", exact=True
+            )
+        ).to_be_visible()
+    finally:
+        context.close()
+    page.goto(passport_url)
+    page.get_by_role("link", name="Delete passport", exact=True).click()
+    page.get_by_role("button", name="Delete passport", exact=True).click()
+    page.wait_for_url(live_server_url + "/passports/")
+    assert not errors, errors

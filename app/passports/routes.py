@@ -439,3 +439,163 @@ def stamp_photo(passport_id: int, photo_id: int) -> ResponseReturnValue:
     )
     response.headers["Cache-Control"] = "private, no-store"
     return response
+
+
+@passports_bp.route("/<int:passport_id>/where-next")
+@login_required
+def where_next(passport_id: int) -> ResponseReturnValue:
+    from models import PilotProfile
+    from utils import accessible_aircraft
+
+    from passports import discovery
+
+    passport = require_passport(passport_id)
+    uid = session["user_id"]
+    aircraft = accessible_aircraft(passport.tenant_id).all()
+    selected = None
+    if request.args.get("aircraft"):
+        selected = next(
+            (
+                ac
+                for ac in aircraft
+                if ac.id == request.args.get("aircraft", type=db_id)
+            ),
+            None,
+        )
+        if selected is None:
+            abort(404)
+    profile = PilotProfile.query.filter_by(user_id=uid).first()
+    home = discovery.home_descriptor(
+        selected, passport.tenant_id
+    ) or discovery.home_descriptor(profile, passport.tenant_id)
+    participant = participant_for(passport.id, uid)
+    latest = discovery.latest_arrival(
+        passport.tenant_id, uid, participant.id if participant else None
+    )
+    searches = discovery.origin_choices(
+        passport.tenant_id, request.args.get("q", "")[:100]
+    )
+    origin_key = request.args.get("origin") or (home["key"] if home else "")
+    if request.args.get("start") == "latest" and latest:
+        origin_key = latest["key"]
+    if request.args.get("start") == "home" and home:
+        origin_key = home["key"]
+    origin = None
+    errors = []
+    if origin_key:
+        origin = builder.available_fields(passport.tenant_id).get(origin_key)
+        if origin is None:
+            errors.append(_("Choose a starting airfield from the search results."))
+        elif origin.get("latitude") is None or origin.get("longitude") is None:
+            errors.append(
+                _("This starting airfield has no coordinates. Choose another.")
+            )
+    mode = request.args.get("mode", "distance")
+    if mode not in {"distance", "time"}:
+        mode = "distance"
+    defaults = {
+        "speed": str(selected.cruise_speed_knots)
+        if selected and selected.cruise_speed_knots is not None
+        else "",
+        "limit": "100",
+        "usable_fuel": "",
+        "flow": str(selected.fuel_flow)
+        if selected and selected.fuel_flow is not None
+        else "",
+        "reserve": "",
+    }
+    preference = discovery.reserve_preference(uid)
+    if preference is not None:
+        defaults["reserve"] = str(preference)
+    values = {
+        key: (request.args.get(key) or value)[:100] for key, value in defaults.items()
+    }
+    parsed = {}
+    for key, label, maximum in [
+        ("speed", _("cruise speed"), 9999.99),
+        ("limit", _("distance/time limit"), 21600),
+        ("usable_fuel", _("usable fuel"), 999999),
+        ("flow", _("fuel flow"), 9999.99),
+        ("reserve", _("reserve minutes"), 1440),
+    ]:
+        try:
+            parsed[key] = discovery.positive(
+                values[key], label, maximum, zero=key == "reserve"
+            )
+        except BuilderError as exc:
+            parsed[key] = None
+            errors.append(str(exc))
+    limit = parsed["limit"] or 100
+    speed = parsed["speed"]
+    if mode == "time" and speed is None:
+        errors.append(_("Enter a cruise speed for time mode, or use distance mode."))
+    returning = request.args.get("trip") == "return"
+    range_nm = discovery.theoretical_range(
+        speed, parsed["usable_fuel"], parsed["flow"], parsed["reserve"], returning
+    )
+    range_enabled = request.args.get("range") == "1"
+    if range_enabled and range_nm is None:
+        errors.append(
+            _(
+                "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
+            )
+        )
+    progress = passport_progress(passport, uid)
+    rows, missing = discovery.nearby(
+        progress, origin, speed, limit, mode, range_nm if range_enabled else None
+    )
+    radius = (
+        limit * speed / 60
+        if mode == "time" and speed
+        else limit
+        if mode == "distance"
+        else None
+    )
+    if radius is not None and range_enabled and range_nm is not None:
+        radius = min(radius, range_nm)
+    map_data = {
+        "origin": {
+            key: float(origin[key])
+            if key in {"latitude", "longitude"} and origin.get(key) is not None
+            else origin.get(key)
+            for key in ("name", "latitude", "longitude")
+        }
+        if origin
+        else None,
+        "radius_nm": radius,
+        "fields": [
+            {
+                key: float(row[key]) if key in {"latitude", "longitude"} else row[key]
+                for key in ("name", "latitude", "longitude", "target_id", "distance_nm")
+            }
+            for row in rows
+        ],
+    }
+    return render_template(
+        "passports/where_next.html",
+        passport=passport,
+        aircraft=aircraft,
+        selected=selected,
+        home=home,
+        latest=latest,
+        searches=searches,
+        origin_options=list(
+            {
+                field["key"]: field
+                for field in [origin, home, latest, *searches]
+                if field is not None
+            }.values()
+        ),
+        origin=origin,
+        origin_key=origin_key,
+        rows=rows,
+        missing=missing,
+        values=values,
+        mode=mode,
+        range_enabled=range_enabled,
+        returning=returning,
+        range_nm=range_nm,
+        map_data=map_data,
+        errors=errors,
+        preference=preference,
+    )

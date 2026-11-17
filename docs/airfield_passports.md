@@ -156,3 +156,48 @@ responses. Photos are visible only to their participant, even to other accepted
 members or the owner. Replacements/deletions remove old files after commit;
 failed database saves remove the new file and retain the old one. Publication
 is a separate, explicit later workflow; uploads never enable public consent.
+
+
+## Where next?
+
+Open a passport and choose **Where next?** to find open, unvisited targets. Only
+your recorded visits determine this view. Choose an accessible aircraft to use its
+explicit home airfield and cruise speed. Its home takes precedence over your pilot
+profile's home; homes are never inferred from flights. Owners can set aircraft
+homes/speeds in the aircraft editor, and pilots can set their own home in their
+profile. Inputs accept a catalogue code or a saved `field:123` reference (useful
+for fields without codes). References from another tenant are refused/hidden.
+Clearing a saved home or speed is supported; older profiles/aircraft have neither.
+
+Alternatively search any starting airfield by code/name (up to 50 results), or
+choose your latest resolvable eligible logged arrival. This shortcut uses only
+your logbook, with dated aliases and your passport's arrival exclusions; it never
+uses another pilot's itinerary. A starting point without coordinates cannot give
+a distance. Missing-coordinate destinations remain in the main passport list and
+the discovery view displays their excluded count.
+
+Filter by great-circle nautical miles or still-air flight minutes. The map shows
+the selected radius; numeric and slider inputs are linked. Results sort nearest
+first (equivalently earliest at the same constant cruise speed). Distance mode
+works with no cruise speed. Time mode explicitly asks for speed. All forms and
+results also work without JavaScript. Blank discovery speed/flow inputs reuse the selected aircraft’s defaults; a blank
+reserve reuses a published personal minimum when available. Discovery parameters
+stay in the page URL;
+they do not change aircraft/profile defaults or create an unmanaged aircraft.
+
+The optional theoretical radius uses `(usable litres / litres per hour - reserve
+minutes / 60) × cruise knots`. Return without refuelling divides that radius by
+two, budgeting both legs. Usable fuel must be entered explicitly; the app never
+uses tank capacity as usable fuel. A published personal-minimum reserve is reused
+when available (the largest published value if several sections specify one),
+otherwise enter one explicitly; zero is an explicit choice, not a default. Missing,
+non-finite, nonpositive speed/flow/fuel, or fuel exhausted by reserve leaves range
+unknown. An unknown range does not mean unlimited range: the selected distance/time
+filter remains applied and a warning explains that the optional range bound was
+not applied. Estimates assume direct still-air flight at constant cruise speed,
+without climb, routing or approach. They are destination discovery, not dispatch.
+
+No licensed runway/restriction dataset is currently loaded, so suitability is
+explicitly unknown. No airfield is marked suitable merely from length, weight or
+its map position. Licensed suitability comparison remains the optional later item
+in the implementation plan.
