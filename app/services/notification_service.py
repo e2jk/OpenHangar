@@ -108,6 +108,11 @@ def _find_recipients(
     recipients = []
     for user, tu in query.all():
         caps = _user_caps(tu.role, user)
+        if notification_type == NotificationType.PASSPORT_EXPIRING:
+            from passports.reminders import has_participation
+
+            if has_participation(tu.tenant_id, user.id):
+                caps.add("is_passport")
         if caps & required:
             recipients.append(user)
     return recipients
@@ -490,6 +495,9 @@ def run_daily_checks(app: Any) -> None:
                 _check_airworthiness_reviews(app)
                 _check_renter_authorizations(app)
                 _check_personal_minimums_recency(app)
+                from passports.reminders import check_expiry
+
+                check_expiry()
         except Exception:
             log.exception("Error in daily notification checks")
 

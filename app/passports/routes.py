@@ -2,6 +2,7 @@
 
 import copy
 import json
+from datetime import date
 
 from extensions import _rate_limiting_disabled, limiter
 from flask import (
@@ -120,6 +121,7 @@ def detail(passport_id: int) -> ResponseReturnValue:
         state=state,
         frequency=request.args.get("frequency") == "1",
         can_manage=can_manage,
+        today=date.today(),
     )
 
 

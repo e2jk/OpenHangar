@@ -15,7 +15,7 @@
 {% if passport.source_url %}<p>{{ _('Source') }}: <a href="{{ passport.source_url }}" hx-boost="false" rel="noreferrer">{{ passport.source_url }}</a>{% if passport.source_retrieved_at %} · {{ _('Retrieved') }}: {{ format_datetime(passport.source_retrieved_at) }}{% endif %}</p>{% endif %}
 {% if passport.description %}<p>{{ passport.description }}</p>{% endif %}
 {% if passport.start_date %}<dl><dt>{{ _('From') }}</dt><dd>{{ passport.start_date }}</dd></dl>{% endif %}
-{% if passport.end_date %}<dl><dt>{{ _('Until') }}</dt><dd>{{ passport.end_date }}</dd></dl>{% endif %}
+{% if passport.end_date %}<dl><dt>{{ _('Until') }}</dt><dd>{{ format_date(passport.end_date) }} · {{ _('Expired') if passport.end_date < today else _('Not expired') }}</dd></dl><a href="{{ url_for('config.notification_preferences') }}">{{ _('Manage expiry reminders') }}</a>{% endif %}
 <p>{{ _('Your progress') }}: <strong>{{ progress.visited }} / {{ progress.total }}</strong>{% if progress.percent is not none %} ({{ progress.percent }}%){% endif %} · {{ _('Original targets') }}: {{ progress.original }} · {{ _('Closed unvisited targets excluded') }}: {{ progress.excluded_closed }}</p>
 {% if progress.total == 0 %}<p>{{ _('No achievable targets yet.') }}</p>{% elif progress.visited == progress.total %}<p>{{ _('Passport complete!') }}</p>{% endif %}
 <form method="get" class="d-flex flex-wrap gap-3 align-items-end my-3">

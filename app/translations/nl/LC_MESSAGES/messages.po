@@ -183,7 +183,7 @@ msgstr "Stel voor het reservefonds een bijdrage per uur óf per maand in, niet b
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Dit GPS-bestand bevat te veel punten om te importeren (meer dan %(n)s). Splits de opname op in meerdere bestanden."
 
-#: app/aircraft/routes.py:555 app/passports/routes.py:571
+#: app/aircraft/routes.py:555 app/passports/routes.py:573
 msgid "cruise speed"
 msgstr "kruissnelheid"
 
@@ -237,15 +237,15 @@ msgstr "%(reg)s opgeslagen."
 msgid "Ownership updated."
 msgstr "Eigendom bijgewerkt."
 
-#: app/aircraft/routes.py:967 app/config/routes.py:1681
+#: app/aircraft/routes.py:967 app/config/routes.py:1686
 msgid "Payment amount must be positive."
 msgstr "Het betalingsbedrag moet positief zijn."
 
-#: app/aircraft/routes.py:970 app/config/routes.py:1684
+#: app/aircraft/routes.py:970 app/config/routes.py:1689
 msgid "Invalid payment amount."
 msgstr "Ongeldig betalingsbedrag."
 
-#: app/aircraft/routes.py:977 app/config/routes.py:1691
+#: app/aircraft/routes.py:977 app/config/routes.py:1696
 msgid "Invalid payment date."
 msgstr "Ongeldige betalingsdatum."
 
@@ -258,7 +258,7 @@ msgstr "Betaling — %(note)s"
 msgid "Payment"
 msgstr "Betaling"
 
-#: app/aircraft/routes.py:999 app/config/routes.py:1714
+#: app/aircraft/routes.py:999 app/config/routes.py:1719
 msgid "Payment recorded."
 msgstr "Betaling geregistreerd."
 
@@ -814,78 +814,78 @@ msgstr "Huurder '%(name)s' gedeactiveerd."
 msgid "No user selected."
 msgstr "Geen gebruiker geselecteerd."
 
-#: app/config/routes.py:1178
+#: app/config/routes.py:1183
 msgid "Cannot save: no tenant associated."
 msgstr "Kan niet opslaan: geen groep gekoppeld."
 
-#: app/config/routes.py:1216
+#: app/config/routes.py:1221
 msgid "Notification preferences saved."
 msgstr "Meldingsvoorkeuren opgeslagen."
 
-#: app/config/routes.py:1299
+#: app/config/routes.py:1304
 #, python-format
 msgid "Back-fill complete: one of %(total)d entry resolved."
 msgid_plural "Back-fill complete: %(updated)d of %(total)d entries resolved."
 msgstr[0] "Aanvulling voltooid: één van %(total)d vermelding opgelost."
 msgstr[1] "Aanvulling voltooid: %(updated)d van %(total)d vermeldingen opgelost."
 
-#: app/config/routes.py:1335
+#: app/config/routes.py:1340
 #, python-format
 msgid "Back-fill complete: %(count)d entry linked to a managed aircraft."
 msgid_plural "Back-fill complete: %(count)d entries linked to a managed aircraft."
 msgstr[0] "Aanvulling voltooid: %(count)d vermelding gekoppeld aan een beheerd vliegtuig."
 msgstr[1] "Aanvulling voltooid: %(count)d vermeldingen gekoppeld aan een beheerd vliegtuig."
 
-#: app/config/routes.py:1467
+#: app/config/routes.py:1472
 msgid "Select a valid renter."
 msgstr "Selecteer een geldige huurder."
 
-#: app/config/routes.py:1474 app/config/routes.py:1479
+#: app/config/routes.py:1479 app/config/routes.py:1484
 msgid "Invalid aircraft selection."
 msgstr "Ongeldige toestelselectie."
 
-#: app/config/routes.py:1482
+#: app/config/routes.py:1487
 msgid "Granted date is required and must be a valid date."
 msgstr "De toekenningsdatum is verplicht en moet een geldige datum zijn."
 
-#: app/config/routes.py:1484
+#: app/config/routes.py:1489
 msgid "Expiry date cannot be before the granted date."
 msgstr "De vervaldatum mag niet vóór de toekenningsdatum liggen."
 
-#: app/config/routes.py:1498
+#: app/config/routes.py:1503
 msgid "This file type is not allowed for the rental agreement."
 msgstr "Dit bestandstype is niet toegestaan voor het huurcontract."
 
-#: app/config/routes.py:1542
+#: app/config/routes.py:1547
 msgid "Rental agreement"
 msgstr "Huurcontract"
 
-#: app/config/routes.py:1548
+#: app/config/routes.py:1553
 msgid "Renter authorization saved."
 msgstr "Huurautorisatie opgeslagen."
 
-#: app/config/routes.py:1594
+#: app/config/routes.py:1599
 msgid "Renter authorization revoked."
 msgstr "Huurautorisatie ingetrokken."
 
-#: app/config/routes.py:1708
+#: app/config/routes.py:1713
 msgid "Payment received"
 msgstr "Betaling ontvangen"
 
-#: app/config/routes.py:1824
+#: app/config/routes.py:1829
 msgid "Every flight with a GPS track was checked again."
 msgstr "Elke vlucht met een GPS-spoor is opnieuw gecontroleerd."
 
-#: app/config/routes.py:1853
+#: app/config/routes.py:1858
 msgid "This difference no longer applies."
 msgstr "Dit verschil is niet meer van toepassing."
 
-#: app/config/routes.py:1864
+#: app/config/routes.py:1869
 #, python-format
 msgid "Flight corrected: %(old)s → %(new)s. Nothing else was changed; the flight's notes record the paper logbook value."
 msgstr "Vlucht gecorrigeerd: %(old)s → %(new)s. Verder is niets gewijzigd; de notities van de vlucht vermelden de waarde uit het papieren logboek."
 
-#: app/config/routes.py:1900
+#: app/config/routes.py:1905
 msgid "Difference dismissed."
 msgstr "Verschil terzijde gelegd."
 
@@ -893,7 +893,7 @@ msgstr "Verschil terzijde gelegd."
 msgid "Licence"
 msgstr "Bewijs"
 
-#: app/documents/routes.py:86 app/services/notification_service.py:761
+#: app/documents/routes.py:86 app/services/notification_service.py:769
 msgid "Medical certificate"
 msgstr "Medisch certificaat"
 
@@ -1163,7 +1163,7 @@ msgstr "Datum"
 msgid "Route"
 msgstr "Route"
 
-#: app/flights/crew_invites.py:496 app/reports/routes.py:113 app/reservations/routes.py:817 app/reservations/routes.py:931 app/reservations/routes.py:1234 app/services/notification_service.py:545 app/services/notification_service.py:575 app/services/notification_service.py:651 app/services/notification_service.py:718 app/services/notification_service.py:874 app/services/notification_service.py:941 app/snags/routes.py:266 app/snags/routes.py:316 app/templates/aircraft/wb_list.html:30 app/templates/auth/setup.html:365 app/templates/base.html:209 app/templates/base.html:324 app/templates/config/renter_form.html:33 app/templates/config/tenant_list.html:32 app/templates/dashboard.html:130 app/templates/dashboard.html:752 app/templates/documents/list.html:35 app/templates/documents/list.html:217 app/templates/documents/reconcile.html:61 app/templates/flights/fleet.html:26 app/templates/flights/flight_form.html:241 app/templates/flights/flight_form.html:244 app/templates/maintenance/_amp_export_body.html:85 app/templates/maintenance/fleet.html:60 app/templates/maintenance/fleet.html:118 app/templates/maintenance/fleet.html:171 app/templates/maintenance/fleet.html:277 app/templates/maintenance/fleet.html:338 app/templates/partials/_crew_invites.html:50 app/templates/pilots/entry_form.html:131 app/templates/pilots/gps_import_upload.html:49 app/templates/pilots/profile.html:172 app/templates/pwa/share_target.html:69 app/templates/reservations/fleet.html:32
+#: app/flights/crew_invites.py:496 app/reports/routes.py:113 app/reservations/routes.py:817 app/reservations/routes.py:931 app/reservations/routes.py:1234 app/services/notification_service.py:553 app/services/notification_service.py:583 app/services/notification_service.py:659 app/services/notification_service.py:726 app/services/notification_service.py:882 app/services/notification_service.py:949 app/snags/routes.py:266 app/snags/routes.py:316 app/templates/aircraft/wb_list.html:30 app/templates/auth/setup.html:365 app/templates/base.html:209 app/templates/base.html:324 app/templates/config/renter_form.html:33 app/templates/config/tenant_list.html:32 app/templates/dashboard.html:130 app/templates/dashboard.html:752 app/templates/documents/list.html:35 app/templates/documents/list.html:217 app/templates/documents/reconcile.html:61 app/templates/flights/fleet.html:26 app/templates/flights/flight_form.html:241 app/templates/flights/flight_form.html:244 app/templates/maintenance/_amp_export_body.html:85 app/templates/maintenance/fleet.html:60 app/templates/maintenance/fleet.html:118 app/templates/maintenance/fleet.html:171 app/templates/maintenance/fleet.html:277 app/templates/maintenance/fleet.html:338 app/templates/partials/_crew_invites.html:50 app/templates/pilots/entry_form.html:131 app/templates/pilots/gps_import_upload.html:49 app/templates/pilots/profile.html:172 app/templates/pwa/share_target.html:69 app/templates/reservations/fleet.html:32
 msgid "Aircraft"
 msgid_plural "Aircraft"
 msgstr[0] "Vliegtuig"
@@ -2087,75 +2087,93 @@ msgstr "Voer een paspoortnaam in."
 msgid "The passport end date must not precede its start date."
 msgstr "De einddatum van het paspoort mag niet vóór de begindatum liggen."
 
-#: app/passports/routes.py:152
+#: app/passports/reminders.py:71
+#, python-format
+msgid "Passport edition expiring: %(title)s"
+msgstr "Paspoorteditie verloopt binnenkort: %(title)s"
+
+#: app/passports/reminders.py:73 app/templates/config/notifications.html:52
+msgid "Passport edition expiring"
+msgstr "Paspoorteditie verloopt binnenkort"
+
+#: app/passports/reminders.py:75
+#, python-format
+msgid "Your passport %(title)s ends on %(date)s. Open the edition to see your remaining airfields and vouchers."
+msgstr "Je paspoort %(title)s eindigt op %(date)s. Open de editie om je nog te bezoeken vliegvelden en beschikbare vouchers te bekijken."
+
+#: app/passports/reminders.py:82
+msgid "Open passport"
+msgstr "Paspoort openen"
+
+#: app/passports/routes.py:154
 msgid "Small airfields"
 msgstr "Kleine vliegvelden"
 
-#: app/passports/routes.py:153
+#: app/passports/routes.py:155
 msgid "Medium airports"
 msgstr "Middelgrote luchthavens"
 
-#: app/passports/routes.py:154
+#: app/passports/routes.py:156
 msgid "Large airports"
 msgstr "Grote luchthavens"
 
-#: app/passports/routes.py:155
+#: app/passports/routes.py:157
 msgid "Heliports"
 msgstr "Helihavens"
 
-#: app/passports/routes.py:156
+#: app/passports/routes.py:158
 msgid "Seaplane bases"
 msgstr "Watervliegbases"
 
-#: app/passports/routes.py:157
+#: app/passports/routes.py:159
 msgid "Balloon ports"
 msgstr "Ballonhavens"
 
-#: app/passports/routes.py:158
+#: app/passports/routes.py:160
 msgid "Closed airfields"
 msgstr "Gesloten vliegvelden"
 
-#: app/passports/routes.py:267
+#: app/passports/routes.py:269
 msgid "Passport saved."
 msgstr "Paspoort opgeslagen."
 
-#: app/passports/routes.py:308
+#: app/passports/routes.py:310
 msgid "An airfield code conflicts with an existing identity. Review or remove that selection."
 msgstr "Een vliegveldcode conflicteert met een bestaande identiteit. Controleer of verwijder die selectie."
 
-#: app/passports/routes.py:371
+#: app/passports/routes.py:373
 msgid "Passport deleted."
 msgstr "Paspoort verwijderd."
 
-#: app/passports/routes.py:544
+#: app/passports/routes.py:546
 msgid "Choose a starting airfield from the search results."
 msgstr "Kies een vertrekveld uit de zoekresultaten."
 
-#: app/passports/routes.py:547
+#: app/passports/routes.py:549
 msgid "This starting airfield has no coordinates. Choose another."
 msgstr "Dit vertrekveld heeft geen coördinaten. Kies een ander veld."
 
-#: app/passports/routes.py:572
+#: app/passports/routes.py:574
 msgid "distance/time limit"
 msgstr "afstands-/tijdslimiet"
 
-#: app/passports/routes.py:573
+#: app/passports/routes.py:575
 msgid "usable fuel"
 msgstr "bruikbare brandstof"
 
-#: app/passports/routes.py:574
+#: app/passports/routes.py:576
 msgid "fuel flow"
 msgstr "brandstofverbruik"
 
-#: app/passports/routes.py:575
+#: app/passports/routes.py:577
 msgid "reserve minutes"
 msgstr "reserve in minuten"
 
-#: app/passports/routes.py:587
+#: app/passports/routes.py:589
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Voer een kruissnelheid in voor de tijdsmodus of gebruik de afstandsmodus."
 
-#: app/passports/routes.py:596
+#: app/passports/routes.py:598
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "Het theoretische bereik is onbekend. Voer bruikbare brandstof, verbruik, snelheid en een expliciete reserve in die positieve vliegtijd overlaten. Het afstands-/tijdfilter blijft van toepassing."
 
@@ -3181,240 +3199,240 @@ msgstr "Aankomstvliegveld gecorrigeerd volgens het GPS-spoor; het papieren logbo
 msgid "Date corrected from the GPS track; the paper logbook says %(value)s."
 msgstr "Datum gecorrigeerd volgens het GPS-spoor; het papieren logboek vermeldt %(value)s."
 
-#: app/services/notification_service.py:348 app/services/notification_service.py:1236 app/templates/email/notif/welcome.html:1
+#: app/services/notification_service.py:353 app/services/notification_service.py:1244 app/templates/email/notif/welcome.html:1
 #, python-format
 msgid "Hello %(name)s,"
 msgstr "Hallo %(name)s,"
 
-#: app/services/notification_service.py:527
+#: app/services/notification_service.py:535
 #, python-format
 msgid "Maintenance overdue: %(name)s on %(reg)s"
 msgstr "Onderhoud achterstallig: %(name)s op %(reg)s"
 
-#: app/services/notification_service.py:534
+#: app/services/notification_service.py:542
 #, python-format
 msgid "Maintenance overdue: %(name)s"
 msgstr "Onderhoud achterstallig: %(name)s"
 
-#: app/services/notification_service.py:538
+#: app/services/notification_service.py:546
 #, python-format
 msgid "%(name)s on %(reg)s is overdue."
 msgstr "%(name)s op %(reg)s is achterstallig."
 
-#: app/services/notification_service.py:546 app/services/notification_service.py:576 app/templates/airworthiness/equipment_board.html:105 app/templates/airworthiness/wishlist_form.html:21 app/templates/maintenance/fleet.html:172 app/templates/maintenance/fleet.html:339 app/templates/maintenance/list.html:93
+#: app/services/notification_service.py:554 app/services/notification_service.py:584 app/templates/airworthiness/equipment_board.html:105 app/templates/airworthiness/wishlist_form.html:21 app/templates/maintenance/fleet.html:172 app/templates/maintenance/fleet.html:339 app/templates/maintenance/list.html:93
 msgid "Item"
 msgstr "Item"
 
-#: app/services/notification_service.py:557
+#: app/services/notification_service.py:565
 #, python-format
 msgid "Maintenance due soon: %(name)s on %(reg)s"
 msgstr "Onderhoud binnenkort verplicht: %(name)s op %(reg)s"
 
-#: app/services/notification_service.py:564
+#: app/services/notification_service.py:572
 #, python-format
 msgid "Maintenance due soon: %(name)s"
 msgstr "Onderhoud binnenkort verplicht: %(name)s"
 
-#: app/services/notification_service.py:568
+#: app/services/notification_service.py:576
 #, python-format
 msgid "%(name)s on %(reg)s is coming due."
 msgstr "%(name)s op %(reg)s vervalt binnenkort."
 
-#: app/services/notification_service.py:630
+#: app/services/notification_service.py:638
 #, python-format
 msgid "Insurance expiring in one day: %(reg)s"
 msgid_plural "Insurance expiring in %(days)s days: %(reg)s"
 msgstr[0] "Verzekering verloopt over één dag: %(reg)s"
 msgstr[1] "Verzekering verloopt over %(days)s dagen: %(reg)s"
 
-#: app/services/notification_service.py:638
+#: app/services/notification_service.py:646
 #, python-format
 msgid "Insurance expiring soon: %(reg)s"
 msgstr "Verzekering verloopt binnenkort: %(reg)s"
 
-#: app/services/notification_service.py:642
+#: app/services/notification_service.py:650
 #, python-format
 msgid "The insurance for %(reg)s expires on %(date)s (one day remaining)."
 msgid_plural "The insurance for %(reg)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "De verzekering voor %(reg)s verloopt op %(date)s (één dag resterend)."
 msgstr[1] "De verzekering voor %(reg)s verloopt op %(date)s (%(days)s dagen resterend)."
 
-#: app/services/notification_service.py:652 app/services/notification_service.py:719 app/services/notification_service.py:803 app/services/notification_service.py:876 app/templates/config/renters_list.html:32 app/templates/dashboard.html:250 app/templates/dashboard.html:270 app/templates/dashboard.html:289 app/templates/dashboard.html:307 app/templates/users/list.html:161
+#: app/services/notification_service.py:660 app/services/notification_service.py:727 app/services/notification_service.py:811 app/services/notification_service.py:884 app/templates/config/renters_list.html:32 app/templates/dashboard.html:250 app/templates/dashboard.html:270 app/templates/dashboard.html:289 app/templates/dashboard.html:307 app/templates/users/list.html:161
 msgid "Expires"
 msgstr "Verloopt"
 
-#: app/services/notification_service.py:653 app/services/notification_service.py:720 app/services/notification_service.py:804
+#: app/services/notification_service.py:661 app/services/notification_service.py:728 app/services/notification_service.py:812
 msgid "Days left"
 msgstr "Dagen resterend"
 
-#: app/services/notification_service.py:699
+#: app/services/notification_service.py:707
 #, python-format
 msgid "ARC expiring in one day: %(reg)s"
 msgid_plural "ARC expiring in %(days)s days: %(reg)s"
 msgstr[0] "ARC verloopt over één dag: %(reg)s"
 msgstr[1] "ARC verloopt over %(days)s dagen: %(reg)s"
 
-#: app/services/notification_service.py:706
+#: app/services/notification_service.py:714
 #, python-format
 msgid "ARC expiring soon: %(reg)s"
 msgstr "ARC verloopt binnenkort: %(reg)s"
 
-#: app/services/notification_service.py:709
+#: app/services/notification_service.py:717
 #, python-format
 msgid "The ARC for %(reg)s expires on %(date)s (one day remaining)."
 msgid_plural "The ARC for %(reg)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "De ARC voor %(reg)s verloopt op %(date)s (één dag resterend)."
 msgstr[1] "De ARC voor %(reg)s verloopt op %(date)s (%(days)s dagen resterend)."
 
-#: app/services/notification_service.py:762 app/services/notification_service.py:1004
+#: app/services/notification_service.py:770 app/services/notification_service.py:1012
 msgid "medical certificate"
 msgstr "medische keuring"
 
-#: app/services/notification_service.py:770 app/services/notification_service.py:771 app/templates/dashboard.html:304
+#: app/services/notification_service.py:778 app/services/notification_service.py:779 app/templates/dashboard.html:304
 msgid "SEP endorsement"
 msgstr "SEP-bevoegdverklaring"
 
-#: app/services/notification_service.py:784
+#: app/services/notification_service.py:792
 #, python-format
 msgid "%(label)s expiring in one day"
 msgid_plural "%(label)s expiring in %(days)s days"
 msgstr[0] "%(label)s verloopt over één dag"
 msgstr[1] "%(label)s verloopt over %(days)s dagen"
 
-#: app/services/notification_service.py:791
+#: app/services/notification_service.py:799
 #, python-format
 msgid "%(label)s expiring soon"
 msgstr "%(label)s verloopt binnenkort"
 
-#: app/services/notification_service.py:794
+#: app/services/notification_service.py:802
 #, python-format
 msgid "Your %(label_lower)s expires on %(date)s (one day remaining)."
 msgid_plural "Your %(label_lower)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "Uw %(label_lower)s verloopt op %(date)s (één dag resterend)."
 msgstr[1] "Uw %(label_lower)s verloopt op %(date)s (%(days)s dagen resterend)."
 
-#: app/services/notification_service.py:852
+#: app/services/notification_service.py:860
 #, python-format
 msgid "Document expiring in one day: %(title)s"
 msgid_plural "Document expiring in %(days)s days: %(title)s"
 msgstr[0] "Document verloopt over één dag: %(title)s"
 msgstr[1] "Document verloopt over %(days)s dagen: %(title)s"
 
-#: app/services/notification_service.py:860
+#: app/services/notification_service.py:868
 #, python-format
 msgid "Document expiring soon: %(title)s"
 msgstr "Document verloopt binnenkort: %(title)s"
 
-#: app/services/notification_service.py:864
+#: app/services/notification_service.py:872
 #, python-format
 msgid "'%(title)s' on %(reg)s expires on %(date)s (one day remaining)."
 msgid_plural "'%(title)s' on %(reg)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "'%(title)s' op %(reg)s verloopt op %(date)s (één dag resterend)."
 msgstr[1] "'%(title)s' op %(reg)s verloopt op %(date)s (%(days)s dagen resterend)."
 
-#: app/services/notification_service.py:875 app/services/notification_service.py:942 app/templates/documents/list.html:140
+#: app/services/notification_service.py:883 app/services/notification_service.py:950 app/templates/documents/list.html:140
 msgid "Document"
 msgstr "Document"
 
-#: app/services/notification_service.py:912 app/services/notification_service.py:1009
+#: app/services/notification_service.py:920 app/services/notification_service.py:1017
 msgid "unknown"
 msgstr "onbekend"
 
-#: app/services/notification_service.py:918
+#: app/services/notification_service.py:926
 #, python-format
 msgid "Airworthiness review due in one day: %(ref)s on %(reg)s"
 msgid_plural "Airworthiness review due in %(days)s days: %(ref)s on %(reg)s"
 msgstr[0] "Luchtwaardigheidscontrole over één dag: %(ref)s op %(reg)s"
 msgstr[1] "Luchtwaardigheidscontrole over %(days)s dagen: %(ref)s op %(reg)s"
 
-#: app/services/notification_service.py:927
+#: app/services/notification_service.py:935
 #, python-format
 msgid "Airworthiness review due: %(ref)s"
 msgstr "Luchtwaardigheidscontrole vereist: %(ref)s"
 
-#: app/services/notification_service.py:931
+#: app/services/notification_service.py:939
 #, python-format
 msgid "Document %(ref)s on %(reg)s requires review by %(date)s (one day)."
 msgid_plural "Document %(ref)s on %(reg)s requires review by %(date)s (%(days)s days)."
 msgstr[0] "Document %(ref)s op %(reg)s moet worden beoordeeld voor %(date)s (één dag)."
 msgstr[1] "Document %(ref)s op %(reg)s moet worden beoordeeld voor %(date)s (%(days)s dagen)."
 
-#: app/services/notification_service.py:943 app/templates/maintenance/fleet.html:174 app/templates/maintenance/list.html:95
+#: app/services/notification_service.py:951 app/templates/maintenance/fleet.html:174 app/templates/maintenance/list.html:95
 msgid "Due"
 msgstr "Vervaldag"
 
-#: app/services/notification_service.py:1003
+#: app/services/notification_service.py:1011
 msgid "authorization"
 msgstr "machtiging"
 
-#: app/services/notification_service.py:1015
+#: app/services/notification_service.py:1023
 #, python-format
 msgid "%(label)s expires %(date)s"
 msgstr "%(label)s verloopt op %(date)s"
 
-#: app/services/notification_service.py:1027
+#: app/services/notification_service.py:1035
 #, python-format
 msgid "One renter authorization"
 msgid_plural "%(n)s renter authorizations"
 msgstr[0] "Eén huurautorisatie"
 msgstr[1] "%(n)s huurautorisaties"
 
-#: app/services/notification_service.py:1033 app/templates/dashboard.html:292 app/templates/dashboard.html:310 app/templates/pilots/profile.html:145
+#: app/services/notification_service.py:1041 app/templates/dashboard.html:292 app/templates/dashboard.html:310 app/templates/pilots/profile.html:145
 #, python-format
 msgid "one day"
 msgid_plural "%(n)s days"
 msgstr[0] "één dag"
 msgstr[1] "%(n)s dagen"
 
-#: app/services/notification_service.py:1043
+#: app/services/notification_service.py:1051
 #, python-format
 msgid "One renter authorization expiring soon"
 msgid_plural "%(n)s renter authorizations expiring soon"
 msgstr[0] "Eén huurautorisatie verloopt binnenkort"
 msgstr[1] "%(n)s huurautorisaties verlopen binnenkort"
 
-#: app/services/notification_service.py:1049
+#: app/services/notification_service.py:1057
 msgid "Renter authorizations expiring soon"
 msgstr "Huurautorisaties verlopen binnenkort"
 
-#: app/services/notification_service.py:1052
+#: app/services/notification_service.py:1060
 #, python-format
 msgid "%(items)s or medical validity dates expire within %(days)s."
 msgstr "%(items)s of geldigheidsdata van medische keuring verlopen binnen %(days)s."
 
-#: app/services/notification_service.py:1109 app/templates/pilots/logbook.html:87
+#: app/services/notification_service.py:1117 app/templates/pilots/logbook.html:87
 #, python-format
 msgid "no matching flight on record yet (comfort zone: %(threshold)s days)."
 msgstr "nog geen overeenkomstige vlucht geregistreerd (comfortzone: %(threshold)s dagen)."
 
-#: app/services/notification_service.py:1114 app/templates/pilots/logbook.html:89
+#: app/services/notification_service.py:1122 app/templates/pilots/logbook.html:89
 #, python-format
 msgid "%(days)s days since your last matching flight (comfort zone: %(threshold)s days)."
 msgstr "%(days)s dagen sinds uw laatste overeenkomstige vlucht (comfortzone: %(threshold)s dagen)."
 
-#: app/services/notification_service.py:1125
+#: app/services/notification_service.py:1133
 #, python-format
 msgid "Personal minimums: one recency threshold exceeded"
 msgid_plural "Personal minimums: %(n)s recency thresholds exceeded"
 msgstr[0] "Persoonlijke minima: één recency-drempel overschreden"
 msgstr[1] "Persoonlijke minima: %(n)s recency-drempels overschreden"
 
-#: app/services/notification_service.py:1131 app/templates/config/notifications.html:47
+#: app/services/notification_service.py:1139 app/templates/config/notifications.html:47
 msgid "Personal minimums recency reminder"
 msgstr "Herinnering recency — persoonlijke minima"
 
-#: app/services/notification_service.py:1134
+#: app/services/notification_service.py:1142
 #, python-format
 msgid "You have exceeded one recency threshold in your personal minimums."
 msgid_plural "You have exceeded %(n)s recency thresholds in your personal minimums."
 msgstr[0] "U heeft één recency-drempel in uw persoonlijke minima overschreden."
 msgstr[1] "U heeft %(n)s recency-drempels in uw persoonlijke minima overschreden."
 
-#: app/services/notification_service.py:1235
+#: app/services/notification_service.py:1243
 msgid "Welcome to your OpenHangar instance"
 msgstr "Welkom bij uw OpenHangar-instantie"
 
-#: app/services/notification_service.py:1238
+#: app/services/notification_service.py:1246
 msgid ""
 "Welcome to OpenHangar! Your instance is set up and email delivery is working.\n"
 "\n"
@@ -3878,7 +3896,7 @@ msgstr "Nachtrecency"
 msgid "Medical"
 msgstr "Medische keuring"
 
-#: app/templates/config/renters_list.html:50 app/templates/dashboard.html:294 app/templates/dashboard.html:312 app/templates/dashboard.html:410 app/templates/dashboard.html:421 app/templates/passports/vouchers.html:12 app/templates/reservations/fleet.html:111 app/templates/users/list.html:173
+#: app/templates/config/renters_list.html:50 app/templates/dashboard.html:294 app/templates/dashboard.html:312 app/templates/dashboard.html:410 app/templates/dashboard.html:421 app/templates/passports/detail.html:18 app/templates/passports/vouchers.html:12 app/templates/reservations/fleet.html:111 app/templates/users/list.html:173
 msgid "Expired"
 msgstr "Verlopen"
 
@@ -6892,167 +6910,171 @@ msgstr "Gedeelde vlucht gewijzigd"
 msgid "Flight correction suggestions"
 msgstr "Voorgestelde vluchtcorrecties"
 
-#: app/templates/config/notifications.html:52
+#: app/templates/config/notifications.html:53
 msgid "Pilot asks to be added to your flight"
 msgstr "Piloot vraagt om aan uw vlucht toegevoegd te worden"
 
-#: app/templates/config/notifications.html:57
+#: app/templates/config/notifications.html:58
 msgid "An aircraft is grounded due to a newly reported snag."
 msgstr "Een vliegtuig is aan de grond gezet vanwege een gemeld defect."
 
-#: app/templates/config/notifications.html:58
+#: app/templates/config/notifications.html:59
 msgid "Any new snag is logged (grounding or non-grounding)."
 msgstr "Elk nieuw defect wordt geregistreerd (vliegverbod of niet)."
 
-#: app/templates/config/notifications.html:59
+#: app/templates/config/notifications.html:60
 msgid "Your booking request has been approved."
 msgstr "Uw reserveringsaanvraag is goedgekeurd."
 
-#: app/templates/config/notifications.html:60
+#: app/templates/config/notifications.html:61
 msgid "A reservation you made has been cancelled."
 msgstr "Een reservering die u heeft gemaakt is geannuleerd."
 
-#: app/templates/config/notifications.html:61
+#: app/templates/config/notifications.html:62
 msgid "A pilot submitted a new booking request requiring approval."
 msgstr "Een piloot heeft een reserveringsaanvraag ingediend die goedkeuring vereist."
 
-#: app/templates/config/notifications.html:62
+#: app/templates/config/notifications.html:63
 msgid "A calendar or hours-based maintenance item is approaching its due date."
 msgstr "Een kalender- of uren-onderhoudspunt nadert zijn vervaldatum."
 
-#: app/templates/config/notifications.html:63
+#: app/templates/config/notifications.html:64
 msgid "A calendar or hours-based maintenance item is past its due date."
 msgstr "Een kalender- of uren-onderhoudspunt heeft zijn vervaldatum overschreden."
 
-#: app/templates/config/notifications.html:64
+#: app/templates/config/notifications.html:65
 msgid "Aircraft insurance is expiring within the warning period."
 msgstr "De vliegtuigverzekering verloopt binnen de ingestelde termijn."
 
-#: app/templates/config/notifications.html:65
+#: app/templates/config/notifications.html:66
 msgid "The Airworthiness Review Certificate (ARC) is expiring within the warning period."
 msgstr "Het certificaat van beoordeling van luchtwaardigheid (ARC) verloopt binnen de ingestelde termijn."
 
-#: app/templates/config/notifications.html:66
+#: app/templates/config/notifications.html:67
 msgid "Your medical certificate is expiring within the warning period."
 msgstr "Uw medische keuring verloopt binnen de ingestelde termijn."
 
-#: app/templates/config/notifications.html:67
+#: app/templates/config/notifications.html:68
 msgid "Your SEP rating is expiring within the warning period."
 msgstr "Uw SEP-bevoegdheid verloopt binnen de ingestelde termijn."
 
-#: app/templates/config/notifications.html:68
+#: app/templates/config/notifications.html:69
 msgid "An aircraft document (with an expiry date) is coming due."
 msgstr "Een vliegtuigdocument (met vervaldatum) nadert zijn vervaldatum."
 
-#: app/templates/config/notifications.html:69
+#: app/templates/config/notifications.html:70
 msgid "A user accepted an invitation and joined the hangar."
 msgstr "Een gebruiker heeft een uitnodiging geaccepteerd en is toegetreden tot de hangar."
 
-#: app/templates/config/notifications.html:70
+#: app/templates/config/notifications.html:71
 msgid "An airworthiness document is due for review."
 msgstr "Een luchtwaardigsheidsdocument moet worden herzien."
 
-#: app/templates/config/notifications.html:71
+#: app/templates/config/notifications.html:72
 msgid "A new Airworthiness Directive appeared in the EASA daily sync."
 msgstr "Een nieuwe luchtwaardigheidsrichtlijn is verschenen in de dagelijkse EASA-synchronisatie."
 
-#: app/templates/config/notifications.html:72
+#: app/templates/config/notifications.html:73
 msgid "A renter authorization or verified medical date is approaching expiry."
 msgstr "Een huurautorisatie of geverifieerde medische datum nadert de vervaldatum."
 
-#: app/templates/config/notifications.html:73
+#: app/templates/config/notifications.html:74
 msgid "A grounding snag was opened on an aircraft you hold a confirmed reservation for."
 msgstr "Er werd een vliegverbod-defect geopend op een toestel waarvoor u een bevestigde reservering heeft."
 
-#: app/templates/config/notifications.html:74
+#: app/templates/config/notifications.html:75
 msgid "You have exceeded a comfort-zone recency threshold in your personal minimums (e.g. days since your last flight)."
 msgstr "U heeft een recency-drempel van uw comfortzone in uw persoonlijke minima overschreden (bv. dagen sinds uw laatste vlucht)."
 
-#: app/templates/config/notifications.html:75
+#: app/templates/config/notifications.html:76
 msgid "Another pilot logged a flight with you on board and asks you to confirm it in your pilot logbook."
 msgstr "Een andere piloot heeft een vlucht gelogd met u aan boord en vraagt u die in uw pilotenlogboek te bevestigen."
 
-#: app/templates/config/notifications.html:76
+#: app/templates/config/notifications.html:77
 msgid "A pilot you named on a flight confirmed or declined it."
 msgstr "Een piloot die u op een vlucht vermeldde, heeft die bevestigd of geweigerd."
 
-#: app/templates/config/notifications.html:77
+#: app/templates/config/notifications.html:78
 msgid "The pilot who logged a flight you are on changed its shared details."
 msgstr "De piloot die een vlucht logde waarop u meevloog, heeft de gedeelde gegevens gewijzigd."
 
-#: app/templates/config/notifications.html:78
+#: app/templates/config/notifications.html:79
 msgid "A pilot on your flight suggests a correction, or your own suggestion was not applied."
 msgstr "Een piloot op uw vlucht stelt een correctie voor, of uw eigen voorstel is niet toegepast."
 
-#: app/templates/config/notifications.html:79
+#: app/templates/config/notifications.html:80
+msgid "An edition you joined is nearing its end date. Off by default; enable it to receive reminders."
+msgstr "Een editie waaraan je deelneemt nadert de einddatum. Standaard uitgeschakeld; schakel dit in om herinneringen te ontvangen."
+
+#: app/templates/config/notifications.html:81
 msgid "A pilot found a flight you logged already in the system and asks to add it to their own logbook."
 msgstr "Een piloot vond een vlucht die u al gelogd had en vraagt die aan het eigen logboek toe te voegen."
 
-#: app/templates/config/notifications.html:88
+#: app/templates/config/notifications.html:90
 msgid "Your preferences"
 msgstr "Uw voorkeuren"
 
-#: app/templates/config/notifications.html:89
+#: app/templates/config/notifications.html:91
 msgid "You only see notification types relevant to your role. Changes apply to your account only."
 msgstr "U ziet alleen meldingstypen die relevant zijn voor uw rol. Wijzigingen zijn alleen van toepassing op uw account."
 
-#: app/templates/config/notifications.html:96 app/templates/config/notifications.html:156
+#: app/templates/config/notifications.html:98 app/templates/config/notifications.html:158
 msgid "Event"
 msgstr "Gebeurtenis"
 
-#: app/templates/config/notifications.html:97 app/templates/config/settings.html:573
+#: app/templates/config/notifications.html:99 app/templates/config/settings.html:573
 msgid "Enabled"
 msgstr "Ingeschakeld"
 
-#: app/templates/config/notifications.html:98
+#: app/templates/config/notifications.html:100
 msgid "Alert (days ahead)"
 msgstr "Melding (dagen vooraf)"
 
-#: app/templates/config/notifications.html:133
+#: app/templates/config/notifications.html:135
 msgid "No notification types are available for your current role."
 msgstr "Er zijn geen meldingstypen beschikbaar voor uw huidige rol."
 
-#: app/templates/config/notifications.html:139
+#: app/templates/config/notifications.html:141
 msgid "Save preferences"
 msgstr "Voorkeuren opslaan"
 
-#: app/templates/config/notifications.html:149
+#: app/templates/config/notifications.html:151
 msgid "Tenant defaults"
 msgstr "Standaardinstellingen groep"
 
-#: app/templates/config/notifications.html:150
+#: app/templates/config/notifications.html:152
 msgid "These are the defaults that apply to all users who have not set their own preference. System defaults are shown where no tenant default is configured."
 msgstr "Dit zijn de standaardwaarden voor gebruikers zonder persoonlijke voorkeur. Systeemstandaarden worden weergegeven als er geen groepsstandaard is geconfigureerd."
 
-#: app/templates/config/notifications.html:157
+#: app/templates/config/notifications.html:159
 msgid "Default"
 msgstr "Standaard"
 
-#: app/templates/config/notifications.html:158
+#: app/templates/config/notifications.html:160
 msgid "Threshold"
 msgstr "Drempelwaarde"
 
-#: app/templates/config/notifications.html:168 app/templates/config/tenant_list.html:47
+#: app/templates/config/notifications.html:170 app/templates/config/tenant_list.html:47
 msgid "Active"
 msgstr "Actief"
 
-#: app/templates/config/notifications.html:170 app/templates/config/tenant_list.html:49
+#: app/templates/config/notifications.html:172 app/templates/config/tenant_list.html:49
 msgid "Inactive"
 msgstr "Inactief"
 
-#: app/templates/config/notifications.html:174 app/templates/maintenance/list.html:151 app/templates/partials/_maintenance_basis.html:9
+#: app/templates/config/notifications.html:176 app/templates/maintenance/list.html:151 app/templates/partials/_maintenance_basis.html:9
 msgid "days"
 msgstr "dagen"
 
-#: app/templates/config/notifications.html:186
+#: app/templates/config/notifications.html:188
 msgid "Email subject prefix"
 msgstr "Voorvoegsel e-mailonderwerp"
 
-#: app/templates/config/notifications.html:190
+#: app/templates/config/notifications.html:192
 msgid "not set"
 msgstr "niet ingesteld"
 
-#: app/templates/config/notifications.html:192
+#: app/templates/config/notifications.html:194
 msgid "Edit in Configuration"
 msgstr "Bewerken in configuratie"
 
@@ -10380,6 +10402,14 @@ msgstr "Volgende editie maken"
 #: app/templates/passports/detail.html:17 app/templates/reports/utilization.html:44
 msgid "From"
 msgstr "Van"
+
+#: app/templates/passports/detail.html:18
+msgid "Not expired"
+msgstr "Niet verlopen"
+
+#: app/templates/passports/detail.html:18
+msgid "Manage expiry reminders"
+msgstr "Herinneringen voor de einddatum beheren"
 
 #: app/templates/passports/detail.html:19 app/templates/passports/series.html:16
 msgid "Your progress"

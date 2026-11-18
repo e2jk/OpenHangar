@@ -367,3 +367,18 @@ Removing targets with voucher records is refused; archive the old edition, or
 remove unused allocations before removing their targets. Date changes cannot
 invalidate saved voucher validity or redemption history. None of this changes
 the underlying flight logbook.
+
+### Edition expiry reminders
+
+Under **Email Notifications**, accepted passport participants can opt into
+**Passport edition expiring** and choose their warning period (30 days by
+default). This is available without pilot privileges. The reminder links to the
+specific edition and its remaining airfields and vouchers; it never treats a
+stamp as a voucher redemption. Passport pages show whether the end date has passed.
+
+Daily checks skip archived, not-yet-started, expired and undated editions, inactive
+accounts, departed organisation members and inactive or unaccepted participation.
+Each recipient's preference and warning period apply independently. Existing email
+deduplication limits an edition to one reminder per day; the existing snooze link
+suppresses that deadline until it changes. Email delivery still requires configured
+SMTP and the instance notification scheduler.

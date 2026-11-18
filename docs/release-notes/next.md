@@ -15,6 +15,8 @@ An airfield passport is a list of airfields you'd like to fly to: every airfield
 
 - **Track your own booklet vouchers**: give each person their own allowance at every airfield. Record a voucher when you actually use it, see what you have left, and correct or undo an entry. A visit earns a stamp without spending a voucher, and using yours leaves your friends’ balances untouched. You can record actual savings in each currency and explicitly carry fresh allowances into the next edition.
 
+- **Remember the end date**: opt into a reminder before a dated passport ends, with your own warning period. The email opens that edition so you can see which airfields and vouchers remain. Archived editions stay available without sending expiry reminders.
+
 On the demo, the owner account comes with three example passports, already stamped from its logbook: every Belgian airfield, a dated edition of a fictional voucher booklet, and one that's complete.
 
 Passports are personal for now. Group passports shared with friends (with or without their own OpenHangar account), public sharing and exports will follow.

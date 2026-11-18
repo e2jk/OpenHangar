@@ -3531,6 +3531,7 @@ class NotificationType:
     SHARED_FLIGHT_CHANGED = "shared_flight_changed"
     FLIGHT_CORRECTION = "flight_correction"
     CREW_CLAIM = "crew_claim"
+    PASSPORT_EXPIRING = "passport_expiring"
 
     ALL: ClassVar[list[str]] = [
         GROUNDING_SNAG_OPENED,
@@ -3556,6 +3557,7 @@ class NotificationType:
         SHARED_FLIGHT_CHANGED,
         FLIGHT_CORRECTION,
         CREW_CLAIM,
+        PASSPORT_EXPIRING,
     ]
 
     # System defaults — coded constants; DB only stores per-user or per-tenant overrides
@@ -3583,6 +3585,7 @@ class NotificationType:
         SHARED_FLIGHT_CHANGED: {"enabled": True, "threshold_days": None},
         FLIGHT_CORRECTION: {"enabled": True, "threshold_days": None},
         CREW_CLAIM: {"enabled": True, "threshold_days": None},
+        PASSPORT_EXPIRING: {"enabled": False, "threshold_days": 30},
     }
 
     # Capability flags required — user sees this type in their prefs if they have >= 1
@@ -3612,6 +3615,7 @@ class NotificationType:
         SHARED_FLIGHT_CHANGED: ["is_pilot"],
         FLIGHT_CORRECTION: ["is_pilot"],
         CREW_CLAIM: ["is_pilot"],
+        PASSPORT_EXPIRING: ["is_passport"],
     }
 
     # Types that have a configurable days-ahead threshold
@@ -3624,6 +3628,7 @@ class NotificationType:
         DOCUMENT_EXPIRING,
         AIRWORTHINESS_REVIEW_DUE,
         RENTER_AUTHORIZATION_EXPIRY,
+        PASSPORT_EXPIRING,
     }
 
 

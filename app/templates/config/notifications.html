@@ -49,6 +49,7 @@
     {% elif t == 'crew_invite_answered' %}{{ _('Flight crew confirmation answered') }}
     {% elif t == 'shared_flight_changed' %}{{ _('Shared flight changed') }}
     {% elif t == 'flight_correction' %}{{ _('Flight correction suggestions') }}
+    {% elif t == 'passport_expiring' %}{{ _('Passport edition expiring') }}
     {% elif t == 'crew_claim' %}{{ _('Pilot asks to be added to your flight') }}
     {% else %}{{ t }}{% endif %}
   {% endmacro %}
@@ -76,6 +77,7 @@
     {% elif t == 'crew_invite_answered' %}{{ _('A pilot you named on a flight confirmed or declined it.') }}
     {% elif t == 'shared_flight_changed' %}{{ _('The pilot who logged a flight you are on changed its shared details.') }}
     {% elif t == 'flight_correction' %}{{ _('A pilot on your flight suggests a correction, or your own suggestion was not applied.') }}
+    {% elif t == 'passport_expiring' %}{{ _('An edition you joined is nearing its end date. Off by default; enable it to receive reminders.') }}
     {% elif t == 'crew_claim' %}{{ _('A pilot found a flight you logged already in the system and asks to add it to their own logbook.') }}
     {% else %}{{ t }}{% endif %}
   {% endmacro %}
