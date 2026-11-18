@@ -1165,6 +1165,8 @@ def notification_preferences() -> ResponseReturnValue:
     is_passport = tenant_id is not None and has_participation(tenant_id, user.id)
 
     def _user_has_cap(caps: list[str]) -> bool:
+        if tu is not None and tu.access_scope != "full":
+            return "is_passport" in caps and is_passport
         return (
             ("is_passport" in caps and is_passport)
             or ("is_owner" in caps and is_owner)

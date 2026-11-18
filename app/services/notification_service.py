@@ -107,6 +107,11 @@ def _find_recipients(
 
     recipients = []
     for user, tu in query.all():
+        if (
+            tu.access_scope != "full"
+            and notification_type != NotificationType.PASSPORT_EXPIRING
+        ):
+            continue
         caps = _user_caps(tu.role, user)
         if notification_type == NotificationType.PASSPORT_EXPIRING:
             from passports.reminders import has_participation

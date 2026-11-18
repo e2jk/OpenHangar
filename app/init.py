@@ -620,6 +620,10 @@ def create_app() -> Flask:
 
     app.jinja_env.globals["csp_nonce"] = _csp_nonce
 
+    from services.account_scope import enforce as enforce_account_scope
+
+    app.before_request(enforce_account_scope)
+
     @app.after_request
     def _security_headers(response: Any) -> Any:
         nonce = getattr(g, "csp_nonce", "")
@@ -820,7 +824,11 @@ def create_app() -> Flask:
 
         if not session.get("user_id"):
             return _jsonify({"error": "unauthorized"}), 401
-        return _jsonify(_compute_banners(int(session["user_id"])))
+        from services.account_scope import restricted
+        from utils import current_membership
+
+        uid = None if restricted(current_membership()) else int(session["user_id"])
+        return _jsonify(_compute_banners(uid))
 
     @app.route("/airport-search")
     def airport_search() -> ResponseReturnValue:
@@ -993,12 +1001,18 @@ def create_app() -> Flask:
                 slot = db.session.get(DemoSlot, slot_id)
                 if slot:
                     demo_display_id = slot.display_id
+        from services.account_scope import restricted
+
+        _restricted_account = bool(_in_request and restricted(current_membership()))
         role = current_user_role() if _in_request else None
         # Phase 23: is_pilot/is_maint also enabled by per-user capability flags
         uid = session.get("user_id") if _in_request else None
         _user_flags = db.session.get(User, uid) if uid else None
         _flag_pilot = bool(_user_flags and _user_flags.is_pilot)
         _flag_maint = bool(_user_flags and _user_flags.is_maintenance)
+        if _restricted_account:
+            role = None
+            _flag_pilot = _flag_maint = False
 
         # Phase 26: adaptive UI based on TenantProfile
         _tenant_profile = None
@@ -1011,7 +1025,11 @@ def create_app() -> Flask:
                 _tenant_profile = TenantProfile.query.filter_by(
                     tenant_id=tu.tenant_id
                 ).first()
-                if _tenant_profile and _tenant_profile.allows_rental:
+                if (
+                    _tenant_profile
+                    and _tenant_profile.allows_rental
+                    and not _restricted_account
+                ):
                     # Phase 37e: nav entry only when there's something to see.
                     from models import BillingAccount, BillingAccountKind, LedgerEntry
 
@@ -1038,7 +1056,7 @@ def create_app() -> Flask:
         _single_aircraft_mode = _pac == 1
 
         # EE-09/EE-10: aviation history day + personal anniversary banners
-        _banners = _compute_banners(uid)
+        _banners = _compute_banners(uid if not _restricted_account else None)
         from datetime import date as _date
 
         _is_owner = role in (Role.ADMIN, Role.OWNER)
@@ -1058,7 +1076,7 @@ def create_app() -> Flask:
             _nav_data_checks_open = _data_checks_open_count(_nav_tenant_id)
         else:
             _nav_data_checks_open = 0
-        if uid:
+        if uid and not _restricted_account:
             from flights.crew_invites import (
                 pending_claims_to_review,
                 pending_invite_count,
@@ -1079,6 +1097,7 @@ def create_app() -> Flask:
 
         return {
             "has_passports": _has_passports,
+            "passport_only": _restricted_account,
             "logged_in": bool(uid),
             "has_users": User.query.count() > 0,
             "flask_env": flask_env,

@@ -323,6 +323,7 @@ def change_role(user_id: int) -> ResponseReturnValue:
         abort(400)
     old_role = tu.role
     tu.role = new_role
+    tu.access_scope = "full"
     # When promoted to owner/admin, per-aircraft access rows are no longer needed
     if new_role in (Role.ADMIN, Role.OWNER):
         UserAircraftAccess.query.filter_by(user_id=user_id).delete()
@@ -330,7 +331,7 @@ def change_role(user_id: int) -> ResponseReturnValue:
     _log.warning(
         "[SECURITY] users.role.changed target_user_id=%s old_role=%s new_role=%s admin_user_id=%s ip=%s",
         _sl(str(user_id)),
-        _sl(old_role.value),
+        _sl(old_role.value if old_role else "passport"),
         _sl(new_role.value),
         _sl(str(session["user_id"])),
         _sl(request.remote_addr),
@@ -528,7 +529,9 @@ def edit_permissions(user_id: int) -> ResponseReturnValue:
         ).all()
     }
 
-    role_default_mask = PermissionBit.ROLE_DEFAULTS.get(tu.role.value, 0)
+    role_default_mask = PermissionBit.ROLE_DEFAULTS.get(
+        tu.role.value if tu.role else "", 0
+    )
 
     def _parse_mask(scope: str) -> int | None:
         mask = 0
