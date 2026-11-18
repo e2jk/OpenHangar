@@ -17,5 +17,5 @@
 <label for="invite-expiry" class="form-label">{{ _('Invitation expiry date (optional)') }}</label><input id="invite-expiry" type="date" name="expires_on" class="form-control" value="{{ request.form.get('expires_on', '') }}">
 <p class="form-text">{{ _('Creating a replacement makes the previous link stop accepting new participants. It does not remove anyone who already joined.') }}</p>
 <button class="btn btn-ac-primary">{{ _('Create a new invitation') }}</button></form>
-<a href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ _('Back to passport') }}</a>
+{% if can_open %}<a href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ _('Back to passport') }}</a>{% else %}<a href="{{ url_for('passports.group_members', series_id=passport.series_id) }}">{{ _('Group members') }}</a>{% endif %}
 </div>{% endblock %}

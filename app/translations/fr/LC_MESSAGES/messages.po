@@ -2282,7 +2282,7 @@ msgstr "La provenance de l’import est invalide. Prévisualisez à nouveau la s
 msgid "Choose an invitation action."
 msgstr "Choisissez une action pour l’invitation."
 
-#: app/passports/invitation_routes.py:256
+#: app/passports/invitation_routes.py:257
 msgid "Your email is verified. Sign in with your existing account to join."
 msgstr "Votre adresse e-mail est vérifiée. Connectez-vous avec votre compte existant pour rejoindre le passeport."
 
@@ -2342,7 +2342,7 @@ msgid "Only the group owner can manage other members."
 msgstr "Seul le propriétaire du groupe peut gérer les autres membres."
 
 #: app/passports/memberships.py:93 app/passports/memberships.py:115
-#: app/templates/passports/group_members.html:20
+#: app/templates/passports/group_members.html:21
 msgid "Transfer group ownership before leaving."
 msgstr "Transférez la propriété du groupe avant de le quitter."
 
@@ -5638,7 +5638,7 @@ msgstr "Composants"
 #: app/templates/aircraft/detail.html:341
 #: app/templates/aircraft/detail.html:357
 #: app/templates/flights/logbook_component.html:81
-#: app/templates/passports/group_members.html:15
+#: app/templates/passports/group_members.html:16
 msgid "Removed"
 msgstr "Déposé"
 
@@ -8280,7 +8280,7 @@ msgstr "Seuil"
 
 #: app/templates/config/notifications.html:170
 #: app/templates/config/tenant_list.html:47
-#: app/templates/passports/group_members.html:15
+#: app/templates/passports/group_members.html:16
 msgid "Active"
 msgstr "Actif"
 
@@ -11977,6 +11977,7 @@ msgid "Create next edition"
 msgstr "Créer l’édition suivante"
 
 #: app/templates/passports/detail.html:13
+#: app/templates/passports/group_members.html:6
 #: app/templates/passports/invitation_settings.html:3
 #: app/templates/passports/invitation_settings.html:6
 msgid "Invite friends"
@@ -11985,7 +11986,9 @@ msgstr "Inviter des amis"
 #: app/templates/passports/detail.html:14
 #: app/templates/passports/group_members.html:3
 #: app/templates/passports/group_members.html:4
-#: app/templates/passports/index.html:10 app/templates/passports/series.html:6
+#: app/templates/passports/index.html:10
+#: app/templates/passports/invitation_settings.html:20
+#: app/templates/passports/series.html:6
 msgid "Group members"
 msgstr "Membres du groupe"
 
@@ -12132,92 +12135,105 @@ msgid "Start again"
 msgstr "Recommencer"
 
 #: app/templates/passports/group_members.html:6
+msgid "Manage group editions"
+msgstr "Gérer les éditions du groupe"
+
+#: app/templates/passports/group_members.html:6
+msgid "Owning an edition does not join it or grant stamps or vouchers. Use its invitation to accept participation separately."
+msgstr "Posséder une édition ne vous y inscrit pas et ne donne ni tampons ni bons. Utilisez son invitation pour accepter séparément votre participation."
+
+#: app/templates/passports/group_members.html:6
+#: app/templates/passports/series.html:19
+msgid "Not a participant"
+msgstr "Non-participant"
+
+#: app/templates/passports/group_members.html:7
 msgid "Group ownership"
 msgstr "Propriété du groupe"
 
-#: app/templates/passports/group_members.html:7
+#: app/templates/passports/group_members.html:8
 msgid "The selected participant must accept within seven days. Transfer covers this group and its group editions, without changing private linked passports, personal evidence, vouchers or aircraft permissions."
 msgstr "Le participant sélectionné doit accepter sous sept jours. Le transfert concerne ce groupe et ses éditions partagées, sans modifier les passeports privés liés, les justificatifs personnels, les bons ou les autorisations liées aux aéronefs."
 
-#: app/templates/passports/group_members.html:8
+#: app/templates/passports/group_members.html:9
 #, python-format
 msgid "Ownership offered to %(name)s."
 msgstr "Propriété proposée à %(name)s."
 
-#: app/templates/passports/group_members.html:9
+#: app/templates/passports/group_members.html:10
 msgid "Accept group ownership"
 msgstr "Accepter la propriété du groupe"
 
-#: app/templates/passports/group_members.html:9
+#: app/templates/passports/group_members.html:10
 msgid "Decline ownership"
 msgstr "Refuser le transfert"
 
-#: app/templates/passports/group_members.html:10
+#: app/templates/passports/group_members.html:11
 msgid "Cancel ownership offer"
 msgstr "Annuler la proposition de transfert"
 
-#: app/templates/passports/group_members.html:12
+#: app/templates/passports/group_members.html:13
 msgid "Offer ownership to a participant"
 msgstr "Proposer la propriété à un participant"
 
-#: app/templates/passports/group_members.html:12
+#: app/templates/passports/group_members.html:13
 msgid "Offer group ownership"
 msgstr "Proposer la propriété du groupe"
 
-#: app/templates/passports/group_members.html:14
+#: app/templates/passports/group_members.html:15
 msgid "Leaving one edition keeps your group history access. Leaving the group ends all group-derived access. Your private visits and voucher records are retained; leaving does not spend or reset vouchers."
 msgstr "Quitter une édition conserve votre accès à l’historique du groupe. Quitter le groupe met fin à tous les accès liés au groupe. Vos visites privées et vos opérations de bons sont conservées ; partir ne consomme ni ne réinitialise vos bons."
 
-#: app/templates/passports/group_members.html:15
+#: app/templates/passports/group_members.html:16
 msgid "Group owner"
 msgstr "Propriétaire du groupe"
 
-#: app/templates/passports/group_members.html:15
+#: app/templates/passports/group_members.html:16
 msgid "Left group"
 msgstr "A quitté le groupe"
 
-#: app/templates/passports/group_members.html:16
+#: app/templates/passports/group_members.html:17
 msgid "Removal scope"
 msgstr "Portée de l’exclusion"
 
-#: app/templates/passports/group_members.html:16
-#: app/templates/passports/group_members.html:21
+#: app/templates/passports/group_members.html:17
+#: app/templates/passports/group_members.html:22
 msgid "Whole group, including history"
 msgstr "Tout le groupe, historique compris"
 
-#: app/templates/passports/group_members.html:16
+#: app/templates/passports/group_members.html:17
 msgid "Remove member"
 msgstr "Exclure le membre"
 
-#: app/templates/passports/group_members.html:18
+#: app/templates/passports/group_members.html:19
 msgid "Leave one edition"
 msgstr "Quitter une édition"
 
-#: app/templates/passports/group_members.html:18
+#: app/templates/passports/group_members.html:19
 msgid "Leave edition"
 msgstr "Quitter l’édition"
 
-#: app/templates/passports/group_members.html:19
+#: app/templates/passports/group_members.html:20
 msgid "Leave group"
 msgstr "Quitter le groupe"
 
-#: app/templates/passports/group_members.html:21
+#: app/templates/passports/group_members.html:22
 msgid "Removed members"
 msgstr "Membres exclus"
 
-#: app/templates/passports/group_members.html:21
+#: app/templates/passports/group_members.html:22
 msgid "Reinstatement allows a fresh invitation acceptance. It does not silently rejoin editions or share old visits again."
 msgstr "La réintégration permet d’accepter à nouveau une invitation. Elle ne réinscrit pas automatiquement aux éditions et ne repartage pas les anciennes visites."
 
-#: app/templates/passports/group_members.html:22
+#: app/templates/passports/group_members.html:23
 msgid "Allow rejoining"
 msgstr "Autoriser la réinscription"
 
-#: app/templates/passports/group_members.html:22
+#: app/templates/passports/group_members.html:23
 msgid "No removed members."
 msgstr "Aucun membre exclu."
 
-#: app/templates/passports/group_members.html:23
+#: app/templates/passports/group_members.html:24
 msgid "Back to editions"
 msgstr "Retour aux éditions"
 
@@ -12553,10 +12569,6 @@ msgstr "Objectifs retirés"
 #: app/templates/passports/series.html:19
 msgid "Read-only history; not a participant"
 msgstr "Historique en lecture seule ; non-participant"
-
-#: app/templates/passports/series.html:19
-msgid "Not a participant"
-msgstr "Non-participant"
 
 #: app/templates/passports/target.html:11
 msgid "A logged arrival is presumed a full stop. Exclude touch-and-go, low approach or other arrivals that should not earn credit. Departures and landing totals alone do not earn stamps."

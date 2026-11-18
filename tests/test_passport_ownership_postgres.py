@@ -24,6 +24,7 @@ from tests.test_passport_management import owner
 from tests.test_passport_memberships import members
 from tests.test_passport_ownership import (
     test_acceptance_transfers_only_group_editions_and_no_personal_vouchers,
+    test_new_owner_manages_unjoined_edition_without_receiving_participation,
 )
 from tests.test_postgres_locks_and_migrations import (
     empty_schema,
@@ -38,6 +39,7 @@ __all__ = [
     "owner",
     "test_acceptance_transfers_only_group_editions_and_no_personal_vouchers",
     "test_migrations_build_the_schema_the_models_describe",
+    "test_new_owner_manages_unjoined_edition_without_receiving_participation",
 ]
 
 

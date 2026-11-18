@@ -3,6 +3,7 @@
 {% block title %}{{ _('Group members') }} — {{ series.title }}{% endblock %}
 {% block content %}<div class="container py-4"><h1>{{ _('Group members') }}</h1><h2 class="h4">{{ series.title }}</h2>
 {% if error %}<p class="alert alert-danger" role="alert">{{ error }}</p>{% endif %}
+{% if view.can_manage %}<section class="my-3"><h2 class="h4">{{ _('Manage group editions') }}</h2><p>{{ _('Owning an edition does not join it or grant stamps or vouchers. Use its invitation to accept participation separately.') }}</p><ul>{% for edition in view.editions %}<li>{% if edition.id in view.accepted %}<a href="{{ url_for('passports.detail', passport_id=edition.id) }}">{{ edition.edition_label or edition.title }}</a>{% else %}{{ edition.edition_label or edition.title }} · {{ _('Not a participant') }}{% endif %} · <a href="{{ url_for('passports.invitation_settings', passport_id=edition.id) }}">{{ _('Invite friends') }}</a></li>{% endfor %}</ul></section>{% endif %}
 <section class="my-3" aria-labelledby="ownership-heading"><h2 id="ownership-heading" class="h4">{{ _('Group ownership') }}</h2>
 <p>{{ _('The selected participant must accept within seven days. Transfer covers this group and its group editions, without changing private linked passports, personal evidence, vouchers or aircraft permissions.') }}</p>
 {% if ownership_offer %}<p>{{ _('Ownership offered to %(name)s.', name=ownership_offer.target_name) }}</p>
