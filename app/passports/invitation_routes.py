@@ -4,6 +4,7 @@ from extensions import _rate_limiting_disabled, limiter
 from flask import (
     Response,
     abort,
+    flash,
     g,
     has_request_context,
     redirect,
@@ -18,7 +19,7 @@ from models import Passport, PassportInvitation, PassportParticipant, User, db
 from services import auth_challenges, auth_sessions
 from utils import current_membership, login_required
 
-from passports import invitations, passports_bp, tokens
+from passports import invitations, passports_bp, registration, tokens
 from passports.management import BuilderError
 
 
@@ -27,6 +28,8 @@ def invitation_privacy(response: Response) -> Response:
     if request.endpoint in {
         "passports.invitation_settings",
         "passports.join_passport",
+        "passports.register_passport",
+        "passports.verify_passport_email",
     } or (
         request.blueprint == "auth"
         and (session.get(invitations.JOIN_KEY) or g.get("passport_join_request"))
@@ -177,3 +180,70 @@ def invitation_context() -> dict[str, str | None]:
         if context:
             title = context[0].payload.get("passport_title")
     return {"passport_join_title": title}
+
+
+@passports_bp.route("/join/<token>/register", methods=["GET", "POST"])
+@limiter.shared_limit(
+    "10 per minute",
+    scope="passport-admission",
+    methods=["POST"],
+    exempt_when=_rate_limiting_disabled,
+)
+def register_passport(token: str) -> ResponseReturnValue:
+    try:
+        _invitation, passport = invitations.lookup(token)
+    except BuilderError as exc:
+        return abort(exc.status, description=str(exc))
+    if session.get("user_id"):
+        return redirect(url_for("passports.join_passport", token=token))
+    error, status = None, 200
+    if request.method == "POST":
+        try:
+            registration.begin(token, dict(request.form))
+            return redirect(url_for("passports.verify_passport_email", token=token))
+        except BuilderError as exc:
+            db.session.rollback()
+            error, status = str(exc), exc.status
+    return render_template(
+        "passports/register.html", passport=passport, token=token, error=error
+    ), status
+
+
+@passports_bp.route("/join/<token>/verify", methods=["GET", "POST"])
+@limiter.shared_limit(
+    "10 per minute",
+    scope="passport-admission",
+    methods=["POST"],
+    exempt_when=_rate_limiting_disabled,
+)
+def verify_passport_email(token: str) -> ResponseReturnValue:
+    try:
+        _invitation, passport = invitations.lookup(token)
+    except BuilderError as exc:
+        return abort(exc.status, description=str(exc))
+    if session.get("user_id"):
+        return redirect(url_for("passports.join_passport", token=token))
+    error, status = None, 200
+    try:
+        registration.pending(token)
+        if request.method == "POST":
+            user, created, proof = registration.verify(
+                token, request.form.get("code", "").strip()
+            )
+            if created:
+                from auth.routes import _finish_login
+
+                return _finish_login(user, expected_binding=proof)
+            flash(
+                _(
+                    "Your email is verified. Sign in with your existing account to join."
+                ),
+                "info",
+            )
+            return redirect(url_for("auth.login"))
+    except BuilderError as exc:
+        db.session.rollback()
+        error, status = str(exc), exc.status
+    return render_template(
+        "passports/verify_email.html", passport=passport, token=token, error=error
+    ), status

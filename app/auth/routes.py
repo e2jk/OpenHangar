@@ -1,4 +1,5 @@
 import hashlib
+import hmac
 import logging
 import os
 from datetime import UTC, datetime, timedelta
@@ -285,11 +286,36 @@ def _invitation_tenant(user: User) -> int | None:
     return passport.tenant_id if expected in (None, user.id) else None
 
 
-def _finish_login(user: User) -> ResponseReturnValue:
+def _login_proof_matches(user: User, proof: str) -> bool:
+    fresh = db.session.get(User, user.id, populate_existing=True)
+    return fresh is not None and hmac.compare_digest(
+        proof, challenges.credential_binding(fresh)
+    )
+
+
+def _changed_login() -> ResponseReturnValue:
+    from passports import invitations
+
+    db.session.rollback()
+    context = session.get(invitations.JOIN_KEY)
+    auth_sessions.revoke_current()
+    session.clear()
+    if context:
+        session[invitations.JOIN_KEY] = context
+    flash(_("Your account changed. Please sign in again."), "warning")
+    return redirect(url_for("auth.login"))
+
+
+def _finish_login(
+    user: User, *, expected_binding: str | None = None
+) -> ResponseReturnValue:
     from passports import invitations
     from passports.management import BuilderError
 
     g.passport_join_request = bool(session.get(invitations.JOIN_KEY))
+    proof = expected_binding or challenges.credential_binding(user)
+    if not _login_proof_matches(user, proof):
+        return _changed_login()
     target_tenant_id = _invitation_tenant(user)
     if (
         target_tenant_id is not None
@@ -303,9 +329,21 @@ def _finish_login(user: User) -> ResponseReturnValue:
         passport = invitations.complete(user)
     except BuilderError as exc:
         db.session.rollback()
+        if not _login_proof_matches(user, proof):
+            return _changed_login()
+        target_tenant_id = _invitation_tenant(user)
+        if (
+            exc.status == 409
+            and target_tenant_id is not None
+            and not user.totp_secret
+            and challenges.requires_totp(user, tenant_id=target_tenant_id)
+        ):
+            return _begin_login_enrolment(user, target_tenant_id)
         warning = str(exc)
         if exc.status != 409:
             session.pop(invitations.JOIN_KEY, None)
+    if not _login_proof_matches(user, proof):
+        return _changed_login()
     context = session.get(invitations.JOIN_KEY)
     session.clear()
     if context:

@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% set no_history_cache = true %}
+{% block title %}{{ _('Verify your email') }} — {{ passport.title }}{% endblock %}
+{% block content %}<div class="container py-4"><h1>{{ _('Verify your email') }}</h1><h2 class="h4">{{ passport.title }}</h2>
+<p>{{ _('Check your inbox for a six-digit code. It expires in 10 minutes. Verify your email to continue joining this passport.') }}</p>
+{% if error %}<p class="alert alert-danger" role="alert">{{ error }}</p>{% endif %}
+<form method="post" hx-boost="false"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label for="registration-code" class="form-label">{{ _('Verification code') }}</label><input id="registration-code" class="form-control" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" minlength="6" maxlength="6" pattern="[0-9]{6}" required><button class="btn btn-ac-primary my-3">{{ _('Verify and continue') }}</button></form>
+<p><a href="{{ url_for('passports.register_passport', token=token) }}">{{ _('Start again or request a new code') }}</a></p></div>{% endblock %}

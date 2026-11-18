@@ -2489,7 +2489,7 @@ downgrades and show localised retrieval timestamps.
   to one account; idempotent enrolment and separate personal voucher allowances.
   Group changes use a transaction mutex and bounded lock waits. Durable removal
   records support later member controls. Owner/join screens and login hand-off
-  now use this service; verified registration and member controls are tracked separately below.
+  and verified registration now use this service; member controls remain below.
 
 - [x] Owner creates one shareable invitation link bound to that specific group
   passport (and edition), suitable for posting in a WhatsApp group. Friends enrol
@@ -2506,9 +2506,9 @@ downgrades and show localised retrieval timestamps.
   reopening as a member opens the map. Owner copy/replace/disable and optional
   expiry controls, no-store/no-referrer/no-index responses, token log redaction,
   CSRF and shared join rate limits are in place. Verified new-account signup is
-  the remaining part of the next item.
+  integrated below.
 
-- [ ] New visitor flow: open invitation → see the named passport → enter display
+- [x] New visitor flow: open invitation → see the named passport → enter display
   name, email and password → verify email → automatically enrol in that passport
   and open their personalised map. Existing accounts sign in and are enrolled in
   the same context. Registration/sign-in clearly says it joins this passport and
@@ -2516,7 +2516,7 @@ downgrades and show localised retrieval timestamps.
   second invitation or owner approval needed in the normal flow. Signed-in users
   have a single CSRF-protected "Join this passport" action; GET requests/link
   previews must not create accounts or memberships.
-- [ ] Preserve the validated invitation context server-side through registration,
+- [x] Preserve the validated invitation context server-side through registration,
   login, email verification, password recovery and any enabled 2FA, then recheck
   the invitation and passport before enrolment. Use only local allowlisted return
   destinations. Joining is transactional/idempotent with one membership per user;
@@ -2525,8 +2525,19 @@ downgrades and show localised retrieval timestamps.
 - [x] Account-restriction foundation: a passport-scoped tenant membership has no
   broad role, uses a fail-closed route allowlist, hides fleet navigation and
   receives only relevant passport reminders. Scope changes revoke existing
-  sessions; operator role promotion is explicit. Invitation creation and the
-  restricted builder/discovery catalogue remain to be integrated below.
+  sessions; operator role promotion is explicit. Invitation creation and verified
+  registration now use these restrictions. The private builder/discovery catalogue
+  and personal-pilot activation remain below.
+
+- [x] Email-verification gate: six-digit code, ten-minute expiry and five durable
+  attempts; keyed code digest and password hash stay in server-held state. No
+  account or participation before proof. One email per address/minute is enforced
+  atomically across workers, with shared admission route rate limits. Existing
+  addresses follow the same mail flow and must still sign in with their existing
+  password/authenticator; account creation races cannot overwrite credentials.
+  New accounts start with no fleet role, pilot or maintenance capability. Admission
+  is rechecked after verification and MFA; credential changes during hand-off
+  require fresh sign-in. Private collection creation and exports remain below.
 
 - [ ] New invitees get a real passport-only account: own passports, manual visits,
   profile/security settings, recovery and data export. Add an explicit account
