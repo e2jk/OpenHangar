@@ -2565,7 +2565,7 @@ downgrades and show localised retrieval timestamps.
   retained. Available edition invitations reuse the group alias and require explicit
   acceptance. Optional history includes skipped middle editions as well as earlier
   years, without retrospective participation or voucher credit.
-- [ ] Owner can remove members and transfer ownership to an accepting participant;
+- [x] Owner can remove members and transfer ownership to an accepting participant;
   participants can leave. Removal revokes passport access and cannot be bypassed
   by reusing the same shared invitation: require explicit owner reinstatement.
   Group membership is passport-scoped, independent of aircraft permissions and

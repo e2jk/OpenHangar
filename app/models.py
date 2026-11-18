@@ -4180,6 +4180,31 @@ class PassportSeriesMember(db.Model):
     )
 
 
+class PassportOwnershipOffer(db.Model):
+    """Authenticated, expiring offer; never a link that identifies a participant."""
+
+    __tablename__ = "passport_ownership_offers"
+    series_id = db.Column(
+        db.Integer,
+        db.ForeignKey("passport_series.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    requester_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    target_user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    request_key = db.Column(db.String(32), nullable=False)
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    expires_at = db.Column(db.DateTime(timezone=True), nullable=False)
+
+
 class Passport(db.Model):
     __tablename__ = "passports"
     __table_args__ = (

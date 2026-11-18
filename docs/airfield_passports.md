@@ -522,6 +522,13 @@ history. Reusing the shared invitation cannot bypass removal, even after deletin
 and recreating the account with the same email. **Allow rejoining** lifts the
 selected removal restriction; the friend must accept an invitation again before
 participation or visit sharing resumes. Separate edition restrictions remain in
-force. Group permissions never grant aircraft or club permissions. Ownership
-transfer is a separate upcoming control; owners cannot leave before transferring
+force. Group permissions never grant aircraft or club permissions. In **Group ownership**, the owner selects an active participant and makes an
+offer. That friend signs in and explicitly accepts within seven days, or declines;
+the owner can cancel or replace the offer. A pending offer grants no permissions.
+Acceptance rechecks both membership and ownership and transfers the group and all
+its group editions together. Private linked passports, personal evidence and
+voucher balances, aircraft permissions and account capabilities stay with their
+existing owners. The former owner remains a participant and can then leave.
+Removed or departed participants cannot accept an old offer, and replaced offers
+cannot be accepted from stale forms. Owners cannot leave before transferring
 ownership.
