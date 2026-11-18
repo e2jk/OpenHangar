@@ -271,7 +271,7 @@ def _group_series(series: PassportSeries, user_id: int) -> ResponseReturnValue:
             frequency=request.args.get("frequency") == "1",
         )
     except BuilderError as exc:
-        abort(exc.status)
+        return abort(exc.status)
 
 
 @passports_bp.route("/<int:passport_id>/group", methods=["GET", "POST"])
