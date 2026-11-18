@@ -213,6 +213,34 @@ def test_private_photo_validation_replace_delete_and_failure(
     assert client.get(f"/passports/{pid}/photos/{photo_id}").status_code == 404
 
 
+def test_missing_photo_is_not_found_without_weakening_privacy(
+    app: Flask, client: FlaskClient, owner: dict[str, int]
+) -> None:
+    signin(client, owner["user"])
+    pid, tid = owner["passport"], owner["target"]
+    assert (
+        client.post(
+            f"/passports/{pid}/airfields/{tid}",
+            data={"action": "photo", "photo": (io.BytesIO(image_bytes()), "photo.jpg")},
+        ).status_code
+        == 302
+    )
+    with app.app_context():
+        photo = PassportStampPhoto.query.one()
+        photo_id = photo.id
+        photo_path(photo.filename).unlink()
+    response = client.get(f"/passports/{pid}/photos/{photo_id}")
+    assert response.status_code == 404
+    assert b"Internal Server Error" not in response.data
+    assert "no-store" in response.headers["Cache-Control"]
+    signin(client, owner["other"])
+    # Access is refused before attempting to read the image file.
+    with patch(
+        "passports.routes.send_file", side_effect=AssertionError("private file read")
+    ):
+        assert client.get(f"/passports/{pid}/photos/{photo_id}").status_code == 404
+
+
 def test_photo_bounds(app: Flask) -> None:
     with app.app_context():
         with pytest.raises(BuilderError):

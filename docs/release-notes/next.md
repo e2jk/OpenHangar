@@ -30,3 +30,4 @@ stamps or vouchers.
 - Email verification limits failed attempts and repeat sends across workers. Existing accounts keep their credentials and authenticator; simultaneous registrations cannot overwrite them. Credential changes during enrolment require a fresh sign-in.
 - Restored the translation catalogs’ standard generated formatting without changing their translations.
 - Simplified verification locking to address an advisory CodeQL finding. Shipping guidance now requires reading advisory PR reviews as well as checking CI, including after auto-merge.
+- Missing or concurrently replaced passport photo files return a normal not-found response while retaining the same private-photo access checks.

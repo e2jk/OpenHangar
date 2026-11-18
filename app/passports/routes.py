@@ -504,9 +504,13 @@ def stamp_photo(passport_id: int, photo_id: int) -> ResponseReturnValue:
     photo = PassportStampPhoto.query.filter_by(
         id=photo_id, passport_id=passport.id, participant_id=participant.id
     ).first_or_404()
-    response = send_file(
-        evidence.photo_path(photo.filename), mimetype="image/jpeg", max_age=0
-    )
+    try:
+        response = send_file(
+            evidence.photo_path(photo.filename), mimetype="image/jpeg", max_age=0
+        )
+    except FileNotFoundError:
+        # A stale reference or concurrent replacement must not become a 500.
+        return abort(404)
     response.headers["Cache-Control"] = "private, no-store"
     return response
 
