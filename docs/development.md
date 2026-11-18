@@ -761,7 +761,8 @@ a change:
   to `ship-later` instead. Its PR gets the same CI and auto-merge, but merging
   it publishes no release (`ci.yml`'s version job doesn't publish for that
   branch): the changes go out with the next daily release
-  (`daily-release.yml`, 23:20 UTC, which releases whatever changed on `main`
+  (`daily-release.yml`, scheduled 23:20 UTC but usually hours later — see
+  below; it releases whatever changed on `main`
   since the latest release — routine Renovate updates the same way), or with
   the next plain `ship` before that. Meant for small changes that don't need
   a release of their own. Keep `docs/release-notes/next.md` up to date as
@@ -789,9 +790,20 @@ being retried forever.
 Renovate PRs are fully tested like a `ship` PR, but a routine update
 doesn't publish a release of its own — several land every day.
 [`daily-release.yml`](../.github/workflows/daily-release.yml) releases
-them together at 23:20 UTC: if `main` differs from the latest release, it
+them together overnight: if `main` differs from the latest release, it
 dispatches `ci.yml`'s rebuild of `main`, which tests the day's updates
-together and publishes them as one release. A `ship` push still releases
+together and publishes them as one release.
+
+It's scheduled for 23:20 UTC, but GitHub only starts scheduled workflows
+on a best-effort basis: runs start late when Actions is busy (and can be
+skipped). In practice it has started about 2 hours late in October 2026,
+growing to 3–6 hours by mid-November, so releases come out around
+02:30–05:30 UTC; the release itself then takes about 10 minutes. The
+other scheduled workflows here start later still (often 7–10 hours). To
+release at a predictable time, trigger it from outside GitHub instead: it
+accepts a manual run, e.g. `gh workflow run daily-release.yml` from a cron
+job with a token allowed to run workflows. It does nothing when `main`
+already matches the latest release, so the schedule can stay as a fallback. A `ship` push still releases
 straight away (taking along any updates merged since the last release),
 and so does Renovate's security-fix PR (labelled `security`), so a CVE
 fix never waits for the daily batch. Renovate still opens its PRs as

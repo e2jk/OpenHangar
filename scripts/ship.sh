@@ -12,9 +12,10 @@
 #
 # With --later it pushes to `ship-later` instead: same PR, same CI, same
 # auto-merge, but merging it doesn't publish a release — the changes go out
-# with the next daily release (.github/workflows/daily-release.yml, 23:20
-# UTC), the way routine Renovate updates do, or with the next plain ship
-# before that. For small changes that needn't be released straight away.
+# with the next daily release (.github/workflows/daily-release.yml,
+# scheduled 23:20 UTC — GitHub often starts it hours later, see
+# docs/development.md), the way routine Renovate updates do, or with the
+# next plain ship before that. For small changes that needn't be released straight away.
 #
 # This is for the repo owner's own solo commits only — external
 # contributors should keep using the normal GitHub fork-and-PR flow
@@ -212,7 +213,7 @@ if [ -n "${OTHER_SHA}" ]; then
 fi
 
 if [ "${BRANCH}" = "ship-later" ]; then
-  echo "Pushed to ship-later — merges once CI is green, released with the next daily release (23:20 UTC). Watch it land with: gh pr status"
+  echo "Pushed to ship-later — merges once CI is green, released with the next daily release (scheduled 23:20 UTC; GitHub often starts it hours later). Watch it land with: gh pr status"
 else
   echo "Pushed to ship — watch it land with: gh pr status"
 fi

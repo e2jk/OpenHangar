@@ -138,8 +138,9 @@ def body(subjects: list[str], summary: str | None, later: bool = False) -> str:
         intro = (
             "Auto-opened from `ship-later` — will merge once CI passes, "
             "without a release of its own: it goes out with the next daily "
-            "release (daily-release.yml, 23:20 UTC), or with the next "
-            "`ship` before that."
+            "release (daily-release.yml, scheduled 23:20 UTC, though GitHub "
+            "often starts it hours later), or with the next `ship` before "
+            "that."
         )
     else:
         intro = "Auto-opened from `ship` — will merge once CI passes."
