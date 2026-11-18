@@ -749,7 +749,12 @@ a change:
   pushes to `ship`. No separate manual sync step is needed before your next
   round of commits: just run the script again — you don't have to wait for
   the current round to finish landing first. Watch a push land with
-  `gh pr status`. `bash scripts/ship.sh --no-verify` skips the pre-push
+  `gh pr status`. Also read the PR's review comments: CodeQL notes and
+  `COMMENTED` reviews need not block auto-merge. Check them when CI completes and
+  again after merge, including the main-branch code-scanning result. Address valid
+  findings in a small follow-up even if the original PR has already merged;
+  successful checks alone are not a complete review audit.
+  `bash scripts/ship.sh --no-verify` skips the pre-push
   hook, same flag and meaning as `git push --no-verify`.
   Before pushing, it lists the commits made on GitHub since the last release
   (e.g. dependency updates) that will ship along, and asks to confirm when one

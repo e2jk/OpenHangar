@@ -22,3 +22,4 @@ SMTP settings to send verification emails.
 - Stabilised invitation setup in browser tests by waiting for sharing consent to finish saving, and made invitation error returns explicit for static analysis.
 - Email verification limits failed attempts and repeat sends across workers. Existing accounts keep their credentials and authenticator; simultaneous registrations cannot overwrite them. Credential changes during enrolment require a fresh sign-in.
 - Restored the translation catalogs’ standard generated formatting without changing their translations.
+- Simplified verification locking to address an advisory CodeQL finding. Shipping guidance now requires reading advisory PR reviews as well as checking CI, including after auto-merge.
