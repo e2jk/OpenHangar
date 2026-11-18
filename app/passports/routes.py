@@ -3,6 +3,7 @@
 import copy
 import json
 from datetime import date
+from typing import Any
 
 from extensions import _rate_limiting_disabled, limiter
 from flask import (
@@ -22,6 +23,7 @@ from models import (
     Passport,
     PassportArrivalExclusion,
     PassportDraft,
+    PassportSeries,
     PassportStampPhoto,
     PassportVisit,
     db,
@@ -37,6 +39,7 @@ from utils import (
 from passports import (
     builder,
     evidence,
+    groups,
     invitation_routes,  # Register edition admission views.
     lifecycle,  # Register transaction-safe file cleanup.
     passports_bp,
@@ -91,11 +94,20 @@ def index() -> ResponseReturnValue:
 @login_required
 def detail(passport_id: int) -> ResponseReturnValue:
     passport = require_passport(passport_id)
-    progress = passport_progress(passport, session["user_id"])
+    shared = _shared_view(passport)
+    progress = (
+        shared["progress"][passport.id]
+        if shared
+        else passport_progress(passport, session["user_id"])
+    )
+    shared_rows = {row["id"]: row for row in shared["rows"]} if shared else {}
+    display_rows = [
+        {**row, **shared_rows.get(row["id"], {})} for row in progress["rows"]
+    ]
     state = request.args.get("state", "all")
     rows = [
         row
-        for row in progress["rows"]
+        for row in display_rows
         if state not in {"visited", "unvisited", "closed"}
         or (state == "visited" and row["visited"])
         or (state == "unvisited" and not row["visited"])
@@ -115,6 +127,10 @@ def detail(passport_id: int) -> ResponseReturnValue:
                 "visited",
                 "count",
                 "is_closed",
+                "state",
+                "colour",
+                "editions",
+                "friends",
             )
         }
         for row in rows
@@ -133,8 +149,21 @@ def detail(passport_id: int) -> ResponseReturnValue:
         state=state,
         frequency=request.args.get("frequency") == "1",
         can_manage=can_manage,
+        group_view=shared is not None,
         today=date.today(),
     )
+
+
+def _shared_view(passport: Passport) -> dict[str, Any] | None:
+    if not passport.is_group:
+        return None
+    series = db.session.get(PassportSeries, passport.series_id)
+    if series is None:
+        return abort(404)
+    try:
+        return groups.combined(series, [passport], session["user_id"], current=passport)
+    except BuilderError as exc:
+        return abort(exc.status)
 
 
 def _actor() -> tuple[int, int]:
@@ -485,6 +514,14 @@ def target_detail(passport_id: int, target_id: int) -> ResponseReturnValue:
             "passports/target.html",
             passport=passport,
             target=target,
+            friends=next(
+                (
+                    row["friends"]
+                    for row in (_shared_view(passport) or {}).get("rows", [])
+                    if row["id"] == target["id"]
+                ),
+                [],
+            ),
             supporting_flights=progress["supporting_flights"],
             photo=photo,
             can_record=can_record,

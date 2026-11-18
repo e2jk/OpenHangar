@@ -101,7 +101,10 @@ def test_history_targets_without_retroactive_stamps_or_vouchers(
         row = view["rows"][0]
         assert row["state"] == "others" and row["count"] == 1 and row["own_count"] == 0
         assert row["friends"] == [
-            {"name": "Original pilot", "edition": "2024", "dates": ["2024-06-01"]}
+            {
+                "name": "Original pilot",
+                "editions": [{"label": "2024", "dates": ["2024-06-01"]}],
+            }
         ]
         assert not PassportParticipant.query.filter_by(
             passport_id=old.id, user_id=group["other"]

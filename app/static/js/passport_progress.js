@@ -24,7 +24,9 @@
       });
       (field.friends || []).forEach(function (friend) {
         var line = document.createElement('div');
-        line.textContent = friend.name + ' · ' + friend.edition + ': ' + friend.dates.join(', ');
+        line.textContent = friend.name + ' · ' + friend.editions.map(function (edition) {
+          return edition.label + ': ' + edition.dates.join(', ');
+        }).join(' · ');
         popup.appendChild(line);
       });
       if (field.current === false && root.dataset.notCurrent) {

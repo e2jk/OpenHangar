@@ -1,0 +1,1 @@
+{% if friends %}<ul class="list-unstyled mb-0">{% for friend in friends %}<li><strong>{{ friend.name }}</strong>{% for edition in friend.editions %}<div>{{ edition.label }}: {{ edition.dates | join(', ') }}</div>{% endfor %}</li>{% endfor %}</ul>{% endif %}

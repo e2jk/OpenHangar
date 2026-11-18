@@ -203,7 +203,7 @@ msgstr "Stel voor het reservefonds een bijdrage per uur óf per maand in, niet b
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Dit GPS-bestand bevat te veel punten om te importeren (meer dan %(n)s). Splits de opname op in meerdere bestanden."
 
-#: app/aircraft/routes.py:555 app/passports/routes.py:585
+#: app/aircraft/routes.py:555 app/passports/routes.py:626
 msgid "cruise speed"
 msgstr "kruissnelheid"
 
@@ -2234,7 +2234,7 @@ msgstr "Voer een weergavenaam voor de groep in van maximaal 128 tekens."
 msgid "Confirm sharing your eligible visit dates with this edition's participants."
 msgstr "Bevestig dat je de datums van je geldige bezoeken deelt met de deelnemers aan deze editie."
 
-#: app/passports/groups.py:344
+#: app/passports/groups.py:360
 msgid "Create a new edition to change the dates of a shared passport."
 msgstr "Maak een nieuwe editie om de datums van een gedeeld paspoort te wijzigen."
 
@@ -2446,75 +2446,75 @@ msgstr "Je paspoort %(title)s eindigt op %(date)s. Open de editie om je nog te b
 msgid "Open passport"
 msgstr "Paspoort openen"
 
-#: app/passports/routes.py:166
+#: app/passports/routes.py:195
 msgid "Small airfields"
 msgstr "Kleine vliegvelden"
 
-#: app/passports/routes.py:167
+#: app/passports/routes.py:196
 msgid "Medium airports"
 msgstr "Middelgrote luchthavens"
 
-#: app/passports/routes.py:168
+#: app/passports/routes.py:197
 msgid "Large airports"
 msgstr "Grote luchthavens"
 
-#: app/passports/routes.py:169
+#: app/passports/routes.py:198
 msgid "Heliports"
 msgstr "Helihavens"
 
-#: app/passports/routes.py:170
+#: app/passports/routes.py:199
 msgid "Seaplane bases"
 msgstr "Watervliegbases"
 
-#: app/passports/routes.py:171
+#: app/passports/routes.py:200
 msgid "Balloon ports"
 msgstr "Ballonhavens"
 
-#: app/passports/routes.py:172
+#: app/passports/routes.py:201
 msgid "Closed airfields"
 msgstr "Gesloten vliegvelden"
 
-#: app/passports/routes.py:281
+#: app/passports/routes.py:310
 msgid "Passport saved."
 msgstr "Paspoort opgeslagen."
 
-#: app/passports/routes.py:322
+#: app/passports/routes.py:351
 msgid "An airfield code conflicts with an existing identity. Review or remove that selection."
 msgstr "Een vliegveldcode conflicteert met een bestaande identiteit. Controleer of verwijder die selectie."
 
-#: app/passports/routes.py:385
+#: app/passports/routes.py:414
 msgid "Passport deleted."
 msgstr "Paspoort verwijderd."
 
-#: app/passports/routes.py:558
+#: app/passports/routes.py:599
 msgid "Choose a starting airfield from the search results."
 msgstr "Kies een vertrekveld uit de zoekresultaten."
 
-#: app/passports/routes.py:561
+#: app/passports/routes.py:602
 msgid "This starting airfield has no coordinates. Choose another."
 msgstr "Dit vertrekveld heeft geen coördinaten. Kies een ander veld."
 
-#: app/passports/routes.py:586
+#: app/passports/routes.py:627
 msgid "distance/time limit"
 msgstr "afstands-/tijdslimiet"
 
-#: app/passports/routes.py:587
+#: app/passports/routes.py:628
 msgid "usable fuel"
 msgstr "bruikbare brandstof"
 
-#: app/passports/routes.py:588
+#: app/passports/routes.py:629
 msgid "fuel flow"
 msgstr "brandstofverbruik"
 
-#: app/passports/routes.py:589
+#: app/passports/routes.py:630
 msgid "reserve minutes"
 msgstr "reserve in minuten"
 
-#: app/passports/routes.py:601
+#: app/passports/routes.py:642
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Voer een kruissnelheid in voor de tijdsmodus of gebruik de afstandsmodus."
 
-#: app/passports/routes.py:610
+#: app/passports/routes.py:651
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "Het theoretische bereik is onbekend. Voer bruikbare brandstof, verbruik, snelheid en een expliciete reserve in die positieve vliegtijd overlaten. Het afstands-/tijdfilter blijft van toepassing."
 
@@ -6800,7 +6800,7 @@ msgstr "Betaling registreren"
 
 #: app/templates/aircraft/owners_billing.html:101
 #: app/templates/aircraft/owners_billing.html:158
-#: app/templates/passports/target.html:19
+#: app/templates/passports/target.html:20
 msgid "Note (optional)"
 msgstr "Notitie (optioneel)"
 
@@ -12036,10 +12036,21 @@ msgstr "Toon vliegvelden"
 #: app/templates/passports/detail.html:25
 #: app/templates/passports/detail.html:28
 #: app/templates/passports/detail.html:30
+#: app/templates/passports/series.html:17
+msgid "Visited by you"
+msgstr "Door jou bezocht"
+
+#: app/templates/passports/detail.html:25
+#: app/templates/passports/detail.html:28
+#: app/templates/passports/detail.html:30
 #: app/templates/passports/series.html:15
 #: app/templates/passports/series.html:17 app/templates/passports/target.html:9
 msgid "Visited"
 msgstr "Bezocht"
+
+#: app/templates/passports/detail.html:25
+msgid "Not visited by you"
+msgstr "Niet door u bezocht"
 
 #: app/templates/passports/detail.html:25
 #: app/templates/passports/detail.html:28
@@ -12055,8 +12066,19 @@ msgid "Show visit frequency"
 msgstr "Toon bezoekfrequentie"
 
 #: app/templates/passports/detail.html:27
+msgid "Counts include your visits and eligible visits shared by active friends. Repeat-visit data may be incomplete."
+msgstr "De aantallen omvatten uw bezoeken en geldige bezoeken die actieve vrienden delen. Herhaalbezoeken zijn mogelijk niet volledig geregistreerd."
+
+#: app/templates/passports/detail.html:27
 msgid "Counts show your recorded full-stop visits in this passport. Repeat-visit data may be incomplete."
 msgstr "De aantallen tonen je vastgelegde bezoeken met een volledige stop binnen dit paspoort. Herhaalbezoeken kunnen onvolledig zijn."
+
+#: app/templates/passports/detail.html:28
+#: app/templates/passports/detail.html:30
+#: app/templates/passports/series.html:15
+#: app/templates/passports/series.html:17
+msgid "Visited by friends"
+msgstr "Bezocht door vrienden"
 
 #: app/templates/passports/detail.html:28
 #: app/templates/passports/detail.html:30
@@ -12071,12 +12093,25 @@ msgid "Passport visit map"
 msgstr "Bezoekkaart van het paspoort"
 
 #: app/templates/passports/detail.html:29
+#: app/templates/passports/series.html:14
+msgid "Strong outline: visited by you. Medium outline: visited by friends only. Muted: nobody visited. History access never grants stamps or vouchers in an edition you did not join."
+msgstr "Dikke rand: door jou bezocht. Middeldikke rand: alleen door vrienden bezocht. Gedempt: door niemand bezocht. Toegang tot de geschiedenis geeft nooit stempels of vouchers in een editie waaraan je niet deelnam."
+
+#: app/templates/passports/detail.html:29
 msgid "Blue: visited by you. Grey: not visited. Dashed outline: closed."
 msgstr "Blauw: door jou bezocht. Grijs: niet bezocht. Onderbroken rand: gesloten."
 
 #: app/templates/passports/detail.html:29
+msgid "Dashed outline: closed."
+msgstr "Gestippelde omtrek: gesloten."
+
+#: app/templates/passports/detail.html:29
 msgid "Marker radius: 6 px for no visits, 8 px for one, increasing to at most 18 px for frequent visits. Exact counts are in the list and map popups."
 msgstr "Markeerstraal: 6 px zonder bezoeken, 8 px bij één bezoek, oplopend tot maximaal 18 px bij veel bezoeken. Exacte aantallen staan in de lijst en kaartpop-ups."
+
+#: app/templates/passports/detail.html:30
+msgid "Your first visit"
+msgstr "Uw eerste bezoek"
 
 #: app/templates/passports/detail.html:30
 #: app/templates/passports/target.html:10
@@ -12483,17 +12518,8 @@ msgid "History scope: editions I participated in."
 msgstr "Geschiedenis: edities waaraan ik deelnam."
 
 #: app/templates/passports/series.html:14
-msgid "Strong outline: visited by you. Medium outline: visited by friends only. Muted: nobody visited. History access never grants stamps or vouchers in an edition you did not join."
-msgstr "Dikke rand: door jou bezocht. Middeldikke rand: alleen door vrienden bezocht. Gedempt: door niemand bezocht. Toegang tot de geschiedenis geeft nooit stempels of vouchers in een editie waaraan je niet deelnam."
-
-#: app/templates/passports/series.html:14
 msgid "Only your accepted editions and your own recorded visits are shown. A historical stamp does not check off the current edition. Frequency counts each visit once across overlapping editions."
 msgstr "Alleen uw geaccepteerde edities en uw eigen vastgelegde bezoeken worden getoond. Een historische stempel vinkt de huidige editie niet af. Elk bezoek telt eenmaal voor de frequentie bij overlappende edities."
-
-#: app/templates/passports/series.html:15
-#: app/templates/passports/series.html:17
-msgid "Visited by friends"
-msgstr "Bezocht door vrienden"
 
 #: app/templates/passports/series.html:15
 #: app/templates/passports/series.html:17
@@ -12507,10 +12533,6 @@ msgstr "Editiekleuren geven bezoeken aan, nooit onbezochte doelen. De editiename
 #: app/templates/passports/series.html:17
 msgid "Editions"
 msgstr "Edities"
-
-#: app/templates/passports/series.html:17
-msgid "Visited by you"
-msgstr "Door jou bezocht"
 
 #: app/templates/passports/series.html:18
 msgid "Compare editions"
@@ -12541,84 +12563,92 @@ msgid "A logged arrival is presumed a full stop. Exclude touch-and-go, low appro
 msgstr "Een vastgelegde aankomst geldt als een volledige stop. Sluit touch-and-go’s, lage naderingen of andere aankomsten uit die niet mogen meetellen. Vertrekken en landingstotalen alleen leveren geen stempels op."
 
 #: app/templates/passports/target.html:12
+msgid "Friends who have been here"
+msgstr "Vrienden die hier zijn geweest"
+
+#: app/templates/passports/target.html:12
+msgid "No friends have shared a qualifying visit here yet."
+msgstr "Nog geen vrienden hebben hier een geldig bezoek gedeeld."
+
+#: app/templates/passports/target.html:13
 msgid "Visit evidence"
 msgstr "Bezoekbewijs"
 
-#: app/templates/passports/target.html:14
+#: app/templates/passports/target.html:15
 msgid "Logged arrival"
 msgstr "Vastgelegde aankomst"
 
-#: app/templates/passports/target.html:14
+#: app/templates/passports/target.html:15
 msgid "Confirmed GPS visit"
 msgstr "Bevestigd GPS-bezoek"
 
-#: app/templates/passports/target.html:14
+#: app/templates/passports/target.html:15
 msgid "Manual visit"
 msgstr "Handmatig bezoek"
 
-#: app/templates/passports/target.html:14
+#: app/templates/passports/target.html:15
 msgid "Excluded from credit"
 msgstr "Telt niet mee"
 
-#: app/templates/passports/target.html:16
+#: app/templates/passports/target.html:17
 msgid "View flight"
 msgstr "Vlucht bekijken"
 
-#: app/templates/passports/target.html:17
+#: app/templates/passports/target.html:18
 msgid "Restore arrival credit"
 msgstr "Aankomst weer laten meetellen"
 
-#: app/templates/passports/target.html:17
+#: app/templates/passports/target.html:18
 msgid "Exclude this arrival"
 msgstr "Deze aankomst uitsluiten"
 
-#: app/templates/passports/target.html:17
+#: app/templates/passports/target.html:18
 msgid "Delete manual visit"
 msgstr "Handmatig bezoek verwijderen"
 
-#: app/templates/passports/target.html:18
+#: app/templates/passports/target.html:19
 msgid "No qualifying visits recorded yet."
 msgstr "Nog geen geldige bezoeken vastgelegd."
 
-#: app/templates/passports/target.html:19
+#: app/templates/passports/target.html:20
 msgid "Record a manual visit"
 msgstr "Handmatig bezoek vastleggen"
 
-#: app/templates/passports/target.html:19
+#: app/templates/passports/target.html:20
 msgid "Visit date"
 msgstr "Bezoekdatum"
 
-#: app/templates/passports/target.html:19
+#: app/templates/passports/target.html:20
 #: app/templates/passports/vouchers.html:21
 msgid "Supporting flight (optional, latest 200 eligible flights)"
 msgstr "Ondersteunende vlucht (optioneel, laatste 200 geldige vluchten)"
 
-#: app/templates/passports/target.html:19
+#: app/templates/passports/target.html:20
 msgid "Independent manual visit"
 msgstr "Onafhankelijk handmatig bezoek"
 
-#: app/templates/passports/target.html:19
+#: app/templates/passports/target.html:20
 msgid "Save visit"
 msgstr "Bezoek opslaan"
 
-#: app/templates/passports/target.html:20
 #: app/templates/passports/target.html:21
+#: app/templates/passports/target.html:22
 msgid "Private stamp photo"
 msgstr "Privéfoto van de stempel"
 
-#: app/templates/passports/target.html:20
+#: app/templates/passports/target.html:21
 msgid "This photo is visible only to you. Uploading it does not earn a visit or publish it."
 msgstr "Deze foto is alleen voor jou zichtbaar. Uploaden telt niet als bezoek en maakt de foto niet openbaar."
 
-#: app/templates/passports/target.html:21
+#: app/templates/passports/target.html:22
 msgid "Delete photo"
 msgstr "Foto verwijderen"
 
-#: app/templates/passports/target.html:22
+#: app/templates/passports/target.html:23
 msgid "JPEG, PNG or WebP, up to 10 MB and 20 megapixels"
 msgstr "JPEG, PNG of WebP, maximaal 10 MB en 20 megapixels"
 
-#: app/templates/passports/target.html:22
+#: app/templates/passports/target.html:23
 msgid "Upload photo"
 msgstr "Foto uploaden"
 
