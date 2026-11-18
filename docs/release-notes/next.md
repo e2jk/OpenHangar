@@ -21,3 +21,4 @@ SMTP settings to send verification emails.
 - The ship script and ship-later PRs no longer promise a 23:20 UTC release: GitHub often starts the scheduled release hours later.
 - Stabilised invitation setup in browser tests by waiting for sharing consent to finish saving, and made invitation error returns explicit for static analysis.
 - Email verification limits failed attempts and repeat sends across workers. Existing accounts keep their credentials and authenticator; simultaneous registrations cannot overwrite them. Credential changes during enrolment require a fresh sign-in.
+- Restored the translation catalogs’ standard generated formatting without changing their translations.
