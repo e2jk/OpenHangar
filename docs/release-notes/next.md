@@ -33,3 +33,5 @@ Existing participants can now explicitly share an edition’s visit dates under 
 - HTTPS list imports explicitly require TLS 1.2 or newer.
 - Browser tests use Playwright 1.65.2, which no longer depends on pyee, so pyee is gone from the test requirements (its updates kept clashing with Playwright's version limits). The CI cache of the test browser now follows the Playwright version, instead of downloading the browser again on every run.
 - Corrected the agent guide's examples for passing data from templates to JavaScript.
+
+- Prepared safe, edition-specific group enrolment: repeated requests cannot duplicate participation or reset anyone’s own vouchers. Invitation screens and account registration are still being developed.

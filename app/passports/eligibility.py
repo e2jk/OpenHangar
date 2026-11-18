@@ -57,7 +57,7 @@ def eligible_flight(flight: Flight) -> bool:
 def participant_for(passport_id: int, user_id: int) -> PassportParticipant | None:
     participant: PassportParticipant | None = (
         PassportParticipant.query.filter_by(
-            passport_id=passport_id, user_id=user_id, is_active=True
+            passport_id=passport_id, user_id=user_id, is_active=True, blocked=False
         )
         .filter(PassportParticipant.accepted_at.is_not(None))
         .first()
@@ -155,6 +155,7 @@ def progress_many(
                 PassportParticipant.passport_id.in_(ids),
                 PassportParticipant.user_id == user_id,
                 PassportParticipant.is_active.is_(True),
+                PassportParticipant.blocked.is_(False),
                 PassportParticipant.accepted_at.is_not(None),
             ).all()
             if include_evidence

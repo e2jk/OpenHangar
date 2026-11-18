@@ -4189,6 +4189,7 @@ class Passport(db.Model):
             "start_date IS NULL OR end_date IS NULL OR start_date <= end_date"
         ),
         db.UniqueConstraint("tenant_id", "id"),
+        db.UniqueConstraint("series_id", "id"),
         db.ForeignKeyConstraint(
             ["tenant_id", "series_id"],
             ["passport_series.tenant_id", "passport_series.id"],
@@ -4241,6 +4242,65 @@ class Passport(db.Model):
         nullable=False,
         default=lambda: datetime.now(UTC),
         onupdate=lambda: datetime.now(UTC),
+    )
+
+
+class PassportInvitation(db.Model):
+    """A shareable admission capability for one edition, never a user identity."""
+
+    __tablename__ = "passport_invitations"
+    passport_id = db.Column(
+        db.Integer, db.ForeignKey("passports.id", ondelete="CASCADE"), primary_key=True
+    )
+    token_hash = db.Column(db.String(64), nullable=False, unique=True)
+    key_nonce = db.Column(db.String(64), nullable=False)
+    enabled = db.Column(
+        db.Boolean, nullable=False, default=True, server_default=db.true()
+    )
+    expires_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+
+
+class PassportGroupBlock(db.Model):
+    """Removal survives account/membership deletion without retaining an email."""
+
+    __tablename__ = "passport_group_blocks"
+    __table_args__ = (
+        db.ForeignKeyConstraint(
+            ["series_id", "passport_id"],
+            ["passports.series_id", "passports.id"],
+            ondelete="CASCADE",
+        ),
+        db.UniqueConstraint("series_id", "passport_id", "email_hash"),
+        db.Index(
+            "uq_passport_group_block",
+            "series_id",
+            "email_hash",
+            unique=True,
+            postgresql_where=text("passport_id IS NULL"),
+            sqlite_where=text("passport_id IS NULL"),
+        ),
+    )
+    id = db.Column(db.Integer, primary_key=True)
+    series_id = db.Column(
+        db.Integer,
+        db.ForeignKey("passport_series.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    passport_id = db.Column(db.Integer, nullable=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    email_hash = db.Column(db.String(64), nullable=False)
+    display_name = db.Column(db.String(128), nullable=False)
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )
 
 
@@ -4322,6 +4382,9 @@ class PassportParticipant(db.Model):
         db.ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
+    )
+    blocked = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
     )
     share_visits = db.Column(
         db.Boolean, nullable=False, default=False, server_default=db.false()

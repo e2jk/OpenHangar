@@ -4,7 +4,7 @@ Only allowlisted shared evidence leaves this module. Callers commit mutations.
 """
 
 from datetime import date
-from typing import Any
+from typing import Any, NoReturn
 
 from flask_babel import gettext as _
 from models import (
@@ -17,10 +17,49 @@ from models import (
     db,
     fits_column,
 )
+from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 
 from passports import editions
 from passports.eligibility import progress_many
 from passports.management import BuilderError, owned_passport, require_actor
+
+
+def lock_series(series_id: int) -> None:
+    """Serialize membership changes; bound waits so a busy import cannot stall joins."""
+    if db.engine.dialect.name == "postgresql":
+        try:
+            db.session.execute(text("SET LOCAL lock_timeout = '1s'"))
+            db.session.execute(
+                text("SELECT pg_advisory_xact_lock(:namespace, :series_id)"),
+                {"namespace": 0x4F485047, "series_id": series_id},
+            )
+        except OperationalError as exc:
+            lock_failure(exc)
+
+
+def lock_failure(exc: OperationalError) -> NoReturn:
+    if getattr(exc.orig, "sqlstate", None) in {"55P03", "40P01"}:
+        raise BuilderError(
+            _("This group is being updated. Please try again."), 409
+        ) from exc
+    raise exc
+
+
+def lock_passport(passport: Passport) -> Passport:
+    series_id = passport.series_id
+    try:
+        locked: Passport = (
+            Passport.query.filter_by(id=passport.id, tenant_id=passport.tenant_id)
+            .with_for_update()
+            .populate_existing()
+            .one()
+        )
+    except OperationalError as exc:
+        lock_failure(exc)
+    if locked.series_id != series_id:
+        raise BuilderError(_("This passport changed. Open it again."), 409)
+    return locked
 
 
 def membership(series: PassportSeries, user_id: int) -> PassportSeriesMember | None:
@@ -56,6 +95,9 @@ def consent(
 ) -> PassportSeriesMember:
     """Existing participants accept sharing; invitations will call this after enrolment."""
     require_actor(passport.tenant_id, user_id)
+    if passport.series_id is not None:
+        lock_series(passport.series_id)
+        passport = lock_passport(passport)
     series = (
         db.session.get(PassportSeries, passport.series_id)
         if passport.series_id is not None
@@ -66,6 +108,7 @@ def consent(
             passport_id=passport.id, user_id=user_id, is_active=True
         )
         .filter(PassportParticipant.accepted_at.is_not(None))
+        .populate_existing()
         .first()
     )
     if (
@@ -73,9 +116,12 @@ def consent(
         or series is None
         or not series.is_group
         or participant is None
+        or participant.blocked
     ):
         raise BuilderError(_("Group not found."), 404)
-    member = db.session.get(PassportSeriesMember, (series.id, user_id))
+    member = db.session.get(
+        PassportSeriesMember, (series.id, user_id), populate_existing=True
+    )
     if member is not None and member.blocked:
         raise BuilderError(_("The group owner must reinstate your membership."), 403)
     name = values.get("display_name", "").strip()
@@ -104,7 +150,15 @@ def consent(
 
 
 def enable(passport: Passport, user_id: int, values: dict[str, str]) -> PassportSeries:
-    owned_passport(passport.tenant_id, user_id, passport.id)
+    original_series_id = passport.series_id
+    if original_series_id is not None:
+        lock_series(original_series_id)
+    try:
+        owned_passport(passport.tenant_id, user_id, passport.id)
+    except OperationalError as exc:
+        lock_failure(exc)
+    if passport.series_id != original_series_id:
+        raise BuilderError(_("This passport changed. Open it again."), 409)
     if passport.series_id is None:
         series = editions.link(passport, user_id, title=values.get("series_title", ""))
     else:
@@ -130,6 +184,7 @@ def visible_editions(
             PassportParticipant.passport_id.in_([p.id for p in passports]),
             PassportParticipant.user_id == user_id,
             PassportParticipant.is_active.is_(True),
+            PassportParticipant.blocked.is_(False),
             PassportParticipant.accepted_at.is_not(None),
             PassportParticipant.share_visits.is_(True),
         ).all()
@@ -186,6 +241,7 @@ def shared_progress(
         .filter(
             PassportParticipant.passport_id.in_([p.id for p in passports]),
             PassportParticipant.is_active.is_(True),
+            PassportParticipant.blocked.is_(False),
             PassportParticipant.accepted_at.is_not(None),
             PassportParticipant.share_visits.is_(True),
             PassportSeriesMember.is_active.is_(True),

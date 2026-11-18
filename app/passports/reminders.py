@@ -24,6 +24,7 @@ def has_participation(tenant_id: int, user_id: int) -> bool:
             Passport.tenant_id == tenant_id,
             PassportParticipant.user_id == user_id,
             PassportParticipant.is_active.is_(True),
+            PassportParticipant.blocked.is_(False),
             PassportParticipant.accepted_at.is_not(None),
         )
         .first()
@@ -47,6 +48,7 @@ def check_expiry() -> None:
             Passport.end_date >= today,
             db.or_(Passport.start_date.is_(None), Passport.start_date <= today),
             PassportParticipant.is_active.is_(True),
+            PassportParticipant.blocked.is_(False),
             PassportParticipant.accepted_at.is_not(None),
             User.is_active.is_(True),
         )
