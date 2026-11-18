@@ -21,6 +21,11 @@ records stay intact. Group pages offer available editions to join and can show
 years skipped between editions you participated in, without giving retrospective
 stamps or vouchers.
 
+A group owner can offer ownership to an active participant, who must explicitly
+accept within seven days. This hands over the group and its group editions while
+preserving each person’s own vouchers and private records. The former owner can
+then leave; pending, cancelled or replaced offers grant no control.
+
 **Maintenance**
 
 - Group enrolment handles repeated requests without duplicate participation or reset voucher balances. Invitation URLs stay out of access logs and referrers, and invitation/sign-in pages are not cached or indexed.
@@ -30,4 +35,5 @@ stamps or vouchers.
 - Email verification limits failed attempts and repeat sends across workers. Existing accounts keep their credentials and authenticator; simultaneous registrations cannot overwrite them. Credential changes during enrolment require a fresh sign-in.
 - Restored the translation catalogs’ standard generated formatting without changing their translations.
 - Simplified verification locking to address an advisory CodeQL finding. Shipping guidance now requires reading advisory PR reviews as well as checking CI, including after auto-merge.
+
 - Missing or concurrently replaced passport photo files return a normal not-found response while retaining the same private-photo access checks.

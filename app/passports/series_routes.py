@@ -15,7 +15,7 @@ from models import (
 )
 from utils import current_membership, db_id, login_required
 
-from passports import editions, groups, memberships, passports_bp
+from passports import editions, groups, memberships, ownership, passports_bp
 from passports.drafts import new_draft, save_draft
 from passports.management import (
     METADATA_FIELDS,
@@ -370,6 +370,27 @@ def group_members(series_id: int) -> ResponseReturnValue:
                 memberships.remove(
                     tenant_id, user_id, series.id, target_id, passport_id=passport_id
                 )
+            elif action == "offer-ownership":
+                target_id = request.form.get("user_id", type=db_id)
+                if target_id is None:
+                    raise BuilderError(_("Choose a member."))
+                ownership.offer(tenant_id, user_id, series.id, target_id)
+            elif action in {
+                "accept-ownership",
+                "decline-ownership",
+                "cancel-ownership",
+            }:
+                key = request.form.get("request_key", "")
+                if action == "cancel-ownership":
+                    ownership.cancel(tenant_id, user_id, series.id, key)
+                else:
+                    ownership.respond(
+                        tenant_id,
+                        user_id,
+                        series.id,
+                        key,
+                        accept=action == "accept-ownership",
+                    )
             elif action == "reinstate":
                 block_id = request.form.get("block_id", type=db_id)
                 if block_id is None:
@@ -396,5 +417,9 @@ def group_members(series_id: int) -> ResponseReturnValue:
             except BuilderError as lost_access:
                 return abort(lost_access.status)
     return render_template(
-        "passports/group_members.html", series=series, view=view, error=error
+        "passports/group_members.html",
+        series=series,
+        view=view,
+        ownership_offer=ownership.view(series, user_id),
+        error=error,
     ), status

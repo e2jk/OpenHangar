@@ -684,6 +684,36 @@ def test_invitation_mobile_login_join_and_no_js(
             expect(
                 friend.get_by_role("button", name="Delete manual visit", exact=True)
             ).to_be_visible()
+            alias = "Visiting friend" if javascript else "No-JS friend"
+            page.goto(passport_url)
+            page.get_by_role("link", name="Group members", exact=True).click()
+            page.locator("#ownership-target").select_option(label=alias)
+            page.get_by_role("button", name="Offer group ownership", exact=True).click()
+            expect(
+                page.get_by_text("Ownership offered to " + alias + ".", exact=True)
+            ).to_be_visible()
+            friend.goto(passport_url)
+            friend.get_by_role("link", name="Group members", exact=True).click()
+            friend.get_by_role(
+                "button", name="Accept group ownership", exact=True
+            ).click()
+            expect(
+                friend.get_by_role("button", name="Offer group ownership", exact=True)
+            ).to_be_visible()
+            friend.locator("#ownership-target").select_option(label="Group organiser")
+            friend.get_by_role(
+                "button", name="Offer group ownership", exact=True
+            ).click()
+            expect(
+                friend.get_by_text("Ownership offered to Group organiser.", exact=True)
+            ).to_be_visible()
+            page.reload()
+            page.get_by_role(
+                "button", name="Accept group ownership", exact=True
+            ).click()
+            expect(
+                page.get_by_role("button", name="Offer group ownership", exact=True)
+            ).to_be_visible()
         finally:
             context.close()
     page.goto(passport_url)
