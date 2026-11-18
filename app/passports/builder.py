@@ -285,8 +285,10 @@ def review(
         validate_copy(tenant_id, user_id, state["edition_copy"])
     metadata = metadata_values(state["metadata"])
     if passport is not None:
+        from passports.groups import validate_dates as validate_shared_dates
         from passports.vouchers import validate_dates
 
+        validate_shared_dates(passport, metadata["start_date"], metadata["end_date"])
         validate_dates(passport, metadata["start_date"], metadata["end_date"])
     fields = selected_fields(tenant_id, state)
     old_targets = (

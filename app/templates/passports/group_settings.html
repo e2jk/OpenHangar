@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% set no_history_cache = true %}
+{% block title %}{{ _('Group visit sharing') }} — {{ passport.title }}{% endblock %}
+{% block content %}<div class="container py-4"><h1>{{ _('Group visit sharing') }}</h1><h2 class="h4">{{ passport.title }}</h2>
+{% if error %}<p class="alert alert-danger">{{ error }}</p>{% endif %}
+<p>{{ _('Share eligible airfield visits with this edition’s participants. They can see your group display name, airfields and visit dates. Private notes, flights, aircraft and voucher records stay private. Photos are not shared by this consent.') }}</p>
+<p>{{ _('The owner may update this edition’s airfield list. Its dates are fixed once sharing is enabled; a different period needs a new edition and new acceptance.') }}</p>
+<form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+{% if not passport.series_id %}<label class="form-label" for="series-title">{{ _('Group name') }}</label><input id="series-title" class="form-control" name="series_title" maxlength="128" required value="{{ request.form.get('series_title', passport.title) }}">{% endif %}
+<label class="form-label" for="group-name">{{ _('Group display name') }}</label><input id="group-name" class="form-control" name="display_name" maxlength="128" required value="{{ request.form.get('display_name', participant.display_name if participant.share_visits else '') }}">
+<div class="form-check my-3"><input id="share-visits" class="form-check-input" type="checkbox" name="share_visits" value="yes" required {{ 'checked' if request.form.get('share_visits') == 'yes' or participant.share_visits }}><label class="form-check-label" for="share-visits">{{ _('Share my eligible visit dates with this edition’s participants.') }}</label></div>
+<div class="form-check my-3"><input id="share-history" class="form-check-input" type="checkbox" name="share_history" value="yes" {{ 'checked' if request.form.get('share_history') == 'yes' or participant.share_history }}><label class="form-check-label" for="share-history">{{ _('Also let later group members see these shared visits when viewing editions they did not join. I can withdraw this history consent here.') }}</label></div>
+<button class="btn btn-ac-primary">{{ _('Save sharing consent') }}</button></form></div>{% endblock %}

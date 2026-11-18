@@ -15,11 +15,16 @@
       if (root.dataset.targetUrl) link.href = root.dataset.targetUrl.replace(/\/0$/, '/' + field.target_id);
       popup.appendChild(link);
       var info = document.createElement('p');
-      info.textContent = (field.visited ? root.dataset.visited : root.dataset.unvisited) + ' · ' + root.dataset.visits + ': ' + field.count + (field.is_closed ? ' · ' + root.dataset.closed : '');
+      info.textContent = (field.state === 'others' ? root.dataset.others : (field.visited ? root.dataset.visited : root.dataset.unvisited)) + ' · ' + root.dataset.visits + ': ' + field.count + (field.is_closed ? ' · ' + root.dataset.closed : '');
       popup.appendChild(info);
       (field.editions || []).forEach(function (edition) {
         var line = document.createElement('div');
         line.textContent = edition.label + ': ' + edition.count;
+        popup.appendChild(line);
+      });
+      (field.friends || []).forEach(function (friend) {
+        var line = document.createElement('div');
+        line.textContent = friend.name + ' · ' + friend.edition + ': ' + friend.dates.join(', ');
         popup.appendChild(line);
       });
       if (field.current === false && root.dataset.notCurrent) {
@@ -27,7 +32,7 @@
         badge.textContent = root.dataset.notCurrent;
         popup.appendChild(badge);
       }
-      L.circleMarker([field.latitude, field.longitude], { radius: radius, color: field.visited ? (field.colour || '#0d6efd') : '#6c757d', fillOpacity: field.visited ? 0.8 : 0.25, weight: field.visited ? 3 : 1, dashArray: field.is_closed ? '4 4' : null }).bindPopup(popup).addTo(map);
+      L.circleMarker([field.latitude, field.longitude], { radius: radius, color: field.visited || field.state === 'others' ? (field.colour || '#0d6efd') : '#6c757d', fillOpacity: field.visited ? 0.8 : (field.state === 'others' ? 0.5 : 0.25), weight: field.visited ? 4 : (field.state === 'others' ? 2 : 1), dashArray: field.is_closed ? '4 4' : null }).bindPopup(popup).addTo(map);
       positions.push([field.latitude, field.longitude]);
     });
     if (positions.length) map.fitBounds(positions, { padding: [25, 25], maxZoom: 12 });

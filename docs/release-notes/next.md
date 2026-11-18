@@ -19,7 +19,7 @@ An airfield passport is a list of airfields you'd like to fly to: every airfield
 
 On the demo, the owner account comes with three example passports, already stamped from its logbook: every Belgian airfield, a dated edition of a fictional voucher booklet, and one that's complete.
 
-Passports are personal for now. Group passports shared with friends (with or without their own OpenHangar account), public sharing and exports will follow.
+Existing participants can now explicitly share an edition’s visit dates under a group display name and optionally let later group members see those visits in earlier editions. A combined group map distinguishes your visits, friends’ visits and places nobody has visited. Looking at an older edition never grants retrospective stamps or vouchers, and private notes, flight details and voucher records remain private. Invitation-based friend accounts, public sharing and exports will follow.
 
 **Privacy**
 - The pages you visited are no longer left in the browser tab after you sign out. For an instant Back button, the app keeps a copy of the last pages visited in the tab; that copy is now dropped as soon as a page loads signed out or under another account. Pages showing other people's email addresses (user management, permissions, the fleet reservations list, setup, the AMP declaration) are never kept in it.

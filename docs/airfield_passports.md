@@ -382,3 +382,32 @@ Each recipient's preference and warning period apply independently. Existing ema
 deduplication limits an edition to one reminder per day; the existing snooze link
 suppresses that deadline until it changes. Email delivery still requires configured
 SMTP and the instance notification scheduler.
+
+### Group edition history and consent
+
+An owner can explicitly enable **Group visit sharing** for an edition, choosing a
+group name and a display name. Linking passports alone never shares a personal
+passport: every shared edition must be enabled separately. Existing accepted
+participants can confirm their own sharing consent; invitation-based enrolment and
+member management are a following increment. No new tenant permissions are granted.
+
+Sharing consent explains that the owner can update the edition’s target list.
+The shared date range is fixed: a different period requires a new edition and
+fresh acceptance, rather than silently exposing another period of a logbook.
+
+Group membership persists independently of annual participation. The series defaults
+to editions the viewer accepted. **Include earlier editions I did not participate
+in** adds earlier, ended or archived shared editions as read-only history. It never
+creates historical participation, vouchers, logbook stamps or completion credit.
+Private passports linked to the same series are excluded.
+
+Ordinary edition sharing exposes only eligible airfields, the chosen group display
+name and visit dates. A separate checkbox permits these visits to appear to later
+group members viewing editions they did not join; its consent can be withdrawn
+without changing the underlying visits. This does not share notes, flight links,
+aircraft, voucher ledgers or photos. Group maps distinguish your own visits,
+friends-only visits and nobody-visited targets by outline and emphasis. Your own
+stamped edition takes colour priority over friends' editions; newest/oldest toggles
+change only presentation. Frequency deduplicates the same event per participant
+across overlapping editions. Blocked/inactive group membership is checked on each
+series request and excluded from shared evidence.

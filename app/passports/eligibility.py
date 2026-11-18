@@ -132,12 +132,15 @@ class EvidenceSnapshot:
     visits: dict[int, list[tuple[PassportVisit, int]]]
 
 
-def progress_many(passports: list[Passport], user_id: int) -> dict[int, dict[str, Any]]:
+def progress_many(
+    passports: list[Passport], user_id: int, *, include_evidence: bool = True
+) -> dict[int, dict[str, Any]]:
     """Batch evidence across editions, including empty/nonparticipating passports.
 
     Only the supplied passports are evaluated; a series relationship is never
     permission to read a linked passport or to give a nonparticipant a stamp.
-    Callers supply their access-checked collection.
+    Callers supply their access-checked collection. Read-only group history can
+    suppress all evidence explicitly, even if legacy participation rows exist.
     """
     if not passports:
         return {}
@@ -147,12 +150,16 @@ def progress_many(passports: list[Passport], user_id: int) -> dict[int, dict[str
     ids = [passport.id for passport in passports]
     participants = {
         participant.passport_id: participant
-        for participant in PassportParticipant.query.filter(
-            PassportParticipant.passport_id.in_(ids),
-            PassportParticipant.user_id == user_id,
-            PassportParticipant.is_active.is_(True),
-            PassportParticipant.accepted_at.is_not(None),
-        ).all()
+        for participant in (
+            PassportParticipant.query.filter(
+                PassportParticipant.passport_id.in_(ids),
+                PassportParticipant.user_id == user_id,
+                PassportParticipant.is_active.is_(True),
+                PassportParticipant.accepted_at.is_not(None),
+            ).all()
+            if include_evidence
+            else []
+        )
     }
     participant_ids = [participant.id for participant in participants.values()]
     snapshot = EvidenceSnapshot(

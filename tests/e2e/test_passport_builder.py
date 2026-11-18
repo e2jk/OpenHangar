@@ -502,3 +502,79 @@ def test_individual_vouchers_stay_separate_from_stamps_and_work_without_js(
     page.get_by_role("button", name="Delete passport", exact=True).click()
     page.wait_for_url(live_server_url + "/passports/")
     assert not errors, errors
+
+
+def test_group_consent_series_map_mobile_and_without_js(
+    passport_page: Page, live_server_url: str
+) -> None:
+    page = passport_page
+    errors: list[str] = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    title = "Group consent " + uuid4().hex[:8]
+    page.goto(live_server_url + "/passports/new")
+    page.locator("#passport-title").fill(title)
+    page.locator("#passport-start").fill("2001-01-01")
+    page.locator("#passport-end").fill("2001-12-31")
+    page.locator("#passport-codes").fill("EBNM EBOS")
+    page.get_by_role("button", name="Add codes", exact=True).click()
+    expect(page.locator("#passport-builder table")).to_contain_text("EBOS")
+    page.get_by_role("button", name="Review passport", exact=True).click()
+    page.get_by_role("button", name="Save passport", exact=True).click()
+    page.wait_for_url(re.compile(r"/passports/\d+/$"))
+    passport_url = page.url
+    page.locator("table tbody a").first.click()
+    page.locator("#visit-date").fill("2001-01-01")
+    page.locator("#visit-note").fill("Private group visit note")
+    page.get_by_role("button", name="Save visit", exact=True).click()
+    expect(page.get_by_text("Private group visit note", exact=True)).to_be_visible()
+    page.get_by_role("link", name=title, exact=True).click()
+    expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()
+    page.get_by_role("link", name="Group visit sharing", exact=True).click()
+    page.locator("#group-name").fill("Browser group pilot")
+    page.locator("#share-visits").check()
+    page.locator("#share-history").check()
+    page.get_by_role("button", name="Save sharing consent", exact=True).click()
+    page.wait_for_url(re.compile(r"/passports/series/\d+/$"))
+    expect(page.locator("#passport-progress-map .leaflet-map-pane")).to_have_count(1)
+    markers = page.locator("#passport-progress-map .leaflet-overlay-pane path")
+    expect(markers).to_have_count(2)
+    assert sorted(
+        markers.evaluate_all("els => els.map(el => el.getAttribute('stroke-width'))")
+    ) == ["1", "4"]
+    assert "Private group visit note" not in page.locator(
+        "#passport-progress"
+    ).get_attribute("data-fields")
+    page.locator("#edition-selector").select_option("all")
+    page.locator("#edition-history").check()
+    page.locator("#passport-frequency").check()
+    page.get_by_role("button", name="Apply", exact=True).click()
+    expect(page.locator("#passport-progress-map .leaflet-map-pane")).to_have_count(1)
+    expect(
+        page.get_by_text(
+            "History scope: participating editions and earlier read-only editions."
+        )
+    ).to_be_visible()
+    page.set_viewport_size({"width": 390, "height": 844})
+    assert page.evaluate(
+        "document.documentElement.scrollWidth <= window.innerWidth + 1"
+    )
+    browser = page.context.browser
+    assert browser is not None
+    context = browser.new_context(java_script_enabled=False, service_workers="block")
+    context.add_cookies(page.context.cookies())
+    try:
+        plain = context.new_page()
+        plain.goto(passport_url.rstrip("/") + "/group")
+        plain.locator("#share-history").uncheck()
+        plain.get_by_role("button", name="Save sharing consent", exact=True).click()
+        expect(
+            plain.get_by_role("heading", name="Compare editions", exact=True)
+        ).to_be_visible()
+        expect(plain.locator("table").first).to_contain_text("EBNM")
+    finally:
+        context.close()
+    page.goto(passport_url)
+    page.get_by_role("link", name="Delete passport", exact=True).click()
+    page.get_by_role("button", name="Delete passport", exact=True).click()
+    page.wait_for_url(live_server_url + "/passports/")
+    assert not errors, errors

@@ -283,6 +283,7 @@ _EXCLUDED_ENDPOINTS = {
         "require_instance_admin, not a tenant role"
     ),
     # Pre-auth / token-based flows: no tenant role exists yet at request time.
+    "passports.group_settings": "owner enables sharing; accepted participants consent to their own evidence only; covered by group scope and consent tests",
     "passports.link_series": "passport-owner scoped; covered by edition ownership and privacy tests",
     "passports.next_edition": "passport-owner scoped; creation capability and draft ownership covered by edition tests",
     "passports.edit_passport": "passport-owner scoped, independent of tenant role; covered by passport builder tests",
