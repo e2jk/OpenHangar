@@ -2483,6 +2483,14 @@ downgrades and show localised retrieval timestamps.
   full memberships, with active-tenant MFA policy enforced. Invitation hand-off
   and its post-authentication revalidation remain to be wired below.
 
+- [x] Invitation-service foundation: purpose/edition-bound capability digests with
+  owner-side token recovery requiring the server key; expiring/revocable invitation
+  records; server-held consent context with post-authentication completion bound
+  to one account; idempotent enrolment and separate personal voucher allowances.
+  Group changes use a transaction mutex and bounded lock waits. Durable removal
+  records support later member controls. Owner/join screens, login hand-off,
+  verified registration and member controls remain to be wired below.
+
 - [ ] Owner creates one shareable invitation link bound to that specific group
   passport (and edition), suitable for posting in a WhatsApp group. Friends enrol
   themselves; the owner does not pre-create accounts or individual links. The

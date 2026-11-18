@@ -15,6 +15,7 @@ def accessible_passports() -> Any:
     accepted = db.select(PassportParticipant.passport_id).where(
         PassportParticipant.user_id == uid,
         PassportParticipant.is_active.is_(True),
+        PassportParticipant.blocked.is_(False),
         PassportParticipant.accepted_at.is_not(None),
     )
     group_memberships = db.select(PassportSeriesMember.series_id).where(

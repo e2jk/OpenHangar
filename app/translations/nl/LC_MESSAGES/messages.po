@@ -2199,24 +2199,34 @@ msgstr "Foto’s mogen maximaal 10 MB groot zijn."
 msgid "Upload a valid JPEG, PNG or WebP photo (up to 20 megapixels)."
 msgstr "Upload een geldige JPEG-, PNG- of WebP-foto (maximaal 20 megapixels)."
 
-#: app/passports/groups.py:50 app/passports/groups.py:77
-#: app/passports/groups.py:164 app/passports/series_routes.py:319
+#: app/passports/groups.py:44
+msgid "This group is being updated. Please try again."
+msgstr "Deze groep wordt bijgewerkt. Probeer het opnieuw."
+
+#: app/passports/groups.py:61 app/passports/groups.py:161
+#: app/passports/invitations.py:106
+msgid "This passport changed. Open it again."
+msgstr "Dit paspoort is gewijzigd. Open het opnieuw."
+
+#: app/passports/groups.py:89 app/passports/groups.py:121
+#: app/passports/groups.py:219 app/passports/invitations.py:98
+#: app/passports/invitations.py:282 app/passports/series_routes.py:319
 msgid "Group not found."
 msgstr "Groep niet gevonden."
 
-#: app/passports/groups.py:80
+#: app/passports/groups.py:126 app/passports/invitations.py:245
 msgid "The group owner must reinstate your membership."
 msgstr "De groepseigenaar moet je lidmaatschap herstellen."
 
-#: app/passports/groups.py:83
+#: app/passports/groups.py:129 app/passports/invitations.py:134
 msgid "Enter a group display name of at most 128 characters."
 msgstr "Voer een weergavenaam voor de groep in van maximaal 128 tekens."
 
-#: app/passports/groups.py:87
+#: app/passports/groups.py:133 app/passports/invitations.py:138
 msgid "Confirm sharing your eligible visit dates with this edition's participants."
 msgstr "Bevestig dat je de datums van je geldige bezoeken deelt met de deelnemers aan deze editie."
 
-#: app/passports/groups.py:291
+#: app/passports/groups.py:347
 msgid "Create a new edition to change the dates of a shared passport."
 msgstr "Maak een nieuwe editie om de datums van een gedeeld paspoort te wijzigen."
 
@@ -2260,9 +2270,31 @@ msgstr "Bekijk eerst een voorbeeld van de geïmporteerde lijst."
 msgid "The import provenance is invalid. Preview the source again."
 msgstr "De herkomstgegevens van de import zijn ongeldig. Bekijk de bron opnieuw."
 
-#: app/passports/management.py:41
+#: app/passports/invitations.py:66 app/passports/invitations.py:88
+#: app/passports/invitations.py:278 app/passports/invitations.py:293
+#: app/passports/invitations.py:302
+msgid "This passport invitation is not available."
+msgstr "Deze paspoortuitnodiging is niet beschikbaar."
+
+#: app/passports/invitations.py:114
+msgid "This edition has ended or is archived."
+msgstr "Deze editie is afgelopen of gearchiveerd."
+
+#: app/passports/invitations.py:118
+msgid "Enter a valid invitation expiry date."
+msgstr "Voer een geldige vervaldatum voor de uitnodiging in."
+
+#: app/passports/invitations.py:120
+msgid "Choose today or a future invitation expiry date."
+msgstr "Kies vandaag of een toekomstige vervaldatum voor de uitnodiging."
+
+#: app/passports/invitations.py:231 app/passports/management.py:41
 msgid "You cannot manage passports with this account."
 msgstr "U kunt met dit account geen paspoorten beheren."
+
+#: app/passports/invitations.py:297
+msgid "Sign in with the account used for this registration."
+msgstr "Meld u aan met het account waarmee u zich hebt geregistreerd."
 
 #: app/passports/management.py:47
 msgid "Pilot access is required to create a passport."
@@ -2284,21 +2316,21 @@ msgstr "Voer een paspoortnaam in."
 msgid "The passport end date must not precede its start date."
 msgstr "De einddatum van het paspoort mag niet vóór de begindatum liggen."
 
-#: app/passports/reminders.py:71
+#: app/passports/reminders.py:73
 #, python-format
 msgid "Passport edition expiring: %(title)s"
 msgstr "Paspoorteditie verloopt binnenkort: %(title)s"
 
-#: app/passports/reminders.py:73 app/templates/config/notifications.html:52
+#: app/passports/reminders.py:75 app/templates/config/notifications.html:52
 msgid "Passport edition expiring"
 msgstr "Paspoorteditie verloopt binnenkort"
 
-#: app/passports/reminders.py:75
+#: app/passports/reminders.py:77
 #, python-format
 msgid "Your passport %(title)s ends on %(date)s. Open the edition to see your remaining airfields and vouchers."
 msgstr "Je paspoort %(title)s eindigt op %(date)s. Open de editie om je nog te bezoeken vliegvelden en beschikbare vouchers te bekijken."
 
-#: app/passports/reminders.py:82
+#: app/passports/reminders.py:84
 msgid "Open passport"
 msgstr "Paspoort openen"
 

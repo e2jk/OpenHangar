@@ -548,6 +548,7 @@ def _provision_defaults(passport: Passport, user_id: int | None = None) -> None:
         .where(
             PassportAirfield.passport_id == passport.id,
             PassportParticipant.is_active.is_(True),
+            PassportParticipant.blocked.is_(False),
             PassportParticipant.accepted_at.is_not(None),
             ~exists,
         )

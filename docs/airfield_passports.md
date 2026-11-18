@@ -452,3 +452,26 @@ default. Personal reminder delivery keeps the same full default. Logbook evidenc
 remains personal across organisations; fleet permission checks remain bound to
 the selected organisation and refuse mismatched aircraft. This is session-layer
 preparation for the invitation hand-off, not a general organisation-switching UI.
+
+
+### Invitation service foundation
+
+The invitation service stores one admission capability per group edition. The
+stored nonce and digest require the instance signing key to reconstruct the URL;
+the URL is never a participant identity. Replacing or disabling it prevents new
+joins without removing existing participants. An ended or archived edition does
+not accept new joins. A separate expiring, server-held authentication context
+retains the selected edition and explicit sharing choices. Completion rechecks
+admission and binds the result to the authenticated account; replay cannot enrol
+a second identity or reset voucher balances. Each participant receives their own
+allowance, including when reusing an existing account from another organisation.
+
+Membership changes lock the group before its passport parents, with a one-second
+PostgreSQL lock timeout and a retryable conflict response. Removal records can
+cover one edition or the whole group and retain a keyed email fingerprint rather
+than an email address, allowing forthcoming owner controls to prevent self-rejoin
+when an account or organisation membership has been deleted. Rotating the server
+signing key invalidates admission URLs; owners must replace those links.
+
+This is an internal foundation: owner invitation controls, join pages, login/2FA
+handoff, verified registration and member controls are not yet exposed.
