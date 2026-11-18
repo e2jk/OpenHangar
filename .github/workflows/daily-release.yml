@@ -19,7 +19,9 @@ name: Daily release
 
 on:
   schedule:
-    - cron: '20 23 * * *'   # daily 23:20 UTC
+    # Daily 23:20 UTC — best effort: GitHub starts scheduled runs late under
+    # load (3–6 hours in November 2026; see docs/development.md).
+    - cron: '20 23 * * *'
   workflow_dispatch: {}     # allow manual runs for testing
 
 permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, the job below opts into exactly the write scopes it needs

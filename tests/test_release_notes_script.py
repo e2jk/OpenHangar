@@ -69,6 +69,8 @@ def test_later_title_and_body(monkeypatch, capsys):
     body = release_notes.body(["feat: x"], None, later=True)
     assert body.startswith("Auto-opened from `ship-later`")
     assert "without a release of its own" in body
+    # The daily release is scheduled, not punctual: GitHub starts it late.
+    assert "scheduled 23:20 UTC" in body and "hours later" in body
     monkeypatch.setattr(sys, "stdin", io.StringIO("feat: a\nfix: b\n"))
     release_notes.main(["title", "--later"])
     assert capsys.readouterr().out == "[later] feat: a (+1 more)\n"
