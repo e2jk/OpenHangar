@@ -229,6 +229,13 @@ def join(
     user = db.session.get(User, user_id, populate_existing=True)
     if user is None or not user.is_active or user.view_only:
         raise BuilderError(_("You cannot manage passports with this account."), 403)
+    if (
+        auth_challenges.requires_totp(user, tenant_id=passport.tenant_id)
+        and not user.totp_secret
+    ):
+        raise BuilderError(
+            _("Set up two-factor authentication before joining this passport."), 409
+        )
     series_member = db.session.get(
         PassportSeriesMember, (passport.series_id, user_id), populate_existing=True
     )

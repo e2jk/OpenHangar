@@ -37,6 +37,7 @@ from utils import (
 from passports import (
     builder,
     evidence,
+    invitation_routes,  # Register edition admission views.
     lifecycle,  # Register transaction-safe file cleanup.
     passports_bp,
     series_routes,  # Register linked-edition views.
@@ -61,7 +62,13 @@ from passports.management import (
     set_archived,
 )
 
-__all__ = ["lifecycle", "passports_bp", "series_routes", "voucher_routes"]
+__all__ = [
+    "invitation_routes",
+    "lifecycle",
+    "passports_bp",
+    "series_routes",
+    "voucher_routes",
+]
 
 
 @passports_bp.route("/")

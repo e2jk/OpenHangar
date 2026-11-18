@@ -283,6 +283,8 @@ _EXCLUDED_ENDPOINTS = {
         "require_instance_admin, not a tenant role"
     ),
     # Pre-auth / token-based flows: no tenant role exists yet at request time.
+    "passports.invitation_settings": "edition owner only; admission controls covered by invitation route and cross-owner tests",
+    "passports.join_passport": "capability-bound explicit self-enrolment, not a fleet role; covered by invitation and authentication tests",
     "passports.group_settings": "owner enables sharing; accepted participants consent to their own evidence only; covered by group scope and consent tests",
     "passports.link_series": "passport-owner scoped; covered by edition ownership and privacy tests",
     "passports.next_edition": "passport-owner scoped; creation capability and draft ownership covered by edition tests",

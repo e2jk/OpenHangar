@@ -2481,17 +2481,17 @@ downgrades and show localised retrieval timestamps.
   identity use that context. Renewing credentials retains it; missing/inactive
   memberships never fall back to another role. Normal logins prefer existing
   full memberships, with active-tenant MFA policy enforced. Invitation hand-off
-  and its post-authentication revalidation remain to be wired below.
+  is integrated below, including post-authentication admission revalidation.
 
 - [x] Invitation-service foundation: purpose/edition-bound capability digests with
   owner-side token recovery requiring the server key; expiring/revocable invitation
   records; server-held consent context with post-authentication completion bound
   to one account; idempotent enrolment and separate personal voucher allowances.
   Group changes use a transaction mutex and bounded lock waits. Durable removal
-  records support later member controls. Owner/join screens, login hand-off,
-  verified registration and member controls remain to be wired below.
+  records support later member controls. Owner/join screens and login hand-off
+  now use this service; verified registration and member controls are tracked separately below.
 
-- [ ] Owner creates one shareable invitation link bound to that specific group
+- [x] Owner creates one shareable invitation link bound to that specific group
   passport (and edition), suitable for posting in a WhatsApp group. Friends enrol
   themselves; the owner does not pre-create accounts or individual links. The
   invitation grants permission to join, not an identity or access to anyone else's
@@ -2500,6 +2500,14 @@ downgrades and show localised retrieval timestamps.
   group series, allowing the previous-edition history option in 41f. Accepting a
   subsequent linked edition reuses the account/group membership and adds only
   that edition's participation; creating it never silently enrols all former members.
+- [x] Existing-account invitation flow: preview without enrolment; explicit sharing
+  choices; sign in (including target-organisation 2FA), then automatic, revalidated
+  self-enrolment into that edition. Signed-in friends have one join action;
+  reopening as a member opens the map. Owner copy/replace/disable and optional
+  expiry controls, no-store/no-referrer/no-index responses, token log redaction,
+  CSRF and shared join rate limits are in place. Verified new-account signup is
+  the remaining part of the next item.
+
 - [ ] New visitor flow: open invitation → see the named passport → enter display
   name, email and password → verify email → automatically enrol in that passport
   and open their personalised map. Existing accounts sign in and are enrolled in

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% set no_history_cache = true %}
 
 {% block title %}OpenHangar — {{ _('Log in') }}{% endblock %}
 
@@ -18,6 +19,7 @@
     </div>
 
     <div class="auth-card-body">
+      {% if passport_join_title %}<p class="alert alert-info">{{ _('Sign in to join %(passport)s. Your eligible visits will be shared with its participants as you chose on the invitation page.', passport=passport_join_title) }}</p>{% endif %}
 
       {% if step == 'totp' %}
       <!-- ── Step 2: TOTP ── -->
@@ -25,6 +27,7 @@
         {{ _('Enter the 6-digit code from your authenticator app to continue.') }}
       </p>
       <form method="POST" action="{{ url_for('auth.login') }}" novalidate hx-boost="false">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="step" value="totp">
 
         <div class="mb-4">
@@ -54,6 +57,7 @@
         <div class="form-text mt-1">{{ _("Enter this key manually if you can't scan the QR code.") }}</div>
       </div>
       <form method="POST" action="{{ url_for('auth.login') }}" novalidate hx-boost="false">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="step" value="totp-enrol">
 
         <div class="mb-4">
@@ -74,6 +78,7 @@
       {% else %}
       <!-- ── Step 1: Credentials ── -->
       <form method="POST" action="{{ url_for('auth.login') }}" novalidate hx-boost="false">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <div class="mb-3">
           <label for="email" class="form-label">{{ _('Email address') }}</label>

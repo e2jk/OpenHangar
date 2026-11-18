@@ -18,6 +18,8 @@ PASSPORT_ENDPOINTS = frozenset(
         "passports.voucher_ledger",
         "passports.series_detail",
         "passports.group_settings",
+        "passports.invitation_settings",
+        "passports.join_passport",
         "passports.archive_passport",
         "passports.delete_passport",
         "passports.link_series",
