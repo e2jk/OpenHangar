@@ -4131,6 +4131,40 @@ class PassportSeries(db.Model):
         index=True,
     )
     title = db.Column(db.String(128), nullable=False)
+    is_group = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
+    )
+
+
+class PassportSeriesMember(db.Model):
+    """Persistent group access; never grants participation or historical vouchers."""
+
+    __tablename__ = "passport_series_members"
+    __table_args__ = (
+        db.ForeignKeyConstraint(
+            ["tenant_id", "series_id"],
+            ["passport_series.tenant_id", "passport_series.id"],
+            ondelete="CASCADE",
+        ),
+        db.ForeignKeyConstraint(
+            ["user_id", "tenant_id"],
+            ["tenant_users.user_id", "tenant_users.tenant_id"],
+            ondelete="CASCADE",
+        ),
+    )
+    series_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(db.Integer, nullable=False, index=True)
+    display_name = db.Column(db.String(128), nullable=False)
+    is_active = db.Column(
+        db.Boolean, nullable=False, default=True, server_default=db.true()
+    )
+    blocked = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
+    )
+    joined_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
 
 
 class Passport(db.Model):
@@ -4174,6 +4208,9 @@ class Passport(db.Model):
     )
     default_voucher_quantity = db.Column(
         db.Integer, nullable=False, default=0, server_default="0"
+    )
+    is_group = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
     )
     title = db.Column(db.String(128), nullable=False)
     description = db.Column(db.Text, nullable=True)
@@ -4272,6 +4309,12 @@ class PassportParticipant(db.Model):
         db.ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
+    )
+    share_visits = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
+    )
+    share_history = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
     )
     display_name = db.Column(db.String(128), nullable=False)
     is_active = db.Column(db.Boolean, nullable=False, default=True)

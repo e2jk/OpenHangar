@@ -4,10 +4,17 @@ import copy
 
 from flask import abort, redirect, render_template, request, session, url_for
 from flask.typing import ResponseReturnValue
-from models import Passport, PassportParticipant, PassportSeries, db
+from flask_babel import gettext as _
+from models import (
+    Passport,
+    PassportParticipant,
+    PassportSeries,
+    PassportSeriesMember,
+    db,
+)
 from utils import current_membership, db_id, login_required
 
-from passports import editions, passports_bp
+from passports import editions, groups, passports_bp
 from passports.drafts import new_draft, save_draft
 from passports.management import (
     METADATA_FIELDS,
@@ -108,11 +115,13 @@ def next_edition(passport_id: int) -> ResponseReturnValue:
 @login_required
 def series_detail(series_id: int) -> ResponseReturnValue:
     tenant_id, user_id = _scope()
-    # Group history access will extend this through explicit series membership;
-    # merely sharing a tenant or an edition does not expose personal collections.
     series = PassportSeries.query.filter_by(
-        id=series_id, tenant_id=tenant_id, owner_user_id=user_id
+        id=series_id, tenant_id=tenant_id
     ).first_or_404()
+    if series.is_group:
+        return _group_series(series, user_id)
+    if series.owner_user_id != user_id:
+        abort(404)
     passports = editions.ordered(
         Passport.query.filter_by(
             series_id=series.id, tenant_id=tenant_id, owner_user_id=user_id
@@ -179,6 +188,7 @@ def series_detail(series_id: int) -> ResponseReturnValue:
     return render_template(
         "passports/series.html",
         series=series,
+        group_view=False,
         passports=passports,
         current=current,
         selected=selected,
@@ -189,3 +199,134 @@ def series_detail(series_id: int) -> ResponseReturnValue:
         oldest=request.args.get("priority") == "oldest",
         frequency=request.args.get("frequency") == "1",
     )
+
+
+def _group_series(series: PassportSeries, user_id: int) -> ResponseReturnValue:
+    try:
+        include_history = request.args.get("history") == "1"
+        passports, accepted = groups.visible_editions(
+            series, user_id, include_history=include_history
+        )
+        participating = [p for p in passports if p.id in accepted]
+        current = editions.current_edition(participating)
+        selected = current or editions.latest_edition(participating)
+        requested = request.args.get("edition", "")
+        if requested and requested != "all":
+            try:
+                edition_id = db_id(requested)
+            except ValueError:
+                abort(404)
+            selected = next((p for p in passports if p.id == edition_id), None)
+            if selected is None:
+                abort(404)
+        visible = passports if requested == "all" else ([selected] if selected else [])
+        all_group_editions = editions.ordered(
+            Passport.query.filter_by(
+                series_id=series.id, tenant_id=series.tenant_id, is_group=True
+            ).all()
+        )
+        colours = {
+            p.id: editions.COLOURS[i % len(editions.COLOURS)]
+            for i, p in enumerate(all_group_editions)
+        }
+        view = groups.combined(
+            series,
+            visible,
+            user_id,
+            oldest=request.args.get("priority") == "oldest",
+            current=current,
+            colours=colours,
+        )
+        # Target comparisons apply to the selected authorised scope, not private linked passports.
+        comparison = (
+            view
+            if visible == passports
+            else groups.combined(
+                series, passports, user_id, current=current, colours=colours
+            )
+        )
+        map_rows = [
+            {
+                key: float(value)
+                if key in {"latitude", "longitude"} and value is not None
+                else value
+                for key, value in row.items()
+            }
+            for row in view["rows"]
+        ]
+        return render_template(
+            "passports/series.html",
+            series=series,
+            group_view=True,
+            include_history=include_history,
+            participating=accepted,
+            passports=passports,
+            current=current,
+            selected=selected,
+            all_editions=requested == "all",
+            view=view,
+            comparisons=comparison["comparisons"],
+            map_rows=map_rows,
+            oldest=request.args.get("priority") == "oldest",
+            frequency=request.args.get("frequency") == "1",
+        )
+    except BuilderError as exc:
+        abort(exc.status)
+
+
+@passports_bp.route("/<int:passport_id>/group", methods=["GET", "POST"])
+@login_required
+def group_settings(passport_id: int) -> ResponseReturnValue:
+    tenant_id, user_id = _scope()
+    # This consent page is also available to existing, accepted participants before
+    # they acquire persistent series membership. It never enrols a nonparticipant.
+    passport = Passport.query.filter_by(
+        id=passport_id, tenant_id=tenant_id
+    ).first_or_404()
+    participant = (
+        PassportParticipant.query.filter_by(
+            passport_id=passport.id, user_id=user_id, is_active=True
+        )
+        .filter(PassportParticipant.accepted_at.is_not(None))
+        .first()
+    )
+    if participant is None:
+        abort(404)
+    member = (
+        db.session.get(PassportSeriesMember, (passport.series_id, user_id))
+        if passport.series_id
+        else None
+    )
+    if member is not None and member.blocked:
+        abort(404)
+    owner = passport.owner_user_id == user_id
+    if not owner and not passport.is_group:
+        abort(404)
+    error, status = None, 200
+    if request.method == "POST":
+        try:
+            values = dict(request.form)
+            series = (
+                groups.enable(passport, user_id, values)
+                if owner and not passport.is_group
+                else (
+                    db.session.get(PassportSeries, passport.series_id)
+                    if passport.series_id is not None
+                    else None
+                )
+            )
+            if series is None:
+                raise BuilderError(_("Group not found."), 404)
+            if passport.is_group:
+                groups.consent(passport, user_id, values)
+            db.session.commit()
+            return redirect(url_for("passports.series_detail", series_id=series.id))
+        except BuilderError as exc:
+            db.session.rollback()
+            error, status = str(exc), exc.status
+    return render_template(
+        "passports/group_settings.html",
+        passport=passport,
+        participant=participant,
+        error=error,
+    ), status

@@ -2347,8 +2347,16 @@ downgrades and show localised retrieval timestamps.
   the existing builder, date-based default selection, archived edition access,
   stable-identity combined map, independent completion/target comparison and
   newest/oldest visit colours with deduplicated frequency. Request-local collection
-  evidence is batched. Group history and reminders below remain
-  outstanding; this subphase is not complete.
+  evidence is batched. Group enrolment, membership management and the remaining
+  shared-history integration below are outstanding; this subphase is not complete.
+
+- [x] Group-history foundation: explicit group/edition sharing, persistent group
+  membership, per-edition visit consent and separate opt-in consent for later
+  members to see historical visits. Existing accepted participants can consent
+  without receiving historical stamps or vouchers. Group series maps include
+  personalised three-state markers, stable edition colours and distinct-event
+  frequency, while private linked editions stay hidden. Invitation enrolment,
+  membership management, shared photos and group coverage remain with 41g.
 
 - [ ] Keep linked editions simple: `PassportSeries` groups passports via an
   optional `Passport.series_id` FK. Each passport remains independently named,

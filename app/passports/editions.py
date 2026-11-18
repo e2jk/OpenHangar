@@ -82,6 +82,10 @@ def link(
     passport: Passport, user_id: int, *, series_id: int | None = None, title: str = ""
 ) -> PassportSeries:
     owned_passport(passport.tenant_id, user_id, passport.id, archived_ok=True)
+    if passport.is_group and series_id != passport.series_id:
+        raise BuilderError(
+            _("A shared edition cannot be moved to another series."), 409
+        )
     if series_id is not None:
         series = owned_series(passport.tenant_id, user_id, series_id)
     else:
