@@ -216,6 +216,15 @@ class LoginThrottle(db.Model):
 
 class TenantUser(db.Model):
     __tablename__ = "tenant_users"
+    __table_args__ = (
+        db.CheckConstraint(
+            "access_scope IN ('full', 'passport')", name="ck_tenant_users_access_scope"
+        ),
+        db.CheckConstraint(
+            "(access_scope = 'full' AND role IS NOT NULL) OR (access_scope = 'passport' AND role IS NULL)",
+            name="ck_tenant_users_scoped_role",
+        ),
+    )
 
     user_id = db.Column(
         db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
@@ -223,7 +232,11 @@ class TenantUser(db.Model):
     tenant_id = db.Column(
         db.Integer, db.ForeignKey("tenants.id", ondelete="CASCADE"), primary_key=True
     )
-    role = db.Column(db.Enum(Role), nullable=False, default=Role.OWNER)
+    access_scope = db.Column(
+        db.String(24), nullable=False, default="full", server_default="full"
+    )
+    # Explicit None must stay NULL, never silently receive the OWNER default.
+    role = db.Column(db.Enum(Role).evaluates_none(), nullable=True, default=Role.OWNER)
 
     user = db.relationship("User", back_populates="tenants")
     tenant = db.relationship("Tenant", back_populates="users")
@@ -4619,3 +4632,15 @@ def _refuse_values_too_large(session: Session, _context: Any, _instances: Any) -
                     raise (TextTooLong if isinstance(value, str) else NumberTooLarge)(
                         column
                     )
+
+
+@event.listens_for(TenantUser, "after_update")
+def _revoke_changed_account_scope(
+    _mapper: Any, connection: Any, membership: TenantUser
+) -> None:
+    if inspect(membership).attrs.access_scope.history.has_changes():
+        connection.execute(
+            update(User)
+            .where(User.id == membership.user_id)
+            .values(auth_version=secrets.token_hex(16))
+        )

@@ -2498,6 +2498,12 @@ downgrades and show localised retrieval timestamps.
   destinations. Joining is transactional/idempotent with one membership per user;
   reopening the invitation as an existing member opens that passport. Never bind
   membership to an unverified email or an arbitrary submitted passport ID.
+- [x] Account-restriction foundation: a passport-scoped tenant membership has no
+  broad role, uses a fail-closed route allowlist, hides fleet navigation and
+  receives only relevant passport reminders. Scope changes revoke existing
+  sessions; operator role promotion is explicit. Invitation creation and the
+  restricted builder/discovery catalogue remain to be integrated below.
+
 - [ ] New invitees get a real passport-only account: own passports, manual visits,
   profile/security settings, recovery and data export. Add an explicit account
   capability/access restriction enforced on all relevant server routes as well as

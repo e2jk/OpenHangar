@@ -200,7 +200,7 @@
         <div class="offcanvas-body">
         {% if logged_in %}
         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          {% if (tenant_profile and tenant_profile.setup_complete) or (not tenant_profile and has_users) %}
+          {% if not passport_only and ((tenant_profile and tenant_profile.setup_complete) or (not tenant_profile and has_users)) %}
           <li class="nav-item">
             <a class="nav-link" href="/"><i class="bi bi-speedometer2 me-1"></i>{{ _('Dashboard') }}</a>
           </li>
@@ -223,7 +223,7 @@
             <a class="nav-link" href="{{ url_for('flights.log_flight') }}"><i class="bi bi-plus-circle me-1"></i>{{ _('Log a flight') }}</a>
           </li>
           {% endif %}
-          {% if is_pilot or has_passports %}
+          {% if is_pilot or has_passports or passport_only %}
           <li class="nav-item"><a class="nav-link" href="{{ url_for('passports.index') }}"><i class="bi bi-passport me-1"></i>{{ _('Airfield passports') }}</a></li>
           {% endif %}
           {% if has_renter_account %}
@@ -313,7 +313,7 @@
   {% if session.get('user_id') %}
   {% set _ep = request.endpoint or '' %}
   <nav class="oh-bottom-nav d-lg-none">
-    {% if (tenant_profile and tenant_profile.setup_complete) or (not tenant_profile and has_users) %}
+    {% if not passport_only and ((tenant_profile and tenant_profile.setup_complete) or (not tenant_profile and has_users)) %}
     <a href="/" class="{{ 'active' if _ep == 'index' }}">
       <i class="bi bi-speedometer2"></i>
       <span>{{ _('Dashboard') }}</span>
@@ -335,7 +335,7 @@
       <span>{{ _('Pilot') }}{% if nav_crew_invite_count %} <span class="badge rounded-pill bg-warning text-dark oh-fs-07">{{ nav_crew_invite_count }}</span>{% endif %}</span>
     </a>
     {% endif %}
-    {% if is_pilot or has_passports %}
+    {% if is_pilot or has_passports or passport_only %}
     <a href="{{ url_for('passports.index') }}" class="{{ 'active' if _ep.startswith('passports.') }}"><i class="bi bi-passport"></i><span>{{ _('Airfield passports') }}</span></a>
     {% endif %}
   </nav>

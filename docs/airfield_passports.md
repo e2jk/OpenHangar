@@ -411,3 +411,26 @@ stamped edition takes colour priority over friends' editions; newest/oldest togg
 change only presentation. Frequency deduplicates the same event per participant
 across overlapping editions. Blocked/inactive group membership is checked on each
 series request and excluded from shared evidence.
+
+### Passport-only account boundary
+
+Passport-only membership is a separate access scope, with no tenant role (including
+VIEWER). Known passport views, own visit/photo/voucher actions, group consent and
+account security/preferences are permitted; unrelated pages, APIs, files and new
+endpoints are denied by default. Global pilot/maintenance flags and existing
+instance-administrator flags do not bypass a restricted membership. Navigation
+hides fleet features, and the home page leads to passports. Notification delivery
+and preferences exclude fleet events even when those global flags were set.
+
+Changing membership scope revokes existing authenticated sessions. The next
+authenticated request clears the retired login and its offline identity instead
+of reusing its broader privileges. An organisation owner can
+deliberately assign a normal tenant role through user management, making that
+membership full-access under the selected role; joining a passport never does so.
+An older schema cannot represent a role-less membership: the migration refuses a
+downgrade while restricted memberships exist, rather than silently granting a role.
+
+This is the authorization foundation for invitation-based friend accounts. Signup,
+email verification and later personal-pilot activation are separate increments.
+Builder/discovery endpoints remain unavailable to restricted accounts until their
+catalogue reads are limited to public data and authorised own/group airfields.
