@@ -90,6 +90,7 @@ def invitation_settings(passport_id: int) -> ResponseReturnValue:
         "passports/invitation_settings.html",
         passport=passport,
         invitation=row,
+        can_open=invitations.enrolled(passport, session["user_id"]),
         invite_url=url_for("passports.join_passport", token=token, _external=True)
         if token
         else None,

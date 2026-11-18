@@ -33,7 +33,10 @@ def accessible_passports() -> Any:
     return Passport.query.filter(
         Passport.tenant_id == membership.tenant_id,
         db.or_(Passport.is_group.is_(False), Passport.series_id.in_(group_memberships)),
-        db.or_(Passport.owner_user_id == uid, Passport.id.in_(accepted)),
+        db.or_(
+            db.and_(Passport.is_group.is_(False), Passport.owner_user_id == uid),
+            Passport.id.in_(accepted),
+        ),
     )
 
 

@@ -2282,7 +2282,7 @@ msgstr "De herkomstgegevens van de import zijn ongeldig. Bekijk de bron opnieuw.
 msgid "Choose an invitation action."
 msgstr "Kies een actie voor de uitnodiging."
 
-#: app/passports/invitation_routes.py:256
+#: app/passports/invitation_routes.py:257
 msgid "Your email is verified. Sign in with your existing account to join."
 msgstr "Uw e-mailadres is geverifieerd. Meld u aan met uw bestaande account om deel te nemen."
 
@@ -2342,7 +2342,7 @@ msgid "Only the group owner can manage other members."
 msgstr "Alleen de groepseigenaar kan andere leden beheren."
 
 #: app/passports/memberships.py:93 app/passports/memberships.py:115
-#: app/templates/passports/group_members.html:20
+#: app/templates/passports/group_members.html:21
 msgid "Transfer group ownership before leaving."
 msgstr "Draag het groepseigendom over voordat u vertrekt."
 
@@ -5638,7 +5638,7 @@ msgstr "Onderdelen"
 #: app/templates/aircraft/detail.html:341
 #: app/templates/aircraft/detail.html:357
 #: app/templates/flights/logbook_component.html:81
-#: app/templates/passports/group_members.html:15
+#: app/templates/passports/group_members.html:16
 msgid "Removed"
 msgstr "Verwijderd"
 
@@ -8280,7 +8280,7 @@ msgstr "Drempelwaarde"
 
 #: app/templates/config/notifications.html:170
 #: app/templates/config/tenant_list.html:47
-#: app/templates/passports/group_members.html:15
+#: app/templates/passports/group_members.html:16
 msgid "Active"
 msgstr "Actief"
 
@@ -11977,6 +11977,7 @@ msgid "Create next edition"
 msgstr "Volgende editie maken"
 
 #: app/templates/passports/detail.html:13
+#: app/templates/passports/group_members.html:6
 #: app/templates/passports/invitation_settings.html:3
 #: app/templates/passports/invitation_settings.html:6
 msgid "Invite friends"
@@ -11985,7 +11986,9 @@ msgstr "Vrienden uitnodigen"
 #: app/templates/passports/detail.html:14
 #: app/templates/passports/group_members.html:3
 #: app/templates/passports/group_members.html:4
-#: app/templates/passports/index.html:10 app/templates/passports/series.html:6
+#: app/templates/passports/index.html:10
+#: app/templates/passports/invitation_settings.html:20
+#: app/templates/passports/series.html:6
 msgid "Group members"
 msgstr "Groepsleden"
 
@@ -12132,92 +12135,105 @@ msgid "Start again"
 msgstr "Opnieuw beginnen"
 
 #: app/templates/passports/group_members.html:6
+msgid "Manage group editions"
+msgstr "Groepsedities beheren"
+
+#: app/templates/passports/group_members.html:6
+msgid "Owning an edition does not join it or grant stamps or vouchers. Use its invitation to accept participation separately."
+msgstr "Eigendom van een editie schrijft u niet in en geeft geen stempels of vouchers. Accepteer deelname afzonderlijk via de uitnodiging."
+
+#: app/templates/passports/group_members.html:6
+#: app/templates/passports/series.html:19
+msgid "Not a participant"
+msgstr "Geen deelnemer"
+
+#: app/templates/passports/group_members.html:7
 msgid "Group ownership"
 msgstr "Groepseigendom"
 
-#: app/templates/passports/group_members.html:7
+#: app/templates/passports/group_members.html:8
 msgid "The selected participant must accept within seven days. Transfer covers this group and its group editions, without changing private linked passports, personal evidence, vouchers or aircraft permissions."
 msgstr "De geselecteerde deelnemer moet binnen zeven dagen accepteren. De overdracht omvat deze groep en de groepsedities, zonder privépaspoorten, persoonlijk bewijs, vouchers of vliegtuigrechten te wijzigen."
 
-#: app/templates/passports/group_members.html:8
+#: app/templates/passports/group_members.html:9
 #, python-format
 msgid "Ownership offered to %(name)s."
 msgstr "Eigendom aangeboden aan %(name)s."
 
-#: app/templates/passports/group_members.html:9
+#: app/templates/passports/group_members.html:10
 msgid "Accept group ownership"
 msgstr "Groepseigendom accepteren"
 
-#: app/templates/passports/group_members.html:9
+#: app/templates/passports/group_members.html:10
 msgid "Decline ownership"
 msgstr "Eigendom weigeren"
 
-#: app/templates/passports/group_members.html:10
+#: app/templates/passports/group_members.html:11
 msgid "Cancel ownership offer"
 msgstr "Eigendomsaanbod annuleren"
 
-#: app/templates/passports/group_members.html:12
+#: app/templates/passports/group_members.html:13
 msgid "Offer ownership to a participant"
 msgstr "Eigendom aanbieden aan een deelnemer"
 
-#: app/templates/passports/group_members.html:12
+#: app/templates/passports/group_members.html:13
 msgid "Offer group ownership"
 msgstr "Groepseigendom aanbieden"
 
-#: app/templates/passports/group_members.html:14
+#: app/templates/passports/group_members.html:15
 msgid "Leaving one edition keeps your group history access. Leaving the group ends all group-derived access. Your private visits and voucher records are retained; leaving does not spend or reset vouchers."
 msgstr "Als u één editie verlaat, behoudt u toegang tot de groepsgeschiedenis. Als u de groep verlaat, vervalt alle toegang via de groep. Uw privébezoeken en voucherregistraties blijven bewaard; vertrekken verbruikt of herstelt geen vouchers."
 
-#: app/templates/passports/group_members.html:15
+#: app/templates/passports/group_members.html:16
 msgid "Group owner"
 msgstr "Groepseigenaar"
 
-#: app/templates/passports/group_members.html:15
+#: app/templates/passports/group_members.html:16
 msgid "Left group"
 msgstr "Groep verlaten"
 
-#: app/templates/passports/group_members.html:16
+#: app/templates/passports/group_members.html:17
 msgid "Removal scope"
 msgstr "Bereik van verwijdering"
 
-#: app/templates/passports/group_members.html:16
-#: app/templates/passports/group_members.html:21
+#: app/templates/passports/group_members.html:17
+#: app/templates/passports/group_members.html:22
 msgid "Whole group, including history"
 msgstr "Hele groep, inclusief geschiedenis"
 
-#: app/templates/passports/group_members.html:16
+#: app/templates/passports/group_members.html:17
 msgid "Remove member"
 msgstr "Lid verwijderen"
 
-#: app/templates/passports/group_members.html:18
+#: app/templates/passports/group_members.html:19
 msgid "Leave one edition"
 msgstr "Eén editie verlaten"
 
-#: app/templates/passports/group_members.html:18
+#: app/templates/passports/group_members.html:19
 msgid "Leave edition"
 msgstr "Editie verlaten"
 
-#: app/templates/passports/group_members.html:19
+#: app/templates/passports/group_members.html:20
 msgid "Leave group"
 msgstr "Groep verlaten"
 
-#: app/templates/passports/group_members.html:21
+#: app/templates/passports/group_members.html:22
 msgid "Removed members"
 msgstr "Verwijderde leden"
 
-#: app/templates/passports/group_members.html:21
+#: app/templates/passports/group_members.html:22
 msgid "Reinstatement allows a fresh invitation acceptance. It does not silently rejoin editions or share old visits again."
 msgstr "Herstel maakt het mogelijk opnieuw een uitnodiging te accepteren. Het schrijft niemand automatisch opnieuw in voor edities en deelt eerdere bezoeken niet opnieuw."
 
-#: app/templates/passports/group_members.html:22
+#: app/templates/passports/group_members.html:23
 msgid "Allow rejoining"
 msgstr "Opnieuw deelnemen toestaan"
 
-#: app/templates/passports/group_members.html:22
+#: app/templates/passports/group_members.html:23
 msgid "No removed members."
 msgstr "Geen verwijderde leden."
 
-#: app/templates/passports/group_members.html:23
+#: app/templates/passports/group_members.html:24
 msgid "Back to editions"
 msgstr "Terug naar edities"
 
@@ -12553,10 +12569,6 @@ msgstr "Verwijderde doelen"
 #: app/templates/passports/series.html:19
 msgid "Read-only history; not a participant"
 msgstr "Geschiedenis alleen bekijken; geen deelnemer"
-
-#: app/templates/passports/series.html:19
-msgid "Not a participant"
-msgstr "Geen deelnemer"
 
 #: app/templates/passports/target.html:11
 msgid "A logged arrival is presumed a full stop. Exclude touch-and-go, low approach or other arrivals that should not earn credit. Departures and landing totals alone do not earn stamps."

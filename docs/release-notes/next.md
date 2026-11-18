@@ -44,3 +44,5 @@ Private flight details and notes stay private.
 - Simplified verification locking to address an advisory CodeQL finding. Shipping guidance now requires reading advisory PR reviews as well as checking CI, including after auto-merge.
 
 - Missing or concurrently replaced passport photo files return a normal not-found response while retaining the same private-photo access checks.
+
+- After ownership transfer, unjoined editions have separate invitation-management links. Maps appear after explicit participation, without granting stamps or vouchers through ownership.

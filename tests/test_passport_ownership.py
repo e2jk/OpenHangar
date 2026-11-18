@@ -264,3 +264,67 @@ def test_offer_view_handles_deleted_membership(
         db.session.delete(member)
         db.session.commit()
         assert ownership.view(series, members["user"]) is None
+
+
+def test_new_owner_manages_unjoined_edition_without_receiving_participation(
+    app: Flask, client: FlaskClient, members: dict[str, int]
+) -> None:
+    from models import PassportVoucherAllocation
+    from passports import invitations
+
+    from tests.test_passport_invitations import raw_token
+
+    with app.app_context():
+        p = extra(members, "Unjoined inherited edition")
+        p.default_voucher_quantity = 1
+        editions.link(p, members["user"], series_id=members["series"])
+        groups.enable(p, members["user"], consent_values("Owner"))
+        invitations.replace(p)
+        ownership.offer(
+            members["tenant"], members["user"], members["series"], members["basic"]
+        )
+        db.session.flush()
+        key = db.session.get(PassportOwnershipOffer, members["series"]).request_key
+        ownership.respond(
+            members["tenant"], members["basic"], members["series"], key, accept=True
+        )
+        db.session.commit()
+        pid, token = p.id, raw_token(p)
+        assert not PassportParticipant.query.filter_by(
+            passport_id=pid, user_id=members["basic"]
+        ).count()
+        assert not PassportVoucherAllocation.query.filter_by(
+            passport_id=pid, personal_user_id=members["basic"]
+        ).count()
+    signin(client, members["basic"])
+    index = client.get("/passports/")
+    assert f'href="/passports/{pid}/"'.encode() not in index.data
+    assert client.get(f"/passports/{pid}/").status_code == 404
+    page = client.get(f"/passports/series/{members['series']}/members")
+    assert b"Unjoined inherited edition" in page.data
+    assert f'href="/passports/{pid}/invitation"'.encode() in page.data
+    settings = client.get(f"/passports/{pid}/invitation")
+    assert settings.status_code == 200
+    assert f'href="/passports/{pid}/"'.encode() not in settings.data
+    assert client.get(f"/passports/join/{token}").status_code == 200
+    assert (
+        client.post(
+            f"/passports/join/{token}", data=consent_values("Basic friend")
+        ).status_code
+        == 302
+    )
+    assert client.get(f"/passports/{pid}/").status_code == 200
+    assert f'href="/passports/{pid}/"'.encode() in client.get("/passports/").data
+    with app.app_context():
+        assert (
+            PassportParticipant.query.filter_by(
+                passport_id=pid, user_id=members["basic"]
+            ).count()
+            == 1
+        )
+        assert (
+            PassportVoucherAllocation.query.filter_by(
+                passport_id=pid, personal_user_id=members["basic"]
+            ).count()
+            == 1
+        )
