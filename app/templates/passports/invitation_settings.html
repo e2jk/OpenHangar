@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% set no_history_cache = true %}
+{% block title %}{{ _('Invite friends') }} — {{ passport.title }}{% endblock %}
+{% block content %}
+<div class="container py-4">
+<h1>{{ _('Invite friends') }}</h1><h2 class="h4">{{ passport.title }}</h2>
+<p>{{ _('Send this edition’s invitation to your friends. Each person signs in with their own account and gets their own map and vouchers. Forwarding an active link lets its recipient join; it never signs them in as you.') }}</p>
+{% if error %}<p class="alert alert-danger">{{ error }}</p>{% endif %}
+{% if invite_url %}
+<div id="passport-invitation"><label for="passport-invite-url" class="form-label">{{ _('Invitation link') }}</label>
+<input id="passport-invite-url" class="form-control" readonly value="{{ invite_url }}">
+<button type="button" class="btn btn-outline-secondary my-2" data-copy-invitation data-copied="{{ _('Copied') }}">{{ _('Copy link') }}</button></div>
+{% if invitation.expires_at %}<p>{{ _('Expires') }}: {{ format_date(invitation.expires_at.date()) }}</p>{% endif %}
+<form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="disable"><button class="btn btn-outline-danger">{{ _('Disable invitation') }}</button></form>
+{% else %}<p class="alert alert-secondary">{{ _('No active invitation. Existing participants keep their access.') }}</p>{% endif %}
+<form method="post" class="my-4"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="replace">
+<label for="invite-expiry" class="form-label">{{ _('Invitation expiry date (optional)') }}</label><input id="invite-expiry" type="date" name="expires_on" class="form-control" value="{{ request.form.get('expires_on', '') }}">
+<p class="form-text">{{ _('Creating a replacement makes the previous link stop accepting new participants. It does not remove anyone who already joined.') }}</p>
+<button class="btn btn-ac-primary">{{ _('Create a new invitation') }}</button></form>
+<a href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ _('Back to passport') }}</a>
+</div>{% endblock %}

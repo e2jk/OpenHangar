@@ -74,3 +74,18 @@ class TestRedactSensitivePath:
 
     def test_empty_path_is_unchanged(self):
         assert redact_sensitive_path("") == ""
+
+
+class TestPassportTokenRedaction:
+    def test_admission_and_public_tokens_in_nested_paths(self):
+        for kind in ("join", "public"):
+            for suffix in ("", "/", "/photo/7", "?lang=fr", " HTTP/1.1"):
+                assert (
+                    redact_sensitive_path(f"/passports/{kind}/secret{suffix}")
+                    == f"/passports/{kind}/[REDACTED]{suffix}"
+                )
+        assert (
+            redact_sensitive_path("/passports/7/invitation")
+            == "/passports/7/invitation"
+        )
+        assert redact_sensitive_path("/passports/join/") == "/passports/join/"

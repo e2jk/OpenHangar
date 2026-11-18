@@ -578,3 +578,93 @@ def test_group_consent_series_map_mobile_and_without_js(
     page.get_by_role("button", name="Delete passport", exact=True).click()
     page.wait_for_url(live_server_url + "/passports/")
     assert not errors, errors
+
+
+def test_invitation_mobile_login_join_and_no_js(
+    passport_page: Page, live_server_url: str
+) -> None:
+    page = passport_page
+    title = "Invited friends " + uuid4().hex[:8]
+    page.goto(live_server_url + "/passports/new")
+    page.locator("#passport-title").fill(title)
+    page.locator("#passport-codes").fill("EBNM EBOS")
+    page.get_by_role("button", name="Add codes", exact=True).click()
+    expect(page.locator("#passport-builder table")).to_contain_text("EBOS")
+    page.get_by_role("button", name="Review passport", exact=True).click()
+    page.get_by_role("button", name="Save passport", exact=True).click()
+    page.wait_for_url(re.compile(r"/passports/\d+/$"))
+    passport_url = page.url
+    page.get_by_role("link", name="Group visit sharing", exact=True).click()
+    page.locator("#group-name").fill("Group organiser")
+    page.locator("#share-visits").check()
+    page.get_by_role("button", name="Save sharing consent", exact=True).click()
+    page.goto(passport_url)
+    page.get_by_role("link", name="Invite friends", exact=True).click()
+    page.get_by_role("button", name="Create a new invitation", exact=True).click()
+    expect(page.locator("#passport-invitation")).to_have_attribute(
+        "data-oh-inited", "1"
+    )
+    invitation_url = page.locator("#passport-invite-url").input_value()
+    page.get_by_role("link", name="Back to passport", exact=True).click()
+    page.get_by_role("link", name="Invite friends", exact=True).click()
+    expect(page.locator("#passport-invitation")).to_have_attribute(
+        "data-oh-inited", "1"
+    )
+    browser = page.context.browser
+    assert browser is not None
+    for javascript, email, password in [
+        (True, "maintenance@openhangar.dev", "openhangar-dev-4"),
+        (False, "renter@openhangar.dev", "openhangar-dev-5"),
+    ]:
+        context = browser.new_context(
+            java_script_enabled=javascript,
+            viewport={"width": 390, "height": 844},
+            service_workers="block",
+        )
+        _block_external_network(context)
+        try:
+            friend = context.new_page()
+            response = friend.goto(invitation_url)
+            assert (
+                response is not None
+                and response.headers["referrer-policy"] == "no-referrer"
+            )
+            expect(
+                friend.get_by_role("heading", name=title, exact=True)
+            ).to_be_visible()
+            friend.locator("#join-name").fill(
+                "Visiting friend" if javascript else "No-JS friend"
+            )
+            friend.locator("#join-sharing").check()
+            friend.get_by_role(
+                "button", name="Sign in and join this passport", exact=True
+            ).click()
+            expect(
+                friend.get_by_text("Sign in to join " + title, exact=False)
+            ).to_be_visible()
+            friend.locator('input[name="email"]').fill(email)
+            friend.locator('input[name="password"]').fill(password)
+            friend.locator('button[type="submit"]').click()
+            friend.wait_for_url(re.compile(r"/passports/\d+/"))
+            expect(
+                friend.get_by_role("heading", name=title, exact=True)
+            ).to_be_visible()
+            if javascript:
+                expect(
+                    friend.locator("#passport-progress-map .leaflet-map-pane")
+                ).to_have_count(1)
+                assert friend.evaluate(
+                    "document.documentElement.scrollWidth <= window.innerWidth + 1"
+                )
+            friend.locator("table tbody a").first.click()
+            friend.locator("#visit-date").fill("2026-01-01")
+            friend.get_by_role("button", name="Save visit", exact=True).click()
+            expect(
+                friend.get_by_role("button", name="Delete manual visit", exact=True)
+            ).to_be_visible()
+        finally:
+            context.close()
+    page.goto(passport_url)
+    page.get_by_role("link", name="Delete passport", exact=True).click()
+    page.get_by_role("button", name="Delete passport", exact=True).click()
+    page.wait_for_url(live_server_url + "/passports/")

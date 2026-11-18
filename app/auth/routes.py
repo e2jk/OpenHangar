@@ -11,6 +11,7 @@ from flask import (
     Blueprint,
     current_app,
     flash,
+    g,
     redirect,
     render_template,
     request,
@@ -243,28 +244,81 @@ def _login_credentials() -> ResponseReturnValue:
         challenges.issue("login_challenge", "totp", user=user)
         return redirect(url_for("auth.login", step="totp"))
 
-    # If the tenant mandates TOTP and the user has none, redirect to enrolment.
-    tu = auth_sessions.login_membership(user)
-    if tu and tu.tenant and tu.tenant.require_totp:
-        totp_secret = pyotp.random_base32()
-        totp_uri = pyotp.TOTP(totp_secret).provisioning_uri(
-            name=user.email, issuer_name="OpenHangar"
-        )
-        challenges.issue(
-            "login_challenge",
-            "totp-enrol",
-            user=user,
-            payload={"secret": totp_secret, "uri": totp_uri},
-        )
-        return redirect(url_for("auth.login", step="totp-enrol"))
+    # The verified admission context selects the target organisation's policy.
+    target_tenant_id = _invitation_tenant(user)
+    if challenges.requires_totp(user, tenant_id=target_tenant_id):
+        return _begin_login_enrolment(user, target_tenant_id)
 
+    return _finish_login(user)
+
+
+def _begin_login_enrolment(
+    user: User, target_tenant_id: int | None
+) -> ResponseReturnValue:
+    totp_secret = pyotp.random_base32()
+    totp_uri = pyotp.TOTP(totp_secret).provisioning_uri(
+        name=user.email, issuer_name="OpenHangar"
+    )
+    challenges.issue(
+        "login_challenge",
+        "totp-enrol",
+        user=user,
+        payload={
+            "secret": totp_secret,
+            "uri": totp_uri,
+            "tenant_id": target_tenant_id,
+        },
+    )
+    return redirect(url_for("auth.login", step="totp-enrol"))
+
+
+def _invitation_tenant(user: User) -> int | None:
+    from passports import invitations
+
+    context = invitations.pending()
+    if context is None:
+        return None
+    challenge, passport = context
+    expected = challenge.payload.get(
+        "expected_user_id", challenge.payload.get("completed_by")
+    )
+    return passport.tenant_id if expected in (None, user.id) else None
+
+
+def _finish_login(user: User) -> ResponseReturnValue:
+    from passports import invitations
+    from passports.management import BuilderError
+
+    g.passport_join_request = bool(session.get(invitations.JOIN_KEY))
+    target_tenant_id = _invitation_tenant(user)
+    if (
+        target_tenant_id is not None
+        and not user.totp_secret
+        and challenges.requires_totp(user, tenant_id=target_tenant_id)
+    ):
+        return _begin_login_enrolment(user, target_tenant_id)
+    passport = None
+    warning = None
+    try:
+        passport = invitations.complete(user)
+    except BuilderError as exc:
+        db.session.rollback()
+        warning = str(exc)
+        if exc.status != 409:
+            session.pop(invitations.JOIN_KEY, None)
+    context = session.get(invitations.JOIN_KEY)
     session.clear()
-    auth_sessions.start(user)
-    # _swr_fresh: tells the SW (sw.js) this / request must bypass whatever
-    # it has cached (e.g. the landing page from before this login) and
-    # re-cache the dashboard under the canonical / key. See pwa.js for the
-    # matching history.replaceState() that scrubs the marker from the URL.
-    return redirect(url_for("index", _swr_fresh=1))
+    if context:
+        session[invitations.JOIN_KEY] = context
+    auth_sessions.start(user, tenant_id=passport.tenant_id if passport else None)
+    if warning:
+        flash(warning, "warning")
+    # Tell the service worker to refresh the selected account/context's page.
+    return redirect(
+        url_for("passports.detail", passport_id=passport.id, _swr_fresh=1)
+        if passport
+        else url_for("index", _swr_fresh=1)
+    )
 
 
 def _login_totp() -> ResponseReturnValue:
@@ -290,13 +344,7 @@ def _login_totp() -> ResponseReturnValue:
         return redirect(url_for("auth.login"))
     db.session.commit()
 
-    session.clear()
-    auth_sessions.start(user)
-    # _swr_fresh: tells the SW (sw.js) this / request must bypass whatever
-    # it has cached (e.g. the landing page from before this login) and
-    # re-cache the dashboard under the canonical / key. See pwa.js for the
-    # matching history.replaceState() that scrubs the marker from the URL.
-    return redirect(url_for("index", _swr_fresh=1))
+    return _finish_login(user)
 
 
 def _login_totp_enrol() -> ResponseReturnValue:
@@ -305,7 +353,9 @@ def _login_totp_enrol() -> ResponseReturnValue:
     if challenge is None:
         return redirect(url_for("auth.login"))
     user = User.query.filter_by(id=challenge.user_id).one()
-    if user.totp_secret or not challenges.requires_totp(user):
+    if user.totp_secret or not challenges.requires_totp(
+        user, tenant_id=challenge.payload.get("tenant_id")
+    ):
         return redirect(url_for("auth.login"))
     totp_secret = challenge.payload["secret"]
     totp_uri = challenge.payload["uri"]
@@ -331,11 +381,9 @@ def _login_totp_enrol() -> ResponseReturnValue:
         _sl(request.remote_addr),
     )
 
-    session.clear()
-    auth_sessions.start(user)
+    response = _finish_login(user)
     flash(_("Two-factor authentication is now active on your account."), "success")
-    # See the _swr_fresh comment on the other two login-success redirects above.
-    return redirect(url_for("index", _swr_fresh=1))
+    return response
 
 
 # ── /logout ───────────────────────────────────────────────────────────────────

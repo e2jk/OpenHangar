@@ -23,6 +23,8 @@ _SENSITIVE_PATH_RE = re.compile(
     r"^(/reset-password/|/share/|/config/users/invite/)[^/?\s]+(?=$|[?\s])"
 )
 
+_PASSPORT_TOKEN_RE = re.compile(r"^(/passports/(?:join|public)/)[^/?\s]+(?=$|[/?\s])")
+
 
 def redact_sensitive_path(path: str) -> str:
     """Return ``path`` with a trailing secret-token segment replaced by
@@ -32,4 +34,6 @@ def redact_sensitive_path(path: str) -> str:
     have no token segment — are returned unchanged.
     """
 
-    return _SENSITIVE_PATH_RE.sub(r"\1[REDACTED]", path)
+    return _PASSPORT_TOKEN_RE.sub(
+        r"\1[REDACTED]", _SENSITIVE_PATH_RE.sub(r"\1[REDACTED]", path)
+    )

@@ -473,5 +473,15 @@ than an email address, allowing forthcoming owner controls to prevent self-rejoi
 when an account or organisation membership has been deleted. Rotating the server
 signing key invalidates admission URLs; owners must replace those links.
 
-This is an internal foundation: owner invitation controls, join pages, login/2FA
-handoff, verified registration and member controls are not yet exposed.
+After enabling group sharing, the owner opens **Invite friends** to create and
+copy an edition-specific link, optionally with an expiry date. Replacing or
+disabling it stops new joins and leaves existing participants enrolled. A friend
+with an existing account opens the link, chooses a display name and explicitly
+accepts eligible-visit sharing, then signs in. The validated context survives
+password entry and two-factor authentication; the invited organisation’s MFA
+policy applies even when their usual organisation does not require it. A signed-in
+friend uses **Join this passport**; an existing participant goes straight to the map.
+Opening a preview never creates an account or participation. Invitation and sign-in
+responses avoid caching, indexing and referrer leakage, and URL tokens are redacted
+from access logs. New-account email verification and member controls follow in
+later increments.

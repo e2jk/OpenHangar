@@ -209,8 +209,18 @@ remain visible but are excluded from the achievable total.
 Use **Where next?** to find open unvisited fields within a distance or still-air
 time limit. You can save a home airfield on your pilot profile and a home/cruise
 speed on an aircraft, or use session-only inputs. Optional range estimates need
-explicit usable fuel, flow and reserve assumptions. Group invitations and
-combined edition views follow in later increments. See [the passport guide](airfield_passports.md).
+explicit usable fuel, flow and reserve assumptions.
+
+Link successive editions to revisit earlier lists or combine their maps, with
+newest/oldest visit colours and optional frequency weighting. Your own voucher
+allowances stay separate from your friends’ balances.
+
+To invite existing account holders, enable **Group visit sharing**, then open
+**Invite friends** on the passport and copy its invitation link. Friends choose a
+group display name and sharing consent, then sign in and join that edition. A
+signed-in friend simply selects **Join this passport**. You can replace, expire or
+disable the link without removing existing participants. New-account registration
+is still being developed. See [the passport guide](airfield_passports.md).
 
 ![Where next? — unvisited airfields near the home airfield](screenshots/passport_where_next.png)
 
