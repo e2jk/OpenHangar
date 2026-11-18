@@ -2580,7 +2580,7 @@ downgrades and show localised retrieval timestamps.
   participant display name and visit date, with private notes, aircraft, flight
   links and photos hidden unless separately authorised/shared. Owners manage the
   group, not another pilot's underlying flights or manual evidence.
-- [ ] Airfield popup/detail includes "Friends who have been here": list each
+- [x] Airfield popup/detail includes "Friends who have been here": list each
   friend with an eligible shared visit in the selected edition/history scope,
   using their group display name and visit year(s), deduplicated across visits.
   Make this available from both "visited by others" and the viewer's own markers,
@@ -2625,6 +2625,12 @@ downgrades and show localised retrieval timestamps.
   explained rather than credited. Accessible without a map or complex JS. Below
   the form, unobtrusively offer a glimpse of the electronic logbook and explain
   portable data export and the optional pilot-activation path.
+- [x] Main shared-edition view uses the personalised three-state map, with all
+  targets visible by default, group visit frequency, an explicit outline legend,
+  and equivalent list labels. Own completion and first-visit dates stay personal.
+  Airfield details and single/combined-edition popups list friends once each with
+  their shared visit dates grouped by edition; identifiers and private evidence
+  stay server-side. Participant statistics/filtering and public maps remain below.
 - [ ] Default shared map is personalised to the signed-in viewing participant, showing every passport target with
   coordinates together in three distinct states:
   - Not visited by any active participant: muted/greyed-out, visibly not yet activated.

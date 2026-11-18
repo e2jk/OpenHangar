@@ -657,7 +657,18 @@ def test_invitation_mobile_login_join_and_no_js(
                 assert friend.evaluate(
                     "document.documentElement.scrollWidth <= window.innerWidth + 1"
                 )
+            if not javascript:
+                expect(friend.locator("table")).to_contain_text("Visiting friend")
             friend.locator("table tbody a").first.click()
+            if not javascript:
+                expect(
+                    friend.get_by_role(
+                        "heading", name="Friends who have been here", exact=True
+                    )
+                ).to_be_visible()
+                expect(
+                    friend.get_by_text("Visiting friend", exact=True)
+                ).to_be_visible()
             friend.locator("#visit-date").fill("2026-01-01")
             friend.get_by_role("button", name="Save visit", exact=True).click()
             expect(
@@ -686,6 +697,11 @@ def test_invitation_mobile_login_join_and_no_js(
             ).to_be_visible()
             alias = "Visiting friend" if javascript else "No-JS friend"
             page.goto(passport_url)
+            expect(page.locator("table")).to_contain_text(alias)
+            page.locator(
+                "#passport-progress-map .leaflet-overlay-pane path"
+            ).first.click()
+            expect(page.locator(".leaflet-popup-content")).to_contain_text(alias)
             page.get_by_role("link", name="Group members", exact=True).click()
             page.locator("#ownership-target").select_option(label=alias)
             page.get_by_role("button", name="Offer group ownership", exact=True).click()

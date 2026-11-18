@@ -271,6 +271,7 @@ def shared_progress(
                 others[pid].append(
                     {
                         "id": row["id"],
+                        "user_id": uid,
                         "name": names[uid, pid],
                         "dates": sorted({e["date"].isoformat() for e in events}),
                         "count": row["count"],
@@ -321,6 +322,7 @@ def combined(
             row = rows[visit["id"]]
             row["friends"].append(
                 {
+                    "user_id": visit["user_id"],
                     "name": visit["name"],
                     "edition": passport.edition_label or passport.title,
                     "dates": visit["dates"],
@@ -334,6 +336,20 @@ def combined(
             for edition in row["editions"]:
                 if edition["id"] == passport.id:
                     edition["count"] += visit["count"]
+    for row in rows.values():
+        friends: dict[int, dict[str, Any]] = {}
+        for visit in row["friends"]:
+            friend = friends.setdefault(
+                visit["user_id"], {"name": visit["name"], "editions": []}
+            )
+            friend["name"] = visit["name"]  # Latest edition's group alias.
+            friend["editions"].append(
+                {"label": visit["edition"], "dates": visit["dates"]}
+            )
+        # Identity keys are for server-side deduplication, never shared flight IDs.
+        row["friends"] = sorted(
+            friends.values(), key=lambda friend: friend["name"].casefold()
+        )
     view["participating"] = evidence["participating"]
     return view
 

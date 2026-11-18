@@ -26,6 +26,13 @@ accept within seven days. This hands over the group and its group editions while
 preserving each person’s own vouchers and private records. The former owner can
 then leave; pending, cancelled or replaced offers grant no control.
 
+Shared passports now open with a map that distinguishes places nobody has
+visited, places visited by friends, and your own stamps. One visit checks off a
+field; the frequency toggle highlights repeat visits. Your completion still counts
+only your own visits. Airfield details and map popups show which friends have been
+there, grouping their visits by edition when viewing several years together.
+Private flight details and notes stay private.
+
 **Maintenance**
 
 - Group enrolment handles repeated requests without duplicate participation or reset voucher balances. Invitation URLs stay out of access logs and referrers, and invitation/sign-in pages are not cached or indexed.

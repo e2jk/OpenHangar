@@ -532,3 +532,21 @@ existing owners. The former owner remains a participant and can then leave.
 Removed or departed participants cannot accept an old offer, and replaced offers
 cannot be accepted from stale forms. Owners cannot leave before transferring
 ownership.
+
+
+### Shared maps and visiting friends
+
+A shared passport opens with all its targets together: muted markers for fields
+nobody has visited, medium outlines for friends’ visits, and strong outlines for
+your own visits. Closure remains a separate dashed outline. The list carries the
+same labels, including fields without coordinates. Your completion percentage and
+first-visit dates remain your own; a friend’s stamp never checks off your passport.
+The frequency toggle counts your visits and visits shared by active friends.
+
+Map popups, the airfield list and airfield details show which friends have visited,
+using their group display names and shared visit dates. Combined editions list
+each friend once, with dates grouped by edition, so repeat visits and multiple
+years do not turn one person into several entries. You can also see these friends
+on fields you have already visited. Private notes, aircraft details, flight links
+and private photos stay out of this shared representation. Removal or leaving
+withdraws that participant’s visits from the live shared map immediately.

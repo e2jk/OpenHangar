@@ -9,6 +9,7 @@
 <p>{{ _('Visited') if target.visited else _('Not visited') }} · {{ _('Recorded visits') }}: {{ target.count }}{% if target.is_closed %} · {{ _('Closed') }}{% endif %}</p>
 {% if target.first %}<p>{{ _('First visit') }}: {{ target.first.date }}{% if target.first.time %} {{ target.first.time }}{% endif %}</p>{% endif %}
 <p>{{ _('A logged arrival is presumed a full stop. Exclude touch-and-go, low approach or other arrivals that should not earn credit. Departures and landing totals alone do not earn stamps.') }}</p>
+{% if passport.is_group %}<h2>{{ _('Friends who have been here') }}</h2>{% include "passports/_friends.html" %}{% if not friends %}<p>{{ _('No friends have shared a qualifying visit here yet.') }}</p>{% endif %}{% endif %}
 <h2>{{ _('Visit evidence') }}</h2>
 {% for event in target.events %}<div class="card mb-3"><div class="card-body">
 <p>{{ event.date }}{% if event.time %} {{ event.time }}{% endif %} — {{ _('Logged arrival') if event.kind == 'arrival' else (_('Confirmed GPS visit') if event.kind == 'confirmed_gps' else _('Manual visit')) }}{% if event.aircraft %} · {{ event.aircraft }}{% endif %}{% if event.excluded %} · {{ _('Excluded from credit') }}{% endif %}</p>
