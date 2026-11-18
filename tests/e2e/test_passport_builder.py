@@ -598,6 +598,7 @@ def test_invitation_mobile_login_join_and_no_js(
     page.locator("#group-name").fill("Group organiser")
     page.locator("#share-visits").check()
     page.get_by_role("button", name="Save sharing consent", exact=True).click()
+    page.wait_for_url(re.compile(r"/passports/series/\d+/$"))
     page.goto(passport_url)
     page.get_by_role("link", name="Invite friends", exact=True).click()
     page.get_by_role("button", name="Create a new invitation", exact=True).click()

@@ -42,14 +42,14 @@ def invitation_privacy(response: Response) -> Response:
 def invitation_settings(passport_id: int) -> ResponseReturnValue:
     membership = current_membership()
     if membership is None:
-        abort(403)
+        return abort(403)
     try:
         passport = invitations.owner_passport(
             membership.tenant_id, session["user_id"], passport_id
         )
     except BuilderError as exc:
         db.session.rollback()
-        abort(exc.status, description=str(exc))
+        return abort(exc.status, description=str(exc))
     error, status = None, 200
     row = db.session.get(PassportInvitation, passport.id)
     if request.method == "POST":
@@ -119,7 +119,7 @@ def join_passport(token: str) -> ResponseReturnValue:
         invitation, passport = invitations.lookup(token)
     except BuilderError as exc:
         db.session.rollback()
-        abort(exc.status, description=str(exc))
+        return abort(exc.status, description=str(exc))
     user = (
         db.session.get(User, session.get("user_id")) if session.get("user_id") else None
     )
