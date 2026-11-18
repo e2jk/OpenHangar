@@ -16,3 +16,4 @@ without an account is still being developed.
 - Group enrolment handles repeated requests without duplicate participation or reset voucher balances. Invitation URLs stay out of access logs and referrers, and invitation/sign-in pages are not cached or indexed.
 - Made the group-history error response explicit, resolving a CodeQL return-path warning while keeping access failures unchanged.
 - The ship script and ship-later PRs no longer promise a 23:20 UTC release: GitHub often starts the scheduled release hours later.
+- Stabilised invitation setup in browser tests by waiting for sharing consent to finish saving, and made invitation error returns explicit for static analysis.
