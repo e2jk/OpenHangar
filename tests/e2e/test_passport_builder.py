@@ -663,6 +663,27 @@ def test_invitation_mobile_login_join_and_no_js(
             expect(
                 friend.get_by_role("button", name="Delete manual visit", exact=True)
             ).to_be_visible()
+            friend.goto(passport_url)
+            friend.get_by_role("link", name="Group members", exact=True).click()
+            expect(
+                friend.get_by_role("heading", name="Group members", exact=True)
+            ).to_be_visible()
+            friend.get_by_role("button", name="Leave edition", exact=True).click()
+            friend.wait_for_url(live_server_url + "/passports/")
+            expect(
+                friend.get_by_text("Groups and edition history", exact=True)
+            ).to_be_visible()
+            friend.goto(invitation_url)
+            expect(friend.locator("#join-name")).to_have_value(
+                "Visiting friend" if javascript else "No-JS friend"
+            )
+            friend.locator("#join-sharing").check()
+            friend.get_by_role("button", name="Join this passport", exact=True).click()
+            friend.wait_for_url(re.compile(r"/passports/\d+/"))
+            friend.locator("table tbody a").first.click()
+            expect(
+                friend.get_by_role("button", name="Delete manual visit", exact=True)
+            ).to_be_visible()
         finally:
             context.close()
     page.goto(passport_url)

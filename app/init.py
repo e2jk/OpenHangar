@@ -1092,9 +1092,12 @@ def create_app() -> Flask:
         else:
             _nav_crew_invite_count = 0
 
-        from passports.access import accessible_passports
+        from passports.access import accessible_group_series, accessible_passports
 
-        _has_passports = bool(uid and accessible_passports().first())
+        _has_passports = bool(
+            uid
+            and (accessible_passports().first() or accessible_group_series().first())
+        )
 
         return {
             "has_passports": _has_passports,

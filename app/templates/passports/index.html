@@ -7,5 +7,6 @@
 {% if passports %}
 <ul>{% for passport in passports %}<li><a href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ passport.title }}</a>{% if passport.series_id and passport.owner_user_id == session.get('user_id') %} · <a href="{{ url_for('passports.series_detail', series_id=passport.series_id) }}">{{ _('Linked editions') }}</a>{% endif %} — {{ summaries[passport.id].visited }} / {{ summaries[passport.id].total }}</li>{% endfor %}</ul>
 {% else %}<p>{{ _('No passports yet.') }}</p>{% endif %}
+{% if group_series %}<h2>{{ _('Groups and edition history') }}</h2><ul>{% for group in group_series %}<li><a href="{{ url_for('passports.series_detail', series_id=group.id) }}">{{ group.title }}</a> · <a href="{{ url_for('passports.group_members', series_id=group.id) }}">{{ _('Group members') }}</a></li>{% endfor %}</ul>{% endif %}
 </div>
 {% endblock %}

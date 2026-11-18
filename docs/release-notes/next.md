@@ -14,6 +14,13 @@ account can record its own visits and manage its security, without access to the
 instance’s fleet or other pilots’ private logbooks. The instance needs working
 SMTP settings to send verification emails.
 
+Friends can leave one edition and keep the group’s history, or leave the whole
+group. Owners can remove members and explicitly allow them to join again; a
+forwarded invitation cannot bypass removal. Private visits and personal voucher
+records stay intact. Group pages offer available editions to join and can show
+years skipped between editions you participated in, without giving retrospective
+stamps or vouchers.
+
 **Maintenance**
 
 - Group enrolment handles repeated requests without duplicate participation or reset voucher balances. Invitation URLs stay out of access logs and referrers, and invitation/sign-in pages are not cached or indexed.

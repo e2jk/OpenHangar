@@ -9,7 +9,7 @@
 <p>{{ _('The owner may update this edition’s airfield list. Its dates are fixed once sharing is enabled; a different period needs a new edition and new acceptance.') }}</p>
 {% if error %}<p class="alert alert-danger">{{ error }}</p>{% endif %}
 <form method="post" hx-boost="false"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-<label class="form-label" for="join-name">{{ _('Group display name') }}</label><input id="join-name" class="form-control" name="display_name" maxlength="128" required autocomplete="nickname" value="{{ request.form.get('display_name', '') }}">
+<label class="form-label" for="join-name">{{ _('Group display name') }}</label><input id="join-name" class="form-control" name="display_name" maxlength="128" required autocomplete="nickname" value="{{ request.form.get('display_name', default_group_name) }}">
 <div class="form-check my-3"><input id="join-sharing" class="form-check-input" type="checkbox" name="share_visits" value="yes" required {{ 'checked' if request.form.get('share_visits') == 'yes' }}><label class="form-check-label" for="join-sharing">{{ _('Share my eligible visit dates with this edition’s participants.') }}</label></div>
 <div class="form-check my-3"><input id="join-history" class="form-check-input" type="checkbox" name="share_history" value="yes" {{ 'checked' if request.form.get('share_history') == 'yes' }}><label class="form-check-label" for="join-history">{{ _('Also let later group members see these shared visits when viewing editions they did not join. I can withdraw this history consent here.') }}</label></div>
 <button class="btn btn-ac-primary">{{ _('Join this passport') if signed_in else _('Sign in and join this passport') }}</button>
