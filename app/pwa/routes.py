@@ -27,10 +27,9 @@ from models import (  # pyright: ignore[reportMissingImports]
     Document,
     Role,
     Tenant,
-    TenantUser,
     db,
 )
-from utils import login_required  # pyright: ignore[reportMissingImports]
+from utils import current_membership, login_required  # pyright: ignore[reportMissingImports]
 
 pwa_bp = Blueprint("pwa", __name__)
 
@@ -109,7 +108,7 @@ def _category_labels() -> list[tuple[str, str]]:
 
 
 def _get_user_aircraft() -> list[Aircraft]:
-    tu = TenantUser.query.filter_by(user_id=session.get("user_id")).first()
+    tu = current_membership()
     if not tu:
         return []
     return cast(
@@ -262,7 +261,7 @@ def share_confirm() -> ResponseReturnValue:
 def _process_document(
     tmp_dir: str, files_meta: list[dict[str, str]], title: str
 ) -> ResponseReturnValue:
-    tu = TenantUser.query.filter_by(user_id=session.get("user_id")).first()
+    tu = current_membership()
     if not tu or tu.role not in _OWNER_ROLES:
         _cleanup_temp(tmp_dir)
         abort(403)

@@ -2224,7 +2224,14 @@ def _pilot_gps_tmp_dir() -> str:
 
 
 def _pilot_tenant_id(user_id: int) -> int | None:
-    tu = TenantUser.query.filter_by(user_id=user_id).first()
+    from flask import has_request_context
+    from utils import current_membership
+
+    tu = (
+        current_membership()
+        if has_request_context() and session.get("user_id") == user_id
+        else TenantUser.query.filter_by(user_id=user_id).first()
+    )
     return tu.tenant_id if tu else None
 
 

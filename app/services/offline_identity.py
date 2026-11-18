@@ -6,7 +6,7 @@ import hashlib
 import hmac
 
 from flask import current_app, has_request_context, session
-from models import TenantUser
+from utils import current_membership
 
 OWNER_HEADER = "X-OH-Offline-Owner"
 SESSION_HEADER = "X-OH-Offline-Session"
@@ -33,6 +33,6 @@ def identity() -> tuple[str, str]:
     token = session.get("auth_session")
     if not uid or not isinstance(token, str):
         return "", ""
-    membership = TenantUser.query.filter_by(user_id=uid).first()
+    membership = current_membership()
     tenant_id = membership.tenant_id if membership else None
     return _namespace(f"owner:{uid}:{tenant_id}"), _namespace(f"login:{token}")

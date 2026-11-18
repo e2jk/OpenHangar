@@ -746,7 +746,7 @@ def _check_medical_and_sep(app: Any) -> None:
         lazy_ngettext as _ln,
     )
     from models import NotificationType as NT  # pyright: ignore[reportMissingImports]
-    from models import PilotProfile, TenantUser, User, db
+    from models import PilotProfile, User, db
 
     from services.document_lifecycle import (  # pyright: ignore[reportMissingImports]
         medical_covered_until,
@@ -757,7 +757,9 @@ def _check_medical_and_sep(app: Any) -> None:
         user = db.session.get(User, profile.user_id)
         if user is None or not user.is_active:
             continue
-        tu = TenantUser.query.filter_by(user_id=user.id).first()
+        from services.auth_sessions import login_membership
+
+        tu = login_membership(user)
         if tu is None:
             continue
 
@@ -1091,7 +1093,6 @@ def _check_personal_minimums_recency(app: Any) -> None:
     from models import (
         PersonalMinimumsRevision,
         PersonalMinimumsStatus,
-        TenantUser,
         User,
         db,
     )
@@ -1105,7 +1106,9 @@ def _check_personal_minimums_recency(app: Any) -> None:
         user = db.session.get(User, revision.user_id)
         if user is None or not user.is_active:
             continue
-        tu = TenantUser.query.filter_by(user_id=user.id).first()
+        from services.auth_sessions import login_membership
+
+        tu = login_membership(user)
         if tu is None:
             continue
 

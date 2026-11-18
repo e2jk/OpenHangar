@@ -204,8 +204,8 @@ def _rate_terms_label(settings: AircraftBookingSettings | None) -> str:
     return f"{type_label} ({basis_label})"
 
 
-def _is_owner_role(user_id: int) -> bool:
-    tu = TenantUser.query.filter_by(user_id=user_id).first()
+def _is_owner_role(user_id: int, tenant_id: int) -> bool:
+    tu = db.session.get(TenantUser, (user_id, tenant_id))
     return tu is not None and tu.role in _OWNER_ROLES
 
 
@@ -688,14 +688,14 @@ def new_reservation(aircraft_id: int):
     effective_rate, rate_source = _effective_rate(ac, settings)
     uid = int(session["user_id"])
     renter_auth_blocked = (
-        not _is_owner_role(uid)
+        not _is_owner_role(uid, _tenant_id())
         and _rental_authorization_policy(ac.tenant_id) == "block"
         and not _renter_authorization_ok(ac.id, uid)
     )
     aircraft_grounded = _has_open_grounding_snag(ac)
     grounded_blocked = (
         aircraft_grounded
-        and not _is_owner_role(uid)
+        and not _is_owner_role(uid, _tenant_id())
         and _grounded_reservation_policy(ac.tenant_id) == "block"
     )
     return render_template(
@@ -863,7 +863,7 @@ def confirm_reservation(aircraft_id: int, res_id: int):
 
     if (
         r.pilot_user_id
-        and not _is_owner_role(r.pilot_user_id)
+        and not _is_owner_role(r.pilot_user_id, r.aircraft.tenant_id)
         and _rental_authorization_policy(ac.tenant_id) == "block"
         and not _renter_authorization_ok(ac.id, r.pilot_user_id)
     ):
@@ -878,7 +878,7 @@ def confirm_reservation(aircraft_id: int, res_id: int):
 
     if (
         r.pilot_user_id
-        and not _is_owner_role(r.pilot_user_id)
+        and not _is_owner_role(r.pilot_user_id, r.aircraft.tenant_id)
         and _grounded_reservation_policy(ac.tenant_id) == "block"
         and _has_open_grounding_snag(ac)
     ):
@@ -1082,7 +1082,7 @@ def _save_reservation(
     # editing an existing pending reservation, is out of scope here).
     uid = int(session["user_id"])
     renter_auth_warning: str | None = None
-    if r is None and not _is_owner_role(uid):
+    if r is None and not _is_owner_role(uid, _tenant_id()):
         policy = _rental_authorization_policy(ac.tenant_id)
         if policy != "off" and not _renter_authorization_ok(ac.id, uid):
             if policy == "block":
@@ -1120,7 +1120,7 @@ def _save_reservation(
     grounded_warning: str | None = None
     if r is None and _has_open_grounding_snag(ac):
         if (
-            not _is_owner_role(uid)
+            not _is_owner_role(uid, _tenant_id())
             and _grounded_reservation_policy(ac.tenant_id) == "block"
         ):
             flash(
@@ -1278,7 +1278,7 @@ def _save_reservation(
 
 
 def _can_dispatch(r: Reservation, user_id: int) -> bool:
-    return _is_owner_role(user_id) or r.pilot_user_id == user_id
+    return _is_owner_role(user_id, r.aircraft.tenant_id) or r.pilot_user_id == user_id
 
 
 def _discrepancy_warning(ac: Aircraft, r: Reservation) -> str | None:
@@ -1342,7 +1342,7 @@ def reservation_detail(aircraft_id: int, res_id: int):
     ac = _get_aircraft_or_404(aircraft_id)
     r = _get_reservation_or_404(ac, res_id)
     uid = int(session["user_id"])
-    is_owner = _is_owner_role(uid)
+    is_owner = _is_owner_role(uid, _tenant_id())
     if not is_owner and r.pilot_user_id != uid:
         abort(403)
 
@@ -1419,7 +1419,9 @@ def checkout(aircraft_id: int, res_id: int):
             errors.append(_("Walk-around confirmation is required."))
         if not snags_acknowledged:
             errors.append(_("You must acknowledge the open snag list."))
-        if ac.is_grounded and not (_is_owner_role(uid) and grounded_override):
+        if ac.is_grounded and not (
+            _is_owner_role(uid, _tenant_id()) and grounded_override
+        ):
             errors.append(
                 _(
                     "This aircraft is grounded — dispatch is blocked. An owner "
@@ -1853,7 +1855,7 @@ def my_account():
     from services.billing import BillingService  # pyright: ignore[reportMissingImports]
 
     uid = int(session["user_id"])
-    tu = TenantUser.query.filter_by(user_id=uid).first()
+    tu = current_membership()
     if not tu:
         abort(403)
 
@@ -1883,7 +1885,7 @@ def my_account_statement_csv():
     from services.billing import BillingService  # pyright: ignore[reportMissingImports]
 
     uid = int(session["user_id"])
-    tu = TenantUser.query.filter_by(user_id=uid).first()
+    tu = current_membership()
     if not tu:
         abort(403)
 

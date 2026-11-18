@@ -434,3 +434,21 @@ This is the authorization foundation for invitation-based friend accounts. Signu
 email verification and later personal-pilot activation are separate increments.
 Builder/discovery endpoints remain unavailable to restricted accounts until their
 catalogue reads are limited to public data and authorised own/group airfields.
+
+### Authentication context for existing accounts
+
+The session layer can bind an authenticated account to a specific organisation
+using its server-held login record. The selected membership must belong to that
+account and remain active; URL parameters and extra cookie fields do not select
+it. Losing that membership ends the login instead of falling back to an owner
+role in another organisation. Roles and resource queries, notification preferences
+and browser-storage identity use the same context. Credential changes retain the
+chosen organisation while renewing the login. Mandatory MFA is checked for the
+bound organisation.
+
+Normal sign-in prefers an existing full membership over passport-only membership,
+so joining a passport in an older organisation does not replace a pilot's normal
+default. Personal reminder delivery keeps the same full default. Logbook evidence
+remains personal across organisations; fleet permission checks remain bound to
+the selected organisation and refuse mismatched aircraft. This is session-layer
+preparation for the invitation hand-off, not a general organisation-switching UI.

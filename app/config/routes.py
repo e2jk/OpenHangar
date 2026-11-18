@@ -1138,7 +1138,6 @@ def notification_preferences() -> ResponseReturnValue:
         Role,
         TenantNotificationDefault,
         TenantProfile,
-        TenantUser,
         User,
     )
     from utils import current_user_role  # pyright: ignore[reportMissingImports]
@@ -1147,7 +1146,9 @@ def notification_preferences() -> ResponseReturnValue:
     if not user:
         abort(403)
 
-    tu = TenantUser.query.filter_by(user_id=user.id).first()
+    from utils import current_membership
+
+    tu = current_membership()
     tenant_id = tu.tenant_id if tu else None
     role = current_user_role()
 
