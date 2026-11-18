@@ -216,6 +216,16 @@ Conventional commits format (`feat:`, `fix:`, `chore:`, `refactor:`, etc.). Do n
 AI-tool attribution trailers (e.g. "Co-Authored-By: <AI tool>") to commit messages or PR
 descriptions — propose the message and let the human commit, per "Purpose" above.
 
+### Shipping and PR reviews
+When shipping has been authorised, monitor both CI and PR review comments. Green
+checks and automatic merge do not mean every review finding has been addressed:
+CodeQL notes and `COMMENTED` reviews can be non-blocking. Read all new review
+comments when checks finish and check again after merge, including the main-branch
+code-scanning result. Triage every finding; fix valid ones in atomic follow-up
+commits and verify the follow-up merges and the finding is resolved. Do not mark
+the increment done or leave known review findings behind when moving to another
+implementation increment.
+
 ### A few things to keep in mind
 - `app/static/vendor/` — managed by `install_vendor_assets.py`, not hand-edited.
 - Existing Alembic migrations — never alter a committed migration; always add a new one.

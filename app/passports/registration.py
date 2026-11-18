@@ -177,7 +177,7 @@ def verify(token: str, code: str) -> tuple[User, bool, str | None]:
     """Return account, creation flag and new-account proof; existing users must sign in."""
     _challenge, passport = pending(token)
     groups.lock_series(passport.series_id)
-    passport = groups.lock_passport(passport)
+    groups.lock_passport(passport)
     challenge, passport = pending(token)
     try:
         challenge = (
