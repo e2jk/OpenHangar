@@ -2448,6 +2448,11 @@ downgrades and show localised retrieval timestamps.
   Cross-year group totals must state their participant/edition scope; membership
   grants only the shared series-history access described above, never access to
   another edition's private evidence.
+- [x] Expiry-reminder increment: accepted participants of any existing role can
+  opt in, choose their warning period, follow an edition link and snooze the
+  current deadline. Daily checks revalidate membership/participation, skip inactive
+  editions and reuse daily email deduplication. Edition pages show expiry status.
+  Validate the restricted passport-only account integration with 41g.
 - [ ] Add an opt-in expiry reminder through the notification framework, with user
   preferences, capability visibility, deduplication and a clear edition link.
   Passport-only accounts use the same opt-in preferences; their form also shows

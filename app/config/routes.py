@@ -1160,9 +1160,14 @@ def notification_preferences() -> ResponseReturnValue:
         or user.is_maintenance
     )
 
+    from passports.reminders import has_participation
+
+    is_passport = tenant_id is not None and has_participation(tenant_id, user.id)
+
     def _user_has_cap(caps: list[str]) -> bool:
         return (
-            ("is_owner" in caps and is_owner)
+            ("is_passport" in caps and is_passport)
+            or ("is_owner" in caps and is_owner)
             or ("is_pilot" in caps and is_pilot)
             or ("is_maint" in caps and is_maint)
         )

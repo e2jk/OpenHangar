@@ -152,7 +152,7 @@ class TestParseNotificationTime:
 
 class TestNotificationTypeConstants:
     def test_all_has_23_types(self):
-        assert len(NotificationType.ALL) == 23
+        assert len(NotificationType.ALL) == 24
 
     def test_system_defaults_cover_all_types(self):
         for t in NotificationType.ALL:
