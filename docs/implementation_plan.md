@@ -2475,6 +2475,14 @@ downgrades and show localised retrieval timestamps.
   existing personal-across-organisations crew-slot policy; administration alone
   never grants visit credit.
 
+- [x] Authenticated-context foundation: server-held login records can bind an
+  existing account to an explicitly validated organisation. Roles, passport
+  access, notification preferences, relevant resource helpers and offline
+  identity use that context. Renewing credentials retains it; missing/inactive
+  memberships never fall back to another role. Normal logins prefer existing
+  full memberships, with active-tenant MFA policy enforced. Invitation hand-off
+  and its post-authentication revalidation remain to be wired below.
+
 - [ ] Owner creates one shareable invitation link bound to that specific group
   passport (and edition), suitable for posting in a WhatsApp group. Friends enrol
   themselves; the owner does not pre-create accounts or individual links. The

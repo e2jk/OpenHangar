@@ -24,6 +24,7 @@ class AuthorizationService:
         Pass aircraft_id=None to get the tenant-level mask (e.g. for list queries).
         """
         from models import (
+            Aircraft,
             PermissionBit,
             Role,
             TenantUser,
@@ -34,8 +35,12 @@ class AuthorizationService:
         )
 
         tu = TenantUser.query.filter_by(user_id=user_id, tenant_id=tenant_id).first()
-        if not tu:
+        if not tu or tu.access_scope != "full" or tu.role is None:
             return 0
+        if aircraft_id is not None:
+            aircraft = db.session.get(Aircraft, aircraft_id)
+            if aircraft is None or aircraft.tenant_id != tenant_id:
+                return 0
 
         role = tu.role
 
@@ -106,10 +111,21 @@ class AuthorizationService:
 
         When tenant_id is not supplied it is resolved from the user's TenantUser row.
         """
-        from models import PermissionBit, TenantUser
+        from models import PermissionBit, TenantUser, db
 
         if tenant_id is None:
-            tu = TenantUser.query.filter_by(user_id=user_id).first()
+            from flask import has_request_context
+            from utils import current_membership
+
+            if has_request_context():
+                actor = current_membership()
+                tu = (
+                    db.session.get(TenantUser, (user_id, actor.tenant_id))
+                    if actor
+                    else None
+                )
+            else:
+                tu = TenantUser.query.filter_by(user_id=user_id).first()
             if not tu:
                 return False
             tenant_id = tu.tenant_id

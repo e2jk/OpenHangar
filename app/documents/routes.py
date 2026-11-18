@@ -36,7 +36,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     PendingReconcile,
     Role,
     Tenant,
-    TenantUser,
     db,
 )
 from services import document_lifecycle as lifecycle  # pyright: ignore[reportMissingImports]
@@ -359,7 +358,7 @@ def _save_upload_canonical(
 
 
 def _current_role() -> Role | None:
-    tu = TenantUser.query.filter_by(user_id=session.get("user_id")).first()
+    tu = current_membership()
     return tu.role if tu else None
 
 

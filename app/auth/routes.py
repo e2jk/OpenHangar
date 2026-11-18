@@ -244,7 +244,7 @@ def _login_credentials() -> ResponseReturnValue:
         return redirect(url_for("auth.login", step="totp"))
 
     # If the tenant mandates TOTP and the user has none, redirect to enrolment.
-    tu = TenantUser.query.filter_by(user_id=user.id).first()
+    tu = auth_sessions.login_membership(user)
     if tu and tu.tenant and tu.tenant.require_totp:
         totp_secret = pyotp.random_base32()
         totp_uri = pyotp.TOTP(totp_secret).provisioning_uri(
@@ -961,7 +961,9 @@ def _profile_confirm_totp(user: User) -> ResponseReturnValue:
 
 
 def _profile_disable_totp(user: User) -> ResponseReturnValue:
-    tu = TenantUser.query.filter_by(user_id=user.id).first()
+    from utils import current_membership
+
+    tu = current_membership()
     if tu and tu.tenant and tu.tenant.require_totp:
         flash(
             _(

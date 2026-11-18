@@ -219,7 +219,7 @@ class TestRequireTotpSettingsToggle:
             assert tenant.require_totp is True
 
     def test_save_require_totp_false(self, app, client):
-        uid, tid = _make_tenant_and_user(app, require_totp=True)
+        uid, tid = _make_tenant_and_user(app, require_totp=True, with_totp=True)
         self._login(client, uid)
         client.post(
             "/config/profile",

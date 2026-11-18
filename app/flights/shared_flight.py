@@ -32,7 +32,6 @@ from models import (  # pyright: ignore[reportMissingImports]
     FlightCorrectionSuggestion,
     NotificationType,
     Role,
-    TenantUser,
     User,
     db,
 )
@@ -405,7 +404,10 @@ def pending_suggestions_by(
 
 
 def _tenant_of(user_id: int) -> int | None:
-    tu = TenantUser.query.filter_by(user_id=user_id).first()
+    from services.auth_sessions import login_membership
+
+    user = db.session.get(User, user_id) if user_id else None
+    tu = login_membership(user) if user else None
     return tu.tenant_id if tu else None
 
 

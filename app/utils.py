@@ -1412,11 +1412,18 @@ def current_membership() -> Any:
     user_id = session.get("user_id")
     if not user_id:
         return None
+    tenant_id = g.get("authenticated_tenant_id")
+    cache_key = (user_id, tenant_id)
     cached = g.get("_oh_membership")
-    if cached is not None and cached[0] == user_id:
+    if cached is not None and cached[0] == cache_key:
         return cached[1]
-    tu = TenantUser.query.filter_by(user_id=user_id).first()
-    g._oh_membership = (user_id, tu)
+    query = TenantUser.query.filter_by(user_id=user_id)
+    if tenant_id is not None:
+        query = query.filter_by(tenant_id=tenant_id)
+    tu = query.order_by(
+        (TenantUser.access_scope != "full").asc(), TenantUser.tenant_id
+    ).first()
+    g._oh_membership = (cache_key, tu)
     return tu
 
 
@@ -1555,7 +1562,7 @@ def tenant_pilots(tenant_id: int) -> list[tuple[int, str]]:
     users = (
         db.session.query(User)
         .join(TenantUser, TenantUser.user_id == User.id)
-        .filter(TenantUser.tenant_id == tenant_id)
+        .filter(TenantUser.tenant_id == tenant_id, TenantUser.access_scope == "full")
         .filter(User.is_active.is_(True))
         .filter(or_(TenantUser.role.in_(pilot_roles), User.is_pilot.is_(True)))
         .all()
@@ -1589,15 +1596,21 @@ def user_can_access_aircraft(aircraft_id: int) -> bool:
     UserAllAircraftAccess row (all-planes grant) or a per-aircraft
     UserAircraftAccess row.
     """
-    from models import Role, UserAircraftAccess, UserAllAircraftAccess
+    from models import Aircraft, Role, UserAircraftAccess, UserAllAircraftAccess, db
 
-    role = current_user_role()
+    tu = current_membership()
+    aircraft = db.session.get(Aircraft, aircraft_id)
+    if (
+        tu is None
+        or tu.access_scope != "full"
+        or aircraft is None
+        or aircraft.tenant_id != tu.tenant_id
+    ):
+        return False
+    role = tu.role
     if role in (Role.ADMIN, Role.OWNER):
         return True
-    uid = session.get("user_id")
-    if not uid:
-        return False
-    tu = current_membership()
+    uid = tu.user_id
     if (
         tu
         and UserAllAircraftAccess.query.filter_by(
@@ -1624,16 +1637,21 @@ def accessible_aircraft(tenant_id: int, include_archived: bool = False) -> Any:
     from models import Aircraft, Role, UserAircraftAccess, UserAllAircraftAccess
 
     base = Aircraft.query.filter_by(tenant_id=tenant_id).order_by(Aircraft.registration)
-    if not include_archived:
-        base = base.filter(Aircraft.archived_at.is_(None))
-    role = current_user_role()
-    if role in (Role.ADMIN, Role.OWNER):
-        return base
-    uid = session.get("user_id")
-    if not uid:
+    membership = current_membership()
+    if (
+        membership is None
+        or membership.access_scope != "full"
+        or membership.tenant_id != tenant_id
+    ):
         from sqlalchemy import false
 
         return base.filter(false())
+    if not include_archived:
+        base = base.filter(Aircraft.archived_at.is_(None))
+    role = membership.role
+    if role in (Role.ADMIN, Role.OWNER):
+        return base
+    uid = membership.user_id
     if UserAllAircraftAccess.query.filter_by(user_id=uid, tenant_id=tenant_id).first():
         return base
     ids = [

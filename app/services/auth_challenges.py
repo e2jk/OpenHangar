@@ -118,5 +118,7 @@ def consume(challenge: AuthChallenge) -> bool:
 
 
 def requires_totp(user: User) -> bool:
-    membership = TenantUser.query.filter_by(user_id=user.id).first()
+    from services.auth_sessions import login_membership
+
+    membership = login_membership(user)
     return bool(membership and membership.tenant.require_totp)
