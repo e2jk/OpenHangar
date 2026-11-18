@@ -219,8 +219,14 @@ To invite existing account holders, enable **Group visit sharing**, then open
 **Invite friends** on the passport and copy its invitation link. Friends choose a
 group display name and sharing consent, then sign in and join that edition. A
 signed-in friend simply selects **Join this passport**. You can replace, expire or
-disable the link without removing existing participants. New-account registration
-is still being developed. See [the passport guide](airfield_passports.md).
+disable the link without removing existing participants.
+
+A friend without an account selects **Create an account and join this passport**,
+chooses a password and verifies the code sent to their email. They then complete
+any required authenticator setup and open their own map. Their new account can
+record passport visits and manage its own security; it has no fleet role. The
+instance needs working SMTP settings for verification emails. See
+[the passport guide](airfield_passports.md).
 
 ![Where next? — unvisited airfields near the home airfield](screenshots/passport_where_next.png)
 

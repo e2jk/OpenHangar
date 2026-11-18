@@ -18,7 +18,7 @@ from models import (
     fits_column,
 )
 from sqlalchemy import text
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import NoResultFound, OperationalError
 
 from passports import editions
 from passports.eligibility import progress_many
@@ -57,6 +57,8 @@ def lock_passport(passport: Passport) -> Passport:
         )
     except OperationalError as exc:
         lock_failure(exc)
+    except NoResultFound as exc:
+        raise BuilderError(_("Group not found."), 404) from exc
     if locked.series_id != series_id:
         raise BuilderError(_("This passport changed. Open it again."), 409)
     return locked

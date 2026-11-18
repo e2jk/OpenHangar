@@ -483,5 +483,20 @@ policy applies even when their usual organisation does not require it. A signed-
 friend uses **Join this passport**; an existing participant goes straight to the map.
 Opening a preview never creates an account or participation. Invitation and sign-in
 responses avoid caching, indexing and referrer leakage, and URL tokens are redacted
-from access logs. New-account email verification and member controls follow in
+from access logs.
+
+Friends without an account choose **Create an account and join this passport**,
+enter their group display name, email and password, and verify a six-digit emailed
+code. It expires after ten minutes and allows five attempts; requesting another
+email is limited to once a minute per address across the instance. Account creation
+starts only after email proof. Participation follows any mandatory authenticator
+setup, then opens the invited edition automatically. Existing addresses must still
+sign in with their original credentials; verification never replaces their password
+or authenticator. A concurrently changed account must sign in again.
+
+Configure the instance’s existing SMTP settings to support registration. Sending
+failures explain how to retry without leaving a partial account. Demo mode does
+not send registration emails. Pending verification uses expiring database challenges
+with only opaque browser tokens, a keyed code digest and a password hash; neither
+the code nor password is stored in the browser session. Member controls follow in
 later increments.

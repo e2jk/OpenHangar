@@ -669,3 +669,94 @@ def test_invitation_mobile_login_join_and_no_js(
     page.get_by_role("link", name="Delete passport", exact=True).click()
     page.get_by_role("button", name="Delete passport", exact=True).click()
     page.wait_for_url(live_server_url + "/passports/")
+
+
+def test_invited_friend_registration_without_javascript(
+    passport_page: Page,
+    live_server_url: str,
+    live_app: Any,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from services import email_service
+
+    if live_app is None:
+        pytest.skip("requires in-process verification mail capture")
+
+    sent: list[str] = []
+
+    def send(
+        to: str,
+        subject: str,
+        text_body: str,
+        html_body: str | None = None,
+        locale: str = "en",
+    ) -> None:
+        sent.append(text_body)
+
+    monkeypatch.setattr(email_service, "send_email", send)
+    page = passport_page
+    title = "Verified guest " + uuid4().hex[:8]
+    page.goto(live_server_url + "/passports/new")
+    page.locator("#passport-title").fill(title)
+    page.locator("#passport-codes").fill("EBNM")
+    page.get_by_role("button", name="Review passport", exact=True).click()
+    page.get_by_role("button", name="Save passport", exact=True).click()
+    page.wait_for_url(re.compile(r"/passports/\d+/$"))
+    passport_url = page.url
+    page.get_by_role("link", name="Group visit sharing", exact=True).click()
+    page.locator("#group-name").fill("Signup organiser")
+    page.locator("#share-visits").check()
+    page.get_by_role("button", name="Save sharing consent", exact=True).click()
+    page.wait_for_url(re.compile(r"/passports/series/\d+/$"))
+    page.goto(passport_url)
+    page.get_by_role("link", name="Invite friends", exact=True).click()
+    page.get_by_role("button", name="Create a new invitation", exact=True).click()
+    invitation_url = page.locator("#passport-invite-url").input_value()
+    browser = page.context.browser
+    assert browser is not None
+    context = browser.new_context(
+        java_script_enabled=False,
+        viewport={"width": 390, "height": 844},
+        service_workers="block",
+    )
+    _block_external_network(context)
+    try:
+        guest = context.new_page()
+        guest.goto(invitation_url)
+        guest.get_by_role(
+            "link", name="Create an account and join this passport", exact=True
+        ).click()
+        guest.locator("#registration-name").fill("New basic friend")
+        guest.locator("#registration-email").fill(
+            "guest-" + uuid4().hex[:12] + "@example.test"
+        )
+        guest.locator("#registration-password").fill("Verified guest password 123!")
+        guest.locator("#registration-confirm").fill("Verified guest password 123!")
+        guest.locator("#registration-sharing").check()
+        guest.get_by_role("button", name="Send verification code", exact=True).click()
+        expect(
+            guest.get_by_role("heading", name="Verify your email", exact=True)
+        ).to_be_visible()
+        assert len(sent) == 1
+        match = re.search(r"\b[0-9]{6}\b", sent[0])
+        assert match
+        guest.locator("#registration-code").fill(match.group())
+        guest.get_by_role("button", name="Verify and continue", exact=True).click()
+        guest.wait_for_url(re.compile(r"/passports/\d+/"))
+        expect(guest.get_by_role("heading", name=title, exact=True)).to_be_visible()
+        expect(guest.get_by_role("link", name="Aircraft", exact=True)).to_have_count(0)
+        denied = guest.goto(live_server_url + "/aircraft/")
+        assert denied is not None and denied.status == 403
+        guest.goto(passport_url)
+        guest.locator("table tbody a").first.click()
+        guest.locator("#visit-date").fill("2026-01-01")
+        guest.get_by_role("button", name="Save visit", exact=True).click()
+        expect(
+            guest.get_by_role("button", name="Delete manual visit", exact=True)
+        ).to_be_visible()
+    finally:
+        context.close()
+    page.goto(passport_url)
+    page.get_by_role("link", name="Delete passport", exact=True).click()
+    page.get_by_role("button", name="Delete passport", exact=True).click()
+    page.wait_for_url(live_server_url + "/passports/")
