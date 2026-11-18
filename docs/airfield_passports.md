@@ -498,5 +498,30 @@ Configure the instance’s existing SMTP settings to support registration. Sendi
 failures explain how to retry without leaving a partial account. Demo mode does
 not send registration emails. Pending verification uses expiring database challenges
 with only opaque browser tokens, a keyed code digest and a password hash; neither
-the code nor password is stored in the browser session. Member controls follow in
-later increments.
+the code nor password is stored in the browser session.
+
+
+### Leaving and managing a group
+
+Open **Group members** from the passport or group editions page. Members see group
+display names, without email addresses or private flight and voucher details.
+**Leave edition** ends participation in the chosen edition and stops sharing its
+visits, while retaining access to the group’s authorised history. **Leave group**
+ends all access derived from that group. Neither action deletes private visit
+records or spends or resets personal vouchers. Returning requires accepting an
+active invitation again; another edition always needs its own acceptance.
+
+The group page offers available invitations for editions not currently joined.
+It reuses your account and group display name. The optional history view includes
+ended or archived group editions you skipped, including gaps between years you
+joined. It gives no retrospective participation, stamps or voucher allowance.
+Unjoined future editions and private linked passports stay outside that history.
+
+Owners can remove a member from one edition or the whole group, including its
+history. Reusing the shared invitation cannot bypass removal, even after deleting
+and recreating the account with the same email. **Allow rejoining** lifts the
+selected removal restriction; the friend must accept an invitation again before
+participation or visit sharing resumes. Separate edition restrictions remain in
+force. Group permissions never grant aircraft or club permissions. Ownership
+transfer is a separate upcoming control; owners cannot leave before transferring
+ownership.

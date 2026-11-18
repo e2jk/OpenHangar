@@ -2557,6 +2557,14 @@ downgrades and show localised retrieval timestamps.
   revocation/expiry after authentication/verification, including an in-flight join.
   Link replacement blocks new joins without removing existing participants. Explain
   that forwarding an active invitation lets its recipient join this passport.
+- [x] Member withdrawal and removal controls: leave one edition while retaining
+  parent group history, or leave the whole group. Owners can remove a member from
+  one edition or all group access. Persistent keyed-address restrictions survive
+  account recreation; reinstatement permits fresh acceptance without automatically
+  rejoining or sharing visits. Private evidence and individual voucher ledgers are
+  retained. Available edition invitations reuse the group alias and require explicit
+  acceptance. Optional history includes skipped middle editions as well as earlier
+  years, without retrospective participation or voucher credit.
 - [ ] Owner can remove members and transfer ownership to an accepting participant;
   participants can leave. Removal revokes passport access and cannot be bypassed
   by reusing the same shared invitation: require explicit owner reinstatement.

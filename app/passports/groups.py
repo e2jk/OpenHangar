@@ -191,19 +191,14 @@ def visible_editions(
             PassportParticipant.share_visits.is_(True),
         ).all()
     }
-    earliest = next(
-        (i for i, p in enumerate(passports) if p.id in accepted), len(passports)
-    )
     return [
         p
-        for i, p in enumerate(passports)
+        for p in passports
         if p.id in accepted
         or (
             include_history
-            and i < earliest
             and (
-                p.id in accepted
-                or p.archived_at is not None
+                p.archived_at is not None
                 or (p.end_date is not None and p.end_date < date.today())
             )
         )

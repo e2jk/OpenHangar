@@ -11,6 +11,7 @@
 {% if passport.series_id and (passport.is_group or passport.owner_user_id == session.get('user_id')) %}<a class="btn btn-ac-ghost my-2" href="{{ url_for('passports.series_detail', series_id=passport.series_id) }}">{{ _('Linked editions') }}</a>{% endif %}
 {% if can_manage %}<a class="btn btn-ac-ghost my-2" href="{{ url_for('passports.link_series', passport_id=passport.id) }}">{{ _('Link editions') }}</a> {% if not passport_only %}<a class="btn btn-ac-ghost my-2" href="{{ url_for('passports.next_edition', passport_id=passport.id) }}">{{ _('Create next edition') }}</a>{% endif %}{% endif %}
 {% if can_manage and passport.is_group %}<a class="btn btn-ac-ghost my-2" href="{{ url_for('passports.invitation_settings', passport_id=passport.id) }}">{{ _('Invite friends') }}</a>{% endif %}
+{% if passport.is_group %}<a class="btn btn-ac-ghost my-2" href="{{ url_for('passports.group_members', series_id=passport.series_id) }}">{{ _('Group members') }}</a>{% endif %}
 {% if can_manage or passport.is_group %}<a class="btn btn-ac-ghost my-2" href="{{ url_for('passports.group_settings', passport_id=passport.id) }}">{{ _('Group visit sharing') }}</a>{% endif %}
 {% if passport.archived_at %}<span class="badge bg-secondary">{{ _('Archived') }}</span>{% endif %}
 {% if passport.edition_label %}<p>{{ _('Edition label') }}: {{ passport.edition_label }}</p>{% endif %}

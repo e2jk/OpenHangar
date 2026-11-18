@@ -60,20 +60,20 @@ msgstr[1] "🎉 Het is vandaag %(n)s jaar geleden dat u uw PPL behaalde!"
 msgid "🎉 Today is the anniversary of your PPL!"
 msgstr "🎉 Vandaag is het de verjaardag van uw PPL!"
 
-#: app/init.py:1163
+#: app/init.py:1166
 #, python-format
 msgid "This upload is too large (maximum %(mb)s MB in total). Please upload the files in smaller batches."
 msgstr "Deze upload is te groot (maximaal %(mb)s MB in totaal). Upload de bestanden in kleinere delen."
 
-#: app/init.py:1190
+#: app/init.py:1193
 msgid "Some text entered is too long, so nothing was saved. Please shorten it and try again."
 msgstr "Een ingevoerde tekst is te lang, dus er is niets opgeslagen. Maak hem korter en probeer het opnieuw."
 
-#: app/flights/form_parsing.py:459 app/init.py:1195
+#: app/flights/form_parsing.py:459 app/init.py:1198
 msgid "A number entered is far too large, so nothing was saved. Please check the values and try again."
 msgstr "Een ingevoerd getal is veel te groot, dus er is niets opgeslagen. Controleer de waarden en probeer het opnieuw."
 
-#: app/init.py:1248
+#: app/init.py:1251
 msgid "The sign-in form had expired. Please sign in again."
 msgstr "Het aanmeldformulier was verlopen. Meld u opnieuw aan."
 
@@ -203,7 +203,7 @@ msgstr "Stel voor het reservefonds een bijdrage per uur óf per maand in, niet b
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Dit GPS-bestand bevat te veel punten om te importeren (meer dan %(n)s). Splits de opname op in meerdere bestanden."
 
-#: app/aircraft/routes.py:555 app/passports/routes.py:580
+#: app/aircraft/routes.py:555 app/passports/routes.py:585
 msgid "cruise speed"
 msgstr "kruissnelheid"
 
@@ -2209,9 +2209,10 @@ msgid "This group is being updated. Please try again."
 msgstr "Deze groep wordt bijgewerkt. Probeer het opnieuw."
 
 #: app/passports/groups.py:61 app/passports/groups.py:91
-#: app/passports/groups.py:123 app/passports/groups.py:221
+#: app/passports/groups.py:123 app/passports/groups.py:216
 #: app/passports/invitations.py:98 app/passports/invitations.py:289
-#: app/passports/series_routes.py:319
+#: app/passports/memberships.py:33 app/passports/memberships.py:41
+#: app/passports/series_routes.py:321
 msgid "Group not found."
 msgstr "Groep niet gevonden."
 
@@ -2233,7 +2234,7 @@ msgstr "Voer een weergavenaam voor de groep in van maximaal 128 tekens."
 msgid "Confirm sharing your eligible visit dates with this edition's participants."
 msgstr "Bevestig dat je de datums van je geldige bezoeken deelt met de deelnemers aan deze editie."
 
-#: app/passports/groups.py:349
+#: app/passports/groups.py:344
 msgid "Create a new edition to change the dates of a shared passport."
 msgstr "Maak een nieuwe editie om de datums van een gedeeld paspoort te wijzigen."
 
@@ -2277,11 +2278,11 @@ msgstr "Bekijk eerst een voorbeeld van de geïmporteerde lijst."
 msgid "The import provenance is invalid. Preview the source again."
 msgstr "De herkomstgegevens van de import zijn ongeldig. Bekijk de bron opnieuw."
 
-#: app/passports/invitation_routes.py:69
+#: app/passports/invitation_routes.py:76
 msgid "Choose an invitation action."
 msgstr "Kies een actie voor de uitnodiging."
 
-#: app/passports/invitation_routes.py:239
+#: app/passports/invitation_routes.py:256
 msgid "Your email is verified. Sign in with your existing account to join."
 msgstr "Uw e-mailadres is geverifieerd. Meld u aan met uw bestaande account om deel te nemen."
 
@@ -2319,7 +2320,8 @@ msgstr "Meld u aan met het account waarmee u zich hebt geregistreerd."
 msgid "Pilot access is required to create a passport."
 msgstr "Piloottoegang is vereist om een paspoort aan te maken."
 
-#: app/passports/management.py:64 app/passports/vouchers.py:143
+#: app/passports/management.py:64 app/passports/memberships.py:65
+#: app/passports/memberships.py:99 app/passports/vouchers.py:143
 msgid "Passport not found."
 msgstr "Paspoort niet gevonden."
 
@@ -2334,6 +2336,20 @@ msgstr "Voer een paspoortnaam in."
 #: app/passports/management.py:92
 msgid "The passport end date must not precede its start date."
 msgstr "De einddatum van het paspoort mag niet vóór de begindatum liggen."
+
+#: app/passports/memberships.py:46
+msgid "Only the group owner can manage other members."
+msgstr "Alleen de groepseigenaar kan andere leden beheren."
+
+#: app/passports/memberships.py:93 app/passports/memberships.py:115
+#: app/templates/passports/group_members.html:12
+msgid "Transfer group ownership before leaving."
+msgstr "Draag het groepseigendom over voordat u vertrekt."
+
+#: app/passports/memberships.py:122 app/passports/memberships.py:125
+#: app/passports/memberships.py:149
+msgid "Member not found."
+msgstr "Lid niet gevonden."
 
 #: app/passports/registration.py:74
 msgid "Enter a valid email address."
@@ -2409,77 +2425,93 @@ msgstr "Je paspoort %(title)s eindigt op %(date)s. Open de editie om je nog te b
 msgid "Open passport"
 msgstr "Paspoort openen"
 
-#: app/passports/routes.py:161
+#: app/passports/routes.py:166
 msgid "Small airfields"
 msgstr "Kleine vliegvelden"
 
-#: app/passports/routes.py:162
+#: app/passports/routes.py:167
 msgid "Medium airports"
 msgstr "Middelgrote luchthavens"
 
-#: app/passports/routes.py:163
+#: app/passports/routes.py:168
 msgid "Large airports"
 msgstr "Grote luchthavens"
 
-#: app/passports/routes.py:164
+#: app/passports/routes.py:169
 msgid "Heliports"
 msgstr "Helihavens"
 
-#: app/passports/routes.py:165
+#: app/passports/routes.py:170
 msgid "Seaplane bases"
 msgstr "Watervliegbases"
 
-#: app/passports/routes.py:166
+#: app/passports/routes.py:171
 msgid "Balloon ports"
 msgstr "Ballonhavens"
 
-#: app/passports/routes.py:167
+#: app/passports/routes.py:172
 msgid "Closed airfields"
 msgstr "Gesloten vliegvelden"
 
-#: app/passports/routes.py:276
+#: app/passports/routes.py:281
 msgid "Passport saved."
 msgstr "Paspoort opgeslagen."
 
-#: app/passports/routes.py:317
+#: app/passports/routes.py:322
 msgid "An airfield code conflicts with an existing identity. Review or remove that selection."
 msgstr "Een vliegveldcode conflicteert met een bestaande identiteit. Controleer of verwijder die selectie."
 
-#: app/passports/routes.py:380
+#: app/passports/routes.py:385
 msgid "Passport deleted."
 msgstr "Paspoort verwijderd."
 
-#: app/passports/routes.py:553
+#: app/passports/routes.py:558
 msgid "Choose a starting airfield from the search results."
 msgstr "Kies een vertrekveld uit de zoekresultaten."
 
-#: app/passports/routes.py:556
+#: app/passports/routes.py:561
 msgid "This starting airfield has no coordinates. Choose another."
 msgstr "Dit vertrekveld heeft geen coördinaten. Kies een ander veld."
 
-#: app/passports/routes.py:581
+#: app/passports/routes.py:586
 msgid "distance/time limit"
 msgstr "afstands-/tijdslimiet"
 
-#: app/passports/routes.py:582
+#: app/passports/routes.py:587
 msgid "usable fuel"
 msgstr "bruikbare brandstof"
 
-#: app/passports/routes.py:583
+#: app/passports/routes.py:588
 msgid "fuel flow"
 msgstr "brandstofverbruik"
 
-#: app/passports/routes.py:584
+#: app/passports/routes.py:589
 msgid "reserve minutes"
 msgstr "reserve in minuten"
 
-#: app/passports/routes.py:596
+#: app/passports/routes.py:601
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Voer een kruissnelheid in voor de tijdsmodus of gebruik de afstandsmodus."
 
-#: app/passports/routes.py:605
+#: app/passports/routes.py:610
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "Het theoretische bereik is onbekend. Voer bruikbare brandstof, verbruik, snelheid en een expliciete reserve in die positieve vliegtijd overlaten. Het afstands-/tijdfilter blijft van toepassing."
+
+#: app/passports/series_routes.py:356 app/passports/series_routes.py:359
+msgid "Choose a valid edition."
+msgstr "Kies een geldige editie."
+
+#: app/passports/series_routes.py:369
+msgid "Choose a member."
+msgstr "Kies een lid."
+
+#: app/passports/series_routes.py:376
+msgid "Choose a removal record."
+msgstr "Kies een verwijdering."
+
+#: app/passports/series_routes.py:379
+msgid "Choose a membership action."
+msgstr "Kies een lidmaatschapsactie."
 
 #: app/passports/source_fetch.py:47
 msgid "The source could not be fetched safely. Paste the airfield codes instead."
@@ -4094,7 +4126,7 @@ msgstr "Vlucht registreren"
 #: app/templates/passports/detail.html:6
 #: app/templates/passports/draft_error.html:3
 #: app/templates/passports/index.html:3 app/templates/passports/index.html:6
-#: app/templates/passports/series.html:5
+#: app/templates/passports/series.html:7
 msgid "Airfield passports"
 msgstr "Vliegveldpaspoorten"
 
@@ -4153,8 +4185,8 @@ msgstr "open-source vliegtuigbeheer"
 #: app/templates/maintenance/fleet.html:281
 #: app/templates/maintenance/fleet.html:341
 #: app/templates/maintenance/list.html:98
-#: app/templates/passports/detail.html:29
-#: app/templates/passports/series.html:15
+#: app/templates/passports/detail.html:30
+#: app/templates/passports/series.html:17
 #: app/templates/pilots/minimums_history.html:25
 #: app/templates/reservations/charge.html:34
 #: app/templates/reservations/detail.html:38
@@ -4451,7 +4483,7 @@ msgstr "Medische keuring"
 
 #: app/templates/config/renters_list.html:50 app/templates/dashboard.html:294
 #: app/templates/dashboard.html:312 app/templates/dashboard.html:410
-#: app/templates/dashboard.html:421 app/templates/passports/detail.html:20
+#: app/templates/dashboard.html:421 app/templates/passports/detail.html:21
 #: app/templates/passports/vouchers.html:12
 #: app/templates/reservations/fleet.html:111 app/templates/users/list.html:175
 msgid "Expired"
@@ -5585,6 +5617,7 @@ msgstr "Onderdelen"
 #: app/templates/aircraft/detail.html:341
 #: app/templates/aircraft/detail.html:357
 #: app/templates/flights/logbook_component.html:81
+#: app/templates/passports/group_members.html:7
 msgid "Removed"
 msgstr "Verwijderd"
 
@@ -6532,8 +6565,8 @@ msgid_plural "%(n)s components"
 msgstr[0] "één onderdeel"
 msgstr[1] "%(n)s onderdelen"
 
-#: app/templates/aircraft/list.html:73 app/templates/passports/detail.html:15
-#: app/templates/passports/series.html:7 app/templates/passports/series.html:17
+#: app/templates/aircraft/list.html:73 app/templates/passports/detail.html:16
+#: app/templates/passports/series.html:9 app/templates/passports/series.html:19
 #: app/templates/passports/vouchers.html:10
 msgid "Archived"
 msgstr "Gearchiveerd"
@@ -7062,11 +7095,11 @@ msgstr "Onderdeelnummer controleren"
 #: app/templates/airworthiness/adsb_form.html:39
 #: app/templates/airworthiness/adsb_print.html:28
 #: app/templates/passports/builder.html:49
-#: app/templates/passports/detail.html:24
-#: app/templates/passports/detail.html:27
-#: app/templates/passports/detail.html:29
-#: app/templates/passports/series.html:13
-#: app/templates/passports/series.html:15 app/templates/passports/target.html:9
+#: app/templates/passports/detail.html:25
+#: app/templates/passports/detail.html:28
+#: app/templates/passports/detail.html:30
+#: app/templates/passports/series.html:15
+#: app/templates/passports/series.html:17 app/templates/passports/target.html:9
 msgid "Closed"
 msgstr "Afgesloten"
 
@@ -7256,7 +7289,7 @@ msgstr[1] "%(n)s documenten totaal"
 #: app/templates/airworthiness/dashboard.html:68
 #: app/templates/documents/list.html:102 app/templates/documents/list.html:104
 #: app/templates/flights/list.html:105 app/templates/flights/list.html:107
-#: app/templates/passports/detail.html:24 app/templates/pilots/logbook.html:142
+#: app/templates/passports/detail.html:25 app/templates/pilots/logbook.html:142
 #: app/templates/pilots/logbook.html:144 app/templates/users/list.html:76
 msgid "All"
 msgstr "Alle"
@@ -8226,6 +8259,7 @@ msgstr "Drempelwaarde"
 
 #: app/templates/config/notifications.html:170
 #: app/templates/config/tenant_list.html:47
+#: app/templates/passports/group_members.html:7
 msgid "Active"
 msgstr "Actief"
 
@@ -9892,8 +9926,8 @@ msgid "This is a different flight — import it as a new entry"
 msgstr "Dit is een andere vlucht — als nieuwe vermelding importeren"
 
 #: app/templates/flights/airframe_import_review.html:150
-#: app/templates/passports/detail.html:25
-#: app/templates/passports/series.html:10
+#: app/templates/passports/detail.html:26
+#: app/templates/passports/series.html:12
 #: app/templates/pilots/import_review.html:158
 #: app/templates/reports/utilization.html:54
 msgid "Apply"
@@ -11545,7 +11579,7 @@ msgid "Since"
 msgstr "Sinds"
 
 #: app/templates/partials/_list_filters.html:25
-#: app/templates/passports/detail.html:20
+#: app/templates/passports/detail.html:21
 msgid "Until"
 msgstr "Tot en met"
 
@@ -11627,7 +11661,7 @@ msgid "Copy voucher quantities and personal/shared allocation settings. Validity
 msgstr "Kopieer de aantallen bonnen en de persoonlijke of gedeelde toewijzingen. De geldigheid volgt de nieuwe editiedatums; gebruikte bonnen en deelnemers worden nooit gekopieerd."
 
 #: app/templates/passports/builder.html:20
-#: app/templates/passports/detail.html:16
+#: app/templates/passports/detail.html:17
 #: app/templates/passports/next_edition.html:9
 msgid "Edition label"
 msgstr "Editienaam"
@@ -11681,7 +11715,7 @@ msgid "Preview source import"
 msgstr "Bronimport bekijken"
 
 #: app/templates/passports/builder.html:33
-#: app/templates/passports/detail.html:17
+#: app/templates/passports/detail.html:18
 #: app/templates/passports/import_review.html:8
 #: app/templates/passports/next_edition.html:5
 #: app/templates/passports/review.html:8
@@ -11689,7 +11723,7 @@ msgid "Source"
 msgstr "Bron"
 
 #: app/templates/passports/builder.html:33
-#: app/templates/passports/detail.html:17
+#: app/templates/passports/detail.html:18
 #: app/templates/passports/import_review.html:8
 #: app/templates/passports/review.html:8
 msgid "Retrieved"
@@ -11832,8 +11866,8 @@ msgid "Selected airfields"
 msgstr "Geselecteerde vliegvelden"
 
 #: app/templates/passports/builder.html:62
-#: app/templates/passports/detail.html:29
-#: app/templates/passports/series.html:15
+#: app/templates/passports/detail.html:30
+#: app/templates/passports/series.html:17
 #: app/templates/passports/vouchers.html:12
 #: app/templates/passports/vouchers.html:33
 #: app/templates/passports/vouchers.html:40
@@ -11851,8 +11885,8 @@ msgid "Manual classifications are shared with other passports in this organisati
 msgstr "Handmatige classificaties worden gedeeld met andere paspoorten in deze organisatie."
 
 #: app/templates/passports/builder.html:63
-#: app/templates/passports/detail.html:30
-#: app/templates/passports/series.html:15
+#: app/templates/passports/detail.html:31
+#: app/templates/passports/series.html:17
 msgid "No airfields selected yet."
 msgstr "Nog geen vliegvelden geselecteerd."
 
@@ -11928,111 +11962,175 @@ msgid "Invite friends"
 msgstr "Vrienden uitnodigen"
 
 #: app/templates/passports/detail.html:14
+#: app/templates/passports/group_members.html:3
+#: app/templates/passports/group_members.html:4
+#: app/templates/passports/index.html:10 app/templates/passports/series.html:6
+msgid "Group members"
+msgstr "Groepsleden"
+
+#: app/templates/passports/detail.html:15
 #: app/templates/passports/group_settings.html:3
 #: app/templates/passports/group_settings.html:4
 msgid "Group visit sharing"
 msgstr "Bezoeken delen met de groep"
 
-#: app/templates/passports/detail.html:19
+#: app/templates/passports/detail.html:20
 #: app/templates/reports/utilization.html:44
 msgid "From"
 msgstr "Van"
 
-#: app/templates/passports/detail.html:20
+#: app/templates/passports/detail.html:21
 msgid "Not expired"
 msgstr "Niet verlopen"
 
-#: app/templates/passports/detail.html:20
+#: app/templates/passports/detail.html:21
 msgid "Manage expiry reminders"
 msgstr "Herinneringen voor de einddatum beheren"
 
-#: app/templates/passports/detail.html:21
-#: app/templates/passports/series.html:17
+#: app/templates/passports/detail.html:22
+#: app/templates/passports/series.html:19
 msgid "Your progress"
 msgstr "Je voortgang"
 
-#: app/templates/passports/detail.html:21
+#: app/templates/passports/detail.html:22
 msgid "Original targets"
 msgstr "Oorspronkelijke doelen"
 
-#: app/templates/passports/detail.html:21
+#: app/templates/passports/detail.html:22
 msgid "Closed unvisited targets excluded"
 msgstr "Uitgesloten gesloten, onbezochte velden"
 
-#: app/templates/passports/detail.html:22
+#: app/templates/passports/detail.html:23
 msgid "No achievable targets yet."
 msgstr "Nog geen haalbare doelen."
 
-#: app/templates/passports/detail.html:22
+#: app/templates/passports/detail.html:23
 msgid "Passport complete!"
 msgstr "Paspoort voltooid!"
 
-#: app/templates/passports/detail.html:24
+#: app/templates/passports/detail.html:25
 msgid "Show airfields"
 msgstr "Toon vliegvelden"
 
-#: app/templates/passports/detail.html:24
-#: app/templates/passports/detail.html:27
-#: app/templates/passports/detail.html:29
-#: app/templates/passports/series.html:13
-#: app/templates/passports/series.html:15 app/templates/passports/target.html:9
+#: app/templates/passports/detail.html:25
+#: app/templates/passports/detail.html:28
+#: app/templates/passports/detail.html:30
+#: app/templates/passports/series.html:15
+#: app/templates/passports/series.html:17 app/templates/passports/target.html:9
 msgid "Visited"
 msgstr "Bezocht"
 
-#: app/templates/passports/detail.html:24
-#: app/templates/passports/detail.html:27
-#: app/templates/passports/detail.html:29
-#: app/templates/passports/series.html:13
-#: app/templates/passports/series.html:15 app/templates/passports/target.html:9
+#: app/templates/passports/detail.html:25
+#: app/templates/passports/detail.html:28
+#: app/templates/passports/detail.html:30
+#: app/templates/passports/series.html:15
+#: app/templates/passports/series.html:17 app/templates/passports/target.html:9
 msgid "Not visited"
 msgstr "Niet bezocht"
 
-#: app/templates/passports/detail.html:25
-#: app/templates/passports/series.html:10
+#: app/templates/passports/detail.html:26
+#: app/templates/passports/series.html:12
 msgid "Show visit frequency"
 msgstr "Toon bezoekfrequentie"
 
-#: app/templates/passports/detail.html:26
+#: app/templates/passports/detail.html:27
 msgid "Counts show your recorded full-stop visits in this passport. Repeat-visit data may be incomplete."
 msgstr "De aantallen tonen je vastgelegde bezoeken met een volledige stop binnen dit paspoort. Herhaalbezoeken kunnen onvolledig zijn."
 
-#: app/templates/passports/detail.html:27
-#: app/templates/passports/detail.html:29
-#: app/templates/passports/series.html:13
-#: app/templates/passports/series.html:15 app/templates/passports/target.html:9
+#: app/templates/passports/detail.html:28
+#: app/templates/passports/detail.html:30
+#: app/templates/passports/series.html:15
+#: app/templates/passports/series.html:17 app/templates/passports/target.html:9
 msgid "Recorded visits"
 msgstr "Vastgelegde bezoeken"
 
-#: app/templates/passports/detail.html:27
-#: app/templates/passports/series.html:13
+#: app/templates/passports/detail.html:28
+#: app/templates/passports/series.html:15
 msgid "Passport visit map"
 msgstr "Bezoekkaart van het paspoort"
 
-#: app/templates/passports/detail.html:28
+#: app/templates/passports/detail.html:29
 msgid "Blue: visited by you. Grey: not visited. Dashed outline: closed."
 msgstr "Blauw: door jou bezocht. Grijs: niet bezocht. Onderbroken rand: gesloten."
 
-#: app/templates/passports/detail.html:28
+#: app/templates/passports/detail.html:29
 msgid "Marker radius: 6 px for no visits, 8 px for one, increasing to at most 18 px for frequent visits. Exact counts are in the list and map popups."
 msgstr "Markeerstraal: 6 px zonder bezoeken, 8 px bij één bezoek, oplopend tot maximaal 18 px bij veel bezoeken. Exacte aantallen staan in de lijst en kaartpop-ups."
 
-#: app/templates/passports/detail.html:29
+#: app/templates/passports/detail.html:30
 #: app/templates/passports/target.html:10
 msgid "First visit"
 msgstr "Eerste bezoek"
 
-#: app/templates/passports/detail.html:29
-#: app/templates/passports/series.html:15
+#: app/templates/passports/detail.html:30
+#: app/templates/passports/series.html:17
 msgid "No coordinates — shown in the list only."
 msgstr "Geen coördinaten — alleen in de lijst getoond."
 
-#: app/templates/passports/detail.html:30
+#: app/templates/passports/detail.html:31
 msgid "No airfields match this view."
 msgstr "Geen vliegvelden komen overeen met deze weergave."
 
 #: app/templates/passports/draft_error.html:7
 msgid "Start again"
 msgstr "Opnieuw beginnen"
+
+#: app/templates/passports/group_members.html:6
+msgid "Leaving one edition keeps your group history access. Leaving the group ends all group-derived access. Your private visits and voucher records are retained; leaving does not spend or reset vouchers."
+msgstr "Als u één editie verlaat, behoudt u toegang tot de groepsgeschiedenis. Als u de groep verlaat, vervalt alle toegang via de groep. Uw privébezoeken en voucherregistraties blijven bewaard; vertrekken verbruikt of herstelt geen vouchers."
+
+#: app/templates/passports/group_members.html:7
+msgid "Group owner"
+msgstr "Groepseigenaar"
+
+#: app/templates/passports/group_members.html:7
+msgid "Left group"
+msgstr "Groep verlaten"
+
+#: app/templates/passports/group_members.html:8
+msgid "Removal scope"
+msgstr "Bereik van verwijdering"
+
+#: app/templates/passports/group_members.html:8
+#: app/templates/passports/group_members.html:13
+msgid "Whole group, including history"
+msgstr "Hele groep, inclusief geschiedenis"
+
+#: app/templates/passports/group_members.html:8
+msgid "Remove member"
+msgstr "Lid verwijderen"
+
+#: app/templates/passports/group_members.html:10
+msgid "Leave one edition"
+msgstr "Eén editie verlaten"
+
+#: app/templates/passports/group_members.html:10
+msgid "Leave edition"
+msgstr "Editie verlaten"
+
+#: app/templates/passports/group_members.html:11
+msgid "Leave group"
+msgstr "Groep verlaten"
+
+#: app/templates/passports/group_members.html:13
+msgid "Removed members"
+msgstr "Verwijderde leden"
+
+#: app/templates/passports/group_members.html:13
+msgid "Reinstatement allows a fresh invitation acceptance. It does not silently rejoin editions or share old visits again."
+msgstr "Herstel maakt het mogelijk opnieuw een uitnodiging te accepteren. Het schrijft niemand automatisch opnieuw in voor edities en deelt eerdere bezoeken niet opnieuw."
+
+#: app/templates/passports/group_members.html:14
+msgid "Allow rejoining"
+msgstr "Opnieuw deelnemen toestaan"
+
+#: app/templates/passports/group_members.html:14
+msgid "No removed members."
+msgstr "Geen verwijderde leden."
+
+#: app/templates/passports/group_members.html:15
+msgid "Back to editions"
+msgstr "Terug naar edities"
 
 #: app/templates/passports/group_settings.html:6
 msgid "Share eligible airfield visits with this edition’s participants. They can see your group display name, airfields and visit dates. Private notes, flights, aircraft and voucher records stay private. Photos are not shared by this consent."
@@ -12110,6 +12208,10 @@ msgstr "Paspoort aanmaken"
 #: app/templates/passports/index.html:9
 msgid "No passports yet."
 msgstr "Nog geen paspoorten."
+
+#: app/templates/passports/index.html:10
+msgid "Groups and edition history"
+msgstr "Groepen en editiegeschiedenis"
 
 #: app/templates/passports/invitation_settings.html:7
 msgid "Send this edition’s invitation to your friends. Each person signs in with their own account and gets their own map and vouchers. Forwarding an active link lets its recipient join; it never signs them in as you."
@@ -12274,101 +12376,109 @@ msgstr "Terug naar de selectie"
 msgid "Save passport"
 msgstr "Paspoort opslaan"
 
-#: app/templates/passports/series.html:6
+#: app/templates/passports/series.html:5
+msgid "Join another edition"
+msgstr "Aan een andere editie deelnemen"
+
+#: app/templates/passports/series.html:5
+msgid "You are a group member, but each edition needs its own acceptance. Joining keeps your existing account and does not enrol you in other editions."
+msgstr "U bent groepslid, maar elke editie vereist afzonderlijke instemming. U behoudt uw bestaande account en wordt niet ingeschreven voor andere edities."
+
+#: app/templates/passports/series.html:8
 msgid "Current edition"
 msgstr "Huidige editie"
 
-#: app/templates/passports/series.html:6
+#: app/templates/passports/series.html:8
 msgid "No participating edition is currently active. Choose an edition below to explore its history."
 msgstr "Er is momenteel geen actieve editie waaraan u deelneemt. Kies hieronder een editie om de geschiedenis te bekijken."
 
-#: app/templates/passports/series.html:7 app/templates/passports/series.html:17
+#: app/templates/passports/series.html:9 app/templates/passports/series.html:19
 msgid "Edition"
 msgstr "Editie"
 
-#: app/templates/passports/series.html:7
+#: app/templates/passports/series.html:9
 msgid "All editions"
 msgstr "Alle edities"
 
-#: app/templates/passports/series.html:8
+#: app/templates/passports/series.html:10
 msgid "Include earlier editions I did not participate in"
 msgstr "Eerdere edities waaraan ik niet deelnam opnemen"
 
-#: app/templates/passports/series.html:9
+#: app/templates/passports/series.html:11
 msgid "Marker edition"
 msgstr "Editie van de markeringen"
 
-#: app/templates/passports/series.html:9
+#: app/templates/passports/series.html:11
 msgid "Newest visits"
 msgstr "Nieuwste bezoeken"
 
-#: app/templates/passports/series.html:9
+#: app/templates/passports/series.html:11
 msgid "Oldest visits"
 msgstr "Oudste bezoeken"
 
-#: app/templates/passports/series.html:11
+#: app/templates/passports/series.html:13
 msgid "Open this edition"
 msgstr "Deze editie openen"
 
-#: app/templates/passports/series.html:12
+#: app/templates/passports/series.html:14
 msgid "History scope: participating editions and earlier read-only editions."
 msgstr "Geschiedenis: deelnemende edities en eerdere edities die alleen kunnen worden bekeken."
 
-#: app/templates/passports/series.html:12
+#: app/templates/passports/series.html:14
 msgid "History scope: editions I participated in."
 msgstr "Geschiedenis: edities waaraan ik deelnam."
 
-#: app/templates/passports/series.html:12
+#: app/templates/passports/series.html:14
 msgid "Strong outline: visited by you. Medium outline: visited by friends only. Muted: nobody visited. History access never grants stamps or vouchers in an edition you did not join."
 msgstr "Dikke rand: door jou bezocht. Middeldikke rand: alleen door vrienden bezocht. Gedempt: door niemand bezocht. Toegang tot de geschiedenis geeft nooit stempels of vouchers in een editie waaraan je niet deelnam."
 
-#: app/templates/passports/series.html:12
+#: app/templates/passports/series.html:14
 msgid "Only your accepted editions and your own recorded visits are shown. A historical stamp does not check off the current edition. Frequency counts each visit once across overlapping editions."
 msgstr "Alleen uw geaccepteerde edities en uw eigen vastgelegde bezoeken worden getoond. Een historische stempel vinkt de huidige editie niet af. Elk bezoek telt eenmaal voor de frequentie bij overlappende edities."
 
-#: app/templates/passports/series.html:13
 #: app/templates/passports/series.html:15
+#: app/templates/passports/series.html:17
 msgid "Visited by friends"
 msgstr "Bezocht door vrienden"
 
-#: app/templates/passports/series.html:13
 #: app/templates/passports/series.html:15
+#: app/templates/passports/series.html:17
 msgid "Not in the current edition"
 msgstr "Niet in de huidige editie"
 
-#: app/templates/passports/series.html:14
+#: app/templates/passports/series.html:16
 msgid "Edition colours indicate visits, never unvisited targets. The edition names and exact visit counts remain visible in the list and popups."
 msgstr "Editiekleuren geven bezoeken aan, nooit onbezochte doelen. De editienamen en exacte aantallen bezoeken blijven zichtbaar in de lijst en pop-ups."
 
-#: app/templates/passports/series.html:15
+#: app/templates/passports/series.html:17
 msgid "Editions"
 msgstr "Edities"
 
-#: app/templates/passports/series.html:15
+#: app/templates/passports/series.html:17
 msgid "Visited by you"
 msgstr "Door jou bezocht"
 
-#: app/templates/passports/series.html:16
+#: app/templates/passports/series.html:18
 msgid "Compare editions"
 msgstr "Edities vergelijken"
 
-#: app/templates/passports/series.html:16
+#: app/templates/passports/series.html:18
 msgid "Target changes are compared with the preceding edition in this series. Completion is calculated independently for each edition."
 msgstr "Doelwijzigingen worden vergeleken met de voorgaande editie in deze reeks. De voortgang wordt voor elke editie onafhankelijk berekend."
 
-#: app/templates/passports/series.html:17
+#: app/templates/passports/series.html:19
 msgid "Added targets"
 msgstr "Toegevoegde doelen"
 
-#: app/templates/passports/series.html:17
+#: app/templates/passports/series.html:19
 msgid "Removed targets"
 msgstr "Verwijderde doelen"
 
-#: app/templates/passports/series.html:17
+#: app/templates/passports/series.html:19
 msgid "Read-only history; not a participant"
 msgstr "Geschiedenis alleen bekijken; geen deelnemer"
 
-#: app/templates/passports/series.html:17
+#: app/templates/passports/series.html:19
 msgid "Not a participant"
 msgstr "Geen deelnemer"
 

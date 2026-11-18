@@ -15,11 +15,18 @@ from flask import (
 )
 from flask.typing import ResponseReturnValue
 from flask_babel import gettext as _
-from models import Passport, PassportInvitation, PassportParticipant, User, db
+from models import (
+    Passport,
+    PassportInvitation,
+    PassportParticipant,
+    PassportSeries,
+    User,
+    db,
+)
 from services import auth_challenges, auth_sessions
 from utils import current_membership, login_required
 
-from passports import invitations, passports_bp, registration, tokens
+from passports import groups, invitations, passports_bp, registration, tokens
 from passports.management import BuilderError
 
 
@@ -160,10 +167,20 @@ def join_passport(token: str) -> ResponseReturnValue:
         except BuilderError as exc:
             db.session.rollback()
             error, status = str(exc), exc.status
+    default_name = ""
+    series = (
+        db.session.get(PassportSeries, passport.series_id)
+        if passport.series_id
+        else None
+    )
+    member = groups.membership(series, user.id) if user and series is not None else None
+    if member is not None:
+        default_name = member.display_name
     return render_template(
         "passports/join.html",
         passport=passport,
         signed_in=user is not None,
+        default_group_name=default_name,
         error=error,
     ), status
 

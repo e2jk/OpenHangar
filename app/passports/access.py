@@ -3,7 +3,13 @@
 from typing import Any
 
 from flask import abort, session
-from models import Passport, PassportParticipant, PassportSeriesMember, db
+from models import (
+    Passport,
+    PassportParticipant,
+    PassportSeries,
+    PassportSeriesMember,
+    db,
+)
 from utils import current_membership
 
 
@@ -38,3 +44,20 @@ def require_passport(passport_id: int) -> Passport:
     if passport is None:
         abort(404)
     return passport
+
+
+def accessible_group_series() -> Any:
+    membership = current_membership()
+    uid = session.get("user_id")
+    if membership is None or uid is None:
+        return PassportSeries.query.filter(db.false())
+    return PassportSeries.query.join(
+        PassportSeriesMember, PassportSeriesMember.series_id == PassportSeries.id
+    ).filter(
+        PassportSeries.tenant_id == membership.tenant_id,
+        PassportSeries.is_group.is_(True),
+        PassportSeriesMember.user_id == uid,
+        PassportSeriesMember.tenant_id == membership.tenant_id,
+        PassportSeriesMember.is_active.is_(True),
+        PassportSeriesMember.blocked.is_(False),
+    )

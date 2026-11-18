@@ -43,7 +43,11 @@ from passports import (
     series_routes,  # Register linked-edition views.
     voucher_routes,  # Register private voucher accounting.
 )
-from passports.access import accessible_passports, require_passport
+from passports.access import (
+    accessible_group_series,
+    accessible_passports,
+    require_passport,
+)
 from passports.catalogue import AirfieldConflict, catalogue_choices
 from passports.drafts import (
     MAX_PAYLOAD_BYTES,
@@ -78,6 +82,7 @@ def index() -> ResponseReturnValue:
     return render_template(
         "passports/index.html",
         passports=passports,
+        group_series=accessible_group_series().order_by("title", "id").all(),
         summaries=progress_many(passports, session["user_id"]),
     )
 

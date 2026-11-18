@@ -2,6 +2,7 @@
 
 import copy
 
+from extensions import _rate_limiting_disabled, limiter
 from flask import abort, redirect, render_template, request, session, url_for
 from flask.typing import ResponseReturnValue
 from flask_babel import gettext as _
@@ -14,7 +15,7 @@ from models import (
 )
 from utils import current_membership, db_id, login_required
 
-from passports import editions, groups, passports_bp
+from passports import editions, groups, memberships, passports_bp
 from passports.drafts import new_draft, save_draft
 from passports.management import (
     METADATA_FIELDS,
@@ -258,6 +259,7 @@ def _group_series(series: PassportSeries, user_id: int) -> ResponseReturnValue:
             "passports/series.html",
             series=series,
             group_view=True,
+            join_offers=memberships.joinable_editions(series, user_id),
             include_history=include_history,
             participating=accepted,
             passports=passports,
@@ -329,4 +331,70 @@ def group_settings(passport_id: int) -> ResponseReturnValue:
         passport=passport,
         participant=participant,
         error=error,
+    ), status
+
+
+@passports_bp.route("/series/<int:series_id>/members", methods=["GET", "POST"])
+@login_required
+@limiter.limit("30 per minute", methods=["POST"], exempt_when=_rate_limiting_disabled)
+def group_members(series_id: int) -> ResponseReturnValue:
+    tenant_id, user_id = _scope()
+    series = PassportSeries.query.filter_by(
+        id=series_id, tenant_id=tenant_id, is_group=True
+    ).first_or_404()
+    try:
+        view = memberships.roster(series, user_id)
+    except BuilderError as exc:
+        return abort(exc.status)
+    error, status = None, 200
+    if request.method == "POST":
+        try:
+            action = request.form.get("action")
+            raw_passport = request.form.get("passport_id", "")
+            passport_id = request.form.get("passport_id", type=db_id)
+            if raw_passport and passport_id is None:
+                raise BuilderError(_("Choose a valid edition."))
+            if action in {"leave-edition", "leave-group"}:
+                if action == "leave-edition" and passport_id is None:
+                    raise BuilderError(_("Choose a valid edition."))
+                memberships.leave(
+                    tenant_id,
+                    user_id,
+                    series.id,
+                    passport_id=passport_id if action == "leave-edition" else None,
+                )
+            elif action == "remove":
+                target_id = request.form.get("user_id", type=db_id)
+                if target_id is None:
+                    raise BuilderError(_("Choose a member."))
+                memberships.remove(
+                    tenant_id, user_id, series.id, target_id, passport_id=passport_id
+                )
+            elif action == "reinstate":
+                block_id = request.form.get("block_id", type=db_id)
+                if block_id is None:
+                    raise BuilderError(_("Choose a removal record."))
+                memberships.reinstate(tenant_id, user_id, series.id, block_id)
+            else:
+                raise BuilderError(_("Choose a membership action."))
+            db.session.commit()
+            return redirect(
+                url_for("passports.index")
+                if action.startswith("leave-")
+                else url_for("passports.group_members", series_id=series.id)
+            )
+        except BuilderError as exc:
+            db.session.rollback()
+            error, status = str(exc), exc.status
+            series = PassportSeries.query.filter_by(
+                id=series_id, tenant_id=tenant_id, is_group=True
+            ).first()
+            if series is None:
+                return abort(404)
+            try:
+                view = memberships.roster(series, user_id)
+            except BuilderError as lost_access:
+                return abort(lost_access.status)
+    return render_template(
+        "passports/group_members.html", series=series, view=view, error=error
     ), status
