@@ -555,3 +555,30 @@ After a transfer, **Manage group editions** on the members page includes edition
 the new owner has not joined. They can manage those invitations and explicitly
 accept participation separately. The passport list links only to joined group
 maps; ownership alone never silently grants stamps or voucher allowances.
+
+### Group progress and filters
+
+A shared edition's page adds **Group progress**: how many airfields have been
+visited by anyone and by everyone, and a leaderboard of each participant's
+airfields and coverage. Tied participants share a rank and the next rank skips
+(1, 1, 3); ties are listed alphabetically.
+
+Everyone is measured against one common set of airfields: every open target,
+plus each closed target that at least one participant stamped. A closure therefore
+never penalises the people who got there in time, and a closed field nobody
+visited drops out for everyone; the page says how many were left out. With
+nothing achievable, or nobody sharing, there is no percentage.
+
+The figures count the participants sharing their visits in that edition. Joining
+through an invitation always includes that consent, so in practice this is every
+friend who joined; the only exception is an owner who turned a personal passport
+into a group without confirming sharing yet. Counting people who haven't agreed
+to share would reveal their progress through the totals. Figures are calculated
+live: leaving, removal or a changed flight shows up straight away, with no
+archived snapshot. They are counts only: no flight, note or aircraft detail.
+
+**Show airfields** gains "Visited by anyone", "Visited by everyone" and "Not
+visited by anyone", and **Visited by participant** narrows the map and list to
+one person's airfields. Filtering never changes who "you" are: marker styles and
+your own progress still describe you. Participants are identified in the address
+by their position in the list, never by an account ID.

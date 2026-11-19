@@ -2645,12 +2645,17 @@ downgrades and show localised retrieval timestamps.
   A participant filter does not silently change who "you" refers to. Public viewers
   without a participant identity get aggregate visited/unvisited styling (41h),
   never an assumed member identity or access to private visit evidence.
-- [ ] Shared map/stats: participant filter, visited by anyone/everyone, per-pilot
+- [x] Shared map/stats: participant filter, visited by anyone/everyone, per-pilot
   coverage and leaderboard with tied ranks. Use a common group denominator of open
   targets plus closed targets stamped by any active participant; explain closure
   adjustments. "Everyone" means all active accepted participants (including passport-only accounts);
   empty groups have no percentage. Removal changes live aggregates, not an archived
   snapshot. Ownership alone never grants access to underlying flights.
+  Delivered as **Group progress** on a shared edition (`groups.edition_stats`):
+  "everyone" counts the active accepted participants sharing visits — every
+  invitation join consents, passport-only accounts included; an owner who has
+  not yet confirmed sharing is left out so totals never reveal unshared progress.
+  Filters are server-side, keyed by list position rather than account IDs.
 
 ### 41h — Public view and exports
 

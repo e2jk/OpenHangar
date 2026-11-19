@@ -250,11 +250,18 @@ def shared_progress(
     by_user: dict[int, list[Passport]] = {}
     names: dict[tuple[int, int], str] = {}
     p_by_id = {p.id: p for p in passports}
+    # Who shares visits in each edition, and which targets each of them has
+    # visited: the basis of group statistics, keyed by user server-side only.
+    roster: dict[int, dict[int, str]] = {p.id: {} for p in passports}
+    visited_by: dict[int, dict[int, set[int]]] = {p.id: {} for p in passports}
     for participant in participants:
-        if participant.user_id == user_id or (
-            participant.passport_id not in accepted and not participant.share_history
-        ):
+        if participant.user_id == user_id:
+            if participant.passport_id in accepted:
+                roster[participant.passport_id][user_id] = participant.display_name
             continue
+        if participant.passport_id not in accepted and not participant.share_history:
+            continue
+        roster[participant.passport_id][participant.user_id] = participant.display_name
         by_user.setdefault(participant.user_id, []).append(
             p_by_id[participant.passport_id]
         )
@@ -268,6 +275,7 @@ def shared_progress(
                 events = [e for e in row["events"] if not e["excluded"]]
                 if not events:
                     continue
+                visited_by[pid].setdefault(row["id"], set()).add(uid)
                 others[pid].append(
                     {
                         "id": row["id"],
@@ -285,11 +293,85 @@ def shared_progress(
                             event["flight_id"] or event["id"],
                         )
                     )
+    for pid, sharing in roster.items():
+        if user_id in sharing:
+            for row in own[pid]["rows"]:
+                if row["visited"]:
+                    visited_by[pid].setdefault(row["id"], set()).add(user_id)
     return {
         "own": own,
         "others": others,
         "other_counts": {identity: len(events) for identity, events in seen.items()},
         "participating": accepted,
+        "roster": roster,
+        "visited_by": visited_by,
+    }
+
+
+def edition_stats(
+    rows: list[dict[str, Any]],
+    roster: dict[int, str],
+    visited_by: dict[int, set[int]],
+    viewer_id: int,
+) -> dict[str, Any]:
+    """Group coverage for one edition, over the participants sharing visits.
+
+    The common denominator is every open target plus each closed target that
+    at least one participant stamped, so closures never penalise anyone who
+    got there first. Ranks are competition ranks (1, 1, 3). With nobody
+    sharing, or nothing achievable, there is no percentage. User IDs stay
+    server-side: participants get an opaque position as their filter key.
+    """
+    ordered = sorted(roster.items(), key=lambda item: (item[1].casefold(), item[0]))
+    keys = {uid: index for index, (uid, _name) in enumerate(ordered, start=1)}
+    counted = [
+        row for row in rows if not row.get("is_closed") or visited_by.get(row["id"])
+    ]
+    denominator = len(counted)
+    visits = {
+        uid: sum(1 for row in counted if uid in visited_by.get(row["id"], set()))
+        for uid in roster
+    }
+    board = sorted(
+        ordered, key=lambda item: (-visits[item[0]], item[1].casefold(), item[0])
+    )
+    leaderboard: list[dict[str, Any]] = []
+    for position, (uid, name) in enumerate(board, start=1):
+        rank = (
+            leaderboard[-1]["rank"]
+            if leaderboard and leaderboard[-1]["visited"] == visits[uid]
+            else position
+        )
+        leaderboard.append(
+            {
+                "key": keys[uid],
+                "name": name,
+                "you": uid == viewer_id,
+                "visited": visits[uid],
+                "rank": rank,
+                "percent": round(100 * visits[uid] / denominator)
+                if denominator
+                else None,
+            }
+        )
+    anyone = sum(1 for row in counted if visited_by.get(row["id"]))
+    everyone = (
+        sum(1 for row in counted if visited_by.get(row["id"], set()) >= set(roster))
+        if roster
+        else None
+    )
+    return {
+        "participants": leaderboard,
+        "denominator": denominator,
+        "original": len(rows),
+        "closed_excluded": len(rows) - denominator,
+        "closed_included": sum(1 for row in counted if row.get("is_closed")),
+        "anyone": anyone if roster else None,
+        "everyone": everyone,
+        "by_target": {
+            row["id"]: {keys[uid] for uid in visited_by.get(row["id"], set())}
+            for row in rows
+        },
     }
 
 
@@ -351,6 +433,16 @@ def combined(
             friends.values(), key=lambda friend: friend["name"].casefold()
         )
     view["participating"] = evidence["participating"]
+    view["stats"] = (
+        edition_stats(
+            evidence["own"][current.id]["rows"],
+            evidence["roster"][current.id],
+            evidence["visited_by"][current.id],
+            user_id,
+        )
+        if current is not None and current.id in evidence["participating"]
+        else None
+    )
     return view
 
 

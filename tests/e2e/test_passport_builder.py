@@ -658,8 +658,10 @@ def test_invitation_mobile_login_join_and_no_js(
                     "document.documentElement.scrollWidth <= window.innerWidth + 1"
                 )
             if not javascript:
-                expect(friend.locator("table")).to_contain_text("Visiting friend")
-            friend.locator("table tbody a").first.click()
+                expect(friend.locator("#passport-targets")).to_contain_text(
+                    "Visiting friend"
+                )
+            friend.locator("#passport-targets tbody a").first.click()
             if not javascript:
                 expect(
                     friend.get_by_role(
@@ -691,13 +693,13 @@ def test_invitation_mobile_login_join_and_no_js(
             friend.locator("#join-sharing").check()
             friend.get_by_role("button", name="Join this passport", exact=True).click()
             friend.wait_for_url(re.compile(r"/passports/\d+/"))
-            friend.locator("table tbody a").first.click()
+            friend.locator("#passport-targets tbody a").first.click()
             expect(
                 friend.get_by_role("button", name="Delete manual visit", exact=True)
             ).to_be_visible()
             alias = "Visiting friend" if javascript else "No-JS friend"
             page.goto(passport_url)
-            expect(page.locator("table")).to_contain_text(alias)
+            expect(page.locator("#passport-targets")).to_contain_text(alias)
             page.locator(
                 "#passport-progress-map .leaflet-overlay-pane path"
             ).first.click()
