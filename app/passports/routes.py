@@ -104,14 +104,19 @@ def detail(passport_id: int) -> ResponseReturnValue:
     display_rows = [
         {**row, **shared_rows.get(row["id"], {})} for row in progress["rows"]
     ]
+    stats = shared["stats"] if shared else None
     state = request.args.get("state", "all")
+    # The participant filter narrows which airfields show; styling and "your"
+    # progress still describe the viewer, whoever is selected.
+    participant = request.args.get("participant", type=list_index) if stats else None
     rows = [
         row
         for row in display_rows
-        if state not in {"visited", "unvisited", "closed"}
-        or (state == "visited" and row["visited"])
-        or (state == "unvisited" and not row["visited"])
-        or (state == "closed" and row.get("is_closed"))
+        if _state_matches(row, state, stats)
+        and (
+            participant is None
+            or (stats is not None and participant in stats["by_target"][row["id"]])
+        )
     ]
     map_rows = [
         {
@@ -150,8 +155,30 @@ def detail(passport_id: int) -> ResponseReturnValue:
         frequency=request.args.get("frequency") == "1",
         can_manage=can_manage,
         group_view=shared is not None,
+        group_stats=stats,
+        participant=participant,
         today=date.today(),
     )
+
+
+def _state_matches(
+    row: dict[str, Any], state: str, stats: dict[str, Any] | None
+) -> bool:
+    if state == "visited":
+        return bool(row["visited"])
+    if state == "unvisited":
+        return not row["visited"]
+    if state == "closed":
+        return bool(row.get("is_closed"))
+    if stats is not None and state in {"anyone", "everyone", "nobody"}:
+        visitors = stats["by_target"][row["id"]]
+        if state == "anyone":
+            return bool(visitors)
+        if state == "nobody":
+            return not visitors
+        everyone = {p["key"] for p in stats["participants"]}
+        return bool(everyone) and visitors >= everyone
+    return True
 
 
 def _shared_view(passport: Passport) -> dict[str, Any] | None:

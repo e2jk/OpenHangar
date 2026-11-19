@@ -221,6 +221,12 @@ group display name and sharing consent, then sign in and join that edition. A
 signed-in friend simply selects **Join this passport**. You can replace, expire or
 disable the link without removing existing participants.
 
+A shared edition shows **Group progress**: airfields visited by anyone and by
+everyone, and a leaderboard of each participant's coverage, all measured against
+the same airfields (open ones, plus closed ones someone visited). Use **Show
+airfields** and **Visited by participant** to narrow the map and list; your own
+progress and marker styles stay yours. See [the passport guide](airfield_passports.md#group-progress-and-filters).
+
 A friend without an account selects **Create an account and join this passport**,
 chooses a password and verifies the code sent to their email. They then complete
 any required authenticator setup and open their own map. Their new account can

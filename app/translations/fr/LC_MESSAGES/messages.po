@@ -203,7 +203,7 @@ msgstr "Définissez soit une contribution horaire, soit une contribution mensuel
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Ce fichier GPS contient trop de points pour être importé (plus de %(n)s). Découpez l'enregistrement en plusieurs fichiers."
 
-#: app/aircraft/routes.py:555 app/passports/routes.py:626
+#: app/aircraft/routes.py:555 app/passports/routes.py:653
 msgid "cruise speed"
 msgstr "vitesse de croisière"
 
@@ -2234,7 +2234,7 @@ msgstr "Saisissez un nom pour le groupe de 128 caractères maximum."
 msgid "Confirm sharing your eligible visit dates with this edition's participants."
 msgstr "Confirmez le partage des dates de vos visites admissibles avec les participants de cette édition."
 
-#: app/passports/groups.py:360
+#: app/passports/groups.py:452
 msgid "Create a new edition to change the dates of a shared passport."
 msgstr "Créez une nouvelle édition pour modifier les dates d’un passeport partagé."
 
@@ -2446,75 +2446,75 @@ msgstr "Votre passeport %(title)s se termine le %(date)s. Ouvrez cette édition 
 msgid "Open passport"
 msgstr "Ouvrir le passeport"
 
-#: app/passports/routes.py:195
+#: app/passports/routes.py:222
 msgid "Small airfields"
 msgstr "Petits aérodromes"
 
-#: app/passports/routes.py:196
+#: app/passports/routes.py:223
 msgid "Medium airports"
 msgstr "Aéroports moyens"
 
-#: app/passports/routes.py:197
+#: app/passports/routes.py:224
 msgid "Large airports"
 msgstr "Grands aéroports"
 
-#: app/passports/routes.py:198
+#: app/passports/routes.py:225
 msgid "Heliports"
 msgstr "Héliports"
 
-#: app/passports/routes.py:199
+#: app/passports/routes.py:226
 msgid "Seaplane bases"
 msgstr "Hydrobases"
 
-#: app/passports/routes.py:200
+#: app/passports/routes.py:227
 msgid "Balloon ports"
 msgstr "Bases de ballons"
 
-#: app/passports/routes.py:201
+#: app/passports/routes.py:228
 msgid "Closed airfields"
 msgstr "Aérodromes fermés"
 
-#: app/passports/routes.py:310
+#: app/passports/routes.py:337
 msgid "Passport saved."
 msgstr "Passeport enregistré."
 
-#: app/passports/routes.py:351
+#: app/passports/routes.py:378
 msgid "An airfield code conflicts with an existing identity. Review or remove that selection."
 msgstr "Un code d’aérodrome entre en conflit avec une identité existante. Vérifiez ou retirez cette sélection."
 
-#: app/passports/routes.py:414
+#: app/passports/routes.py:441
 msgid "Passport deleted."
 msgstr "Passeport supprimé."
 
-#: app/passports/routes.py:599
+#: app/passports/routes.py:626
 msgid "Choose a starting airfield from the search results."
 msgstr "Choisissez un aérodrome de départ dans les résultats."
 
-#: app/passports/routes.py:602
+#: app/passports/routes.py:629
 msgid "This starting airfield has no coordinates. Choose another."
 msgstr "Cet aérodrome de départ n’a pas de coordonnées. Choisissez-en un autre."
 
-#: app/passports/routes.py:627
+#: app/passports/routes.py:654
 msgid "distance/time limit"
 msgstr "limite de distance/durée"
 
-#: app/passports/routes.py:628
+#: app/passports/routes.py:655
 msgid "usable fuel"
 msgstr "carburant utilisable"
 
-#: app/passports/routes.py:629
+#: app/passports/routes.py:656
 msgid "fuel flow"
 msgstr "consommation"
 
-#: app/passports/routes.py:630
+#: app/passports/routes.py:657
 msgid "reserve minutes"
 msgstr "réserve en minutes"
 
-#: app/passports/routes.py:642
+#: app/passports/routes.py:669
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Saisissez une vitesse de croisière pour le mode durée, ou utilisez le mode distance."
 
-#: app/passports/routes.py:651
+#: app/passports/routes.py:678
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "L’autonomie théorique est inconnue. Saisissez le carburant utilisable, la consommation, la vitesse et une réserve explicite laissant une durée de vol positive. Le filtre distance/durée reste appliqué."
 
@@ -4206,7 +4206,7 @@ msgstr "gestion d'avions open source"
 #: app/templates/maintenance/fleet.html:281
 #: app/templates/maintenance/fleet.html:341
 #: app/templates/maintenance/list.html:98
-#: app/templates/passports/detail.html:30
+#: app/templates/passports/detail.html:36
 #: app/templates/passports/series.html:17
 #: app/templates/pilots/minimums_history.html:25
 #: app/templates/reservations/charge.html:34
@@ -7116,9 +7116,9 @@ msgstr "Vérifier la référence pièce"
 #: app/templates/airworthiness/adsb_form.html:39
 #: app/templates/airworthiness/adsb_print.html:28
 #: app/templates/passports/builder.html:49
-#: app/templates/passports/detail.html:25
-#: app/templates/passports/detail.html:28
 #: app/templates/passports/detail.html:30
+#: app/templates/passports/detail.html:34
+#: app/templates/passports/detail.html:36
 #: app/templates/passports/series.html:15
 #: app/templates/passports/series.html:17 app/templates/passports/target.html:9
 msgid "Closed"
@@ -7310,7 +7310,7 @@ msgstr[1] "%(n)s documents au total"
 #: app/templates/airworthiness/dashboard.html:68
 #: app/templates/documents/list.html:102 app/templates/documents/list.html:104
 #: app/templates/flights/list.html:105 app/templates/flights/list.html:107
-#: app/templates/passports/detail.html:25 app/templates/pilots/logbook.html:142
+#: app/templates/passports/detail.html:30 app/templates/pilots/logbook.html:142
 #: app/templates/pilots/logbook.html:144 app/templates/users/list.html:76
 msgid "All"
 msgstr "Tout"
@@ -9947,7 +9947,7 @@ msgid "This is a different flight — import it as a new entry"
 msgstr "Il s'agit d'un vol différent — l'importer comme une nouvelle entrée"
 
 #: app/templates/flights/airframe_import_review.html:150
-#: app/templates/passports/detail.html:26
+#: app/templates/passports/detail.html:32
 #: app/templates/passports/series.html:12
 #: app/templates/pilots/import_review.html:158
 #: app/templates/reports/utilization.html:54
@@ -11887,7 +11887,7 @@ msgid "Selected airfields"
 msgstr "Aérodromes sélectionnés"
 
 #: app/templates/passports/builder.html:62
-#: app/templates/passports/detail.html:30
+#: app/templates/passports/detail.html:36
 #: app/templates/passports/series.html:17
 #: app/templates/passports/vouchers.html:12
 #: app/templates/passports/vouchers.html:33
@@ -11906,7 +11906,7 @@ msgid "Manual classifications are shared with other passports in this organisati
 msgstr "Les classifications manuelles sont partagées avec les autres passeports de cette organisation."
 
 #: app/templates/passports/builder.html:63
-#: app/templates/passports/detail.html:31
+#: app/templates/passports/detail.html:37
 #: app/templates/passports/series.html:17
 msgid "No airfields selected yet."
 msgstr "Aucun aérodrome sélectionné pour le moment."
@@ -12032,101 +12032,161 @@ msgstr "Aucun objectif réalisable pour le moment."
 msgid "Passport complete!"
 msgstr "Passeport terminé !"
 
+#: app/templates/passports/detail.html:24
+msgid "Group progress"
+msgstr "Progression du groupe"
+
 #: app/templates/passports/detail.html:25
+#: app/templates/passports/detail.html:30
+msgid "Visited by anyone"
+msgstr "Visités par au moins un participant"
+
+#: app/templates/passports/detail.html:25
+#: app/templates/passports/detail.html:30
+msgid "Visited by everyone"
+msgstr "Visités par tous les participants"
+
+#: app/templates/passports/detail.html:26
+msgid "Rank"
+msgstr "Rang"
+
+#: app/templates/passports/detail.html:26
+msgid "Participant"
+msgstr "Participant"
+
+#: app/templates/passports/detail.html:26
+msgid "Airfields visited"
+msgstr "Aérodromes visités"
+
+#: app/templates/passports/detail.html:26
+msgid "Coverage"
+msgstr "Couverture"
+
+#: app/templates/passports/detail.html:26
+#: app/templates/passports/detail.html:31 app/templates/users/list.html:46
+msgid "you"
+msgstr "vous"
+
+#: app/templates/passports/detail.html:27
+msgid "Nobody is sharing visits in this edition yet, so there are no group figures."
+msgstr "Personne ne partage encore ses visites dans cette édition, il n’y a donc pas encore de chiffres de groupe."
+
+#: app/templates/passports/detail.html:28
+msgid "Group figures count the participants sharing their visits in this edition, and change straight away when someone leaves or is removed. Everyone is measured against the same airfields: all open ones, plus closed ones that someone visited."
+msgstr "Les chiffres du groupe comptent les participants qui partagent leurs visites dans cette édition et changent immédiatement quand quelqu’un part ou est retiré. Tout le monde est comparé aux mêmes aérodromes : tous ceux qui sont ouverts, plus les aérodromes fermés que quelqu’un a visités."
+
+#: app/templates/passports/detail.html:28
+#, python-format
+msgid "Closed airfields nobody visited are left out: %(n)s."
+msgstr "Aérodromes fermés que personne n’a visités, non comptés : %(n)s."
+
+#: app/templates/passports/detail.html:30
 msgid "Show airfields"
 msgstr "Afficher les aérodromes"
 
-#: app/templates/passports/detail.html:25
-#: app/templates/passports/detail.html:28
 #: app/templates/passports/detail.html:30
+#: app/templates/passports/detail.html:34
+#: app/templates/passports/detail.html:36
 #: app/templates/passports/series.html:17
 msgid "Visited by you"
 msgstr "Visité par vous"
 
-#: app/templates/passports/detail.html:25
-#: app/templates/passports/detail.html:28
 #: app/templates/passports/detail.html:30
+#: app/templates/passports/detail.html:34
+#: app/templates/passports/detail.html:36
 #: app/templates/passports/series.html:15
 #: app/templates/passports/series.html:17 app/templates/passports/target.html:9
 msgid "Visited"
 msgstr "Visité"
 
-#: app/templates/passports/detail.html:25
+#: app/templates/passports/detail.html:30
 msgid "Not visited by you"
 msgstr "Pas encore visité par vous"
 
-#: app/templates/passports/detail.html:25
-#: app/templates/passports/detail.html:28
 #: app/templates/passports/detail.html:30
+#: app/templates/passports/detail.html:34
+#: app/templates/passports/detail.html:36
 #: app/templates/passports/series.html:15
 #: app/templates/passports/series.html:17 app/templates/passports/target.html:9
 msgid "Not visited"
 msgstr "Non visité"
 
-#: app/templates/passports/detail.html:26
+#: app/templates/passports/detail.html:30
+msgid "Not visited by anyone"
+msgstr "Visités par personne"
+
+#: app/templates/passports/detail.html:31
+msgid "Visited by participant"
+msgstr "Visités par un participant"
+
+#: app/templates/passports/detail.html:31
+msgid "Any participant"
+msgstr "N’importe quel participant"
+
+#: app/templates/passports/detail.html:32
 #: app/templates/passports/series.html:12
 msgid "Show visit frequency"
 msgstr "Afficher la fréquence des visites"
 
-#: app/templates/passports/detail.html:27
+#: app/templates/passports/detail.html:33
 msgid "Counts include your visits and eligible visits shared by active friends. Repeat-visit data may be incomplete."
 msgstr "Les comptes incluent vos visites et les visites admissibles partagées par les amis actifs. Les visites répétées peuvent être incomplètement enregistrées."
 
-#: app/templates/passports/detail.html:27
+#: app/templates/passports/detail.html:33
 msgid "Counts show your recorded full-stop visits in this passport. Repeat-visit data may be incomplete."
 msgstr "Les nombres correspondent à vos visites enregistrées avec arrêt complet dans ce passeport. Les visites répétées peuvent être incomplètes."
 
-#: app/templates/passports/detail.html:28
-#: app/templates/passports/detail.html:30
+#: app/templates/passports/detail.html:34
+#: app/templates/passports/detail.html:36
 #: app/templates/passports/series.html:15
 #: app/templates/passports/series.html:17
 msgid "Visited by friends"
 msgstr "Visité par des amis"
 
-#: app/templates/passports/detail.html:28
-#: app/templates/passports/detail.html:30
+#: app/templates/passports/detail.html:34
+#: app/templates/passports/detail.html:36
 #: app/templates/passports/series.html:15
 #: app/templates/passports/series.html:17 app/templates/passports/target.html:9
 msgid "Recorded visits"
 msgstr "Visites enregistrées"
 
-#: app/templates/passports/detail.html:28
+#: app/templates/passports/detail.html:34
 #: app/templates/passports/series.html:15
 msgid "Passport visit map"
 msgstr "Carte des visites du passeport"
 
-#: app/templates/passports/detail.html:29
+#: app/templates/passports/detail.html:35
 #: app/templates/passports/series.html:14
 msgid "Strong outline: visited by you. Medium outline: visited by friends only. Muted: nobody visited. History access never grants stamps or vouchers in an edition you did not join."
 msgstr "Contour épais : visité par vous. Contour moyen : visité uniquement par des amis. Atténué : aucune visite. L’accès à l’historique n’attribue jamais de tampons ni de bons dans une édition à laquelle vous n’avez pas participé."
 
-#: app/templates/passports/detail.html:29
+#: app/templates/passports/detail.html:35
 msgid "Blue: visited by you. Grey: not visited. Dashed outline: closed."
 msgstr "Bleu : visité par vous. Gris : non visité. Contour pointillé : fermé."
 
-#: app/templates/passports/detail.html:29
+#: app/templates/passports/detail.html:35
 msgid "Dashed outline: closed."
 msgstr "Contour en pointillés : fermé."
 
-#: app/templates/passports/detail.html:29
+#: app/templates/passports/detail.html:35
 msgid "Marker radius: 6 px for no visits, 8 px for one, increasing to at most 18 px for frequent visits. Exact counts are in the list and map popups."
 msgstr "Rayon des marqueurs : 6 px sans visite, 8 px pour une visite, jusqu’à 18 px pour les visites fréquentes. Les nombres exacts figurent dans la liste et les fenêtres de la carte."
 
-#: app/templates/passports/detail.html:30
+#: app/templates/passports/detail.html:36
 msgid "Your first visit"
 msgstr "Votre première visite"
 
-#: app/templates/passports/detail.html:30
+#: app/templates/passports/detail.html:36
 #: app/templates/passports/target.html:10
 msgid "First visit"
 msgstr "Première visite"
 
-#: app/templates/passports/detail.html:30
+#: app/templates/passports/detail.html:36
 #: app/templates/passports/series.html:17
 msgid "No coordinates — shown in the list only."
 msgstr "Sans coordonnées — affiché uniquement dans la liste."
 
-#: app/templates/passports/detail.html:31
+#: app/templates/passports/detail.html:37
 msgid "No airfields match this view."
 msgstr "Aucun aérodrome ne correspond à cette vue."
 
@@ -14605,10 +14665,6 @@ msgstr "Accès aux avions"
 #: app/templates/users/list.html:36
 msgid "Capability flags"
 msgstr "Indicateurs de capacité"
-
-#: app/templates/users/list.html:46
-msgid "you"
-msgstr "vous"
 
 #: app/templates/users/list.html:49
 msgid "inactive"
