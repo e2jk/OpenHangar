@@ -623,10 +623,10 @@ def where_next(passport_id: int) -> ResponseReturnValue:
     if origin_key:
         origin = builder.available_fields(passport.tenant_id).get(origin_key)
         if origin is None:
-            errors.append(_("Choose a starting airfield from the search results."))
+            errors.append(_("Choose a reference airfield from the search results."))
         elif origin.get("latitude") is None or origin.get("longitude") is None:
             errors.append(
-                _("This starting airfield has no coordinates. Choose another.")
+                _("This reference airfield has no coordinates. Choose another.")
             )
     mode = request.args.get("mode", "distance")
     if mode not in {"distance", "time"}:

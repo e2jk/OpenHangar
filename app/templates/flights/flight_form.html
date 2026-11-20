@@ -473,7 +473,7 @@
                      value="{{ flight.takeoff_time.strftime('%H:%M') if flight and flight.takeoff_time else request.form.get('takeoff_time', '') }}">
             </div>
             <div class="col-6">
-              <label for="landing_time" class="form-label">{{ _('Landing') }}</label>
+              <label for="landing_time" class="form-label">{{ _('Landing time') }}</label>
               <input type="time" class="form-control" id="landing_time" name="landing_time"
                      value="{{ flight.landing_time.strftime('%H:%M') if flight and flight.landing_time else request.form.get('landing_time', '') }}">
             </div>

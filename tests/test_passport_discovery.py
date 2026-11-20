@@ -35,7 +35,7 @@ def test_discovery_page_and_aircraft_access(
     uid, tid, pid = owner["user"], owner["tenant"], owner["passport"]
     signin(client, uid)
     path = f"/passports/{pid}/where-next"
-    assert "Choose a starting" in client.get(path).text
+    assert "Choose a reference" in client.get(path).text
     with app.app_context():
         ac = Aircraft(
             tenant_id=tid,
@@ -79,7 +79,7 @@ def test_discovery_page_and_aircraft_access(
     )
     assert (
         "150.0 nm" in automatic.text
-        and "Choose a starting airfield to find destinations." not in automatic.text
+        and "Choose a reference airfield to find destinations." not in automatic.text
     )
     response = client.get(
         path,
@@ -105,7 +105,7 @@ def test_discovery_page_and_aircraft_access(
     assert "No open, unvisited" not in response.text
     assert "unknown" in response.text.lower()
     for args, message in [
-        ({"origin": "field:999999"}, "Choose a starting"),
+        ({"origin": "field:999999"}, "Choose a reference"),
         ({"origin": "catalogue:2"}, "no coordinates"),
         ({"mode": "time", "speed": ""}, "Enter a cruise speed"),
         ({"range": 1}, "range is unknown"),
