@@ -23,6 +23,7 @@ from werkzeug.datastructures import MultiDict
 
 from passports import catalogue as cat
 from passports import imports
+from passports.catalogue_access import visible_identity_ids
 from passports.drafts import MAX_TARGETS, save_draft
 from passports.management import (
     METADATA_FIELDS,
@@ -57,8 +58,14 @@ def _field_descriptor(field: PassportAirfieldIdentity) -> dict[str, Any]:
     }
 
 
-def available_fields(tenant_id: int) -> dict[str, dict[str, Any]]:
-    materialised = PassportAirfieldIdentity.query.filter_by(tenant_id=tenant_id).all()
+def available_fields(
+    tenant_id: int, *, user_id: int | None = None
+) -> dict[str, dict[str, Any]]:
+    visible = visible_identity_ids(tenant_id, user_id)
+    query = PassportAirfieldIdentity.query.filter_by(tenant_id=tenant_id)
+    if visible is not None:
+        query = query.filter(PassportAirfieldIdentity.id.in_(visible))
+    materialised = query.all()
     by_source = {
         field.source_id: field
         for field in materialised
@@ -204,12 +211,15 @@ def add_codes(tenant_id: int, state: dict[str, Any], raw: str) -> None:
             if code:
                 by_code.setdefault(code.upper(), set()).add(field["key"])
     aliases: dict[str, set[str]] = {}
-    for code, airfield_id in (
+    alias_query = (
         db.session.query(PassportAirfieldAlias.code, PassportAirfieldAlias.airfield_id)
         .join(PassportAirfieldIdentity)
         .filter(PassportAirfieldIdentity.tenant_id == tenant_id)
-        .all()
-    ):
+    )
+    visible = visible_identity_ids(tenant_id)
+    if visible is not None:
+        alias_query = alias_query.filter(PassportAirfieldAlias.airfield_id.in_(visible))
+    for code, airfield_id in alias_query.all():
         aliases.setdefault(code, set()).add(f"field:{airfield_id}")
     selected, unresolved = set(state["selected"]), []
     for code in dict.fromkeys(re.split(r"[\s,;]+", raw.strip().upper())):

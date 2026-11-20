@@ -14,6 +14,7 @@ PASSPORT_ENDPOINTS = frozenset(
         "passports.index",
         "passports.detail",
         "passports.target_detail",
+        "passports.where_next",
         "passports.stamp_photo",
         "passports.voucher_ledger",
         "passports.series_detail",
