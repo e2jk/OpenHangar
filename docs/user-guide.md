@@ -190,6 +190,10 @@ retrieval dates are retained as provenance; publisher descriptions are not impor
 Unreleased or unsupported sources offer a pasted-code fallback. Unknown codes require correction or explicit
 removal. Military/ULM classification can remain unknown or be entered manually.
 
+Friends with passport-only accounts can build their own passports and prepare
+a linked next edition too. Their military/ULM labels apply to their own passport;
+public airfield details do not reveal another collection’s private corrections.
+
 Only the owner can edit, archive, reopen or delete a passport. Editing previews
 changes to your completion; removing an airfield with saved visits or stamp photos
 requires confirmation. Deleting a passport keeps your flight logbook. The builder

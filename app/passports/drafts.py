@@ -47,16 +47,14 @@ def new_draft(
         key: str(getattr(passport, key) or "") if passport is not None else ""
         for key in METADATA_FIELDS
     }
-    selected = (
-        [
-            f"field:{row.airfield_id}"
-            for row in PassportAirfield.query.filter_by(passport_id=passport.id)
-            .order_by(PassportAirfield.display_order, PassportAirfield.id)
-            .all()
-        ]
+    targets = (
+        PassportAirfield.query.filter_by(passport_id=passport.id)
+        .order_by(PassportAirfield.display_order, PassportAirfield.id)
+        .all()
         if passport is not None
         else []
     )
+    selected = [f"field:{target.airfield_id}" for target in targets]
     draft = PassportDraft(
         token_hash=hashlib.sha256(token.encode()).hexdigest(),
         tenant_id=tenant_id,
@@ -77,7 +75,16 @@ def new_draft(
             "import_preview": None,
             "selected": selected,
             "custom": {},
-            "classifications": {},
+            "classifications": {
+                f"field:{target.airfield_id}": target.classification_overrides
+                for target in targets
+                if target.classification_overrides
+            },
+            "public_catalogue": [
+                f"field:{target.airfield_id}"
+                for target in targets
+                if target.public_catalogue
+            ],
             "visible": [],
             "filters": {
                 "countries": [],

@@ -88,10 +88,10 @@ def test_restricted_search_preserves_public_data_without_private_overrides(
     with app.app_context():
         fields = builder.available_fields(c["tenant"], user_id=c["basic"])
         assert f"field:{c['hidden']}" not in fields
-        assert f"field:{c['public']}" not in fields
         assert f"field:{c['own_field']}" in fields and f"field:{c['field']}" in fields
-        public = fields["catalogue:" + c["source"]]
-        assert public["name"] == c["public_name"] and public["id"] is None
+        public = fields[f"field:{c['public']}"]
+        assert public["name"] == c["public_name"] and public["id"] == c["public"]
+        assert public["public_catalogue"] is True
         assert (
             discovery.origin_choices(
                 c["tenant"], "PRIVATE STRIP NAME", user_id=c["basic"]
@@ -123,15 +123,17 @@ def test_code_import_and_saved_references_revalidate_request_scope(
         builder.add_codes(c["tenant"], state, "SECRETSTRIP SECRETALIAS OWNSTRIP EBNM")
         assert state["unresolved"] == ["SECRETSTRIP", "SECRETALIAS"]
         assert f"field:{c['own_field']}" in state["selected"]
-        assert "catalogue:" + c["source"] in state["selected"]
+        assert f"field:{c['public']}" in state["selected"]
         for value in (
             "SECRETSTRIP",
             "SECRETALIAS",
             f"field:{c['hidden']}",
-            f"field:{c['public']}",
         ):
             with pytest.raises(BuilderError):
                 discovery.resolve_home(c["tenant"], value)
+        candidate = discovery.resolve_home(c["tenant"], f"field:{c['public']}")
+        assert isinstance(candidate, cat.CatalogueAirfield)
+        assert candidate.name == c["public_name"]
         candidate = discovery.resolve_home(c["tenant"], "EBNM")
         assert (
             isinstance(candidate, cat.CatalogueAirfield)
@@ -189,7 +191,7 @@ def test_latest_arrival_does_not_resolve_hidden_tenant_aliases(
         result = discovery.latest_arrival(c["tenant"], c["basic"], None)
         assert (
             result["name"] == c["public_name"]
-            and result["key"] == "catalogue:" + c["source"]
+            and result["key"] == f"field:{c['public']}"
         )
         # Internal trusted jobs and full memberships retain their catalogue view.
         assert visible_identity_ids(c["tenant"]) is None
@@ -240,7 +242,7 @@ def test_passport_only_discovery_uses_public_or_visible_origins_and_no_fleet(
         assert client.get(path, query_string={"aircraft": "1"}).status_code == 404
     assert b"Where next?" in client.get(f"/passports/{c['passport']}/").data
     assert client.get("/passports/999999/where-next").status_code == 404
-    assert client.get("/passports/new").status_code == 403
+    assert client.get("/passports/new").status_code == 200
 
 
 def test_cached_full_membership_cannot_survive_scope_downgrade(
@@ -262,3 +264,146 @@ def test_cached_full_membership_cannot_survive_scope_downgrade(
         assert membership.access_scope == "full"  # An intentionally stale ORM row.
         assert f"field:{c['hidden']}" not in builder.available_fields(c["tenant"])
         assert f"field:{c['field']}" in builder.available_fields(c["tenant"])
+
+
+def test_personal_builder_keeps_public_projection_and_local_classifications(
+    app: Flask, client: FlaskClient, catalogue: dict[str, Any]
+) -> None:
+    from passports.eligibility import target_fields
+
+    from tests.test_passport_builder import posted, signin
+
+    c = catalogue
+    signin(client, c["basic"])
+    key = f"field:{c['public']}"
+    response = client.get("/passports/new")
+    response = client.post(
+        "/passports/new",
+        data=posted(response, "add_codes", title="My public tour", codes="EBNM"),
+    )
+    assert response.status_code == 200 and "PRIVATE OVERRIDE" not in response.text
+    response = client.post(
+        "/passports/new",
+        data=posted(
+            response, "review", **{"military_" + key: "yes", "ulm_" + key: "no"}
+        ),
+    )
+    assert response.status_code == 200
+    response = client.post("/passports/new", data=posted(response, "save"))
+    assert response.status_code == 302
+    with app.app_context():
+        passport = Passport.query.filter_by(title="My public tour").one()
+        passport_id = passport.id
+        target = PassportAirfield.query.filter_by(passport_id=passport.id).one()
+        assert target.public_catalogue
+        assert target.classification_overrides == {"military": True, "ulm": False}
+        assert target_fields(passport)[0]["name"] == c["public_name"]
+        assert target_fields(passport)[0]["military"] is True
+        identity = db.session.get(PassportAirfieldIdentity, c["public"])
+        assert identity.overrides == {"name": "PRIVATE OVERRIDE", "latitude": 42.0}
+        # Owning a public target must not turn into a private metadata grant.
+        assert (
+            builder.available_fields(c["tenant"], user_id=c["basic"])[key]["name"]
+            == c["public_name"]
+        )
+        membership = db.session.get(TenantUser, (c["basic"], c["tenant"]))
+        assert membership.role is None and membership.access_scope == "passport"
+    edit = f"/passports/{passport_id}/edit"
+    response = client.get(edit)
+    assert response.status_code == 200 and "PRIVATE OVERRIDE" not in response.text
+    response = client.post(edit, data=posted(response, "review"))
+    response = client.post(edit, data=posted(response, "save"))
+    assert response.status_code == 302
+    response = client.post(
+        f"/passports/{passport_id}/next-edition", data={"title": "Next public tour"}
+    )
+    assert response.status_code == 200 and "PRIVATE OVERRIDE" not in response.text
+    response = client.post("/passports/new", data=posted(response, "review"))
+    assert response.status_code == 200
+    response = client.post("/passports/new", data=posted(response, "save"))
+    assert response.status_code == 302
+    with app.app_context():
+        passport = Passport.query.filter_by(title="Next public tour").one()
+        target = PassportAirfield.query.filter_by(passport_id=passport.id).one()
+        assert target.public_catalogue and target.classification_overrides["military"]
+        assert target_fields(passport)[0]["name"] == c["public_name"]
+
+
+@pytest.mark.parametrize("values", [[], {"name": "leak"}, {"ulm": "yes"}])
+def test_invalid_local_classifications_are_rejected(
+    app: Flask, catalogue: dict[str, Any], values: Any
+) -> None:
+    with app.app_context():
+        target = PassportAirfield.query.filter_by(
+            airfield_id=catalogue["own_field"]
+        ).one()
+        target.classification_overrides = values
+        with pytest.raises(ValueError, match="local classifications"):
+            db.session.flush()
+        db.session.rollback()
+
+
+def test_public_provenance_requires_matching_catalogue_identity(
+    app: Flask, catalogue: dict[str, Any]
+) -> None:
+    from models import PassportAirfieldAlias
+
+    with app.app_context():
+        target = PassportAirfield.query.filter_by(
+            airfield_id=catalogue["own_field"]
+        ).one()
+        target.public_catalogue = True
+        with pytest.raises(ValueError, match="public source"):
+            db.session.flush()
+        db.session.rollback()
+        alias = PassportAirfieldAlias.query.filter_by(
+            airfield_id=catalogue["public"]
+        ).first()
+        alias.catalogue_source_id = "wrong source"
+        with pytest.raises(ValueError, match="provenance"):
+            db.session.flush()
+        db.session.rollback()
+
+
+def test_public_aliases_and_private_aliases_remain_distinct_for_visit_credit(
+    app: Flask, client: FlaskClient, catalogue: dict[str, Any]
+) -> None:
+    from passports.eligibility import passport_progress
+
+    from tests.test_passport_builder import posted, signin
+
+    c = catalogue
+    with app.app_context():
+        identity = db.session.get(PassportAirfieldIdentity, c["public"])
+        cat.add_alias(identity, "PRIVATECODE")
+        row = next(r for r in cat.load_catalogue() if r.source_id == c["source"])
+        # Refreshing an existing public code preserves its public provenance.
+        cat.materialise(c["tenant"], row)
+        for code in ("EBNM", "PRIVATECODE"):
+            db.session.add(
+                Flight(
+                    pic_user_id=c["basic"],
+                    date=date(2026, 1, 1),
+                    arrival_icao=code,
+                    flight_time=1,
+                )
+            )
+        db.session.commit()
+    signin(client, c["basic"])
+    response = client.get("/passports/new")
+    response = client.post(
+        "/passports/new",
+        data=posted(response, "review", title="Public visit evidence", codes="EBNM"),
+    )
+    assert response.status_code == 200
+    response = client.post("/passports/new", data=posted(response, "save"))
+    assert response.status_code == 302
+    with app.app_context():
+        passport = Passport.query.filter_by(title="Public visit evidence").one()
+        progress = passport_progress(passport, c["basic"])
+        assert progress["rows"][0]["count"] == 1
+        fields = builder.available_fields(c["tenant"], user_id=c["basic"])
+        assert fields[f"field:{c['public']}"]["name"] == c["public_name"]
+        state = {"selected": []}
+        builder.add_codes(c["tenant"], state, "PRIVATECODE", user_id=c["basic"])
+        assert state["unresolved"] == ["PRIVATECODE"]

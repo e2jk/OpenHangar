@@ -836,6 +836,26 @@ def test_invited_friend_registration_without_javascript(
         guest.get_by_role("button", name="Find destinations", exact=True).click()
         guest.wait_for_url(lambda url: "origin=" in url)
         expect(guest.locator("#discovery-origin")).not_to_have_value("")
+        guest.goto(live_server_url + "/passports/")
+        guest.get_by_role("link", name="Create passport", exact=True).click()
+        guest.locator("#passport-title").fill("Guest personal tour " + title)
+        guest.locator("#passport-codes").fill("EBNM")
+        guest.get_by_role("button", name="Add codes", exact=True).click()
+        guest.get_by_role("button", name="Review passport", exact=True).click()
+        guest.get_by_role("button", name="Save passport", exact=True).click()
+        guest.wait_for_url(re.compile(r"/passports/\d+/$"))
+        expect(
+            guest.get_by_role(
+                "heading", name="Guest personal tour " + title, exact=True
+            )
+        ).to_be_visible()
+        guest.get_by_role("link", name="Edit passport", exact=True).click()
+        guest.get_by_role("button", name="Review passport", exact=True).click()
+        guest.get_by_role("button", name="Save passport", exact=True).click()
+        guest.wait_for_url(re.compile(r"/passports/\d+/$"))
+        guest.get_by_role("link", name="Delete passport", exact=True).click()
+        guest.get_by_role("button", name="Delete passport", exact=True).click()
+        guest.wait_for_url(live_server_url + "/passports/")
     finally:
         context.close()
     page.goto(passport_url)

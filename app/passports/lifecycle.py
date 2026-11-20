@@ -14,6 +14,8 @@ from flask import current_app
 from models import (
     Passport,
     PassportAirfield,
+    PassportAirfieldAlias,
+    PassportAirfieldIdentity,
     PassportParticipant,
     PassportSeries,
     PassportStampPhoto,
@@ -30,6 +32,38 @@ from sqlalchemy.orm import Session
 def prepare_passport_changes(session: Session, _context: Any, _instances: Any) -> None:
     replaced: set[str] = set()
     for obj in (*session.new, *session.dirty):
+        if isinstance(obj, PassportAirfield):
+            classifications = (
+                obj.classification_overrides
+                if obj.classification_overrides is not None
+                else {}
+            )
+            if (
+                not isinstance(classifications, dict)
+                or classifications.keys() - {"military", "ulm"}
+                or any(
+                    value is not None and not isinstance(value, bool)
+                    for value in classifications.values()
+                )
+            ):
+                raise ValueError("Invalid passport-local classifications")
+            if obj.public_catalogue:
+                identity = session.get(PassportAirfieldIdentity, obj.airfield_id)
+                if identity is None or identity.source != "ourairports":
+                    raise ValueError("Public catalogue targets require a public source")
+        if (
+            isinstance(obj, PassportAirfieldAlias)
+            and obj.catalogue_source_id is not None
+        ):
+            identity = session.get(PassportAirfieldIdentity, obj.airfield_id)
+            if (
+                identity is None
+                or identity.source != "ourairports"
+                or identity.source_id != obj.catalogue_source_id
+            ):
+                raise ValueError(
+                    "Public alias provenance must match its airfield source"
+                )
         if isinstance(obj, PassportStampPhoto) and not re.fullmatch(
             r"[A-Za-z0-9_-]+\.(?:jpg|jpeg|png|webp)", obj.filename or ""
         ):

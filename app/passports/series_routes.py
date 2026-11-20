@@ -87,9 +87,19 @@ def next_edition(passport_id: int) -> ResponseReturnValue:
             state["metadata"] = {
                 key: str(metadata[key] or "") for key in METADATA_FIELDS
             }
-            state["selected"] = [
-                "field:" + str(field["id"]) for field in target_fields(source)
+            fields = target_fields(source)
+            state["selected"] = ["field:" + str(field["id"]) for field in fields]
+            state["public_catalogue"] = [
+                "field:" + str(field["id"])
+                for field in fields
+                if field.get("public_catalogue")
             ]
+            state["classifications"] = {
+                "field:" + str(field["id"]): {
+                    name: field.get(name) for name in ("military", "ulm")
+                }
+                for field in fields
+            }
             if source.source_url and source.source_retrieved_at:
                 state["source"] = {
                     "url": source.source_url,

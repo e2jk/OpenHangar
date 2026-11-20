@@ -54,8 +54,6 @@ def scoped(app: Flask, owner: dict[str, int]) -> Iterator[dict[str, int]]:
         "/expenses/",
         "/airport-search?q=TEST",
         "/aircraft-type-search?q=C172",
-        "/passports/new",
-        "/passports/999/next-edition",
     ],
 )
 @pytest.mark.parametrize("method", ["get", "post"])
@@ -96,7 +94,7 @@ def test_home_navigation_profile_and_own_stamps(
     assert client.get("/profile").status_code == 200
     assert client.get("/static/css/base.css").status_code == 200
     detail = client.get(f"/passports/{scoped['passport']}/")
-    assert detail.status_code == 200 and b"Create next edition" not in detail.data
+    assert detail.status_code == 200 and b"Create next edition" in detail.data
     assert b"Where next?" in detail.data
     assert client.get(f"/passports/{scoped['passport']}/where-next").status_code == 200
     # The real target route remains participant-scoped; find its canonical URL.

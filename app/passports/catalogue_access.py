@@ -11,6 +11,7 @@ from flask import has_request_context, session
 from models import (
     Passport,
     PassportAirfield,
+    PassportAirfieldIdentity,
     PassportParticipant,
     PassportSeriesMember,
     TenantUser,
@@ -19,7 +20,9 @@ from models import (
 )
 
 
-def visible_identity_ids(tenant_id: int, user_id: int | None = None) -> Any:
+def visible_identity_ids(
+    tenant_id: int, user_id: int | None = None, *, private_metadata: bool = False
+) -> Any:
     """Return a visibility subquery, or None for a full membership/trusted job."""
     if user_id is None:
         if not has_request_context():
@@ -61,7 +64,16 @@ def visible_identity_ids(tenant_id: int, user_id: int | None = None) -> Any:
         db.or_(Passport.is_group.is_(False), Passport.series_id.in_(groups)),
         db.or_(Passport.owner_user_id == user_id, Passport.id.in_(accepted)),
     )
-    return db.select(PassportAirfield.airfield_id).where(
+    permitted = db.select(PassportAirfield.airfield_id).where(
         PassportAirfield.tenant_id == tenant_id,
         PassportAirfield.passport_id.in_(passports),
+    )
+    if private_metadata:
+        return permitted.where(PassportAirfield.public_catalogue.is_(False))
+    return db.select(PassportAirfieldIdentity.id).where(
+        PassportAirfieldIdentity.tenant_id == tenant_id,
+        db.or_(
+            PassportAirfieldIdentity.source == "ourairports",
+            PassportAirfieldIdentity.id.in_(permitted),
+        ),
     )

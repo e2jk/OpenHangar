@@ -33,7 +33,6 @@ from utils import (
     db_id,
     list_index,
     login_required,
-    require_pilot_access,
 )
 
 from passports import (
@@ -83,8 +82,14 @@ __all__ = [
 @login_required
 def index() -> ResponseReturnValue:
     passports = accessible_passports().order_by("title", "id").all()
+    try:
+        require_actor(*_actor(), creating=True)
+        can_create = True
+    except BuilderError:
+        can_create = False
     return render_template(
         "passports/index.html",
+        can_create=can_create,
         passports=passports,
         group_series=accessible_group_series().order_by("title", "id").all(),
         summaries=progress_many(passports, session["user_id"]),
@@ -217,7 +222,9 @@ def _render_builder(
     status: int = 200,
 ) -> ResponseReturnValue:
     state = draft.payload
-    fields = builder.selected_fields(draft.tenant_id, state, allow_missing=True)
+    fields = builder.selected_fields(
+        draft.tenant_id, state, allow_missing=True, user_id=draft.user_id
+    )
     choices = catalogue_choices()
     type_labels = {
         "small_airport": _("Small airfields"),
@@ -235,6 +242,7 @@ def _render_builder(
             draft.tenant_id,
             {**state, "selected": preview["matched"]},
             allow_missing=True,
+            user_id=draft.user_id,
         )
         return _builder_response(
             render_template(
@@ -269,7 +277,7 @@ def _render_builder(
             ),
             status,
         )
-    matches = builder.matching_fields(draft.tenant_id, state)
+    matches = builder.matching_fields(draft.tenant_id, state, user_id=draft.user_id)
     return _builder_response(
         render_template(
             "passports/builder.html",
@@ -394,7 +402,6 @@ def _import_limit_exempt() -> bool:
 
 @passports_bp.route("/new", methods=["GET", "POST"])
 @login_required
-@require_pilot_access
 @limiter.shared_limit(
     "5 per minute",
     scope="passport-source-import",
