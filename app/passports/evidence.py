@@ -38,9 +38,9 @@ def writable_participant(passport: Passport, user_id: int) -> PassportParticipan
     return participant
 
 
-def add_visit(
-    passport: Passport, participant: PassportParticipant, target_id: int, values: Any
-) -> None:
+def visit_values(
+    passport: Passport, participant: PassportParticipant, values: Any
+) -> dict[str, Any]:
     try:
         day = date.fromisoformat(values.get("visit_date", ""))
     except ValueError as exc:
@@ -71,15 +71,19 @@ def add_visit(
             raise BuilderError(
                 _("Choose a flight from your own logbook on the visit date.")
             )
+    return {"visit_date": day, "flight_id": flight_id, "note": note or None}
+
+
+def add_visit(
+    passport: Passport, participant: PassportParticipant, target_id: int, values: Any
+) -> None:
     db.session.add(
         PassportVisit(
             passport_id=passport.id,
             participant_id=participant.id,
             target_id=target_id,
             author_user_id=participant.user_id,
-            visit_date=day,
-            flight_id=flight_id,
-            note=note or None,
+            **visit_values(passport, participant, values),
         )
     )
 

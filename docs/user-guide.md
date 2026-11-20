@@ -200,6 +200,11 @@ requires confirmation. Deleting a passport keeps your flight logbook. The builde
 supports normal forms without JavaScript and keeps its draft on the server for
 two hours.
 
+Open a manual visit’s **Edit manual visit** form to correct its date or note,
+or change its supporting flight. Removing that link keeps the visit as an
+independent manual entry; editing the visit never changes the flight itself.
+Archived editions stay read-only.
+
 Your own logbook arrivals fill the passport automatically; dates, crew membership
 and edits are checked live. Arrivals are assumed full-stop: open an airfield to
 exclude a touch-and-go or low approach. You can also record a dated manual visit,

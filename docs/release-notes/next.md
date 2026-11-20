@@ -17,6 +17,10 @@ add missing airfields and prepare a linked next edition. Public airfield details
 stay separate from other passports’ private corrections; military and ULM labels
 entered by a friend apply to their own passport.
 
+Manual passport visits can now be corrected in place: change the date or note,
+or replace/remove a supporting flight. Corrections update your passport progress
+without changing the flight logbook, and remain private to your account.
+
 **Maintenance**
 
 - The “What’s Changed” PR list keeps chore PRs together after the other changes,

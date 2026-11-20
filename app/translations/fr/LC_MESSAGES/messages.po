@@ -203,7 +203,7 @@ msgstr "Définissez soit une contribution horaire, soit une contribution mensuel
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Ce fichier GPS contient trop de points pour être importé (plus de %(n)s). Découpez l'enregistrement en plusieurs fichiers."
 
-#: app/aircraft/routes.py:555 app/passports/routes.py:665
+#: app/aircraft/routes.py:555 app/passports/routes.py:677
 msgid "cruise speed"
 msgstr "vitesse de croisière"
 
@@ -2194,15 +2194,15 @@ msgstr "La note de visite est trop longue."
 msgid "Choose a flight from your own logbook on the visit date."
 msgstr "Choisissez un vol de votre propre carnet à la date de la visite."
 
-#: app/passports/evidence.py:93
+#: app/passports/evidence.py:97
 msgid "Choose a photo to upload."
 msgstr "Choisissez une photo à téléverser."
 
-#: app/passports/evidence.py:96
+#: app/passports/evidence.py:100
 msgid "Photos must be at most 10 MB."
 msgstr "Les photos ne doivent pas dépasser 10 Mo."
 
-#: app/passports/evidence.py:123
+#: app/passports/evidence.py:127
 msgid "Upload a valid JPEG, PNG or WebP photo (up to 20 megapixels)."
 msgstr "Téléversez une photo JPEG, PNG ou WebP valide (20 mégapixels maximum)."
 
@@ -2488,35 +2488,35 @@ msgstr "Un code d’aérodrome entre en conflit avec une identité existante. V�
 msgid "Passport deleted."
 msgstr "Passeport supprimé."
 
-#: app/passports/routes.py:638
+#: app/passports/routes.py:650
 msgid "Choose a reference airfield from the search results."
 msgstr "Choisissez un aérodrome de référence parmi les résultats de recherche."
 
-#: app/passports/routes.py:641
+#: app/passports/routes.py:653
 msgid "This reference airfield has no coordinates. Choose another."
 msgstr "Cet aérodrome de référence n’a pas de coordonnées. Choisissez-en un autre."
 
-#: app/passports/routes.py:666
+#: app/passports/routes.py:678
 msgid "distance/time limit"
 msgstr "limite de distance/durée"
 
-#: app/passports/routes.py:667
+#: app/passports/routes.py:679
 msgid "usable fuel"
 msgstr "carburant utilisable"
 
-#: app/passports/routes.py:668
+#: app/passports/routes.py:680
 msgid "fuel flow"
 msgstr "consommation"
 
-#: app/passports/routes.py:669
+#: app/passports/routes.py:681
 msgid "reserve minutes"
 msgstr "réserve en minutes"
 
-#: app/passports/routes.py:681
+#: app/passports/routes.py:693
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Saisissez une vitesse de croisière pour le mode durée, ou utilisez le mode distance."
 
-#: app/passports/routes.py:690
+#: app/passports/routes.py:702
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "L’autonomie théorique est inconnue. Saisissez le carburant utilisable, la consommation, la vitesse et une réserve explicite laissant une durée de vol positive. Le filtre distance/durée reste appliqué."
 
@@ -6799,7 +6799,8 @@ msgstr "Enregistrer le paiement"
 
 #: app/templates/aircraft/owners_billing.html:101
 #: app/templates/aircraft/owners_billing.html:158
-#: app/templates/passports/target.html:20
+#: app/templates/passports/target.html:25
+#: app/templates/passports/target.html:31
 msgid "Note (optional)"
 msgstr "Note (facultatif)"
 
@@ -12672,49 +12673,65 @@ msgstr "Exclure cette arrivée"
 msgid "Delete manual visit"
 msgstr "Supprimer la visite manuelle"
 
-#: app/templates/passports/target.html:19
-msgid "No qualifying visits recorded yet."
-msgstr "Aucune visite admissible enregistrée pour le moment."
+#: app/templates/passports/target.html:21
+msgid "Edit manual visit"
+msgstr "Modifier la visite manuelle"
 
-#: app/templates/passports/target.html:20
-msgid "Record a manual visit"
-msgstr "Enregistrer une visite manuelle"
-
-#: app/templates/passports/target.html:20
+#: app/templates/passports/target.html:24
+#: app/templates/passports/target.html:31
 msgid "Visit date"
 msgstr "Date de visite"
 
-#: app/templates/passports/target.html:20
+#: app/templates/passports/target.html:26
+#: app/templates/passports/target.html:31
 #: app/templates/passports/vouchers.html:21
 msgid "Supporting flight (optional, latest 200 eligible flights)"
 msgstr "Vol justificatif (facultatif, les 200 derniers vols admissibles)"
 
-#: app/templates/passports/target.html:20
+#: app/templates/passports/target.html:27
+#: app/templates/passports/target.html:31
 msgid "Independent manual visit"
 msgstr "Visite manuelle indépendante"
 
-#: app/templates/passports/target.html:20
+#: app/templates/passports/target.html:27
+msgid "Current supporting flight"
+msgstr "Vol justificatif actuel"
+
+#: app/templates/passports/target.html:28
+#: app/templates/pilots/entry_form.html:312
+msgid "Save Changes"
+msgstr "Enregistrer les modifications"
+
+#: app/templates/passports/target.html:30
+msgid "No qualifying visits recorded yet."
+msgstr "Aucune visite admissible enregistrée pour le moment."
+
+#: app/templates/passports/target.html:31
+msgid "Record a manual visit"
+msgstr "Enregistrer une visite manuelle"
+
+#: app/templates/passports/target.html:31
 msgid "Save visit"
 msgstr "Enregistrer la visite"
 
-#: app/templates/passports/target.html:21
-#: app/templates/passports/target.html:22
+#: app/templates/passports/target.html:32
+#: app/templates/passports/target.html:33
 msgid "Private stamp photo"
 msgstr "Photo privée du tampon"
 
-#: app/templates/passports/target.html:21
+#: app/templates/passports/target.html:32
 msgid "This photo is visible only to you. Uploading it does not earn a visit or publish it."
 msgstr "Cette photo n’est visible que par vous. Son téléversement ne valide aucune visite et ne la publie pas."
 
-#: app/templates/passports/target.html:22
+#: app/templates/passports/target.html:33
 msgid "Delete photo"
 msgstr "Supprimer la photo"
 
-#: app/templates/passports/target.html:23
+#: app/templates/passports/target.html:34
 msgid "JPEG, PNG or WebP, up to 10 MB and 20 megapixels"
 msgstr "JPEG, PNG ou WebP, 10 Mo et 20 mégapixels maximum"
 
-#: app/templates/passports/target.html:23
+#: app/templates/passports/target.html:34
 msgid "Upload photo"
 msgstr "Téléverser la photo"
 
@@ -13145,10 +13162,6 @@ msgstr "Conditions opérationnelles (heures)"
 #: app/templates/pilots/entry_form.html:280
 msgid "Function (hours)"
 msgstr "Fonction (heures)"
-
-#: app/templates/pilots/entry_form.html:312
-msgid "Save Changes"
-msgstr "Enregistrer les modifications"
 
 #: app/templates/pilots/entry_form.html:312
 #: app/templates/pilots/logbook.html:21

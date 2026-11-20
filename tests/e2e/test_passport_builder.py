@@ -823,6 +823,12 @@ def test_invited_friend_registration_without_javascript(
         expect(
             guest.get_by_role("button", name="Delete manual visit", exact=True)
         ).to_be_visible()
+        guest.get_by_text("Edit manual visit", exact=True).click()
+        edit_form = guest.locator('form:has(input[name="action"][value="edit_visit"])')
+        edit_form.locator('input[name="visit_date"]').fill("2026-01-02")
+        edit_form.locator('textarea[name="note"]').fill("Corrected visit date")
+        edit_form.get_by_role("button", name="Save Changes", exact=True).click()
+        expect(guest.get_by_text("Corrected visit date", exact=True)).to_be_visible()
         guest.goto(passport_url)
         guest.get_by_role("link", name="Where next?", exact=True).click()
         expect(

@@ -623,3 +623,10 @@ from builder and map descriptors.
 The additive migration backfills public provenance only for existing canonical
 source codes. Downgrading refuses to discard public projections or local
 classifications; these targets must first be explicitly removed.
+
+Manual visit correction uses the same bounded date/note/own-flight validation as
+creation. The update rechecks active participation, editable edition, target,
+participant and manual evidence kind. Confirmed GPS evidence and another
+participant’s visits cannot be rewritten through this form. The visit identity
+and creation timestamp are retained; its flight link may be removed without
+altering the flight. The form works without JavaScript.
