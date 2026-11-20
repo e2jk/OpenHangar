@@ -12,6 +12,7 @@ from utils import current_membership
 PASSPORT_ENDPOINTS = frozenset(
     {
         "passports.index",
+        "passports.export_account",
         "passports.new_passport",
         "passports.edit_passport",
         "passports.next_edition",
