@@ -1778,6 +1778,8 @@ msgid "Takeoff time"
 msgstr "Heure de décollage"
 
 #: app/flights/shared_flight.py:150
+#: app/templates/flights/airframe_import_review.html:49
+#: app/templates/flights/flight_form.html:476
 msgid "Landing time"
 msgstr "Heure d’atterrissage"
 
@@ -2372,7 +2374,7 @@ msgstr "Seul le participant sélectionné peut répondre à cette proposition."
 msgid "Group ownership changed. Ask the owner to make a new offer."
 msgstr "Le propriétaire du groupe a changé. Demandez au propriétaire de faire une nouvelle proposition."
 
-#: app/passports/registration.py:74
+#: app/passports/registration.py:74 app/templates/base.html:431
 msgid "Enter a valid email address."
 msgstr "Saisissez une adresse e-mail valide."
 
@@ -2487,12 +2489,12 @@ msgid "Passport deleted."
 msgstr "Passeport supprimé."
 
 #: app/passports/routes.py:626
-msgid "Choose a starting airfield from the search results."
-msgstr "Choisissez un aérodrome de départ dans les résultats."
+msgid "Choose a reference airfield from the search results."
+msgstr "Choisissez un aérodrome de référence parmi les résultats de recherche."
 
 #: app/passports/routes.py:629
-msgid "This starting airfield has no coordinates. Choose another."
-msgstr "Cet aérodrome de départ n’a pas de coordonnées. Choisissez-en un autre."
+msgid "This reference airfield has no coordinates. Choose another."
+msgstr "Cet aérodrome de référence n’a pas de coordonnées. Choisissez-en un autre."
 
 #: app/passports/routes.py:654
 msgid "distance/time limit"
@@ -4305,10 +4307,6 @@ msgstr "Veuillez cocher cette case pour continuer."
 msgid "Please select one of these options."
 msgstr "Veuillez sélectionner une de ces options."
 
-#: app/templates/base.html:431
-msgid "Please enter a valid email address."
-msgstr "Veuillez saisir une adresse e-mail valide."
-
 #: app/templates/base.html:432
 msgid "Please enter a valid URL."
 msgstr "Veuillez saisir une URL valide."
@@ -5873,6 +5871,7 @@ msgid "History"
 msgstr "Historique"
 
 #: app/templates/aircraft/detail.html:841
+#: app/templates/passports/vouchers.html:37
 msgid "Valid from (optional)"
 msgstr "Valide à partir du (facultatif)"
 
@@ -5960,16 +5959,16 @@ msgstr "Ajouter"
 
 #: app/templates/aircraft/detail.html:1011
 #: app/templates/aircraft/detail.html:1022
-msgid "Cover"
-msgstr "Couverture"
+msgid "Main photo"
+msgstr "Photo principale"
 
 #: app/templates/aircraft/detail.html:1029
 msgid "Delete this photo?"
 msgstr "Supprimer cette photo ?"
 
 #: app/templates/aircraft/detail.html:1040
-msgid "Drag to reorder — first photo is the cover."
-msgstr "Faites glisser pour réordonner — la première photo est la couverture."
+msgid "Drag to reorder — the first photo is the main photo."
+msgstr "Faites glisser pour réorganiser — la première photo est la photo principale."
 
 #: app/templates/aircraft/detail.html:1045
 msgid "No photos yet."
@@ -9872,11 +9871,6 @@ msgstr "Conserver le carnet de cet appareil tel quel pour toutes"
 msgid "Takeoff"
 msgstr "Décollage"
 
-#: app/templates/flights/airframe_import_review.html:49
-#: app/templates/flights/flight_form.html:476
-msgid "Landing"
-msgstr "Atterrissage"
-
 #: app/templates/flights/airframe_import_review.html:51
 #: app/templates/flights/flight_form.html:597
 msgid "Passengers"
@@ -12051,16 +12045,16 @@ msgid "Rank"
 msgstr "Rang"
 
 #: app/templates/passports/detail.html:26
-msgid "Participant"
-msgstr "Participant"
+msgid "Participant name"
+msgstr "Nom du participant"
 
-#: app/templates/passports/detail.html:26
+#: app/templates/passports/detail.html:26 app/templates/pilots/stats.html:44
 msgid "Airfields visited"
 msgstr "Aérodromes visités"
 
 #: app/templates/passports/detail.html:26
-msgid "Coverage"
-msgstr "Couverture"
+msgid "Completion"
+msgstr "Avancement"
 
 #: app/templates/passports/detail.html:26
 #: app/templates/passports/detail.html:31 app/templates/users/list.html:46
@@ -12770,8 +12764,8 @@ msgstr "Utilisés"
 
 #: app/templates/passports/vouchers.html:12
 #: app/templates/passports/vouchers.html:18
-msgid "Remaining"
-msgstr "Solde"
+msgid "Vouchers remaining"
+msgstr "Bons restants"
 
 #: app/templates/passports/vouchers.html:12
 #: app/templates/passports/vouchers.html:18
@@ -12881,10 +12875,6 @@ msgid "Participant (personal allocations only)"
 msgstr "Participant (attributions personnelles uniquement)"
 
 #: app/templates/passports/vouchers.html:37
-msgid "Validity starts (optional)"
-msgstr "Début de validité (facultatif)"
-
-#: app/templates/passports/vouchers.html:37
 msgid "Validity ends (optional)"
 msgstr "Fin de validité (facultatif)"
 
@@ -12917,20 +12907,20 @@ msgid "Unmanaged aircraft / session inputs"
 msgstr "Aéronef non géré / données de la session"
 
 #: app/templates/passports/where_next.html:13
-msgid "Starting airfield"
-msgstr "Aérodrome de départ"
+msgid "Reference airfield"
+msgstr "Aérodrome de référence"
 
 #: app/templates/passports/where_next.html:13
 msgid "Use aircraft home, then pilot home"
 msgstr "Base de l’aéronef, sinon base du pilote"
 
 #: app/templates/passports/where_next.html:14
-msgid "Search starting airfield by code or name"
-msgstr "Rechercher le départ par code ou nom"
+msgid "Search reference airfield by code or name"
+msgstr "Rechercher l’aérodrome de référence par code ou nom"
 
 #: app/templates/passports/where_next.html:14
-msgid "Up to 50 matches appear in the starting-airfield list. Narrow the search if needed."
-msgstr "Jusqu’à 50 résultats dans la liste des départs. Affinez la recherche si nécessaire."
+msgid "Up to 50 matches appear in the reference-airfield list. Narrow the search if needed."
+msgstr "La liste des aérodromes de référence affiche jusqu’à 50 résultats. Affinez la recherche si nécessaire."
 
 #: app/templates/passports/where_next.html:15
 msgid "Use home airfield"
@@ -12946,8 +12936,8 @@ msgstr "Mode de filtrage"
 
 #: app/templates/passports/where_next.html:17
 #: app/templates/passports/where_next.html:34
-msgid "Distance (nm)"
-msgstr "Distance (NM)"
+msgid "Distance (NM)"
+msgstr "Distance en NM"
 
 #: app/templates/passports/where_next.html:17
 #: app/templates/passports/where_next.html:34
@@ -13011,8 +13001,8 @@ msgid "Find destinations"
 msgstr "Trouver des destinations"
 
 #: app/templates/passports/where_next.html:30
-msgid "Choose a starting airfield to find destinations."
-msgstr "Choisissez un aérodrome de départ pour trouver des destinations."
+msgid "Choose a reference airfield to find destinations."
+msgstr "Choisissez un aérodrome de référence pour trouver des destinations."
 
 #: app/templates/passports/where_next.html:30
 msgid "Starting from"
@@ -13822,10 +13812,6 @@ msgstr "Temps de vol total"
 #: app/templates/pilots/stats.html:40
 msgid "Total distance"
 msgstr "Distance totale"
-
-#: app/templates/pilots/stats.html:44
-msgid "Airports visited"
-msgstr "Aérodromes visités"
 
 #: app/templates/pilots/stats.html:48
 msgid "Countries visited"

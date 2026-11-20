@@ -1008,7 +1008,7 @@
   <div class="ac-form-card p-3">
     <div id="photo-gallery" class="d-flex flex-wrap gap-2"
          data-reorder-url="{{ url_for('aircraft.reorder_photos', aircraft_id=aircraft.id) }}"
-         data-cover-label="{{ _('Cover') }}">
+         data-cover-label="{{ _('Main photo') }}">
       {% for photo in photos %}
       <div class="photo-thumb position-relative" data-photo-id="{{ photo.id }}" draggable="true">
         <img src="{{ url_for('aircraft.serve_photo_thumb', aircraft_id=aircraft.id, photo_id=photo.id) }}"
@@ -1019,7 +1019,7 @@
              data-img-alt="{{ photo.original_filename }}"
              title="{{ photo.original_filename }}">
         {% if loop.first %}
-        <span class="position-absolute top-0 start-0 badge bg-primary oh-fs-065 m-1">{{ _('Cover') }}</span>
+        <span class="position-absolute top-0 start-0 badge bg-primary oh-fs-065 m-1">{{ _('Main photo') }}</span>
         {% endif %}
         {% if is_owner %}
         <form method="post"
@@ -1037,7 +1037,7 @@
     </div>
     {% if is_owner and photos | length > 1 %}
     <p class="text-muted oh-fs-08 mt-2 mb-0">
-      <i class="bi bi-arrows-move me-1"></i>{{ _('Drag to reorder — first photo is the cover.') }}
+      <i class="bi bi-arrows-move me-1"></i>{{ _('Drag to reorder — the first photo is the main photo.') }}
     </p>
     {% endif %}
   </div>
