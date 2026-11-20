@@ -2421,8 +2421,11 @@ downgrades and show localised retrieval timestamps.
   assumed free landing. Enforce remaining quantity transactionally under concurrent
   submissions, provide correction/undo, and show used/remaining counts. Savings
   are summed by currency, with no implicit conversion or invented landing fee.
-- [ ] Compare participant/group coverage across linked editions using stable airfield
+- [x] Compare participant/group coverage across linked editions using stable airfield
   identities, showing both target-set changes and each edition's own percentage.
+  The comparison lists each edition’s sharing participants, anyone/everyone
+  coverage and closure-adjusted denominator within the selected history scope;
+  read-only viewers never receive retrospective participation.
 - [ ] "All editions" combines the union of targets from all accessible editions in
   the series, including fields removed from the current edition and archived
   editions. One marker/list row per stable airfield identity, not per code/year;

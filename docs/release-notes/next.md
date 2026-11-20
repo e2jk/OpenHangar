@@ -6,6 +6,11 @@ can now create and edit their own collections, add missing airfields and prepare
 a linked next edition. Their military and ULM labels apply to their own passport;
 public airfield details keep other collections’ private corrections separate.
 
+Linked group editions now compare coverage by anyone, by everyone and by each
+participant, alongside the airfields added or removed. Each edition has its own
+percentage, with read-only history clearly separated from participation. Older
+shared maps also open reliably while a newer edition is active.
+
 **Where next?** helps those friends find unvisited destinations using public
 airfield data and fields shared through their passports. They can enter speed
 and range estimates manually, with access checked against their current

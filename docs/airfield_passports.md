@@ -662,3 +662,18 @@ The ZIP spills to an anonymous temporary file after 4 MiB; response closure and
 failure paths close it. Photos are copied from already sanitised private uploads.
 The download uses normal navigation rather than HTMX and is excluded from
 service-worker and history caches.
+
+### Comparing group editions
+
+The linked-edition comparison includes anyone/everyone coverage and each sharing
+participant's coverage, beside that edition's independent personal completion and
+stable-identity target additions/removals. Each edition uses its own common
+denominator: open fields plus closed fields reached by at least one sharing
+participant. No percentage is produced for an empty or unachievable group scope.
+
+Figures follow the viewer's selected history scope and sharing consent. A later
+friend viewing an earlier edition is labelled as a read-only viewer and is not
+added to its leaderboard or everyone count. Withheld historical visits do not
+contribute even to aggregate counts. Existing request-batched evidence supplies
+the comparison; no per-edition statistics queries are added. Selecting an older
+map while another edition is current never indexes evidence outside that map.

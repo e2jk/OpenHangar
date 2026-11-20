@@ -368,6 +368,12 @@ def edition_stats(
         "closed_included": sum(1 for row in counted if row.get("is_closed")),
         "anyone": anyone if roster else None,
         "everyone": everyone,
+        "anyone_percent": round(100 * anyone / denominator)
+        if roster and denominator
+        else None,
+        "everyone_percent": round(100 * everyone / denominator)
+        if everyone is not None and denominator
+        else None,
         "by_target": {
             row["id"]: {keys[uid] for uid in visited_by.get(row["id"], set())}
             for row in rows
@@ -433,13 +439,21 @@ def combined(
             friends.values(), key=lambda friend: friend["name"].casefold()
         )
     view["participating"] = evidence["participating"]
-    view["stats"] = (
-        edition_stats(
-            evidence["own"][current.id]["rows"],
-            evidence["roster"][current.id],
-            evidence["visited_by"][current.id],
+    by_edition = {}
+    for comparison in view["comparisons"]:
+        passport_id = comparison["passport"].id
+        stats = edition_stats(
+            evidence["own"][passport_id]["rows"],
+            evidence["roster"][passport_id],
+            evidence["visited_by"][passport_id],
             user_id,
         )
+        comparison["group_stats"] = stats
+        by_edition[passport_id] = stats
+    # A historical map can be selected while a different participating edition
+    # is current. Its evidence is outside this view, so never index it here.
+    view["stats"] = (
+        by_edition.get(current.id)
         if current is not None and current.id in evidence["participating"]
         else None
     )
