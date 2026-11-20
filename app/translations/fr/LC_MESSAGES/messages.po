@@ -203,7 +203,7 @@ msgstr "Définissez soit une contribution horaire, soit une contribution mensuel
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Ce fichier GPS contient trop de points pour être importé (plus de %(n)s). Découpez l'enregistrement en plusieurs fichiers."
 
-#: app/aircraft/routes.py:555 app/passports/routes.py:677
+#: app/aircraft/routes.py:555 app/passports/routes.py:701
 msgid "cruise speed"
 msgstr "vitesse de croisière"
 
@@ -2448,75 +2448,75 @@ msgstr "Votre passeport %(title)s se termine le %(date)s. Ouvrez cette édition 
 msgid "Open passport"
 msgstr "Ouvrir le passeport"
 
-#: app/passports/routes.py:230
+#: app/passports/routes.py:254
 msgid "Small airfields"
 msgstr "Petits aérodromes"
 
-#: app/passports/routes.py:231
+#: app/passports/routes.py:255
 msgid "Medium airports"
 msgstr "Aéroports moyens"
 
-#: app/passports/routes.py:232
+#: app/passports/routes.py:256
 msgid "Large airports"
 msgstr "Grands aéroports"
 
-#: app/passports/routes.py:233
+#: app/passports/routes.py:257
 msgid "Heliports"
 msgstr "Héliports"
 
-#: app/passports/routes.py:234
+#: app/passports/routes.py:258
 msgid "Seaplane bases"
 msgstr "Hydrobases"
 
-#: app/passports/routes.py:235
+#: app/passports/routes.py:259
 msgid "Balloon ports"
 msgstr "Bases de ballons"
 
-#: app/passports/routes.py:236
+#: app/passports/routes.py:260
 msgid "Closed airfields"
 msgstr "Aérodromes fermés"
 
-#: app/passports/routes.py:346
+#: app/passports/routes.py:370
 msgid "Passport saved."
 msgstr "Passeport enregistré."
 
-#: app/passports/routes.py:387
+#: app/passports/routes.py:411
 msgid "An airfield code conflicts with an existing identity. Review or remove that selection."
 msgstr "Un code d’aérodrome entre en conflit avec une identité existante. Vérifiez ou retirez cette sélection."
 
-#: app/passports/routes.py:449
+#: app/passports/routes.py:473
 msgid "Passport deleted."
 msgstr "Passeport supprimé."
 
-#: app/passports/routes.py:650
+#: app/passports/routes.py:674
 msgid "Choose a reference airfield from the search results."
 msgstr "Choisissez un aérodrome de référence parmi les résultats de recherche."
 
-#: app/passports/routes.py:653
+#: app/passports/routes.py:677
 msgid "This reference airfield has no coordinates. Choose another."
 msgstr "Cet aérodrome de référence n’a pas de coordonnées. Choisissez-en un autre."
 
-#: app/passports/routes.py:678
+#: app/passports/routes.py:702
 msgid "distance/time limit"
 msgstr "limite de distance/durée"
 
-#: app/passports/routes.py:679
+#: app/passports/routes.py:703
 msgid "usable fuel"
 msgstr "carburant utilisable"
 
-#: app/passports/routes.py:680
+#: app/passports/routes.py:704
 msgid "fuel flow"
 msgstr "consommation"
 
-#: app/passports/routes.py:681
+#: app/passports/routes.py:705
 msgid "reserve minutes"
 msgstr "réserve en minutes"
 
-#: app/passports/routes.py:693
+#: app/passports/routes.py:717
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Saisissez une vitesse de croisière pour le mode durée, ou utilisez le mode distance."
 
-#: app/passports/routes.py:702
+#: app/passports/routes.py:726
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "L’autonomie théorique est inconnue. Saisissez le carburant utilisable, la consommation, la vitesse et une réserve explicite laissant une durée de vol positive. Le filtre distance/durée reste appliqué."
 
@@ -11954,7 +11954,7 @@ msgstr "Où aller ensuite ?"
 msgid "Edit passport"
 msgstr "Modifier le passeport"
 
-#: app/templates/passports/detail.html:11 app/templates/passports/index.html:8
+#: app/templates/passports/detail.html:11 app/templates/passports/index.html:9
 msgid "Linked editions"
 msgstr "Éditions liées"
 
@@ -11981,7 +11981,7 @@ msgstr "Inviter des amis"
 #: app/templates/passports/detail.html:14
 #: app/templates/passports/group_members.html:3
 #: app/templates/passports/group_members.html:4
-#: app/templates/passports/index.html:10
+#: app/templates/passports/index.html:11
 #: app/templates/passports/invitation_settings.html:20
 #: app/templates/passports/series.html:6
 msgid "Group members"
@@ -12365,11 +12365,15 @@ msgstr "Le remplacement d’une liste importée conserve les aérodromes ayant d
 msgid "Create passport"
 msgstr "Créer un passeport"
 
-#: app/templates/passports/index.html:9
+#: app/templates/passports/index.html:7
+msgid "Export my passport data"
+msgstr "Exporter mes données de passeports"
+
+#: app/templates/passports/index.html:10
 msgid "No passports yet."
 msgstr "Aucun passeport pour le moment."
 
-#: app/templates/passports/index.html:10
+#: app/templates/passports/index.html:11
 msgid "Groups and edition history"
 msgstr "Groupes et historique des éditions"
 

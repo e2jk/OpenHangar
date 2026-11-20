@@ -630,3 +630,35 @@ participant and manual evidence kind. Confirmed GPS evidence and another
 participant’s visits cannot be rewritten through this form. The visit identity
 and creation timestamp are retained; its flight link may be removed without
 altering the flight. The form works without JavaScript.
+
+### Portable participant data
+
+**Export my passport data** on the passport list downloads an authenticated,
+non-cacheable ZIP for the current organisation. This capability also works for
+passport-only and read-only accounts. It never uses group ownership as permission
+to export a friend's records.
+
+The archive contains UTF-8 `passport-data.json` with
+`format: "openhangar-passport-data"` and `version: 1`, plus available own photos
+under `photos/<photo-id>.jpg`. JSON sections contain current accessible passport
+metadata, own participation/consent records, target references, manual/GPS visits,
+arrival exclusions, personal voucher allocations, own voucher use/corrections,
+current eligible completion evidence and photo references. Dates/timestamps use
+ISO notation; monetary amounts use decimal strings with their stored currency.
+Flight IDs are references, not a second copy of the flight logbook. Shared-pool
+events belonging to other participants, private flight notes, invitation keys,
+idempotency tokens, contact lists and other participants' photos are excluded.
+
+Withdrawn/inactive participation does not discard the person's stored evidence.
+The export retains their own records and photo files, but omits inaccessible
+passport titles and future targets. A retained target supplies public source
+metadata where available; inaccessible custom fields supply stable IDs only.
+Existing public projections and local classifications keep their usual
+permissions. Current completion is a live snapshot for accessible passports, not
+a historical group snapshot. A missing/concurrently removed photo has
+`included: false`; its absence does not prevent the remaining export.
+
+The ZIP spills to an anonymous temporary file after 4 MiB; response closure and
+failure paths close it. Photos are copied from already sanitised private uploads.
+The download uses normal navigation rather than HTMX and is excluded from
+service-worker and history caches.

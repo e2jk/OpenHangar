@@ -200,6 +200,12 @@ requires confirmation. Deleting a passport keeps your flight logbook. The builde
 supports normal forms without JavaScript and keeps its draft on the server for
 two hours.
 
+On **Airfield passports**, choose **Export my passport data** to download a ZIP
+with your records and stamp photos for this organisation. It includes your
+retained evidence after withdrawal, without exposing the group’s later private
+changes. Missing photo files are marked in the export. Other friends’ private
+evidence is excluded, including when you own the group.
+
 Open a manual visit’s **Edit manual visit** form to correct its date or note,
 or change its supporting flight. Removing that link keeps the visit as an
 independent manual entry; editing the visit never changes the flight itself.

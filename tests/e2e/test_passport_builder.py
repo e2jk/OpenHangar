@@ -1,6 +1,8 @@
 """Real-browser builder, map reinitialisation and mobile layout."""
 
+import json
 import re
+import zipfile
 from collections.abc import Iterator
 from typing import Any
 from uuid import uuid4
@@ -882,6 +884,20 @@ def test_invited_friend_registration_without_javascript(
         guest.get_by_role("link", name="Delete passport", exact=True).click()
         guest.get_by_role("button", name="Delete passport", exact=True).click()
         guest.wait_for_url(live_server_url + "/passports/")
+        with guest.expect_download() as downloaded:
+            guest.get_by_role(
+                "link", name="Export my passport data", exact=True
+            ).click()
+        download = downloaded.value
+        assert download.suggested_filename == "openhangar-passports.zip"
+        archive_path = download.path()
+        assert archive_path is not None
+        with zipfile.ZipFile(archive_path) as archive:
+            exported = json.loads(archive.read("passport-data.json"))
+        assert exported["format"] == "openhangar-passport-data"
+        assert any(
+            visit["note"] == "Corrected visit date" for visit in exported["visits"]
+        )
     finally:
         context.close()
     page.goto(passport_url)

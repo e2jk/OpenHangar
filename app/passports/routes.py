@@ -96,6 +96,30 @@ def index() -> ResponseReturnValue:
     )
 
 
+@passports_bp.route("/export")
+@login_required
+@limiter.limit("2 per minute", exempt_when=_rate_limiting_disabled)
+def export_account() -> ResponseReturnValue:
+    from passports.exports import account_archive
+
+    tenant_id, user_id = _actor()
+    output = account_archive(tenant_id, user_id, accessible_passports().all())
+    try:
+        response = send_file(
+            output,
+            mimetype="application/zip",
+            as_attachment=True,
+            download_name="openhangar-passports.zip",
+            max_age=0,
+        )
+    except Exception:
+        output.close()
+        raise
+    response.call_on_close(output.close)
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
+
+
 @passports_bp.route("/<int:passport_id>/")
 @login_required
 def detail(passport_id: int) -> ResponseReturnValue:

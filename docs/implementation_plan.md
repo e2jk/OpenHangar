@@ -2551,7 +2551,7 @@ downgrades and show localised retrieval timestamps.
   source projections and passport-local classifications preserve other collections’
   private corrections and aliases. Existing curated collections retain their data.
   Own-account exports and pilot activation remain below.
-- [ ] New invitees get a real passport-only account: own passports, manual visits,
+- [x] New invitees get a real passport-only account: own passports, manual visits,
   profile/security settings, recovery and data export. Add an explicit account
   capability/access restriction enforced on all relevant server routes as well as
   navigation; do not assign a broad default tenant role (including VIEWER) that
@@ -2694,10 +2694,13 @@ downgrades and show localised retrieval timestamps.
   Support the current participant/discovery selection and never include flight
   tracks or private evidence. Verify files against navigation-app-compatible
   waypoint fixtures. Set `hx-boost="false"` on file download links.
-- [ ] Provide participant data export (visits, notes, voucher events and photo
+- [x] Provide participant data export (visits, notes, voucher events and photo
   references/files) in a documented portable format, scoped to their own data;
   passport-only members export through their authenticated account. Owner export of a group
-  must not bypass participant evidence privacy.
+  must not bypass participant evidence privacy. The authenticated ZIP contains a
+  versioned JSON document and own photo files. Withdrawn records are retained in
+  the export without granting current private group metadata; missing photos are
+  explicitly marked. Exports stay within the authenticated organisation.
 
 ### 41i — Integration, validation and documentation
 
