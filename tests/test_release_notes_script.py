@@ -313,3 +313,57 @@ def test_already_released(capsys, tmp_path):
         == 0
     )
     assert capsys.readouterr().out == ""
+
+
+def test_generated_prs_group_chores_without_losing_commit_details():
+    intro = "Release summary\n\n## What's Changed\n"
+    deps = (
+        "* chore(deps): update package by @renovate in https://github.com/o/r/pull/1\n"
+    )
+    feature = "* feat: add maps by @pilot in https://github.com/o/r/pull/2\n"
+    chore = "* [later] chore: tidy files by @owner in https://github.com/o/r/pull/3\n  * chore: first commit\n  * docs: explain it\n"
+    fix = "* fix: keep stamps by @pilot in https://github.com/o/r/pull/4\n"
+    security = "* chore(deps): patch [security] by @renovate in https://github.com/o/r/pull/5\n"
+    mixed = "* [later] feat: improve maps (+1 more) by @pilot in https://github.com/o/r/pull/6\n  * feat: improve maps\n  * chore: cleanup\n"
+    footer = "\n## New Contributors\n* @new made their first contribution in https://github.com/o/r/pull/2\n\n**Full Changelog**: https://github.com/o/r/compare/v1...v2\n"
+    notes = intro + deps + feature + chore + fix + security + mixed + footer
+    expected = intro + feature + fix + mixed + deps + chore + security + footer
+    assert release_notes.group_prs(notes) == expected
+    assert release_notes.group_prs(expected) == expected
+    # Reordering does not hide vulnerability fixes from the release title.
+    assert release_notes.release_name("2.0.0", "New maps", expected).endswith(
+        "[SECURITY]"
+    )
+
+
+def test_generated_pr_grouping_preserves_other_sections_and_untyped_titles():
+    before = "## Summary\n* chore: explanation by @someone in https://github.com/o/r/pull/0\n\n"
+    notes = "## What's Changed\n\n* chore!: change defaults by @owner in https://github.com/o/r/pull/1\n* A more useful map by @pilot in https://github.com/o/r/pull/2\n\n**Full Changelog**: compare\n"
+    result = release_notes.group_prs(before + notes)
+    assert result.startswith(before + "## What's Changed\n\n* A more useful map")
+    assert result.endswith(
+        "* chore!: change defaults by @owner in https://github.com/o/r/pull/1\n\n**Full Changelog**: compare\n"
+    )
+    assert result.count("https://github.com/o/r/pull/0") == 1
+
+
+def test_generated_pr_grouping_noop_and_cli(tmp_path):
+    for notes in (
+        "",
+        "No generated PR list\n",
+        "## What's Changed\n\n**Full Changelog**: compare\n",
+        "## What's Changed\n* feat: maps by @p in url\n* chore: tidy by @p in url\n",
+        "## What's Changed\n* chore: first by @p in url\n* chore: second by @p in url\n",
+        "## What's Changed\n* fix: a chore problem by @p in url\n",
+    ):
+        assert release_notes.group_prs(notes) == notes
+    path = tmp_path / "notes.md"
+    path.write_text(
+        "## What's Changed\n* chore: tidy by @p in url\n* fix: maps by @p in url\n",
+        encoding="utf-8",
+    )
+    assert release_notes.main(["group-prs", str(path)]) == 0
+    assert (
+        path.read_text()
+        == "## What's Changed\n* fix: maps by @p in url\n* chore: tidy by @p in url\n"
+    )

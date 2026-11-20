@@ -33,6 +33,7 @@ GitHub release after it the same way (`release_notes.py heading FILE`).
         # the summary's lines already in the latest release's NOTES (or
         # its title already that release's NAME); exit 1 if any — see
         # already_released
+    release_notes.py group-prs NOTES  # chore PRs after other changes
     release_notes.py drop-released NOTES URLS
         # remove from GitHub-generated release NOTES (in place) the PRs
         # whose URLs are listed in the URLS file — see drop_released
@@ -294,6 +295,36 @@ def drop_released(notes: str, released_urls: set[str]) -> str:
     return text.strip("\n") + "\n"
 
 
+def group_prs(notes: str) -> str:
+    """Keep chore PRs together after other PRs in GitHub's generated list.
+
+    Preserve order within each group, nested commit bullets, authors, links and
+    the other sections. Titles, rather than labels, also cover unlabelled chores
+    and ship-later PRs. Mixed ship batches stay with their PR's main change.
+    """
+    heading = re.search(r"(?m)^## What's Changed[ \t]*$", notes)
+    if heading is None:
+        return notes
+    rest = notes[heading.end() :]
+    boundary = re.search(r"(?m)^(?:#{1,6} |\*\*Full Changelog\*\*)", rest)
+    end = boundary.start() if boundary else len(rest)
+    section = rest[:end]
+    prefix, *blocks = re.split(r"(?m)(?=^\* )", section)
+
+    def chore(block: str) -> bool:
+        titles = _pr_titles(block.splitlines()[0])
+        return bool(
+            titles and _kind(titles[0].removeprefix(_LATER + " ")).lower() == "chore"
+        )
+
+    ordered = sorted(blocks, key=chore)
+    if ordered == blocks:
+        return notes
+    trailing = section[len(section.rstrip("\r\n")) :]
+    grouped = prefix + "\n".join(block.rstrip("\r\n") for block in ordered) + trailing
+    return notes[: heading.end()] + grouped + rest[end:]
+
+
 def already_released(summary: str, notes: str, release_name: str = "") -> list[str]:
     """The lines of *summary* (next.md) that the latest release already
     published: its title line when that's the release's own title (the part
@@ -330,6 +361,7 @@ def main(argv: list[str] | None = None) -> int:
             "heading",
             "summary",
             "drop-released",
+            "group-prs",
             "already-released",
             "release-name",
             "previous-release",
@@ -366,6 +398,12 @@ def main(argv: list[str] | None = None) -> int:
         for line in found:
             print(line)
         return 1 if found else 0
+    if args.mode == "group-prs":
+        with open(args.file, encoding="utf-8") as fh:
+            notes = fh.read()
+        with open(args.file, "w", encoding="utf-8") as fh:
+            fh.write(group_prs(notes))
+        return 0
     if args.mode == "drop-released":
         with open(args.urls, encoding="utf-8") as fh:
             urls = {line.strip() for line in fh if line.strip()}
