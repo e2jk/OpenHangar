@@ -25,3 +25,5 @@ without changing the flight logbook, and remain private to your account.
 
 - The “What’s Changed” PR list keeps chore PRs together after the other changes,
   including dependency updates, while preserving authors, links and commit details.
+
+- Passport browser checks distinguish displayed visit notes from editable fields.

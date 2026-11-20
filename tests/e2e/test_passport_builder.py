@@ -156,7 +156,9 @@ def test_passport_visits_frequency_and_htmx_map(
     page.locator("#visit-date").fill("2025-01-01")
     page.locator("#visit-note").fill("Browser visit")
     page.get_by_role("button", name="Save visit", exact=True).click()
-    expect(page.get_by_text("Browser visit", exact=True)).to_be_visible()
+    expect(
+        page.locator("p.text-break").filter(has_text=re.compile(r"^Browser visit$"))
+    ).to_be_visible()
     page.get_by_role("link", name=title, exact=True).click()
     expect(
         page.locator("#passport-progress-map .leaflet-overlay-pane path")
@@ -167,7 +169,9 @@ def test_passport_visits_frequency_and_htmx_map(
     page.locator("#passport-progress-map .leaflet-overlay-pane path").click(force=True)
     expect(page.locator(".leaflet-popup-content a")).to_be_visible()
     page.locator(".leaflet-popup-content a").click()
-    expect(page.get_by_text("Browser visit", exact=True)).to_be_visible()
+    expect(
+        page.locator("p.text-break").filter(has_text=re.compile(r"^Browser visit$"))
+    ).to_be_visible()
     page.goto(passport_url)
     page.set_viewport_size({"width": 390, "height": 844})
     assert page.evaluate(
@@ -354,7 +358,11 @@ def test_linked_editions_copy_combined_map_and_no_js(
     page.locator("#visit-date").fill("2025-01-01")
     page.locator("#visit-note").fill("Private edition evidence")
     page.get_by_role("button", name="Save visit", exact=True).click()
-    expect(page.get_by_text("Private edition evidence", exact=True)).to_be_visible()
+    expect(
+        page.locator("p.text-break").filter(
+            has_text=re.compile(r"^Private edition evidence$")
+        )
+    ).to_be_visible()
     page.get_by_role("link", name=title, exact=True).click()
     expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()
     page.get_by_role("link", name="Create next edition", exact=True).click()
@@ -471,7 +479,11 @@ def test_individual_vouchers_stay_separate_from_stamps_and_work_without_js(
     page.locator("#visit-date").fill("2025-03-01")
     page.locator("#visit-note").fill("Visit without voucher use")
     page.get_by_role("button", name="Save visit", exact=True).click()
-    expect(page.get_by_text("Visit without voucher use", exact=True)).to_be_visible()
+    expect(
+        page.locator("p.text-break").filter(
+            has_text=re.compile(r"^Visit without voucher use$")
+        )
+    ).to_be_visible()
     page.get_by_role("link", name=title, exact=True).click()
     expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()
     page.get_by_role("link", name="Vouchers", exact=True).click()
@@ -526,7 +538,11 @@ def test_group_consent_series_map_mobile_and_without_js(
     page.locator("#visit-date").fill("2001-01-01")
     page.locator("#visit-note").fill("Private group visit note")
     page.get_by_role("button", name="Save visit", exact=True).click()
-    expect(page.get_by_text("Private group visit note", exact=True)).to_be_visible()
+    expect(
+        page.locator("p.text-break").filter(
+            has_text=re.compile(r"^Private group visit note$")
+        )
+    ).to_be_visible()
     page.get_by_role("link", name=title, exact=True).click()
     expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()
     page.get_by_role("link", name="Group visit sharing", exact=True).click()
@@ -828,7 +844,11 @@ def test_invited_friend_registration_without_javascript(
         edit_form.locator('input[name="visit_date"]').fill("2026-01-02")
         edit_form.locator('textarea[name="note"]').fill("Corrected visit date")
         edit_form.get_by_role("button", name="Save Changes", exact=True).click()
-        expect(guest.get_by_text("Corrected visit date", exact=True)).to_be_visible()
+        expect(
+            guest.locator("p.text-break").filter(
+                has_text=re.compile(r"^Corrected visit date$")
+            )
+        ).to_be_visible()
         guest.goto(passport_url)
         guest.get_by_role("link", name="Where next?", exact=True).click()
         expect(
