@@ -472,6 +472,18 @@ def target_detail(passport_id: int, target_id: int) -> ResponseReturnValue:
             action = request.form.get("action")
             if action == "visit":
                 evidence.add_visit(passport, participant, target_id, request.form)
+            elif action == "edit_visit":
+                visit = PassportVisit.query.filter_by(
+                    id=request.form.get("visit_id", type=db_id),
+                    passport_id=passport.id,
+                    participant_id=participant.id,
+                    target_id=target_id,
+                    evidence_kind="manual",
+                ).first_or_404()
+                for name, value in evidence.visit_values(
+                    passport, participant, request.form
+                ).items():
+                    setattr(visit, name, value)
             elif action == "delete_visit":
                 visit = PassportVisit.query.filter_by(
                     id=request.form.get("visit_id", type=db_id),

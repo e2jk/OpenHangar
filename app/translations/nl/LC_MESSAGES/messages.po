@@ -203,7 +203,7 @@ msgstr "Stel voor het reservefonds een bijdrage per uur óf per maand in, niet b
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Dit GPS-bestand bevat te veel punten om te importeren (meer dan %(n)s). Splits de opname op in meerdere bestanden."
 
-#: app/aircraft/routes.py:555 app/passports/routes.py:665
+#: app/aircraft/routes.py:555 app/passports/routes.py:677
 msgid "cruise speed"
 msgstr "kruissnelheid"
 
@@ -2194,15 +2194,15 @@ msgstr "De bezoeknotitie is te lang."
 msgid "Choose a flight from your own logbook on the visit date."
 msgstr "Kies een vlucht uit je eigen logboek op de bezoekdatum."
 
-#: app/passports/evidence.py:93
+#: app/passports/evidence.py:97
 msgid "Choose a photo to upload."
 msgstr "Kies een foto om te uploaden."
 
-#: app/passports/evidence.py:96
+#: app/passports/evidence.py:100
 msgid "Photos must be at most 10 MB."
 msgstr "Foto’s mogen maximaal 10 MB groot zijn."
 
-#: app/passports/evidence.py:123
+#: app/passports/evidence.py:127
 msgid "Upload a valid JPEG, PNG or WebP photo (up to 20 megapixels)."
 msgstr "Upload een geldige JPEG-, PNG- of WebP-foto (maximaal 20 megapixels)."
 
@@ -2488,35 +2488,35 @@ msgstr "Een vliegveldcode conflicteert met een bestaande identiteit. Controleer 
 msgid "Passport deleted."
 msgstr "Paspoort verwijderd."
 
-#: app/passports/routes.py:638
+#: app/passports/routes.py:650
 msgid "Choose a reference airfield from the search results."
 msgstr "Kies een referentievliegveld uit de zoekresultaten."
 
-#: app/passports/routes.py:641
+#: app/passports/routes.py:653
 msgid "This reference airfield has no coordinates. Choose another."
 msgstr "Dit referentievliegveld heeft geen coördinaten. Kies een ander."
 
-#: app/passports/routes.py:666
+#: app/passports/routes.py:678
 msgid "distance/time limit"
 msgstr "afstands-/tijdslimiet"
 
-#: app/passports/routes.py:667
+#: app/passports/routes.py:679
 msgid "usable fuel"
 msgstr "bruikbare brandstof"
 
-#: app/passports/routes.py:668
+#: app/passports/routes.py:680
 msgid "fuel flow"
 msgstr "brandstofverbruik"
 
-#: app/passports/routes.py:669
+#: app/passports/routes.py:681
 msgid "reserve minutes"
 msgstr "reserve in minuten"
 
-#: app/passports/routes.py:681
+#: app/passports/routes.py:693
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Voer een kruissnelheid in voor de tijdsmodus of gebruik de afstandsmodus."
 
-#: app/passports/routes.py:690
+#: app/passports/routes.py:702
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "Het theoretische bereik is onbekend. Voer bruikbare brandstof, verbruik, snelheid en een expliciete reserve in die positieve vliegtijd overlaten. Het afstands-/tijdfilter blijft van toepassing."
 
@@ -6799,7 +6799,8 @@ msgstr "Betaling registreren"
 
 #: app/templates/aircraft/owners_billing.html:101
 #: app/templates/aircraft/owners_billing.html:158
-#: app/templates/passports/target.html:20
+#: app/templates/passports/target.html:25
+#: app/templates/passports/target.html:31
 msgid "Note (optional)"
 msgstr "Notitie (optioneel)"
 
@@ -12672,49 +12673,65 @@ msgstr "Deze aankomst uitsluiten"
 msgid "Delete manual visit"
 msgstr "Handmatig bezoek verwijderen"
 
-#: app/templates/passports/target.html:19
-msgid "No qualifying visits recorded yet."
-msgstr "Nog geen geldige bezoeken vastgelegd."
+#: app/templates/passports/target.html:21
+msgid "Edit manual visit"
+msgstr "Handmatig bezoek bewerken"
 
-#: app/templates/passports/target.html:20
-msgid "Record a manual visit"
-msgstr "Handmatig bezoek vastleggen"
-
-#: app/templates/passports/target.html:20
+#: app/templates/passports/target.html:24
+#: app/templates/passports/target.html:31
 msgid "Visit date"
 msgstr "Bezoekdatum"
 
-#: app/templates/passports/target.html:20
+#: app/templates/passports/target.html:26
+#: app/templates/passports/target.html:31
 #: app/templates/passports/vouchers.html:21
 msgid "Supporting flight (optional, latest 200 eligible flights)"
 msgstr "Ondersteunende vlucht (optioneel, laatste 200 geldige vluchten)"
 
-#: app/templates/passports/target.html:20
+#: app/templates/passports/target.html:27
+#: app/templates/passports/target.html:31
 msgid "Independent manual visit"
 msgstr "Onafhankelijk handmatig bezoek"
 
-#: app/templates/passports/target.html:20
+#: app/templates/passports/target.html:27
+msgid "Current supporting flight"
+msgstr "Huidige ondersteunende vlucht"
+
+#: app/templates/passports/target.html:28
+#: app/templates/pilots/entry_form.html:312
+msgid "Save Changes"
+msgstr "Wijzigingen opslaan"
+
+#: app/templates/passports/target.html:30
+msgid "No qualifying visits recorded yet."
+msgstr "Nog geen geldige bezoeken vastgelegd."
+
+#: app/templates/passports/target.html:31
+msgid "Record a manual visit"
+msgstr "Handmatig bezoek vastleggen"
+
+#: app/templates/passports/target.html:31
 msgid "Save visit"
 msgstr "Bezoek opslaan"
 
-#: app/templates/passports/target.html:21
-#: app/templates/passports/target.html:22
+#: app/templates/passports/target.html:32
+#: app/templates/passports/target.html:33
 msgid "Private stamp photo"
 msgstr "Privéfoto van de stempel"
 
-#: app/templates/passports/target.html:21
+#: app/templates/passports/target.html:32
 msgid "This photo is visible only to you. Uploading it does not earn a visit or publish it."
 msgstr "Deze foto is alleen voor jou zichtbaar. Uploaden telt niet als bezoek en maakt de foto niet openbaar."
 
-#: app/templates/passports/target.html:22
+#: app/templates/passports/target.html:33
 msgid "Delete photo"
 msgstr "Foto verwijderen"
 
-#: app/templates/passports/target.html:23
+#: app/templates/passports/target.html:34
 msgid "JPEG, PNG or WebP, up to 10 MB and 20 megapixels"
 msgstr "JPEG, PNG of WebP, maximaal 10 MB en 20 megapixels"
 
-#: app/templates/passports/target.html:23
+#: app/templates/passports/target.html:34
 msgid "Upload photo"
 msgstr "Foto uploaden"
 
@@ -13145,10 +13162,6 @@ msgstr "Operationele omstandigheden (uren)"
 #: app/templates/pilots/entry_form.html:280
 msgid "Function (hours)"
 msgstr "Functie (uren)"
-
-#: app/templates/pilots/entry_form.html:312
-msgid "Save Changes"
-msgstr "Wijzigingen opslaan"
 
 #: app/templates/pilots/entry_form.html:312
 #: app/templates/pilots/logbook.html:21

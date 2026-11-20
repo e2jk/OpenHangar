@@ -2631,6 +2631,11 @@ downgrades and show localised retrieval timestamps.
   discussion; future debrief sharing requires an explicit audience-selected action
   (see the Flight Debriefs & Shared Experience backlog entry). Phase 41 does
   not depend on building the full debrief feature.
+- [x] Manual visit correction increment: participants, including passport-only
+  friends, can edit their own manual date/note/supporting-flight association in a
+  normal mobile-friendly form. Existing date/eligibility and read-only guards apply;
+  other participants’ evidence, GPS confirmations and logbooks remain protected.
+  Data export and the pilot-activation explanation remain below.
 - [ ] Minimal mobile visit form: choose target, date, save; optional note and
   edit/delete own manual visits. No access to unrelated instance users, logbooks,
   aircraft or other participants' private evidence; closed/out-of-window visits are
