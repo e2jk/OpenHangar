@@ -1726,6 +1726,10 @@ jobs:
           open("/tmp/auto-notes.md", "w").write(f"{head}\n{lines}\n\n{footer}{tail}")
           PY
           fi
+          # Keep chore PRs together, after functional changes. Do this after
+          # adding the current ship PR so it is grouped by the same rule.
+          python3 scripts/release_notes.py group-prs /tmp/auto-notes.md
+
           # The hand-written release summary (docs/release-notes/next.md)
           # goes on top — only when it changed since the previous version
           # tag, so a summary written for an earlier release is never
