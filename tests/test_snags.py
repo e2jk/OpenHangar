@@ -2,7 +2,7 @@
 Tests for Phase 12: Snag List routes, model, and grounding propagation.
 """
 
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
@@ -492,7 +492,7 @@ class TestResolveSnag:
         ac_id = _add_aircraft(app, tenant_id)
         snag_id = _add_snag(app, ac_id)
         _login(app, client)
-        today = date.today().isoformat()
+        today = datetime.now(UTC).date().isoformat()
         resp = client.post(
             f"/aircraft/{ac_id}/snags/{snag_id}/resolve",
             data={"resolution_note": "Fixed by mechanic.", "resolved_at": today},
@@ -516,7 +516,7 @@ class TestResolveSnag:
             f"/aircraft/{ac_id}/snags/{snag_id}/resolve",
             data={
                 "resolution_note": "Gear door repaired.",
-                "resolved_at": date.today().isoformat(),
+                "resolved_at": datetime.now(UTC).date().isoformat(),
             },
         )
         with app.app_context():

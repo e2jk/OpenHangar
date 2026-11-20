@@ -33,3 +33,5 @@ airfields and validity dates use consistent wording across pages.
 
 - Passport browser checks distinguish displayed visit notes from editable fields
   and exercise downloads separately from page navigation.
+
+- Snag resolution tests use UTC dates consistently around local midnight.
