@@ -153,3 +153,82 @@ def test_personal_passports_have_no_group_figures_or_filters(
         for state in ("visited", "unvisited")
     }
     assert shown["visited"] != shown["unvisited"]
+
+
+def test_linked_editions_compare_group_and_each_participant_independently(
+    app: Flask, client: FlaskClient, group: dict[str, int]
+) -> None:
+    from models import PassportAirfield, TenantUser
+    from passports.catalogue import create_custom
+
+    with app.app_context():
+        series = db.session.get(PassportSeries, group["series"])
+        new = db.session.get(Passport, group["new"])
+        for name, code, closed in (
+            ("New open airfield", "NEWOPEN", False),
+            ("Closed unvisited airfield", "NEWCLOSED", True),
+        ):
+            field = create_custom(group["tenant"], name, code=code)
+            field.is_closed = closed
+            db.session.add(
+                PassportAirfield(
+                    tenant_id=group["tenant"], passport_id=new.id, airfield_id=field.id
+                )
+            )
+        db.session.flush()
+        passports, _accepted = groups.visible_editions(series, group["user"])
+        comparisons = groups.combined(series, passports, group["user"])["comparisons"]
+        old, recent = comparisons
+        assert (
+            old["group_stats"]["anyone_percent"]
+            == old["group_stats"]["everyone_percent"]
+            == 100
+        )
+        assert recent["added"] == 2 and recent["removed"] == 0
+        stats = recent["group_stats"]
+        assert stats["denominator"] == 2 and stats["closed_excluded"] == 1
+        assert stats["anyone_percent"] == 50 and stats["everyone_percent"] == 0
+        assert {p["name"]: p["percent"] for p in stats["participants"]} == {
+            "Original pilot": 0,
+            "Later friend": 50,
+        }
+        # A roleless friend sees only authorised history, with no own retroactive
+        # participation or progress in the old edition.
+        member = db.session.get(TenantUser, (group["other"], group["tenant"]))
+        member.role, member.access_scope = None, "passport"
+        db.session.commit()
+    signin(client, group["other"])
+    page = client.get(
+        f"/passports/series/{group['series']}/",
+        query_string={"edition": "all", "history": "1"},
+    )
+    assert page.status_code == 200
+    assert 'id="passport-edition-comparisons"' in page.text
+    assert (
+        "Participant progress" in page.text
+        and "Read-only history; not a participant" in page.text
+    )
+    assert "1 / 2 (50%)" in page.text and "Later friend (you): 1 / 2 (50%)" in page.text
+    assert "PRIVATE MANUAL" not in page.text and "PRIVATE FLIGHT" not in page.text
+
+
+def test_history_comparisons_do_not_disclose_withheld_visit_totals(
+    app: Flask, group: dict[str, int]
+) -> None:
+    with app.app_context():
+        old = db.session.get(Passport, group["old"])
+        participant = PassportParticipant.query.filter_by(
+            passport_id=old.id, user_id=group["user"]
+        ).one()
+        participant.share_history = False
+        db.session.commit()
+        series = db.session.get(PassportSeries, group["series"])
+        passports, _accepted = groups.visible_editions(
+            series, group["other"], include_history=True
+        )
+        data = groups.combined(series, passports, group["other"])
+        historical = next(e for e in data["comparisons"] if e["passport"].id == old.id)
+        stats = historical["group_stats"]
+        assert stats["participants"] == [] and stats["anyone"] is None
+        assert stats["anyone_percent"] is None and stats["everyone_percent"] is None
+        assert historical["progress"]["visited"] == 0

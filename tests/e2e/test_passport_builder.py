@@ -566,6 +566,10 @@ def test_group_consent_series_map_mobile_and_without_js(
     page.locator("#edition-history").check()
     page.locator("#passport-frequency").check()
     page.get_by_role("button", name="Apply", exact=True).click()
+    comparisons = page.locator("#passport-edition-comparisons")
+    expect(comparisons).to_contain_text("Participant progress")
+    expect(comparisons).to_contain_text("Browser group pilot")
+    expect(comparisons).to_contain_text("Visited by anyone")
     expect(page.locator("#passport-progress-map .leaflet-map-pane")).to_have_count(1)
     expect(
         page.get_by_text(

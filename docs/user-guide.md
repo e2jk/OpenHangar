@@ -230,6 +230,12 @@ Link successive editions to revisit earlier lists or combine their maps, with
 newest/oldest visit colours and optional frequency weighting. Your own voucher
 allowances stay separate from your friends’ balances.
 
+Linked group editions also show a comparison of the airfields added/removed,
+coverage by anyone and everyone, and each sharing participant's progress. Every
+edition has its own percentage and closure adjustment. Including earlier
+read-only history adds only the visits shared with you; it does not join that
+edition or give you its stamps or vouchers.
+
 To invite existing account holders, enable **Group visit sharing**, then open
 **Invite friends** on the passport and copy its invitation link. Friends choose a
 group display name and sharing consent, then sign in and join that edition. A

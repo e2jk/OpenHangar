@@ -2236,7 +2236,7 @@ msgstr "Voer een weergavenaam voor de groep in van maximaal 128 tekens."
 msgid "Confirm sharing your eligible visit dates with this edition's participants."
 msgstr "Bevestig dat je de datums van je geldige bezoeken deelt met de deelnemers aan deze editie."
 
-#: app/passports/groups.py:452
+#: app/passports/groups.py:466
 msgid "Create a new edition to change the dates of a shared passport."
 msgstr "Maak een nieuwe editie om de datums van een gedeeld paspoort te wijzigen."
 
@@ -6586,7 +6586,7 @@ msgstr[0] "één onderdeel"
 msgstr[1] "%(n)s onderdelen"
 
 #: app/templates/aircraft/list.html:73 app/templates/passports/detail.html:16
-#: app/templates/passports/series.html:9 app/templates/passports/series.html:19
+#: app/templates/passports/series.html:9 app/templates/passports/series.html:26
 #: app/templates/passports/vouchers.html:10
 msgid "Archived"
 msgstr "Gearchiveerd"
@@ -12007,7 +12007,7 @@ msgid "Manage expiry reminders"
 msgstr "Herinneringen voor de einddatum beheren"
 
 #: app/templates/passports/detail.html:22
-#: app/templates/passports/series.html:19
+#: app/templates/passports/series.html:22
 msgid "Your progress"
 msgstr "Je voortgang"
 
@@ -12033,11 +12033,13 @@ msgstr "Groepsvoortgang"
 
 #: app/templates/passports/detail.html:25
 #: app/templates/passports/detail.html:30
+#: app/templates/passports/series.html:23
 msgid "Visited by anyone"
 msgstr "Door minstens één deelnemer bezocht"
 
 #: app/templates/passports/detail.html:25
 #: app/templates/passports/detail.html:30
+#: app/templates/passports/series.html:23
 msgid "Visited by everyone"
 msgstr "Door iedereen bezocht"
 
@@ -12058,11 +12060,13 @@ msgid "Completion"
 msgstr "Voltooiing"
 
 #: app/templates/passports/detail.html:26
-#: app/templates/passports/detail.html:31 app/templates/users/list.html:46
+#: app/templates/passports/detail.html:31
+#: app/templates/passports/series.html:30 app/templates/users/list.html:46
 msgid "you"
 msgstr "u"
 
 #: app/templates/passports/detail.html:27
+#: app/templates/passports/series.html:30
 msgid "Nobody is sharing visits in this edition yet, so there are no group figures."
 msgstr "Nog niemand deelt bezoeken in deze editie, dus er zijn nog geen groepscijfers."
 
@@ -12071,6 +12075,7 @@ msgid "Group figures count the participants sharing their visits in this edition
 msgstr "De groepscijfers tellen de deelnemers die hun bezoeken in deze editie delen, en veranderen meteen wanneer iemand vertrekt of wordt verwijderd. Iedereen wordt gemeten aan dezelfde vliegvelden: alle open vliegvelden, plus gesloten vliegvelden die iemand heeft bezocht."
 
 #: app/templates/passports/detail.html:28
+#: app/templates/passports/series.html:31
 #, python-format
 msgid "Closed airfields nobody visited are left out: %(n)s."
 msgstr "Gesloten vliegvelden die niemand heeft bezocht, niet meegeteld: %(n)s."
@@ -12198,7 +12203,7 @@ msgid "Owning an edition does not join it or grant stamps or vouchers. Use its i
 msgstr "Eigendom van een editie schrijft u niet in en geeft geen stempels of vouchers. Accepteer deelname afzonderlijk via de uitnodiging."
 
 #: app/templates/passports/group_members.html:6
-#: app/templates/passports/series.html:19
+#: app/templates/passports/series.html:27
 msgid "Not a participant"
 msgstr "Geen deelnemer"
 
@@ -12556,7 +12561,7 @@ msgstr "Huidige editie"
 msgid "No participating edition is currently active. Choose an edition below to explore its history."
 msgstr "Er is momenteel geen actieve editie waaraan u deelneemt. Kies hieronder een editie om de geschiedenis te bekijken."
 
-#: app/templates/passports/series.html:9 app/templates/passports/series.html:19
+#: app/templates/passports/series.html:9 app/templates/passports/series.html:22
 msgid "Edition"
 msgstr "Editie"
 
@@ -12618,14 +12623,22 @@ msgid "Target changes are compared with the preceding edition in this series. Co
 msgstr "Doelwijzigingen worden vergeleken met de voorgaande editie in deze reeks. De voortgang wordt voor elke editie onafhankelijk berekend."
 
 #: app/templates/passports/series.html:19
+msgid "Group comparisons count only the participants and visits shared with you in each edition. Read-only history never makes you a participant. Each edition uses its own open airfields plus closed airfields someone reached."
+msgstr "Groepsvergelijkingen tellen alleen deelnemers en bezoeken die per editie met u worden gedeeld. Alleen de geschiedenis bekijken maakt u geen deelnemer. Elke editie telt haar open vliegvelden en gesloten vliegvelden die iemand heeft bezocht."
+
+#: app/templates/passports/series.html:23
+msgid "Participant progress"
+msgstr "Voortgang per deelnemer"
+
+#: app/templates/passports/series.html:24
 msgid "Added targets"
 msgstr "Toegevoegde doelen"
 
-#: app/templates/passports/series.html:19
+#: app/templates/passports/series.html:24
 msgid "Removed targets"
 msgstr "Verwijderde doelen"
 
-#: app/templates/passports/series.html:19
+#: app/templates/passports/series.html:26
 msgid "Read-only history; not a participant"
 msgstr "Geschiedenis alleen bekijken; geen deelnemer"
 
