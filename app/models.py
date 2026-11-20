@@ -4120,6 +4120,8 @@ class PassportAirfieldAlias(db.Model):
         index=True,
     )
     code = db.Column(db.String(64), nullable=False)
+    # Set only for aliases derived from the bundled public catalogue.
+    catalogue_source_id = db.Column(db.String(64), nullable=True)
     valid_from = db.Column(db.Date, nullable=True)
     valid_until = db.Column(db.Date, nullable=True)
 
@@ -4386,6 +4388,12 @@ class PassportAirfield(db.Model):
     airfield_id = db.Column(db.Integer, nullable=False, index=True)
     display_order = db.Column(db.Integer, nullable=False, default=0)
     note = db.Column(db.Text, nullable=True)
+    public_catalogue = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
+    )
+    classification_overrides = db.Column(
+        db.JSON, nullable=False, default=dict, server_default="{}"
+    )
 
 
 class PassportParticipant(db.Model):

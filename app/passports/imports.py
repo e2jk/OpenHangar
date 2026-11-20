@@ -112,7 +112,14 @@ def publisher_codes(response: Fetched) -> list[str]:
     return _unique(codes)
 
 
-def prepare(tenant_id: int, state: dict[str, Any], adapter: str, url: str) -> None:
+def prepare(
+    tenant_id: int,
+    state: dict[str, Any],
+    adapter: str,
+    url: str,
+    *,
+    user_id: int | None = None,
+) -> None:
     from passports.builder import add_codes
 
     deadline = time.monotonic() + TOTAL_SECONDS
@@ -138,7 +145,7 @@ def prepare(tenant_id: int, state: dict[str, Any], adapter: str, url: str) -> No
     else:
         raise BuilderError(_("Choose a supported import source."))
     scratch: dict[str, Any] = {"selected": []}
-    add_codes(tenant_id, scratch, "\n".join(codes))
+    add_codes(tenant_id, scratch, "\n".join(codes), user_id=user_id)
     state["import_preview"] = {
         "source": {
             "url": response.url,

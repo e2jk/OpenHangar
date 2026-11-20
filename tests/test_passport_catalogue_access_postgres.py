@@ -13,6 +13,7 @@ from tests.test_passport_catalogue_access import (
     test_code_import_and_saved_references_revalidate_request_scope,
     test_latest_arrival_does_not_resolve_hidden_tenant_aliases,
     test_passport_only_discovery_uses_public_or_visible_origins_and_no_fleet,
+    test_personal_builder_keeps_public_projection_and_local_classifications,
     test_restricted_search_preserves_public_data_without_private_overrides,
 )
 from tests.test_passport_groups import group
@@ -30,6 +31,7 @@ __all__ = [
     "test_code_import_and_saved_references_revalidate_request_scope",
     "test_latest_arrival_does_not_resolve_hidden_tenant_aliases",
     "test_passport_only_discovery_uses_public_or_visible_origins_and_no_fleet",
+    "test_personal_builder_keeps_public_projection_and_local_classifications",
     "test_restricted_search_preserves_public_data_without_private_overrides",
 ]
 

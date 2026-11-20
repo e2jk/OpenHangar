@@ -203,7 +203,7 @@ msgstr "Définissez soit une contribution horaire, soit une contribution mensuel
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Ce fichier GPS contient trop de points pour être importé (plus de %(n)s). Découpez l'enregistrement en plusieurs fichiers."
 
-#: app/aircraft/routes.py:555 app/passports/routes.py:658
+#: app/aircraft/routes.py:555 app/passports/routes.py:665
 msgid "cruise speed"
 msgstr "vitesse de croisière"
 
@@ -2071,68 +2071,68 @@ msgstr "Le PDF enregistré pour la révision « %(number)s » est introuvable su
 msgid "Choose yes, no or unknown for each classification."
 msgstr "Choisissez oui, non ou inconnu pour chaque classification."
 
-#: app/passports/builder.py:98 app/passports/builder.py:537
+#: app/passports/builder.py:133 app/passports/builder.py:605
 msgid "An airfield reference is invalid. Reopen the builder."
 msgstr "Une référence d’aérodrome est invalide. Rouvrez l’éditeur."
 
-#: app/passports/builder.py:106 app/passports/builder.py:421
+#: app/passports/builder.py:141 app/passports/builder.py:482
 msgid "An airfield is no longer available. Review your selection."
 msgstr "Un aérodrome n’est plus disponible. Vérifiez votre sélection."
 
-#: app/passports/builder.py:166 app/passports/management.py:83
+#: app/passports/builder.py:203 app/passports/management.py:84
 msgid "A passport field is too long."
 msgstr "Un champ du passeport est trop long."
 
-#: app/passports/builder.py:171
+#: app/passports/builder.py:208
 msgid "An airfield selection was not offered by this draft."
 msgstr "Un aérodrome sélectionné ne figurait pas dans ce brouillon."
 
-#: app/passports/builder.py:192
+#: app/passports/builder.py:229
 msgid "Choose valid catalogue filters."
 msgstr "Choisissez des filtres de catalogue valides."
 
-#: app/passports/builder.py:196
+#: app/passports/builder.py:233
 msgid "The airfield search is too long."
 msgstr "La recherche d’aérodrome est trop longue."
 
-#: app/passports/builder.py:207
+#: app/passports/builder.py:246
 msgid "The pasted airfield list is too long."
 msgstr "La liste d’aérodromes collée est trop longue."
 
-#: app/passports/builder.py:237 app/passports/builder.py:524
-#: app/passports/builder.py:550 app/passports/drafts.py:135
+#: app/passports/builder.py:283 app/passports/builder.py:592
+#: app/passports/builder.py:620 app/passports/drafts.py:142
 msgid "This passport selection is too large. Narrow your selection."
 msgstr "Cette sélection de passeport est trop grande. Réduisez votre sélection."
 
-#: app/passports/builder.py:250
+#: app/passports/builder.py:296
 msgid "Enter a valid custom airfield name and optional code."
 msgstr "Saisissez un nom d’aérodrome personnalisé valide et un code facultatif."
 
-#: app/passports/builder.py:257
+#: app/passports/builder.py:303
 msgid "Enter both valid coordinates, or leave both empty."
 msgstr "Saisissez deux coordonnées valides ou laissez les deux champs vides."
 
-#: app/passports/builder.py:285
+#: app/passports/builder.py:336
 msgid "This passport changed while you were editing it. Reopen the builder."
 msgstr "Ce passeport a changé pendant votre modification. Rouvrez l’éditeur."
 
-#: app/passports/builder.py:290
+#: app/passports/builder.py:341
 msgid "Correct the unknown or ambiguous codes, or explicitly drop them."
 msgstr "Corrigez les codes inconnus ou ambigus, ou retirez-les explicitement."
 
-#: app/passports/builder.py:330
+#: app/passports/builder.py:390
 msgid "Keep airfields with voucher allocations. Archive this edition or delete unused allocations first."
 msgstr "Conservez les aérodromes ayant des bons attribués. Archivez cette édition ou supprimez d’abord les attributions inutilisées."
 
-#: app/passports/builder.py:393
+#: app/passports/builder.py:453
 msgid "Review this selection again before saving."
 msgstr "Vérifiez à nouveau cette sélection avant d’enregistrer."
 
-#: app/passports/builder.py:396
+#: app/passports/builder.py:456
 msgid "Confirm removal of airfields with saved visits or photos."
 msgstr "Confirmez le retrait des aérodromes avec des visites ou photos enregistrées."
 
-#: app/passports/builder.py:547
+#: app/passports/builder.py:617
 msgid "Unknown passport builder action."
 msgstr "Action inconnue dans l’éditeur de passeport."
 
@@ -2141,15 +2141,15 @@ msgstr "Action inconnue dans l’éditeur de passeport."
 msgid "Enter a valid %(label)s."
 msgstr "Saisissez une valeur valide pour %(label)s."
 
-#: app/passports/discovery.py:56 app/passports/discovery.py:84
+#: app/passports/discovery.py:56 app/passports/discovery.py:105
 msgid "Choose an unambiguous airfield code or a saved field reference."
 msgstr "Choisissez un code d’aérodrome non ambigu ou une référence de terrain enregistrée."
 
-#: app/passports/drafts.py:109 app/passports/drafts.py:121
+#: app/passports/drafts.py:116 app/passports/drafts.py:128
 msgid "This passport draft has expired. Start again."
 msgstr "Ce brouillon de passeport a expiré. Recommencez."
 
-#: app/passports/drafts.py:124
+#: app/passports/drafts.py:131
 msgid "This draft changed in another tab. Reopen the builder."
 msgstr "Ce brouillon a changé dans un autre onglet. Rouvrez l’éditeur."
 
@@ -2173,7 +2173,7 @@ msgstr "L’édition source a changé. Recommencez la copie."
 msgid "Join this passport before recording visits."
 msgstr "Rejoignez ce passeport avant d’enregistrer des visites."
 
-#: app/passports/evidence.py:37 app/passports/management.py:66
+#: app/passports/evidence.py:37 app/passports/management.py:67
 msgid "Reopen this passport before editing it."
 msgstr "Rouvrez ce passeport avant de le modifier."
 
@@ -2214,7 +2214,7 @@ msgstr "Ce groupe est en cours de mise à jour. Réessayez."
 #: app/passports/groups.py:123 app/passports/groups.py:216
 #: app/passports/invitations.py:98 app/passports/invitations.py:289
 #: app/passports/memberships.py:33 app/passports/memberships.py:41
-#: app/passports/series_routes.py:321
+#: app/passports/series_routes.py:331
 msgid "Group not found."
 msgstr "Groupe introuvable."
 
@@ -2260,23 +2260,23 @@ msgstr "Le format de la liste de l’éditeur a changé. Collez une liste vérif
 msgid "The publisher list contains a missing or unsupported code. Paste a verified list instead."
 msgstr "La liste de l’éditeur contient un code manquant ou non pris en charge. Collez une liste vérifiée à la place."
 
-#: app/passports/imports.py:123
+#: app/passports/imports.py:130
 msgid "Enter the booklet edition label before importing. Verify the edition with the publisher."
 msgstr "Saisissez le libellé de l’édition du carnet avant l’import. Vérifiez l’édition auprès de l’éditeur."
 
-#: app/passports/imports.py:130
+#: app/passports/imports.py:137
 msgid "The publisher has not released its current participant list. Paste a list you have verified, or try again later."
 msgstr "L’éditeur n’a pas encore publié sa liste actuelle de participants. Collez une liste que vous avez vérifiée ou réessayez plus tard."
 
-#: app/passports/imports.py:139
+#: app/passports/imports.py:146
 msgid "Choose a supported import source."
 msgstr "Choisissez une source d’import prise en charge."
 
-#: app/passports/imports.py:159
+#: app/passports/imports.py:166
 msgid "Preview the imported list before applying it."
 msgstr "Prévisualisez la liste importée avant de l’appliquer."
 
-#: app/passports/imports.py:184
+#: app/passports/imports.py:191
 msgid "The import provenance is invalid. Preview the source again."
 msgstr "La provenance de l’import est invalide. Prévisualisez à nouveau la source."
 
@@ -2318,24 +2318,24 @@ msgstr "Configurez l’authentification à deux facteurs avant de rejoindre ce p
 msgid "Sign in with the account used for this registration."
 msgstr "Connectez-vous avec le compte utilisé pour cette inscription."
 
-#: app/passports/management.py:47
+#: app/passports/management.py:48
 msgid "Pilot access is required to create a passport."
 msgstr "Un accès pilote est nécessaire pour créer un passeport."
 
-#: app/passports/management.py:64 app/passports/memberships.py:65
+#: app/passports/management.py:65 app/passports/memberships.py:65
 #: app/passports/memberships.py:99 app/passports/vouchers.py:143
 msgid "Passport not found."
 msgstr "Passeport introuvable."
 
-#: app/passports/management.py:78
+#: app/passports/management.py:79
 msgid "Enter valid passport dates."
 msgstr "Saisissez des dates de passeport valides."
 
-#: app/passports/management.py:86
+#: app/passports/management.py:87
 msgid "Enter a passport name."
 msgstr "Saisissez un nom de passeport."
 
-#: app/passports/management.py:92
+#: app/passports/management.py:93
 msgid "The passport end date must not precede its start date."
 msgstr "La date de fin du passeport ne doit pas précéder sa date de début."
 
@@ -2448,91 +2448,91 @@ msgstr "Votre passeport %(title)s se termine le %(date)s. Ouvrez cette édition 
 msgid "Open passport"
 msgstr "Ouvrir le passeport"
 
-#: app/passports/routes.py:223
+#: app/passports/routes.py:230
 msgid "Small airfields"
 msgstr "Petits aérodromes"
 
-#: app/passports/routes.py:224
+#: app/passports/routes.py:231
 msgid "Medium airports"
 msgstr "Aéroports moyens"
 
-#: app/passports/routes.py:225
+#: app/passports/routes.py:232
 msgid "Large airports"
 msgstr "Grands aéroports"
 
-#: app/passports/routes.py:226
+#: app/passports/routes.py:233
 msgid "Heliports"
 msgstr "Héliports"
 
-#: app/passports/routes.py:227
+#: app/passports/routes.py:234
 msgid "Seaplane bases"
 msgstr "Hydrobases"
 
-#: app/passports/routes.py:228
+#: app/passports/routes.py:235
 msgid "Balloon ports"
 msgstr "Bases de ballons"
 
-#: app/passports/routes.py:229
+#: app/passports/routes.py:236
 msgid "Closed airfields"
 msgstr "Aérodromes fermés"
 
-#: app/passports/routes.py:338
+#: app/passports/routes.py:346
 msgid "Passport saved."
 msgstr "Passeport enregistré."
 
-#: app/passports/routes.py:379
+#: app/passports/routes.py:387
 msgid "An airfield code conflicts with an existing identity. Review or remove that selection."
 msgstr "Un code d’aérodrome entre en conflit avec une identité existante. Vérifiez ou retirez cette sélection."
 
-#: app/passports/routes.py:442
+#: app/passports/routes.py:449
 msgid "Passport deleted."
 msgstr "Passeport supprimé."
 
-#: app/passports/routes.py:631
+#: app/passports/routes.py:638
 msgid "Choose a reference airfield from the search results."
 msgstr "Choisissez un aérodrome de référence parmi les résultats de recherche."
 
-#: app/passports/routes.py:634
+#: app/passports/routes.py:641
 msgid "This reference airfield has no coordinates. Choose another."
 msgstr "Cet aérodrome de référence n’a pas de coordonnées. Choisissez-en un autre."
 
-#: app/passports/routes.py:659
+#: app/passports/routes.py:666
 msgid "distance/time limit"
 msgstr "limite de distance/durée"
 
-#: app/passports/routes.py:660
+#: app/passports/routes.py:667
 msgid "usable fuel"
 msgstr "carburant utilisable"
 
-#: app/passports/routes.py:661
+#: app/passports/routes.py:668
 msgid "fuel flow"
 msgstr "consommation"
 
-#: app/passports/routes.py:662
+#: app/passports/routes.py:669
 msgid "reserve minutes"
 msgstr "réserve en minutes"
 
-#: app/passports/routes.py:674
+#: app/passports/routes.py:681
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Saisissez une vitesse de croisière pour le mode durée, ou utilisez le mode distance."
 
-#: app/passports/routes.py:683
+#: app/passports/routes.py:690
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "L’autonomie théorique est inconnue. Saisissez le carburant utilisable, la consommation, la vitesse et une réserve explicite laissant une durée de vol positive. Le filtre distance/durée reste appliqué."
 
-#: app/passports/series_routes.py:356 app/passports/series_routes.py:359
+#: app/passports/series_routes.py:366 app/passports/series_routes.py:369
 msgid "Choose a valid edition."
 msgstr "Choisissez une édition valide."
 
-#: app/passports/series_routes.py:369 app/passports/series_routes.py:376
+#: app/passports/series_routes.py:379 app/passports/series_routes.py:386
 msgid "Choose a member."
 msgstr "Choisissez un membre."
 
-#: app/passports/series_routes.py:397
+#: app/passports/series_routes.py:407
 msgid "Choose a removal record."
 msgstr "Choisissez une exclusion."
 
-#: app/passports/series_routes.py:400
+#: app/passports/series_routes.py:410
 msgid "Choose a membership action."
 msgstr "Choisissez une action d’adhésion."
 

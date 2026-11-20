@@ -56,6 +56,25 @@ def resolve_home(
             _("Choose an unambiguous airfield code or a saved field reference.")
         )
     visible = visible_identity_ids(tenant_id, user_id)
+    private = (
+        visible_identity_ids(tenant_id, user_id, private_metadata=True)
+        if visible is not None
+        else None
+    )
+
+    def candidate(
+        field: PassportAirfieldIdentity,
+    ) -> PassportAirfieldIdentity | cat.CatalogueAirfield:
+        if (
+            private is not None
+            and not PassportAirfieldIdentity.query.filter(
+                PassportAirfieldIdentity.id == field.id,
+                PassportAirfieldIdentity.id.in_(private),
+            ).first()
+        ):
+            return cat.public_candidate(field)
+        return field
+
     try:
         if value.startswith("field:"):
             query = PassportAirfieldIdentity.query.filter_by(
@@ -66,10 +85,12 @@ def resolve_home(
             result: PassportAirfieldIdentity | None = query.first()
             if result is None:
                 raise ValueError
-            return result
-        result = cat.resolve_code(tenant_id, value, airfield_ids=visible)
+            return candidate(result)
+        result = cat.resolve_code(
+            tenant_id, value, airfield_ids=visible, private_airfield_ids=private
+        )
         if result is not None:
-            return result
+            return candidate(result)
         matches = [
             row
             for row in cat.load_catalogue()
@@ -122,7 +143,20 @@ def home_descriptor(owner: Any, tenant_id: int) -> dict[str, Any] | None:
         ).first()
     ):
         return None
-    return {**cat.effective_airfield(field), "key": value}
+    private = (
+        visible_identity_ids(tenant_id, private_metadata=True)
+        if visible is not None
+        else None
+    )
+    public = (
+        private is not None
+        and not PassportAirfieldIdentity.query.filter(
+            PassportAirfieldIdentity.id == field.id,
+            PassportAirfieldIdentity.id.in_(private),
+        ).first()
+    )
+    data = cat.public_airfield(field) if public else cat.effective_airfield(field)
+    return {**data, "key": value}
 
 
 def distance_nm(lat: float, lon: float, other_lat: float, other_lon: float) -> float:
@@ -274,8 +308,20 @@ def latest_arrival(
         .filter(PassportAirfieldIdentity.tenant_id == tenant_id)
     )
     visible = visible_identity_ids(tenant_id, user_id)
+    private = (
+        visible_identity_ids(tenant_id, user_id, private_metadata=True)
+        if visible is not None
+        else None
+    )
+    private_ids = set(db.session.scalars(private)) if private is not None else None
     if visible is not None:
-        alias_query = alias_query.filter(PassportAirfieldIdentity.id.in_(visible))
+        alias_query = alias_query.filter(
+            PassportAirfieldIdentity.id.in_(visible),
+            db.or_(
+                PassportAirfieldAlias.catalogue_source_id.is_not(None),
+                PassportAirfieldIdentity.id.in_(private),
+            ),
+        )
     for alias, field in alias_query.all():
         aliases.setdefault(alias.code, []).append((alias, field))
     sources: dict[str, list[cat.CatalogueAirfield]] = {}
@@ -297,7 +343,12 @@ def latest_arrival(
             }
             if len(matches) == 1:
                 field = next(iter(matches.values()))
-                return {**cat.effective_airfield(field), "key": f"field:{field.id}"}
+                data = (
+                    cat.public_airfield(field)
+                    if private_ids is not None and field.id not in private_ids
+                    else cat.effective_airfield(field)
+                )
+                return {**data, "key": f"field:{field.id}"}
             continue
         rows = sources.get(code, [])
         if len(rows) == 1:

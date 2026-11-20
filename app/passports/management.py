@@ -40,7 +40,8 @@ def require_actor(tenant_id: int, user_id: int, *, creating: bool = False) -> Us
     if user is None or not user.is_active or user.view_only or membership is None:
         raise BuilderError(_("You cannot manage passports with this account."), 403)
     if creating and not (
-        user.is_pilot
+        membership.access_scope == "passport"
+        or user.is_pilot
         or membership.role
         in (Role.ADMIN, Role.OWNER, Role.PILOT, Role.STUDENT, Role.INSTRUCTOR)
     ):
@@ -97,7 +98,14 @@ def fingerprint(passport: Passport | None) -> str:
     if passport is None:
         return ""
     targets = [
-        (target.id, target.airfield_id, target.display_order, target.note)
+        (
+            target.id,
+            target.airfield_id,
+            target.display_order,
+            target.note,
+            target.public_catalogue,
+            target.classification_overrides,
+        )
         for target in PassportAirfield.query.filter_by(passport_id=passport.id)
         .order_by(PassportAirfield.id)
         .all()

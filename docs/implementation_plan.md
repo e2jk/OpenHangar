@@ -2545,7 +2545,12 @@ downgrades and show localised retrieval timestamps.
   arrival lookups recheck that scope, including removal and account-scope changes.
   Hidden tenant overrides are excluded from public search results. Aircraft
   selectors and fleet lookups are suppressed; manual speed/range inputs work
-  without a pilot or fleet role. Private builder writes remain gated below.
+  without a pilot or fleet role. Private builder writes are integrated in the following increment.
+- [x] Personal collection builder increment: passport-only friends can create, edit
+  and copy their own editions without gaining fleet or logbook capabilities. Public
+  source projections and passport-local classifications preserve other collections’
+  private corrections and aliases. Existing curated collections retain their data.
+  Own-account exports and pilot activation remain below.
 - [ ] New invitees get a real passport-only account: own passports, manual visits,
   profile/security settings, recovery and data export. Add an explicit account
   capability/access restriction enforced on all relevant server routes as well as

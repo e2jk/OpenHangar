@@ -26,7 +26,7 @@ from models import (
 )
 from sqlalchemy.orm import selectinload
 
-from passports.catalogue import effective_airfield
+from passports.catalogue import effective_airfield, public_airfield
 
 
 def date_eligible(
@@ -83,7 +83,17 @@ def _field(
     target: PassportAirfield, identity: PassportAirfieldIdentity
 ) -> dict[str, Any]:
     return {
-        **effective_airfield(identity),
+        **{
+            key: value
+            for key, value in (
+                public_airfield(identity)
+                if target.public_catalogue
+                else effective_airfield(identity)
+            ).items()
+            if key != "classification_provenance"
+        },
+        **(target.classification_overrides or {}),
+        "public_catalogue": bool(target.public_catalogue),
         "id": identity.id,
         "key": str(identity.id),
         "target_id": target.id,
@@ -229,11 +239,25 @@ def evaluate(
     ):
         raise ValueError("Passport evidence snapshot scope mismatch")
     aliases = snapshot.aliases if snapshot is not None else _aliases(tenant_id)
+    public_sources = {
+        field.get("source_id"): field["key"]
+        for field in fields
+        if field.get("public_catalogue") and field.get("source_id")
+    }
     for alias in aliases:
+        target = fields_by_id.get(alias.airfield_id)
+        if (
+            target
+            and target.get("public_catalogue")
+            and alias.catalogue_source_id is None
+        ):
+            continue
         key = (
-            fields_by_id[alias.airfield_id]["key"]
-            if alias.airfield_id in fields_by_id
-            else "outside:" + str(alias.airfield_id)
+            target["key"]
+            if target
+            else public_sources.get(
+                alias.catalogue_source_id, "outside:" + str(alias.airfield_id)
+            )
         )
         codes.setdefault(alias.code, []).append(
             (key, alias.valid_from, alias.valid_until)
@@ -245,9 +269,9 @@ def evaluate(
                 "",
                 "ZZZZ",
             }:
-                codes.setdefault(str(code).upper(), []).append(
-                    (field["key"], None, None)
-                )
+                entries = codes.setdefault(str(code).upper(), [])
+                if not any(key == field["key"] for key, _first, _last in entries):
+                    entries.append((field["key"], None, None))
     evidence: dict[str, list[dict[str, Any]]] = {f["key"]: [] for f in fields}
     excluded: set[int] = set()
     if participant:

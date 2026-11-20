@@ -130,12 +130,24 @@ def find_airfields(
 
 
 def resolve_code(
-    tenant_id: int, code: str, on_date: date | None = None, *, airfield_ids: Any = None
+    tenant_id: int,
+    code: str,
+    on_date: date | None = None,
+    *,
+    airfield_ids: Any = None,
+    private_airfield_ids: Any = None,
 ) -> PassportAirfieldIdentity | None:
     """Resolve only explicit aliases; ambiguous/reused codes are never guessed."""
     aliases = db.select(PassportAirfieldAlias.airfield_id).where(
         PassportAirfieldAlias.code == code.strip().upper()
     )
+    if private_airfield_ids is not None:
+        aliases = aliases.where(
+            db.or_(
+                PassportAirfieldAlias.airfield_id.in_(private_airfield_ids),
+                PassportAirfieldAlias.catalogue_source_id.is_not(None),
+            )
+        )
     if on_date is not None:
         aliases = aliases.where(
             db.or_(
@@ -167,6 +179,7 @@ def add_alias(
     *,
     valid_from: date | None = None,
     valid_until: date | None = None,
+    catalogue_source_id: str | None = None,
 ) -> PassportAirfieldAlias:
     """Explicit dated reconciliation may retain a reused code on two identities."""
     code = code.strip().upper()
@@ -179,6 +192,7 @@ def add_alias(
     alias = PassportAirfieldAlias(
         airfield_id=airfield.id,
         code=code,
+        catalogue_source_id=catalogue_source_id,
         valid_from=valid_from,
         valid_until=valid_until,
     )
@@ -208,12 +222,13 @@ def materialise(tenant_id: int, row: CatalogueAirfield) -> PassportAirfieldIdent
     field.source_url = "https://ourairports.com/airports/" + row.ident + "/"
     field.updated_at = datetime.now(UTC)
     db.session.flush()
-    existing = {
-        alias.code
-        for alias in PassportAirfieldAlias.query.filter_by(airfield_id=field.id).all()
-    }
+    aliases = PassportAirfieldAlias.query.filter_by(airfield_id=field.id).all()
+    existing = {alias.code for alias in aliases}
+    for alias in aliases:
+        if alias.code in codes:
+            alias.catalogue_source_id = row.source_id
     for code in sorted(codes - existing):
-        add_alias(field, code)
+        add_alias(field, code, catalogue_source_id=row.source_id)
     db.session.flush()
     return field
 
@@ -233,6 +248,30 @@ def refresh_referenced(tenant_id: int) -> list[str]:
             except AirfieldConflict:
                 conflicts.append(field.source_id)
     return conflicts
+
+
+def public_airfield(field: PassportAirfieldIdentity) -> dict[str, Any]:
+    """The retained public source values, without tenant corrections/provenance."""
+    return {
+        **{key: getattr(field, key, None) for key in OVERRIDE_FIELDS},
+        "source_id": field.source_id,
+    }
+
+
+def public_candidate(field: PassportAirfieldIdentity) -> CatalogueAirfield:
+    """A saved public reference, keeping source values across catalogue refreshes."""
+    return CatalogueAirfield(
+        source_id=field.source_id or "",
+        ident=field.ident or "",
+        icao_code=field.icao_code,
+        name=field.name,
+        latitude=float(field.latitude) if field.latitude is not None else None,
+        longitude=float(field.longitude) if field.longitude is not None else None,
+        country=field.country,
+        region=field.region,
+        airfield_type=field.airfield_type or "",
+        is_closed=field.is_closed,
+    )
 
 
 def effective_airfield(field: PassportAirfieldIdentity) -> dict[str, Any]:

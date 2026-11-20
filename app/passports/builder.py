@@ -45,11 +45,20 @@ def _classification(value: str) -> bool | None:
     return {"unknown": None, "yes": True, "no": False}[value]
 
 
-def _field_descriptor(field: PassportAirfieldIdentity) -> dict[str, Any]:
-    data = cat.effective_airfield(field)
+def _field_descriptor(
+    field: PassportAirfieldIdentity, *, public: bool = False
+) -> dict[str, Any]:
+    data = cat.public_airfield(field) if public else cat.effective_airfield(field)
+    data = {
+        key: value
+        for key, value in data.items()
+        if key in cat.OVERRIDE_FIELDS or key == "source_id"
+    }
     return {
         **data,
         "id": field.id,
+        "public_catalogue": public,
+        "source_id": field.source_id,
         "key": f"field:{field.id}",
         "latitude": float(data["latitude"]) if data["latitude"] is not None else None,
         "longitude": float(data["longitude"])
@@ -59,7 +68,7 @@ def _field_descriptor(field: PassportAirfieldIdentity) -> dict[str, Any]:
 
 
 def available_fields(
-    tenant_id: int, *, user_id: int | None = None
+    tenant_id: int, *, user_id: int | None = None, public_keys: set[str] | None = None
 ) -> dict[str, dict[str, Any]]:
     visible = visible_identity_ids(tenant_id, user_id)
     query = PassportAirfieldIdentity.query.filter_by(tenant_id=tenant_id)
@@ -71,23 +80,49 @@ def available_fields(
         for field in materialised
         if field.source == "ourairports"
     }
-    result = {f"field:{field.id}": _field_descriptor(field) for field in materialised}
+    private = (
+        visible_identity_ids(tenant_id, user_id, private_metadata=True)
+        if visible is not None
+        else None
+    )
+    private_ids = set(db.session.scalars(private)) if private is not None else None
+    result = {
+        f"field:{field.id}": _field_descriptor(
+            field,
+            public=(private_ids is not None and field.id not in private_ids)
+            or f"field:{field.id}" in (public_keys or set()),
+        )
+        for field in materialised
+    }
     for row in cat.load_catalogue():
         key = f"catalogue:{row.source_id}"
         result[key] = (
             result[f"field:{by_source[row.source_id].id}"]
             if row.source_id in by_source
-            else {**vars(row), "key": key, "id": None, "military": None, "ulm": None}
+            else {
+                **vars(row),
+                "key": key,
+                "id": None,
+                "military": None,
+                "ulm": None,
+                "public_catalogue": visible is not None,
+            }
         )
     return result
 
 
 def selected_fields(
-    tenant_id: int, state: dict[str, Any], *, allow_missing: bool = False
+    tenant_id: int,
+    state: dict[str, Any],
+    *,
+    allow_missing: bool = False,
+    user_id: int | None = None,
 ) -> list[dict[str, Any]]:
     if not state["selected"]:
         return []
-    available = available_fields(tenant_id)
+    available = available_fields(
+        tenant_id, user_id=user_id, public_keys=set(state.get("public_catalogue", []))
+    )
     selected = []
     seen = set()
     for key in state["selected"]:
@@ -124,14 +159,16 @@ def selected_fields(
     return selected
 
 
-def matching_fields(tenant_id: int, state: dict[str, Any]) -> list[dict[str, Any]]:
+def matching_fields(
+    tenant_id: int, state: dict[str, Any], *, user_id: int | None = None
+) -> list[dict[str, Any]]:
     filters = state["filters"]
     if not (
         filters["countries"] or filters["regions"] or len(filters["query"].strip()) >= 2
     ):
         return []
     matches = {}
-    for field in available_fields(tenant_id).values():
+    for field in available_fields(tenant_id, user_id=user_id).values():
         if field["key"] in matches:
             continue
         if (
@@ -202,11 +239,13 @@ def set_filters(state: dict[str, Any], form: MultiDict[str, str]) -> None:
     state["filters"] = filters
 
 
-def add_codes(tenant_id: int, state: dict[str, Any], raw: str) -> None:
+def add_codes(
+    tenant_id: int, state: dict[str, Any], raw: str, *, user_id: int | None = None
+) -> None:
     if len(raw) > 50000:
         raise BuilderError(_("The pasted airfield list is too long."))
     by_code: dict[str, set[str]] = {}
-    for field in available_fields(tenant_id).values():
+    for field in available_fields(tenant_id, user_id=user_id).values():
         for code in (field.get("ident"), field.get("icao_code")):
             if code:
                 by_code.setdefault(code.upper(), set()).add(field["key"])
@@ -216,9 +255,16 @@ def add_codes(tenant_id: int, state: dict[str, Any], raw: str) -> None:
         .join(PassportAirfieldIdentity)
         .filter(PassportAirfieldIdentity.tenant_id == tenant_id)
     )
-    visible = visible_identity_ids(tenant_id)
+    visible = visible_identity_ids(tenant_id, user_id)
     if visible is not None:
-        alias_query = alias_query.filter(PassportAirfieldAlias.airfield_id.in_(visible))
+        private = visible_identity_ids(tenant_id, user_id, private_metadata=True)
+        alias_query = alias_query.filter(
+            PassportAirfieldAlias.airfield_id.in_(visible),
+            db.or_(
+                PassportAirfieldAlias.catalogue_source_id.is_not(None),
+                PassportAirfieldAlias.airfield_id.in_(private),
+            ),
+        )
     for code, airfield_id in alias_query.all():
         aliases.setdefault(code, set()).add(f"field:{airfield_id}")
     selected, unresolved = set(state["selected"]), []
@@ -280,6 +326,11 @@ def review(
     draft: PassportDraft,
     state: dict[str, Any],
 ) -> dict[str, Any]:
+    from passports.management import require_actor
+
+    require_actor(tenant_id, user_id, creating=passport is None)
+    if passport is not None:
+        passport = owned_passport(tenant_id, user_id, passport.id)
     if fingerprint(passport) != draft.base_fingerprint:
         raise BuilderError(
             _("This passport changed while you were editing it. Reopen the builder."),
@@ -300,7 +351,7 @@ def review(
 
         validate_shared_dates(passport, metadata["start_date"], metadata["end_date"])
         validate_dates(passport, metadata["start_date"], metadata["end_date"])
-    fields = selected_fields(tenant_id, state)
+    fields = selected_fields(tenant_id, state, user_id=user_id)
     old_targets = (
         PassportAirfield.query.filter_by(passport_id=passport.id).all()
         if passport
@@ -313,13 +364,22 @@ def review(
         if passport
         else set()
     )
-    old_fields = [
-        _field_descriptor(field)
+    identities = {
+        field.id: field
         for field in PassportAirfieldIdentity.query.filter(
             PassportAirfieldIdentity.id.in_(
                 [target.airfield_id for target in old_targets]
             )
         ).all()
+    }
+    old_fields = [
+        {
+            **_field_descriptor(
+                identities[target.airfield_id], public=bool(target.public_catalogue)
+            ),
+            **(target.classification_overrides or {}),
+        }
+        for target in old_targets
     ]
     if passport is not None:
         from passports.vouchers import protected_targets as voucher_targets
@@ -412,6 +472,7 @@ def commit_selection(
     }
     kept: set[int] = set()
     source_rows = {row.source_id: row for row in cat.load_catalogue()}
+    restricted = visible_identity_ids(tenant_id, user_id) is not None
     for field in impact["fields"]:
         key = field["key"]
         if field.get("id"):
@@ -431,17 +492,21 @@ def commit_selection(
                 longitude=field["longitude"],
             )
         classifications = {name: field.get(name) for name in ("military", "ulm")}
-        existing = cat.effective_airfield(identity)
-        if any(existing.get(name) != classifications[name] for name in classifications):
-            cat.correct_airfield(identity, classifications)
-            identity.overrides = {
-                **identity.overrides,
-                "classification_provenance": {
-                    "source": "manual",
-                    "user_id": user_id,
-                    "updated_at": datetime.now(UTC).isoformat(),
-                },
-            }
+        local = bool(field.get("public_catalogue")) or restricted
+        if not local:
+            existing = cat.effective_airfield(identity)
+            if any(
+                existing.get(name) != classifications[name] for name in classifications
+            ):
+                cat.correct_airfield(identity, classifications)
+                identity.overrides = {
+                    **identity.overrides,
+                    "classification_provenance": {
+                        "source": "manual",
+                        "user_id": user_id,
+                        "updated_at": datetime.now(UTC).isoformat(),
+                    },
+                }
         if identity.id not in kept:
             target = old_targets.get(identity.id)
             if target is None:
@@ -451,6 +516,8 @@ def commit_selection(
                     airfield_id=identity.id,
                 )
                 db.session.add(target)
+            target.public_catalogue = bool(field.get("public_catalogue"))
+            target.classification_overrides = classifications if local else {}
             target.display_order = len(kept)
             kept.add(identity.id)
     for identity_id, target in old_targets.items():
@@ -497,6 +564,7 @@ def advance(
             state,
             form.get("import_source", "generic"),
             form.get("import_url", ""),
+            user_id=user_id,
         )
     elif action in {"import_merge", "import_replace"}:
         retained = set()
@@ -517,7 +585,7 @@ def advance(
         set_filters(state, form)
     elif action == "select_all":
         combined = set(state["selected"]) | {
-            field["key"] for field in matching_fields(tenant_id, state)
+            field["key"] for field in matching_fields(tenant_id, state, user_id=user_id)
         }
         if len(combined) > MAX_TARGETS:
             raise BuilderError(
@@ -525,7 +593,7 @@ def advance(
             )
         state["selected"] = sorted(combined)
     elif action == "add_codes":
-        add_codes(tenant_id, state, form.get("codes", ""))
+        add_codes(tenant_id, state, form.get("codes", ""), user_id=user_id)
     elif action == "drop_unknown":
         state["codes"], state["unresolved"] = "", []
     elif action == "add_custom":
@@ -539,7 +607,9 @@ def advance(
         state["selected"].remove(key)
     elif action == "review":
         if form.get("codes", state["codes"]).strip():
-            add_codes(tenant_id, state, form.get("codes", state["codes"]))
+            add_codes(
+                tenant_id, state, form.get("codes", state["codes"]), user_id=user_id
+            )
         state["review"] = review(tenant_id, user_id, passport, draft, state)[
             "signature"
         ]
@@ -553,7 +623,10 @@ def advance(
         []
         if state["review"] or state.get("import_preview")
         else [
-            field["key"] for field in matching_fields(tenant_id, state)[:VISIBLE_LIMIT]
+            field["key"]
+            for field in matching_fields(tenant_id, state, user_id=user_id)[
+                :VISIBLE_LIMIT
+            ]
         ]
     )
     save_draft(draft, state)

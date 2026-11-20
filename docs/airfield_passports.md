@@ -1,8 +1,9 @@
 # Airfield passports
 
-Phases 41a–41c provide the data foundation, owner-only builder, live stamps,
-visit map, manual visits and private stamp photos. Group invitations follow in later increments of
-[Phase 41](implementation_plan.md#phase-41--airfield-passports).
+[Phase 41](implementation_plan.md#phase-41--airfield-passports) provides
+personal collections, live stamps, visit maps, manual visits, private stamp
+photos, linked voucher editions and invitation-based group participation.
+The live implementation plan records the remaining increments.
 
 ## Read access
 
@@ -12,8 +13,8 @@ and detail pages reveal only passports in the user's current tenant which they
 own or have actively accepted. An administrator role alone does not disclose
 someone else's passport. Pending/inactive membership grants no access.
 
-Both pages opt out of HTMX history and service-worker caching. No passport-only
-registration or broader account-permission changes are enabled by this increment.
+Both pages opt out of HTMX history and service-worker caching. Passport-only
+registration is bound to a valid group invitation and email verification.
 
 ## Build and manage a passport
 
@@ -25,9 +26,11 @@ commas, semicolons or new lines. Unknown/ambiguous codes must be corrected or
 explicitly dropped before saving. Missing fields can be entered manually, with
 optional coordinates; coordinate-less fields remain in the list.
 
-Military and ULM filters preserve an explicit unknown state. Manual classification
-is saved with author/time provenance and shared across passports in this tenant;
-it is not copied into the source dataset. The builder's blue markers are selected
+Military and ULM filters preserve an explicit unknown state. Passport-only owners
+store classifications on their own targets. Full operators retain tenant-wide
+curated classifications on existing non-public targets, with author/time
+provenance; public projections keep their own local classifications. No manual
+classification is copied into the source dataset. The builder's blue markers are selected
 fields and grey markers are unselected search results. The lists and forms also
 work without JavaScript.
 
@@ -599,3 +602,24 @@ public fields contribute only their original public CSV data, without tenant
 corrections or custom aliases. Leaving a group or changing account scope affects
 the next lookup, including one that already cached its former membership. Internal
 non-request catalogue maintenance retains its explicit tenant-wide behaviour.
+
+
+### Personal collections for passport-only friends
+
+Passport-only accounts can create and edit their own collections, add missing
+airfields and copy a linked next edition, without a pilot or fleet role. Existing
+owner, draft, review and protected-removal checks apply unchanged.
+
+Public catalogue targets retain the canonical identity but use original public
+source details rather than tenant corrections. Owning such a target never grants
+access to private corrections or manual aliases. Catalogue aliases record their
+public source; only these aliases contribute automatic arrival credit to a public
+target. Historical public aliases retain their date boundaries. Military/ULM
+classifications entered by a passport-only owner are stored on that target, not
+on the shared identity, and survive editing and edition copying. Existing curated
+targets retain their earlier semantics. Classification provenance is excluded
+from builder and map descriptors.
+
+The additive migration backfills public provenance only for existing canonical
+source codes. Downgrading refuses to discard public projections or local
+classifications; these targets must first be explicitly removed.

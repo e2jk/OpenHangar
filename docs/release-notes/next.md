@@ -1,4 +1,4 @@
-# Clearer aviation labels in French and Dutch
+# Personal passports for friends and clearer aviation labels
 
 Passport completion, remaining vouchers and the aircraft’s main photo now use
 distinct, clear terms. Flight forms explicitly label landing times, and destination
@@ -11,6 +11,11 @@ Friends using a passport-only account can now open **Where next?** to find
 unvisited destinations. Searches use public airfield data and airfields shared
 through their passports. They can enter speed and range estimates manually, with
 catalogue access checked against their current passport permissions.
+
+Friends with passport-only accounts can also create and edit their own passports,
+add missing airfields and prepare a linked next edition. Public airfield details
+stay separate from other passports’ private corrections; military and ULM labels
+entered by a friend apply to their own passport.
 
 **Maintenance**
 
