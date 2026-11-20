@@ -22,6 +22,7 @@ from utils import db_id
 
 from passports import catalogue as cat
 from passports.builder import available_fields
+from passports.catalogue_access import visible_identity_ids
 from passports.management import BuilderError
 
 
@@ -45,7 +46,7 @@ def positive(
 
 
 def resolve_home(
-    tenant_id: int, value: str
+    tenant_id: int, value: str, *, user_id: int | None = None
 ) -> PassportAirfieldIdentity | cat.CatalogueAirfield | None:
     value = value.strip()
     if not value:
@@ -54,17 +55,19 @@ def resolve_home(
         raise BuilderError(
             _("Choose an unambiguous airfield code or a saved field reference.")
         )
+    visible = visible_identity_ids(tenant_id, user_id)
     try:
         if value.startswith("field:"):
-            result: PassportAirfieldIdentity | None = (
-                PassportAirfieldIdentity.query.filter_by(
-                    id=db_id(value[6:]), tenant_id=tenant_id
-                ).first()
+            query = PassportAirfieldIdentity.query.filter_by(
+                id=db_id(value[6:]), tenant_id=tenant_id
             )
+            if visible is not None:
+                query = query.filter(PassportAirfieldIdentity.id.in_(visible))
+            result: PassportAirfieldIdentity | None = query.first()
             if result is None:
                 raise ValueError
             return result
-        result = cat.resolve_code(tenant_id, value)
+        result = cat.resolve_code(tenant_id, value, airfield_ids=visible)
         if result is not None:
             return result
         matches = [
@@ -110,6 +113,15 @@ def home_descriptor(owner: Any, tenant_id: int) -> dict[str, Any] | None:
     if not value:
         return None
     field = owner.home_airfield
+    visible = visible_identity_ids(tenant_id)
+    if (
+        visible is not None
+        and not PassportAirfieldIdentity.query.filter(
+            PassportAirfieldIdentity.id == field.id,
+            PassportAirfieldIdentity.id.in_(visible),
+        ).first()
+    ):
+        return None
     return {**cat.effective_airfield(field), "key": value}
 
 
@@ -210,14 +222,16 @@ def theoretical_range(
     return speed * (fuel / flow - reserve / 60) / (2 if returning else 1)
 
 
-def origin_choices(tenant_id: int, query: str) -> list[dict[str, Any]]:
+def origin_choices(
+    tenant_id: int, query: str, *, user_id: int | None = None
+) -> list[dict[str, Any]]:
     if len(query.strip()) < 2:
         return []
     words = query.casefold().split()
     # Deduplicate a catalogue row already materialised in this tenant.
     matches = {
         field["key"]: field
-        for field in available_fields(tenant_id).values()
+        for field in available_fields(tenant_id, user_id=user_id).values()
         if all(
             word in f"{field.get('ident') or ''} {field['name']}".casefold()
             for word in words
@@ -254,12 +268,15 @@ def latest_arrival(
         .yield_per(200)
     )
     aliases: dict[str, list[Any]] = {}
-    for alias, field in (
+    alias_query = (
         db.session.query(PassportAirfieldAlias, PassportAirfieldIdentity)
         .join(PassportAirfieldIdentity)
         .filter(PassportAirfieldIdentity.tenant_id == tenant_id)
-        .all()
-    ):
+    )
+    visible = visible_identity_ids(tenant_id, user_id)
+    if visible is not None:
+        alias_query = alias_query.filter(PassportAirfieldIdentity.id.in_(visible))
+    for alias, field in alias_query.all():
         aliases.setdefault(alias.code, []).append((alias, field))
     sources: dict[str, list[cat.CatalogueAirfield]] = {}
     for row in cat.load_catalogue():

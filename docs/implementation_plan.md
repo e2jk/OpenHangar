@@ -2539,6 +2539,13 @@ downgrades and show localised retrieval timestamps.
   is rechecked after verification and MFA; credential changes during hand-off
   require fresh sign-in. Private collection creation and exports remain below.
 
+- [x] Restricted discovery increment: passport-only accounts can use Where next
+  with public CSV data and fields already visible through their own passports or
+  accepted group participation. Search, saved references, aliases, homes and latest
+  arrival lookups recheck that scope, including removal and account-scope changes.
+  Hidden tenant overrides are excluded from public search results. Aircraft
+  selectors and fleet lookups are suppressed; manual speed/range inputs work
+  without a pilot or fleet role. Private builder writes remain gated below.
 - [ ] New invitees get a real passport-only account: own passports, manual visits,
   profile/security settings, recovery and data export. Add an explicit account
   capability/access restriction enforced on all relevant server routes as well as

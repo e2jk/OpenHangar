@@ -52,6 +52,7 @@ from passports.access import (
     require_passport,
 )
 from passports.catalogue import AirfieldConflict, catalogue_choices
+from passports.catalogue_access import visible_identity_ids
 from passports.drafts import (
     MAX_PAYLOAD_BYTES,
     MAX_TARGETS,
@@ -589,7 +590,11 @@ def where_next(passport_id: int) -> ResponseReturnValue:
 
     passport = require_passport(passport_id)
     uid = session["user_id"]
-    aircraft = accessible_aircraft(passport.tenant_id).all()
+    aircraft = (
+        []
+        if visible_identity_ids(passport.tenant_id) is not None
+        else accessible_aircraft(passport.tenant_id).all()
+    )
     selected = None
     if request.args.get("aircraft"):
         selected = next(

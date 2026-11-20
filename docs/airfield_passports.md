@@ -432,8 +432,9 @@ downgrade while restricted memberships exist, rather than silently granting a ro
 
 This is the authorization foundation for invitation-based friend accounts. Signup,
 email verification and later personal-pilot activation are separate increments.
-Builder/discovery endpoints remain unavailable to restricted accounts until their
-catalogue reads are limited to public data and authorised own/group airfields.
+Passport-only accounts can use discovery with catalogue reads limited to public
+data and authorised own/group airfields. Private builder writes remain unavailable
+until their selection and catalogue mutations have equivalent permission checks.
 
 ### Authentication context for existing accounts
 
@@ -582,3 +583,19 @@ visited by anyone", and **Visited by participant** narrows the map and list to
 one person's airfields. Filtering never changes who "you" are: marker styles and
 your own progress still describe you. Participants are identified in the address
 by their position in the list, never by an account ID.
+
+
+### Destination discovery for passport-only accounts
+
+Friends can open **Where next?** from an accepted passport and search public
+OurAirports data or fields visible through their own passports and accepted group
+participation. They can enter cruise speed and optional fuel/range estimates
+manually. Aircraft selection and fleet lookups are unavailable in this account
+scope, even when the same identity has broader permissions in another context.
+
+Catalogue visibility is checked for name searches, code aliases, saved field
+references, saved homes and the latest-arrival shortcut. Hidden materialised
+public fields contribute only their original public CSV data, without tenant
+corrections or custom aliases. Leaving a group or changing account scope affects
+the next lookup, including one that already cached its former membership. Internal
+non-request catalogue maintenance retains its explicit tenant-wide behaviour.

@@ -823,6 +823,19 @@ def test_invited_friend_registration_without_javascript(
         expect(
             guest.get_by_role("button", name="Delete manual visit", exact=True)
         ).to_be_visible()
+        guest.goto(passport_url)
+        guest.get_by_role("link", name="Where next?", exact=True).click()
+        expect(
+            guest.get_by_role("heading", name="Where next?", exact=True)
+        ).to_be_visible()
+        expect(guest.locator("#discovery-aircraft")).to_have_count(0)
+        guest.locator("#discovery-query").fill("EBBR")
+        guest.get_by_role("button", name="Search airfields", exact=True).click()
+        expect(guest.locator("#discovery-origin")).to_contain_text("EBBR")
+        guest.locator("#discovery-origin").select_option(index=1)
+        guest.get_by_role("button", name="Find destinations", exact=True).click()
+        guest.wait_for_url(lambda url: "origin=" in url)
+        expect(guest.locator("#discovery-origin")).not_to_have_value("")
     finally:
         context.close()
     page.goto(passport_url)
