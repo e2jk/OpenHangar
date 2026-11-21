@@ -1,4 +1,13 @@
 (function () {
+  // Marker size. Without the frequency view every marker has the same weight,
+  // however often it was visited; with it, size grows with the logarithm of
+  // the visit count and is capped, so a busy home base cannot swamp the map.
+  function markerRadius(count, frequency) {
+    if (!frequency) return 7;
+    return count ? Math.min(18, 8 + 2 * Math.log2(count)) : 6;
+  }
+  window.ohPassportMarkerRadius = markerRadius;
+
   function init() {
     var root = document.getElementById('passport-progress');
     if (!root || root.dataset.ohInited || typeof L === 'undefined') return;
@@ -8,7 +17,7 @@
     var positions = [];
     JSON.parse(root.dataset.fields).forEach(function (field) {
       if (field.latitude === null || field.longitude === null) return;
-      var radius = root.dataset.frequency === '1' ? (field.count ? Math.min(18, 8 + 2 * Math.log2(field.count)) : 6) : 7;
+      var radius = markerRadius(field.count, root.dataset.frequency === '1');
       var popup = document.createElement('div');
       var link = document.createElement(root.dataset.targetUrl ? 'a' : 'strong');
       link.textContent = (field.ident ? field.ident + ' — ' : '') + field.name;
