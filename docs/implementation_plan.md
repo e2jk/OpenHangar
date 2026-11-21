@@ -2903,29 +2903,29 @@ collections get their own small tables. A collection later shared *with a
 passport group* references the group's active members instead of copying its
 invitations.
 
-### 42a — Shared building blocks
+### 42a — Shared building blocks ✅
 
 Behaviour-preserving moves into `app/services/`, each with its existing tests;
 passport behaviour unchanged.
 
-- [ ] Image cleaning: `passports/evidence.py:save_photo` (size/pixel limits,
+- [x] Image cleaning: `passports/evidence.py:save_photo` (size/pixel limits,
   decompression-bomb guard, EXIF orientation applied, re-encoded without
   EXIF/GPS/comments/profiles, random name) → `services/images.py`
   (`clean_photo(upload) -> bytes`, `store(folder, data) -> filename`). Making it
   the only way any photo is stored, for every photo type, is a backlog item
   ("Photos: one cleaning pipeline for every stored photo").
-- [ ] File deletion after commit: `passports/lifecycle.py` (files removed only
+- [x] File deletion after commit: `passports/lifecycle.py` (files removed only
   after the ORM delete commits, kept on rollback) → a generic helper with a
   registry of (model, filename column, folder).
-- [ ] Capability tokens: `passports/tokens.py` → `services/capability_tokens.py`.
-- [ ] Waypoint files: `passports/waypoints.py` → `services/waypoints.py`.
-- [ ] Destination search: the source-independent parts of
+- [x] Capability tokens: `passports/tokens.py` → `services/capability_tokens.py`.
+- [x] Waypoint files: `passports/waypoints.py` → `services/waypoints.py`.
+- [x] Destination search: the source-independent parts of
   `passports/discovery.py` (origin resolution, `distance_nm`, `nearby`,
   `theoretical_range`, reserve preference, origin choices) →
   `services/destination_search.py`; each source provides candidate rows.
-- [ ] Account data export: `passports/exports.py:account_archive` becomes one
+- [x] Account data export: `passports/exports.py:account_archive` becomes one
   versioned account export to which each feature contributes a section.
-- [ ] Public share links (41h, if still open when this starts): build them as a
+- [x] Public share links (41h, if still open when this starts): build them as a
   generic `PublicShare` (resource type + id, token digest, revoked/rotated) with
   one allowlisted public projection per resource type, so places can add theirs
   later. The aircraft `ShareToken` may move onto it later; not required.

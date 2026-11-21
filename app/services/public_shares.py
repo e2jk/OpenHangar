@@ -7,8 +7,9 @@ This module never decides which resource fields may be published.
 from datetime import UTC, datetime
 
 from models import PublicShare, db
-from passports import tokens
 from utils import as_utc
+
+from services import capability_tokens as tokens
 
 
 def _purpose(share: PublicShare) -> str:

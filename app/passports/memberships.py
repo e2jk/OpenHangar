@@ -17,9 +17,10 @@ from models import (
     User,
     db,
 )
+from services import capability_tokens as tokens
 from sqlalchemy.exc import OperationalError
 
-from passports import groups, invitations, tokens
+from passports import groups, invitations
 from passports.management import BuilderError, require_actor
 
 

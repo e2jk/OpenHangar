@@ -8,7 +8,7 @@ must not be used to manage passport records with files.
 
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from flask import current_app
 from models import (
@@ -24,13 +24,14 @@ from models import (
     User,
     db,
 )
-from sqlalchemy import event, inspect, select, update
+from services import file_cleanup
+from sqlalchemy import event, select, update
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.elements import ColumnElement
 
 
 @event.listens_for(Session, "before_flush")
 def prepare_passport_changes(session: Session, _context: Any, _instances: Any) -> None:
-    replaced: set[str] = set()
     for obj in (*session.new, *session.dirty):
         if isinstance(obj, PassportAirfield):
             classifications = (
@@ -68,75 +69,47 @@ def prepare_passport_changes(session: Session, _context: Any, _instances: Any) -
             r"[A-Za-z0-9_-]+\.(?:jpg|jpeg|png|webp)", obj.filename or ""
         ):
             raise ValueError("Invalid passport photo filename")
-        if isinstance(obj, PassportStampPhoto):
-            replaced.update(inspect(obj).attrs.filename.history.deleted)
         if isinstance(obj, Passport) and obj.series_id is not None:
             series = session.get(PassportSeries, obj.series_id)
             if series is None or series.tenant_id != obj.tenant_id:
                 raise ValueError("Passport series belongs to another tenant")
-    filters = []
-    for obj in session.deleted:
-        if isinstance(obj, PassportStampPhoto):
-            filters.append(PassportStampPhoto.id == obj.id)
-        elif isinstance(obj, Passport):
-            filters.append(PassportStampPhoto.passport_id == obj.id)
-        elif isinstance(obj, PassportParticipant):
-            filters.append(PassportStampPhoto.participant_id == obj.id)
-        elif isinstance(obj, PassportAirfield):
-            filters.append(PassportStampPhoto.target_id == obj.id)
-        elif isinstance(obj, User):
-            filters.extend(
-                [
-                    PassportStampPhoto.uploader_user_id == obj.id,
-                    PassportStampPhoto.participant_id.in_(
-                        select(PassportParticipant.id).where(
-                            PassportParticipant.user_id == obj.id
-                        )
-                    ),
-                    PassportStampPhoto.passport_id.in_(
-                        select(Passport.id).where(Passport.owner_user_id == obj.id)
-                    ),
-                ]
-            )
-        elif isinstance(obj, Tenant):
-            filters.append(
-                PassportStampPhoto.passport_id.in_(
-                    select(Passport.id).where(Passport.tenant_id == obj.id)
+
+
+def photo_cascade_filter(obj: Any) -> ColumnElement[bool] | None:
+    if isinstance(obj, Passport):
+        return cast(ColumnElement[bool], PassportStampPhoto.passport_id == obj.id)
+    if isinstance(obj, PassportParticipant):
+        return cast(ColumnElement[bool], PassportStampPhoto.participant_id == obj.id)
+    if isinstance(obj, PassportAirfield):
+        return cast(ColumnElement[bool], PassportStampPhoto.target_id == obj.id)
+    if isinstance(obj, User):
+        predicate: ColumnElement[bool] = db.or_(
+            PassportStampPhoto.uploader_user_id == obj.id,
+            PassportStampPhoto.participant_id.in_(
+                select(PassportParticipant.id).where(
+                    PassportParticipant.user_id == obj.id
                 )
-            )
-    filenames = set(replaced)
-    if filters:
-        filenames.update(
-            session.execute(
-                select(PassportStampPhoto.filename).where(db.or_(*filters))
-            ).scalars()
+            ),
+            PassportStampPhoto.passport_id.in_(
+                select(Passport.id).where(Passport.owner_user_id == obj.id)
+            ),
         )
-    if filenames:
-        transaction = session.get_nested_transaction() or session.get_transaction()
-        session.info.setdefault("passport_deleted_photos", {}).setdefault(
-            transaction, set()
-        ).update(filenames)
+        return predicate
+    if isinstance(obj, Tenant):
+        predicate = PassportStampPhoto.passport_id.in_(
+            select(Passport.id).where(Passport.tenant_id == obj.id)
+        )
+        return predicate
+    return None
 
 
-@event.listens_for(Session, "after_commit")
-def remove_passport_files(session: Session) -> None:
-    queues = session.info.get("passport_deleted_photos", {})
-    transaction = session.get_nested_transaction() or session.get_transaction()
-    filenames = queues.pop(transaction, set())
-    if transaction is not None and transaction.parent is not None:
-        queues.setdefault(transaction.parent, set()).update(filenames)
-        return
-    for filename in filenames:
-        path = Path(current_app.config["UPLOAD_FOLDER"]) / "passport_photos" / filename
-        try:
-            path.unlink(missing_ok=True)
-        except OSError:
-            current_app.logger.exception("Could not delete passport photo %s", filename)
-
-
-@event.listens_for(Session, "after_soft_rollback")
-def retain_passport_files(session: Session, previous_transaction: Any) -> None:
-    session.info.get("passport_deleted_photos", {}).pop(previous_transaction, None)
+file_cleanup.register(
+    PassportStampPhoto,
+    "filename",
+    lambda: Path(current_app.config["UPLOAD_FOLDER"]) / "passport_photos",
+    cascade_filter=photo_cascade_filter,
+    error_label="passport photo",
+)
 
 
 @event.listens_for(Session, "before_flush")

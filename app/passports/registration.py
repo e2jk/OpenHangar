@@ -30,11 +30,12 @@ from models import (
     fits_column,
 )
 from services import auth_challenges, email_service, login_throttle
+from services import capability_tokens as tokens
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.exc import NoResultFound, OperationalError
 
-from passports import groups, invitations, tokens
+from passports import groups, invitations
 from passports.management import BuilderError
 
 KEY = "passport_registration"

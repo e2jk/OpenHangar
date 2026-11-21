@@ -1,8 +1,5 @@
 """Participant-owned evidence mutations. Callers commit; photos start private."""
 
-import io
-import secrets
-import warnings
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -17,15 +14,15 @@ from models import (
     PassportVisit,
     db,
 )
-from PIL import Image, ImageOps, UnidentifiedImageError
+from services import images
+from services.images import MAX_PHOTO_BYTES
 from utils import db_id
 from werkzeug.datastructures import FileStorage
 
 from passports.eligibility import date_eligible, eligible_flight, participant_for
 from passports.management import BuilderError, require_actor
 
-MAX_PHOTO_BYTES = 10 * 1024 * 1024
-MAX_PHOTO_PIXELS = 20_000_000
+__all__ = ["MAX_PHOTO_BYTES"]
 
 
 def writable_participant(passport: Passport, user_id: int) -> PassportParticipant:
@@ -93,44 +90,11 @@ def photo_path(filename: str) -> Path:
 
 
 def save_photo(upload: FileStorage | None) -> str:
-    if upload is None or not upload.filename:
-        raise BuilderError(_("Choose a photo to upload."))
-    raw = upload.stream.read(MAX_PHOTO_BYTES + 1)
-    if len(raw) > MAX_PHOTO_BYTES:
-        raise BuilderError(_("Photos must be at most 10 MB."))
     try:
-        with warnings.catch_warnings():
-            warnings.simplefilter("error", Image.DecompressionBombWarning)
-            with Image.open(io.BytesIO(raw)) as original:
-                if (
-                    original.format not in {"JPEG", "PNG", "WEBP"}
-                    or original.width * original.height > MAX_PHOTO_PIXELS
-                ):
-                    raise ValueError("Unsupported or oversized image")
-                original.load()
-                upright = ImageOps.exif_transpose(original)
-                rgb = upright.convert("RGB")
-                rgb.thumbnail((2000, 2000))
-                # Copy pixels into a clean image: no EXIF, GPS, comments or profiles.
-                clean = Image.new("RGB", rgb.size)
-                clean.paste(rgb)
-                output = io.BytesIO()
-                clean.save(output, format="JPEG", quality=85)
-    except (
-        UnidentifiedImageError,
-        OSError,
-        ValueError,
-        Image.DecompressionBombError,
-        Image.DecompressionBombWarning,
-    ) as exc:
-        raise BuilderError(
-            _("Upload a valid JPEG, PNG or WebP photo (up to 20 megapixels).")
-        ) from exc
-    filename = secrets.token_hex(16) + ".jpg"
-    path = photo_path(filename)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(output.getvalue())
-    return filename
+        data = images.clean_photo(upload)
+    except images.PhotoError as exc:
+        raise BuilderError(str(exc)) from exc
+    return images.store(photo_path(""), data)
 
 
 def replace_photo(

@@ -262,7 +262,7 @@ def test_photo_bounds(app: Flask) -> None:
                 )
             )
         with (
-            patch("passports.evidence.MAX_PHOTO_PIXELS", 1),
+            patch("services.images.MAX_PHOTO_PIXELS", 1),
             pytest.raises(BuilderError),
         ):
             save_photo(
