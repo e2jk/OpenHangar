@@ -350,7 +350,7 @@ def test_membership_validation_and_no_implicit_consent(
         db.session.rollback()
 
 
-def test_legacy_unconsented_participation_gets_no_history_credit(
+def test_unconsented_participation_sees_own_visits_but_does_not_participate(
     app: Flask, group: dict[str, int]
 ) -> None:
     with app.app_context():
@@ -366,7 +366,9 @@ def test_legacy_unconsented_participation_gets_no_history_credit(
         )
         db.session.commit()
         view = groups.combined(series, [old], group["other"])
-        assert view["rows"][0]["own_count"] == 0
+        # Their own 2024 flight is theirs to see, but without sharing consent
+        # the edition stays read-only history: not counted as participating.
+        assert view["rows"][0]["own_count"] == 1
         assert old.id not in view["participating"]
 
 

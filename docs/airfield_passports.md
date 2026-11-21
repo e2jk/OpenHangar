@@ -604,6 +604,9 @@ years do not turn one person into several entries. You can also see these friend
 on fields you have already visited. Private notes, aircraft details, flight links
 and private photos stay out of this shared representation. Removal or leaving
 withdraws that participant’s visits from the live shared map immediately.
+Turning off visit sharing does the same for others, but the participant still
+sees their own visits and stamps in every edition they joined
+(`groups.shared_progress`); they only stop counting in group figures.
 
 After a transfer, **Manage group editions** on the members page includes editions
 the new owner has not joined. They can manage those invitations and explicitly

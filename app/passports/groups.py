@@ -214,13 +214,25 @@ def shared_progress(
     allowed_ids = {p.id for p in permitted}
     if any(p.id not in allowed_ids or p.series_id != series.id for p in passports):
         raise BuilderError(_("Group not found."), 404)
+    # The viewer always sees their own stamps in an edition they joined, even
+    # after they stop sharing visits; sharing only decides what others see.
+    joined = {
+        p.passport_id
+        for p in PassportParticipant.query.filter(
+            PassportParticipant.passport_id.in_([p.id for p in passports]),
+            PassportParticipant.user_id == user_id,
+            PassportParticipant.is_active.is_(True),
+            PassportParticipant.blocked.is_(False),
+            PassportParticipant.accepted_at.is_not(None),
+        ).all()
+    }
     own = {
         **progress_many(
-            [p for p in passports if p.id not in accepted],
+            [p for p in passports if p.id not in joined],
             user_id,
             include_evidence=False,
         ),
-        **progress_many([p for p in passports if p.id in accepted], user_id),
+        **progress_many([p for p in passports if p.id in joined], user_id),
     }
     participants = (
         db.session.query(PassportParticipant)
