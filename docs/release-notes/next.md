@@ -18,6 +18,11 @@ next?** results. Fields without usable coordinates are listed separately.
 Downloads contain names, codes and coordinates, without flight tracks, private
 notes or friends’ details.
 
+Print a personal passport with your completion and first visit dates, or save
+it as a PDF through your browser. Choose which of your stamp photos to include;
+private notes and other participants’ photos stay out. The preview also works
+without JavaScript using the browser’s Print command.
+
 **Maintenance**
 
 - Background navigation prefetches no longer create competing sign-in forms,

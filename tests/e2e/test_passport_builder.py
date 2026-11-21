@@ -4,12 +4,13 @@ import json
 import re
 import zipfile
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any
 from uuid import uuid4
 from xml.etree import ElementTree as ET
 
 import pytest
-from playwright.sync_api import BrowserContext, Page, expect
+from playwright.sync_api import BrowserContext, Page, Route, expect
 
 from tests.e2e.conftest import _block_external_network
 
@@ -984,3 +985,109 @@ def test_passport_data_download_stays_outside_htmx(
     assert exported["format"] == "openhangar-passport-data"
     assert exported["version"] == 1 and isinstance(exported["comments"], list)
     assert page.url == live_server_url + "/passports/"
+
+
+def test_private_passport_print_with_selected_photo_htmx_and_no_javascript(
+    passport_page: Page, live_server_url: str, tmp_path: Path
+) -> None:
+    from tests.test_passport_stamps import image_bytes
+
+    page = passport_page
+    title = "Printable " + uuid4().hex[:8]
+    page.goto(live_server_url + "/passports/new")
+    page.locator("#passport-title").fill(title)
+    page.locator("#passport-start").fill("2001-01-01")
+    page.locator("#passport-end").fill("2001-12-31")
+    page.locator("#passport-codes").fill("EBNM EBOS")
+    page.get_by_role("button", name="Add codes", exact=True).click()
+    expect(page.locator("#passport-builder table")).to_contain_text("EBOS")
+    page.get_by_role("button", name="Review passport", exact=True).click()
+    page.get_by_role("button", name="Save passport", exact=True).click()
+    page.wait_for_url(re.compile(r"/passports/\d+/$"))
+    passport_url = page.url
+    page.locator("#passport-targets tbody a").first.click()
+    page.locator("#visit-date").fill("2001-01-01")
+    page.locator("#visit-note").fill("PRIVATE PRINT NOTE")
+    page.get_by_role("button", name="Save visit", exact=True).click()
+    page.locator("#stamp-photo").set_input_files(
+        {"name": "stamp.jpg", "mimeType": "image/jpeg", "buffer": image_bytes()}
+    )
+    page.get_by_role("button", name="Upload photo", exact=True).click()
+    page.goto(passport_url)
+    page.get_by_role("link", name="Print passport", exact=True).click()
+    expect(page.locator("#passport-print")).to_have_attribute("data-oh-inited", "1")
+    expect(page.locator("#passport-print-document")).to_contain_text("1 / 2")
+    assert "PRIVATE PRINT NOTE" not in page.content()
+    expect(page.locator(".passport-print-photo")).to_have_count(0)
+    page.locator('input[name="photo"]').check()
+    page.get_by_role("button", name="Update print preview", exact=True).click()
+    expect(page.locator(".passport-print-photo")).to_have_count(1)
+    selected_url = page.url
+    image = page.locator(".passport-print-photo")
+    source = image.get_attribute("src")
+    assert source is not None
+    held: list[Route] = []
+    page.route("**/photos/*?print-wait=*", lambda route: held.append(route))
+    page.evaluate(
+        "() => { window.__passportPrinted = 0; window.print = () => { window.__passportPrinted++; }; }"
+    )
+    for number, fail in [(1, False), (2, True)]:
+        held.clear()
+        with page.expect_request("**/photos/*?print-wait=" + str(number)):
+            image.evaluate(
+                "(img, src) => { img.src = src; }",
+                source + "?print-wait=" + str(number),
+            )
+        page.locator("#passport-print-button").click()
+        expect(page.locator("#passport-print-button")).to_be_disabled()
+        assert page.evaluate("window.__passportPrinted") == number - 1
+        assert held
+        for route in held:
+            route.abort() if fail else route.continue_()
+        page.wait_for_function("(n) => window.__passportPrinted === n", arg=number)
+        expect(page.locator("#passport-print-button")).to_be_enabled()
+    image.evaluate("(img, src) => { img.src = src; }", source)
+    page.wait_for_function(
+        "() => document.querySelector('.passport-print-photo').naturalWidth > 0"
+    )
+    page.set_viewport_size({"width": 390, "height": 844})
+    assert page.evaluate(
+        "document.documentElement.scrollWidth <= window.innerWidth + 1"
+    )
+    page.set_viewport_size({"width": 900, "height": 1100})
+    page.emulate_media(media="print")
+    expect(page.locator("#passport-print-button")).to_be_hidden()
+    assert (
+        page.locator("body").evaluate("el => getComputedStyle(el).backgroundColor")
+        == "rgb(255, 255, 255)"
+    )
+    pdf = page.pdf(
+        path=tmp_path / "passport-print-preview.pdf",
+        format="A4",
+        print_background=True,
+        margin={"top": "10mm", "bottom": "10mm", "left": "10mm", "right": "10mm"},
+    )
+    assert len(re.findall(rb"/Type\s*/Page\b", pdf)) == 1
+    page.screenshot(path=tmp_path / "passport-print-preview.png", full_page=True)
+    page.emulate_media(media="screen")
+    page.get_by_role("link", name="Back", exact=True).click()
+    page.get_by_role("link", name="Print passport", exact=True).click()
+    expect(page.locator("#passport-print")).to_have_attribute("data-oh-inited", "1")
+    browser = page.context.browser
+    assert browser is not None
+    context = browser.new_context(java_script_enabled=False, service_workers="block")
+    context.add_cookies(page.context.cookies())
+    try:
+        plain = context.new_page()
+        plain.goto(selected_url)
+        expect(plain.locator(".passport-print-photo")).to_have_count(1)
+        expect(plain.locator("#passport-print-button")).to_be_hidden()
+        plain.locator('input[name="photo"]').uncheck()
+        plain.get_by_role("button", name="Update print preview", exact=True).click()
+        expect(plain.locator(".passport-print-photo")).to_have_count(0)
+    finally:
+        context.close()
+    page.goto(passport_url)
+    page.get_by_role("link", name="Delete passport", exact=True).click()
+    page.get_by_role("button", name="Delete passport", exact=True).click()
+    page.wait_for_url(live_server_url + "/passports/")

@@ -726,3 +726,25 @@ GPX represents the positive 180° meridian as −180° to respect its exclusive 
 longitude bound. XML-invalid text characters are omitted; KML descriptions are
 escaped as HTML before XML serialization. No navigation track or altitude is
 inferred.
+
+
+### Private print preview
+
+An authenticated edition's **Print passport** page projects the viewer's own
+current completion and first qualifying visit dates. It includes closed targets
+with their separate status and explains those excluded from the denominator.
+The projection contains no flight IDs, aircraft, visitor lists or private notes.
+
+Stamp photos are omitted by default. A normal form selects individual photos
+owned by the current participant; bounded IDs from another passport or
+participant are refused, including requests by the group owner. Missing files
+show an unavailable-file label. Photo selection does not change stamp credit.
+Archived editions retain the same own-data read boundary.
+
+The page is private, non-cacheable and excluded from HTMX history; the existing
+passport service-worker exclusion also covers it. Printing uses the browser's
+Print/save-PDF dialog, with a white document, repeated table headers and bounded,
+uncropped images. The external module reinitialises after HTMX navigation and
+waits for selected images to finish loading or fail before opening the dialog.
+Without JavaScript the selection form and browser Print command still work.
+Public printing remains a separate integration under the public-sharing scope.

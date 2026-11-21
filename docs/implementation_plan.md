@@ -2694,6 +2694,11 @@ downgrades and show localised retrieval timestamps.
   photos; do not send private marker data and merely hide it with CSS. Public image
   requests recheck active token/consent. Rotation, revocation and participant
   withdrawal invalidate access immediately, including cached responses.
+- [x] Private print increment: authenticated own completion/first dates and
+  selected own photos, with a bounded photo-ID chooser, unavailable-file labels,
+  live eligibility, archived-edition support, browser Print/save-PDF and normal
+  no-JavaScript forms. Private notes and other participants’ photos are absent
+  from the explicit print projection. Public print integration remains below.
 - [ ] Printable passport with targets, completion, stamp dates and chosen photos;
   private and public versions follow their respective field permissions. Use
   print-friendly HTML first, reusing the established PDF pipeline if a downloadable

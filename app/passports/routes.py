@@ -10,6 +10,7 @@ from extensions import _rate_limiting_disabled, limiter
 from flask import (
     Response,
     abort,
+    after_this_request,
     flash,
     make_response,
     redirect,
@@ -46,6 +47,7 @@ from passports import (
     invitation_routes,  # Register edition admission views.
     lifecycle,  # Register transaction-safe file cleanup.
     passports_bp,
+    printing,
     series_routes,  # Register linked-edition views.
     voucher_routes,  # Register private voucher accounting.
     waypoints,
@@ -204,6 +206,25 @@ def detail(passport_id: int) -> ResponseReturnValue:
         participant=participant,
         today=date.today(),
     )
+
+
+@passports_bp.route("/<int:passport_id>/print")
+@login_required
+def print_passport(passport_id: int) -> ResponseReturnValue:
+    @after_this_request
+    def private(response: Response) -> Response:
+        response.headers["Cache-Control"] = "private, no-store"
+        response.headers["X-Robots-Tag"] = "noindex, nofollow"
+        return response
+
+    passport = require_passport(passport_id)
+    try:
+        view = printing.personal(
+            passport, session["user_id"], request.args.getlist("photo")
+        )
+    except BuilderError as exc:
+        return abort(exc.status, description=str(exc))
+    return render_template("passports/print.html", view=view)
 
 
 def _waypoint_view(

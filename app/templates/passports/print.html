@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% set no_history_cache = true %}
+{% block title %}{{ view.title }} - {{ _('Print passport') }}{% endblock %}
+{% block content %}
+<div class="container py-4" id="passport-print">
+<section class="d-print-none mb-4" aria-label="{{ _('Print options') }}">
+<div class="d-flex flex-wrap gap-2"><a class="btn btn-ac-ghost" href="{{ url_for('passports.detail', passport_id=view.id) }}">{{ _('Back') }}</a><button type="button" id="passport-print-button" class="btn btn-ac-primary d-none">{{ _('Print / download as PDF') }}</button></div>
+<p>{{ _('Use your browser’s Print command to print or save a PDF.') }}</p>
+<p>{{ _('This printout shows your own completion. Private flight and visit notes and other participants’ photos are not included.') }}</p>
+{% if view.photos %}<form method="get"><fieldset><legend class="h5">{{ _('Stamp photos to include') }}</legend>
+<p>{{ _('Photos do not count as visits.') }}</p>
+<div class="row g-3">{% for photo in view.photos %}<div class="col-md-4"><label class="d-block text-break"><input type="checkbox" name="photo" value="{{ photo.id }}" {{ 'checked' if photo.selected }}> {{ photo.name }}{% if photo.available %}<img class="passport-print-thumbnail d-block" src="{{ photo.url }}" loading="lazy" alt="{{ _('Private stamp photo') }}">{% else %} · {{ _('Photo file unavailable') }}{% endif %}</label></div>{% endfor %}</div>
+<button class="btn btn-ac-ghost mt-3">{{ _('Update print preview') }}</button>
+</fieldset></form>{% endif %}
+</section>
+<article id="passport-print-document">
+<h1 class="text-break">{{ view.title }}</h1>
+{% if view.edition_label %}<p>{{ view.edition_label }}</p>{% endif %}
+{% if view.archived %}<p>{{ _('Archived') }}</p>{% endif %}
+{% if view.start_date or view.end_date %}<p>{% if view.start_date %}{{ _('From') }} {{ format_date(view.start_date) }}{% endif %}{% if view.end_date %}{% if view.start_date %} · {% endif %}{{ _('Until') }} {{ format_date(view.end_date) }}{% endif %}</p>{% endif %}
+<p>{{ _('Your progress') }}: <strong>{{ view.visited }} / {{ view.total }}</strong>{% if view.percent is not none %} ({{ view.percent }}%){% endif %}</p>
+{% if view.closed_excluded %}<p>{{ _('Closed unvisited targets excluded') }}: {{ view.closed_excluded }}</p>{% endif %}
+{% if view.total == 0 %}<p>{{ _('No achievable targets yet.') }}</p>{% endif %}
+{% if view.targets %}<div class="table-responsive"><table class="table passport-print-table"><thead><tr><th>{{ _('Airfield') }}</th><th>{{ _('Status') }}</th><th>{{ _('First visit') }}</th>{% if view.include_photos %}<th>{{ _('Private stamp photo') }}</th>{% endif %}</tr></thead><tbody>
+{% for target in view.targets %}<tr>
+<td class="text-break">{{ target.ident or '-' }} - {{ target.name }}</td>
+<td>{{ _('Visited') if target.visited else _('Not visited') }}{% if target.is_closed %} · {{ _('Closed') }}{% endif %}</td>
+<td>{{ format_date(target.date) if target.date else '-' }}</td>
+{% if view.include_photos %}<td>{% if target.photo %}{% if target.photo.available %}<img class="passport-print-photo" src="{{ target.photo.url }}" alt="{{ _('Private stamp photo') }}">{% else %}{{ _('Photo file unavailable') }}{% endif %}{% else %}-{% endif %}</td>{% endif %}
+</tr>{% endfor %}</tbody></table></div>{% else %}<p>{{ _('No airfields selected yet.') }}</p>{% endif %}
+</article>
+</div>
+{% endblock %}

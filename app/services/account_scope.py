@@ -17,6 +17,7 @@ PASSPORT_ENDPOINTS = frozenset(
         "passports.edit_passport",
         "passports.next_edition",
         "passports.detail",
+        "passports.print_passport",
         "passports.discussion",
         "passports.target_detail",
         "passports.where_next",
