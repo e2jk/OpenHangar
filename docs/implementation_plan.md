@@ -2756,8 +2756,16 @@ downgrades and show localised retrieval timestamps.
   pages with email addresses opt out of HTMX history. Personal stamp forms use
   the existing offline-submit guard until deliberately made offline-aware; do not
   imply offline writes are supported merely because the app is a PWA.
-- [ ] Backups/restores include passport tables, aliases, visits, voucher ledgers
+- [x] Backups/restores include passport tables, aliases, visits, voucher ledgers
   and photo files. No remote fetch needed to read a restored passport.
+  *Done:* backups are a full `pg_dump` plus the uploads folder, so
+  `passport_photos/` is included. The CI round-trip
+  (`.github/scripts/backup_roundtrip.py`) fills every passport table except
+  builder drafts and a shared stamp photo file, then a real backup and restore
+  must reproduce their row counts, visits, vouchers, photo rows, account scopes
+  and file hashes. It fails if any of those tables is left empty. Airfield names
+  and coordinates are stored with the passport identities, so reading a
+  restored passport needs no remote fetch.
 - [x] Demo/dev seed, personal passports (`seed_passports` in `_seed_helpers.py`):
   lifetime personal passport, dated edition, closed field, missing-coordinate
   field and contrasting completion states, stamped live from the seeded logbook;

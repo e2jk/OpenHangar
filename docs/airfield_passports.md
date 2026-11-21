@@ -796,3 +796,13 @@ uncropped images. The external module reinitialises after HTMX navigation and
 waits for selected images to finish loading or fail before opening the dialog.
 Without JavaScript the selection form and browser Print command still work.
 Public printing remains a separate integration under the public-sharing scope.
+
+## Backups
+
+Instance backups are a full database dump plus the uploads folder, so every
+passport table and the stamp photos under `UPLOAD_FOLDER/passport_photos` are
+included; only the source-fetch locks are left out. Airfield names and
+coordinates are stored with the passport identities, so a restored passport
+needs no remote catalogue fetch. CI proves this on each pull request with a
+real PostgreSQL backup and restore of a fixture covering every passport table
+(except builder drafts) and a photo file (`.github/scripts/backup_roundtrip.py`).
