@@ -226,6 +226,7 @@
           {% if personal_logbook %}
           <li class="nav-item"><a class="nav-link" href="{{ url_for('pilots.logbook') }}"><i class="bi bi-journal-text me-1"></i>{{ _('Pilot logbook') }}</a></li>
           {% endif %}
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('places.index') }}"><i class="bi bi-geo-alt me-1"></i>{{ _('Places') }}</a></li>
           {% if is_pilot or has_passports or passport_only %}
           <li class="nav-item"><a class="nav-link" href="{{ url_for('passports.index') }}"><i class="bi bi-passport me-1"></i>{{ _('Airfield passports') }}</a></li>
           {% endif %}
@@ -404,6 +405,7 @@
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/gps_import_review.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/entry_detail_map.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/flight_tracks_map.js') }}"></script>
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/places.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/passport_builder.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/passport_progress.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/passport_discovery.js') }}"></script>

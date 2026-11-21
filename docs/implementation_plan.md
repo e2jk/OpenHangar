@@ -2948,7 +2948,7 @@ passport behaviour unchanged.
   their rights, renames or deletes the collection; deleting a shared collection
   asks for confirmation and states how many places and visits go with it.
   Members can leave.
-- [ ] Adding members: users with organisation access pick from the instance's
+- [x] Adding members: users with organisation access pick from the instance's
   users; Personal accounts (42h) never get a browsable user list and add by exact
   e-mail only, reusing the passport registration lookup
   (`tokens.email_digest`), without revealing whether an account exists.

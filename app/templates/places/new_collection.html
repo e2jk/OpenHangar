@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% set no_history_cache = true %}
+{% block title %}{{ _('New collection') }} — OpenHangar{% endblock %}
+{% block content %}
+<div class="container py-4"><h1>{{ _('New collection') }}</h1>
+<form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label class="form-label" for="collection-name">{{ _('Collection name') }}</label><input class="form-control mb-3" id="collection-name" name="name" maxlength="128" required value="{{ request.form.get('name', '') }}"><button class="btn btn-ac-primary" type="submit">{{ _('Create collection') }}</button> <a href="{{ url_for('places.index') }}">{{ _('Cancel') }}</a></form></div>
+{% endblock %}

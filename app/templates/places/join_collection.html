@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% set no_history_cache = true %}
+{% block title %}{{ _('Join collection') }} — OpenHangar{% endblock %}
+{% block content %}
+<div class="container py-4"><h1>{{ collection.name }}</h1><p>{{ _('Joining lets the other members see your name and the visits you record in this collection.') }}</p><p>{{ _('Can edit') if invitation.can_edit else _('Can view and record own visits') }}</p><form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-ac-primary" type="submit">{{ _('Join collection') }}</button> <a href="{{ url_for('places.index') }}">{{ _('Cancel') }}</a></form></div>
+{% endblock %}

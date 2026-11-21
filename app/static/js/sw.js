@@ -120,6 +120,7 @@ var NOT_CACHED_ROUTES = {
 /* Routes deliberately NOT cached, with why — pattern matches (dynamic
  * segments, or a shared reason covering several routes at once). */
 var NOT_CACHED_PATTERNS = [
+  [/^\/places(?:\/|$)/, 'private collection membership and invitations must stay current'],
   [/^\/passports(?:\/|$)/, 'private passport membership and evidence must stay current'],
   [/\/(new|add|create|edit|upload|service|charge|checkin|checkout|resolve|permissions|publish|settings|config|status)$/,
     'one-shot create/edit/action form — needs fresh state on every open, not revisited'],

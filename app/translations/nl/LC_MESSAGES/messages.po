@@ -60,20 +60,20 @@ msgstr[1] "🎉 Het is vandaag %(n)s jaar geleden dat u uw PPL behaalde!"
 msgid "🎉 Today is the anniversary of your PPL!"
 msgstr "🎉 Vandaag is het de verjaardag van uw PPL!"
 
-#: app/init.py:1175
+#: app/init.py:1178
 #, python-format
 msgid "This upload is too large (maximum %(mb)s MB in total). Please upload the files in smaller batches."
 msgstr "Deze upload is te groot (maximaal %(mb)s MB in totaal). Upload de bestanden in kleinere delen."
 
-#: app/init.py:1202
+#: app/init.py:1205
 msgid "Some text entered is too long, so nothing was saved. Please shorten it and try again."
 msgstr "Een ingevoerde tekst is te lang, dus er is niets opgeslagen. Maak hem korter en probeer het opnieuw."
 
-#: app/flights/form_parsing.py:459 app/init.py:1207
+#: app/flights/form_parsing.py:459 app/init.py:1210
 msgid "A number entered is far too large, so nothing was saved. Please check the values and try again."
 msgstr "Een ingevoerd getal is veel te groot, dus er is niets opgeslagen. Controleer de waarden en probeer het opnieuw."
 
-#: app/init.py:1260
+#: app/init.py:1263
 msgid "The sign-in form had expired. Please sign in again."
 msgstr "Het aanmeldformulier was verlopen. Meld u opnieuw aan."
 
@@ -1264,7 +1264,7 @@ msgstr "Route"
 #: app/services/notification_service.py:956 app/snags/routes.py:266
 #: app/snags/routes.py:316 app/templates/aircraft/wb_list.html:30
 #: app/templates/auth/setup.html:365 app/templates/base.html:209
-#: app/templates/base.html:327 app/templates/config/renter_form.html:33
+#: app/templates/base.html:328 app/templates/config/renter_form.html:33
 #: app/templates/config/tenant_list.html:32 app/templates/dashboard.html:130
 #: app/templates/dashboard.html:752 app/templates/documents/list.html:35
 #: app/templates/documents/list.html:217
@@ -2457,7 +2457,8 @@ msgstr "De openbare naam is te lang."
 msgid "Choose a public-sharing action."
 msgstr "Kies een actie voor openbaar delen."
 
-#: app/passports/registration.py:75 app/templates/base.html:438
+#: app/passports/registration.py:75 app/places/sharing.py:42
+#: app/templates/base.html:440
 msgid "Enter a valid email address."
 msgstr "Voer een geldig e-mailadres in."
 
@@ -3167,21 +3168,30 @@ msgstr "Collectie niet gevonden."
 msgid "Place not found."
 msgstr "Plaats niet gevonden."
 
-#: app/places/collections.py:20
+#: app/places/collections.py:21
 msgid "Enter a collection name of at most 128 characters."
 msgstr "Voer een collectienaam van maximaal 128 tekens in."
 
-#: app/places/collections.py:64
+#: app/places/collections.py:65
 msgid "My places"
 msgstr "Mijn plaatsen"
 
-#: app/places/collections.py:121
+#: app/places/collections.py:124
+msgid "Add friends by their exact email address."
+msgstr "Voeg vrienden toe met hun exacte e-mailadres."
+
+#: app/places/collections.py:127
 msgid "The collection creator must remain an editor."
 msgstr "De maker van de collectie moet bewerkingsrechten behouden."
 
-#: app/places/collections.py:159
+#: app/places/collections.py:165
 msgid "The creator must transfer or delete the collection before leaving."
 msgstr "De maker moet de collectie overdragen of verwijderen voordat die de collectie verlaat."
+
+#: app/places/collections.py:187 app/places/routes.py:191
+#: app/places/routes.py:197 app/places/routes.py:204
+msgid "Choose a member of this collection."
+msgstr "Kies een lid van deze collectie."
 
 #: app/places/coordinates.py:37
 msgid "Enter valid latitude and longitude coordinates."
@@ -3226,6 +3236,18 @@ msgstr "Elke bezoeker moet lid zijn van de doelcollectie. Maak anders een kopie 
 #: app/places/management.py:244
 msgid "Only the place owner or collection creator can permanently delete it."
 msgstr "Alleen de eigenaar van de plaats of de maker van de collectie kan deze definitief verwijderen."
+
+#: app/places/routes.py:215
+msgid "Invitation saved. Ask your friend to sign in and open Places."
+msgstr "Uitnodiging opgeslagen. Vraag je vriend om in te loggen en Plaatsen te openen."
+
+#: app/places/routes.py:221 app/places/sharing.py:74 app/places/sharing.py:98
+msgid "Invitation not found or expired."
+msgstr "Uitnodiging niet gevonden of verlopen."
+
+#: app/places/routes.py:234
+msgid "Review the collection totals and confirm its deletion."
+msgstr "Controleer het aantal plaatsen en bezoeken in de collectie en bevestig de verwijdering."
 
 #: app/places/tags.py:11
 msgid "Town"
@@ -4305,8 +4327,8 @@ msgstr "Downloaden"
 #: app/templates/_doc_viewer_modal.html:14
 #: app/templates/aircraft/owner_account.html:22
 #: app/templates/aircraft/owners_billing.html:20 app/templates/base.html:173
-#: app/templates/base.html:198 app/templates/base.html:282
-#: app/templates/base.html:291 app/templates/base.html:303
+#: app/templates/base.html:198 app/templates/base.html:283
+#: app/templates/base.html:292 app/templates/base.html:304
 #: app/templates/dashboard.html:814
 #: app/templates/partials/_flight_tracks_map.html:70
 #: app/templates/pilots/logbook.html:95
@@ -4314,7 +4336,7 @@ msgid "Close"
 msgstr "Sluiten"
 
 #: app/templates/auth/login.html:4 app/templates/auth/login.html:43
-#: app/templates/base.html:57 app/templates/base.html:258
+#: app/templates/base.html:57 app/templates/base.html:259
 #: app/templates/errors/403.html:31 app/templates/landing.html:281
 #: app/templates/welcome.html:20
 msgid "Log in"
@@ -4357,7 +4379,7 @@ msgid "The demo environment is being reset. Please wait — the page will reload
 msgstr "De demo-omgeving wordt opnieuw ingesteld. Even geduld — de pagina wordt automatisch herladen zodra ze gereed is."
 
 #: app/templates/base.html:170 app/templates/base.html:172
-#: app/templates/base.html:430
+#: app/templates/base.html:432
 msgid "Install app"
 msgstr "App installeren"
 
@@ -4369,19 +4391,19 @@ msgstr "Voeg OpenHangar toe aan uw startscherm voor snelle toegang."
 msgid "Not now"
 msgstr "Niet nu"
 
-#: app/templates/base.html:181 app/templates/base.html:429
+#: app/templates/base.html:181 app/templates/base.html:431
 msgid "Offline"
 msgstr "Offline"
 
 #: app/templates/auth/profile.html:16 app/templates/base.html:205
-#: app/templates/base.html:322 app/templates/config/settings.html:52
+#: app/templates/base.html:323 app/templates/config/settings.html:52
 #: app/templates/dashboard.html:3 app/templates/dashboard.html:116
 #: app/templates/errors/403.html:27 app/templates/errors/404.html:27
 #: app/templates/users/list.html:18
 msgid "Dashboard"
 msgstr "Dashboard"
 
-#: app/templates/base.html:220 app/templates/base.html:338
+#: app/templates/base.html:220 app/templates/base.html:339
 #: app/templates/dashboard.html:753 app/templates/landing.html:33
 #: app/templates/landing.html:241 app/templates/partials/_crew_claims.html:49
 #: app/templates/reservations/calendar.html:193
@@ -4397,7 +4419,7 @@ msgid "Flights waiting for your confirmation"
 msgstr "Vluchten die op uw bevestiging wachten"
 
 #: app/templates/aircraft/detail.html:488 app/templates/base.html:223
-#: app/templates/base.html:334 app/templates/dashboard.html:634
+#: app/templates/base.html:335 app/templates/dashboard.html:634
 #: app/templates/dashboard.html:654 app/templates/dashboard.html:701
 #: app/templates/dashboard.html:811 app/templates/flights/fleet.html:15
 #: app/templates/flights/flight_form.html:4
@@ -4407,12 +4429,17 @@ msgid "Log a flight"
 msgstr "Vlucht registreren"
 
 #: app/templates/aircraft/flight_detail.html:110 app/templates/base.html:227
-#: app/templates/base.html:342 app/templates/flights/flight_form.html:817
+#: app/templates/base.html:343 app/templates/flights/flight_form.html:817
 #: app/templates/pilots/logbook.html:16
 msgid "Pilot logbook"
 msgstr "Pilootlogboek"
 
-#: app/templates/base.html:230 app/templates/base.html:345
+#: app/templates/base.html:229 app/templates/places/collection_settings.html:19
+#: app/templates/places/index.html:3 app/templates/places/index.html:6
+msgid "Places"
+msgstr "Plaatsen"
+
+#: app/templates/base.html:231 app/templates/base.html:346
 #: app/templates/passports/confirm.html:3 app/templates/passports/detail.html:4
 #: app/templates/passports/detail.html:7
 #: app/templates/passports/draft_error.html:3
@@ -4422,41 +4449,41 @@ msgstr "Pilootlogboek"
 msgid "Airfield passports"
 msgstr "Vliegveldpaspoorten"
 
-#: app/templates/base.html:234
+#: app/templates/base.html:235
 msgid "My account"
 msgstr "Mijn rekening"
 
-#: app/templates/base.html:239 app/templates/config/data_checks.html:14
+#: app/templates/base.html:240 app/templates/config/data_checks.html:14
 #: app/templates/config/notifications.html:16
 #: app/templates/config/settings.html:3 app/templates/config/settings.html:44
 msgid "Configuration"
 msgstr "Configuratie"
 
-#: app/templates/base.html:239
+#: app/templates/base.html:240
 msgid "Update available"
 msgstr "Update beschikbaar"
 
-#: app/templates/base.html:239
+#: app/templates/base.html:240
 msgid "Data checks to review"
 msgstr "Gegevenscontroles na te kijken"
 
-#: app/templates/auth/profile.html:3 app/templates/base.html:250
+#: app/templates/auth/profile.html:3 app/templates/base.html:251
 msgid "Profile"
 msgstr "Profiel"
 
-#: app/templates/base.html:253
+#: app/templates/base.html:254
 msgid "Log Out"
 msgstr "Uitloggen"
 
-#: app/templates/base.html:289
+#: app/templates/base.html:290
 msgid "This instance still has pre-upgrade pilot-logbook/crew data that wasn't automatically converted to the new unified logbook. It's preserved as-is in the database but no longer reachable from the interface."
 msgstr "Deze instantie bevat nog pilotenlogboek-/bemanningsgegevens van vóór de upgrade die niet automatisch zijn geconverteerd naar het nieuwe unified logboek. Deze gegevens blijven ongewijzigd bewaard in de database, maar zijn niet meer bereikbaar via de interface."
 
-#: app/templates/base.html:290
+#: app/templates/base.html:291
 msgid "Please open an issue if you need help extracting it."
 msgstr "Open een issue als u hulp nodig heeft om deze gegevens te extraheren."
 
-#: app/templates/base.html:358
+#: app/templates/base.html:359
 msgid "open-source aircraft ops"
 msgstr "open-source vliegtuigbeheer"
 
@@ -4466,7 +4493,7 @@ msgstr "open-source vliegtuigbeheer"
 #: app/templates/airworthiness/avionics_unit_form.html:47
 #: app/templates/airworthiness/dashboard.html:95
 #: app/templates/airworthiness/equipment_board.html:50
-#: app/templates/airworthiness/status_form.html:21 app/templates/base.html:362
+#: app/templates/airworthiness/status_form.html:21 app/templates/base.html:363
 #: app/templates/config/renters_list.html:33
 #: app/templates/config/settings.html:300
 #: app/templates/config/settings.html:399
@@ -4506,7 +4533,7 @@ msgstr "Status"
 #: app/templates/airworthiness/status_form.html:61
 #: app/templates/airworthiness/stc_form.html:50
 #: app/templates/airworthiness/wishlist_form.html:45
-#: app/templates/base.html:378 app/templates/config/renter_form.html:104
+#: app/templates/base.html:379 app/templates/config/renter_form.html:104
 #: app/templates/documents/edit_form.html:16
 #: app/templates/documents/edit_form.html:103
 #: app/templates/documents/pilot_upload_form.html:16
@@ -4535,6 +4562,8 @@ msgstr "Status"
 #: app/templates/pilots/entry_form.html:314
 #: app/templates/pilots/import_map.html:170
 #: app/templates/pilots/minimums_edit.html:15
+#: app/templates/places/join_collection.html:5
+#: app/templates/places/new_collection.html:6
 #: app/templates/pwa/share_target.html:14
 #: app/templates/refuels/refuel_form.html:61
 #: app/templates/reservations/charge.html:108
@@ -4548,7 +4577,7 @@ msgstr "Status"
 msgid "Cancel"
 msgstr "Annuleren"
 
-#: app/templates/base.html:379 app/templates/partials/_crew_invites.html:33
+#: app/templates/base.html:380 app/templates/partials/_crew_invites.html:33
 #: app/templates/partials/_crew_invites.html:72
 #: app/templates/pilots/gps_import_review.html:303
 #: app/templates/reservations/calendar.html:220
@@ -4556,55 +4585,55 @@ msgstr "Annuleren"
 msgid "Confirm"
 msgstr "Bevestigen"
 
-#: app/templates/base.html:431
+#: app/templates/base.html:433
 msgid "You're offline — this can't be saved right now. Reconnect and try again."
 msgstr "U bent offline — dit kan nu niet worden opgeslagen. Maak opnieuw verbinding en probeer het opnieuw."
 
-#: app/templates/base.html:434
+#: app/templates/base.html:436
 msgid "Please fill out this field."
 msgstr "Vul dit veld in."
 
-#: app/templates/base.html:435
+#: app/templates/base.html:437
 msgid "Please select an item in the list."
 msgstr "Selecteer een item in de lijst."
 
-#: app/templates/base.html:436
+#: app/templates/base.html:438
 msgid "Please check this box if you want to proceed."
 msgstr "Vink dit vakje aan om door te gaan."
 
-#: app/templates/base.html:437
+#: app/templates/base.html:439
 msgid "Please select one of these options."
 msgstr "Selecteer een van deze opties."
 
-#: app/templates/base.html:439
+#: app/templates/base.html:441
 msgid "Please enter a valid URL."
 msgstr "Voer een geldige URL in."
 
-#: app/templates/base.html:440
+#: app/templates/base.html:442
 msgid "Please match the requested format."
 msgstr "Gebruik de gevraagde opmaak."
 
-#: app/templates/base.html:441
+#: app/templates/base.html:443
 #, python-brace-format
 msgid "Please use at least {min} characters (currently {n})."
 msgstr "Gebruik ten minste {min} tekens (momenteel {n})."
 
-#: app/templates/base.html:442
+#: app/templates/base.html:444
 #, python-brace-format
 msgid "Please use no more than {max} characters (currently {n})."
 msgstr "Gebruik maximaal {max} tekens (momenteel {n})."
 
-#: app/templates/base.html:443
+#: app/templates/base.html:445
 #, python-brace-format
 msgid "Value must be {min} or more."
 msgstr "De waarde moet {min} of hoger zijn."
 
-#: app/templates/base.html:444
+#: app/templates/base.html:446
 #, python-brace-format
 msgid "Value must be {max} or less."
 msgstr "De waarde moet {max} of lager zijn."
 
-#: app/templates/base.html:445
+#: app/templates/base.html:447
 msgid "Please enter a valid value."
 msgstr "Voer een geldige waarde in."
 
@@ -12725,6 +12754,7 @@ msgid "Whole group, including history"
 msgstr "Hele groep, inclusief geschiedenis"
 
 #: app/templates/passports/group_members.html:17
+#: app/templates/places/collection_settings.html:9
 msgid "Remove member"
 msgstr "Lid verwijderen"
 
@@ -14619,6 +14649,164 @@ msgstr[1] "%(n)s vluchten"
 #: app/templates/pilots/stats.html:117
 msgid "All airports visited"
 msgstr "Alle bezochte luchthavens"
+
+#: app/templates/places/collection_settings.html:4
+msgid "Collection rights"
+msgstr "Rechten in de collectie"
+
+#: app/templates/places/collection_settings.html:4
+#: app/templates/places/collection_settings.html:9
+#: app/templates/places/join_collection.html:5
+msgid "Can edit"
+msgstr "Mag bewerken"
+
+#: app/templates/places/collection_settings.html:4
+#: app/templates/places/collection_settings.html:9
+#: app/templates/places/join_collection.html:5
+msgid "Can view and record own visits"
+msgstr "Mag bekijken en eigen bezoeken vastleggen"
+
+#: app/templates/places/collection_settings.html:5
+#: app/templates/places/index.html:9
+msgid "Collection settings"
+msgstr "Collectie-instellingen"
+
+#: app/templates/places/collection_settings.html:7
+msgid "Back to places"
+msgstr "Terug naar plaatsen"
+
+#: app/templates/places/collection_settings.html:8
+msgid "Use as my default collection"
+msgstr "Instellen als mijn standaardcollectie"
+
+#: app/templates/places/collection_settings.html:9
+msgid "Collection members"
+msgstr "Collectieleden"
+
+#: app/templates/places/collection_settings.html:9
+#: app/templates/places/collection_settings.html:14
+#: app/templates/places/collection_settings.html:18
+msgid "Unnamed member"
+msgstr "Lid zonder naam"
+
+#: app/templates/places/collection_settings.html:9
+msgid "Change rights"
+msgstr "Rechten wijzigen"
+
+#: app/templates/places/collection_settings.html:10
+msgid "Your places and visits stay in the collection when you leave. Copy any places you want to keep first."
+msgstr "Je plaatsen en bezoeken blijven in de collectie als je vertrekt. Kopieer eerst de plaatsen die je zelf wilt bewaren."
+
+#: app/templates/places/collection_settings.html:10
+msgid "Leave collection"
+msgstr "Collectie verlaten"
+
+#: app/templates/places/collection_settings.html:12
+#: app/templates/places/new_collection.html:6
+msgid "Collection name"
+msgstr "Collectienaam"
+
+#: app/templates/places/collection_settings.html:12
+msgid "Rename collection"
+msgstr "Collectie hernoemen"
+
+#: app/templates/places/collection_settings.html:13
+msgid "Add a friend"
+msgstr "Een vriend toevoegen"
+
+#: app/templates/places/collection_settings.html:14
+msgid "Choose a user"
+msgstr "Kies een gebruiker"
+
+#: app/templates/places/collection_settings.html:14
+msgid "Add member"
+msgstr "Lid toevoegen"
+
+#: app/templates/places/collection_settings.html:15
+msgid "Exact email address"
+msgstr "Exact e-mailadres"
+
+#: app/templates/places/collection_settings.html:15
+msgid "The invitation appears when your friend signs in with this email and opens Places. It expires after 30 days. No email is sent."
+msgstr "De uitnodiging verschijnt als je vriend met dit e-mailadres inlogt en Plaatsen opent. Deze verloopt na 30 dagen. Er wordt geen e-mail verstuurd."
+
+#: app/templates/places/collection_settings.html:15
+msgid "Save invitation"
+msgstr "Uitnodiging opslaan"
+
+#: app/templates/places/collection_settings.html:16
+msgid "Collection invitation link"
+msgstr "Uitnodigingslink voor de collectie"
+
+#: app/templates/places/collection_settings.html:17
+msgid "Pending invitations"
+msgstr "Openstaande uitnodigingen"
+
+#: app/templates/places/collection_settings.html:17
+msgid "Revoke invitation"
+msgstr "Uitnodiging intrekken"
+
+#: app/templates/places/collection_settings.html:18
+msgid "Transfer collection"
+msgstr "Collectie overdragen"
+
+#: app/templates/places/collection_settings.html:18
+msgid "New collection owner"
+msgstr "Nieuwe eigenaar van de collectie"
+
+#: app/templates/places/collection_settings.html:19
+msgid "Delete collection"
+msgstr "Collectie verwijderen"
+
+#: app/templates/places/collection_settings.html:19
+msgid "Deleting this collection also permanently deletes its places and visits."
+msgstr "Als je deze collectie verwijdert, worden ook de plaatsen en bezoeken definitief verwijderd."
+
+#: app/templates/places/collection_settings.html:19
+msgid "Visits"
+msgstr "Bezoeken"
+
+#: app/templates/places/collection_settings.html:19
+msgid "I confirm the permanent deletion of this collection."
+msgstr "Ik bevestig de definitieve verwijdering van deze collectie."
+
+#: app/templates/places/index.html:6 app/templates/places/new_collection.html:3
+#: app/templates/places/new_collection.html:5
+msgid "New collection"
+msgstr "Nieuwe collectie"
+
+#: app/templates/places/index.html:7
+msgid "Save places worth visiting and share a collection with friends."
+msgstr "Bewaar plaatsen die een bezoek waard zijn en deel een collectie met vrienden."
+
+#: app/templates/places/index.html:8
+msgid "Collection invitations"
+msgstr "Uitnodigingen voor collecties"
+
+#: app/templates/places/index.html:9
+msgid "Collections"
+msgstr "Collecties"
+
+#: app/templates/places/index.html:9
+msgid "All collections"
+msgstr "Alle collecties"
+
+#: app/templates/places/index.html:10
+msgid "No places in this view yet."
+msgstr "Er zijn nog geen plaatsen in deze weergave."
+
+#: app/templates/places/join_collection.html:3
+#: app/templates/places/join_collection.html:5
+msgid "Join collection"
+msgstr "Deelnemen aan collectie"
+
+#: app/templates/places/join_collection.html:5
+msgid "Joining lets the other members see your name and the visits you record in this collection."
+msgstr "Als je deelneemt, kunnen de andere leden je naam en de bezoeken die je in deze collectie vastlegt zien."
+
+#: app/templates/places/new_collection.html:6
+msgid "Create collection"
+msgstr "Collectie aanmaken"
 
 #: app/templates/pwa/share_target.html:3 app/templates/pwa/share_target.html:10
 msgid "Shared files"

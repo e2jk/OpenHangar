@@ -1,5 +1,69 @@
 # Parallel shipping lanes and groundwork for address search
 
+# Airfield tips and questions for your passport group
+
+Places now has private collections for trips or groups of friends. Choose who
+can edit each collection, manage membership separately from aircraft access,
+and transfer a collection before leaving. Friends invited by exact email accept
+from their own account; the sender gets no account-directory lookup.
+
+Group passports now have a conversation for each airfield. Ask about an approach
+before your first visit, share flying tips or recommend a restaurant nearby.
+The discussion stays with the group across editions, so advice from earlier years
+remains available. Categories and date filters help you find relevant comments;
+each shows its author, posting date and optional date of the experience.
+
+Discussions are visible to active members of that group, including passport-only
+friends who join later. Authors can edit or delete their own comments; group
+owners can remove them. Private flight and visit notes stay separate. Your
+personal data export includes only your own contributions, including comments
+retained after leaving the group. Access is checked when opening or posting.
+
+Take your next destinations with you: GPX and KML downloads contain the open
+airfields you have not visited in your current passport selection or **Where
+next?** results. Fields without usable coordinates are listed separately.
+Downloads contain names, codes and coordinates, without flight tracks, private
+notes or friends’ details.
+
+Print a personal passport with your completion and first visit dates, or save
+it as a PDF through your browser. Choose which of your stamp photos to include;
+private notes and other participants’ photos stay out. The preview also works
+without JavaScript using the browser’s Print command.
+
+On group maps, visit frequency now counts **your own visits** by default. Choose
+**Count visits by** to see the whole group or one participant instead; the map,
+list and popups always say whose visits they count, and the per-edition counts
+follow the same choice. Previously the counts silently added your friends' visits
+to yours.
+
+On group passports you can now share a stamp photo with your friends. Open an
+airfield and choose **Share with this group**: the edition's other participants
+see it with your group name under **Photos shared by friends**. Photos stay
+private until you share them, sharing with the group never publishes them on a
+public link, and **Stop sharing with the group** hides them again straight
+away. Uploading a new photo makes it private again.
+
+Friends with a passport-only account who fly can now keep their own pilot
+logbook on the same account. Choose **Start my pilot logbook** on the passports
+page: flights they log fill their passports automatically, and the logbook
+gives no access to your aircraft, reservations, maintenance or other pilots'
+logbooks. By default an administrator enables it from the user list
+(**Enable personal logbook**); a new setting in **Configuration** lets account
+holders start it themselves.
+
+Recording a visit on a phone is quicker: **Record a visit** on a passport opens a
+simple form where you choose the airfield and date, add an optional note and
+save, with no map needed. You can still edit or delete the visit from its
+airfield page.
+
+Share a read-only passport map with a public link. The owner can replace or
+revoke the link and set an expiry date. Each participant separately chooses
+whether to publish their visited airfields, visit counts, photos and an optional
+photo credit. The public list and map show month/year dates, with a frequency
+toggle and a printable view; notes, flights, aircraft registrations and contact
+details stay private. Withdrawing permission or revoking the link stops new
+access immediately, including photo requests.
+
 **Maintenance**
 
 - Shipping from a parallel worktree: `scripts/ship.sh --later` run in another

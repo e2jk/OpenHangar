@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% set no_history_cache = true %}
+{% block title %}{{ _('Places') }} — OpenHangar{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="page-header mb-4"><h1 class="page-title">{{ _('Places') }}</h1>{% if can_create %}<a class="btn btn-ac-primary" href="{{ url_for('places.new_collection') }}">{{ _('New collection') }}</a>{% endif %}</div>
+  <p>{{ _('Save places worth visiting and share a collection with friends.') }}</p>
+  {% if invitations %}<section class="mb-4"><h2>{{ _('Collection invitations') }}</h2><ul>{% for invitation, name in invitations %}<li><a href="{{ url_for('places.join_collection', collection_id=invitation.collection_id) }}">{{ name }}</a></li>{% endfor %}</ul></section>{% endif %}
+  <nav aria-label="{{ _('Collections') }}" class="mb-4"><a class="btn btn-ac-ghost" href="{{ url_for('places.index') }}">{{ _('All collections') }}</a>{% for collection in collections %}<span class="d-inline-block me-2"><a class="btn {{ 'btn-ac-primary' if selected == collection.id else 'btn-ac-ghost' }}" href="{{ url_for('places.index', collection=collection.id) }}">{{ collection.name }}</a> <a href="{{ url_for('places.collection_settings', collection_id=collection.id) }}" aria-label="{{ _('Collection settings') }}: {{ collection.name }}"><i class="bi bi-gear"></i></a></span>{% endfor %}</nav>
+  {% if places %}<ul>{% for place in places %}<li>{{ place.title }}{% if place.address %} — {{ place.address }}{% endif %}</li>{% endfor %}</ul>{% else %}<p>{{ _('No places in this view yet.') }}</p>{% endif %}
+</div>
+{% endblock %}
