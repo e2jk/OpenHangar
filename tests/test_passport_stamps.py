@@ -174,6 +174,8 @@ def test_private_photo_validation_replace_delete_and_failure(
     assert not first.exists()
     with app.app_context():
         second = photo_path(PassportStampPhoto.query.one().filename)
+    # Other tests in this worker may have left their own photos in the folder.
+    before = set(second.parent.iterdir())
     # A DB failure must remove the newly-written file and retain the old photo.
     with (
         patch(
@@ -189,7 +191,7 @@ def test_private_photo_validation_replace_delete_and_failure(
                 "photo": (io.BytesIO(image_bytes()), "new.jpg"),
             },
         )
-    assert second.exists() and len(list(second.parent.iterdir())) == 1
+    assert second.exists() and set(second.parent.iterdir()) == before
     signin(client, owner["other"])
     assert client.get(f"/passports/{pid}/photos/{photo_id}").status_code == 404
     with app.app_context():
