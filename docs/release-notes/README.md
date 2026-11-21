@@ -66,6 +66,10 @@ since the previous release**, so `next.md` must too:
   shown as new. A batch that empties `next.md` after a release is compared
   with an empty file. So write each change's entry in the same batch as the
   change itself.
+- A parallel worktree's lane (`ship-later--<lane>`, see
+  `docs/development.md`) is a `ship-later` PR of its own: its description
+  shows only its own batch's entries. Add your entries without touching the
+  other lane's; on a conflict in `next.md`, keep both sides.
 
 ## Commits made on GitHub
 

@@ -22,8 +22,20 @@
 # straight into main (see CONTRIBUTING.md), which this script has no part
 # in and doesn't affect.
 #
-# Usage: scripts/ship.sh [--later] [--no-verify | --upstream]
+# Parallel worktrees ("lanes"): run from a linked worktree (git worktree
+# add), it pushes to `ship-later--<lane>` instead, <lane> being the
+# worktree's branch name (or --lane NAME). Each lane gets its own PR, so
+# two agents can ship side by side without overwriting each other's
+# branch. Lanes only ship --later: a release straight away (including any
+# security fix, which must be released at once) goes through the main
+# worktree's `ship`. Both PRs usually touch docs/release-notes/next.md, so
+# whichever merges second may need this script run again in its lane to
+# rebase it (its PR then shows "This branch has conflicts").
+#
+# Usage: scripts/ship.sh [--later] [--lane NAME] [--no-verify | --upstream]
 #   --later       merge without a release of its own (see above).
+#   --lane NAME   ship in a named lane (implies --later); automatic in a
+#                 linked worktree, named after its branch.
 #   --no-verify   skip the pre-push hook (ruff/mypy/bandit/zizmor/
 #                 actionlint/pip-audit/migrations/translations) — same
 #                 flag, same meaning as `git push --no-verify`, just
@@ -39,14 +51,52 @@ BRANCH=ship
 OTHER_BRANCH=ship-later
 NO_VERIFY=()
 UPSTREAM_ONLY=0
-for arg in "$@"; do
-  case "$arg" in
-    --later) BRANCH=ship-later; OTHER_BRANCH=ship ;;
+LATER=0
+LANE=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --later) LATER=1 ;;
+    --lane) [ "$#" -ge 2 ] || { echo "--lane needs a name" >&2; exit 1; }; LANE="$2"; shift ;;
+    --lane=*) LANE="${1#--lane=}" ;;
     --no-verify) NO_VERIFY=(--no-verify); echo "Skipping pre-push checks (--no-verify)." ;;
     --upstream) UPSTREAM_ONLY=1 ;;
-    *) echo "Unknown argument: $arg (only --later, --no-verify and --upstream are supported)" >&2; exit 1 ;;
+    *) echo "Unknown argument: $1 (only --later, --lane, --no-verify and --upstream are supported)" >&2; exit 1 ;;
   esac
+  shift
 done
+
+# A linked worktree (a parallel agent's) ships in its own lane, named after
+# its branch, so it never pushes to — or closes — the main worktree's PR.
+if [ -z "${LANE}" ]; then
+  GIT_DIR_ABS="$(git rev-parse --absolute-git-dir)"
+  COMMON_DIR_ABS="$(cd "$(git rev-parse --git-common-dir)" && pwd -P)"
+  if [ "$(cd "${GIT_DIR_ABS}" && pwd -P)" != "${COMMON_DIR_ABS}" ]; then
+    CURRENT_BRANCH="$(git symbolic-ref --quiet --short HEAD || true)"
+    if [ -z "${CURRENT_BRANCH}" ]; then
+      echo "This worktree is on a detached HEAD: name its lane with --lane NAME." >&2
+      exit 1
+    fi
+    LANE="${CURRENT_BRANCH}"
+  fi
+fi
+if [ -n "${LANE}" ]; then
+  # Lowercase letters, digits and single hyphens: a safe branch suffix.
+  LANE="$(printf '%s' "${LANE}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')"
+  if [ -z "${LANE}" ] || [ "${#LANE}" -gt 40 ]; then
+    echo "Invalid lane name: use 1-40 letters, digits or hyphens (--lane NAME)." >&2
+    exit 1
+  fi
+  if [ "${LATER}" != 1 ] && [ "${UPSTREAM_ONLY}" != 1 ]; then
+    echo "Lane ${LANE}: a parallel worktree only ships --later. A release straight away" >&2
+    echo "(including a security fix) ships from the main worktree. Not pushing." >&2
+    exit 1
+  fi
+  BRANCH="ship-later--${LANE}"
+  OTHER_BRANCH=""
+elif [ "${LATER}" = 1 ]; then
+  BRANCH=ship-later
+  OTHER_BRANCH=ship
+fi
 PUSH_ARGS=(origin "HEAD:${BRANCH}" --force-with-lease "${NO_VERIFY[@]}")
 
 # Commits on origin/main that we don't have and no release contains yet —
@@ -160,7 +210,10 @@ fi
 # commits: it's closed (its branch deleted) once ship has them all.
 # --verify --quiet: a plain rev-parse of a missing ref still prints its
 # argument before failing, which would read as "the branch exists".
-OTHER_SHA="$(git rev-parse --verify --quiet "refs/remotes/origin/${OTHER_BRANCH}" || true)"
+OTHER_SHA=""
+if [ -n "${OTHER_BRANCH}" ]; then
+  OTHER_SHA="$(git rev-parse --verify --quiet "refs/remotes/origin/${OTHER_BRANCH}" || true)"
+fi
 if [ -n "${OTHER_SHA}" ] && [ "${BRANCH}" = "ship-later" ]; then
   echo "A ship PR (released when it merges) is still open on origin/ship."
   echo "Run scripts/ship.sh without --later to add these commits to it, or wait until it lands. Not pushing."
@@ -212,7 +265,9 @@ if [ -n "${OTHER_SHA}" ]; then
   fi
 fi
 
-if [ "${BRANCH}" = "ship-later" ]; then
+if [ -n "${LANE}" ]; then
+  echo "Pushed to ${BRANCH} (lane ${LANE}) — its own PR merges once CI is green, released with the next daily release. Watch it land with: gh pr status"
+elif [ "${BRANCH}" = "ship-later" ]; then
   echo "Pushed to ship-later — merges once CI is green, released with the next daily release (scheduled 23:20 UTC; GitHub often starts it hours later). Watch it land with: gh pr status"
 else
   echo "Pushed to ship — watch it land with: gh pr status"

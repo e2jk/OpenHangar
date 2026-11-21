@@ -70,7 +70,8 @@ name: Auto-PR and auto-merge
 # about the order, only that both end up satisfied).
 on:
   push:
-    branches: [ship, ship-later]
+    # ship-later--<lane>: a parallel worktree's own --later lane (scripts/ship.sh).
+    branches: [ship, ship-later, 'ship-later--*']
   workflow_run:  # zizmor: ignore[dangerous-triggers] intentional: no checkout of anything anywhere in this file, only gh api/pr calls by number/SHA -- see the comment above
     workflows: [CI]
     types: [completed]
@@ -140,8 +141,9 @@ jobs:
           # ship-later: merges without its own release (ci.yml's version
           # job doesn't publish for this branch) — said in title and body.
           later_args=()
-          if [ "$HEAD_BRANCH" = "ship-later" ]; then
-            later_args=(--later)
+          case "$HEAD_BRANCH" in ship-later|ship-later--*) is_later=1 ;; *) is_later=0 ;; esac
+          if [ "$is_later" = 1 ]; then
+            later_args=(--later --branch "$HEAD_BRANCH")
             # next.md keeps everything since the previous release, so a
             # ship-later PR shows only what its own batch added: pass next.md
             # as it was at the merge base (empty if it didn't exist yet).
@@ -242,7 +244,7 @@ jobs:
           for pr in $prs; do
             head_ref=$(gh pr view "$pr" --json headRefName --jq .headRefName 2>/dev/null)
             case "$head_ref" in
-              ""|ship|ship-later|renovate/*)
+              ""|ship|ship-later|ship-later--*|renovate/*)
                 # Empty means the PR lookup itself failed (e.g. a bad
                 # manually-typed pr_number) -- skip either way, ship/renovate
                 # PRs are handled by the other job / Renovate's own automerge.
