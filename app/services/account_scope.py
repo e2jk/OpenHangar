@@ -34,6 +34,7 @@ PASSPORT_ENDPOINTS = frozenset(
         "passports.delete_passport",
         "passports.link_series",
         "passports.start_logbook",
+        "passports.record_visit",
     }
 )
 # A personal pilot logbook ('logbook' scope): only the account's own entries.

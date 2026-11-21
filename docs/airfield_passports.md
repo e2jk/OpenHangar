@@ -88,7 +88,10 @@ The schema supports independent manual visit events, per-participant arrival
 exclusions and a photo per participant/target. Automatic credit and the earliest
 eligible visit calculation are delivered in 41c. Deleting a flight nulls a manual
 visit's supporting flight link and removes arrival exclusions; it does not delete
-the independently asserted visit or stamp photo. Deleting users removes their
+the independently asserted visit or stamp photo. Besides the airfield page, the
+minimal **Record a visit** form (`passports/visit_routes.py`) adds a manual visit
+by choosing the airfield; it uses the same participant, archive and date checks.
+Deleting users removes their
 participations/authored evidence/uploads and passports they still own.
 
 Photo filenames are opaque safe basenames under `UPLOAD_FOLDER/passport_photos`.

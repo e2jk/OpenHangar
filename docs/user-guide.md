@@ -246,7 +246,9 @@ codes and coordinates, without flight tracks, visit notes or friends’ details.
 Your own logbook arrivals fill the passport automatically; dates, crew membership
 and edits are checked live. Arrivals are assumed full-stop: open an airfield to
 exclude a touch-and-go or low approach. You can also record a dated manual visit,
-optionally linked to your own flight, and upload a private stamp photo. Photos do
+optionally linked to your own flight, and upload a private stamp photo. On a
+phone, **Record a visit** on the passport page is the quickest way: choose the
+airfield and date, add a note if you like, and save. Photos do
 not earn credit. On a group passport you can share a photo with the edition's
 other participants (**Share with this group**) and stop sharing at any time;
 uploading a new photo makes it private again. The default map gives every visited field equal weight; **Show

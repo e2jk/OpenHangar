@@ -297,6 +297,7 @@ _EXCLUDED_ENDPOINTS = {
     "passports.archive_passport": "passport-owner scoped, independent of tenant role; covered by passport builder tests",
     "passports.voucher_ledger": "participant-owned private redemptions, owner-only allocations; covered by voucher privacy and PostgreSQL race tests",
     "passports.target_detail": "participant-owned evidence; covered by passport stamp privacy tests",
+    "passports.record_visit": "participant-owned manual visit through the same evidence guards as the airfield page; covered by mobile visit form tests",
     "passports.start_logbook": "self-activation for passport-only memberships under the owner's policy, not a fleet role; covered by personal pilot logbook tests",
     "passports.delete_passport": "passport-owner scoped, independent of tenant role; covered by passport builder tests",
     "auth.login": "pre-auth, no tenant role exists yet",

@@ -51,6 +51,7 @@ from passports import (
     photo_sharing,
     printing,
     series_routes,  # Register linked-edition views.
+    visit_routes,  # Register the minimal mobile visit form.
     voucher_routes,  # Register private voucher accounting.
     waypoints,
 )
@@ -85,6 +86,7 @@ __all__ = [
     "logbook_routes",
     "passports_bp",
     "series_routes",
+    "visit_routes",
     "voucher_routes",
 ]
 
@@ -194,8 +196,14 @@ def detail(passport_id: int) -> ResponseReturnValue:
         require_actor(passport.tenant_id, session["user_id"])
     except BuilderError:
         can_manage = False
+    try:
+        evidence.writable_participant(passport, session["user_id"])
+        can_record_visit = True
+    except BuilderError:
+        can_record_visit = False
     return render_template(
         "passports/detail.html",
+        can_record_visit=can_record_visit,
         **waypoint_context,
         passport=passport,
         targets=rows,

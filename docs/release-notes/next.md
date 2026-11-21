@@ -44,6 +44,11 @@ logbooks. By default an administrator enables it from the user list
 (**Enable personal logbook**); a new setting in **Configuration** lets account
 holders start it themselves.
 
+Recording a visit on a phone is quicker: **Record a visit** on a passport opens a
+simple form where you choose the airfield and date, add an optional note and
+save, with no map needed. You can still edit or delete the visit from its
+airfield page.
+
 **Maintenance**
 
 - Background navigation prefetches no longer create competing sign-in forms,
