@@ -3183,6 +3183,94 @@ msgstr "La personne qui a créé la collection doit conserver les droits de modi
 msgid "The creator must transfer or delete the collection before leaving."
 msgstr "La personne qui a créé la collection doit la transférer ou la supprimer avant de la quitter."
 
+#: app/places/coordinates.py:37
+msgid "Enter valid latitude and longitude coordinates."
+msgstr "Saisissez une latitude et une longitude valides."
+
+#: app/places/coordinates.py:97
+msgid "Paste decimal or DMS coordinates, or a map link containing coordinates."
+msgstr "Collez des coordonnées décimales ou en degrés, minutes et secondes, ou un lien de carte contenant des coordonnées."
+
+#: app/places/management.py:41
+msgid "A place field is too long."
+msgstr "Un champ du lieu est trop long."
+
+#: app/places/management.py:44
+msgid "Enter a place name."
+msgstr "Saisissez un nom de lieu."
+
+#: app/places/management.py:57
+msgid "Enter a full http or https website address."
+msgstr "Saisissez une adresse de site complète commençant par http ou https."
+
+#: app/places/management.py:72
+msgid "Use tag names of at most 80 characters."
+msgstr "Utilisez des noms d’étiquette de 80 caractères maximum."
+
+#: app/places/management.py:126
+msgid "Use Move to change a place's collection."
+msgstr "Utilisez « Déplacer » pour changer la collection d’un lieu."
+
+#: app/places/management.py:174
+msgid "The place photo could not be copied."
+msgstr "La photo du lieu n’a pas pu être copiée."
+
+#: app/places/management.py:189
+msgid "Only the place owner can move it."
+msgstr "Seul le propriétaire du lieu peut le déplacer."
+
+#: app/places/management.py:200
+msgid "Every visitor must belong to the destination collection. Copy this place instead."
+msgstr "Chaque personne ayant enregistré une visite doit faire partie de la collection de destination. Copiez plutôt ce lieu."
+
+#: app/places/management.py:244
+msgid "Only the place owner or collection creator can permanently delete it."
+msgstr "Seuls le propriétaire du lieu ou la personne qui a créé la collection peuvent le supprimer définitivement."
+
+#: app/places/tags.py:11
+msgid "Town"
+msgstr "Ville"
+
+#: app/places/tags.py:12
+msgid "Attraction"
+msgstr "Site touristique"
+
+#: app/places/tags.py:13
+msgid "Restaurant"
+msgstr "Restaurant"
+
+#: app/places/tags.py:14 app/templates/flights/list.html:184
+msgid "Nature"
+msgstr "Nature"
+
+#: app/places/tags.py:15
+msgid "Viewpoint"
+msgstr "Point de vue"
+
+#: app/places/tags.py:16
+msgid "Museum"
+msgstr "Musée"
+
+#: app/places/tags.py:17
+msgid "Beach"
+msgstr "Plage"
+
+#: app/places/tags.py:18
+msgid "Overnight stay"
+msgstr "Hébergement"
+
+#: app/places/tags.py:19
+msgid "Family"
+msgstr "Famille"
+
+#: app/places/tags.py:29 app/places/tags.py:62
+msgid "Tag not found."
+msgstr "Étiquette introuvable."
+
+#: app/places/tags.py:32
+msgid "Enter a tag name of at most 80 characters."
+msgstr "Saisissez un nom d’étiquette de 80 caractères maximum."
+
 #: app/pwa/routes.py:90
 msgid "Aircraft document"
 msgstr "Document d'avion"
@@ -10643,10 +10731,6 @@ msgstr "Importé depuis le carnet de vol pilote — la durée de vol doit être
 #: app/templates/offline/pilot_logbook.html:30
 msgid "UTC times"
 msgstr "Heures UTC"
-
-#: app/templates/flights/list.html:184
-msgid "Nature"
-msgstr "Nature"
 
 #: app/templates/flights/list.html:185
 #: app/templates/offline/aircraft_logbook.html:34
