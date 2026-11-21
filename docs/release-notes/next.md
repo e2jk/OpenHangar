@@ -63,6 +63,10 @@ aircraft flights as possible matches, and an administrator's logbook backfill
 could attach their personal flights to its aircraft. Only organisations where
 the pilot has full access are considered now.
 
+In a past group edition, a participant who turned off visit sharing saw their
+own stamps disappear; they now always see their own visits, while the group
+no longer counts them.
+
 The personal passport data export now also includes your group and public
 sharing choices. Signed-in passport-only accounts can read `robots.txt` again.
 

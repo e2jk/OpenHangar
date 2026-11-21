@@ -177,3 +177,21 @@ def test_participant_scope_page_names_the_participant(
     ).text
     assert "Visit counts show the visits of Later friend." in page
     assert "Recorded visits by Later friend" in page
+
+
+def test_non_sharing_participant_still_sees_own_visits(
+    app: Flask, client: FlaskClient, group: dict[str, int]
+) -> None:
+    with app.app_context():
+        PassportParticipant.query.filter_by(
+            passport_id=group["new"], user_id=group["other"]
+        ).one().share_visits = False
+        db.session.commit()
+    signin(client, group["other"])
+    page = client.get(f"/passports/{group['new']}/").text
+    # Their own 2025 arrival still stamps their own (now history) edition...
+    assert "Your progress: <strong>1 / 1</strong>" in page
+    # ...while the group no longer counts them: no group figures include them.
+    with app.app_context():
+        view = _view(group, group["other"], scope="group")
+        assert _row(view, _airfield(group))["count"] == 0
