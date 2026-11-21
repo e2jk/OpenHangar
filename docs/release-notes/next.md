@@ -63,6 +63,10 @@ aircraft flights as possible matches, and an administrator's logbook backfill
 could attach their personal flights to its aircraft. Only organisations where
 the pilot has full access are considered now.
 
+**Security:** the aircraft co-owner form accepted any user account, including
+users of another organisation, and listed passport-only friends. Only full
+members of the aircraft's organisation can now be chosen as co-owners.
+
 In a past group edition, a participant who turned off visit sharing saw their
 own stamps disappear; they now always see their own visits, while the group
 no longer counts them.
