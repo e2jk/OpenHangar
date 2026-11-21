@@ -13,6 +13,7 @@ from html.parser import HTMLParser
 from typing import Any
 
 from flask_babel import gettext as _
+from utils import as_utc
 
 from passports.management import BuilderError
 from passports.source_fetch import (
@@ -183,9 +184,7 @@ def source_values(state: dict[str, Any]) -> dict[str, Any]:
         return {"source_url": None, "source_retrieved_at": None}
     try:
         url = validate_url(source["url"]).url
-        retrieved = datetime.fromisoformat(source["retrieved_at"])
-        if retrieved.tzinfo is None:
-            retrieved = retrieved.replace(tzinfo=UTC)
+        retrieved = as_utc(datetime.fromisoformat(source["retrieved_at"]))
     except (KeyError, TypeError, ValueError) as exc:
         raise BuilderError(
             _("The import provenance is invalid. Preview the source again.")

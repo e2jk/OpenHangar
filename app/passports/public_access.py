@@ -19,13 +19,16 @@ from models import (
     db,
 )
 from services import public_shares
+from utils import as_utc
+
+from passports.participation import active_participation
 
 
 def current_consent(value: datetime | None, participant: PassportParticipant) -> bool:
     return bool(
         value is not None
         and participant.accepted_at is not None
-        and public_shares.aware(value) >= public_shares.aware(participant.accepted_at)
+        and as_utc(value) >= as_utc(participant.accepted_at)
     )
 
 
@@ -40,9 +43,7 @@ def participants(passport: Passport) -> list[PassportParticipant]:
         )
         .filter(
             PassportParticipant.passport_id == passport.id,
-            PassportParticipant.is_active.is_(True),
-            PassportParticipant.blocked.is_(False),
-            PassportParticipant.accepted_at.is_not(None),
+            *active_participation(),
             User.is_active.is_(True),
         )
     )

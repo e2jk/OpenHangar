@@ -17,9 +17,11 @@ from models import (
     PassportSeriesMember,
     db,
 )
+from utils import as_utc
 
 from passports import groups, memberships
 from passports.management import BuilderError, require_actor
+from passports.participation import active_participation
 
 
 def _eligible(series: PassportSeries, passports: list[Passport], user_id: int) -> None:
@@ -28,9 +30,7 @@ def _eligible(series: PassportSeries, passports: list[Passport], user_id: int) -
     if not PassportParticipant.query.filter(
         PassportParticipant.passport_id.in_([p.id for p in passports]),
         PassportParticipant.user_id == user_id,
-        PassportParticipant.is_active.is_(True),
-        PassportParticipant.blocked.is_(False),
-        PassportParticipant.accepted_at.is_not(None),
+        *active_participation(),
     ).first():
         raise BuilderError(_("Choose an active participant in this group."), 409)
 
@@ -56,9 +56,7 @@ def _current(series: PassportSeries, key: str) -> PassportOwnershipOffer:
         row.request_key.encode(), key.encode()
     ):
         raise BuilderError(_("This ownership offer is no longer available."), 409)
-    expiry = row.expires_at
-    if expiry.tzinfo is None:
-        expiry = expiry.replace(tzinfo=UTC)
+    expiry = as_utc(row.expires_at)
     if expiry < datetime.now(UTC) or row.requester_user_id != series.owner_user_id:
         raise BuilderError(_("This ownership offer is no longer available."), 409)
     return row

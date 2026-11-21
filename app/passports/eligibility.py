@@ -27,6 +27,7 @@ from models import (
 from sqlalchemy.orm import selectinload
 
 from passports.catalogue import effective_airfield, public_airfield
+from passports.participation import active_participation
 
 
 def date_eligible(
@@ -164,9 +165,7 @@ def progress_many(
             PassportParticipant.query.filter(
                 PassportParticipant.passport_id.in_(ids),
                 PassportParticipant.user_id == user_id,
-                PassportParticipant.is_active.is_(True),
-                PassportParticipant.blocked.is_(False),
-                PassportParticipant.accepted_at.is_not(None),
+                *active_participation(),
             ).all()
             if include_evidence
             else []

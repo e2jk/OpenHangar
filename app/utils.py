@@ -8,6 +8,7 @@ import math
 import os
 from collections import defaultdict
 from collections.abc import Callable
+from datetime import UTC, datetime
 from functools import wraps
 from typing import Any
 
@@ -1294,6 +1295,15 @@ def haversine_nm(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 
 
 _alog = logging.getLogger("openhangar.activity")
+
+
+def as_utc(value: datetime) -> datetime:
+    """A stored timestamp as an aware UTC datetime.
+
+    SQLite returns naive values for timezone-aware columns; PostgreSQL returns
+    aware ones. Comparing the two would raise, so normalise before comparing.
+    """
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
 
 def _sl(value: object) -> str:

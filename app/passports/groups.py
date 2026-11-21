@@ -23,6 +23,7 @@ from sqlalchemy.exc import NoResultFound, OperationalError
 from passports import editions
 from passports.eligibility import progress_many
 from passports.management import BuilderError, owned_passport, require_actor
+from passports.participation import active_participation
 
 
 def lock_series(series_id: int) -> None:
@@ -185,9 +186,7 @@ def visible_editions(
         for p in PassportParticipant.query.filter(
             PassportParticipant.passport_id.in_([p.id for p in passports]),
             PassportParticipant.user_id == user_id,
-            PassportParticipant.is_active.is_(True),
-            PassportParticipant.blocked.is_(False),
-            PassportParticipant.accepted_at.is_not(None),
+            *active_participation(),
             PassportParticipant.share_visits.is_(True),
         ).all()
     }
@@ -221,9 +220,7 @@ def shared_progress(
         for p in PassportParticipant.query.filter(
             PassportParticipant.passport_id.in_([p.id for p in passports]),
             PassportParticipant.user_id == user_id,
-            PassportParticipant.is_active.is_(True),
-            PassportParticipant.blocked.is_(False),
-            PassportParticipant.accepted_at.is_not(None),
+            *active_participation(),
         ).all()
     }
     own = {
@@ -249,9 +246,7 @@ def shared_progress(
         )
         .filter(
             PassportParticipant.passport_id.in_([p.id for p in passports]),
-            PassportParticipant.is_active.is_(True),
-            PassportParticipant.blocked.is_(False),
-            PassportParticipant.accepted_at.is_not(None),
+            *active_participation(),
             PassportParticipant.share_visits.is_(True),
             PassportSeriesMember.is_active.is_(True),
             PassportSeriesMember.blocked.is_(False),

@@ -25,6 +25,7 @@ from utils import int_in
 from passports.eligibility import date_eligible, eligible_flight
 from passports.evidence import writable_participant
 from passports.management import BuilderError, owned_passport
+from passports.participation import active_participation
 
 MAX_ALLOCATION_COPIES = 5000
 
@@ -547,9 +548,7 @@ def _provision_defaults(passport: Passport, user_id: int | None = None) -> None:
         )
         .where(
             PassportAirfield.passport_id == passport.id,
-            PassportParticipant.is_active.is_(True),
-            PassportParticipant.blocked.is_(False),
-            PassportParticipant.accepted_at.is_not(None),
+            *active_participation(),
             ~exists,
         )
     )

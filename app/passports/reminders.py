@@ -15,6 +15,8 @@ from models import (
 )
 from services.notification_service import dispatch, get_effective_preference
 
+from passports.participation import active_participation
+
 
 def has_participation(tenant_id: int, user_id: int) -> bool:
     return (
@@ -23,9 +25,7 @@ def has_participation(tenant_id: int, user_id: int) -> bool:
         .filter(
             Passport.tenant_id == tenant_id,
             PassportParticipant.user_id == user_id,
-            PassportParticipant.is_active.is_(True),
-            PassportParticipant.blocked.is_(False),
-            PassportParticipant.accepted_at.is_not(None),
+            *active_participation(),
         )
         .first()
         is not None
@@ -47,9 +47,7 @@ def check_expiry() -> None:
             Passport.archived_at.is_(None),
             Passport.end_date >= today,
             db.or_(Passport.start_date.is_(None), Passport.start_date <= today),
-            PassportParticipant.is_active.is_(True),
-            PassportParticipant.blocked.is_(False),
-            PassportParticipant.accepted_at.is_not(None),
+            *active_participation(),
             User.is_active.is_(True),
         )
         .all()
