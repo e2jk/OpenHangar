@@ -77,3 +77,7 @@ airfield page.
 - Prepare storage and token controls for public passport links, with separate
   publication permissions. Existing visits and photos remain private; the public
   pages will follow in a separate change.
+
+- Documentation only: an audit of the airfield-passport roadmap ticked the
+  edition, history, colour, reminder and invitation items that were already
+  built and tested; the few still open now say what remains.

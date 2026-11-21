@@ -2361,26 +2361,26 @@ downgrades and show localised retrieval timestamps.
   frequency, while private linked editions stay hidden. Invitation enrolment,
   membership management, shared photos and group coverage remain with 41g.
 
-- [ ] Keep linked editions simple: `PassportSeries` groups passports via an
+- [x] Keep linked editions simple: `PassportSeries` groups passports via an
   optional `Passport.series_id` FK. Each passport remains independently named,
   with its own optional start/end dates, targets, participants, visits and voucher
   allocations. The series supplies the shared group context, edition selector and
   combined map; a passport outside a series works on its own. Do not infer links
   from similar names or require a previous/next-edition chain.
-- [ ] No recurrence engine, schedule rules, automatic renewal or scheduled balance
+- [x] No recurrence engine, schedule rules, automatic renewal or scheduled balance
   resets. "Create next edition" is an explicit copy-and-review action, followed
   by entering its name/dates and confirming its targets/allocations. Explicit dates
   determine eligibility, not an edition year field. Yearly, monthly, seasonal and
   irregular editions use the same relationship and date fields; undated personal
   passports remain supported. Preserve historical passports instead of renaming
   an old edition or moving its dates to reset its visits/vouchers.
-- [ ] Group series has persistent group membership, separate from participation in
+- [x] Group series has persistent group membership, separate from participation in
   each linked passport. Initial use case: Landegutscheinheft 2027 and 2028, each
   dated 1 January–31 December, in the same series. Retain the same accounts and
   group identity; joining 2028 does not enrol a friend retrospectively in 2027 or
   allocate historical vouchers. These annual dates are a setup choice, not a
   constraint on other series.
-- [ ] Opening a series defaults to the currently valid, non-archived participating
+- [x] Opening a series defaults to the currently valid, non-archived participating
   edition, determined by its explicit date range. If several overlap, choose the
   latest start date with a stable ID tie-break and keep the others selectable.
   If none is current, show that clearly and offer the latest participating edition
@@ -2388,14 +2388,14 @@ downgrades and show localised retrieval timestamps.
   labelling an old edition as current. Undated passports have no timed-edition
   priority and remain selectable. Offer an available current edition's join action
   when the viewer has not participated in it.
-- [ ] Default group history to "Editions I participated in", with "Include earlier
+- [x] Default group history to "Editions I participated in", with "Include earlier
   editions I didn't participate in" adding earlier passports from the same series
   to the selector and combined map. Clearly distinguish participation from read-only
   history access; never require joining an old passport just to view its shared map.
   Use generic "All editions" labels, with "All years" and year labels where useful
   for a series such as Landegutscheinheft. Other edition names, such as "November
   2027" or "Summer 2027", remain intact; do not collapse editions sharing a year.
-- [ ] Active group members, including passport-only friends, can opt into the
+- [x] Active group members, including passport-only friends, can opt into the
   group's earlier edition maps and shared visit history without owner-prepared
   individual invitations. History access is scoped to that group series and uses
   the same group-visible fields/consent as ordinary shared maps: airfields, shared
@@ -2403,14 +2403,14 @@ downgrades and show localised retrieval timestamps.
   aircraft details or personal voucher ledgers. Shared-history consent must explain
   that later group members may see these past visits. No access to unrelated
   groups, personal passports or private evidence merely because editions are linked.
-- [ ] Included non-participating editions contribute their targets and group visits to
+- [x] Included non-participating editions contribute their targets and group visits to
   the combined map, edition colours and authorised group-frequency totals. The viewer
   has no own stamp in those editions: historical visits by friends get the
   "visited by others" emphasis. Do not backfill the viewer's old flights into editions
   they did not join, change their completion denominator, add them to historical
   leaderboards/"everyone" totals, or enable historical edits/redemptions. Label
   per-edition participation and the selected history scope in map, list and statistics.
-- [ ] Add edition archive/comparison and "create next edition" flows: copy targets,
+- [x] Add edition archive/comparison and "create next edition" flows: copy targets,
   settings and optional voucher allocations, or import a replacement list and
   review changes. Never copy visits, redeemed vouchers, group invitations or public
   links. Participants must accept a new group edition before logbook sharing starts.
@@ -2429,7 +2429,7 @@ downgrades and show localised retrieval timestamps.
   The comparison lists each edition’s sharing participants, anyone/everyone
   coverage and closure-adjusted denominator within the selected history scope;
   read-only viewers never receive retrospective participation.
-- [ ] "All editions" combines the union of targets from all accessible editions in
+- [x] "All editions" combines the union of targets from all accessible editions in
   the series, including fields removed from the current edition and archived
   editions. One marker/list row per stable airfield identity, not per code/year;
   show which editions included it, and the eligible visit history per edition.
@@ -2441,7 +2441,7 @@ downgrades and show localised retrieval timestamps.
   colour, not the frequency period: a field visited once in 2026 and three times
   in 2027 has weight four in "All years" under either priority, and weight three
   in the 2027-only view. Show per-year counts in the popup alongside the total.
-- [ ] Use a consistent colour per linked passport, with an edition-name legend and
+- [x] Use a consistent colour per linked passport, with an edition-name legend and
   text/icon alternatives. For yearly editions this is a year colour. Order dated
   editions by start date (stable ID tie-break); undated linked passports use an
   explicit display order. Default marker edition is the most recent in which the
@@ -2462,15 +2462,20 @@ downgrades and show localised retrieval timestamps.
   Cross-year group totals must state their participant/edition scope; membership
   grants only the shared series-history access described above, never access to
   another edition's private evidence.
+  *Audit 2026-11-21:* the private hierarchy is done (own stamps strongest, friends'
+  newest/oldest year, muted unvisited, separate closure and "not in the current
+  edition" badges, scoped cross-year totals). Open only for the public aggregate
+  year priority, which comes with 41h.
 - [x] Expiry-reminder increment: accepted participants of any existing role can
   opt in, choose their warning period, follow an edition link and snooze the
   current deadline. Daily checks revalidate membership/participation, skip inactive
   editions and reuse daily email deduplication. Edition pages show expiry status.
   Validate the restricted passport-only account integration with 41g.
-- [ ] Add an opt-in expiry reminder through the notification framework, with user
+- [x] Add an opt-in expiry reminder through the notification framework, with user
   preferences, capability visibility, deduplication and a clear edition link.
   Passport-only accounts use the same opt-in preferences; their form also shows
   expiry status.
+  *Done:* delivered by the expiry-reminder increment above.
 
 ### 41g — Group passports and invitation-based accounts
 
@@ -2575,7 +2580,7 @@ downgrades and show localised retrieval timestamps.
   (default, from the user list) or the account holder too. Imports, GPS-import
   review, tracks, minimums, the pilot profile and the offline logbook stay
   denied until each is audited for tenant data.
-- [ ] Invitations use high-entropy tokens hashed at rest, with owner copy/replace/
+- [x] Invitations use high-entropy tokens hashed at rest, with owner copy/replace/
   disable controls and optional expiry. Redact tokens from logs, avoid referrer
   leakage, indexing and caching, and rate-limit registration/join attempts. Recheck
   revocation/expiry after authentication/verification, including an in-flight join.
@@ -2655,6 +2660,9 @@ downgrades and show localised retrieval timestamps.
   discussion; future debrief sharing requires an explicit audience-selected action
   (see the Flight Debriefs & Shared Experience backlog entry). Phase 41 does
   not depend on building the full debrief feature.
+  *Audit 2026-11-21:* the private part is done (the export includes your own
+  comments, and notes are never published into discussions). Open until the 41h
+  public pages and endpoints exist and are proven to leave names and comments out.
 - [x] Manual visit correction increment: participants, including passport-only
   friends, can edit their own manual date/note/supporting-flight association in a
   normal mobile-friendly form. Existing date/eligibility and read-only guards apply;
@@ -2690,6 +2698,9 @@ downgrades and show localised retrieval timestamps.
   A participant filter does not silently change who "you" refers to. Public viewers
   without a participant identity get aggregate visited/unvisited styling (41h),
   never an assumed member identity or access to private visit evidence.
+  *Audit 2026-11-21:* the three-state map, legend, outlines, list/popup labels,
+  closure badge and coordinate-less list rows are done. Open only for the public
+  aggregate styling (41h).
 - [x] Shared map/stats: participant filter, visited by anyone/everyone, per-pilot
   coverage and leaderboard with tied ranks. Use a common group denominator of open
   targets plus closed targets stamped by any active participant; explain closure
