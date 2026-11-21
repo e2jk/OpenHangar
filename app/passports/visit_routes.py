@@ -28,7 +28,8 @@ def record_visit(passport_id: int) -> ResponseReturnValue:
     try:
         participant = evidence.writable_participant(passport, uid)
     except BuilderError as exc:
-        abort(exc.status, description=str(exc))
+        # An explicit exit: the rest of the view always has a participant.
+        return abort(exc.status, description=str(exc))
     targets = sorted(
         passport_progress(passport, uid)["rows"],
         key=lambda row: (str(row.get("name") or "").casefold(), row["target_id"]),
