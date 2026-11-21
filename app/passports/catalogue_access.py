@@ -19,6 +19,8 @@ from models import (
     db,
 )
 
+from passports.participation import active_participation
+
 
 def visible_identity_ids(
     tenant_id: int, user_id: int | None = None, *, private_metadata: bool = False
@@ -49,9 +51,7 @@ def visible_identity_ids(
         return empty
     accepted = db.select(PassportParticipant.passport_id).where(
         PassportParticipant.user_id == user_id,
-        PassportParticipant.is_active.is_(True),
-        PassportParticipant.blocked.is_(False),
-        PassportParticipant.accepted_at.is_not(None),
+        *active_participation(),
     )
     groups = db.select(PassportSeriesMember.series_id).where(
         PassportSeriesMember.tenant_id == tenant_id,

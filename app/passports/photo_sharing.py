@@ -22,6 +22,7 @@ from models import (
 )
 
 from passports import groups
+from passports.participation import active_participation
 from passports.public_access import current_consent
 
 
@@ -72,9 +73,7 @@ def _shared_query(passport: Passport) -> Any:
             PassportStampPhoto.passport_id == passport.id,
             PassportParticipant.passport_id == passport.id,
             PassportStampPhoto.group_shared_at.is_not(None),
-            PassportParticipant.is_active.is_(True),
-            PassportParticipant.blocked.is_(False),
-            PassportParticipant.accepted_at.is_not(None),
+            *active_participation(),
             PassportParticipant.share_visits.is_(True),
             PassportSeriesMember.is_active.is_(True),
             PassportSeriesMember.blocked.is_(False),

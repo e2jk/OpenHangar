@@ -24,6 +24,7 @@ from models import (
 )
 from services import auth_challenges
 from sqlalchemy.exc import OperationalError
+from utils import as_utc
 
 from passports import groups, tokens, vouchers
 from passports.management import BuilderError, owned_passport, require_actor
@@ -38,11 +39,7 @@ def _now() -> datetime:
 
 
 def _expiry(value: datetime | None) -> datetime | None:
-    return (
-        value.replace(tzinfo=UTC)
-        if value is not None and value.tzinfo is None
-        else value
-    )
+    return as_utc(value) if value is not None else None
 
 
 def available(invitation: PassportInvitation, passport: Passport) -> bool:

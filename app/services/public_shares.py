@@ -8,10 +8,7 @@ from datetime import UTC, datetime
 
 from models import PublicShare, db
 from passports import tokens
-
-
-def aware(value: datetime) -> datetime:
-    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+from utils import as_utc
 
 
 def _purpose(share: PublicShare) -> str:
@@ -36,7 +33,7 @@ def revoke(share: PublicShare) -> None:
 
 def recover(share: PublicShare) -> str | None:
     if share.revoked_at is not None or (
-        share.expires_at is not None and aware(share.expires_at) <= datetime.now(UTC)
+        share.expires_at is not None and as_utc(share.expires_at) <= datetime.now(UTC)
     ):
         return None
     return tokens.recover(
@@ -76,5 +73,5 @@ def matches_resource(
     return (
         share.tenant_id == tenant_id
         and share.issuer_user_id == owner_user_id
-        and aware(share.resource_created_at) == aware(created_at)
+        and as_utc(share.resource_created_at) == as_utc(created_at)
     )

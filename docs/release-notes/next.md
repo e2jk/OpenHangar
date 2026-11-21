@@ -137,3 +137,8 @@ sharing choices. Signed-in passport-only accounts can read `robots.txt` again.
 
 - French: 56 older messages now use the narrow no-break space before
   `:`, `;`, `!`, `?` and `»` (and after `«`), as French typography requires.
+
+- Airfield-passport code now has one definition of an active participant and
+  one helper for comparing stored timestamps, instead of copies in a dozen
+  modules. A share-link test no longer fails when a random page nonce happens
+  to contain the number it checks for.
