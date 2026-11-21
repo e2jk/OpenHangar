@@ -433,11 +433,11 @@ membership full-access under the selected role; joining a passport never does so
 An older schema cannot represent a role-less membership: the migration refuses a
 downgrade while restricted memberships exist, rather than silently granting a role.
 
-This is the authorization foundation for invitation-based friend accounts. Signup,
-email verification and later personal-pilot activation are separate increments.
+Invitation-based friend accounts use this authorization boundary for signup and
+email verification. Later personal-pilot activation remains a separate increment.
 Passport-only accounts can use discovery with catalogue reads limited to public
-data and authorised own/group airfields. Private builder writes remain unavailable
-until their selection and catalogue mutations have equivalent permission checks.
+data and authorised own/group airfields, and build their own collections through
+scoped catalogue writes. Joining a group never grants fleet access.
 
 ### Authentication context for existing accounts
 
@@ -678,14 +678,18 @@ contribute even to aggregate counts. Existing request-batched evidence supplies
 the comparison; no per-edition statistics queries are added. Selecting an older
 map while another edition is current never indexes evidence outside that map.
 
-### Group discussion storage and access foundation
+### Group airfield discussions
 
 Discussion records belong to a group series and stable airfield identity, with
 composite tenant foreign keys. They contain the explicitly shared author alias,
 category (airfield, nearby recommendation or question), body, optional experience
 date, posted time and optional edited time. Bodies are bounded to 8,000 characters.
-This foundation does not expose a posting page yet; UI and own-comment export
-integration follow separately.
+The airfield detail shows the latest three comments and opens a paginated discussion
+with category and posting-date filters. The optional experience date is separate
+from the posting date. Normal CSRF-protected forms work without JavaScript; writes
+are limited per account. Responses are private, non-cacheable and excluded from
+HTMX history. The participant ZIP includes only comments authored by its requester,
+including retained comments after leaving, never another member’s posts.
 
 Comments do not create stamps, participants or voucher use. They survive target
 or edition removal while the group exists. Active group members may discuss the

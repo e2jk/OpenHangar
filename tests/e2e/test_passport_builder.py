@@ -582,7 +582,11 @@ def test_group_consent_series_map_mobile_and_without_js(
     )
     browser = page.context.browser
     assert browser is not None
-    context = browser.new_context(java_script_enabled=False, service_workers="block")
+    context = browser.new_context(
+        java_script_enabled=False,
+        service_workers="block",
+        viewport={"width": 390, "height": 844},
+    )
     context.add_cookies(page.context.cookies())
     try:
         plain = context.new_page()
@@ -593,6 +597,31 @@ def test_group_consent_series_map_mobile_and_without_js(
             plain.get_by_role("heading", name="Compare editions", exact=True)
         ).to_be_visible()
         expect(plain.locator("table").first).to_contain_text("EBNM")
+        plain.get_by_role("link", name=re.compile(r"^EBNM —")).click()
+        expect(
+            plain.get_by_text("Visible to members of this group", exact=True)
+        ).to_be_visible()
+        plain.locator("#comment-body").fill("Which restaurant do you recommend?")
+        plain.locator("#comment-category").select_option("question")
+        plain.get_by_role("button", name="Post comment", exact=True).click()
+        expect(plain.locator(".passport-comment-body")).to_have_text(
+            "Which restaurant do you recommend?"
+        )
+        plain.get_by_text("Edit comment", exact=True).click()
+        plain.locator('textarea[id^="edit-comment-body-"]').fill(
+            "A restaurant question before visiting"
+        )
+        plain.get_by_role("button", name="Save Changes", exact=True).click()
+        expect(plain.locator(".passport-comment-body")).to_have_text(
+            "A restaurant question before visiting"
+        )
+        assert (
+            "Private group visit note"
+            not in plain.locator("#passport-discussion").inner_text()
+        )
+        assert plain.evaluate(
+            "document.documentElement.scrollWidth <= window.innerWidth + 1"
+        )
     finally:
         context.close()
     page.goto(passport_url)

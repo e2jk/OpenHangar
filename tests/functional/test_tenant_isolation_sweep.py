@@ -75,6 +75,7 @@ class TenantWorld:
     passport_id: int
     series_id: int
     target_id: int
+    airfield_id: int
     aircraft_id: int
     component_id: int
     flight_id: int
@@ -305,6 +306,7 @@ def _build_tenant_world(app, client_factory, suffix: str) -> TenantWorld:
             "passport_id": passport.id,
             "series_id": series.id,
             "target_id": target.id,
+            "airfield_id": field.id,
             "aircraft_id": aircraft.id,
             "component_id": component.id,
             "flight_id": flight.id,

@@ -9,6 +9,7 @@ from typing import Any, BinaryIO, cast
 from models import (
     Passport,
     PassportAirfield,
+    PassportAirfieldComment,
     PassportAirfieldIdentity,
     PassportArrivalExclusion,
     PassportParticipant,
@@ -204,6 +205,17 @@ def account_archive(
                 ],
             }
             for p in visible_passports
+        ],
+        "comments": [
+            _values(
+                comment,
+                "id series_id airfield_id author_display_name category body experience_date created_at edited_at",
+            )
+            for comment in PassportAirfieldComment.query.filter_by(
+                tenant_id=tenant_id, author_user_id=user_id
+            )
+            .order_by(PassportAirfieldComment.id)
+            .all()
         ],
         "photos": [],
     }
