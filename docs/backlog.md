@@ -1246,3 +1246,68 @@ lists remain independently planned there.
   notes, crew details, route or attachments, or publish it on the internet.
 - Expand the workflow and fields later, including editing, withdrawal, deletion,
   provenance, and what happens to shared excerpts when their source changes.
+
+## Airfield catalogue: optional ULM / microlight fields
+
+The bundled catalogue (`app/data/airports.csv`, from OurAirports) has no ULM
+classification — the `ulm` flag is "unknown unless corrected" — and many
+ULM-only fields (French *bases ULM*, Belgian/Dutch microlight strips) are not
+listed at all. Find a source of ULM fields with a licence compatible with
+redistribution (candidates to evaluate: OpenAIP, OpenStreetMap
+`aeroway=aerodrome` + `aerodrome:type`, national ULM federation lists), and
+import it as a separate dataset rather than mixing it into the main catalogue.
+
+- Ship the dataset with the image, but **disabled by default**: an instance
+  setting (or per-user preference) turns ULM fields on for passport building,
+  Where next? and place airfield suggestions. Enabled, they're tagged `ulm` so
+  lists and maps can filter them.
+- Decide de-duplication against fields already in the catalogue (same field
+  listed in both — never merge by proximity alone, per the catalogue rules).
+- Measure the size impact on search lists and the map before choosing the
+  default; keep the existing behaviour when disabled.
+
+## Photos: one cleaning pipeline for every stored photo
+
+Passport photos are cleaned on upload (`passports/evidence.py:save_photo`:
+size/pixel limits, decompression-bomb guard, EXIF orientation applied, pixels
+re-encoded without EXIF/GPS/comments/profiles). Other photos are stored as
+uploaded, including the GPS position in a phone photo's EXIF:
+
+- aircraft photos (`aircraft/routes.py:_save_photo_file`), which also appear on
+  the public showcase share page (`share/routes.py:showcase_photo`), so the
+  location where the photo was taken is published;
+- flight counter / fuel photos (`flights/routes.py:_save_upload`, which also
+  accepts GIF and HEIC) and the PWA share-target "flight photo" path.
+
+Make the shared image module (extracted in Phase 42a as `services/images.py`)
+the only way a photo is written, and route every upload through it:
+
+- **Read, then clean.** Upload handling first reads the metadata the feature can
+  use, then stores only the cleaned image. EXIF is used as a *suggestion*,
+  never applied silently:
+  - capture time → arrival/departure time suggestions (Phase 46 "Photo EXIF &
+    arrival time auto-fill"), counter-photo OCR context (backlog "Logbook: OCR
+    auto-fill from counter photos");
+  - GPS position of a **counter photo** → airfield suggestion when registering a
+    flight: the end-of-flight photo suggests the **arrival** airfield, the
+    pre-flight photo (`flight_counter_photo_preflight`) the **departure**
+    airfield. Nearest catalogue airfield within a small radius (e.g. 2 km, so a
+    photo taken on the apron matches its field), shown with its distance; no
+    suggestion when nothing is close enough or two fields are about equally
+    close. Natural companion to the Phase 46 time suggestion, from the same
+    upload;
+  - GPS position → pin suggestion for a new place (Places) or the nearest
+    passport target for a stamp photo.
+  The extracted values are passed to the form; they're never saved as hidden
+  metadata.
+- Decide the format policy for HEIC (needs a decoder dependency, or converted
+  in the browser before upload) and animated GIF (first frame or refused).
+- One-off migration for existing files: re-encode stored aircraft and flight
+  photos (keeping thumbnails consistent), with a dry-run report first. Keep
+  originals only if the operator asks (configuration flag), never by default.
+- Documents (`documents/` uploads, the Syncthing-compatible archive) are
+  originals by design and stay untouched; an image uploaded as a document is
+  not a "photo" for this purpose. Revisit if that turns out to leak locations
+  through a share page.
+- Tests: GPS/EXIF absent from every stored photo type, public showcase serves
+  cleaned files, suggestions still work from the uploaded original.

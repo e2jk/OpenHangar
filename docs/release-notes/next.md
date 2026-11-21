@@ -36,3 +36,8 @@ without JavaScript using the browser’s Print command.
   restaurants) linked to nearby airfields, with **Where next?** becoming one
   search over places and passports, and *Personal* accounts. Later phases moved
   up by one number.
+
+- Two ideas added to the backlog for later: an optional, off-by-default set of
+  ULM / microlight fields, and cleaning every stored photo of its location data
+  after reading what's useful from it — such as suggesting the departure or
+  arrival airfield from where a counter photo was taken.
