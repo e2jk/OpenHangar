@@ -9,6 +9,7 @@ from datetime import date
 from decimal import Decimal
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
+import pytest
 from aircraft.co_owner_form_parsing import (  # pyright: ignore[reportMissingImports]
     parse_owners_form,
 )
@@ -521,3 +522,52 @@ class TestOwnershipBreakdownCard:
         r_edit = client.get(f"/aircraft/{acid}/edit")
         assert r_edit.status_code == 200
         assert b"co_owner" not in r_edit.data
+
+
+class TestManageOwnersEligibility:
+    """Only full members of the aircraft's organisation can become co-owners."""
+
+    @pytest.mark.parametrize("outsider", ["other_tenant", "passport_only"])
+    def test_rejects_ineligible_co_owner(self, app, client, outsider):
+        uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        if outsider == "other_tenant":
+            with app.app_context():
+                other = Tenant(name="Elsewhere")
+                db.session.add(other)
+                db.session.commit()
+                other_id = other.id
+            stranger = _add_tenant_user(app, other_id, "far@example.com", "Far Away")
+        else:
+            with app.app_context():
+                friend = User(
+                    email="friend@example.com",
+                    password_hash="unused",
+                    is_active=True,
+                    name="Passport Friend",
+                )
+                db.session.add(friend)
+                db.session.flush()
+                db.session.add(
+                    TenantUser(
+                        user_id=friend.id,
+                        tenant_id=tid,
+                        role=None,
+                        access_scope="passport",
+                    )
+                )
+                db.session.commit()
+                stranger = friend.id
+        _login(app, client)
+        page = client.get(f"/aircraft/{acid}/owners").text
+        assert "Far Away" not in page and "Passport Friend" not in page
+        r = client.post(
+            f"/aircraft/{acid}/owners",
+            data={
+                "owner_user_id[]": [str(uid), str(stranger)],
+                "owner_share_pct[]": ["50", "50"],
+            },
+        )
+        assert r.status_code == 200 and b"Invalid owner selection." in r.data
+        with app.app_context():
+            assert AircraftOwner.query.filter_by(aircraft_id=acid).count() == 0

@@ -706,9 +706,15 @@ def manage_owners(aircraft_id: int) -> ResponseReturnValue:
     if not _shared_ownership_enabled(ac.tenant_id, ac.id):
         abort(404)
 
+    # Only full members of this organisation can co-own its aircraft; never a
+    # passport-only friend or a user of another organisation.
     tenant_users = (
         User.query.join(TenantUser, TenantUser.user_id == User.id)
-        .filter(TenantUser.tenant_id == ac.tenant_id, User.is_active.is_(True))
+        .filter(
+            TenantUser.tenant_id == ac.tenant_id,
+            TenantUser.access_scope == "full",
+            User.is_active.is_(True),
+        )
         .order_by(User.name)
         .all()
     )
@@ -721,6 +727,9 @@ def manage_owners(aircraft_id: int) -> ResponseReturnValue:
             request.form
         )
         errors = errors + reserve_errors
+        eligible = {user.id for user in tenant_users}
+        if any(row["user_id"] not in eligible for row in rows):
+            errors.append(_("Invalid owner selection."))
 
         if errors:
             for msg in errors:
