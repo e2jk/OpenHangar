@@ -156,6 +156,7 @@ def test_private_photo_validation_replace_delete_and_failure(
         photo = PassportStampPhoto.query.one()
         first, photo_id = photo_path(photo.filename), photo.id
         assert not photo.public_consent
+        assert photo.public_shared_at is None
         with Image.open(first) as image:
             assert not image.getexif() and image.format == "JPEG"
     response = client.get(f"/passports/{pid}/photos/{photo_id}")

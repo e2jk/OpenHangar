@@ -68,3 +68,7 @@ holders start it themselves.
   release, which presented earlier changes as its own. The descriptions of the
   56 affected pull requests since 7 November, three of their titles and the
   corresponding lines in the v3.38.0 and v3.44.0 release notes were corrected.
+
+- Prepare storage and token controls for public passport links, with separate
+  publication permissions. Existing visits and photos remain private; the public
+  pages will follow in a separate change.
