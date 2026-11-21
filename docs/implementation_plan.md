@@ -2246,9 +2246,8 @@ working with the strict CSP and HTMX script stripping.
   Photos remain private unless explicitly selected for publication.
 - [x] Intermediate stops on an A → B → C → A flight can be added manually with
   the flight as supporting evidence.
-- [ ] Later GPS enhancement: propose candidate stops using position/speed/dwell evidence and show
-  the evidence for confirmation. Proximity alone or a low-speed point must never
-  award a stamp. Test touch-and-go, taxi, GPS gaps/noise and nearby parallel fields.
+- *Moved to the backlog (2026-11-21, not part of Phase 41):* GPS stop candidates — see
+  "Airfield passports: deferred from Phase 41" in `docs/backlog.md`.
 
 **Delivered personal-passport core:** shared live eligibility/counting service for
 builder previews, lists, map and evidence pages; manual visits with optional owned
@@ -2281,10 +2280,8 @@ GPS candidate detection remains the explicitly later enhancement above.
   an explicit reserve. Distinguish one-way from return-without-refuelling radius
   (return mode budgets both legs). Missing/invalid inputs mean range unknown,
   never zero or unlimited. This is destination discovery, not fuel dispatch advice.
-- [ ] Optional suitability comparison: user-entered runway length/surface/weight
-  requirements against licensed runway/restriction data, with source/date shown.
-  Mark missing values "unknown"; do not imply operational suitability from aircraft
-  weight or runway length alone. The map remains usable without OpenAIP access.
+- *Moved to the backlog (2026-11-21, not part of Phase 41):* runway suitability comparison — see
+  "Airfield passports: deferred from Phase 41" in `docs/backlog.md`.
 
 **Delivered discovery core:** explicit home-airfield references on aircraft and pilot
 profiles, optional aircraft cruise speed, and a private “Where next?” view. Aircraft
@@ -2868,38 +2865,10 @@ vanish. Keep this future direction here; it is not part of Phase 41 delivery.
 
 ### 41j — Stretch goal: passport-only instance
 
-Optional extension after the core phase, not a prerequisite for marking its
-agreed core scope complete. An operator could run OpenHangar solely as a passport
-completion service, without setting up aircraft, maintenance, reservations or a
-pilot logbook. Example: propose a publisher-operated instance to LandeGut, where
-Landegutscheinheft customers maintain a map of their own visits across editions.
-This is a possible offering, not an existing publisher partnership.
-
-- [ ] Provide an explicit passport-only instance setup/presentation using the same
-  passport/account/series implementation. Onboarding and the home page lead straight
-  to editions and personal progress; hide unrelated navigation and enforce the
-  corresponding server-side access limits. No aircraft or full pilot profile is
-  required to register visits. Decide the configuration mechanism before building;
-  adding a new operating model requires operator agreement under AGENTS.md.
-- [ ] Operator manages the catalogue, linked editions and customer enrolment.
-  Reuse passport-scoped invitations initially; any purchase verification, publisher
-  customer-account integration or open registration is separately specified before
-  implementation. No payment/e-commerce system required for the stretch goal.
-- [ ] Customer experience: select an enrolled edition, record visits on a phone,
-  see the personal map fill, and browse their previous/combined editions. Retain
-  export, account security and independent private completion records.
-- [ ] Optional customer community: pilots can choose to share visits and airfield
-  comments/tips with authenticated members of the defined publisher community.
-  Personal tracking works without opting in. Distinguish viewing community content
-  from consenting to share one's own activity; do not automatically turn every
-  customer into a publicly ranked participant or share private history. Define
-  publisher-community versus smaller friends-group audiences explicitly, with
-  withdrawal and moderation controls. No internet-public publication by default.
-- [ ] Validate fresh passport-only setup, registration/enrolment, manual stamping,
-  edition history, community opt-in/withdrawal, cross-customer privacy, moderation,
-  export/backup/restore and disabled-feature access. Document deployment and add
-  representative demo/screenshots. Optional later pilot activation must follow
-  the instance policy rather than exposing fleet features automatically.
+*Moved to the backlog (2026-11-21, not part of Phase 41):* a publisher-operated,
+passport-only instance with its own onboarding, operator-managed catalogue and
+customer community. It needs an agreed operating-model decision first; see
+"Airfield passports: deferred from Phase 41" in `docs/backlog.md`.
 
 ---
 
