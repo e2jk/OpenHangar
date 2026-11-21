@@ -164,6 +164,13 @@ def test_passport_visits_frequency_and_htmx_map(
     expect(
         page.locator("#passport-progress-map .leaflet-overlay-pane path")
     ).to_have_count(1)
+    # Checklist view: equal weight however often a field was visited.
+    radius = "([c, f]) => window.ohPassportMarkerRadius(c, f)"
+    assert {page.evaluate(radius, [n, False]) for n in (0, 1, 7, 5000)} == {7}
+    # Frequency view: zero < one < many, and a busy home base is capped.
+    sizes = [page.evaluate(radius, [n, True]) for n in (0, 1, 2, 8, 5000)]
+    assert sizes == sorted(sizes) and sizes[0] < sizes[1] < sizes[3]
+    assert sizes[-1] == 18
     page.locator("#passport-frequency").check()
     page.get_by_role("button", name="Apply", exact=True).click()
     expect(page.locator("#passport-progress")).to_have_attribute("data-frequency", "1")

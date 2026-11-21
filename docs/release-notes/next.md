@@ -81,6 +81,10 @@ airfield page.
 - The demo and development data now include a group passport shared by two
   pilots and a friend with a passport-only account, to try the group features.
 
+- New automated checks for airfield passports: map marker sizes in the visit
+  frequency view, separate arrivals on the same day, redirect targets in
+  invitation links and friends who join a group's discussion later.
+
 - The automatic backup check now also restores airfield passports — groups,
   friends' accounts, visits, vouchers, comments and stamp photos — and fails
   if any of them is missing after the restore.

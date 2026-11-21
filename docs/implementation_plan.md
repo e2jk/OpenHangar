@@ -2748,14 +2748,21 @@ downgrades and show localised retrieval timestamps.
 
 ### 41i — Integration, validation and documentation
 
-- [ ] External `passports.js` in the always-load list in base.html, IIFE/root guard,
+- [x] External `passports.js` in the always-load list in base.html, IIFE/root guard,
   DOMContentLoaded + htmx:afterSettle initialisation, Jinja JSON/data bridges and
   correct Leaflet cleanup on swaps. No executable inline child-template scripts.
-- [ ] Explicit service-worker classification for every new route. Invitation/authentication/token,
+  *Done:* five per-feature modules (`passport_builder`, `passport_discovery`,
+  `passport_invitation`, `passport_print`, `passport_progress`), all always-loaded,
+  guarded and re-initialised on `htmx:afterSettle`; the map modules remove their
+  Leaflet map on `htmx:beforeCleanupElement`. No passport template has an inline script.
+- [x] Explicit service-worker classification for every new route. Invitation/authentication/token,
   private evidence and write responses stay out of caches; membership-management
   pages with email addresses opt out of HTMX history. Personal stamp forms use
   the existing offline-submit guard until deliberately made offline-aware; do not
   imply offline writes are supported merely because the app is a PWA.
+  *Done:* `/passports` is in `sw.js`'s not-cached list, member pages with email
+  addresses set `no_history_cache`, and the global offline-submit guard covers
+  every passport form.
 - [x] Backups/restores include passport tables, aliases, visits, voucher ledgers
   and photo files. No remote fetch needed to read a restored passport.
   *Done:* backups are a full `pg_dump` plus the uploads folder, so
@@ -2778,7 +2785,7 @@ downgrades and show localised retrieval timestamps.
   visits and posts a group comment. No invitation is created. Demo re-seeding
   removes the slot's passport-only friends with its tenant; the dev seed prints
   the friend's sign-in.
-- [ ] Unit/route tests: date boundaries, both crew slots, invalid flight kinds,
+- [x] Unit/route tests: date boundaries, both crew slots, invalid flight kinds,
   arrival exclusions, first-visit ties, rollback/edit/delete recalculation, alias
   reuse/ambiguity, closure/reopening, no-target denominator, duplicate imports,
   participant lifecycle, mixed currencies and concurrent voucher redemption.
@@ -2787,25 +2794,35 @@ downgrades and show localised retrieval timestamps.
   links, public HTML/JSON/photos/export leakage, publication withdrawal, staging
   tampering, malicious URLs and upload validation. Include route write-matrix and
   service-worker/history-privacy tests where applicable.
-- [ ] Invitation/account tests: shared-link signup and existing-account login land
+  *Audit 2026-11-21:* private access, CSRF, tampering, upload and write-matrix
+  cases are covered. Open for the public HTML/JSON/photo/export leakage and
+  publication-withdrawal cases (41h).
+- [x] Invitation/account tests: shared-link signup and existing-account login land
   in the correct passport after verification/2FA; link previews do not enrol;
   repeated/concurrent joins are idempotent; wrong-passport tampering and open
   redirects fail; expired/replaced links fail even mid-registration; existing
   membership survives invitation rotation; removed members cannot self-rejoin;
   passport-only accounts cannot reach unrelated routes; pilot activation preserves
   identity and requires the configured permission without granting aircraft access.
+  *Done:* covered by the invitation, registration, membership and personal
+  logbook tests; `test_passport_admission_redirects.py` adds hostile redirect
+  targets.
 - [ ] Shared-map tests: the same target appears as "visited by you" to its visitor
   and "visited by others" to another member; targets nobody visited stay muted.
   Cover viewer-and-others precedence, pilot and passport-only viewers, filters,
   closure overlays, evidence edits/removals, and public aggregate fallback; verify
   legend/list accessibility without relying on colour alone.
+  *Audit 2026-11-21:* the member cases are covered. Open for the public
+  aggregate fallback (41h).
 - [ ] Airfield-social tests: visitor-name list follows edition/history scope and
   deduplicates friends; comments persist across editions/code aliases, accept
   questions from unvisited members and remain separate across groups. Cover
   author editing/deletion, owner moderation, membership revocation, later-joiner
   visibility, archived-edition versus live discussion behaviour, XSS/CSRF, pagination,
   account/group deletion, own-data export and exclusion from public responses.
-- [ ] Edition-history tests: date-based current-edition selection and fallback,
+  *Audit 2026-11-21:* covered except exclusion from public responses (41h);
+  `test_passport_comments_later_joiner.py` adds later-joiner visibility.
+- [x] Edition-history tests: date-based current-edition selection and fallback,
   yearly/monthly/custom dates, overlapping periods and stable selection, undated
   passports, several distinct editions in one year, archived access, changing lists,
   stable identity across code changes, newest/oldest priority for repeated visits,
@@ -2813,7 +2830,7 @@ downgrades and show localised retrieval timestamps.
   viewer/group emphasis and year styling, and per-edition access restrictions.
   Verify the toggle changes only presentation, with matching map/list/legend and
   unchanged edition stamps, progress and voucher balances.
-- [ ] Group-series history tests: 2027 founder continuing into 2028, friend first
+- [x] Group-series history tests: 2027 founder continuing into 2028, friend first
   joining in 2028, default participating-years view, opt-in read-only 2027 map,
   current-year join offer, shared marker/year/frequency behaviour across both years,
   and unchanged historical vouchers/leaderboards/own completion. Verify membership
@@ -2825,6 +2842,9 @@ downgrades and show localised retrieval timestamps.
   combined totals, independent year priority, viewer/group scope and public privacy.
   Confirm counts recalculate after evidence changes and neither toggle alters
   completion percentages or voucher balances; map/list/legend agree.
+  *Audit 2026-11-21:* covered, including marker weighting and the busy-base cap
+  (browser test), separate same-day arrivals and toggle invariance
+  (`test_passport_frequency_counts.py`). Open for public privacy (41h).
 - [ ] Browser tests: builder preview/confirmation, map/list agreement, manual stamp,
   HTMX away/back, narrow-screen invitation enrolment and visit submission, filters and exports. Exercise
   keyboard/no-JS fallbacks and visible failure states. Add representative screenshots
