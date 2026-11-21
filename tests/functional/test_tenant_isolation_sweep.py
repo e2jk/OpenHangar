@@ -73,6 +73,7 @@ class TenantWorld:
     tenant_id: int
     admin_user_id: int
     passport_id: int
+    collection_id: int
     series_id: int
     target_id: int
     airfield_id: int
@@ -106,6 +107,8 @@ def _build_tenant_world(app, client_factory, suffix: str) -> TenantWorld:
             PassportAirfield,
             PassportAirfieldIdentity,
             PassportSeries,
+            PlaceCollection,
+            PlaceCollectionMember,
             RenterAuthorization,
             Reservation,
             ReservationStatus,
@@ -298,12 +301,27 @@ def _build_tenant_world(app, client_factory, suffix: str) -> TenantWorld:
             tenant_id=tenant.id, passport_id=passport.id, airfield_id=field.id
         )
         db.session.add(target)
+        collection = PlaceCollection(
+            tenant_id=tenant.id,
+            created_by_user_id=admin.id,
+            name=f"Private collection {suffix}",
+        )
+        db.session.add(collection)
+        db.session.flush()
+        db.session.add(
+            PlaceCollectionMember(
+                tenant_id=tenant.id,
+                collection_id=collection.id,
+                user_id=admin.id,
+            )
+        )
         db.session.commit()
 
         world_ids = {
             "tenant_id": tenant.id,
             "admin_user_id": admin.id,
             "passport_id": passport.id,
+            "collection_id": collection.id,
             "series_id": series.id,
             "target_id": target.id,
             "airfield_id": field.id,

@@ -4804,6 +4804,33 @@ class PlaceCollectionMember(db.Model):
     )
 
 
+class PlaceCollectionInvitation(db.Model):
+    """Blind exact-email invitation; joining requires the recipient's own login."""
+
+    __tablename__ = "place_collection_invitations"
+    __table_args__ = (
+        db.UniqueConstraint("collection_id", "email_digest"),
+        db.ForeignKeyConstraint(
+            ["tenant_id", "collection_id"],
+            ["place_collections.tenant_id", "place_collections.id"],
+            ondelete="CASCADE",
+        ),
+    )
+    id = db.Column(db.Integer, primary_key=True)
+    collection_id = db.Column(db.Integer, nullable=False, index=True)
+    tenant_id = db.Column(db.Integer, nullable=False, index=True)
+    # Supplied by the sender, never filled from the instance user directory.
+    email = db.Column(db.String(255), nullable=False)
+    email_digest = db.Column(db.String(64), nullable=False)
+    can_edit = db.Column(
+        db.Boolean, nullable=False, default=True, server_default=db.true()
+    )
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    expires_at = db.Column(db.DateTime(timezone=True), nullable=False, index=True)
+
+
 class PlacePreference(db.Model):
     """Defaults belong to a user within one tenant, never to their global profile."""
 

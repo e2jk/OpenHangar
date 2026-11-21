@@ -6,6 +6,7 @@ from models import (
     PlaceCollection,
     PlaceCollectionMember,
     PlacePreference,
+    TenantUser,
     db,
     fits_column,
 )
@@ -116,6 +117,11 @@ def set_member(
 ) -> PlaceCollectionMember:
     """Trusted ID-based lane for organisation accounts; personal UI uses exact email."""
     collection = collection_access(tenant_id, user_id, collection_id, managing=True)
+    member = db.session.get(PlaceCollectionMember, (collection_id, target_user_id))
+    membership = db.session.get(TenantUser, (user_id, tenant_id))
+    assert membership is not None
+    if member is None and membership.access_scope != "full":
+        raise PlaceError(_("Add friends by their exact email address."))
     actor(tenant_id, target_user_id)
     if target_user_id == collection.created_by_user_id and not can_edit:
         raise PlaceError(_("The collection creator must remain an editor."))
@@ -170,3 +176,17 @@ def remove_member(
 def delete_collection(tenant_id: int, user_id: int, collection_id: int) -> None:
     collection = collection_access(tenant_id, user_id, collection_id, managing=True)
     db.session.delete(collection)
+
+
+def transfer_collection(
+    tenant_id: int, user_id: int, collection_id: int, target_user_id: int
+) -> None:
+    collection = collection_access(tenant_id, user_id, collection_id, managing=True)
+    member = db.session.get(PlaceCollectionMember, (collection_id, target_user_id))
+    if member is None:
+        raise PlaceError(_("Choose a member of this collection."))
+    actor(tenant_id, target_user_id)
+    member.can_edit = True
+    collection.created_by_user_id = target_user_id
+    # A transferred collection is shared; the recipient retains their own My places.
+    collection.is_personal = False
