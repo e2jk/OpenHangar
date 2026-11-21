@@ -239,10 +239,13 @@ def body(
     summary: str | None,
     later: bool = False,
     base: str | None = None,
+    branch: str | None = None,
 ) -> str:
+    """The PR description; *branch* names the pushed branch (a parallel
+    worktree's lane is `ship-later--<lane>`)."""
     if later:
         intro = (
-            "Auto-opened from `ship-later` — will merge once CI passes, "
+            f"Auto-opened from `{branch or 'ship-later'}` — will merge once CI passes, "
             "without a release of its own: it goes out with the next daily "
             "release (daily-release.yml, scheduled 23:20 UTC, though GitHub "
             "often starts it hours later), or with the next `ship` before "
@@ -491,6 +494,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--summary-file")
     parser.add_argument("--base-summary-file")
     parser.add_argument("--later", action="store_true")
+    parser.add_argument("--branch", help="body: the branch the batch was pushed to")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args(argv)
     if args.mode == "versions-json":  # file = version, tags on stdin
@@ -554,7 +558,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.mode == "title":
         print(title(subjects, args.later, summary))
     else:
-        sys.stdout.write(body(subjects, summary, args.later, base))
+        sys.stdout.write(body(subjects, summary, args.later, base, args.branch))
     return 0
 
 

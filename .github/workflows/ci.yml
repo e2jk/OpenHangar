@@ -74,7 +74,7 @@ jobs:
     # gain a needs: [version] dependency that would delay its otherwise-
     # immediate start just to read a value it could evaluate itself.
     if: |
-      !(github.event_name == 'push' && (github.ref == 'refs/heads/ship' || github.ref == 'refs/heads/ship-later' || startsWith(github.ref, 'refs/heads/renovate/') || github.ref == 'refs/heads/main'))
+      !(github.event_name == 'push' && (github.ref == 'refs/heads/ship' || github.ref == 'refs/heads/ship-later' || startsWith(github.ref, 'refs/heads/ship-later--') || startsWith(github.ref, 'refs/heads/renovate/') || github.ref == 'refs/heads/main'))
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     permissions:
@@ -352,7 +352,7 @@ jobs:
     # as `failing` (red). A single always-succeeding job here keeps the
     # badge honest without touching the real skip logic anywhere else.
     if: |
-      github.event_name == 'push' && (github.ref == 'refs/heads/ship' || github.ref == 'refs/heads/ship-later' || startsWith(github.ref, 'refs/heads/renovate/') || github.ref == 'refs/heads/main')
+      github.event_name == 'push' && (github.ref == 'refs/heads/ship' || github.ref == 'refs/heads/ship-later' || startsWith(github.ref, 'refs/heads/ship-later--') || startsWith(github.ref, 'refs/heads/renovate/') || github.ref == 'refs/heads/main')
     runs-on: ubuntu-26.04
     timeout-minutes: 1
     steps:
@@ -497,7 +497,7 @@ jobs:
     # skipped, or failed, as long as that job declares its own if: (only a
     # job with *no* if: falls back to requiring needs to have succeeded).
     if: |
-      !(github.event_name == 'push' && (github.ref == 'refs/heads/ship' || github.ref == 'refs/heads/ship-later' || startsWith(github.ref, 'refs/heads/renovate/') || github.ref == 'refs/heads/main'))
+      !(github.event_name == 'push' && (github.ref == 'refs/heads/ship' || github.ref == 'refs/heads/ship-later' || startsWith(github.ref, 'refs/heads/ship-later--') || startsWith(github.ref, 'refs/heads/renovate/') || github.ref == 'refs/heads/main'))
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
@@ -542,8 +542,9 @@ jobs:
               ;;
             pull_request)
               case "${HEAD_REF}" in
-                ship-later)
-                  # scripts/ship.sh --later: fully tested here like a ship
+                ship-later|ship-later--*)
+                  # scripts/ship.sh --later (or a parallel worktree's own
+                  # ship-later--<lane>): fully tested here like a ship
                   # PR, but merges without a release of its own — it goes
                   # out with the next daily release (daily-release.yml),
                   # like a routine Renovate update.

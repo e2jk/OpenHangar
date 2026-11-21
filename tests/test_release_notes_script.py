@@ -487,3 +487,14 @@ def test_later_body_merged_rewording_and_tight_lists():
         "**Export my passport data** downloads a ZIP with your visits.\n\n"
         "**Maintenance**\n\n- one new check\n- another new check"
     )
+
+
+def test_lane_body_names_its_own_branch(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "stdin", io.StringIO("feat(places): add collections\n"))
+    release_notes.main(["body", "--later", "--branch", "ship-later--phase42"])
+    out = capsys.readouterr().out
+    assert out.startswith("Auto-opened from `ship-later--phase42`")
+    # Without a branch, a --later body keeps naming ship-later.
+    assert release_notes.body(["fix: a"], None, later=True).startswith(
+        "Auto-opened from `ship-later`"
+    )

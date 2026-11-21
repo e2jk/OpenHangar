@@ -776,9 +776,23 @@ a change:
   while a `ship` PR is open (ship without `--later` to add to it), and a plain
   ship closes a pending `ship-later` PR once its commits are all included.
 
-  `ship` (and `ship-later`) is deleted from the remote automatically after
-  each merge (repo-wide `delete_branch_on_merge`) and simply recreated on the
-  next push.
+  **Parallel worktrees (lanes):** run from a linked worktree (`git worktree
+  add …`, e.g. a second agent working on another phase), `bash
+  scripts/ship.sh --later` pushes to `ship-later--<lane>` instead, `<lane>`
+  being that worktree's branch name in lowercase letters, digits and hyphens
+  (or `--lane NAME`, which also works from the main worktree). Each lane has
+  its own PR, with the same CI, auto-merge and generated description, so two
+  worktrees ship side by side without touching each other's branch, and a
+  lane never closes or adds to the main worktree's `ship`/`ship-later` PR.
+  Lanes only ship `--later`: a release straight away, including any security
+  fix (which is always released at once), goes through the main worktree's
+  plain `ship`. Lanes usually both add to `docs/release-notes/next.md`, so
+  the PR that merges second can show "This branch has conflicts": run
+  `bash scripts/ship.sh --later` again in that lane to rebase it.
+
+  `ship`, `ship-later` and each `ship-later--<lane>` branch are deleted from
+  the remote automatically after each merge (repo-wide
+  `delete_branch_on_merge`) and simply recreated on the next push.
 
 ### Bot dependency-update PRs (Renovate)
 
