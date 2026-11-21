@@ -247,6 +247,7 @@ def _group_series(series: PassportSeries, user_id: int) -> ResponseReturnValue:
             oldest=request.args.get("priority") == "oldest",
             current=current,
             colours=colours,
+            scope=groups.parse_count_scope(request.args.get("count")),
         )
         # Target comparisons apply to the selected authorised scope, not private linked passports.
         comparison = (

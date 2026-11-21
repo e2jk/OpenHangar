@@ -159,7 +159,7 @@ def detail(passport_id: int) -> ResponseReturnValue:
     download, waypoint_context = _waypoint_view(
         passport.id,
         rows,
-        ("state", "participant", "frequency"),
+        ("state", "participant", "frequency", "count"),
         endpoint="passports.detail",
     )
     if download is not None:
@@ -202,6 +202,9 @@ def detail(passport_id: int) -> ResponseReturnValue:
         frequency=request.args.get("frequency") == "1",
         can_manage=can_manage,
         group_view=shared is not None,
+        count_scopes=shared["count_scopes"] if shared else [],
+        count_scope=shared["count_scope"] if shared else "you",
+        count_scope_name=shared["count_scope_name"] if shared else "",
         group_stats=stats,
         participant=participant,
         today=date.today(),
@@ -300,7 +303,13 @@ def _shared_view(passport: Passport) -> dict[str, Any] | None:
     if series is None:
         return abort(404)
     try:
-        return groups.combined(series, [passport], session["user_id"], current=passport)
+        return groups.combined(
+            series,
+            [passport],
+            session["user_id"],
+            current=passport,
+            scope=groups.parse_count_scope(request.args.get("count")),
+        )
     except BuilderError as exc:
         return abort(exc.status)
 

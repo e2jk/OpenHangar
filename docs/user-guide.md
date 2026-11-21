@@ -253,7 +253,9 @@ speed on an aircraft, or use session-only inputs. Optional range estimates need
 explicit usable fuel, flow and reserve assumptions.
 
 Link successive editions to revisit earlier lists or combine their maps, with
-newest/oldest visit colours and optional frequency weighting. Your own voucher
+newest/oldest visit colours and optional frequency weighting. In a group, frequency
+counts your own visits unless you choose the whole group or one participant under
+**Count visits by**. Your own voucher
 allowances stay separate from your friends’ balances.
 
 Linked group editions also show a comparison of the airfields added/removed,

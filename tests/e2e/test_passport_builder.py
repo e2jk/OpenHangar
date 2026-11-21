@@ -592,6 +592,16 @@ def test_group_consent_series_map_mobile_and_without_js(
     page.locator("#edition-history").check()
     page.locator("#passport-frequency").check()
     page.get_by_role("button", name="Apply", exact=True).click()
+    # Frequency counts your own visits until another scope is chosen. Wait for
+    # each navigation: the page before it already shows the same controls.
+    page.wait_for_url(re.compile(r"frequency=1"))
+    expect(page.locator("#passport-count")).to_have_value("you")
+    expect(page.locator("main")).to_contain_text("Your recorded visits")
+    page.locator("#passport-count").select_option("group")
+    page.get_by_role("button", name="Apply", exact=True).click()
+    page.wait_for_url(re.compile(r"count=group"))
+    expect(page.locator("#passport-count")).to_have_value("group")
+    expect(page.locator("main")).to_contain_text("Recorded visits by the whole group")
     comparisons = page.locator("#passport-edition-comparisons")
     expect(comparisons).to_contain_text("Participant progress")
     expect(comparisons).to_contain_text("Browser group pilot")

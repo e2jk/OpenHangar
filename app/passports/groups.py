@@ -302,6 +302,14 @@ def shared_progress(
         "own": own,
         "others": others,
         "other_counts": {identity: len(events) for identity, events in seen.items()},
+        # Per participant, each visit counted once across overlapping editions.
+        "user_counts": {
+            identity: {
+                uid: sum(1 for event in events if event[0] == uid)
+                for uid in {event[0] for event in events}
+            }
+            for identity, events in seen.items()
+        },
         "participating": accepted,
         "roster": roster,
         "visited_by": visited_by,
@@ -381,6 +389,39 @@ def edition_stats(
     }
 
 
+def parse_count_scope(value: str | None) -> str | int:
+    """The frequency scope asked for in a query string: "you" (default),
+    "group", or a participant's position key; anything else means "you"."""
+    from utils import list_index
+
+    if value in {"you", "group"}:
+        return value
+    try:
+        return list_index(value or "")
+    except ValueError:
+        return "you"
+
+
+def count_scopes(
+    passports: list[Passport], roster: dict[int, dict[int, str]], user_id: int
+) -> tuple[list[dict[str, Any]], dict[int, int]]:
+    """Frequency scopes of a shared view: "you", "group", then each other
+    participant sharing visits, under an opaque position key (as the
+    participant filter does) and their latest edition's group name."""
+    names: dict[int, str] = {}
+    for passport in editions.ordered(passports):
+        names.update(roster.get(passport.id, {}))
+    others = sorted(
+        ((uid, name) for uid, name in names.items() if uid != user_id),
+        key=lambda item: (item[1].casefold(), item[0]),
+    )
+    keyed = sorted(names.items(), key=lambda item: (item[1].casefold(), item[0]))
+    keys = {uid: index for index, (uid, _name) in enumerate(keyed, start=1)}
+    scopes: list[dict[str, Any]] = [{"key": "you"}, {"key": "group"}]
+    scopes += [{"key": keys[uid], "name": name} for uid, name in others]
+    return scopes, {keys[uid]: uid for uid in keys}
+
+
 def combined(
     series: PassportSeries,
     passports: list[Passport],
@@ -389,8 +430,20 @@ def combined(
     oldest: bool = False,
     current: Passport | None = None,
     colours: dict[int, str] | None = None,
+    scope: str | int = "you",
 ) -> dict[str, Any]:
+    """The shared map/list rows. Visit counts describe one explicit *scope*:
+    the viewer's own visits by default, the whole group ("group": every
+    participant sharing visits, one visit per participant per event), or one
+    participant (their opaque key); never a silent mix."""
     evidence = shared_progress(series, passports, user_id)
+    scopes, by_key = count_scopes(passports, evidence["roster"], user_id)
+    if scope not in {"you", "group"} and scope not in by_key:
+        scope = "you"
+    chosen = by_key.get(scope) if isinstance(scope, int) else None
+    if chosen == user_id:
+        scope, chosen = "you", None
+    sharing = {pid for pid, members in evidence["roster"].items() if user_id in members}
     view = editions.combined(
         passports,
         user_id,
@@ -404,7 +457,18 @@ def combined(
         row["own_count"] = row["count"]
         row["state"] = "own" if row["visited"] else "unvisited"
         row["friends"] = []
-        row["count"] += evidence["other_counts"].get(row["id"], 0)
+        per_user = evidence["user_counts"].get(row["id"], {})
+        if scope == "group":
+            # The viewer counts in the group only where they share visits.
+            row["count"] = (row["count"] if sharing else 0) + sum(per_user.values())
+        elif chosen is not None:
+            row["count"] = per_user.get(chosen, 0)
+        # Per-edition counts start as the viewer's own; others are added below.
+        for edition in row["editions"]:
+            if chosen is not None or (
+                scope == "group" and edition["id"] not in sharing
+            ):
+                edition["count"] = 0
     for passport in editions.ordered(passports):
         for visit in evidence["others"][passport.id]:
             row = rows[visit["id"]]
@@ -421,9 +485,10 @@ def combined(
                 if row["colour"] is None or not oldest:
                     row["colour"] = view["colours"][passport.id]
                     row["edition_label"] = passport.edition_label or passport.title
-            for edition in row["editions"]:
-                if edition["id"] == passport.id:
-                    edition["count"] += visit["count"]
+            if scope == "group" or visit["user_id"] == chosen:
+                for edition in row["editions"]:
+                    if edition["id"] == passport.id:
+                        edition["count"] += visit["count"]
     for row in rows.values():
         friends: dict[int, dict[str, Any]] = {}
         for visit in row["friends"]:
@@ -439,6 +504,12 @@ def combined(
             friends.values(), key=lambda friend: friend["name"].casefold()
         )
     view["participating"] = evidence["participating"]
+    view["count_scopes"] = scopes
+    view["count_scope"] = scope
+    # The chosen participant's group name; "you" and "group" need none.
+    view["count_scope_name"] = next(
+        (option.get("name", "") for option in scopes if option["key"] == scope), ""
+    )
     by_edition = {}
     for comparison in view["comparisons"]:
         passport_id = comparison["passport"].id

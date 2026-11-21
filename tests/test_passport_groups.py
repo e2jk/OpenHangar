@@ -97,7 +97,9 @@ def test_history_targets_without_retroactive_stamps_or_vouchers(
         )
         assert [p.id for p in visible] == [group["old"], group["new"]]
         old = db.session.get(Passport, group["old"])
-        view = groups.combined(series, [old], group["other"])
+        # Counts are the viewer's own unless the whole group is chosen.
+        assert groups.combined(series, [old], group["other"])["rows"][0]["count"] == 0
+        view = groups.combined(series, [old], group["other"], scope="group")
         row = view["rows"][0]
         assert row["state"] == "others" and row["count"] == 1 and row["own_count"] == 0
         assert row["friends"] == [
@@ -139,8 +141,10 @@ def test_own_colour_precedence_frequency_and_history_withdrawal(
         passports, _ = groups.visible_editions(
             series, group["other"], include_history=True
         )
-        newest = groups.combined(series, passports, group["other"])
-        oldest = groups.combined(series, passports, group["other"], oldest=True)
+        newest = groups.combined(series, passports, group["other"], scope="group")
+        oldest = groups.combined(
+            series, passports, group["other"], oldest=True, scope="group"
+        )
         assert newest["rows"][0]["state"] == "own"
         assert (
             newest["rows"][0]["edition_label"]
@@ -301,7 +305,9 @@ def test_three_states_and_overlapping_frequency(
         passports, _ = groups.visible_editions(
             series, group["other"], include_history=True
         )
-        view = groups.combined(series, passports, group["other"], current=new)
+        view = groups.combined(
+            series, passports, group["other"], current=new, scope="group"
+        )
         rows = {r["id"]: r for r in view["rows"]}
         assert (
             rows[group["field"]]["count"] == 2

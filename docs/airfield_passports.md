@@ -412,7 +412,10 @@ aircraft, voucher ledgers or photos. Group maps distinguish your own visits,
 friends-only visits and nobody-visited targets by outline and emphasis. Your own
 stamped edition takes colour priority over friends' editions; newest/oldest toggles
 change only presentation. Frequency deduplicates the same event per participant
-across overlapping editions. Blocked/inactive group membership is checked on each
+across overlapping editions. `groups.combined(scope=…)` takes `"you"`, `"group"`
+or a participant's opaque position key (`count_scopes`, the same ordering as the
+participant filter); totals and per-edition counts both follow that scope, and an
+unknown key falls back to `"you"`. Blocked/inactive group membership is checked on each
 series request and excluded from shared evidence.
 
 ### Passport-only account boundary
@@ -545,7 +548,13 @@ nobody has visited, medium outlines for friends’ visits, and strong outlines f
 your own visits. Closure remains a separate dashed outline. The list carries the
 same labels, including fields without coordinates. Your completion percentage and
 first-visit dates remain your own; a friend’s stamp never checks off your passport.
-The frequency toggle counts your visits and visits shared by active friends.
+With frequency shown, **Count visits by** chooses whose visits size the markers
+and fill the counts in the list and popups: **You** (the default), **The whole
+group** (every participant sharing visits, one visit per person per event, so a
+flight logged by two participating pilots counts twice), or one participant by
+their group name. The label beside the map and list always names the chosen
+scope, and your own count is never silently mixed with others'. You count in the
+group total only in editions where you share your visits.
 
 Map popups, the airfield list and airfield details show which friends have visited,
 using their group display names and shared visit dates. Combined editions list

@@ -82,10 +82,18 @@ def test_default_group_detail_has_three_states_and_private_friend_list(
         fields["First field"]["state"] == "others"
         and not fields["First field"]["visited"]
     )
+    # Frequency counts the viewer's own visits by default; the group on request.
     assert (
         fields["Both visited"]["state"] == "own"
-        and fields["Both visited"]["count"] == 2
+        and fields["Both visited"]["count"] == 1
     )
+    group_fields = {
+        row["name"]: row
+        for row in map_fields(
+            client.get(f"/passports/{members['passport']}/?frequency=1&count=group")
+        )
+    }
+    assert group_fields["Both visited"]["count"] == 2
     assert fields["Nobody visited"]["state"] == "unvisited"
     serialized = json.dumps(fields)
     for private in (
