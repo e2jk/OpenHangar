@@ -1652,7 +1652,7 @@ core shared with Phases 38/39).
 **Rental charges & settlement:**
 - [x] `RentalCharge` model — reservation FK, renter FK, billable hours, rate snapshot, fuel credits, manual adjustments, total; drafted automatically at check-in from the counter delta and rate settings; owner reviews and finalizes
 - [x] Renter account: running balance per renter (finalized charges − payments); payments recorded manually and immutable once saved — corrections via counter-entry (same principle as Phase 39 reconciliation)
-- [x] Renter statement export — CSV per renter per period: opening balance, itemised charges by flight, fuel credits, payments, closing balance; PDF with the same content if a PDF pipeline exists by then (Phase 47) (CSV only — no PDF pipeline exists yet)
+- [x] Renter statement export — CSV per renter per period: opening balance, itemised charges by flight, fuel credits, payments, closing balance; PDF with the same content if a PDF pipeline exists by then (Phase 48) (CSV only — no PDF pipeline exists yet)
 - [x] Renter-facing view: a renter sees their own charges, payments, and balance; owners/admins see all renters
 
 **Availability guards (benefit all operating models, not only rental):**
@@ -1800,7 +1800,7 @@ The AOPA guide distinguishes two fundamentally different cost types that must no
 - [x] Manual reconciliation: record a payment against a co-owner's capital account (amount, date, free-text note, recorded-by user); adjusts the account balance immediately
 - [x] Payments are immutable once saved; corrections are made by recording a counter-entry
 
-**Reserve / overhaul fund (stretch goal — may slip to Phase 42):**
+**Reserve / overhaul fund (stretch goal — may slip to Phase 43):**
 - [x] `CoOwnerReserveFund` — per-aircraft fund with a configurable per-hour or per-month contribution rate; each co-owner's share of contributions deducted from their capital account; fund balance visible on the dashboard
 - [x] Intended to cover large scheduled expenses (engine overhaul, propeller) without special assessments
 
@@ -1989,7 +1989,7 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
   chrome/Bootstrap dependency) render the same shared template partials
   (`_amp_export_body.html`/`_amp_export_style.html`), so there's one source of truth
   for the document content, matching the round-trip design principle above. This
-  supersedes the originally-planned "defer to Phase 47" browser-print-only approach —
+  supersedes the originally-planned "defer to Phase 48" browser-print-only approach —
   built directly into this phase instead once a working WeasyPrint pipeline was
   validated end-to-end.
 - [x] Blocks 1–3 rendered from `Aircraft`/`Component`/`AmpDeclaration`: registration,
@@ -2838,7 +2838,214 @@ This is a possible offering, not an existing publisher partnership.
 
 ---
 
-## Phase 42 — Flying Club
+## Phase 42 — Explore: Places and Where next?
+
+Goal: let users collect **places worth flying to** (a town, a theme park, a
+restaurant, a viewpoint) as pins on a map, link them to nearby airfields, share
+collections with other users, and turn **Where next?** into one search over
+places, passports or both. A place has nothing to do with aircraft; unlinked
+places stay valid. Places and passports work independently of each other.
+
+Navigation: a new **Explore** entry with **Places** and **Where next?** (fr
+*Explorer* · *Lieux* · existing *Où aller ensuite ?*; nl *Verkennen* · *Plekken* ·
+existing *Waarheen nu?*). Where next? is also reachable from a passport (that
+passport preselected) and from Places (places preselected).
+
+**Delivery order:** 42a (shared building blocks) → 42b–42e (Places) → 42f
+(Where next? on its own) → 42g (integration) → 42h (Personal accounts). Each
+increment includes its own tests, translations and documentation.
+
+**Reuse rule:** extract what Phase 41 already built in a generic shape *before*
+Places uses it, and don't force a shared abstraction where the features genuinely
+differ. Passport groups (`PassportSeries`/`PassportSeriesMember`: editions,
+per-edition consent, blocking, voucher lock order, ownership offers) and
+passport invitations/registration/discussions stay passport-specific; place
+collections get their own small tables. A collection later shared *with a
+passport group* references the group's active members instead of copying its
+invitations.
+
+### 42a — Shared building blocks
+
+Behaviour-preserving moves into `app/services/`, each with its existing tests;
+passport behaviour unchanged.
+
+- [ ] Image cleaning: `passports/evidence.py:save_photo` (size/pixel limits,
+  decompression-bomb guard, EXIF orientation applied, re-encoded without
+  EXIF/GPS/comments/profiles, random name) → `services/images.py`
+  (`clean_photo(upload) -> bytes`, `store(folder, data) -> filename`). Making it
+  the only way any photo is stored, for every photo type, is a backlog item
+  ("Photos: one cleaning pipeline for every stored photo").
+- [ ] File deletion after commit: `passports/lifecycle.py` (files removed only
+  after the ORM delete commits, kept on rollback) → a generic helper with a
+  registry of (model, filename column, folder).
+- [ ] Capability tokens: `passports/tokens.py` → `services/capability_tokens.py`.
+- [ ] Waypoint files: `passports/waypoints.py` → `services/waypoints.py`.
+- [ ] Destination search: the source-independent parts of
+  `passports/discovery.py` (origin resolution, `distance_nm`, `nearby`,
+  `theoretical_range`, reserve preference, origin choices) →
+  `services/destination_search.py`; each source provides candidate rows.
+- [ ] Account data export: `passports/exports.py:account_archive` becomes one
+  versioned account export to which each feature contributes a section.
+- [ ] Public share links (41h, if still open when this starts): build them as a
+  generic `PublicShare` (resource type + id, token digest, revoked/rotated) with
+  one allowlisted public projection per resource type, so places can add theirs
+  later. The aircraft `ShareToken` may move onto it later; not required.
+
+### 42b — Collections and places
+
+- [ ] Models + migration: `PlaceCollection` (tenant, name, created_by,
+  is_personal), `PlaceCollectionMember` (collection, user, can_edit, joined_at),
+  per-user default collection, `Place` (collection, owner, title, optional plain
+  text description, required latitude/longitude, optional address text, external
+  URL, photo, archived flag, `deleted_at`/`deleted_by` for the bin, created/updated
+  by and timestamps), `PlaceTag` per collection + association table.
+- [ ] Collections: each user gets a personal "My places" on first use; any
+  number of further collections, each shared with its own set of users of the
+  instance ("Our places", "Club fly-outs"…). Each place belongs to exactly one
+  collection.
+- [ ] Members are **editors** (add/edit places, link airfields, record visits)
+  or **readers** (see places and visits, record their own visits). Default:
+  editor. Only the creator (or an instance admin) adds/removes members, changes
+  their rights, renames or deletes the collection; deleting a shared collection
+  asks for confirmation and states how many places and visits go with it.
+  Members can leave.
+- [ ] Adding members: users with organisation access pick from the instance's
+  users; Personal accounts (42h) never get a browsable user list and add by exact
+  e-mail only, reusing the passport registration lookup
+  (`tokens.email_digest`), without revealing whether an account exists.
+- [ ] **Default collection for new places** (per-user setting); the add-place
+  form preselects it and allows another choice.
+- [ ] **Place owner** = creator. Only the owner moves a place, and only to a
+  collection they belong to whose members include everyone who recorded a visit
+  there; otherwise only a copy is possible. Any editor can copy a place (content,
+  tags, airfield links; not visits; the copy is owned by its maker). A non-owner
+  deleting puts the place in the collection's **bin**: any editor restores it;
+  purged after 30 days or earlier by the owner or collection creator. "Last
+  changed by … on …" shown on each place.
+- [ ] When an owner leaves or their account is removed, their places and visits
+  stay ("former member"), ownership passes to the collection creator; before
+  leaving, the owner can copy places to another of their collections.
+- [ ] Creating a place: click the map to drop the pin (draggable), or paste
+  coordinates (decimal or DMS) or a map link containing coordinates.
+- [ ] Tags: any number per place; free tags per collection with a translated
+  starter set offered as suggestions (*Town*, *Attraction*, *Restaurant*,
+  *Nature*, *Viewpoint*, *Museum*, *Beach*, *Overnight stay*, *Family*); rename,
+  merge and delete in the collection settings.
+- [ ] List + map of one or all collections: place pins, linked airfields, lines
+  between them; filter by tag, visited / not yet / archived, linked / unlinked;
+  sort by name, date added, last visit. Place photo through `services/images.py`.
+
+### 42c — Address search
+
+- [ ] Type a place name or address and press Search; choosing a result drops the
+  pin and pre-fills title/address (editable).
+- [ ] Geocoding through the OpenHangar server, never from the browser (user IP
+  not exposed, CSP keeps `connect-src 'self'`), with a cache. **Enabled by
+  default** with the public OpenStreetMap Nominatim service, within its usage
+  policy: search on submit only (no type-ahead), ≤ 1 request/s for the instance,
+  identifying User-Agent, attribution shown.
+- [ ] New `OPENHANGAR_GEOCODER_URL` (another Nominatim-compatible server, or
+  empty to disable address search); documented in `docs/configuration.md`.
+  Disabled, unreachable or rate-limited geocoder → clear message, map pin and
+  coordinates still work; search text is never logged.
+
+### 42d — Airfield linking
+
+- [ ] `PlaceAirfield`: place ↔ `PassportAirfieldIdentity` (existing tenant-scoped
+  identities and offline catalogue; no second airfield table), with an optional
+  "how to get there" note (walk, bike, taxi, bus…) and "preferred" flag; distance
+  computed for display.
+- [ ] Suggest airfields within **15 km** (adjustable), nearest first, with type
+  and distance; one click links one. Suggested: small/medium/large airports,
+  seaplane bases and airfields added manually in this instance; never heliports
+  or closed fields. Any airfield can be searched and linked manually; nothing is
+  linked automatically. ULM-only fields missing from the catalogue are added as
+  manual airfields (an optional ULM dataset is a backlog item).
+- [ ] **Unlinked places**: "Unlinked" badge, "Unlinked only" filter, prompt to
+  link an airfield.
+
+### 42e — Visits
+
+- [ ] `PlaceVisit` (place, user, date, optional flight, optional short note). A
+  place can be visited many times by different members; "visited" means at least
+  one visit; the place page shows the history ("Last visited 12 May 2026 by Anna
+  and you"). One-click visit from the place page, date defaulting to today.
+- [ ] **After logging a flight** whose arrival or an intermediate full-stop
+  landing is at an airfield linked to a place in one of the user's collections,
+  the post-save page offers a dismissible "You landed at EBXX, 4 km from *Pairi
+  Daiza* — record a visit?"; one click creates the visit linked to the flight.
+  Never automatic, not inside the flight form, shown once per flight and place,
+  also after an offline-saved flight synchronises, and for the second crew member
+  on their copy.
+
+### 42f — Where next? on its own
+
+- [ ] Standalone page `/explore/where-next` with the existing origin, distance /
+  still-air time and theoretical-range controls, plus **Search in**: *Places*
+  (all or chosen collections; not yet visited by default, "include visited"),
+  *Passports* (all active or chosen ones), or *Both* (default when both have
+  content; selector hidden when only one has).
+- [ ] Entry points: Explore menu, a passport's page (passport preselected;
+  `/passports/<id>/where-next` redirects there so existing links keep working),
+  Places (places preselected), a place's page.
+- [ ] Results are airfields, deduplicated, each with its reasons ("Not yet
+  stamped in *Belgian passport 2026*", "4 km from *Pairi Daiza* (taxi)"). Sorted by
+  distance; at equal distance more reasons first; no opaque scoring. Unlinked
+  places reported as a count ("3 places have no airfield yet").
+- [ ] Map with origin, radius, result airfields and the place pins they serve.
+  Filters: tag, "airfields I've never landed at", hide closed. GPX/KML download
+  of the combined result.
+- [ ] Privacy unchanged: never reveal another pilot's itinerary; group passports
+  contribute their targets only; collection visits shown to members only.
+  Aircraft defaults (home, cruise speed) only for users with aircraft access;
+  anyone can enter origin and speed by hand.
+
+### 42g — Integration
+
+- [ ] Backup/restore, the account data export (places, visits, own photos) and
+  GPX/KML export of places.
+- [ ] Demo seed with a shared "Our places" collection; offline/PWA cache
+  classification; screenshots; user guide; configuration docs.
+- [ ] Validation: shared-collection members see and edit the same places,
+  readers can't edit, non-members get 404 everywhere (Where next?, exports, photo
+  URLs); leaving/removal keeps places and visits; Where next? with only places,
+  only passports, both or neither; the old passport URL redirects.
+
+### 42h — Personal accounts
+
+Every account gets the **personal features** (passports, Places, Where next?,
+own profile, own data export), whatever its role. Organisation access (aircraft,
+maintenance, flights) is a separate layer: *Personal* account = none, *Viewer
+(read-only)* = read-only, other roles = as today. What a user can do with a place
+depends only on their collection membership. No new role.
+
+- [ ] Rename the Phase 41 passport-only account type to **Personal**:
+  `TenantUser.access_scope` `"passport"` → `"personal"` (data migration, updated
+  check constraint, older backups still restore), `services/account_scope.py`
+  allowlist renamed, labels and translations updated. Places and Where next?
+  endpoints added to the allowlist one by one, each with a test (the standalone
+  Where next? page in the same commit as the move from passports).
+- [ ] "Pilot-logbook activation" (Phase 41) upgrades a Personal account without
+  fleet access and keeps its places and collection memberships.
+- [ ] Viewer keeps its stored value and name, shown as "Viewer (read-only)", with
+  the description "Read-only access to aircraft, maintenance and flights, plus
+  personal features (passports, Places)". User-management UI and user guide
+  explain when to choose Personal or Viewer for a non-pilot.
+- [ ] Tests: a Viewer or Personal account can edit places in a collection where
+  they are an editor and gains no organisation access through Places.
+
+### Later / optional
+
+Per-visit photos and notes/reviews (a timeline on the place); sharing a
+collection with a passport group, a club or members without an account (reusing
+the 41g invitation and consent model); importing places from GPX/KML/CSV or map
+service exports; opening hours / seasonal notes; a public "favourite fly-outs"
+page through the generic share links; combined Where next? criteria ("within 30
+min flight *and* < 5 km from the field").
+
+---
+
+## Phase 43 — Flying Club
 
 Goal: support the flying-club operating model, where the club is the sole aircraft owner and members share access under a common membership structure.
 
@@ -2860,7 +3067,7 @@ Goal: support the flying-club operating model, where the club is the sole aircra
 
 ---
 
-## Phase 43 — Flying School
+## Phase 44 — Flying School
 
 Goal: support the flight-school operating model, where instructors deliver dual-instruction flights to students, with per-student progress tracking and instructor-specific permissions. The same model covers independent instructors operating on a single aircraft with a small number of private students — no formal school structure required.
 
@@ -2890,7 +3097,7 @@ Goal: support the flight-school operating model, where instructors deliver dual-
 
 ---
 
-## Phase 44 — Pilot Logbook Auto-population
+## Phase 45 — Pilot Logbook Auto-population
 
 Goal: auto-populate the pilot logbook from aircraft logbook entries so that
 logging a flight on the aircraft form fills both logbooks in one step.
@@ -2923,7 +3130,7 @@ logging a flight on the aircraft form fills both logbooks in one step.
 
 ---
 
-## Phase 45 — Photo EXIF & Arrival Time Auto-fill
+## Phase 46 — Photo EXIF & Arrival Time Auto-fill
 
 Goal: extract the arrival time automatically from counter photos so pilots
 don't need to type it in after every flight.
@@ -2940,7 +3147,7 @@ don't need to type it in after every flight.
 
 ---
 
-## Phase 46 — External Integrations
+## Phase 47 — External Integrations
 
 Goal: connect OpenHangar to the tools operators already use.
 
@@ -2954,7 +3161,7 @@ Goal: connect OpenHangar to the tools operators already use.
 
 ---
 
-## Phase 47 — Advanced Reporting & Exports
+## Phase 48 — Advanced Reporting & Exports
 
 Goal: give owners and clubs actionable summaries they can share or archive.
 
@@ -2976,7 +3183,7 @@ Goal: give owners and clubs actionable summaries they can share or archive.
 
 ---
 
-## Phase 48 — Hosted SaaS & Advanced RBAC
+## Phase 49 — Hosted SaaS & Advanced RBAC
 
 Goal: support a multi-tenant hosted offering with fine-grained permissions and full audit trail.
 
