@@ -254,3 +254,17 @@ tr.clickable-row { cursor: pointer; }
 
 /* Preserve authors’ paragraph breaks without allowing user HTML. */
 .passport-comment-body { white-space: pre-wrap; }
+
+.passport-print-thumbnail { max-width: 7rem; max-height: 5rem; object-fit: contain; }
+.passport-print-photo { max-width: 12rem; width: 100%; height: auto; max-height: 10rem; object-fit: contain; }
+@media print {
+  body:has(#passport-print) { color: #111 !important; background: #fff !important; }
+  body:has(#passport-print) > :not(main), body:has(#passport-print) main > :not(#passport-print) { display: none !important; }
+  body:has(#passport-print) main, #passport-print { margin: 0; padding: 0 !important; max-width: none; }
+  #passport-print-document, #passport-print-document .table { color: #111; background: #fff; }
+  #passport-print-document .table { --bs-table-bg: #fff; --bs-table-color: #111; --bs-table-border-color: #888; }
+  #passport-print-document .table-responsive { overflow: visible; }
+  #passport-print-document thead { display: table-header-group; }
+  #passport-print-document tr { break-inside: avoid; }
+  .passport-print-photo { max-width: 55mm; max-height: 45mm; }
+}

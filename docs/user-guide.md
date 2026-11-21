@@ -224,6 +224,13 @@ or change its supporting flight. Removing that link keeps the visit as an
 independent manual entry; editing the visit never changes the flight itself.
 Archived editions stay read-only.
 
+Choose **Print passport** for a paper copy or a PDF saved through your browser.
+The preview shows your own completion and first visit dates. Tick any of your
+stamp photos you want to include, then update the preview. Photos are omitted
+by default and do not count as visits. Private flight/visit notes and other
+participants’ photos stay out. The selection form also works without JavaScript;
+use the browser’s Print command in that case.
+
 Use **Download GPX waypoints** or **Download KML waypoints** to take open,
 unvisited destinations into a navigation or mapping app. The download follows
 your current edition filters or the results in **Where next?**. Airfields without
