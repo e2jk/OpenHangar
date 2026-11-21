@@ -22,10 +22,7 @@ from models import (
 )
 
 from passports import groups
-
-
-def _aware(value: datetime) -> datetime:
-    return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
+from passports.public_access import current_consent
 
 
 def _sharing(participant: PassportParticipant | None) -> bool:
@@ -87,7 +84,8 @@ def _shared_query(passport: Passport) -> Any:
 
 
 def _current(photo: PassportStampPhoto, participant: PassportParticipant) -> bool:
-    return _aware(photo.group_shared_at) >= _aware(participant.accepted_at)
+    # The same rule as public consent: only a choice made since joining counts.
+    return current_consent(photo.group_shared_at, participant)
 
 
 def friends_photos(
@@ -129,11 +127,7 @@ def visible_photo(
 
 def is_shared(photo: PassportStampPhoto, participant: PassportParticipant) -> bool:
     """Whether the owner's own photo currently reaches the group."""
-    return (
-        photo.group_shared_at is not None
-        and _sharing(participant)
-        and _current(photo, participant)
-    )
+    return _sharing(participant) and _current(photo, participant)
 
 
 def set_shared(photo: PassportStampPhoto, share: bool) -> None:
