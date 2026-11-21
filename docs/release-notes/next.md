@@ -48,3 +48,6 @@ airfields and validity dates use consistent wording across pages.
   and exercise downloads separately from page navigation.
 
 - Snag resolution tests use UTC dates consistently around local midnight.
+
+- Background navigation prefetches no longer create competing sign-in forms,
+  which could replace the login CSRF cookie while switching accounts.
