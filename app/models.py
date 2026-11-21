@@ -2748,6 +2748,35 @@ class ShareToken(db.Model):
         return self.revoked_at is None
 
 
+class PublicShare(db.Model):
+    """A revocable capability; resource adapters enforce ownership and projection.
+
+    Binding the resource creation time prevents an old URL from becoming valid
+    if a deleted resource's integer ID is reused.
+    """
+
+    __tablename__ = "public_shares"
+    __table_args__ = (db.UniqueConstraint("tenant_id", "resource_type", "resource_id"),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(
+        db.Integer, db.ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    issuer_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    resource_type = db.Column(db.String(32), nullable=False)
+    resource_id = db.Column(db.Integer, nullable=False)
+    resource_created_at = db.Column(db.DateTime(timezone=True), nullable=False)
+    token_digest = db.Column(db.String(64), nullable=False, unique=True)
+    key_nonce = db.Column(db.String(43), nullable=False)
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    expires_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    revoked_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+
 # ── Phase 12: Snag List ───────────────────────────────────────────────────────
 
 
@@ -4436,6 +4465,10 @@ class PassportParticipant(db.Model):
     display_name = db.Column(db.String(128), nullable=False)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
     accepted_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    # Internet publication is distinct from sharing inside the group.
+    public_shared_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    public_frequency_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    public_name = db.Column(db.String(128), nullable=True)
 
 
 class PassportVisit(db.Model):
@@ -4706,6 +4739,7 @@ class PassportStampPhoto(db.Model):
     # Explicitly shown to this edition's group; counts only while newer than
     # the uploader's current acceptance, so a rejoin never revives it.
     group_shared_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    public_shared_at = db.Column(db.DateTime(timezone=True), nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )
