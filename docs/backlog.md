@@ -4,6 +4,63 @@ Ideas that were considered but deferred. Not prioritised, not scheduled.
 
 ---
 
+## Airfield passports: deferred from Phase 41
+
+Optional or stretch items of the airfield-passport phase, deliberately left out
+of its core scope (decided 2026-11-21).
+
+### GPS stop candidates
+
+Propose candidate intermediate stops from GPS position, speed and dwell evidence
+and show that evidence for confirmation. Proximity alone or a low-speed point
+must never award a stamp. Test touch-and-go, taxi, GPS gaps/noise and nearby
+parallel fields. Manual intermediate stops with the flight as supporting
+evidence already exist.
+
+### Runway suitability comparison in "Where next?"
+
+User-entered runway length/surface/weight requirements compared against
+licensed runway/restriction data, with source and date shown. Mark missing
+values "unknown"; never imply operational suitability from aircraft weight or
+runway length alone. The map must remain usable without OpenAIP access.
+
+### Passport-only instance (publisher-operated)
+
+Optional extension after the core phase, not a prerequisite for marking its
+agreed core scope complete. An operator could run OpenHangar solely as a passport
+completion service, without setting up aircraft, maintenance, reservations or a
+pilot logbook. Example: propose a publisher-operated instance to LandeGut, where
+Landegutscheinheft customers maintain a map of their own visits across editions.
+This is a possible offering, not an existing publisher partnership.
+
+- Provide an explicit passport-only instance setup/presentation using the same
+  passport/account/series implementation. Onboarding and the home page lead straight
+  to editions and personal progress; hide unrelated navigation and enforce the
+  corresponding server-side access limits. No aircraft or full pilot profile is
+  required to register visits. Decide the configuration mechanism before building;
+  adding a new operating model requires operator agreement under AGENTS.md.
+- Operator manages the catalogue, linked editions and customer enrolment.
+  Reuse passport-scoped invitations initially; any purchase verification, publisher
+  customer-account integration or open registration is separately specified before
+  implementation. No payment/e-commerce system required for the stretch goal.
+- Customer experience: select an enrolled edition, record visits on a phone,
+  see the personal map fill, and browse their previous/combined editions. Retain
+  export, account security and independent private completion records.
+- Optional customer community: pilots can choose to share visits and airfield
+  comments/tips with authenticated members of the defined publisher community.
+  Personal tracking works without opting in. Distinguish viewing community content
+  from consenting to share one's own activity; do not automatically turn every
+  customer into a publicly ranked participant or share private history. Define
+  publisher-community versus smaller friends-group audiences explicitly, with
+  withdrawal and moderation controls. No internet-public publication by default.
+- Validate fresh passport-only setup, registration/enrolment, manual stamping,
+  edition history, community opt-in/withdrawal, cross-customer privacy, moderation,
+  export/backup/restore and disabled-feature access. Document deployment and add
+  representative demo/screenshots. Optional later pilot activation must follow
+  the instance policy rather than exposing fleet features automatically.
+
+---
+
 ## Follow-up: let a second crew member claim their own slot on an existing flight
 
 **Depends on** the single-`Flight`-table refactor (shipped 2026-07-24,
