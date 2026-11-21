@@ -134,3 +134,6 @@ sharing choices. Signed-in passport-only accounts can read `robots.txt` again.
   including the PostgreSQL and browser tests. A check now also proves that a
   public link to a group passport never shows the group's discussion or its
   members' names.
+
+- French: 56 older messages now use the narrow no-break space before
+  `:`, `;`, `!`, `?` and `»` (and after `«`), as French typography requires.
