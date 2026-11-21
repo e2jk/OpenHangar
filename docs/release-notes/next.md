@@ -29,6 +29,13 @@ list and popups always say whose visits they count, and the per-edition counts
 follow the same choice. Previously the counts silently added your friends' visits
 to yours.
 
+On group passports you can now share a stamp photo with your friends. Open an
+airfield and choose **Share with this group**: the edition's other participants
+see it with your group name under **Photos shared by friends**. Photos stay
+private until you share them, are never public, and **Stop sharing with the
+group** hides them again straight away. Uploading a new photo makes it private
+again.
+
 **Maintenance**
 
 - Background navigation prefetches no longer create competing sign-in forms,

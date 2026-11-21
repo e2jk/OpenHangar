@@ -1,4 +1,4 @@
-"""Participant-owned evidence mutations. Callers commit; photos are always private."""
+"""Participant-owned evidence mutations. Callers commit; photos start private."""
 
 import io
 import secrets
@@ -150,3 +150,5 @@ def replace_photo(
         db.session.add(photo)
     photo.filename = filename
     photo.public_consent = False
+    # A new picture needs a new sharing choice.
+    photo.group_shared_at = None

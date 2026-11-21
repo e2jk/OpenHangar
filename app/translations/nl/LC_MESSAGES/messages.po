@@ -203,7 +203,7 @@ msgstr "Stel voor het reservefonds een bijdrage per uur óf per maand in, niet b
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Dit GPS-bestand bevat te veel punten om te importeren (meer dan %(n)s). Splits de opname op in meerdere bestanden."
 
-#: app/aircraft/routes.py:555 app/passports/routes.py:802
+#: app/aircraft/routes.py:555 app/passports/routes.py:857
 msgid "cruise speed"
 msgstr "kruissnelheid"
 
@@ -2515,79 +2515,83 @@ msgstr "Je paspoort %(title)s eindigt op %(date)s. Open de editie om je nog te b
 msgid "Open passport"
 msgstr "Paspoort openen"
 
-#: app/passports/routes.py:249
+#: app/passports/routes.py:250
 msgid "Choose a reference airfield and correct the destination filters before downloading."
 msgstr "Kies een referentievliegveld en corrigeer de bestemmingsfilters voordat u downloadt."
 
-#: app/passports/routes.py:345
+#: app/passports/routes.py:346
 msgid "Small airfields"
 msgstr "Kleine vliegvelden"
 
-#: app/passports/routes.py:346
+#: app/passports/routes.py:347
 msgid "Medium airports"
 msgstr "Middelgrote luchthavens"
 
-#: app/passports/routes.py:347
+#: app/passports/routes.py:348
 msgid "Large airports"
 msgstr "Grote luchthavens"
 
-#: app/passports/routes.py:348
+#: app/passports/routes.py:349
 msgid "Heliports"
 msgstr "Helihavens"
 
-#: app/passports/routes.py:349
+#: app/passports/routes.py:350
 msgid "Seaplane bases"
 msgstr "Watervliegbases"
 
-#: app/passports/routes.py:350
+#: app/passports/routes.py:351
 msgid "Balloon ports"
 msgstr "Ballonhavens"
 
-#: app/passports/routes.py:351
+#: app/passports/routes.py:352
 msgid "Closed airfields"
 msgstr "Gesloten vliegvelden"
 
-#: app/passports/routes.py:461
+#: app/passports/routes.py:462
 msgid "Passport saved."
 msgstr "Paspoort opgeslagen."
 
-#: app/passports/routes.py:502
+#: app/passports/routes.py:503
 msgid "An airfield code conflicts with an existing identity. Review or remove that selection."
 msgstr "Een vliegveldcode conflicteert met een bestaande identiteit. Controleer of verwijder die selectie."
 
-#: app/passports/routes.py:564
+#: app/passports/routes.py:565
 msgid "Passport deleted."
 msgstr "Paspoort verwijderd."
 
-#: app/passports/routes.py:775
+#: app/passports/routes.py:587
+msgid "Share your visits with this group before sharing photos."
+msgstr "Deel je bezoeken met deze groep voordat je foto's deelt."
+
+#: app/passports/routes.py:830
 msgid "Choose a reference airfield from the search results."
 msgstr "Kies een referentievliegveld uit de zoekresultaten."
 
-#: app/passports/routes.py:778
+#: app/passports/routes.py:833
 msgid "This reference airfield has no coordinates. Choose another."
 msgstr "Dit referentievliegveld heeft geen coördinaten. Kies een ander."
 
-#: app/passports/routes.py:803
+#: app/passports/routes.py:858
 msgid "distance/time limit"
 msgstr "afstands-/tijdslimiet"
 
-#: app/passports/routes.py:804
+#: app/passports/routes.py:859
 msgid "usable fuel"
 msgstr "bruikbare brandstof"
 
-#: app/passports/routes.py:805
+#: app/passports/routes.py:860
 msgid "fuel flow"
 msgstr "brandstofverbruik"
 
-#: app/passports/routes.py:806
+#: app/passports/routes.py:861
 msgid "reserve minutes"
 msgstr "reserve in minuten"
 
-#: app/passports/routes.py:818
+#: app/passports/routes.py:873
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Voer een kruissnelheid in voor de tijdsmodus of gebruik de afstandsmodus."
 
-#: app/passports/routes.py:827
+#: app/passports/routes.py:882
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "Het theoretische bereik is onbekend. Voer bruikbare brandstof, verbruik, snelheid en een expliciete reserve in die positieve vliegtijd overlaten. Het afstands-/tijdfilter blijft van toepassing."
 
@@ -6881,8 +6885,8 @@ msgstr "Betaling registreren"
 
 #: app/templates/aircraft/owners_billing.html:101
 #: app/templates/aircraft/owners_billing.html:158
-#: app/templates/passports/target.html:31
-#: app/templates/passports/target.html:37
+#: app/templates/passports/target.html:32
+#: app/templates/passports/target.html:38
 msgid "Note (optional)"
 msgstr "Notitie (optioneel)"
 
@@ -12334,12 +12338,13 @@ msgstr "Geen vliegvelden komen overeen met deze weergave."
 
 #: app/templates/passports/discussion.html:3
 #: app/templates/passports/discussion.html:7
-#: app/templates/passports/target.html:14
+#: app/templates/passports/target.html:15
 msgid "Group airfield discussion"
 msgstr "Groepsgesprek over het vliegveld"
 
 #: app/templates/passports/discussion.html:9
-#: app/templates/passports/target.html:15
+#: app/templates/passports/target.html:13
+#: app/templates/passports/target.html:16
 msgid "Visible to members of this group"
 msgstr "Zichtbaar voor leden van deze groep"
 
@@ -12393,7 +12398,7 @@ msgid "Experience date (optional)"
 msgstr "Datum van de ervaring (optioneel)"
 
 #: app/templates/passports/discussion.html:31
-#: app/templates/passports/target.html:34
+#: app/templates/passports/target.html:35
 #: app/templates/pilots/entry_form.html:312
 msgid "Save Changes"
 msgstr "Wijzigingen opslaan"
@@ -12734,8 +12739,8 @@ msgid "Photos do not count as visits."
 msgstr "Foto’s tellen niet als bezoeken."
 
 #: app/templates/passports/print.html:12 app/templates/passports/print.html:24
-#: app/templates/passports/print.html:29 app/templates/passports/target.html:38
-#: app/templates/passports/target.html:39
+#: app/templates/passports/print.html:29 app/templates/passports/target.html:40
+#: app/templates/passports/target.html:41
 msgid "Private stamp photo"
 msgstr "Privéfoto van de stempel"
 
@@ -12936,95 +12941,125 @@ msgstr "Vrienden die hier zijn geweest"
 msgid "No friends have shared a qualifying visit here yet."
 msgstr "Nog geen vrienden hebben hier een geldig bezoek gedeeld."
 
-#: app/templates/passports/target.html:17
+#: app/templates/passports/target.html:13
+msgid "Photos shared by friends"
+msgstr "Foto's gedeeld door vrienden"
+
+#: app/templates/passports/target.html:13
+#, python-format
+msgid "Stamp photo shared by %(name)s"
+msgstr "Stempelfoto gedeeld door %(name)s"
+
+#: app/templates/passports/target.html:18
 msgid "Open discussion"
 msgstr "Gesprek openen"
 
-#: app/templates/passports/target.html:19
+#: app/templates/passports/target.html:20
 msgid "Visit evidence"
 msgstr "Bezoekbewijs"
 
-#: app/templates/passports/target.html:21
+#: app/templates/passports/target.html:22
 msgid "Logged arrival"
 msgstr "Vastgelegde aankomst"
 
-#: app/templates/passports/target.html:21
+#: app/templates/passports/target.html:22
 msgid "Confirmed GPS visit"
 msgstr "Bevestigd GPS-bezoek"
 
-#: app/templates/passports/target.html:21
+#: app/templates/passports/target.html:22
 msgid "Manual visit"
 msgstr "Handmatig bezoek"
 
-#: app/templates/passports/target.html:21
+#: app/templates/passports/target.html:22
 msgid "Excluded from credit"
 msgstr "Telt niet mee"
 
-#: app/templates/passports/target.html:23
+#: app/templates/passports/target.html:24
 msgid "View flight"
 msgstr "Vlucht bekijken"
 
-#: app/templates/passports/target.html:24
+#: app/templates/passports/target.html:25
 msgid "Restore arrival credit"
 msgstr "Aankomst weer laten meetellen"
 
-#: app/templates/passports/target.html:24
+#: app/templates/passports/target.html:25
 msgid "Exclude this arrival"
 msgstr "Deze aankomst uitsluiten"
 
-#: app/templates/passports/target.html:24
+#: app/templates/passports/target.html:25
 msgid "Delete manual visit"
 msgstr "Handmatig bezoek verwijderen"
 
-#: app/templates/passports/target.html:27
+#: app/templates/passports/target.html:28
 msgid "Edit manual visit"
 msgstr "Handmatig bezoek bewerken"
 
-#: app/templates/passports/target.html:30
-#: app/templates/passports/target.html:37
+#: app/templates/passports/target.html:31
+#: app/templates/passports/target.html:38
 msgid "Visit date"
 msgstr "Bezoekdatum"
 
-#: app/templates/passports/target.html:32
-#: app/templates/passports/target.html:37
+#: app/templates/passports/target.html:33
+#: app/templates/passports/target.html:38
 #: app/templates/passports/vouchers.html:21
 msgid "Supporting flight (optional, latest 200 eligible flights)"
 msgstr "Ondersteunende vlucht (optioneel, laatste 200 geldige vluchten)"
 
-#: app/templates/passports/target.html:33
-#: app/templates/passports/target.html:37
+#: app/templates/passports/target.html:34
+#: app/templates/passports/target.html:38
 msgid "Independent manual visit"
 msgstr "Onafhankelijk handmatig bezoek"
 
-#: app/templates/passports/target.html:33
+#: app/templates/passports/target.html:34
 msgid "Current supporting flight"
 msgstr "Huidige ondersteunende vlucht"
 
-#: app/templates/passports/target.html:36
+#: app/templates/passports/target.html:37
 msgid "No qualifying visits recorded yet."
 msgstr "Nog geen geldige bezoeken vastgelegd."
 
-#: app/templates/passports/target.html:37
+#: app/templates/passports/target.html:38
 msgid "Record a manual visit"
 msgstr "Handmatig bezoek vastleggen"
 
-#: app/templates/passports/target.html:37
+#: app/templates/passports/target.html:38
 msgid "Save visit"
 msgstr "Bezoek opslaan"
 
-#: app/templates/passports/target.html:38
+#: app/templates/passports/target.html:39
+#: app/templates/passports/target.html:41
+msgid "Stamp photo shared with this group"
+msgstr "Stempelfoto gedeeld met deze groep"
+
+#: app/templates/passports/target.html:39
+msgid "Participants of this edition who share their visits see this photo with your group display name. It is never public. Uploading a new photo makes it private again."
+msgstr "Deelnemers aan deze editie die hun bezoeken delen, zien deze foto met je weergavenaam in de groep. De foto is nooit openbaar. Als je een nieuwe foto uploadt, is die weer privé."
+
+#: app/templates/passports/target.html:40
 msgid "This photo is visible only to you. Uploading it does not earn a visit or publish it."
 msgstr "Deze foto is alleen voor jou zichtbaar. Uploaden telt niet als bezoek en maakt de foto niet openbaar."
 
-#: app/templates/passports/target.html:39
+#: app/templates/passports/target.html:42
+msgid "Stop sharing with the group"
+msgstr "Niet meer delen met de groep"
+
+#: app/templates/passports/target.html:42
+msgid "Share with this group"
+msgstr "Delen met deze groep"
+
+#: app/templates/passports/target.html:43
 msgid "Delete photo"
 msgstr "Foto verwijderen"
 
-#: app/templates/passports/target.html:40
+#: app/templates/passports/target.html:44
+msgid "Participants of this edition who share their visits will see it with your group display name. You can stop sharing at any time. It never becomes public."
+msgstr "Deelnemers aan deze editie die hun bezoeken delen, zien de foto met je weergavenaam in de groep. Je kunt het delen op elk moment stoppen. De foto wordt nooit openbaar."
+
+#: app/templates/passports/target.html:45
 msgid "JPEG, PNG or WebP, up to 10 MB and 20 megapixels"
 msgstr "JPEG, PNG of WebP, maximaal 10 MB en 20 megapixels"
 
-#: app/templates/passports/target.html:40
+#: app/templates/passports/target.html:45
 msgid "Upload photo"
 msgstr "Foto uploaden"
 

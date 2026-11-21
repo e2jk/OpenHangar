@@ -152,17 +152,30 @@ unvisited fields remain visible but excluded, and original/excluded target count
 are displayed separately. No achievable targets means no percentage. Reopened
 fields rejoin the denominator. Fields without coordinates remain in the list.
 
-## Private stamp photos
+## Stamp photos
 
 Each participant may keep one photo per target, independently of which evidence
 earns the stamp. Upload JPEG, PNG or WebP up to 10 MB and 20 megapixels. Actual image
 content is decoded and re-encoded as a bounded JPEG with EXIF/GPS metadata removed;
 the upload name is replaced with a random filename. A photo itself earns no credit.
 Photo endpoints require your active passport participation and return no-store
-responses. Photos are visible only to their participant, even to other accepted
-members or the owner. Replacements/deletions remove old files after commit;
+responses. Photos are private to their participant, even from other accepted
+members or the owner, until that participant explicitly shares one. Replacements/deletions remove old files after commit;
 failed database saves remove the new file and retain the old one. Publication
 is a separate, explicit later workflow; uploads never enable public consent.
+
+On a group edition, **Share with this group** shows your photo of that airfield
+to the edition's other participants (`PassportStampPhoto.group_shared_at`,
+`passports/photo_sharing.py`). They see it under **Photos shared by friends**
+with your group display name, never your account details. The share is
+honoured only while you and the viewer are both active, accepted,
+visit-sharing participants of that edition and active members of the group;
+the page and every image request recheck this server-side. **Stop sharing with
+the group** withdraws it at once, and still works on an archived edition, where
+new sharing is refused. Uploading a replacement makes the photo private again,
+and a share made before your current acceptance (after leaving and rejoining)
+no longer counts. Shared photos stay within their edition: they appear neither
+on other editions nor publicly, and the separate `public_consent` stays off.
 
 
 ## Where next?

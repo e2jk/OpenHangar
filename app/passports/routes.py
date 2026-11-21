@@ -47,6 +47,7 @@ from passports import (
     invitation_routes,  # Register edition admission views.
     lifecycle,  # Register transaction-safe file cleanup.
     passports_bp,
+    photo_sharing,
     printing,
     series_routes,  # Register linked-edition views.
     voucher_routes,  # Register private voucher accounting.
@@ -566,6 +567,29 @@ def delete_passport(passport_id: int) -> ResponseReturnValue:
     return render_template("passports/confirm.html", passport=passport, deleting=True)
 
 
+def _share_photo(passport: Passport, target_id: int) -> None:
+    """Share an own stamp photo with the group, or withdraw it at any time."""
+    uid = session["user_id"]
+    share = request.form.get("share") == "yes"
+    # Withdrawing stays possible on an archived edition; sharing does not.
+    participant = (
+        evidence.writable_participant(passport, uid)
+        if share
+        else participant_for(passport.id, uid)
+    )
+    if participant is None or not passport.is_group:
+        abort(404)
+    photo = PassportStampPhoto.query.filter_by(
+        participant_id=participant.id, target_id=target_id
+    ).first_or_404()
+    if share and not participant.share_visits:
+        raise BuilderError(
+            _("Share your visits with this group before sharing photos."), 409
+        )
+    photo_sharing.set_shared(photo, share)
+    db.session.commit()
+
+
 @passports_bp.route(
     "/<int:passport_id>/airfields/<int:target_id>", methods=["GET", "POST"]
 )
@@ -583,6 +607,15 @@ def target_detail(passport_id: int, target_id: int) -> ResponseReturnValue:
     status = 200
     if request.method == "POST":
         try:
+            if request.form.get("action") == "share_photo":
+                _share_photo(passport, target_id)
+                return redirect(
+                    url_for(
+                        "passports.target_detail",
+                        passport_id=passport.id,
+                        target_id=target_id,
+                    )
+                )
             participant = evidence.writable_participant(passport, session["user_id"])
             action = request.form.get("action")
             if action == "visit":
@@ -696,6 +729,21 @@ def target_detail(passport_id: int, target_id: int) -> ResponseReturnValue:
             ),
             supporting_flights=progress["supporting_flights"],
             photo=photo,
+            photo_shared=(
+                photo is not None
+                and participant is not None
+                and passport.is_group
+                and photo_sharing.is_shared(photo, participant)
+            ),
+            can_share_photo=(
+                can_record
+                and passport.is_group
+                and participant is not None
+                and participant.share_visits
+            ),
+            friends_photos=photo_sharing.friends_photos(
+                passport, target_id, session["user_id"]
+            ),
             can_record=can_record,
             error=error,
         ),
@@ -708,11 +756,18 @@ def target_detail(passport_id: int, target_id: int) -> ResponseReturnValue:
 def stamp_photo(passport_id: int, photo_id: int) -> ResponseReturnValue:
     passport = require_passport(passport_id)
     participant = participant_for(passport.id, session["user_id"])
-    if participant is None:
+    photo = (
+        PassportStampPhoto.query.filter_by(
+            id=photo_id, passport_id=passport.id, participant_id=participant.id
+        ).first()
+        if participant is not None
+        else None
+    )
+    if photo is None:
+        # A friend's photo only while it is shared with this edition's group.
+        photo = photo_sharing.visible_photo(passport, photo_id, session["user_id"])
+    if photo is None:
         abort(404)
-    photo = PassportStampPhoto.query.filter_by(
-        id=photo_id, passport_id=passport.id, participant_id=participant.id
-    ).first_or_404()
     try:
         response = send_file(
             evidence.photo_path(photo.filename), mimetype="image/jpeg", max_age=0

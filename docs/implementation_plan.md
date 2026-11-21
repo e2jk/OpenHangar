@@ -2594,10 +2594,16 @@ downgrades and show localised retrieval timestamps.
   but leaves shared series-history access; the latter revokes all group-derived
   access, including optional previous-edition views. History endpoints recheck group
   membership server-side; a UI toggle alone never grants access.
-- [ ] Members see their own full evidence; other members/owner see target,
+- [x] Members see their own full evidence; other members/owner see target,
   participant display name and visit date, with private notes, aircraft, flight
   links and photos hidden unless separately authorised/shared. Owners manage the
   group, not another pilot's underlying flights or manual evidence.
+  *Photos:* a participant explicitly shares one stamp photo with the edition's
+  group (**Share with this group**) and can withdraw it at any time, archived
+  editions included. Viewer and uploader must both be active, accepted,
+  visit-sharing participants and group members, rechecked on the page and on
+  each image request; a replacement or a rejoin makes the photo private again.
+  Public photo publication remains with 41h.
 - [x] Airfield popup/detail includes "Friends who have been here": list each
   friend with an eligible shared visit in the selected edition/history scope,
   using their group display name and visit year(s), deduplicated across visits.
