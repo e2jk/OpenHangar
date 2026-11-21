@@ -1512,6 +1512,13 @@ def require_pilot_access(f: Callable[..., Any]) -> Callable[..., Any]:
         role = current_user_role()
         if role in (Role.ADMIN, Role.OWNER, Role.PILOT, Role.STUDENT, Role.INSTRUCTOR):
             return f(*args, **kwargs)
+        membership = current_membership()
+        if membership is not None and membership.access_scope != "full":
+            # Restricted accounts never inherit the global is_pilot flag; a
+            # personal logbook grants only its allowlisted own-entry pages.
+            if membership.access_scope == "logbook":
+                return f(*args, **kwargs)
+            return abort(403)
         uid = session.get("user_id")
         if uid:
             user = db.session.get(User, uid)

@@ -223,6 +223,9 @@
             <a class="nav-link" href="{{ url_for('flights.log_flight') }}"><i class="bi bi-plus-circle me-1"></i>{{ _('Log a flight') }}</a>
           </li>
           {% endif %}
+          {% if personal_logbook %}
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('pilots.logbook') }}"><i class="bi bi-journal-text me-1"></i>{{ _('Pilot logbook') }}</a></li>
+          {% endif %}
           {% if is_pilot or has_passports or passport_only %}
           <li class="nav-item"><a class="nav-link" href="{{ url_for('passports.index') }}"><i class="bi bi-passport me-1"></i>{{ _('Airfield passports') }}</a></li>
           {% endif %}
@@ -334,6 +337,9 @@
       <i class="bi bi-person"></i>
       <span>{{ _('Pilot') }}{% if nav_crew_invite_count %} <span class="badge rounded-pill bg-warning text-dark oh-fs-07">{{ nav_crew_invite_count }}</span>{% endif %}</span>
     </a>
+    {% endif %}
+    {% if personal_logbook %}
+    <a href="{{ url_for('pilots.logbook') }}" class="{{ 'active' if _ep.startswith('pilots.') }}"><i class="bi bi-journal-text"></i><span>{{ _('Pilot logbook') }}</span></a>
     {% endif %}
     {% if is_pilot or has_passports or passport_only %}
     <a href="{{ url_for('passports.index') }}" class="{{ 'active' if _ep.startswith('passports.') }}"><i class="bi bi-passport"></i><span>{{ _('Airfield passports') }}</span></a>

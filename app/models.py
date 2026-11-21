@@ -218,10 +218,13 @@ class TenantUser(db.Model):
     __tablename__ = "tenant_users"
     __table_args__ = (
         db.CheckConstraint(
-            "access_scope IN ('full', 'passport')", name="ck_tenant_users_access_scope"
+            "access_scope IN ('full', 'passport', 'logbook')",
+            name="ck_tenant_users_access_scope",
         ),
+        # 'logbook' is a passport-only account that also keeps its own pilot
+        # logbook: still no role, so no fleet, reservation or maintenance access.
         db.CheckConstraint(
-            "(access_scope = 'full' AND role IS NOT NULL) OR (access_scope = 'passport' AND role IS NULL)",
+            "(access_scope = 'full' AND role IS NOT NULL) OR (access_scope IN ('passport', 'logbook') AND role IS NULL)",
             name="ck_tenant_users_scoped_role",
         ),
     )
@@ -403,6 +406,11 @@ class TenantProfile(db.Model):
     # warn-level at most (they may be booking the aircraft for the shop visit).
     grounded_reservation_policy = db.Column(
         db.String(8), nullable=False, default="warn"
+    )
+    # Phase 41: "admin" | "self" — who may start a personal pilot logbook on a
+    # passport-only account: only an administrator, or the account holder too.
+    personal_logbook_policy = db.Column(
+        db.String(8), nullable=False, default="admin", server_default="admin"
     )
     # Phase 39c: days a co-owner capital balance may stay negative before the
     # billing dashboard flags it. Only editable/read on a shared_ownership
@@ -4787,9 +4795,15 @@ def _refuse_values_too_large(session: Session, _context: Any, _instances: Any) -
 def _revoke_changed_account_scope(
     _mapper: Any, connection: Any, membership: TenantUser
 ) -> None:
-    if inspect(membership).attrs.access_scope.history.has_changes():
-        connection.execute(
-            update(User)
-            .where(User.id == membership.user_id)
-            .values(auth_version=secrets.token_hex(16))
-        )
+    history = inspect(membership).attrs.access_scope.history
+    if not history.has_changes():
+        return
+    # Adding a personal logbook only widens a passport-only account to its own
+    # entries; every other scope change signs the account out everywhere.
+    if list(history.deleted) == ["passport"] and list(history.added) == ["logbook"]:
+        return
+    connection.execute(
+        update(User)
+        .where(User.id == membership.user_id)
+        .values(auth_version=secrets.token_hex(16))
+    )

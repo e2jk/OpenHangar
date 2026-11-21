@@ -45,7 +45,7 @@ def visible_identity_ids(
     )
     if scope == "full":
         return None
-    if scope != "passport":
+    if scope not in ("passport", "logbook"):
         return empty
     accepted = db.select(PassportParticipant.passport_id).where(
         PassportParticipant.user_id == user_id,

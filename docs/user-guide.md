@@ -191,7 +191,13 @@ Unreleased or unsupported sources offer a pasted-code fallback. Unknown codes re
 removal. Military/ULM classification can remain unknown or be entered manually.
 
 Friends with passport-only accounts can build their own passports and prepare
-a linked next edition too. Their military/ULM labels apply to their own passport;
+a linked next edition too. A friend who flies can also keep a personal pilot
+logbook on the same account (**Start my pilot logbook** on the passports page):
+their logged arrivals then fill their passports automatically. It holds only
+their own flights and gives no access to your aircraft, reservations,
+maintenance or other pilots' logbooks. By default an administrator enables it
+from the user list; under **Configuration**, you can let account holders start
+it themselves. Their military/ULM labels apply to their own passport;
 public airfield details do not reveal another collection’s private corrections.
 
 Only the owner can edit, archive, reopen or delete a passport. Editing previews

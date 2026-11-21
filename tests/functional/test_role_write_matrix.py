@@ -238,6 +238,7 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
     # users_bp
     "users.invite": _OWNER_ROLES,
     "users.change_role": _OWNER_ROLES,
+    "users.personal_logbook": _OWNER_ROLES,
     "users.revoke_access": _OWNER_ROLES,
     "users.revoke_invite": _OWNER_ROLES,
     "users.update_aircraft_access": _OWNER_ROLES,
@@ -296,6 +297,7 @@ _EXCLUDED_ENDPOINTS = {
     "passports.archive_passport": "passport-owner scoped, independent of tenant role; covered by passport builder tests",
     "passports.voucher_ledger": "participant-owned private redemptions, owner-only allocations; covered by voucher privacy and PostgreSQL race tests",
     "passports.target_detail": "participant-owned evidence; covered by passport stamp privacy tests",
+    "passports.start_logbook": "self-activation for passport-only memberships under the owner's policy, not a fleet role; covered by personal pilot logbook tests",
     "passports.delete_passport": "passport-owner scoped, independent of tenant role; covered by passport builder tests",
     "auth.login": "pre-auth, no tenant role exists yet",
     "auth.setup": "pre-auth first-run tenant creation",

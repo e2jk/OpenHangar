@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Start my pilot logbook') }} — OpenHangar{% endblock %}
+{% block content %}
+<div class="container py-4 oh-mw-600">
+<a href="{{ url_for('passports.index') }}">{{ _('Airfield passports') }}</a>
+<h1 class="page-title">{{ _('Start my pilot logbook') }}</h1>
+{% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+<p>{{ _('Keep your own pilot logbook on this same account. Your passports, visits and groups stay exactly as they are.') }}</p>
+<ul>
+<li>{{ _('Record your flights by hand. Logged arrivals then fill your airfield passports automatically, without a manual visit for each one.') }}</li>
+<li>{{ _('Only you see your logbook entries.') }}</li>
+<li>{{ _('It gives no access to this organisation’s aircraft, reservations, maintenance or other pilots’ logbooks.') }}</li>
+</ul>
+{% if allowed %}
+<form method="post">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<div class="form-check mb-3"><input class="form-check-input" type="checkbox" name="confirm" value="yes" id="confirm-logbook" required><label class="form-check-label" for="confirm-logbook">{{ _('Start a personal pilot logbook on my account') }}</label></div>
+<button class="btn btn-ac-primary">{{ _('Start my pilot logbook') }}</button>
+</form>
+{% else %}
+<p class="alert alert-info">{{ _('An administrator of this OpenHangar decides who can keep a personal pilot logbook. Ask them to enable it for your account.') }}</p>
+{% endif %}
+</div>
+{% endblock %}

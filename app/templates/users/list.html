@@ -51,12 +51,12 @@
           </td>
           <td class="align-middle">
             {% if tu.user_id == current_user_id %}
-              <span class="text-muted">{{ _('Passport-only account') if tu.access_scope != 'full' else role_labels[tu.role] }}</span>
+              <span class="text-muted">{{ (_('Passport and personal logbook') if tu.access_scope == 'logbook' else _('Passport-only account')) if tu.access_scope != 'full' else role_labels[tu.role] }}</span>
             {% else %}
             <form method="post" action="{{ url_for('users.change_role', user_id=tu.user_id) }}" class="d-flex gap-2 align-items-center"
                   hx-swap="innerHTML show:none" data-scroll-anchor="user-row-{{ tu.user_id }}">
               <select name="role" class="form-select form-select-sm" data-auto-submit>
-                {% if tu.access_scope != 'full' %}<option value="" disabled selected>{{ _('Passport-only account') }}</option>{% endif %}
+                {% if tu.access_scope != 'full' %}<option value="" disabled selected>{{ _('Passport and personal logbook') if tu.access_scope == 'logbook' else _('Passport-only account') }}</option>{% endif %}
                 {% for r in all_roles %}
                 <option value="{{ r.value }}" {% if r == tu.role %}selected{% endif %}>{{ role_labels[r] }}</option>
                 {% endfor %}
@@ -65,7 +65,16 @@
             {% endif %}
           </td>
           <td class="align-middle">
-            {% if tu.access_scope != 'full' %}<span class="text-muted">{{ _('Passport-only account') }}</span>
+            {% if tu.access_scope != 'full' %}<span class="text-muted">{{ _('No aircraft access') }}</span>
+              {% if tu.user_id != current_user_id %}
+              <form method="post" action="{{ url_for('users.personal_logbook', user_id=tu.user_id) }}" class="mt-1"
+                    hx-swap="innerHTML show:none" data-scroll-anchor="user-row-{{ tu.user_id }}">
+                <input type="hidden" name="enable" value="{{ 'no' if tu.access_scope == 'logbook' else 'yes' }}">
+                <button type="submit" class="btn btn-xs btn-ac-ghost oh-fs-08">
+                  <i class="bi bi-journal-text me-1"></i>{{ _('Remove personal logbook access') if tu.access_scope == 'logbook' else _('Enable personal logbook') }}
+                </button>
+              </form>
+              {% endif %}
             {% elif tu.role in (Role.ADMIN, Role.OWNER) %}
               <span class="text-muted oh-fs-085">{{ _('All aircraft') }}</span>
             {% elif all_aircraft %}
