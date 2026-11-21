@@ -31,6 +31,7 @@
 <div id="passport-discovery" data-map="{{ map_data | tojson | forceescape }}" data-target-url="{{ url_for('passports.target_detail', passport_id=passport.id, target_id=0) }}"><div id="passport-discovery-map" class="passport-selection-map border rounded" role="region" aria-label="{{ _('Destination discovery map') }}"></div></div>
 <p>{{ _('Targets without coordinates cannot be distance-filtered; they remain in the passport list.') }} ({{ missing }})</p>
 <p>{{ _('Suitability unknown: no licensed runway or restriction dataset is loaded. Check current aerodrome information before planning a flight.') }}</p>
+{% include "passports/_waypoint_downloads.html" %}
 {% if rows %}<div class="table-responsive"><table class="table"><thead><tr><th>{{ _('Airfield') }}</th><th>{{ _('Distance (NM)') }}</th><th>{{ _('Still-air time (minutes)') }}</th></tr></thead><tbody>{% for row in rows %}<tr><td><a href="{{ url_for('passports.target_detail', passport_id=passport.id, target_id=row.target_id) }}">{{ row.name }}</a></td><td>{{ '%.1f'|format(row.distance_nm) }}</td><td>{{ '%.1f'|format(row.minutes) if row.minutes is not none else _('Unknown') }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p>{{ _('No open, unvisited airfields match these inputs.') }}</p>{% endif %}
 </div>
 {% endblock %}

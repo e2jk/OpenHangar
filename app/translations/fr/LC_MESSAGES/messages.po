@@ -203,7 +203,7 @@ msgstr "Définissez soit une contribution horaire, soit une contribution mensuel
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Ce fichier GPS contient trop de points pour être importé (plus de %(n)s). Découpez l'enregistrement en plusieurs fichiers."
 
-#: app/aircraft/routes.py:555 app/passports/routes.py:714
+#: app/aircraft/routes.py:555 app/passports/routes.py:772
 msgid "cruise speed"
 msgstr "vitesse de croisière"
 
@@ -598,133 +598,133 @@ msgstr "Élément de liste de souhaits ajouté."
 msgid "Wish-list item removed."
 msgstr "Élément de liste de souhaits supprimé."
 
-#: app/auth/routes.py:153
+#: app/auth/routes.py:161
 #, python-format
 msgid "Too many failed sign-in attempts. Try again in one second."
 msgid_plural "Too many failed sign-in attempts. Try again in %(n)s seconds."
 msgstr[0] "Trop de tentatives de connexion échouées. Réessayez dans une seconde."
 msgstr[1] "Trop de tentatives de connexion échouées. Réessayez dans %(n)s secondes."
 
-#: app/auth/routes.py:169
+#: app/auth/routes.py:177
 #, python-format
 msgid "Account temporarily locked due to too many failed attempts. Try again in %(minutes)s minutes."
 msgstr "Compte temporairement bloqué en raison de trop nombreuses tentatives échouées. Réessayez dans %(minutes)s minutes."
 
-#: app/auth/routes.py:215
+#: app/auth/routes.py:223
 msgid "Invalid email or password."
 msgstr "Adresse e-mail ou mot de passe invalide."
 
-#: app/auth/routes.py:239
+#: app/auth/routes.py:247
 msgid "Your account has been deactivated. Contact the administrator."
 msgstr "Votre compte a été désactivé. Contactez l'administrateur."
 
-#: app/auth/routes.py:305
+#: app/auth/routes.py:313
 msgid "Your account changed. Please sign in again."
 msgstr "Votre compte a été modifié. Connectez-vous à nouveau."
 
-#: app/auth/routes.py:378 app/auth/routes.py:986
+#: app/auth/routes.py:386 app/auth/routes.py:994
 msgid "Invalid authenticator code."
 msgstr "Code d'authentification invalide."
 
-#: app/auth/routes.py:403
+#: app/auth/routes.py:411
 msgid "Invalid code — please try again."
 msgstr "Code invalide — veuillez réessayer."
 
-#: app/auth/routes.py:423
+#: app/auth/routes.py:431
 msgid "Two-factor authentication is now active on your account."
 msgstr "L'authentification à deux facteurs est maintenant active sur votre compte."
 
-#: app/auth/routes.py:498
+#: app/auth/routes.py:506
 msgid "Account creation is disabled in demo mode."
 msgstr "La création de compte est désactivée en mode démo."
 
-#: app/auth/routes.py:609 app/users/routes.py:255
+#: app/auth/routes.py:617 app/users/routes.py:255
 msgid "A valid email address is required."
 msgstr "Une adresse e-mail valide est obligatoire."
 
-#: app/auth/routes.py:611 app/auth/routes.py:950 app/auth/routes.py:1101
+#: app/auth/routes.py:619 app/auth/routes.py:958 app/auth/routes.py:1109
 #: app/users/routes.py:257
 msgid "Password must be at least 12 characters."
 msgstr "Le mot de passe doit comporter au moins 12 caractères."
 
-#: app/auth/routes.py:644 app/auth/routes.py:772
+#: app/auth/routes.py:652 app/auth/routes.py:780
 msgid "Session expired. Please start over."
 msgstr "Session expirée. Veuillez recommencer."
 
-#: app/auth/routes.py:655 app/auth/routes.py:1026
+#: app/auth/routes.py:663 app/auth/routes.py:1034
 msgid "Invalid code. Please try again."
 msgstr "Code invalide. Veuillez réessayer."
 
-#: app/auth/routes.py:682
+#: app/auth/routes.py:690
 msgid "Please select an option."
 msgstr "Veuillez sélectionner une option."
 
-#: app/auth/routes.py:703
+#: app/auth/routes.py:711
 msgid "Please enter a valid number of aircraft (0 or more)."
 msgstr "Veuillez entrer un nombre d'appareils valide (0 ou plus)."
 
-#: app/auth/routes.py:729
+#: app/auth/routes.py:737
 msgid "Please enter a name."
 msgstr "Veuillez entrer un nom."
 
-#: app/auth/routes.py:862
+#: app/auth/routes.py:870
 msgid "Setup complete. Welcome to OpenHangar!"
 msgstr "Configuration terminée. Bienvenue dans OpenHangar !"
 
-#: app/auth/routes.py:863 app/templates/dashboard.html:516
+#: app/auth/routes.py:871 app/templates/dashboard.html:516
 msgid "Add your first aircraft"
 msgstr "Ajouter votre premier avion"
 
-#: app/auth/routes.py:864
+#: app/auth/routes.py:872
 msgid "Register your first flight"
 msgstr "Enregistrer votre premier vol"
 
-#: app/auth/routes.py:937
+#: app/auth/routes.py:945
 msgid "Display name updated."
 msgstr "Nom d'affichage mis à jour."
 
-#: app/auth/routes.py:947 app/auth/routes.py:982
+#: app/auth/routes.py:955 app/auth/routes.py:990
 msgid "Current password is incorrect."
 msgstr "Le mot de passe actuel est incorrect."
 
-#: app/auth/routes.py:953 app/auth/routes.py:1104
+#: app/auth/routes.py:961 app/auth/routes.py:1112
 #: app/passports/registration.py:113 app/users/routes.py:259
 msgid "Passwords do not match."
 msgstr "Les mots de passe ne correspondent pas."
 
-#: app/auth/routes.py:964
+#: app/auth/routes.py:972
 msgid "Password updated successfully."
 msgstr "Mot de passe mis à jour avec succès."
 
-#: app/auth/routes.py:1019
+#: app/auth/routes.py:1027
 msgid "Session expired. Please try again."
 msgstr "Session expirée. Veuillez réessayer."
 
-#: app/auth/routes.py:1045
+#: app/auth/routes.py:1053
 msgid "Two-factor authentication enabled."
 msgstr "Double authentification activée."
 
-#: app/auth/routes.py:1056
+#: app/auth/routes.py:1064
 msgid "Your administrator requires two-factor authentication. It cannot be disabled on this account."
 msgstr "Votre administrateur exige l’authentification à deux facteurs. Elle ne peut pas être désactivée sur ce compte."
 
-#: app/auth/routes.py:1073
+#: app/auth/routes.py:1081
 msgid "Two-factor authentication disabled."
 msgstr "Double authentification désactivée."
 
-#: app/auth/routes.py:1086
+#: app/auth/routes.py:1094
 msgid "This reset link has already been used."
 msgstr "Ce lien de réinitialisation a déjà été utilisé."
 
-#: app/auth/routes.py:1091
+#: app/auth/routes.py:1099
 msgid "This reset link has expired. Ask the administrator for a new one."
 msgstr "Ce lien de réinitialisation a expiré. Demandez-en un nouveau à l'administrateur."
 
-#: app/auth/routes.py:1109
+#: app/auth/routes.py:1117
 msgid "User not found."
 msgstr "Utilisateur introuvable."
 
-#: app/auth/routes.py:1118
+#: app/auth/routes.py:1126
 msgid "Password reset successfully. You can now log in."
 msgstr "Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter."
 
@@ -2503,75 +2503,79 @@ msgstr "Votre passeport %(title)s se termine le %(date)s. Ouvrez cette édition 
 msgid "Open passport"
 msgstr "Ouvrir le passeport"
 
-#: app/passports/routes.py:257
+#: app/passports/routes.py:225
+msgid "Choose a reference airfield and correct the destination filters before downloading."
+msgstr "Choisissez un aérodrome de référence et corrigez les filtres de destination avant de télécharger."
+
+#: app/passports/routes.py:315
 msgid "Small airfields"
 msgstr "Petits aérodromes"
 
-#: app/passports/routes.py:258
+#: app/passports/routes.py:316
 msgid "Medium airports"
 msgstr "Aéroports moyens"
 
-#: app/passports/routes.py:259
+#: app/passports/routes.py:317
 msgid "Large airports"
 msgstr "Grands aéroports"
 
-#: app/passports/routes.py:260
+#: app/passports/routes.py:318
 msgid "Heliports"
 msgstr "Héliports"
 
-#: app/passports/routes.py:261
+#: app/passports/routes.py:319
 msgid "Seaplane bases"
 msgstr "Hydrobases"
 
-#: app/passports/routes.py:262
+#: app/passports/routes.py:320
 msgid "Balloon ports"
 msgstr "Bases de ballons"
 
-#: app/passports/routes.py:263
+#: app/passports/routes.py:321
 msgid "Closed airfields"
 msgstr "Aérodromes fermés"
 
-#: app/passports/routes.py:373
+#: app/passports/routes.py:431
 msgid "Passport saved."
 msgstr "Passeport enregistré."
 
-#: app/passports/routes.py:414
+#: app/passports/routes.py:472
 msgid "An airfield code conflicts with an existing identity. Review or remove that selection."
 msgstr "Un code d’aérodrome entre en conflit avec une identité existante. Vérifiez ou retirez cette sélection."
 
-#: app/passports/routes.py:476
+#: app/passports/routes.py:534
 msgid "Passport deleted."
 msgstr "Passeport supprimé."
 
-#: app/passports/routes.py:687
+#: app/passports/routes.py:745
 msgid "Choose a reference airfield from the search results."
 msgstr "Choisissez un aérodrome de référence parmi les résultats de recherche."
 
-#: app/passports/routes.py:690
+#: app/passports/routes.py:748
 msgid "This reference airfield has no coordinates. Choose another."
 msgstr "Cet aérodrome de référence n’a pas de coordonnées. Choisissez-en un autre."
 
-#: app/passports/routes.py:715
+#: app/passports/routes.py:773
 msgid "distance/time limit"
 msgstr "limite de distance/durée"
 
-#: app/passports/routes.py:716
+#: app/passports/routes.py:774
 msgid "usable fuel"
 msgstr "carburant utilisable"
 
-#: app/passports/routes.py:717
+#: app/passports/routes.py:775
 msgid "fuel flow"
 msgstr "consommation"
 
-#: app/passports/routes.py:718
+#: app/passports/routes.py:776
 msgid "reserve minutes"
 msgstr "réserve en minutes"
 
-#: app/passports/routes.py:730
+#: app/passports/routes.py:788
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Saisissez une vitesse de croisière pour le mode durée, ou utilisez le mode distance."
 
-#: app/passports/routes.py:739
+#: app/passports/routes.py:797
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "L’autonomie théorique est inconnue. Saisissez le carburant utilisable, la consommation, la vitesse et une réserve explicite laissant une durée de vol positive. Le filtre distance/durée reste appliqué."
 
@@ -2698,6 +2702,15 @@ msgstr "Copiez au maximum 5 000 attributions de bons. Réduisez la sélection 
 #: app/passports/vouchers.py:501 app/templates/passports/vouchers.html:40
 msgid "Awaiting participation"
 msgstr "En attente de participation"
+
+#: app/passports/waypoints.py:83
+msgid "Unvisited airfields"
+msgstr "Aérodromes non visités"
+
+#: app/passports/waypoints.py:86
+#, python-format
+msgid "Omitted without usable coordinates: %(fields)s."
+msgstr "Omis faute de coordonnées exploitables : %(fields)s."
 
 #: app/pilots/form_parsing.py:40
 #, python-format
@@ -4263,7 +4276,7 @@ msgstr "gestion d'avions open source"
 #: app/templates/maintenance/fleet.html:281
 #: app/templates/maintenance/fleet.html:341
 #: app/templates/maintenance/list.html:98
-#: app/templates/passports/detail.html:36
+#: app/templates/passports/detail.html:37
 #: app/templates/passports/series.html:17
 #: app/templates/pilots/minimums_history.html:25
 #: app/templates/reservations/charge.html:34
@@ -5878,7 +5891,7 @@ msgstr "Carburant à bord"
 #: app/templates/passports/builder.html:42
 #: app/templates/passports/builder.html:63
 #: app/templates/passports/where_next.html:26
-#: app/templates/passports/where_next.html:34
+#: app/templates/passports/where_next.html:35
 msgid "Unknown"
 msgstr "Inconnu"
 
@@ -7173,7 +7186,7 @@ msgstr "Vérifier la référence pièce"
 #: app/templates/passports/builder.html:49
 #: app/templates/passports/detail.html:30
 #: app/templates/passports/detail.html:34
-#: app/templates/passports/detail.html:36
+#: app/templates/passports/detail.html:37
 #: app/templates/passports/series.html:15
 #: app/templates/passports/series.html:17 app/templates/passports/target.html:9
 msgid "Closed"
@@ -11713,6 +11726,26 @@ msgstr "Carte des aérodromes sélectionnés"
 msgid "Blue markers are selected; grey markers are search results. The list remains available without JavaScript."
 msgstr "Les marqueurs bleus sont sélectionnés ; les gris sont des résultats de recherche. La liste reste disponible sans JavaScript."
 
+#: app/templates/passports/_waypoint_downloads.html:1
+msgid "Waypoint downloads"
+msgstr "Téléchargement des points de cheminement"
+
+#: app/templates/passports/_waypoint_downloads.html:2
+msgid "Downloads contain only open airfields you have not visited in this selection: names, codes and coordinates, without flight tracks or private notes."
+msgstr "Les fichiers contiennent uniquement les aérodromes ouverts que vous n’avez pas visités dans cette sélection : noms, codes et coordonnées, sans traces de vol ni notes privées."
+
+#: app/templates/passports/_waypoint_downloads.html:3
+msgid "Download GPX waypoints"
+msgstr "Exporter les points GPX"
+
+#: app/templates/passports/_waypoint_downloads.html:3
+msgid "Download KML waypoints"
+msgstr "Exporter les points KML"
+
+#: app/templates/passports/_waypoint_downloads.html:4
+msgid "These open, unvisited airfields have no usable coordinates and are omitted. They cannot be distance-filtered."
+msgstr "Ces aérodromes ouverts et non visités n’ont pas de coordonnées exploitables et sont omis. Ils ne peuvent pas être filtrés par distance."
+
 #: app/templates/passports/builder.html:3
 #: app/templates/passports/builder.html:6
 #: app/templates/passports/draft_error.html:5
@@ -11938,12 +11971,12 @@ msgid "Selected airfields"
 msgstr "Aérodromes sélectionnés"
 
 #: app/templates/passports/builder.html:62
-#: app/templates/passports/detail.html:36
+#: app/templates/passports/detail.html:37
 #: app/templates/passports/series.html:17
 #: app/templates/passports/vouchers.html:12
 #: app/templates/passports/vouchers.html:33
 #: app/templates/passports/vouchers.html:40
-#: app/templates/passports/where_next.html:34
+#: app/templates/passports/where_next.html:35
 msgid "Airfield"
 msgstr "Aérodrome"
 
@@ -11957,7 +11990,7 @@ msgid "Manual classifications are shared with other passports in this organisati
 msgstr "Les classifications manuelles sont partagées avec les autres passeports de cette organisation."
 
 #: app/templates/passports/builder.html:63
-#: app/templates/passports/detail.html:37
+#: app/templates/passports/detail.html:38
 #: app/templates/passports/series.html:17
 msgid "No airfields selected yet."
 msgstr "Aucun aérodrome sélectionné pour le moment."
@@ -12142,14 +12175,14 @@ msgstr "Afficher les aérodromes"
 
 #: app/templates/passports/detail.html:30
 #: app/templates/passports/detail.html:34
-#: app/templates/passports/detail.html:36
+#: app/templates/passports/detail.html:37
 #: app/templates/passports/series.html:17
 msgid "Visited by you"
 msgstr "Visité par vous"
 
 #: app/templates/passports/detail.html:30
 #: app/templates/passports/detail.html:34
-#: app/templates/passports/detail.html:36
+#: app/templates/passports/detail.html:37
 #: app/templates/passports/series.html:15
 #: app/templates/passports/series.html:17 app/templates/passports/target.html:9
 msgid "Visited"
@@ -12161,7 +12194,7 @@ msgstr "Pas encore visité par vous"
 
 #: app/templates/passports/detail.html:30
 #: app/templates/passports/detail.html:34
-#: app/templates/passports/detail.html:36
+#: app/templates/passports/detail.html:37
 #: app/templates/passports/series.html:15
 #: app/templates/passports/series.html:17 app/templates/passports/target.html:9
 msgid "Not visited"
@@ -12193,14 +12226,14 @@ msgid "Counts show your recorded full-stop visits in this passport. Repeat-visit
 msgstr "Les nombres correspondent à vos visites enregistrées avec arrêt complet dans ce passeport. Les visites répétées peuvent être incomplètes."
 
 #: app/templates/passports/detail.html:34
-#: app/templates/passports/detail.html:36
+#: app/templates/passports/detail.html:37
 #: app/templates/passports/series.html:15
 #: app/templates/passports/series.html:17
 msgid "Visited by friends"
 msgstr "Visité par des amis"
 
 #: app/templates/passports/detail.html:34
-#: app/templates/passports/detail.html:36
+#: app/templates/passports/detail.html:37
 #: app/templates/passports/series.html:15
 #: app/templates/passports/series.html:17 app/templates/passports/target.html:9
 msgid "Recorded visits"
@@ -12228,21 +12261,21 @@ msgstr "Contour en pointillés : fermé."
 msgid "Marker radius: 6 px for no visits, 8 px for one, increasing to at most 18 px for frequent visits. Exact counts are in the list and map popups."
 msgstr "Rayon des marqueurs : 6 px sans visite, 8 px pour une visite, jusqu’à 18 px pour les visites fréquentes. Les nombres exacts figurent dans la liste et les fenêtres de la carte."
 
-#: app/templates/passports/detail.html:36
+#: app/templates/passports/detail.html:37
 msgid "Your first visit"
 msgstr "Votre première visite"
 
-#: app/templates/passports/detail.html:36
+#: app/templates/passports/detail.html:37
 #: app/templates/passports/target.html:10
 msgid "First visit"
 msgstr "Première visite"
 
-#: app/templates/passports/detail.html:36
+#: app/templates/passports/detail.html:37
 #: app/templates/passports/series.html:17
 msgid "No coordinates — shown in the list only."
 msgstr "Sans coordonnées — affiché uniquement dans la liste."
 
-#: app/templates/passports/detail.html:37
+#: app/templates/passports/detail.html:38
 msgid "No airfields match this view."
 msgstr "Aucun aérodrome ne correspond à cette vue."
 
@@ -13129,12 +13162,12 @@ msgid "Filter mode"
 msgstr "Mode de filtrage"
 
 #: app/templates/passports/where_next.html:17
-#: app/templates/passports/where_next.html:34
+#: app/templates/passports/where_next.html:35
 msgid "Distance (NM)"
 msgstr "Distance en NM"
 
 #: app/templates/passports/where_next.html:17
-#: app/templates/passports/where_next.html:34
+#: app/templates/passports/where_next.html:35
 msgid "Still-air time (minutes)"
 msgstr "Durée sans vent (minutes)"
 
@@ -13214,7 +13247,7 @@ msgstr "Les objectifs sans coordonnées ne peuvent pas être filtrés par distan
 msgid "Suitability unknown: no licensed runway or restriction dataset is loaded. Check current aerodrome information before planning a flight."
 msgstr "Adéquation inconnue : aucune donnée autorisée sur les pistes ou restrictions n’est chargée. Consultez les informations d’aérodrome actuelles avant de planifier un vol."
 
-#: app/templates/passports/where_next.html:34
+#: app/templates/passports/where_next.html:35
 msgid "No open, unvisited airfields match these inputs."
 msgstr "Aucun aérodrome ouvert non visité ne correspond à ces critères."
 

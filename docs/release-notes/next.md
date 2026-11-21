@@ -12,7 +12,15 @@ owners can remove them. Private flight and visit notes stay separate. Your
 personal data export includes only your own contributions, including comments
 retained after leaving the group. Access is checked when opening or posting.
 
+Take your next destinations with you: GPX and KML downloads contain the open
+airfields you have not visited in your current passport selection or **Where
+next?** results. Fields without usable coordinates are listed separately.
+Downloads contain names, codes and coordinates, without flight tracks, private
+notes or friends’ details.
+
 **Maintenance**
 
 - Background navigation prefetches no longer create competing sign-in forms,
   which could replace the login CSRF cookie while switching accounts.
+
+- Passport browser checks also exercise personal ZIP downloads outside the signup flow.

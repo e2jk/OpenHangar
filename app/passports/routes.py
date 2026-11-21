@@ -4,9 +4,11 @@ import copy
 import json
 from datetime import date
 from typing import Any
+from urllib.parse import urlencode
 
 from extensions import _rate_limiting_disabled, limiter
 from flask import (
+    Response,
     abort,
     flash,
     make_response,
@@ -46,6 +48,7 @@ from passports import (
     passports_bp,
     series_routes,  # Register linked-edition views.
     voucher_routes,  # Register private voucher accounting.
+    waypoints,
 )
 from passports.access import (
     accessible_group_series,
@@ -151,6 +154,14 @@ def detail(passport_id: int) -> ResponseReturnValue:
             or (stats is not None and participant in stats["by_target"][row["id"]])
         )
     ]
+    download, waypoint_context = _waypoint_view(
+        passport.id,
+        rows,
+        ("state", "participant", "frequency"),
+        endpoint="passports.detail",
+    )
+    if download is not None:
+        return download
     map_rows = [
         {
             key: float(row[key])
@@ -180,6 +191,7 @@ def detail(passport_id: int) -> ResponseReturnValue:
         can_manage = False
     return render_template(
         "passports/detail.html",
+        **waypoint_context,
         passport=passport,
         targets=rows,
         progress=progress,
@@ -192,6 +204,52 @@ def detail(passport_id: int) -> ResponseReturnValue:
         participant=participant,
         today=date.today(),
     )
+
+
+def _waypoint_view(
+    passport_id: int,
+    rows: list[dict[str, Any]],
+    keys: tuple[str, ...],
+    *,
+    endpoint: str,
+    missing_rows: list[dict[str, Any]] | None = None,
+    enabled: bool = True,
+) -> tuple[Response | None, dict[str, Any]]:
+    selection = waypoints.select(rows, missing_rows=missing_rows)
+    fmt = request.args.get("download")
+    if fmt is not None:
+        if not enabled:
+            abort(
+                400,
+                description=_(
+                    "Choose a reference airfield and correct the destination filters before downloading."
+                ),
+            )
+        if fmt not in waypoints.FORMATS:
+            abort(400)
+        response = Response(
+            waypoints.document(selection, fmt), mimetype=waypoints.FORMATS[fmt]
+        )
+        response.headers["Content-Disposition"] = (
+            f'attachment; filename="passport-{passport_id}-unvisited.{fmt}"'
+        )
+        response.headers["Cache-Control"] = "private, no-store"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        return response, {}
+    # Never pass arbitrary query keys to url_for: its reserved options can
+    # change the URL's host or scheme. These are the view's own input names.
+    query = {key: request.args[key][:100] for key in keys if key in request.args}
+    links = (
+        {
+            fmt: url_for(endpoint, passport_id=passport_id)
+            + "?"
+            + urlencode({**query, "download": fmt})
+            for fmt in waypoints.FORMATS
+        }
+        if enabled
+        else {}
+    )
+    return None, {"waypoint_links": links, "omitted_waypoints": selection.omitted}
 
 
 def _state_matches(
@@ -743,6 +801,29 @@ def where_next(passport_id: int) -> ResponseReturnValue:
     rows, missing = discovery.nearby(
         progress, origin, speed, limit, mode, range_nm if range_enabled else None
     )
+    download, waypoint_context = _waypoint_view(
+        passport.id,
+        rows,
+        (
+            "aircraft",
+            "origin",
+            "q",
+            "start",
+            "mode",
+            "speed",
+            "limit",
+            "usable_fuel",
+            "flow",
+            "reserve",
+            "range",
+            "trip",
+        ),
+        endpoint="passports.where_next",
+        missing_rows=progress["rows"],
+        enabled=origin is not None and not errors,
+    )
+    if download is not None:
+        return download
     radius = (
         limit * speed / 60
         if mode == "time" and speed
@@ -772,6 +853,7 @@ def where_next(passport_id: int) -> ResponseReturnValue:
     }
     return render_template(
         "passports/where_next.html",
+        **waypoint_context,
         passport=passport,
         aircraft=aircraft,
         selected=selected,

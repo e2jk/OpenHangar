@@ -224,6 +224,12 @@ or change its supporting flight. Removing that link keeps the visit as an
 independent manual entry; editing the visit never changes the flight itself.
 Archived editions stay read-only.
 
+Use **Download GPX waypoints** or **Download KML waypoints** to take open,
+unvisited destinations into a navigation or mapping app. The download follows
+your current edition filters or the results in **Where next?**. Airfields without
+usable coordinates are listed separately and omitted. Files contain names,
+codes and coordinates, without flight tracks, visit notes or friends’ details.
+
 Your own logbook arrivals fill the passport automatically; dates, crew membership
 and edits are checked live. Arrivals are assumed full-stop: open an airfield to
 exclude a touch-and-go or low approach. You can also record a dated manual visit,

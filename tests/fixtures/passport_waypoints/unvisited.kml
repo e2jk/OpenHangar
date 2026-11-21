@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document><name>Unvisited airfields</name><Placemark><name>TEST</name><description>Example airfield</description><Point><coordinates>4.50000000,50.50000000</coordinates></Point></Placemark></Document>
+</kml>

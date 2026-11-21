@@ -6,6 +6,7 @@ import zipfile
 from collections.abc import Iterator
 from typing import Any
 from uuid import uuid4
+from xml.etree import ElementTree as ET
 
 import pytest
 from playwright.sync_api import BrowserContext, Page, expect
@@ -240,6 +241,22 @@ def test_passport_destination_discovery(
     assert page.evaluate(
         "document.documentElement.scrollWidth <= window.innerWidth + 1"
     )
+    gpx_link = page.get_by_role("link", name="Download GPX waypoints", exact=True)
+    expect(gpx_link).to_have_attribute("hx-boost", "false")
+    discovery_url = page.url
+    with page.expect_download() as downloaded:
+        gpx_link.click()
+    gpx_path = downloaded.value.path()
+    assert gpx_path is not None and downloaded.value.suggested_filename.endswith(
+        "-unvisited.gpx"
+    )
+    points = (
+        ET.parse(gpx_path).getroot().findall("{http://www.topografix.com/GPX/1/1}wpt")
+    )
+    assert [
+        point.findtext("{http://www.topografix.com/GPX/1/1}name") for point in points
+    ] == [destination]
+    assert page.url == discovery_url
     browser = page.context.browser
     assert browser is not None
     context = browser.new_context(java_script_enabled=False, service_workers="block")
@@ -255,6 +272,17 @@ def test_passport_destination_discovery(
                 "No open, unvisited airfields match these inputs.", exact=True
             )
         ).to_be_visible()
+        with plain.expect_download() as downloaded:
+            plain.get_by_role("link", name="Download KML waypoints", exact=True).click()
+        kml_path = downloaded.value.path()
+        assert kml_path is not None and downloaded.value.suggested_filename.endswith(
+            "-unvisited.kml"
+        )
+        assert (
+            not ET.parse(kml_path)
+            .getroot()
+            .findall(".//{http://www.opengis.net/kml/2.2}Placemark")
+        )
     finally:
         context.close()
     page.goto(passport_url)
@@ -937,3 +965,22 @@ def test_invited_friend_registration_without_javascript(
     page.get_by_role("link", name="Delete passport", exact=True).click()
     page.get_by_role("button", name="Delete passport", exact=True).click()
     page.wait_for_url(live_server_url + "/passports/")
+
+
+def test_passport_data_download_stays_outside_htmx(
+    passport_page: Page, live_server_url: str
+) -> None:
+    page = passport_page
+    page.goto(live_server_url + "/passports/")
+    link = page.get_by_role("link", name="Export my passport data", exact=True)
+    expect(link).to_have_attribute("hx-boost", "false")
+    with page.expect_download() as downloaded:
+        link.click()
+    archive_path = downloaded.value.path()
+    assert archive_path is not None
+    assert downloaded.value.suggested_filename == "openhangar-passports.zip"
+    with zipfile.ZipFile(archive_path) as archive:
+        exported = json.loads(archive.read("passport-data.json"))
+    assert exported["format"] == "openhangar-passport-data"
+    assert exported["version"] == 1 and isinstance(exported["comments"], list)
+    assert page.url == live_server_url + "/passports/"
