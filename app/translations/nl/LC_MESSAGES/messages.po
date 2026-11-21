@@ -3183,6 +3183,94 @@ msgstr "De maker van de collectie moet bewerkingsrechten behouden."
 msgid "The creator must transfer or delete the collection before leaving."
 msgstr "De maker moet de collectie overdragen of verwijderen voordat die de collectie verlaat."
 
+#: app/places/coordinates.py:37
+msgid "Enter valid latitude and longitude coordinates."
+msgstr "Voer een geldige breedtegraad en lengtegraad in."
+
+#: app/places/coordinates.py:97
+msgid "Paste decimal or DMS coordinates, or a map link containing coordinates."
+msgstr "Plak decimale coördinaten of graden, minuten en seconden, of een kaartlink met coördinaten."
+
+#: app/places/management.py:41
+msgid "A place field is too long."
+msgstr "Een veld van de plaats is te lang."
+
+#: app/places/management.py:44
+msgid "Enter a place name."
+msgstr "Voer een plaatsnaam in."
+
+#: app/places/management.py:57
+msgid "Enter a full http or https website address."
+msgstr "Voer een volledig websiteadres in dat begint met http of https."
+
+#: app/places/management.py:72
+msgid "Use tag names of at most 80 characters."
+msgstr "Gebruik tagnamen van maximaal 80 tekens."
+
+#: app/places/management.py:126
+msgid "Use Move to change a place's collection."
+msgstr "Gebruik Verplaatsen om een plaats naar een andere collectie te verplaatsen."
+
+#: app/places/management.py:174
+msgid "The place photo could not be copied."
+msgstr "De foto van de plaats kon niet worden gekopieerd."
+
+#: app/places/management.py:189
+msgid "Only the place owner can move it."
+msgstr "Alleen de eigenaar van de plaats kan deze verplaatsen."
+
+#: app/places/management.py:200
+msgid "Every visitor must belong to the destination collection. Copy this place instead."
+msgstr "Elke bezoeker moet lid zijn van de doelcollectie. Maak anders een kopie van deze plaats."
+
+#: app/places/management.py:244
+msgid "Only the place owner or collection creator can permanently delete it."
+msgstr "Alleen de eigenaar van de plaats of de maker van de collectie kan deze definitief verwijderen."
+
+#: app/places/tags.py:11
+msgid "Town"
+msgstr "Stad"
+
+#: app/places/tags.py:12
+msgid "Attraction"
+msgstr "Bezienswaardigheid"
+
+#: app/places/tags.py:13
+msgid "Restaurant"
+msgstr "Restaurant"
+
+#: app/places/tags.py:14 app/templates/flights/list.html:184
+msgid "Nature"
+msgstr "Aard"
+
+#: app/places/tags.py:15
+msgid "Viewpoint"
+msgstr "Uitkijkpunt"
+
+#: app/places/tags.py:16
+msgid "Museum"
+msgstr "Museum"
+
+#: app/places/tags.py:17
+msgid "Beach"
+msgstr "Strand"
+
+#: app/places/tags.py:18
+msgid "Overnight stay"
+msgstr "Overnachting"
+
+#: app/places/tags.py:19
+msgid "Family"
+msgstr "Gezin"
+
+#: app/places/tags.py:29 app/places/tags.py:62
+msgid "Tag not found."
+msgstr "Tag niet gevonden."
+
+#: app/places/tags.py:32
+msgid "Enter a tag name of at most 80 characters."
+msgstr "Voer een tagnaam van maximaal 80 tekens in."
+
 #: app/pwa/routes.py:90
 msgid "Aircraft document"
 msgstr "Vliegtuigdocument"
@@ -10643,10 +10731,6 @@ msgstr "Geïmporteerd vanuit pilootlogboek — vluchttijd vereist handmatige inv
 #: app/templates/offline/pilot_logbook.html:30
 msgid "UTC times"
 msgstr "UTC-tijden"
-
-#: app/templates/flights/list.html:184
-msgid "Nature"
-msgstr "Aard"
 
 #: app/templates/flights/list.html:185
 #: app/templates/offline/aircraft_logbook.html:34

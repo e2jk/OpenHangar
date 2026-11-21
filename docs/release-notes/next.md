@@ -70,3 +70,8 @@
   membership controls reading and editing independently of aircraft roles;
   destinations and visit history are retained when a member leaves. The Places
   screens are still being built.
+
+- Prepare the Places editing rules: parse coordinates and supported map links
+  without fetching them, clean uploaded photos, keep independent photo copies,
+  protect visitors when moving destinations, and support tags and a 30-day bin.
+  These services will be connected to the Places screens next.
