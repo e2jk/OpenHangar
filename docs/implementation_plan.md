@@ -2660,12 +2660,16 @@ downgrades and show localised retrieval timestamps.
   normal mobile-friendly form. Existing date/eligibility and read-only guards apply;
   other participants’ evidence, GPS confirmations and logbooks remain protected.
   Data export and the pilot-activation explanation remain below.
-- [ ] Minimal mobile visit form: choose target, date, save; optional note and
+- [x] Minimal mobile visit form: choose target, date, save; optional note and
   edit/delete own manual visits. No access to unrelated instance users, logbooks,
   aircraft or other participants' private evidence; closed/out-of-window visits are
   explained rather than credited. Accessible without a map or complex JS. Below
   the form, unobtrusively offer a glimpse of the electronic logbook and explain
   portable data export and the optional pilot-activation path.
+  *Done:* **Record a visit** (`passports.record_visit`) on the passport page: a
+  plain select/date/note form using the airfield page's validation; edit/delete
+  stay on the airfield page. Below it: data export, and either the pilot logbook
+  or **Start my pilot logbook** for passport-only accounts.
 - [x] Main shared-edition view uses the personalised three-state map, with all
   targets visible by default, group visit frequency, an explicit outline legend,
   and equivalent list labels. Own completion and first-visit dates stay personal.

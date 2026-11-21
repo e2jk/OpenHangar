@@ -6,6 +6,7 @@
 <div class="container py-4">
 <a href="{{ url_for('passports.index') }}">{{ _('Airfield passports') }}</a>
 <h1 class="text-break">{{ passport.title }}</h1>
+{% if can_record_visit %}<a class="btn btn-ac-primary my-2" href="{{ url_for('passports.record_visit', passport_id=passport.id) }}">{{ _('Record a visit') }}</a>{% endif %}
 <a class="btn btn-ac-ghost my-2" href="{{ url_for('passports.print_passport', passport_id=passport.id) }}">{{ _('Print passport') }}</a>
 <a class="btn btn-ac-ghost my-2" href="{{ url_for('passports.voucher_ledger', passport_id=passport.id) }}">{{ _('Vouchers') }}</a>
 <a class="btn btn-ac-ghost my-2" href="{{ url_for('passports.where_next', passport_id=passport.id) }}">{{ _('Where next?') }}</a>

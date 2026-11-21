@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% set no_history_cache = true %}
+{% block title %}{{ _('Record a visit') }} — {{ passport.title }}{% endblock %}
+{% block content %}
+<div class="container py-4 oh-mw-600">
+<a href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ passport.title }}</a>
+<h1 class="page-title">{{ _('Record a visit') }}</h1>
+{% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+<form method="post" class="mb-4">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<label for="visit-target" class="form-label">{{ _('Airfield') }}</label>
+<select id="visit-target" class="form-select" name="target" required>
+<option value="">{{ _('Choose an airfield') }}</option>
+{% for row in targets %}<option value="{{ row.target_id }}" {% if request.form.get('target') == row.target_id|string %}selected{% endif %}>{{ row.name }}{% if row.ident %} ({{ row.ident }}){% endif %}{% if row.is_closed %} · {{ _('Closed') }}{% endif %}{% if row.visited %} · {{ _('Visited') }}{% endif %}</option>{% endfor %}
+</select>
+<label for="visit-date" class="form-label mt-2">{{ _('Visit date') }}</label>
+<input id="visit-date" class="form-control" type="date" name="visit_date" value="{{ request.form.get('visit_date', today) }}" required>
+<label for="visit-note" class="form-label mt-2">{{ _('Note (optional)') }}</label>
+<textarea id="visit-note" class="form-control" name="note" maxlength="8000">{{ request.form.get('note', '') }}</textarea>
+<p class="form-text">{{ _('Only visits within the passport dates and not in the future count. You can edit or delete a visit later from its airfield page.') }}</p>
+<button class="btn btn-ac-primary">{{ _('Save visit') }}</button>
+</form>
+<section aria-labelledby="visit-logbook-heading" class="text-muted">
+<h2 id="visit-logbook-heading" class="h6">{{ _('Your records') }}</h2>
+<p>{{ _('Your visits stay yours: export them at any time with your other passport data.') }} <a href="{{ url_for('passports.export_account') }}" hx-boost="false">{{ _('Export my passport data') }}</a></p>
+{% if is_pilot or personal_logbook %}<p>{{ _('Flights in your pilot logbook fill this passport automatically.') }} <a href="{{ url_for('pilots.logbook') }}">{{ _('Open my pilot logbook') }}</a></p>
+{% elif passport_only %}<p>{{ _('Fly yourself? Keep your own pilot logbook on this account and your logged arrivals fill your passports automatically.') }} <a href="{{ url_for('passports.start_logbook') }}">{{ _('Start my pilot logbook') }}</a></p>{% endif %}
+</section>
+</div>
+{% endblock %}
