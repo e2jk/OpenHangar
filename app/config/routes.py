@@ -736,6 +736,9 @@ def update_profile() -> ResponseReturnValue:
     policy = request.form.get("rental_authorization_policy", "").strip()
     if policy in ("off", "warn", "block"):
         profile.rental_authorization_policy = policy
+    logbook_policy = request.form.get("personal_logbook_policy", "").strip()
+    if logbook_policy in ("admin", "self"):
+        profile.personal_logbook_policy = logbook_policy
 
     if profile.operating_model == OperatingModel.SHARED_OWNERSHIP:
         overdue_raw = request.form.get("co_owner_overdue_days", "").strip()

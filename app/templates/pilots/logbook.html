@@ -17,13 +17,13 @@
       <p class="page-sub">{{ _('Personal flight record — visible only to you') }}</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-      <a href="{{ url_for('flights.log_flight') }}" class="btn btn-ac-primary">
+      <a href="{{ url_for('pilots.new_entry') if personal_logbook else url_for('flights.log_flight') }}" class="btn btn-ac-primary">
         <i class="bi bi-plus-circle me-1"></i>{{ _('Add Entry') }}
       </a>
       {# On phones these secondary actions collapse into the "More" dropdown
          below instead of stacking across several rows above the logbook
          content. #}
-      <a href="{{ url_for('offline.pilot_logbook') }}" class="btn btn-ac-ghost d-none d-lg-inline-block">
+      {% if not personal_logbook %}<a href="{{ url_for('offline.pilot_logbook') }}" class="btn btn-ac-ghost d-none d-lg-inline-block">
         <i class="bi bi-cloud-arrow-down me-1"></i>{{ _('Offline logbook') }}
       </a>
       <a href="{{ url_for('pilots.import_upload') }}" class="btn btn-ac-ghost d-none d-lg-inline-block">
@@ -34,7 +34,7 @@
       </a>
       <a href="{{ url_for('pilots.pilot_tracks') }}" class="btn btn-ac-ghost d-none d-lg-inline-block">
         <i class="bi bi-map me-1"></i>{{ _('Tracks') }}
-      </a>
+      </a>{% endif %}
       <a href="{{ url_for('pilots.pilot_stats') }}" class="btn btn-ac-ghost d-none d-lg-inline-block">
         <i class="bi bi-bar-chart-line me-1"></i>{{ _('Statistics') }}
       </a>
@@ -42,34 +42,34 @@
          class="btn btn-ac-ghost d-none d-lg-inline-block" title="{{ other_order_label }}">
         <i class="bi {{ other_order_icon }} me-1"></i>{{ other_order_label }}
       </a>
-      <a href="{{ url_for('pilots.profile') }}" class="btn btn-ac-ghost d-none d-lg-inline-block">
+      {% if not personal_logbook %}<a href="{{ url_for('pilots.profile') }}" class="btn btn-ac-ghost d-none d-lg-inline-block">
         <i class="bi bi-person-badge me-1"></i>{{ _('Pilot Profile') }}
       </a>
       <a href="{{ url_for('pilots.minimums_view') }}" class="btn btn-ac-ghost d-none d-lg-inline-block">
         <i class="bi bi-clipboard2-check me-1"></i>{{ _('Personal minimums') }}
-      </a>
+      </a>{% endif %}
       <div class="dropdown d-lg-none">
         <button class="btn btn-ac-ghost dropdown-toggle" type="button"
                 data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           <i class="bi bi-three-dots me-1"></i>{{ _('More') }}
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
-          <li><a class="dropdown-item" href="{{ url_for('offline.pilot_logbook') }}">
+          {% if not personal_logbook %}<li><a class="dropdown-item" href="{{ url_for('offline.pilot_logbook') }}">
             <i class="bi bi-cloud-arrow-down me-2"></i>{{ _('Offline logbook') }}</a></li>
           <li><a class="dropdown-item" href="{{ url_for('pilots.import_upload') }}">
             <i class="bi bi-cloud-upload me-2"></i>{{ _('Import') }}</a></li>
           <li><a class="dropdown-item" href="{{ url_for('pilots.pilot_gps_import_upload') }}">
             <i class="bi bi-geo-alt me-2"></i>{{ _('Import GPS') }}</a></li>
           <li><a class="dropdown-item" href="{{ url_for('pilots.pilot_tracks') }}">
-            <i class="bi bi-map me-2"></i>{{ _('Tracks') }}</a></li>
+            <i class="bi bi-map me-2"></i>{{ _('Tracks') }}</a></li>{% endif %}
           <li><a class="dropdown-item" href="{{ url_for('pilots.pilot_stats') }}">
             <i class="bi bi-bar-chart-line me-2"></i>{{ _('Statistics') }}</a></li>
           <li><a class="dropdown-item" href="{{ url_for('pilots.logbook', order=other_order, per_page=per_page, **filters) }}">
             <i class="bi {{ other_order_icon }} me-2"></i>{{ other_order_label }}</a></li>
-          <li><a class="dropdown-item" href="{{ url_for('pilots.profile') }}">
+          {% if not personal_logbook %}<li><a class="dropdown-item" href="{{ url_for('pilots.profile') }}">
             <i class="bi bi-person-badge me-2"></i>{{ _('Pilot Profile') }}</a></li>
           <li><a class="dropdown-item" href="{{ url_for('pilots.minimums_view') }}">
-            <i class="bi bi-clipboard2-check me-2"></i>{{ _('Personal minimums') }}</a></li>
+            <i class="bi bi-clipboard2-check me-2"></i>{{ _('Personal minimums') }}</a></li>{% endif %}
         </ul>
       </div>
     </div>
@@ -362,7 +362,7 @@
   <div class="ac-form-card p-4 text-center">
     <i class="bi bi-journal-x fs-1 text-muted mb-3 d-block"></i>
     <p class="text-muted mb-3">{% if filters %}{{ _('No flight matches these filters.') }}{% else %}{{ _('No logbook entries yet.') }}{% endif %}</p>
-    <a href="{{ url_for('flights.log_flight') }}" class="btn btn-ac-primary">
+    <a href="{{ url_for('pilots.new_entry') if personal_logbook else url_for('flights.log_flight') }}" class="btn btn-ac-primary">
       <i class="bi bi-plus-circle me-1"></i>{{ _('Add First Entry') }}
     </a>
   </div>

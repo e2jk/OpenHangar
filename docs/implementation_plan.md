@@ -2564,11 +2564,17 @@ downgrades and show localised retrieval timestamps.
   exposes unrelated instance data. Retain existing authentication, password hashing,
   email verification, login rate limits and 2FA support. Invitation registration
   is narrowly enabled for an active passport invitation, not general tenant signup.
-- [ ] Offer "Start my pilot logbook" as a later activation on the same account,
+- [x] Offer "Start my pilot logbook" as a later activation on the same account,
   preserving identity, visits and group membership. Respect the instance owner's
   pilot-activation policy; enabling personal pilot features does not grant aircraft,
   reservation, maintenance or other pilots' logbook access. No account duplication
   or migration of anonymous/secret-link visits is needed.
+  *Done:* a `logbook` access scope (still role-less) adds only the account's own
+  logbook entries, statistics and entry-form lookups to the passport allowlist.
+  `TenantProfile.personal_logbook_policy` lets only administrators enable it
+  (default, from the user list) or the account holder too. Imports, GPS-import
+  review, tracks, minimums, the pilot profile and the offline logbook stay
+  denied until each is audited for tenant data.
 - [ ] Invitations use high-entropy tokens hashed at rest, with owner copy/replace/
   disable controls and optional expiry. Redact tokens from logs, avoid referrer
   leakage, indexing and caching, and rate-limit registration/join attempts. Recheck

@@ -36,6 +36,14 @@ private until you share them, are never public, and **Stop sharing with the
 group** hides them again straight away. Uploading a new photo makes it private
 again.
 
+Friends with a passport-only account who fly can now keep their own pilot
+logbook on the same account. Choose **Start my pilot logbook** on the passports
+page: flights they log fill their passports automatically, and the logbook
+gives no access to your aircraft, reservations, maintenance or other pilots'
+logbooks. By default an administrator enables it from the user list
+(**Enable personal logbook**); a new setting in **Configuration** lets account
+holders start it themselves.
+
 **Maintenance**
 
 - Background navigation prefetches no longer create competing sign-in forms,

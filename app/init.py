@@ -1002,9 +1002,10 @@ def create_app() -> Flask:
                 slot = db.session.get(DemoSlot, slot_id)
                 if slot:
                     demo_display_id = slot.display_id
-        from services.account_scope import restricted
+        from services.account_scope import personal_logbook, restricted
 
         _restricted_account = bool(_in_request and restricted(current_membership()))
+        _personal_logbook = bool(_in_request and personal_logbook(current_membership()))
         role = current_user_role() if _in_request else None
         # Phase 23: is_pilot/is_maint also enabled by per-user capability flags
         uid = session.get("user_id") if _in_request else None
@@ -1102,6 +1103,8 @@ def create_app() -> Flask:
         return {
             "has_passports": _has_passports,
             "passport_only": _restricted_account,
+            # A passport-only account that also keeps its own pilot logbook.
+            "personal_logbook": _personal_logbook,
             "logged_in": bool(uid),
             "has_users": User.query.count() > 0,
             "flask_env": flask_env,

@@ -46,6 +46,7 @@ from passports import (
     groups,
     invitation_routes,  # Register edition admission views.
     lifecycle,  # Register transaction-safe file cleanup.
+    logbook_routes,  # Register personal pilot-logbook activation.
     passports_bp,
     photo_sharing,
     printing,
@@ -81,6 +82,7 @@ __all__ = [
     "discussion_routes",
     "invitation_routes",
     "lifecycle",
+    "logbook_routes",
     "passports_bp",
     "series_routes",
     "voucher_routes",

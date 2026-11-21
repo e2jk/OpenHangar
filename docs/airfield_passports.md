@@ -441,7 +441,8 @@ instance-administrator flags do not bypass a restricted membership. Navigation
 hides fleet features, and the home page leads to passports. Notification delivery
 and preferences exclude fleet events even when those global flags were set.
 
-Changing membership scope revokes existing authenticated sessions. The next
+Changing membership scope revokes existing authenticated sessions, except the
+widening to a personal pilot logbook described below. The next
 authenticated request clears the retired login and its offline identity instead
 of reusing its broader privileges. An organisation owner can
 deliberately assign a normal tenant role through user management, making that
@@ -450,7 +451,29 @@ An older schema cannot represent a role-less membership: the migration refuses a
 downgrade while restricted memberships exist, rather than silently granting a role.
 
 Invitation-based friend accounts use this authorization boundary for signup and
-email verification. Later personal-pilot activation remains a separate increment.
+email verification.
+
+### Personal pilot logbook on a passport-only account
+
+**Start my pilot logbook** (`passports.start_logbook`) moves the same
+membership from the `passport` scope to `logbook`, keeping the account, its
+visits and group memberships. It still has no tenant role: the allowlist
+(`services/account_scope.LOGBOOK_ENDPOINTS`) adds only the account's own
+logbook list, entry add/edit/delete/view, statistics, the GPS-file autofill of
+the entry form and the airport/aircraft-type lookups. Logbook import, GPS-import
+review, tracks, personal minimums, the pilot profile, the offline logbook and
+every aircraft, flight, reservation and maintenance page stay denied, and
+aircraft queries remain empty for any non-full scope. Own entries are
+standalone flights, so their arrivals fill passports like any pilot's.
+
+The instance owner sets **Personal pilot logbooks for passport-only accounts**
+in the configuration (`TenantProfile.personal_logbook_policy`): by default only
+an administrator enables a logbook, from the user list (**Enable personal
+logbook** / **Remove personal logbook access**); with the other choice the
+account holder may also start it. View-only users cannot start one.
+Activation is logged and keeps the current login; removal keeps the entries
+but revokes the account's sessions like any other scope change. The migration's
+downgrade turns personal-logbook memberships back into passport-only ones.
 Passport-only accounts can use discovery with catalogue reads limited to public
 data and authorised own/group airfields, and build their own collections through
 scoped catalogue writes. Joining a group never grants fleet access.

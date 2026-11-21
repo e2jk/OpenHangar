@@ -165,6 +165,15 @@
             {% endif %}
           </div>
           <div class="mb-3">
+            <label class="form-label fw-semibold" for="personal_logbook_policy">{{ _('Personal pilot logbooks for passport-only accounts') }}</label>
+            {% set _lpol = tenant_profile.personal_logbook_policy if tenant_profile else 'admin' %}
+            <select name="personal_logbook_policy" id="personal_logbook_policy" class="form-select form-select-sm" aria-describedby="personal-logbook-policy-help">
+              <option value="admin" {% if _lpol == 'admin' %}selected{% endif %}>{{ _('Only an administrator enables them, from the user list') }}</option>
+              <option value="self" {% if _lpol == 'self' %}selected{% endif %}>{{ _('Account holders may also start their own') }}</option>
+            </select>
+            <p class="form-text mt-1 mb-0" id="personal-logbook-policy-help">{{ _('A personal logbook holds only that person’s own flights. It gives no access to aircraft, reservations, maintenance or other pilots’ logbooks.') }}</p>
+          </div>
+          <div class="mb-3">
             <div class="form-check">
               <input class="form-check-input" type="checkbox" name="require_totp" id="require_totp"
                      {% if tenant and tenant.require_totp %}checked{% endif %}>

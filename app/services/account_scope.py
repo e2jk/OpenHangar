@@ -33,6 +33,23 @@ PASSPORT_ENDPOINTS = frozenset(
         "passports.archive_passport",
         "passports.delete_passport",
         "passports.link_series",
+        "passports.start_logbook",
+    }
+)
+# A personal pilot logbook ('logbook' scope): only the account's own entries.
+# Imports, GPS-import review, tracks, minimums and the pilot profile stay out
+# until each has been checked for tenant data; aircraft flights stay out too.
+LOGBOOK_ENDPOINTS = frozenset(
+    {
+        "pilots.logbook",
+        "pilots.new_entry",
+        "pilots.edit_entry",
+        "pilots.delete_entry",
+        "pilots.view_entry",
+        "pilots.pilot_stats",
+        "flights.parse_gps_api",
+        "airport_search",
+        "aircraft_type_search",
     }
 )
 ACCOUNT_ENDPOINTS = frozenset(
@@ -60,6 +77,10 @@ def restricted(membership: TenantUser | None) -> bool:
     return membership is not None and membership.access_scope != "full"
 
 
+def personal_logbook(membership: TenantUser | None) -> bool:
+    return membership is not None and membership.access_scope == "logbook"
+
+
 def enforce() -> ResponseReturnValue | None:
     if (
         request.endpoint == "static"
@@ -69,6 +90,9 @@ def enforce() -> ResponseReturnValue | None:
         return None
     if request.endpoint == "index":
         return redirect(url_for("passports.index"))
-    if request.endpoint not in PASSPORT_ENDPOINTS | ACCOUNT_ENDPOINTS:
+    allowed = PASSPORT_ENDPOINTS | ACCOUNT_ENDPOINTS
+    if personal_logbook(current_membership()):
+        allowed |= LOGBOOK_ENDPOINTS
+    if request.endpoint not in allowed:
         abort(403)
     return None

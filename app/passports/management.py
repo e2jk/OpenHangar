@@ -40,7 +40,7 @@ def require_actor(tenant_id: int, user_id: int, *, creating: bool = False) -> Us
     if user is None or not user.is_active or user.view_only or membership is None:
         raise BuilderError(_("You cannot manage passports with this account."), 403)
     if creating and not (
-        membership.access_scope == "passport"
+        membership.access_scope in ("passport", "logbook")
         or user.is_pilot
         or membership.role
         in (Role.ADMIN, Role.OWNER, Role.PILOT, Role.STUDENT, Role.INSTRUCTOR)
