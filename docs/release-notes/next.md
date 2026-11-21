@@ -1,4 +1,4 @@
-# Airfield tips and questions for your passport group
+# Airfield passports complete: groups, public links and logbooks
 
 Group passports now have a conversation for each airfield. Ask about an approach
 before your first visit, share flying tips or recommend a restaurant nearby.
@@ -56,6 +56,15 @@ photo credit. The public list and map show month/year dates, with a frequency
 toggle and a printable view; notes, flights, aircraft registrations and contact
 details stay private. Withdrawing permission or revoking the link stops new
 access immediately, including photo requests.
+
+**Security:** a pilot who is also a passport-only friend in another
+organisation could, during a logbook import, be offered that organisation's
+aircraft flights as possible matches, and an administrator's logbook backfill
+could attach their personal flights to its aircraft. Only organisations where
+the pilot has full access are considered now.
+
+The personal passport data export now also includes your group and public
+sharing choices. Signed-in passport-only accounts can read `robots.txt` again.
 
 **Maintenance**
 
