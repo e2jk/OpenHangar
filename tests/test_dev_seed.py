@@ -93,7 +93,37 @@ class TestDevSeedEndToEnd:
                 "Belgian airfields",
                 "Landing voucher booklet",
                 "Training airfields",
+                "Flying friends",
             }
+            # The group passport mixes full accounts and a passport-only friend.
+            from models import (
+                PassportInvitation,
+                PassportParticipant,
+                PassportVisit,
+                TenantUser,
+            )
+
+            friend = User.query.filter_by(email="friend@openhangar.dev").one()
+            friend_tu = TenantUser.query.filter_by(user_id=friend.id).one()
+            assert friend_tu.access_scope == "passport" and friend_tu.role is None
+            group = max(
+                (p for p in Passport.query if p.title.startswith("Flying friends")),
+                key=lambda p: p.start_date,
+            )
+            assert group.is_group and group.series_id is not None
+            members = {
+                p.user_id
+                for p in PassportParticipant.query.filter_by(passport_id=group.id)
+            }
+            assert friend.id in members and uid in members and len(members) == 3
+            assert (
+                PassportVisit.query.filter_by(
+                    passport_id=group.id, author_user_id=friend.id
+                ).count()
+                == 3
+            )
+            # No invitation link that documentation could expose.
+            assert PassportInvitation.query.count() == 0
             lifetime = passport_progress(passports["Belgian airfields"], uid)
             booklet = passport_progress(passports["Landing voucher booklet"], uid)
             training = passport_progress(passports["Training airfields"], uid)

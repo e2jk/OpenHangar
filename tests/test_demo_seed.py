@@ -12,6 +12,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     DemoSlot,
     Passport,
     PassportAirfieldIdentity,
+    TenantUser,
 )
 
 
@@ -44,9 +45,13 @@ class TestDemoSeedEndToEnd:
             assert DemoSlot.query.count() == 1
             # The wipe removes the first run's passports and airfield
             # identities (referenced by aircraft home airfields) with its
-            # tenant: only the new slot's three passports remain.
+            # tenant: only the new slot's five passports remain (three
+            # personal ones and the two editions of the group passport).
             slot = DemoSlot.query.one()
-            assert Passport.query.count() == 3
+            assert Passport.query.count() == 5
+            # ...and its single passport-only friend, never the first run's.
+            friends = TenantUser.query.filter(TenantUser.access_scope == "passport")
+            assert [tu.tenant_id for tu in friends] == [slot.tenant_id]
             assert {p.tenant_id for p in Passport.query} == {slot.tenant_id}
             assert {f.tenant_id for f in PassportAirfieldIdentity.query} == {
                 slot.tenant_id

@@ -2770,8 +2770,14 @@ downgrades and show localised retrieval timestamps.
   lifetime personal passport, dated edition, closed field, missing-coordinate
   field and contrasting completion states, stamped live from the seeded logbook;
   aircraft/pilot home airfields and cruise speeds; documentation screenshots.
-- [ ] Demo/dev seed, group passport (with 41g): mixed pilot/passport-only group;
+- [x] Demo/dev seed, group passport (with 41g): mixed pilot/passport-only group;
   never expose real invitation links in documentation/screenshots.
+  *Done:* `seed_group_passport` adds "Flying friends", two yearly editions of
+  one group series. The owner and the seeded pilot are stamped live from their
+  logbooks; a passport-only friend (no role, no fleet access) records manual
+  visits and posts a group comment. No invitation is created. Demo re-seeding
+  removes the slot's passport-only friends with its tenant; the dev seed prints
+  the friend's sign-in.
 - [ ] Unit/route tests: date boundaries, both crew slots, invalid flight kinds,
   arrival exclusions, first-visit ties, rollback/edit/delete recalculation, alias
   reuse/ambiguity, closure/reopening, no-target denominator, duplicate imports,

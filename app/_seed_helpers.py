@@ -3820,3 +3820,142 @@ def seed_passports(tenant_id: int, user_id: int, aircraft: list) -> None:
         [field(code) for code in _PASSPORT_TRAINING_CODES],
     )
     db.session.flush()
+
+
+# Manual visits by the passport-only friend of the seeded group, in the
+# current edition: (code, days ago, note).
+_PASSPORT_FRIEND_VISITS = [
+    ("EBSP", 30, None),
+    ("EBZW", 18, "Flew along with a friend — my first visit here."),
+    ("EBKH", 9, None),
+]
+
+
+def seed_group_passport(
+    tenant_id: int,
+    owner_id: int,
+    pilot_id: int | None,
+    friend_email: str,
+    password_hash: str,
+) -> None:
+    """A group passport with a mixed membership (Phase 41g).
+
+    Two yearly editions of one group series: the owner and an optional
+    second pilot earn stamps live from their seeded logbooks, and a
+    passport-only friend (no tenant role, no fleet access) records manual
+    visits and shares a comment. No invitation is created, so no
+    invitation link can appear in documentation or screenshots.
+    Call after seed_pilot_profiles and seed_passports.
+    """
+    from models import PassportAirfieldComment, TenantUser, User
+    from passports import catalogue as cat  # pyright: ignore[reportMissingImports]
+    from passports import editions, evidence, groups  # pyright: ignore[reportMissingImports]
+    from passports.management import (  # pyright: ignore[reportMissingImports]
+        create_personal,
+    )
+
+    by_ident = {row.ident: row for row in cat.load_catalogue()}
+
+    def field(code: str) -> Any:
+        return cat.materialise(tenant_id, by_ident[code])
+
+    friend = User(
+        email=friend_email,
+        password_hash=password_hash,
+        totp_secret=None,
+        is_active=True,
+        name="Demo Passport Friend",
+    )
+    db.session.add(friend)
+    db.session.flush()
+    db.session.add(
+        TenantUser(
+            user_id=friend.id, tenant_id=tenant_id, role=None, access_scope="passport"
+        )
+    )
+
+    def consent(name: str) -> dict[str, str]:
+        return {
+            "series_title": "Flying friends",
+            "display_name": name,
+            "share_visits": "yes",
+            "share_history": "yes",
+        }
+
+    this_year = passport_booklet_year(date.today())
+    series = None
+    editions_made = []
+    for year in (this_year - 1, this_year):
+        edition = create_personal(
+            tenant_id,
+            owner_id,
+            {
+                "title": f"Flying friends {year}",
+                "description": "A fictional group booklet shared by friends.",
+                "edition_label": str(year),
+                "start_date": date(year, 1, 1),
+                "end_date": date(year, 12, 31),
+            },
+        )
+        for order, code in enumerate(_PASSPORT_BOOKLET_CODES):
+            db.session.add(
+                PassportAirfield(
+                    tenant_id=tenant_id,
+                    passport_id=edition.id,
+                    airfield_id=field(code).id,
+                    display_order=order,
+                )
+            )
+        db.session.flush()
+        if series is not None:
+            editions.link(edition, owner_id, series_id=series.id)
+        series = groups.enable(edition, owner_id, consent("Demo Owner"))
+        editions_made.append(edition)
+
+    current = editions_made[-1]
+    members = [(friend.id, "Demo Passport Friend")]
+    if pilot_id is not None:
+        members.insert(0, (pilot_id, "Demo Pilot"))
+    for user_id, name in members:
+        db.session.add(
+            PassportParticipant(
+                passport_id=current.id,
+                user_id=user_id,
+                accepted_at=datetime.now(UTC),
+                display_name=name,
+            )
+        )
+        db.session.flush()
+        groups.consent(current, user_id, consent(name))
+    friend_participant = PassportParticipant.query.filter_by(
+        passport_id=current.id, user_id=friend.id
+    ).one()
+    targets = {
+        row.airfield_id: row.id
+        for row in PassportAirfield.query.filter_by(passport_id=current.id)
+    }
+    for code, days_ago, note in _PASSPORT_FRIEND_VISITS:
+        evidence.add_visit(
+            current,
+            friend_participant,
+            targets[field(code).id],
+            {
+                "visit_date": max(
+                    date(this_year, 1, 1), date.today() - timedelta(days=days_ago)
+                ).isoformat(),
+                "note": note or "",
+            },
+        )
+    db.session.add(
+        PassportAirfieldComment(
+            tenant_id=tenant_id,
+            series_id=series.id,
+            airfield_id=field("EBZW").id,
+            author_user_id=friend.id,
+            author_display_name="Demo Passport Friend",
+            category="nearby",
+            body="The clubhouse terrace serves good pancakes on weekends.",
+            created_at=datetime.now(UTC) - timedelta(days=17),
+        )
+    )
+    db.session.flush()

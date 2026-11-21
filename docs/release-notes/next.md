@@ -78,6 +78,9 @@ airfield page.
   publication permissions. Existing visits and photos remain private; the public
   pages will follow in a separate change.
 
+- The demo and development data now include a group passport shared by two
+  pilots and a friend with a passport-only account, to try the group features.
+
 - The automatic backup check now also restores airfield passports — groups,
   friends' accounts, visits, vouchers, comments and stamp photos — and fails
   if any of them is missing after the restore.
