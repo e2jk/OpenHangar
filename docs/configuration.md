@@ -59,6 +59,7 @@ documented inline in [`docker/.env.example`](../docker/.env.example).
 | [`OPENHANGAR_ALERT_EMAIL_TO`](#openhangar_alert_email_to) | No | — | [Security alerting](#security-alerting) |
 | [`OPENHANGAR_ALERT_WEBHOOK_URL`](#openhangar_alert_webhook_url) | No | — | [Security alerting](#security-alerting) |
 | [`OPENHANGAR_OPENAIP_API_KEY`](#openhangar_openaip_api_key) | No | — | [Maps](#maps) |
+| [`OPENHANGAR_GEOCODER_URL`](#openhangar_geocoder_url) | No | `https://nominatim.openstreetmap.org` | [Maps](#maps) |
 | [`OPENHANGAR_AIRWORTHINESS_EASA_SYNC_HOUR`](#openhangar_airworthiness_easa_sync_hour) | No | *(random 1–5)* | [Airworthiness](#airworthiness) |
 | [`OPENHANGAR_GATUS_ENDPOINT_URL`](#openhangar_gatus_endpoint_url) | No | — | [Monitoring](#monitoring) |
 | [`OPENHANGAR_GATUS_AUTH_HEADER`](#openhangar_gatus_auth_header) | No | — | [Monitoring](#monitoring) |
@@ -676,6 +677,27 @@ airways, airports).
   any value previously saved via the UI.
 - Removing the variable leaves the stored key untouched.
 - Also accepts `OPENHANGAR_OPENAIP_API_KEY_FILE` — see [Secrets from files](#secrets-from-files)
+
+### `OPENHANGAR_GEOCODER_URL`
+
+Address and place-name search (for example when adding a place): the base URL
+of a Nominatim-compatible geocoder.
+
+- **Default:** `https://nominatim.openstreetmap.org`, the public OpenStreetMap
+  service, used within its
+  [usage policy](https://operations.osmfoundation.org/policies/nominatim/):
+  searches only when someone presses Search (never while typing), at most one
+  request per second for the whole instance (shared by all workers), an
+  identifying User-Agent, repeated searches answered from an in-memory cache,
+  and the "© OpenStreetMap contributors" attribution next to the results.
+- **Another server:** set the base URL of your own or a commercial
+  Nominatim-compatible service (`http://` or `https://`, without `/search`),
+  for example `http://nominatim.internal:8080`.
+- **Disable:** set it to an empty value. Address search then says it is turned
+  off; placing the pin on the map and typing coordinates keep working.
+- Searches go from the OpenHangar server, never from the browser: users' IP
+  addresses are not sent to the geocoder. The search text is never logged or
+  stored on disk.
 
 ---
 

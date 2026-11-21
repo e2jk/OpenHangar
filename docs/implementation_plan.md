@@ -2987,6 +2987,14 @@ passport behaviour unchanged.
   empty to disable address search); documented in `docs/configuration.md`.
   Disabled, unreachable or rate-limited geocoder → clear message, map pin and
   coordinates still work; search text is never logged.
+  *Service done (2026-11-22):* `services/geocoding.py` — `search(query,
+  language=…, limit=…) -> list[GeocodeResult]`, `enabled()`, `attribution()`,
+  `GeocoderError` (`reason`: disabled/invalid/busy/unavailable, translated
+  `message`); `OPENHANGAR_GEOCODER_URL` is read into `app.config["GEOCODER_URL"]`;
+  one request per second for the instance through a lock file in
+  `UPLOAD_FOLDER/geocoder_locks` (not backed up); per-worker in-memory cache;
+  documented in `docs/configuration.md`. The Search box, result list and pin
+  drop in the Places form remain (42b/42g, other agent).
 
 ### 42d — Airfield linking
 

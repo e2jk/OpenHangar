@@ -493,6 +493,11 @@ def create_app() -> Flask:
     app.config["UPLOAD_FOLDER"] = os.environ.get(
         "OPENHANGAR_UPLOAD_FOLDER", "/data/uploads"
     )
+    # Address search (services.geocoding): a Nominatim-compatible server,
+    # the public OpenStreetMap one by default; set it empty to turn it off.
+    app.config["GEOCODER_URL"] = os.environ.get(
+        "OPENHANGAR_GEOCODER_URL", "https://nominatim.openstreetmap.org"
+    ).strip()
     app.config["BACKUP_FOLDER"] = os.environ.get(
         "OPENHANGAR_BACKUP_FOLDER", "/data/backups"
     )
