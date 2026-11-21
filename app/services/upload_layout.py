@@ -54,8 +54,13 @@ TILE_CACHE_DIRNAME = "tile_cache"
 # (passports.source_fetch.fetch_slot). Kept, never cleaned up (removing one
 # could let two workers each lock a different file); never backed up.
 PASSPORT_FETCH_LOCKS_DIRNAME = "passport_fetch_locks"
+# The lock file (and last request time) that keeps address search to one
+# geocoder request per second across workers (services.geocoding). Kept,
+# never cleaned up, for the same reason; never backed up.
+GEOCODER_LOCKS_DIRNAME = "geocoder_locks"
 # Top-level folders a backup leaves out: nothing in them is worth restoring.
 NOT_BACKED_UP_DIRNAMES = TEMP_DIRNAMES | {
     TILE_CACHE_DIRNAME,
     PASSPORT_FETCH_LOCKS_DIRNAME,
+    GEOCODER_LOCKS_DIRNAME,
 }

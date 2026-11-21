@@ -60,20 +60,20 @@ msgstr[1] "🎉 Het is vandaag %(n)s jaar geleden dat u uw PPL behaalde!"
 msgid "🎉 Today is the anniversary of your PPL!"
 msgstr "🎉 Vandaag is het de verjaardag van uw PPL!"
 
-#: app/init.py:1169
+#: app/init.py:1174
 #, python-format
 msgid "This upload is too large (maximum %(mb)s MB in total). Please upload the files in smaller batches."
 msgstr "Deze upload is te groot (maximaal %(mb)s MB in totaal). Upload de bestanden in kleinere delen."
 
-#: app/init.py:1196
+#: app/init.py:1201
 msgid "Some text entered is too long, so nothing was saved. Please shorten it and try again."
 msgstr "Een ingevoerde tekst is te lang, dus er is niets opgeslagen. Maak hem korter en probeer het opnieuw."
 
-#: app/flights/form_parsing.py:459 app/init.py:1201
+#: app/flights/form_parsing.py:459 app/init.py:1206
 msgid "A number entered is far too large, so nothing was saved. Please check the values and try again."
 msgstr "Een ingevoerd getal is veel te groot, dus er is niets opgeslagen. Controleer de waarden en probeer het opnieuw."
 
-#: app/init.py:1254
+#: app/init.py:1259
 msgid "The sign-in form had expired. Please sign in again."
 msgstr "Het aanmeldformulier was verlopen. Meld u opnieuw aan."
 
@@ -157,7 +157,7 @@ msgstr "ARC"
 msgid "Manual"
 msgstr "Handleiding"
 
-#: app/aircraft/co_owner_form_parsing.py:73
+#: app/aircraft/co_owner_form_parsing.py:73 app/aircraft/routes.py:732
 msgid "Invalid owner selection."
 msgstr "Ongeldige eigenaarselectie."
 
@@ -216,11 +216,11 @@ msgstr "Kenteken is verplicht."
 msgid "%(reg)s is already used by another aircraft in this hangar (registrations that only differ by spaces or slashes still count as the same, since they'd otherwise share a URL)."
 msgstr "%(reg)s wordt al gebruikt door een ander vliegtuig in deze hangar (registraties die alleen verschillen door spaties of schuine strepen worden als identiek beschouwd, aangezien ze anders dezelfde URL zouden delen)."
 
-#: app/aircraft/routes.py:572 app/aircraft/routes.py:1388
+#: app/aircraft/routes.py:572 app/aircraft/routes.py:1397
 msgid "Manufacturer is required."
 msgstr "Fabrikant is verplicht."
 
-#: app/aircraft/routes.py:574 app/aircraft/routes.py:1390
+#: app/aircraft/routes.py:574 app/aircraft/routes.py:1399
 msgid "Model is required."
 msgstr "Model is verplicht."
 
@@ -253,164 +253,164 @@ msgstr "De brandstoftankcapaciteit moet een positief getal zijn."
 msgid "%(reg)s saved."
 msgstr "%(reg)s opgeslagen."
 
-#: app/aircraft/routes.py:766
+#: app/aircraft/routes.py:775
 msgid "Ownership updated."
 msgstr "Eigendom bijgewerkt."
 
-#: app/aircraft/routes.py:967 app/config/routes.py:1692
+#: app/aircraft/routes.py:976 app/config/routes.py:1692
 msgid "Payment amount must be positive."
 msgstr "Het betalingsbedrag moet positief zijn."
 
-#: app/aircraft/routes.py:970 app/config/routes.py:1695
+#: app/aircraft/routes.py:979 app/config/routes.py:1695
 msgid "Invalid payment amount."
 msgstr "Ongeldig betalingsbedrag."
 
-#: app/aircraft/routes.py:977 app/config/routes.py:1702
+#: app/aircraft/routes.py:986 app/config/routes.py:1702
 msgid "Invalid payment date."
 msgstr "Ongeldige betalingsdatum."
 
-#: app/aircraft/routes.py:988
+#: app/aircraft/routes.py:997
 #, python-format
 msgid "Payment — %(note)s"
 msgstr "Betaling — %(note)s"
 
-#: app/aircraft/routes.py:988
+#: app/aircraft/routes.py:997
 msgid "Payment"
 msgstr "Betaling"
 
-#: app/aircraft/routes.py:999 app/config/routes.py:1725
+#: app/aircraft/routes.py:1008 app/config/routes.py:1725
 msgid "Payment recorded."
 msgstr "Betaling geregistreerd."
 
-#: app/aircraft/routes.py:1029
+#: app/aircraft/routes.py:1038
 msgid "Payment reversed"
 msgstr "Betaling teruggedraaid"
 
-#: app/aircraft/routes.py:1031
+#: app/aircraft/routes.py:1040
 msgid "Entry reversed."
 msgstr "Boeking teruggedraaid."
 
-#: app/aircraft/routes.py:1081
+#: app/aircraft/routes.py:1090
 msgid "Valuation snapshot recorded."
 msgstr "Waarderingsmoment vastgelegd."
 
-#: app/aircraft/routes.py:1228
+#: app/aircraft/routes.py:1237
 #, python-format
 msgid "%(reg)s has been archived — its history stays available, but it no longer appears in the active fleet."
 msgstr "%(reg)s is gearchiveerd — de geschiedenis blijft beschikbaar, maar het toestel verschijnt niet langer in de actieve vloot."
 
-#: app/aircraft/routes.py:1246
+#: app/aircraft/routes.py:1255
 #, python-format
 msgid "%(reg)s is back in the active fleet."
 msgstr "%(reg)s is terug in de actieve vloot."
 
-#: app/aircraft/routes.py:1271
+#: app/aircraft/routes.py:1280
 #, python-format
 msgid "%(reg)s and all its components have been deleted."
 msgstr "%(reg)s en alle onderdelen zijn verwijderd."
 
-#: app/aircraft/routes.py:1316
+#: app/aircraft/routes.py:1325
 #, python-format
 msgid "Engine and propeller added — fill in the details when ready."
 msgid_plural "%(n)s engines and propellers added — fill in the details when ready."
 msgstr[0] "Motor en propeller toegevoegd — vul de details in wanneer u klaar bent."
 msgstr[1] "%(n)s motoren en propellers toegevoegd — vul de details in wanneer u klaar bent."
 
-#: app/aircraft/routes.py:1386
+#: app/aircraft/routes.py:1395
 msgid "Component type is required."
 msgstr "Onderdeeltype is verplicht."
 
-#: app/aircraft/routes.py:1399
+#: app/aircraft/routes.py:1408
 msgid "Time at install must be a positive number."
 msgstr "Uren bij installatie moet een positief getal zijn."
 
-#: app/aircraft/routes.py:1408
+#: app/aircraft/routes.py:1417
 msgid "TBO must be a positive number of hours."
 msgstr "TBO moet een positief aantal uren zijn."
 
-#: app/aircraft/routes.py:1417
+#: app/aircraft/routes.py:1426
 msgid "Last overhaul hours must be a non-negative number."
 msgstr "De uren van de laatste revisie moeten een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:1426 app/refuels/routes.py:69 app/snags/routes.py:68
+#: app/aircraft/routes.py:1435 app/refuels/routes.py:69 app/snags/routes.py:68
 #, python-format
 msgid "%(label)s must be a valid date (YYYY-MM-DD)."
 msgstr "%(label)s moet een geldige datum zijn (JJJJ-MM-DD)."
 
-#: app/aircraft/routes.py:1473
+#: app/aircraft/routes.py:1482
 #, python-format
 msgid "%(make)s %(model)s saved."
 msgstr "%(make)s %(model)s opgeslagen."
 
-#: app/aircraft/routes.py:1497
+#: app/aircraft/routes.py:1506
 #, python-format
 msgid "%(label)s removed."
 msgstr "%(label)s verwijderd."
 
-#: app/aircraft/routes.py:1555
+#: app/aircraft/routes.py:1564
 #, python-format
 msgid "%(field)s must be a positive number."
 msgstr "%(field)s moet een positief getal zijn."
 
-#: app/aircraft/routes.py:1578
+#: app/aircraft/routes.py:1587
 msgid "At least one loading station is required."
 msgstr "Minimaal één laadpunt is vereist."
 
-#: app/aircraft/routes.py:1645
+#: app/aircraft/routes.py:1654
 msgid "W&B configuration saved."
 msgstr "W&B-configuratie opgeslagen."
 
-#: app/aircraft/routes.py:1659 app/aircraft/routes.py:1683
+#: app/aircraft/routes.py:1668 app/aircraft/routes.py:1692
 msgid "Configure W&B envelope first."
 msgstr "Configureer eerst de W&B-envelop."
 
-#: app/aircraft/routes.py:1702
+#: app/aircraft/routes.py:1711
 msgid "A valid date is required."
 msgstr "Een geldige datum is vereist."
 
-#: app/aircraft/routes.py:1717
+#: app/aircraft/routes.py:1726
 #, python-format
 msgid "Volume for %(station)s exceeds tank capacity."
 msgstr "Het volume voor %(station)s overschrijdt de tankinhoud."
 
-#: app/aircraft/routes.py:1725
+#: app/aircraft/routes.py:1734
 #, python-format
 msgid "Volume for %(station)s must be a non-negative number."
 msgstr "Het volume voor %(station)s moet een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:1739
+#: app/aircraft/routes.py:1748
 #, python-format
 msgid "Weight for %(station)s must be a non-negative number."
 msgstr "Het gewicht voor %(station)s moet een niet-negatief getal zijn."
 
-#: app/aircraft/routes.py:1788
+#: app/aircraft/routes.py:1797
 msgid "W&B calculation saved."
 msgstr "W&B-berekening opgeslagen."
 
-#: app/aircraft/routes.py:1817
+#: app/aircraft/routes.py:1826
 msgid "W&B calculation deleted."
 msgstr "W&B-berekening verwijderd."
 
-#: app/aircraft/routes.py:2130 app/pilots/routes.py:2435
+#: app/aircraft/routes.py:2139 app/pilots/routes.py:2435
 msgid "Please select at least one GPS log file."
 msgstr "Selecteer ten minste één GPS-logbestand."
 
-#: app/aircraft/routes.py:2146 app/pilots/routes.py:2464
+#: app/aircraft/routes.py:2155 app/pilots/routes.py:2464
 #, python-format
 msgid "%(fn)s: unsupported file type (use .gpx, .kml or .csv — SkyDemon's .gpx.bin exports work too)."
 msgstr "%(fn)s: niet-ondersteund bestandstype (gebruik .gpx, .kml of .csv — de .gpx.bin-exports van SkyDemon werken ook)."
 
-#: app/aircraft/routes.py:2154 app/pilots/routes.py:2471
+#: app/aircraft/routes.py:2163 app/pilots/routes.py:2471
 #, python-format
 msgid "%(fn)s: file too large (20 MB limit)."
 msgstr "%(fn)s: bestand te groot (limiet 20 MB)."
 
-#: app/aircraft/routes.py:2165 app/pilots/routes.py:2481
+#: app/aircraft/routes.py:2174 app/pilots/routes.py:2481
 #, python-format
 msgid "%(fn)s: %(err)s"
 msgstr "%(fn)s: %(err)s"
 
-#: app/aircraft/routes.py:2203 app/pilots/routes.py:2511
+#: app/aircraft/routes.py:2212 app/pilots/routes.py:2511
 #: app/templates/aircraft/gps_import_review.html:25
 #: app/templates/pilots/gps_import_review.html:24
 #, python-format
@@ -419,37 +419,37 @@ msgid_plural "%(n)s files skipped — no movement detected."
 msgstr[0] "één bestand overgeslagen — geen beweging gedetecteerd."
 msgstr[1] "%(n)s bestanden overgeslagen — geen beweging gedetecteerd."
 
-#: app/aircraft/routes.py:2212 app/pilots/routes.py:2519
+#: app/aircraft/routes.py:2221 app/pilots/routes.py:2519
 msgid "No valid GPS files to import."
 msgstr "Geen geldige GPS-bestanden om te importeren."
 
-#: app/aircraft/routes.py:2260 app/pilots/routes.py:2608
+#: app/aircraft/routes.py:2269 app/pilots/routes.py:2608
 #, python-format
 msgid "Could not read %(fn)s — please upload again."
 msgstr "Kan %(fn)s niet lezen — upload het bestand opnieuw."
 
-#: app/aircraft/routes.py:2554 app/aircraft/routes.py:2934
-#: app/aircraft/routes.py:3081 app/aircraft/routes.py:3146
+#: app/aircraft/routes.py:2563 app/aircraft/routes.py:2943
+#: app/aircraft/routes.py:3090 app/aircraft/routes.py:3155
 #: app/pilots/routes.py:2697 app/pilots/routes.py:2788
 #: app/pilots/routes.py:3065
 msgid "Session expired — please upload your GPS files again."
 msgstr "Sessie verlopen — upload uw GPS-bestanden opnieuw."
 
-#: app/aircraft/routes.py:2939 app/pilots/routes.py:3070
+#: app/aircraft/routes.py:2948 app/pilots/routes.py:3070
 msgid "No segments to import."
 msgstr "Geen segmenten om te importeren."
 
-#: app/aircraft/routes.py:2945 app/aircraft/routes.py:2949
-#: app/aircraft/routes.py:3151 app/pilots/routes.py:3076
+#: app/aircraft/routes.py:2954 app/aircraft/routes.py:2958
+#: app/aircraft/routes.py:3160 app/pilots/routes.py:3076
 #: app/pilots/routes.py:3080
 msgid "Invalid segment index."
 msgstr "Ongeldig segmentindex."
 
-#: app/aircraft/routes.py:2954 app/pilots/routes.py:3085
+#: app/aircraft/routes.py:2963 app/pilots/routes.py:3085
 msgid "This segment has already been confirmed."
 msgstr "Dit segment is al bevestigd."
 
-#: app/aircraft/routes.py:2973 app/aircraft/routes.py:3040
+#: app/aircraft/routes.py:2982 app/aircraft/routes.py:3049
 #: app/pilots/routes.py:3105 app/pilots/routes.py:3146
 #, python-format
 msgid "one flight imported successfully."
@@ -457,7 +457,7 @@ msgid_plural "%(n)s flights imported successfully."
 msgstr[0] "één vlucht succesvol geïmporteerd."
 msgstr[1] "%(n)s vluchten succesvol geïmporteerd."
 
-#: app/aircraft/routes.py:2982 app/aircraft/routes.py:3051
+#: app/aircraft/routes.py:2991 app/aircraft/routes.py:3060
 #: app/pilots/routes.py:3114
 #, python-format
 msgid "one segment skipped."
@@ -465,49 +465,49 @@ msgid_plural "%(n)s segments skipped."
 msgstr[0] "één segment overgeslagen."
 msgstr[1] "%(n)s segmenten overgeslagen."
 
-#: app/aircraft/routes.py:2995 app/pilots/routes.py:3124
+#: app/aircraft/routes.py:3004 app/pilots/routes.py:3124
 msgid "Segment skipped."
 msgstr "Segment overgeslagen."
 
-#: app/aircraft/routes.py:3062 app/pilots/routes.py:3155
+#: app/aircraft/routes.py:3071 app/pilots/routes.py:3155
 msgid "Flight confirmed."
 msgstr "Vlucht bevestigd."
 
-#: app/aircraft/routes.py:3118 app/pilots/routes.py:2816
+#: app/aircraft/routes.py:3127 app/pilots/routes.py:2816
 #, python-format
 msgid "One flight linked to its GPS track."
 msgid_plural "%(n)d flights linked to their GPS tracks."
 msgstr[0] "Eén vlucht gekoppeld aan haar GPS-spoor."
 msgstr[1] "%(n)d vluchten gekoppeld aan hun GPS-sporen."
 
-#: app/aircraft/routes.py:3213
+#: app/aircraft/routes.py:3222
 msgid "No original GPS files are kept for this aircraft yet."
 msgstr "Voor dit vliegtuig zijn nog geen originele gps-bestanden bewaard."
 
-#: app/aircraft/routes.py:3275
+#: app/aircraft/routes.py:3284
 #, python-format
 msgid "Import undone: the flights it created are deleted and the GPS tracks it added removed. Their files are kept for one day in the removed GPS files."
 msgid_plural "Import undone: the flights it created are deleted and the GPS tracks it added removed. Their files are kept for %(n)s days in the removed GPS files."
 msgstr[0] "Import ongedaan gemaakt: de vluchten die hij aanmaakte zijn verwijderd en de GPS-tracks die hij toevoegde weggehaald. Hun bestanden worden één dag bewaard bij de weggehaalde GPS-bestanden."
 msgstr[1] "Import ongedaan gemaakt: de vluchten die hij aanmaakte zijn verwijderd en de GPS-tracks die hij toevoegde weggehaald. Hun bestanden worden %(n)s dagen bewaard bij de weggehaalde GPS-bestanden."
 
-#: app/aircraft/routes.py:3565
+#: app/aircraft/routes.py:3574
 msgid "No files selected."
 msgstr "Geen bestanden geselecteerd."
 
-#: app/aircraft/routes.py:3585
+#: app/aircraft/routes.py:3594
 #, python-format
 msgid "%(name)s: unsupported format (use JPEG, PNG, WEBP or HEIC)."
 msgstr "%(name)s: niet-ondersteund formaat (gebruik JPEG, PNG, WEBP of HEIC)."
 
-#: app/aircraft/routes.py:3607
+#: app/aircraft/routes.py:3616
 #, python-format
 msgid "one photo uploaded."
 msgid_plural "%(n)s photos uploaded."
 msgstr[0] "één foto geüpload."
 msgstr[1] "%(n)s foto's geüpload."
 
-#: app/aircraft/routes.py:3686
+#: app/aircraft/routes.py:3695
 msgid "Photo deleted."
 msgstr "Foto verwijderd."
 
@@ -2245,7 +2245,7 @@ msgid "The visit note is too long."
 msgstr "De bezoeknotitie is te lang."
 
 #: app/passports/evidence.py:61 app/passports/evidence.py:72
-#: app/passports/vouchers.py:203 app/passports/vouchers.py:213
+#: app/passports/vouchers.py:204 app/passports/vouchers.py:214
 msgid "Choose a flight from your own logbook on the visit date."
 msgstr "Kies een vlucht uit je eigen logboek op de bezoekdatum."
 
@@ -2261,77 +2261,77 @@ msgstr "Foto’s mogen maximaal 10 MB groot zijn."
 msgid "Upload a valid JPEG, PNG or WebP photo (up to 20 megapixels)."
 msgstr "Upload een geldige JPEG-, PNG- of WebP-foto (maximaal 20 megapixels)."
 
-#: app/passports/groups.py:44
+#: app/passports/groups.py:45
 msgid "This group is being updated. Please try again."
 msgstr "Deze groep wordt bijgewerkt. Probeer het opnieuw."
 
-#: app/passports/groups.py:61 app/passports/groups.py:91
-#: app/passports/groups.py:123 app/passports/groups.py:216
-#: app/passports/invitations.py:98 app/passports/invitations.py:289
+#: app/passports/groups.py:62 app/passports/groups.py:92
+#: app/passports/groups.py:124 app/passports/groups.py:215
+#: app/passports/invitations.py:95 app/passports/invitations.py:286
 #: app/passports/memberships.py:33 app/passports/memberships.py:41
 #: app/passports/series_routes.py:332
 msgid "Group not found."
 msgstr "Groep niet gevonden."
 
-#: app/passports/groups.py:63 app/passports/groups.py:163
-#: app/passports/invitations.py:106
+#: app/passports/groups.py:64 app/passports/groups.py:164
+#: app/passports/invitations.py:103
 msgid "This passport changed. Open it again."
 msgstr "Dit paspoort is gewijzigd. Open het opnieuw."
 
-#: app/passports/groups.py:128 app/passports/invitations.py:252
+#: app/passports/groups.py:129 app/passports/invitations.py:249
 #: app/passports/registration.py:223 app/passports/registration.py:260
 msgid "The group owner must reinstate your membership."
 msgstr "De groepseigenaar moet je lidmaatschap herstellen."
 
-#: app/passports/groups.py:131 app/passports/invitations.py:134
+#: app/passports/groups.py:132 app/passports/invitations.py:131
 msgid "Enter a group display name of at most 128 characters."
 msgstr "Voer een weergavenaam voor de groep in van maximaal 128 tekens."
 
-#: app/passports/groups.py:135 app/passports/invitations.py:138
+#: app/passports/groups.py:136 app/passports/invitations.py:135
 msgid "Confirm sharing your eligible visit dates with this edition's participants."
 msgstr "Bevestig dat je de datums van je geldige bezoeken deelt met de deelnemers aan deze editie."
 
-#: app/passports/groups.py:537
+#: app/passports/groups.py:544
 msgid "Create a new edition to change the dates of a shared passport."
 msgstr "Maak een nieuwe editie om de datums van een gedeeld paspoort te wijzigen."
 
-#: app/passports/imports.py:59
+#: app/passports/imports.py:60
 msgid "The source format is unsupported. Paste the airfield codes instead."
 msgstr "Het bronformaat wordt niet ondersteund. Plak in plaats daarvan de vliegveldcodes."
 
-#: app/passports/imports.py:68
+#: app/passports/imports.py:69
 msgid "No candidate airfield codes were found. For dynamic or unsupported pages, paste the codes instead."
 msgstr "Geen mogelijke vliegveldcodes gevonden. Plak de codes bij dynamische of niet-ondersteunde pagina’s."
 
-#: app/passports/imports.py:73
+#: app/passports/imports.py:74
 msgid "The source contains too many airfield codes. Use a smaller list."
 msgstr "De bron bevat te veel vliegveldcodes. Gebruik een kleinere lijst."
 
-#: app/passports/imports.py:98
+#: app/passports/imports.py:99
 msgid "The publisher list format changed. Paste a verified list instead."
 msgstr "Het formaat van de uitgeverslijst is gewijzigd. Plak een gecontroleerde lijst."
 
-#: app/passports/imports.py:108
+#: app/passports/imports.py:109
 msgid "The publisher list contains a missing or unsupported code. Paste a verified list instead."
 msgstr "De uitgeverslijst bevat een ontbrekende of niet-ondersteunde code. Plak een gecontroleerde lijst."
 
-#: app/passports/imports.py:130
+#: app/passports/imports.py:131
 msgid "Enter the booklet edition label before importing. Verify the edition with the publisher."
 msgstr "Voer vóór het importeren de editie van het boekje in. Controleer de editie bij de uitgever."
 
-#: app/passports/imports.py:137
+#: app/passports/imports.py:138
 msgid "The publisher has not released its current participant list. Paste a list you have verified, or try again later."
 msgstr "De uitgever heeft de huidige deelnemerslijst nog niet vrijgegeven. Plak een gecontroleerde lijst of probeer het later opnieuw."
 
-#: app/passports/imports.py:146
+#: app/passports/imports.py:147
 msgid "Choose a supported import source."
 msgstr "Kies een ondersteunde importbron."
 
-#: app/passports/imports.py:166
+#: app/passports/imports.py:167
 msgid "Preview the imported list before applying it."
 msgstr "Bekijk eerst een voorbeeld van de geïmporteerde lijst."
 
-#: app/passports/imports.py:191
+#: app/passports/imports.py:190
 msgid "The import provenance is invalid. Preview the source again."
 msgstr "De herkomstgegevens van de import zijn ongeldig. Bekijk de bron opnieuw."
 
@@ -2343,33 +2343,33 @@ msgstr "Kies een actie voor de uitnodiging."
 msgid "Your email is verified. Sign in with your existing account to join."
 msgstr "Uw e-mailadres is geverifieerd. Meld u aan met uw bestaande account om deel te nemen."
 
-#: app/passports/invitations.py:66 app/passports/invitations.py:88
-#: app/passports/invitations.py:285 app/passports/invitations.py:300
-#: app/passports/invitations.py:309
+#: app/passports/invitations.py:63 app/passports/invitations.py:85
+#: app/passports/invitations.py:282 app/passports/invitations.py:297
+#: app/passports/invitations.py:306
 msgid "This passport invitation is not available."
 msgstr "Deze paspoortuitnodiging is niet beschikbaar."
 
-#: app/passports/invitations.py:114
+#: app/passports/invitations.py:111
 msgid "This edition has ended or is archived."
 msgstr "Deze editie is afgelopen of gearchiveerd."
 
-#: app/passports/invitations.py:118
+#: app/passports/invitations.py:115
 msgid "Enter a valid invitation expiry date."
 msgstr "Voer een geldige vervaldatum voor de uitnodiging in."
 
-#: app/passports/invitations.py:120
+#: app/passports/invitations.py:117
 msgid "Choose today or a future invitation expiry date."
 msgstr "Kies vandaag of een toekomstige vervaldatum voor de uitnodiging."
 
-#: app/passports/invitations.py:231 app/passports/management.py:41
+#: app/passports/invitations.py:228 app/passports/management.py:41
 msgid "You cannot manage passports with this account."
 msgstr "U kunt met dit account geen paspoorten beheren."
 
-#: app/passports/invitations.py:237
+#: app/passports/invitations.py:234
 msgid "Set up two-factor authentication before joining this passport."
 msgstr "Stel tweefactorauthenticatie in voordat u aan dit paspoort deelneemt."
 
-#: app/passports/invitations.py:304
+#: app/passports/invitations.py:301
 msgid "Sign in with the account used for this registration."
 msgstr "Meld u aan met het account waarmee u zich hebt geregistreerd."
 
@@ -2387,7 +2387,7 @@ msgstr "Piloottoegang is vereist om een paspoort aan te maken."
 
 #: app/passports/management.py:65 app/passports/memberships.py:65
 #: app/passports/memberships.py:99 app/passports/public_routes.py:74
-#: app/passports/vouchers.py:143
+#: app/passports/vouchers.py:144
 msgid "Passport not found."
 msgstr "Paspoort niet gevonden."
 
@@ -2425,16 +2425,16 @@ msgstr "Kies een actieve deelnemer in deze groep."
 msgid "Choose another participant."
 msgstr "Kies een andere deelnemer."
 
-#: app/passports/ownership.py:58 app/passports/ownership.py:63
-#: app/passports/ownership.py:96
+#: app/passports/ownership.py:58 app/passports/ownership.py:61
+#: app/passports/ownership.py:94
 msgid "This ownership offer is no longer available."
 msgstr "Dit eigendomsaanbod is niet meer beschikbaar."
 
-#: app/passports/ownership.py:74
+#: app/passports/ownership.py:72
 msgid "Only the selected participant can respond to this offer."
 msgstr "Alleen de geselecteerde deelnemer kan op dit aanbod reageren."
 
-#: app/passports/ownership.py:81
+#: app/passports/ownership.py:79
 msgid "Group ownership changed. Ask the owner to make a new offer."
 msgstr "De groep heeft een andere eigenaar. Vraag de eigenaar een nieuw aanbod te doen."
 
@@ -2534,21 +2534,21 @@ msgstr "Deze verificatiecode is onjuist."
 msgid "This account changed. Please try again."
 msgstr "Dit account is gewijzigd. Probeer het opnieuw."
 
-#: app/passports/reminders.py:73
+#: app/passports/reminders.py:71
 #, python-format
 msgid "Passport edition expiring: %(title)s"
 msgstr "Paspoorteditie verloopt binnenkort: %(title)s"
 
-#: app/passports/reminders.py:75 app/templates/config/notifications.html:52
+#: app/passports/reminders.py:73 app/templates/config/notifications.html:52
 msgid "Passport edition expiring"
 msgstr "Paspoorteditie verloopt binnenkort"
 
-#: app/passports/reminders.py:77
+#: app/passports/reminders.py:75
 #, python-format
 msgid "Your passport %(title)s ends on %(date)s. Open the edition to see your remaining airfields and vouchers."
 msgstr "Je paspoort %(title)s eindigt op %(date)s. Open de editie om je nog te bezoeken vliegvelden en beschikbare vouchers te bekijken."
 
-#: app/passports/reminders.py:84
+#: app/passports/reminders.py:82
 msgid "Open passport"
 msgstr "Paspoort openen"
 
@@ -2672,91 +2672,91 @@ msgstr "Kies een vliegveld uit dit paspoort."
 msgid "The voucher record changed. Reload the page before trying again."
 msgstr "De bonregistratie is gewijzigd. Laad de pagina opnieuw voordat u het nogmaals probeert."
 
-#: app/passports/vouchers.py:39
+#: app/passports/vouchers.py:40
 msgid "Enter valid voucher dates."
 msgstr "Voer geldige datums voor de bonnen in."
 
-#: app/passports/vouchers.py:48
+#: app/passports/vouchers.py:49
 msgid "Enter a whole voucher quantity between 0 and 100,000 (at least 1 for a redemption)."
 msgstr "Voer een geheel aantal bonnen tussen 0 en 100.000 in (minstens 1 bij gebruik)."
 
-#: app/passports/vouchers.py:71
+#: app/passports/vouchers.py:72
 msgid "Voucher validity must stay within the edition dates."
 msgstr "De geldigheid van de bonnen moet binnen de editiedatums vallen."
 
-#: app/passports/vouchers.py:86
+#: app/passports/vouchers.py:87
 msgid "Airfield not found."
 msgstr "Vliegveld niet gevonden."
 
-#: app/passports/vouchers.py:91
+#: app/passports/vouchers.py:92
 msgid "Choose a participant from this organisation."
 msgstr "Kies een deelnemer uit deze organisatie."
 
-#: app/passports/vouchers.py:118
+#: app/passports/vouchers.py:119
 msgid "The allocation cannot be smaller than its recorded use."
 msgstr "Het toegewezen aantal kan niet kleiner zijn dan het vastgelegde gebruik."
 
-#: app/passports/vouchers.py:125
+#: app/passports/vouchers.py:126
 msgid "Voucher validity cannot exclude saved redemption history."
 msgstr "De geldigheid van de bonnen mag vastgelegde gebruiksgeschiedenis niet uitsluiten."
 
-#: app/passports/vouchers.py:162 app/passports/vouchers.py:413
+#: app/passports/vouchers.py:163 app/passports/vouchers.py:414
 msgid "Voucher allocation not found."
 msgstr "Toewijzing van bonnen niet gevonden."
 
-#: app/passports/vouchers.py:188
+#: app/passports/vouchers.py:189
 msgid "Enter a non-negative saving with at most two decimals and a three-letter currency, or leave both empty."
 msgstr "Voer een niet-negatieve besparing met maximaal twee decimalen en een valutacode van drie letters in, of laat beide velden leeg."
 
-#: app/passports/vouchers.py:242 app/passports/vouchers.py:307
+#: app/passports/vouchers.py:243 app/passports/vouchers.py:308
 msgid "Voucher redemption not found."
 msgstr "Gebruik van bonnen niet gevonden."
 
-#: app/passports/vouchers.py:245
+#: app/passports/vouchers.py:246
 msgid "This redemption was already corrected or undone."
 msgstr "Dit gebruik is al gecorrigeerd of ongedaan gemaakt."
 
-#: app/passports/vouchers.py:249
+#: app/passports/vouchers.py:250
 msgid "Reload the voucher form before submitting."
 msgstr "Laad het bonnenformulier opnieuw voordat u het verstuurt."
 
-#: app/passports/vouchers.py:253
+#: app/passports/vouchers.py:254
 msgid "This voucher use was already saved. Reload the page to record another use."
 msgstr "Dit bongebruik is al opgeslagen. Laad de pagina opnieuw om ander gebruik vast te leggen."
 
-#: app/passports/vouchers.py:266
+#: app/passports/vouchers.py:267
 msgid "The redemption must be within the voucher validity and not in the future."
 msgstr "Het gebruik moet binnen de geldigheid van de bonnen vallen en mag niet in de toekomst liggen."
 
-#: app/passports/vouchers.py:271
+#: app/passports/vouchers.py:272
 msgid "There are not enough vouchers remaining."
 msgstr "Er zijn niet genoeg bonnen over."
 
-#: app/passports/vouchers.py:274
+#: app/passports/vouchers.py:275
 msgid "The voucher note is too long."
 msgstr "De notitie bij de bonnen is te lang."
 
-#: app/passports/vouchers.py:319
+#: app/passports/vouchers.py:320
 msgid "These edition dates would exclude saved voucher validity. Create a new edition instead."
 msgstr "Deze editiedatums zouden opgeslagen geldigheid van bonnen uitsluiten. Maak een nieuwe editie aan."
 
-#: app/passports/vouchers.py:329
+#: app/passports/vouchers.py:330
 msgid "These edition dates would exclude saved redemptions. Create a new edition instead."
 msgstr "Deze editiedatums zouden opgeslagen gebruik uitsluiten. Maak een nieuwe editie aan."
 
-#: app/passports/vouchers.py:416
+#: app/passports/vouchers.py:417
 msgid "Keep allocations with redemption history. Archive the edition instead."
 msgstr "Behoud toewijzingen met gebruiksgeschiedenis. Archiveer de editie."
 
-#: app/passports/vouchers.py:425
+#: app/passports/vouchers.py:426
 msgid "Copy vouchers to a different edition in the same organisation."
 msgstr "Kopieer bonnen naar een andere editie binnen dezelfde organisatie."
 
-#: app/passports/vouchers.py:479
+#: app/passports/vouchers.py:480
 msgid "Copy at most 5,000 voucher allocations. Narrow the target selection or copy without allocations."
 msgstr "Kopieer maximaal 5.000 bontoewijzingen. Beperk de selectie van vliegvelden of kopieer zonder toewijzingen."
 
-#: app/passports/vouchers.py:501 app/templates/passports/vouchers.html:40
+#: app/passports/vouchers.py:502 app/templates/passports/vouchers.html:40
 msgid "Awaiting participation"
 msgstr "Wacht op deelname"
 
@@ -3740,6 +3740,26 @@ msgstr "Aankomstvliegveld gecorrigeerd volgens het GPS-spoor; het papieren logbo
 #, python-format
 msgid "Date corrected from the GPS track; the paper logbook says %(value)s."
 msgstr "Datum gecorrigeerd volgens het GPS-spoor; het papieren logboek vermeldt %(value)s."
+
+#: app/services/geocoding.py:96
+msgid "Address search is turned off on this instance. Place the pin on the map or enter coordinates."
+msgstr "Adres zoeken is uitgeschakeld op deze installatie. Plaats de speld op de kaart of voer coördinaten in."
+
+#: app/services/geocoding.py:98
+msgid "Enter between 2 and 200 characters to search for."
+msgstr "Voer tussen 2 en 200 tekens in om op te zoeken."
+
+#: app/services/geocoding.py:100
+msgid "Address search is busy. Try again in a moment, or place the pin on the map."
+msgstr "Adres zoeken is bezet. Probeer het zo meteen opnieuw of plaats de speld op de kaart."
+
+#: app/services/geocoding.py:103
+msgid "Address search is unavailable right now. Place the pin on the map or enter coordinates."
+msgstr "Adres zoeken is momenteel niet beschikbaar. Plaats de speld op de kaart of voer coördinaten in."
+
+#: app/services/geocoding.py:124
+msgid "Address search: © OpenStreetMap contributors"
+msgstr "Adres zoeken: © OpenStreetMap-bijdragers"
 
 #: app/services/notification_service.py:358
 #: app/services/notification_service.py:1252
