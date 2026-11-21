@@ -1,10 +1,7 @@
 """Portable participant-owned data; group ownership never expands the export."""
 
-import json
-import tempfile
-import zipfile
 from datetime import UTC, datetime
-from typing import Any, BinaryIO, cast
+from typing import Any, BinaryIO
 
 from models import (
     Passport,
@@ -19,8 +16,11 @@ from models import (
     PassportVoucherRedemption,
     db,
 )
+from services import account_exports
+from services.account_exports import ExportContext, ExportFile, ExportSection
 
 from passports import catalogue
+from passports.access import passports_for_user
 from passports.catalogue_access import visible_identity_ids
 from passports.eligibility import progress_many
 from passports.evidence import photo_path
@@ -30,9 +30,9 @@ def _values(row: Any, names: str) -> dict[str, Any]:
     return {name: getattr(row, name) for name in names.split()}
 
 
-def account_archive(
+def passport_section(
     tenant_id: int, user_id: int, visible_passports: list[Passport]
-) -> BinaryIO:
+) -> ExportSection:
     """Export this tenant's own records, including retained withdrawn evidence.
 
     Current group metadata/completion is included only for currently accessible
@@ -219,36 +219,37 @@ def account_archive(
         ],
         "photos": [],
     }
-    # The download response owns this file and closes it after transmission.
-    output = tempfile.SpooledTemporaryFile(  # noqa: SIM115
-        max_size=4 * 1024 * 1024, mode="w+b"
+    files = []
+    for photo in photos:
+        entry = _values(
+            photo,
+            "id passport_id participant_id target_id public_consent public_shared_at group_shared_at created_at",
+        )
+        entry["file"] = "photos/" + str(photo.id) + ".jpg"
+        document["photos"].append(entry)
+        files.append(ExportFile(entry["file"], photo_path(photo.filename), entry))
+    return ExportSection(document, files, legacy_document="passport-data.json")
+
+
+def _account_section(context: ExportContext) -> ExportSection:
+    return passport_section(
+        context.tenant_id,
+        context.user_id,
+        passports_for_user(context.tenant_id, context.user_id).all(),
     )
-    try:
-        with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-            for photo in photos:
-                entry = _values(
-                    photo,
-                    "id passport_id participant_id target_id public_consent public_shared_at group_shared_at created_at",
-                )
-                entry["file"] = "photos/" + str(photo.id) + ".jpg"
-                try:
-                    archive.write(
-                        photo_path(photo.filename),
-                        entry["file"],
-                        compress_type=zipfile.ZIP_STORED,
-                    )
-                    entry["included"] = True
-                except FileNotFoundError:
-                    # Lost/concurrently removed photos must not prevent recovering
-                    # the participant's other records.
-                    entry["included"] = False
-                document["photos"].append(entry)
-            archive.writestr(
-                "passport-data.json",
-                json.dumps(document, ensure_ascii=False, indent=2, default=str),
-            )
-        output.seek(0)
-        return cast(BinaryIO, output)
-    except Exception:
-        output.close()
-        raise
+
+
+account_exports.register("passports", _account_section)
+
+
+def account_archive(
+    tenant_id: int, user_id: int, visible_passports: list[Passport]
+) -> BinaryIO:
+    """Compatibility entry point retaining the caller's existing passport scope."""
+    return account_exports.account_archive(
+        tenant_id,
+        user_id,
+        overrides={
+            "passports": passport_section(tenant_id, user_id, visible_passports),
+        },
+    )

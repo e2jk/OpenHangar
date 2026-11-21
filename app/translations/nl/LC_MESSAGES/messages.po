@@ -203,7 +203,7 @@ msgstr "Stel voor het reservefonds een bijdrage per uur óf per maand in, niet b
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Dit GPS-bestand bevat te veel punten om te importeren (meer dan %(n)s). Splits de opname op in meerdere bestanden."
 
-#: app/aircraft/routes.py:555 app/passports/routes.py:869
+#: app/aircraft/routes.py:555 app/passports/routes.py:871
 msgid "cruise speed"
 msgstr "kruissnelheid"
 
@@ -688,7 +688,7 @@ msgid "Current password is incorrect."
 msgstr "Huidig wachtwoord is onjuist."
 
 #: app/auth/routes.py:961 app/auth/routes.py:1112
-#: app/passports/registration.py:113 app/users/routes.py:259
+#: app/passports/registration.py:114 app/users/routes.py:259
 msgid "Passwords do not match."
 msgstr "Wachtwoorden komen niet overeen."
 
@@ -2177,15 +2177,6 @@ msgstr "Voer een geldige plaatsingsdatum in."
 msgid "The posting date range is reversed."
 msgstr "De begindatum voor geplaatste reacties ligt na de einddatum."
 
-#: app/passports/discovery.py:44
-#, python-format
-msgid "Enter a valid %(label)s."
-msgstr "Voer een geldige waarde in voor %(label)s."
-
-#: app/passports/discovery.py:56 app/passports/discovery.py:105
-msgid "Choose an unambiguous airfield code or a saved field reference."
-msgstr "Kies een eenduidige vliegveldcode of een opgeslagen veldreferentie."
-
 #: app/passports/discussion_routes.py:121
 msgid "Flying and airfield tips"
 msgstr "Tips voor de vlucht en het vliegveld"
@@ -2224,42 +2215,30 @@ msgstr "Voer een reeksnaam van maximaal 128 tekens in."
 msgid "The source edition changed. Start the copy again."
 msgstr "De broneditie is gewijzigd. Begin opnieuw met kopiëren."
 
-#: app/passports/evidence.py:35
+#: app/passports/evidence.py:32
 msgid "Join this passport before recording visits."
 msgstr "Neem deel aan dit paspoort voordat je bezoeken vastlegt."
 
-#: app/passports/evidence.py:37 app/passports/management.py:67
+#: app/passports/evidence.py:34 app/passports/management.py:67
 msgid "Reopen this passport before editing it."
 msgstr "Heropen dit paspoort voordat u het bewerkt."
 
-#: app/passports/evidence.py:47
+#: app/passports/evidence.py:44
 msgid "Enter a valid visit date."
 msgstr "Voer een geldige bezoekdatum in."
 
-#: app/passports/evidence.py:50
+#: app/passports/evidence.py:47
 msgid "The visit must be within the passport dates and not in the future."
 msgstr "Het bezoek moet binnen de paspoortperiode vallen en mag niet in de toekomst liggen."
 
-#: app/passports/evidence.py:54
+#: app/passports/evidence.py:51
 msgid "The visit note is too long."
 msgstr "De bezoeknotitie is te lang."
 
-#: app/passports/evidence.py:61 app/passports/evidence.py:72
+#: app/passports/evidence.py:58 app/passports/evidence.py:69
 #: app/passports/vouchers.py:204 app/passports/vouchers.py:214
 msgid "Choose a flight from your own logbook on the visit date."
 msgstr "Kies een vlucht uit je eigen logboek op de bezoekdatum."
-
-#: app/passports/evidence.py:97
-msgid "Choose a photo to upload."
-msgstr "Kies een foto om te uploaden."
-
-#: app/passports/evidence.py:100
-msgid "Photos must be at most 10 MB."
-msgstr "Foto’s mogen maximaal 10 MB groot zijn."
-
-#: app/passports/evidence.py:127
-msgid "Upload a valid JPEG, PNG or WebP photo (up to 20 megapixels)."
-msgstr "Upload een geldige JPEG-, PNG- of WebP-foto (maximaal 20 megapixels)."
 
 #: app/passports/groups.py:45
 msgid "This group is being updated. Please try again."
@@ -2267,27 +2246,27 @@ msgstr "Deze groep wordt bijgewerkt. Probeer het opnieuw."
 
 #: app/passports/groups.py:62 app/passports/groups.py:92
 #: app/passports/groups.py:124 app/passports/groups.py:215
-#: app/passports/invitations.py:95 app/passports/invitations.py:286
-#: app/passports/memberships.py:33 app/passports/memberships.py:41
+#: app/passports/invitations.py:96 app/passports/invitations.py:287
+#: app/passports/memberships.py:34 app/passports/memberships.py:42
 #: app/passports/series_routes.py:332
 msgid "Group not found."
 msgstr "Groep niet gevonden."
 
 #: app/passports/groups.py:64 app/passports/groups.py:164
-#: app/passports/invitations.py:103
+#: app/passports/invitations.py:104
 msgid "This passport changed. Open it again."
 msgstr "Dit paspoort is gewijzigd. Open het opnieuw."
 
-#: app/passports/groups.py:129 app/passports/invitations.py:249
-#: app/passports/registration.py:223 app/passports/registration.py:260
+#: app/passports/groups.py:129 app/passports/invitations.py:250
+#: app/passports/registration.py:224 app/passports/registration.py:261
 msgid "The group owner must reinstate your membership."
 msgstr "De groepseigenaar moet je lidmaatschap herstellen."
 
-#: app/passports/groups.py:132 app/passports/invitations.py:131
+#: app/passports/groups.py:132 app/passports/invitations.py:132
 msgid "Enter a group display name of at most 128 characters."
 msgstr "Voer een weergavenaam voor de groep in van maximaal 128 tekens."
 
-#: app/passports/groups.py:136 app/passports/invitations.py:135
+#: app/passports/groups.py:136 app/passports/invitations.py:136
 msgid "Confirm sharing your eligible visit dates with this edition's participants."
 msgstr "Bevestig dat je de datums van je geldige bezoeken deelt met de deelnemers aan deze editie."
 
@@ -2335,41 +2314,41 @@ msgstr "Bekijk eerst een voorbeeld van de geïmporteerde lijst."
 msgid "The import provenance is invalid. Preview the source again."
 msgstr "De herkomstgegevens van de import zijn ongeldig. Bekijk de bron opnieuw."
 
-#: app/passports/invitation_routes.py:76
+#: app/passports/invitation_routes.py:77
 msgid "Choose an invitation action."
 msgstr "Kies een actie voor de uitnodiging."
 
-#: app/passports/invitation_routes.py:257
+#: app/passports/invitation_routes.py:258
 msgid "Your email is verified. Sign in with your existing account to join."
 msgstr "Uw e-mailadres is geverifieerd. Meld u aan met uw bestaande account om deel te nemen."
 
-#: app/passports/invitations.py:63 app/passports/invitations.py:85
-#: app/passports/invitations.py:282 app/passports/invitations.py:297
-#: app/passports/invitations.py:306
+#: app/passports/invitations.py:64 app/passports/invitations.py:86
+#: app/passports/invitations.py:283 app/passports/invitations.py:298
+#: app/passports/invitations.py:307
 msgid "This passport invitation is not available."
 msgstr "Deze paspoortuitnodiging is niet beschikbaar."
 
-#: app/passports/invitations.py:111
+#: app/passports/invitations.py:112
 msgid "This edition has ended or is archived."
 msgstr "Deze editie is afgelopen of gearchiveerd."
 
-#: app/passports/invitations.py:115
+#: app/passports/invitations.py:116
 msgid "Enter a valid invitation expiry date."
 msgstr "Voer een geldige vervaldatum voor de uitnodiging in."
 
-#: app/passports/invitations.py:117
+#: app/passports/invitations.py:118
 msgid "Choose today or a future invitation expiry date."
 msgstr "Kies vandaag of een toekomstige vervaldatum voor de uitnodiging."
 
-#: app/passports/invitations.py:228 app/passports/management.py:41
+#: app/passports/invitations.py:229 app/passports/management.py:41
 msgid "You cannot manage passports with this account."
 msgstr "U kunt met dit account geen paspoorten beheren."
 
-#: app/passports/invitations.py:234
+#: app/passports/invitations.py:235
 msgid "Set up two-factor authentication before joining this passport."
 msgstr "Stel tweefactorauthenticatie in voordat u aan dit paspoort deelneemt."
 
-#: app/passports/invitations.py:301
+#: app/passports/invitations.py:302
 msgid "Sign in with the account used for this registration."
 msgstr "Meld u aan met het account waarmee u zich hebt geregistreerd."
 
@@ -2385,8 +2364,8 @@ msgstr "Je pilootlogboek is klaar. Vluchten die je hier toevoegt, vullen ook je 
 msgid "Pilot access is required to create a passport."
 msgstr "Piloottoegang is vereist om een paspoort aan te maken."
 
-#: app/passports/management.py:65 app/passports/memberships.py:65
-#: app/passports/memberships.py:99 app/passports/public_routes.py:74
+#: app/passports/management.py:65 app/passports/memberships.py:66
+#: app/passports/memberships.py:100 app/passports/public_routes.py:74
 #: app/passports/vouchers.py:144
 msgid "Passport not found."
 msgstr "Paspoort niet gevonden."
@@ -2403,17 +2382,17 @@ msgstr "Voer een paspoortnaam in."
 msgid "The passport end date must not precede its start date."
 msgstr "De einddatum van het paspoort mag niet vóór de begindatum liggen."
 
-#: app/passports/memberships.py:46
+#: app/passports/memberships.py:47
 msgid "Only the group owner can manage other members."
 msgstr "Alleen de groepseigenaar kan andere leden beheren."
 
-#: app/passports/memberships.py:93 app/passports/memberships.py:115
+#: app/passports/memberships.py:94 app/passports/memberships.py:116
 #: app/templates/passports/group_members.html:21
 msgid "Transfer group ownership before leaving."
 msgstr "Draag het groepseigendom over voordat u vertrekt."
 
-#: app/passports/memberships.py:122 app/passports/memberships.py:125
-#: app/passports/memberships.py:149
+#: app/passports/memberships.py:123 app/passports/memberships.py:126
+#: app/passports/memberships.py:150
 msgid "Member not found."
 msgstr "Lid niet gevonden."
 
@@ -2478,27 +2457,27 @@ msgstr "De openbare naam is te lang."
 msgid "Choose a public-sharing action."
 msgstr "Kies een actie voor openbaar delen."
 
-#: app/passports/registration.py:74 app/templates/base.html:438
+#: app/passports/registration.py:75 app/templates/base.html:438
 msgid "Enter a valid email address."
 msgstr "Voer een geldig e-mailadres in."
 
-#: app/passports/registration.py:101
+#: app/passports/registration.py:102
 msgid "Please wait a minute before requesting another verification email."
 msgstr "Wacht een minuut voordat u een nieuwe verificatiemail aanvraagt."
 
-#: app/passports/registration.py:111
+#: app/passports/registration.py:112
 msgid "Choose a password between 12 and 1024 characters."
 msgstr "Kies een wachtwoord van 12 tot 1024 tekens."
 
-#: app/passports/registration.py:115
+#: app/passports/registration.py:116
 msgid "Registration email is disabled in demo mode."
 msgstr "Registratiemails zijn uitgeschakeld in de demomodus."
 
-#: app/passports/registration.py:138
+#: app/passports/registration.py:139
 msgid "Verify your OpenHangar email"
 msgstr "Verifieer uw OpenHangar-e-mailadres"
 
-#: app/passports/registration.py:140
+#: app/passports/registration.py:141
 #, python-format
 msgid ""
 "Your verification code is %(code)s. It expires in 10 minutes.\n"
@@ -2513,24 +2492,24 @@ msgstr ""
 "\n"
 "Negeer deze e-mail als u dit niet hebt aangevraagd."
 
-#: app/passports/registration.py:154
+#: app/passports/registration.py:155
 msgid "We could not send the verification email. Please try again or contact the instance administrator."
 msgstr "De verificatiemail kon niet worden verzonden. Probeer het opnieuw of neem contact op met de beheerder van deze instantie."
 
-#: app/passports/registration.py:170 app/passports/registration.py:195
-#: app/passports/registration.py:200 app/passports/registration.py:226
+#: app/passports/registration.py:171 app/passports/registration.py:196
+#: app/passports/registration.py:201 app/passports/registration.py:227
 msgid "This email verification has expired. Start again from the invitation."
 msgstr "Deze e-mailverificatie is verlopen. Begin opnieuw via de uitnodiging."
 
-#: app/passports/registration.py:206
+#: app/passports/registration.py:207
 msgid "Too many incorrect codes. Request a new verification email."
 msgstr "Te veel onjuiste codes. Vraag een nieuwe verificatiemail aan."
 
-#: app/passports/registration.py:213
+#: app/passports/registration.py:214
 msgid "That verification code is not correct."
 msgstr "Deze verificatiecode is onjuist."
 
-#: app/passports/registration.py:255
+#: app/passports/registration.py:256
 msgid "This account changed. Please try again."
 msgstr "Dit account is gewijzigd. Probeer het opnieuw."
 
@@ -2552,83 +2531,83 @@ msgstr "Je paspoort %(title)s eindigt op %(date)s. Open de editie om je nog te b
 msgid "Open passport"
 msgstr "Paspoort openen"
 
-#: app/passports/routes.py:262
+#: app/passports/routes.py:264
 msgid "Choose a reference airfield and correct the destination filters before downloading."
 msgstr "Kies een referentievliegveld en corrigeer de bestemmingsfilters voordat u downloadt."
 
-#: app/passports/routes.py:358
+#: app/passports/routes.py:360
 msgid "Small airfields"
 msgstr "Kleine vliegvelden"
 
-#: app/passports/routes.py:359
+#: app/passports/routes.py:361
 msgid "Medium airports"
 msgstr "Middelgrote luchthavens"
 
-#: app/passports/routes.py:360
+#: app/passports/routes.py:362
 msgid "Large airports"
 msgstr "Grote luchthavens"
 
-#: app/passports/routes.py:361
+#: app/passports/routes.py:363
 msgid "Heliports"
 msgstr "Helihavens"
 
-#: app/passports/routes.py:362
+#: app/passports/routes.py:364
 msgid "Seaplane bases"
 msgstr "Watervliegbases"
 
-#: app/passports/routes.py:363
+#: app/passports/routes.py:365
 msgid "Balloon ports"
 msgstr "Ballonhavens"
 
-#: app/passports/routes.py:364
+#: app/passports/routes.py:366
 msgid "Closed airfields"
 msgstr "Gesloten vliegvelden"
 
-#: app/passports/routes.py:474
+#: app/passports/routes.py:476
 msgid "Passport saved."
 msgstr "Paspoort opgeslagen."
 
-#: app/passports/routes.py:515
+#: app/passports/routes.py:517
 msgid "An airfield code conflicts with an existing identity. Review or remove that selection."
 msgstr "Een vliegveldcode conflicteert met een bestaande identiteit. Controleer of verwijder die selectie."
 
-#: app/passports/routes.py:577
+#: app/passports/routes.py:579
 msgid "Passport deleted."
 msgstr "Paspoort verwijderd."
 
-#: app/passports/routes.py:599
+#: app/passports/routes.py:601
 msgid "Share your visits with this group before sharing photos."
 msgstr "Deel je bezoeken met deze groep voordat je foto's deelt."
 
-#: app/passports/routes.py:842
+#: app/passports/routes.py:844
 msgid "Choose a reference airfield from the search results."
 msgstr "Kies een referentievliegveld uit de zoekresultaten."
 
-#: app/passports/routes.py:845
+#: app/passports/routes.py:847
 msgid "This reference airfield has no coordinates. Choose another."
 msgstr "Dit referentievliegveld heeft geen coördinaten. Kies een ander."
 
-#: app/passports/routes.py:870
+#: app/passports/routes.py:872
 msgid "distance/time limit"
 msgstr "afstands-/tijdslimiet"
 
-#: app/passports/routes.py:871
+#: app/passports/routes.py:873
 msgid "usable fuel"
 msgstr "bruikbare brandstof"
 
-#: app/passports/routes.py:872
+#: app/passports/routes.py:874
 msgid "fuel flow"
 msgstr "brandstofverbruik"
 
-#: app/passports/routes.py:873
+#: app/passports/routes.py:875
 msgid "reserve minutes"
 msgstr "reserve in minuten"
 
-#: app/passports/routes.py:885
+#: app/passports/routes.py:887
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Voer een kruissnelheid in voor de tijdsmodus of gebruik de afstandsmodus."
 
-#: app/passports/routes.py:894
+#: app/passports/routes.py:896
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "Het theoretische bereik is onbekend. Voer bruikbare brandstof, verbruik, snelheid en een expliciete reserve in die positieve vliegtijd overlaten. Het afstands-/tijdfilter blijft van toepassing."
 
@@ -2760,14 +2739,9 @@ msgstr "Kopieer maximaal 5.000 bontoewijzingen. Beperk de selectie van vliegveld
 msgid "Awaiting participation"
 msgstr "Wacht op deelname"
 
-#: app/passports/waypoints.py:83
+#: app/passports/waypoints.py:30
 msgid "Unvisited airfields"
 msgstr "Niet-bezochte vliegvelden"
-
-#: app/passports/waypoints.py:86
-#, python-format
-msgid "Omitted without usable coordinates: %(fields)s."
-msgstr "Weggelaten wegens ontbrekende bruikbare coördinaten: %(fields)s."
 
 #: app/pilots/form_parsing.py:40
 #, python-format
@@ -3741,6 +3715,15 @@ msgstr "Aankomstvliegveld gecorrigeerd volgens het GPS-spoor; het papieren logbo
 msgid "Date corrected from the GPS track; the paper logbook says %(value)s."
 msgstr "Datum gecorrigeerd volgens het GPS-spoor; het papieren logboek vermeldt %(value)s."
 
+#: app/services/destination_search.py:43
+#, python-format
+msgid "Enter a valid %(label)s."
+msgstr "Voer een geldige waarde in voor %(label)s."
+
+#: app/services/destination_search.py:59
+msgid "Choose an unambiguous airfield code or a saved field reference."
+msgstr "Kies een eenduidige vliegveldcode of een opgeslagen veldreferentie."
+
 #: app/services/geocoding.py:96
 msgid "Address search is turned off on this instance. Place the pin on the map or enter coordinates."
 msgstr "Adres zoeken is uitgeschakeld op deze installatie. Plaats de speld op de kaart of voer coördinaten in."
@@ -3760,6 +3743,18 @@ msgstr "Adres zoeken is momenteel niet beschikbaar. Plaats de speld op de kaart 
 #: app/services/geocoding.py:124
 msgid "Address search: © OpenStreetMap contributors"
 msgstr "Adres zoeken: © OpenStreetMap-bijdragers"
+
+#: app/services/images.py:22
+msgid "Choose a photo to upload."
+msgstr "Kies een foto om te uploaden."
+
+#: app/services/images.py:25
+msgid "Photos must be at most 10 MB."
+msgstr "Foto’s mogen maximaal 10 MB groot zijn."
+
+#: app/services/images.py:52
+msgid "Upload a valid JPEG, PNG or WebP photo (up to 20 megapixels)."
+msgstr "Upload een geldige JPEG-, PNG- of WebP-foto (maximaal 20 megapixels)."
 
 #: app/services/notification_service.py:358
 #: app/services/notification_service.py:1252
@@ -4046,6 +4041,11 @@ msgstr ""
 #, python-format
 msgid "This spreadsheet is too large to import (at most %(rows)s rows). Split it into several files, or remove unused sheets and formatting."
 msgstr "Deze spreadsheet is te groot om te importeren (hoogstens %(rows)s rijen). Splits ze op in meerdere bestanden, of verwijder ongebruikte tabbladen en opmaak."
+
+#: app/services/waypoints.py:77
+#, python-format
+msgid "Omitted without usable coordinates: %(fields)s."
+msgstr "Weggelaten wegens ontbrekende bruikbare coördinaten: %(fields)s."
 
 #: app/snags/routes.py:144
 msgid "Title is required."

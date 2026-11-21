@@ -8,6 +8,8 @@ from models import (
     PassportParticipant,
     PassportSeries,
     PassportSeriesMember,
+    TenantUser,
+    User,
     db,
 )
 from utils import current_membership
@@ -20,21 +22,38 @@ def accessible_passports() -> Any:
     uid = session.get("user_id")
     if membership is None or uid is None:
         return Passport.query.filter(db.false())
+    return passports_for_user(membership.tenant_id, uid)
+
+
+def passports_for_user(tenant_id: int, user_id: int) -> Any:
+    """Explicit account scope for account-export contributors and trusted jobs."""
+    membership = (
+        db.session.query(TenantUser.user_id)
+        .join(User, User.id == TenantUser.user_id)
+        .filter(
+            TenantUser.tenant_id == tenant_id,
+            TenantUser.user_id == user_id,
+            User.is_active.is_(True),
+        )
+        .first()
+    )
+    if membership is None:
+        return Passport.query.filter(db.false())
     accepted = db.select(PassportParticipant.passport_id).where(
-        PassportParticipant.user_id == uid,
+        PassportParticipant.user_id == user_id,
         *active_participation(),
     )
     group_memberships = db.select(PassportSeriesMember.series_id).where(
-        PassportSeriesMember.user_id == uid,
-        PassportSeriesMember.tenant_id == membership.tenant_id,
+        PassportSeriesMember.user_id == user_id,
+        PassportSeriesMember.tenant_id == tenant_id,
         PassportSeriesMember.is_active.is_(True),
         PassportSeriesMember.blocked.is_(False),
     )
     return Passport.query.filter(
-        Passport.tenant_id == membership.tenant_id,
+        Passport.tenant_id == tenant_id,
         db.or_(Passport.is_group.is_(False), Passport.series_id.in_(group_memberships)),
         db.or_(
-            db.and_(Passport.is_group.is_(False), Passport.owner_user_id == uid),
+            db.and_(Passport.is_group.is_(False), Passport.owner_user_id == user_id),
             Passport.id.in_(accepted),
         ),
     )

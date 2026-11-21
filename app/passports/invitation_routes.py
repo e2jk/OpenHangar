@@ -24,9 +24,10 @@ from models import (
     db,
 )
 from services import auth_challenges, auth_sessions
+from services import capability_tokens as tokens
 from utils import current_membership, login_required
 
-from passports import groups, invitations, passports_bp, registration, tokens
+from passports import groups, invitations, passports_bp, registration
 from passports.management import BuilderError
 
 

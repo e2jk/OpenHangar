@@ -43,6 +43,7 @@ from passports import (
     comments,
     discussion_routes,  # Register private group airfield discussions.
     evidence,
+    exports,  # Register the passport contributor to the common account export.
     groups,
     invitation_routes,  # Register edition admission views.
     lifecycle,  # Register transaction-safe file cleanup.
@@ -82,6 +83,7 @@ from passports.management import (
 
 __all__ = [
     "discussion_routes",
+    "exports",
     "invitation_routes",
     "lifecycle",
     "logbook_routes",

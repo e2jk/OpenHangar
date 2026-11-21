@@ -46,7 +46,11 @@ def unpack(response: Any) -> tuple[dict[str, Any], dict[str, bytes]]:
     with zipfile.ZipFile(io.BytesIO(response.data)) as archive:
         files = {name: archive.read(name) for name in archive.namelist()}
     response.close()
-    return json.loads(files.pop("passport-data.json")), files
+    document = json.loads(files.pop("passport-data.json"))
+    account = json.loads(files.pop("account-data.json"))
+    assert account["format"] == "openhangar-account-data" and account["version"] == 1
+    assert account["sections"]["passports"]["data"] == document
+    return document, files
 
 
 def test_export_contains_only_own_evidence_vouchers_and_photo_files(
@@ -204,8 +208,13 @@ def test_empty_export_and_temporary_file_cleanup(
     output = io.BytesIO()
     with (
         app.app_context(),
-        patch("passports.exports.tempfile.SpooledTemporaryFile", return_value=output),
-        patch("passports.exports.json.dumps", side_effect=OSError("disk failure")),
+        patch(
+            "services.account_exports.tempfile.SpooledTemporaryFile",
+            return_value=output,
+        ),
+        patch(
+            "services.account_exports.json.dumps", side_effect=OSError("disk failure")
+        ),
         pytest.raises(OSError, match="disk failure"),
     ):
         account_archive(s["tenant"], s["other"], [])

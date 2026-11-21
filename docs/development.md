@@ -938,3 +938,46 @@ remain valid. Owner edits and explicitly confirmed maintenance conflicts retain
 their existing override behavior. Repeated dispatch requests re-read committed
 state and report the existing "already checked out/in" message. Checkin creates a
 charge draft, not a flight; flights remain explicitly logged by the pilot.
+
+
+### Shared services for destination features
+
+Passport adapters and Places can reuse the following services without sharing
+membership or publication policy:
+
+- `services.images.clean_photo(upload)` returns cleaned JPEG bytes, applying EXIF
+  orientation and removing metadata. `store(folder, data)` writes those bytes
+  under a random filename. `PhotoError` carries the existing translated validation
+  messages. Check access before writing; callers remove a newly stored file if
+  saving its database record fails.
+- `services.file_cleanup.register(model, filename_column, folder, ...)` registers
+  an after-commit cleanup adapter. `folder` is an application-context callback
+  returning a `Path`; an optional `cascade_filter(deleted_object)` supplies the
+  feature's SQL predicates for parent deletions. Savepoint commits defer deletion
+  until the outer commit; rollbacks retain files. Each file has one owning row;
+  copying a record must store its photo under a new filename. ORM events do not
+  cover bulk SQL deletes. Passport-specific validation and voucher anonymisation
+  remain in `passports.lifecycle`.
+- `services.capability_tokens` retains the original signing namespace and email
+  digests, so existing URLs and removal records remain valid. Capability tokens
+  confer resource access, never account identity. `services.public_shares` already
+  provides generic rotation, revocation and expiry; each resource still supplies
+  its own live ownership checks and public field allowlist.
+- `services.waypoints` accepts authorised destination rows and serialises GPX/KML
+  using an explicit document label. `passports.waypoints` keeps the passport-only
+  unvisited/open selection. Place adapters decide their own selection.
+- `services.destination_search` accepts candidate rows and an origin resolver.
+  It provides distance, still-air time, theoretical range, numeric validation,
+  origin choices and reserve preferences. Passport visibility, catalogue lookups,
+  visit filters and home-default access stay in `passports.discovery`.
+- `services.account_exports.register(name, provider)` contributes an
+  `ExportSection` for an explicit `ExportContext(tenant_id, user_id)`. Providers
+  enforce their own membership/data scope. The single ZIP contains versioned
+  `account-data.json` with feature sections; the passport adapter also preserves
+  `passport-data.json` and its existing `photos/` references. New features use
+  their own archive namespace, such as `places/photos/`. Duplicate, reserved and
+  unsafe archive paths are refused. The returned temporary file belongs to the
+  response; failures close it, and missing files are marked rather than aborting
+  recovery of the remaining data.
+
+These services introduce no new operating model, role or database schema.

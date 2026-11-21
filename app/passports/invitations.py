@@ -23,10 +23,11 @@ from models import (
     fits_column,
 )
 from services import auth_challenges
+from services import capability_tokens as tokens
 from sqlalchemy.exc import OperationalError
 from utils import as_utc
 
-from passports import groups, tokens, vouchers
+from passports import groups, vouchers
 from passports.management import BuilderError, owned_passport, require_actor
 
 JOIN_KEY = "passport_join"
