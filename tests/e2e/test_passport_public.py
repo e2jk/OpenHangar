@@ -12,7 +12,7 @@ from tests.e2e.test_passport_builder import passport_page
 
 pytestmark = [pytest.mark.e2e, pytest.mark.destructive]
 
-__all__ = ["passport_page"]
+__all__ = ["passport_page", "pytestmark"]
 
 
 def test_public_passport_map_print_withdrawal_and_revoke(
@@ -70,7 +70,14 @@ def test_public_passport_map_print_withdrawal_and_revoke(
     assert page.evaluate("window.__publicCopied") == public_url
     page.locator("#publish-visits").check()
     page.locator("#publish-frequency").check()
-    page.get_by_role("button", name="Save publication choices", exact=True).click()
+    with page.expect_response(
+        lambda response: (
+            response.request.method == "POST"
+            and response.url.endswith("/public-sharing")
+        )
+    ) as saved:
+        page.get_by_role("button", name="Save publication choices", exact=True).click()
+    assert saved.value.status == 302
     browser = page.context.browser
     assert browser is not None
     context = browser.new_context(service_workers="block")
@@ -122,14 +129,30 @@ def test_public_passport_map_print_withdrawal_and_revoke(
             expect(plain.locator("#public-print-photos")).to_be_checked()
         finally:
             plain_context.close()
-        page.get_by_role(
-            "button", name="Withdraw all my public information", exact=True
-        ).click()
+        with page.expect_response(
+            lambda response: (
+                response.request.method == "POST"
+                and response.url.endswith("/public-sharing")
+            )
+        ) as withdrawn:
+            page.get_by_role(
+                "button", name="Withdraw all my public information", exact=True
+            ).click()
+        assert withdrawn.value.status == 302
+        expect(page.locator("#publish-visits")).not_to_be_checked()
         public.goto(public_url)
         expect(public.locator("#passport-public-airfields")).not_to_contain_text(
             "2001-04"
         )
-        page.get_by_role("button", name="Revoke public link", exact=True).click()
+        with page.expect_response(
+            lambda response: (
+                response.request.method == "POST"
+                and response.url.endswith("/public-sharing")
+            )
+        ) as revoked:
+            page.get_by_role("button", name="Revoke public link", exact=True).click()
+        assert revoked.value.status == 302
+        expect(page.locator("#passport-public-url")).to_have_count(0)
         response = public.goto(public_url)
         assert response is not None and response.status == 404
         assert "no-store" in response.headers["cache-control"]
