@@ -4695,6 +4695,9 @@ class PassportStampPhoto(db.Model):
     )
     filename = db.Column(db.String(128), nullable=False, unique=True)
     public_consent = db.Column(db.Boolean, nullable=False, default=False)
+    # Explicitly shown to this edition's group; counts only while newer than
+    # the uploader's current acceptance, so a rejoin never revives it.
+    group_shared_at = db.Column(db.DateTime(timezone=True), nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )

@@ -203,7 +203,7 @@ msgstr "Définissez soit une contribution horaire, soit une contribution mensuel
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Ce fichier GPS contient trop de points pour être importé (plus de %(n)s). Découpez l'enregistrement en plusieurs fichiers."
 
-#: app/aircraft/routes.py:555 app/passports/routes.py:802
+#: app/aircraft/routes.py:555 app/passports/routes.py:857
 msgid "cruise speed"
 msgstr "vitesse de croisière"
 
@@ -2515,79 +2515,83 @@ msgstr "Votre passeport %(title)s se termine le %(date)s. Ouvrez cette édition 
 msgid "Open passport"
 msgstr "Ouvrir le passeport"
 
-#: app/passports/routes.py:249
+#: app/passports/routes.py:250
 msgid "Choose a reference airfield and correct the destination filters before downloading."
 msgstr "Choisissez un aérodrome de référence et corrigez les filtres de destination avant de télécharger."
 
-#: app/passports/routes.py:345
+#: app/passports/routes.py:346
 msgid "Small airfields"
 msgstr "Petits aérodromes"
 
-#: app/passports/routes.py:346
+#: app/passports/routes.py:347
 msgid "Medium airports"
 msgstr "Aéroports moyens"
 
-#: app/passports/routes.py:347
+#: app/passports/routes.py:348
 msgid "Large airports"
 msgstr "Grands aéroports"
 
-#: app/passports/routes.py:348
+#: app/passports/routes.py:349
 msgid "Heliports"
 msgstr "Héliports"
 
-#: app/passports/routes.py:349
+#: app/passports/routes.py:350
 msgid "Seaplane bases"
 msgstr "Hydrobases"
 
-#: app/passports/routes.py:350
+#: app/passports/routes.py:351
 msgid "Balloon ports"
 msgstr "Bases de ballons"
 
-#: app/passports/routes.py:351
+#: app/passports/routes.py:352
 msgid "Closed airfields"
 msgstr "Aérodromes fermés"
 
-#: app/passports/routes.py:461
+#: app/passports/routes.py:462
 msgid "Passport saved."
 msgstr "Passeport enregistré."
 
-#: app/passports/routes.py:502
+#: app/passports/routes.py:503
 msgid "An airfield code conflicts with an existing identity. Review or remove that selection."
 msgstr "Un code d’aérodrome entre en conflit avec une identité existante. Vérifiez ou retirez cette sélection."
 
-#: app/passports/routes.py:564
+#: app/passports/routes.py:565
 msgid "Passport deleted."
 msgstr "Passeport supprimé."
 
-#: app/passports/routes.py:775
+#: app/passports/routes.py:587
+msgid "Share your visits with this group before sharing photos."
+msgstr "Partagez vos visites avec ce groupe avant de partager des photos."
+
+#: app/passports/routes.py:830
 msgid "Choose a reference airfield from the search results."
 msgstr "Choisissez un aérodrome de référence parmi les résultats de recherche."
 
-#: app/passports/routes.py:778
+#: app/passports/routes.py:833
 msgid "This reference airfield has no coordinates. Choose another."
 msgstr "Cet aérodrome de référence n’a pas de coordonnées. Choisissez-en un autre."
 
-#: app/passports/routes.py:803
+#: app/passports/routes.py:858
 msgid "distance/time limit"
 msgstr "limite de distance/durée"
 
-#: app/passports/routes.py:804
+#: app/passports/routes.py:859
 msgid "usable fuel"
 msgstr "carburant utilisable"
 
-#: app/passports/routes.py:805
+#: app/passports/routes.py:860
 msgid "fuel flow"
 msgstr "consommation"
 
-#: app/passports/routes.py:806
+#: app/passports/routes.py:861
 msgid "reserve minutes"
 msgstr "réserve en minutes"
 
-#: app/passports/routes.py:818
+#: app/passports/routes.py:873
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Saisissez une vitesse de croisière pour le mode durée, ou utilisez le mode distance."
 
-#: app/passports/routes.py:827
+#: app/passports/routes.py:882
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "L’autonomie théorique est inconnue. Saisissez le carburant utilisable, la consommation, la vitesse et une réserve explicite laissant une durée de vol positive. Le filtre distance/durée reste appliqué."
 
@@ -6881,8 +6885,8 @@ msgstr "Enregistrer le paiement"
 
 #: app/templates/aircraft/owners_billing.html:101
 #: app/templates/aircraft/owners_billing.html:158
-#: app/templates/passports/target.html:31
-#: app/templates/passports/target.html:37
+#: app/templates/passports/target.html:32
+#: app/templates/passports/target.html:38
 msgid "Note (optional)"
 msgstr "Note (facultatif)"
 
@@ -12334,12 +12338,13 @@ msgstr "Aucun aérodrome ne correspond à cette vue."
 
 #: app/templates/passports/discussion.html:3
 #: app/templates/passports/discussion.html:7
-#: app/templates/passports/target.html:14
+#: app/templates/passports/target.html:15
 msgid "Group airfield discussion"
 msgstr "Discussion du groupe sur l’aérodrome"
 
 #: app/templates/passports/discussion.html:9
-#: app/templates/passports/target.html:15
+#: app/templates/passports/target.html:13
+#: app/templates/passports/target.html:16
 msgid "Visible to members of this group"
 msgstr "Visible par les membres de ce groupe"
 
@@ -12393,7 +12398,7 @@ msgid "Experience date (optional)"
 msgstr "Date de l’expérience (facultative)"
 
 #: app/templates/passports/discussion.html:31
-#: app/templates/passports/target.html:34
+#: app/templates/passports/target.html:35
 #: app/templates/pilots/entry_form.html:312
 msgid "Save Changes"
 msgstr "Enregistrer les modifications"
@@ -12734,8 +12739,8 @@ msgid "Photos do not count as visits."
 msgstr "Les photos ne comptent pas comme des visites."
 
 #: app/templates/passports/print.html:12 app/templates/passports/print.html:24
-#: app/templates/passports/print.html:29 app/templates/passports/target.html:38
-#: app/templates/passports/target.html:39
+#: app/templates/passports/print.html:29 app/templates/passports/target.html:40
+#: app/templates/passports/target.html:41
 msgid "Private stamp photo"
 msgstr "Photo privée du tampon"
 
@@ -12936,95 +12941,125 @@ msgstr "Amis ayant visité cet aérodrome"
 msgid "No friends have shared a qualifying visit here yet."
 msgstr "Aucun ami n’a encore partagé de visite admissible ici."
 
-#: app/templates/passports/target.html:17
+#: app/templates/passports/target.html:13
+msgid "Photos shared by friends"
+msgstr "Photos partagées par vos amis"
+
+#: app/templates/passports/target.html:13
+#, python-format
+msgid "Stamp photo shared by %(name)s"
+msgstr "Photo du tampon partagée par %(name)s"
+
+#: app/templates/passports/target.html:18
 msgid "Open discussion"
 msgstr "Ouvrir la discussion"
 
-#: app/templates/passports/target.html:19
+#: app/templates/passports/target.html:20
 msgid "Visit evidence"
 msgstr "Justificatifs de visite"
 
-#: app/templates/passports/target.html:21
+#: app/templates/passports/target.html:22
 msgid "Logged arrival"
 msgstr "Arrivée du carnet de vol"
 
-#: app/templates/passports/target.html:21
+#: app/templates/passports/target.html:22
 msgid "Confirmed GPS visit"
 msgstr "Visite GPS confirmée"
 
-#: app/templates/passports/target.html:21
+#: app/templates/passports/target.html:22
 msgid "Manual visit"
 msgstr "Visite manuelle"
 
-#: app/templates/passports/target.html:21
+#: app/templates/passports/target.html:22
 msgid "Excluded from credit"
 msgstr "Exclu du décompte"
 
-#: app/templates/passports/target.html:23
+#: app/templates/passports/target.html:24
 msgid "View flight"
 msgstr "Voir le vol"
 
-#: app/templates/passports/target.html:24
+#: app/templates/passports/target.html:25
 msgid "Restore arrival credit"
 msgstr "Rétablir le décompte de cette arrivée"
 
-#: app/templates/passports/target.html:24
+#: app/templates/passports/target.html:25
 msgid "Exclude this arrival"
 msgstr "Exclure cette arrivée"
 
-#: app/templates/passports/target.html:24
+#: app/templates/passports/target.html:25
 msgid "Delete manual visit"
 msgstr "Supprimer la visite manuelle"
 
-#: app/templates/passports/target.html:27
+#: app/templates/passports/target.html:28
 msgid "Edit manual visit"
 msgstr "Modifier la visite manuelle"
 
-#: app/templates/passports/target.html:30
-#: app/templates/passports/target.html:37
+#: app/templates/passports/target.html:31
+#: app/templates/passports/target.html:38
 msgid "Visit date"
 msgstr "Date de visite"
 
-#: app/templates/passports/target.html:32
-#: app/templates/passports/target.html:37
+#: app/templates/passports/target.html:33
+#: app/templates/passports/target.html:38
 #: app/templates/passports/vouchers.html:21
 msgid "Supporting flight (optional, latest 200 eligible flights)"
 msgstr "Vol justificatif (facultatif, les 200 derniers vols admissibles)"
 
-#: app/templates/passports/target.html:33
-#: app/templates/passports/target.html:37
+#: app/templates/passports/target.html:34
+#: app/templates/passports/target.html:38
 msgid "Independent manual visit"
 msgstr "Visite manuelle indépendante"
 
-#: app/templates/passports/target.html:33
+#: app/templates/passports/target.html:34
 msgid "Current supporting flight"
 msgstr "Vol justificatif actuel"
 
-#: app/templates/passports/target.html:36
+#: app/templates/passports/target.html:37
 msgid "No qualifying visits recorded yet."
 msgstr "Aucune visite admissible enregistrée pour le moment."
 
-#: app/templates/passports/target.html:37
+#: app/templates/passports/target.html:38
 msgid "Record a manual visit"
 msgstr "Enregistrer une visite manuelle"
 
-#: app/templates/passports/target.html:37
+#: app/templates/passports/target.html:38
 msgid "Save visit"
 msgstr "Enregistrer la visite"
 
-#: app/templates/passports/target.html:38
+#: app/templates/passports/target.html:39
+#: app/templates/passports/target.html:41
+msgid "Stamp photo shared with this group"
+msgstr "Photo du tampon partagée avec ce groupe"
+
+#: app/templates/passports/target.html:39
+msgid "Participants of this edition who share their visits see this photo with your group display name. It is never public. Uploading a new photo makes it private again."
+msgstr "Les participants de cette édition qui partagent leurs visites voient cette photo avec votre nom dans le groupe. Elle n’est jamais publique. Téléverser une nouvelle photo la rend de nouveau privée."
+
+#: app/templates/passports/target.html:40
 msgid "This photo is visible only to you. Uploading it does not earn a visit or publish it."
 msgstr "Cette photo n’est visible que par vous. Son téléversement ne valide aucune visite et ne la publie pas."
 
-#: app/templates/passports/target.html:39
+#: app/templates/passports/target.html:42
+msgid "Stop sharing with the group"
+msgstr "Ne plus partager avec le groupe"
+
+#: app/templates/passports/target.html:42
+msgid "Share with this group"
+msgstr "Partager avec ce groupe"
+
+#: app/templates/passports/target.html:43
 msgid "Delete photo"
 msgstr "Supprimer la photo"
 
-#: app/templates/passports/target.html:40
+#: app/templates/passports/target.html:44
+msgid "Participants of this edition who share their visits will see it with your group display name. You can stop sharing at any time. It never becomes public."
+msgstr "Les participants de cette édition qui partagent leurs visites la verront avec votre nom dans le groupe. Vous pouvez arrêter le partage à tout moment. Elle ne devient jamais publique."
+
+#: app/templates/passports/target.html:45
 msgid "JPEG, PNG or WebP, up to 10 MB and 20 megapixels"
 msgstr "JPEG, PNG ou WebP, 10 Mo et 20 mégapixels maximum"
 
-#: app/templates/passports/target.html:40
+#: app/templates/passports/target.html:45
 msgid "Upload photo"
 msgstr "Téléverser la photo"
 
