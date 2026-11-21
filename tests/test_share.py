@@ -347,14 +347,16 @@ class TestPublicView:
                     date=datetime(2026, 1, 1).date(),
                     departure_icao="EBOS",
                     arrival_icao="EBBR",
-                    flight_time_counter_start=100.0,
-                    flight_time_counter_end=101.5,
+                    flight_time_counter_start=4320.0,
+                    flight_time_counter_end=4321.5,
                 )
             )
             db.session.commit()
         _add_token(app, acid, "sum12345", access_level="summary")
         resp = client.get("/share/sum12345")
-        assert b"101" not in resp.data  # hobbs value not shown in summary
+        # A distinctive counter value: a short one such as "101" can also
+        # occur in the page's random per-request nonce.
+        assert b"4321" not in resp.data  # hobbs value not shown in summary
 
     def test_full_shows_hobbs(self, app, client):
         _uid, _tid, acid = _setup(app)
