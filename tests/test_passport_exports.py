@@ -115,6 +115,13 @@ def test_export_contains_only_own_evidence_vouchers_and_photo_files(
     assert data["voucher_events"][0]["saving_amount"] == "12.34"
     assert data["arrival_exclusions"] and data["current_completion"]
     assert data["photos"][0]["included"] is True
+    # Publication and sharing choices are part of the participant's own data.
+    assert {"public_shared_at", "public_frequency_at", "public_name"} <= set(
+        data["participations"][0]
+    )
+    assert {"public_consent", "public_shared_at", "group_shared_at"} <= set(
+        data["photos"][0]
+    )
     assert list(files.values()) == [b"OWN NOTE"]
     assert "FRIEND SECRET" not in json.dumps(data)
     assert "request_key" not in json.dumps(data)

@@ -691,9 +691,11 @@ to export a friend's records.
 The archive contains UTF-8 `passport-data.json` with
 `format: "openhangar-passport-data"` and `version: 1`, plus available own photos
 under `photos/<photo-id>.jpg`. JSON sections contain current accessible passport
-metadata, own participation/consent records, target references, manual/GPS visits,
+metadata, own participation/consent records (including group visit sharing and
+public publication choices with their dates), target references, manual/GPS visits,
 arrival exclusions, personal voucher allocations, own voucher use/corrections,
-current eligible completion evidence and photo references. Dates/timestamps use
+current eligible completion evidence and photo references with their group and
+public sharing state. Dates/timestamps use
 ISO notation; monetary amounts use decimal strings with their stored currency.
 Flight IDs are references, not a second copy of the flight logbook. Shared-pool
 events belonging to other participants, private flight notes, invitation keys,

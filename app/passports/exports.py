@@ -146,7 +146,7 @@ def account_archive(
         "participations": [
             _values(
                 p,
-                "id passport_id display_name accepted_at is_active share_visits share_history",
+                "id passport_id display_name accepted_at is_active share_visits share_history public_shared_at public_frequency_at public_name",
             )
             for p in participants
         ],
@@ -228,7 +228,7 @@ def account_archive(
             for photo in photos:
                 entry = _values(
                     photo,
-                    "id passport_id participant_id target_id public_consent group_shared_at created_at",
+                    "id passport_id participant_id target_id public_consent public_shared_at group_shared_at created_at",
                 )
                 entry["file"] = "photos/" + str(photo.id) + ".jpg"
                 try:
