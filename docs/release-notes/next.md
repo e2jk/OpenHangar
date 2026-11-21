@@ -49,6 +49,14 @@ simple form where you choose the airfield and date, add an optional note and
 save, with no map needed. You can still edit or delete the visit from its
 airfield page.
 
+Share a read-only passport map with a public link. The owner can replace or
+revoke the link and set an expiry date. Each participant separately chooses
+whether to publish their visited airfields, visit counts, photos and an optional
+photo credit. The public list and map show month/year dates, with a frequency
+toggle and a printable view; notes, flights, aircraft registrations and contact
+details stay private. Withdrawing permission or revoking the link stops new
+access immediately, including photo requests.
+
 **Maintenance**
 
 - Background navigation prefetches no longer create competing sign-in forms,
@@ -74,9 +82,8 @@ airfield page.
   56 affected pull requests since 7 November, three of their titles and the
   corresponding lines in the v3.38.0 and v3.44.0 release notes were corrected.
 
-- Prepare storage and token controls for public passport links, with separate
-  publication permissions. Existing visits and photos remain private; the public
-  pages will follow in a separate change.
+- Public links use shared storage and revocable, expiring tokens. Existing visits
+  and photos remain private until their participants choose to publish them.
 
 - The demo and development data now include a group passport shared by two
   pilots and a friend with a passport-only account, to try the group features.

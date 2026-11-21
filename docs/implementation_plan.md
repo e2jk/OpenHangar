@@ -2713,14 +2713,14 @@ downgrades and show localised retrieval timestamps.
   not yet confirmed sharing is left out so totals never reveal unshared progress.
   Filters are server-side, keyed by list position rather than account IDs.
 
-### 41h — Public view and exports
+### 41h — Public view and exports ✅
 
-- [ ] Dedicated revocable read-only passport share tokens, independently enabled
+- [x] Dedicated revocable read-only passport share tokens, independently enabled
   by the owner. Public map/list shows aggregate progress, month/year instead of
   exact dates, no aircraft registrations, flight IDs/links, private notes, invitation
   tokens or member contact details. Individual names/photos require that
   participant's explicit publication choice; default to aggregate group progress.
-- [ ] Build a separate allowlisted public representation for HTML, JSON, print and
+- [x] Build a separate allowlisted public representation for HTML, JSON, print and
   photos; do not send private marker data and merely hide it with CSS. Public image
   requests recheck active token/consent. Rotation, revocation and participant
   withdrawal invalidate access immediately, including cached responses.
@@ -2728,8 +2728,9 @@ downgrades and show localised retrieval timestamps.
   selected own photos, with a bounded photo-ID chooser, unavailable-file labels,
   live eligibility, archived-edition support, browser Print/save-PDF and normal
   no-JavaScript forms. Private notes and other participants’ photos are absent
-  from the explicit print projection. Public print integration remains below.
-- [ ] Printable passport with targets, completion, stamp dates and chosen photos;
+  from the explicit print projection. The public print view uses a separate
+  month-only projection and only explicitly published photos.
+- [x] Printable passport with targets, completion, stamp dates and chosen photos;
   private and public versions follow their respective field permissions. Use
   print-friendly HTML first, reusing the established PDF pipeline if a downloadable
   PDF is included; no dependency on completing Advanced Reporting.

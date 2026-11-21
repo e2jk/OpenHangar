@@ -287,6 +287,7 @@ _EXCLUDED_ENDPOINTS = {
     # Pre-auth / token-based flows: no tenant role exists yet at request time.
     "passports.register_passport": "verified-email signup under an edition capability; bounded challenge state and scoped account tests",
     "passports.verify_passport_email": "email proof consumes a purpose-bound challenge; enrolment still follows account and MFA policy",
+    "passports.public_settings": "owner-only link controls and participant-owned publication choices; covered by public consent and PostgreSQL privacy tests",
     "passports.invitation_settings": "edition owner only; admission controls covered by invitation route and cross-owner tests",
     "passports.join_passport": "capability-bound explicit self-enrolment, not a fleet role; covered by invitation and authentication tests",
     "passports.group_members": "group membership scoped self-withdrawal and owner-only removal/reinstatement, covered by lifecycle tests",

@@ -817,3 +817,37 @@ coordinates are stored with the passport identities, so a restored passport
 needs no remote catalogue fetch. CI proves this on each pull request with a
 real PostgreSQL backup and restore of a fixture covering every passport table
 (except builder drafts) and a photo file (`.github/scripts/backup_roundtrip.py`).
+
+### Public read-only passport links
+
+Open **Public sharing** from an edition. Its owner can create or replace a link,
+choose an optional expiry date, copy the link, or revoke it. A public link grants
+read access only and never enrols its recipient in the group. Ended or archived
+editions can remain available through the owner's link.
+
+Each active participant chooses what to publish on the Internet. Visits and
+first-visit months, repeat counts, individual photos and an optional photo credit
+are separate choices; none is copied from group-sharing consent. Group visits
+must also be shared within the group before they can be published. A photo credit
+uses only the name entered explicitly for publication. No group visitor roster,
+private notes, flights, registrations or contact details appear publicly.
+
+Use **Withdraw all my public information** to remove your publication choices at
+once. Individual photos can also be withdrawn separately; replacing a photo
+clears its publication permission. Leaving and rejoining does not reactivate
+consent from the earlier participation.
+
+The public map normally treats each visited field equally. Its frequency toggle
+uses only repeat counts their participants explicitly published. Unmarked fields
+may have private visits, and the public denominator includes closed fields only
+when there is a published visit. Public JSON uses the same field allowlist as the
+HTML view. The print view includes month/year dates and optionally published
+photos; the browser's Print command also works without JavaScript.
+
+Public responses are not cached. Every HTML, JSON, print and image request checks
+the live link and publication choices. Replacing or revoking a link invalidates
+the old URL immediately. Images have no cache validators or file modification
+timestamps; browser history restoration revalidates the page. Already downloaded
+copies cannot be recalled. The generic `PublicShare` stores a resource type and
+ID, tenant, issuer, creation-time binding, token digest and key-dependent nonce.
+Aircraft sharing remains independent.

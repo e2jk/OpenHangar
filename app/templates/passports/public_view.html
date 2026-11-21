@@ -1,0 +1,26 @@
+{% extends "share/public.html" %}
+{% block public_title %}{{ view.title }} — OpenHangar{% endblock %}
+{% block public_content %}
+<main>
+{% if printable %}<section id="passport-print">{% endif %}
+<div class="container py-4" id="passport-public"{% if not printable %} data-targets="{{ view.targets | tojson | forceescape }}"{% endif %} data-visited="{{ _('Publicly shared visits') }}" data-unvisited="{{ _('Not publicly marked') }}">
+<h1>{{ view.title }}</h1>{% if view.edition %}<p>{{ view.edition }}</p>{% endif %}
+<p>{{ _('Publicly shared visits') }}: {{ view.visited }} / {{ view.total }}{% if view.percent is not none %} ({{ view.percent }}%){% endif %}</p>
+<p>{{ _('Only explicitly published visits and photos appear here. An unmarked airfield may have private visits. Dates show only the month and year.') }}</p>
+<div class="passport-public-controls mb-3">
+{% if printable %}<button class="btn btn-primary d-none" type="button" id="passport-print-button">{{ _('Print / save PDF') }}</button>
+<form method="get"><div class="form-check"><input class="form-check-input" id="public-print-photos" type="checkbox" name="photos" value="1" {% if include_photos %}checked{% endif %}><label for="public-print-photos">{{ _('Include published photos') }}</label></div><button class="btn btn-outline-secondary">{{ _('Update preview') }}</button></form>
+{% else %}<label><input type="checkbox" data-public-frequency> {{ _('Visit frequency (published counts only)') }}</label>
+<a class="btn btn-outline-secondary" href="{{ public_print }}" hx-boost="false">{{ _('Print passport') }}</a>
+<a href="{{ public_json }}" download="passport-public.json" hx-boost="false">{{ _('Download public data (JSON)') }}</a>
+{% endif %}
+</div>
+{% if not printable %}<div id="passport-public-map" class="passport-public-map" aria-label="{{ _('Passport map') }}"></div>{% endif %}
+<div class="table-responsive"{% if printable %} id="passport-print-document"{% endif %}><table class="table" id="passport-public-airfields"><thead><tr><th>{{ _('Airfield') }}</th><th>{{ _('Publicly shared visits') }}</th><th>{{ _('First visit month') }}</th><th>{{ _('Published visit count') }}</th></tr></thead><tbody>
+{% for target in view.targets %}<tr><td>{{ target.name }}{% if target.ident %} ({{ target.ident }}){% endif %}{% if target.closed %} — {{ _('Closed') }}{% endif %}</td><td>{{ _('Visited') if target.visited else _('Not publicly marked') }}</td><td>{{ target.month or '—' }}</td><td>{{ target.frequency if target.frequency is not none else '—' }}</td></tr>
+{% if not printable or include_photos %}{% for photo in target.photos %}<tr><td colspan="4"><figure><img class="passport-public-photo" loading="{{ 'eager' if printable else 'lazy' }}" src="{{ photo.url }}" alt="{{ target.name }}">{% if photo.name %}<figcaption>{{ photo.name }}</figcaption>{% endif %}</figure></td></tr>{% endfor %}{% endif %}
+{% endfor %}</tbody></table></div>
+</div>
+{% if printable %}</section>{% endif %}
+</main>
+{% endblock %}

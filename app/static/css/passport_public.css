@@ -1,0 +1,10 @@
+.passport-public-map { height: 420px; margin-bottom: 1rem; }
+.passport-public-photo { max-width: 100%; max-height: 240px; object-fit: contain; }
+@media print {
+  @page { size: A4; margin: 10mm; }
+  #passport-public { padding: 0 !important; }
+  .passport-public-controls, .passport-public-map, .oh-footer { display: none !important; }
+  .table-responsive { overflow: visible; }
+  figure, tr { break-inside: avoid; }
+  .passport-public-photo { max-height: 65mm; }
+}

@@ -50,6 +50,7 @@ from passports import (
     passports_bp,
     photo_sharing,
     printing,
+    public_routes,  # Register standalone public passport representations.
     series_routes,  # Register linked-edition views.
     visit_routes,  # Register the minimal mobile visit form.
     voucher_routes,  # Register private voucher accounting.
@@ -85,6 +86,7 @@ __all__ = [
     "lifecycle",
     "logbook_routes",
     "passports_bp",
+    "public_routes",
     "series_routes",
     "visit_routes",
     "voucher_routes",

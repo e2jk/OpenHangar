@@ -11,6 +11,9 @@ from utils import current_membership
 
 PASSPORT_ENDPOINTS = frozenset(
     {
+        "passports.public_view",
+        "passports.public_photo",
+        "passports.public_settings",
         "passports.index",
         "passports.export_account",
         "passports.new_passport",
