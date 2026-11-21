@@ -42,8 +42,8 @@ msgstr "Premier vol : 17 décembre 1903 — 12 secondes, 37 mètres. (frères 
 #, python-format
 msgid "🎉 Today marks one year since your first solo flight!"
 msgid_plural "🎉 Today marks %(n)s years since your first solo flight!"
-msgstr[0] "🎉 Cela fait un an que vous avez effectué votre premier vol solo !"
-msgstr[1] "🎉 Cela fait %(n)s ans que vous avez effectué votre premier vol solo !"
+msgstr[0] "🎉 Cela fait un an que vous avez effectué votre premier vol solo !"
+msgstr[1] "🎉 Cela fait %(n)s ans que vous avez effectué votre premier vol solo !"
 
 #: app/init.py:189
 msgid "🎉 Today is the anniversary of your first solo flight!"
@@ -53,8 +53,8 @@ msgstr "🎉 Aujourd'hui, c'est l'anniversaire de votre premier vol solo !"
 #, python-format
 msgid "🎉 Today marks one year since you earned your PPL!"
 msgid_plural "🎉 Today marks %(n)s years since you earned your PPL!"
-msgstr[0] "🎉 Cela fait un an que vous avez obtenu votre PPL !"
-msgstr[1] "🎉 Cela fait %(n)s ans que vous avez obtenu votre PPL !"
+msgstr[0] "🎉 Cela fait un an que vous avez obtenu votre PPL !"
+msgstr[1] "🎉 Cela fait %(n)s ans que vous avez obtenu votre PPL !"
 
 #: app/init.py:201
 msgid "🎉 Today is the anniversary of your PPL!"
@@ -960,7 +960,7 @@ msgstr "Le type de fichier « %(ext)s » n'est pas autorisé."
 #: app/documents/routes.py:596 app/documents/routes.py:704
 #: app/documents/routes.py:831 app/documents/routes.py:935
 msgid "'Valid from' must not be after 'Valid until'."
-msgstr "« Valide à partir du » ne doit pas être postérieur à « Valide jusqu'au »."
+msgstr "« Valide à partir du » ne doit pas être postérieur à « Valide jusqu'au »."
 
 #: app/documents/routes.py:643 app/documents/routes.py:959
 #: app/pwa/routes.py:344
@@ -1570,7 +1570,7 @@ msgstr "Format non pris en charge. Veuillez envoyer un fichier .csv ou .xlsx."
 #: app/flights/routes.py:2363 app/maintenance/routes.py:869
 #: app/pilots/routes.py:1439
 msgid "File too large (maximum 10 MB)."
-msgstr "Fichier trop volumineux (maximum 10 Mo)."
+msgstr "Fichier trop volumineux (maximum 10 Mo)."
 
 #: app/flights/routes.py:2424 app/flights/routes.py:2801
 #: app/flights/routes.py:2879 app/flights/routes.py:3015
@@ -1629,7 +1629,7 @@ msgstr "%(imported)d vols importés jusqu'à présent. %(n)d lignes semblent dé
 #: app/flights/routes.py:2640 app/flights/routes.py:2707
 #, python-format
 msgid "Rows already in this aircraft's log, skipped: %(detail)s"
-msgstr "Lignes déjà présentes dans le carnet de cet appareil, ignorées : %(detail)s"
+msgstr "Lignes déjà présentes dans le carnet de cet appareil, ignorées : %(detail)s"
 
 #: app/flights/routes.py:2649 app/flights/routes.py:2731
 #: app/pilots/routes.py:1687 app/pilots/routes.py:1780
@@ -1669,7 +1669,7 @@ msgstr "Import terminé : aucun vol importé."
 #: app/flights/routes.py:2715
 #, python-format
 msgid "row %(row)d: %(kind)s counter starts at %(got).1f but the previous entry ended at %(prev).1f"
-msgstr "ligne %(row)d : le compteur %(kind)s commence à %(got).1f alors que l'entrée précédente se terminait à %(prev).1f"
+msgstr "ligne %(row)d : le compteur %(kind)s commence à %(got).1f alors que l'entrée précédente se terminait à %(prev).1f"
 
 #: app/flights/routes.py:2725
 #, python-format
@@ -1679,12 +1679,12 @@ msgstr " … et %(n)d de plus"
 #: app/flights/routes.py:2726
 #, python-format
 msgid "Counter continuity warnings: %(detail)s"
-msgstr "Avertissements de continuité des compteurs : %(detail)s"
+msgstr "Avertissements de continuité des compteurs : %(detail)s"
 
 #: app/flights/routes.py:2774
 #, python-format
 msgid "Review complete: %(overwritten)d flights updated, %(new)d imported as new, %(kept)d left unchanged."
-msgstr "Révision terminée : %(overwritten)d vols mis à jour, %(new)d importés comme nouveaux, %(kept)d laissés inchangés."
+msgstr "Révision terminée : %(overwritten)d vols mis à jour, %(new)d importés comme nouveaux, %(kept)d laissés inchangés."
 
 #: app/flights/routes.py:2889 app/flights/routes.py:2917
 #: app/pilots/routes.py:1972 app/pilots/routes.py:2000
@@ -1714,7 +1714,7 @@ msgstr[1] "Les meilleures correspondances de %(n)d lignes étaient déjà utilis
 #: app/flights/routes.py:3111
 #, python-format
 msgid "Import deleted: %(n)d flight entries removed."
-msgstr "Import supprimé : %(n)d entrées de vol retirées."
+msgstr "Import supprimé : %(n)d entrées de vol retirées."
 
 #: app/flights/routes.py:3142
 msgid "Import marked as historical: edits to its flights will no longer be blocked by validation on old, imprecise values."
@@ -2060,12 +2060,12 @@ msgstr "Complétez le profil de déclaration AMP avant d'exporter le document AM
 #: app/maintenance/routes.py:1336
 #, python-format
 msgid "No saved PDF for revision '%(number)s' — it was never downloaded while current."
-msgstr "Aucun PDF enregistré pour la révision « %(number)s » — elle n'a jamais été téléchargée pendant qu'elle était à jour."
+msgstr "Aucun PDF enregistré pour la révision « %(number)s » — elle n'a jamais été téléchargée pendant qu'elle était à jour."
 
 #: app/maintenance/routes.py:1349
 #, python-format
 msgid "The saved PDF for revision '%(number)s' is missing on disk."
-msgstr "Le PDF enregistré pour la révision « %(number)s » est introuvable sur le disque."
+msgstr "Le PDF enregistré pour la révision « %(number)s » est introuvable sur le disque."
 
 #: app/passports/builder.py:44
 msgid "Choose yes, no or unknown for each classification."
@@ -3108,7 +3108,7 @@ msgstr "%(imported)d entrées importées jusqu'à présent. %(n)d lignes semblen
 #: app/pilots/routes.py:1680 app/pilots/routes.py:1773
 #, python-format
 msgid "Rows already in your logbook, skipped: %(detail)s"
-msgstr "Lignes déjà présentes dans votre carnet de vol, ignorées : %(detail)s"
+msgstr "Lignes déjà présentes dans votre carnet de vol, ignorées : %(detail)s"
 
 #: app/pilots/routes.py:1719
 msgid "All entries in this file were already in your logbook — nothing new was imported."
@@ -3161,7 +3161,7 @@ msgstr[1] "%(n)d lignes ont un temps de vol total qui ne correspondent pas à la
 #: app/pilots/routes.py:1871
 #, python-format
 msgid "Review complete: %(overwritten)d entries updated, %(new)d imported as new, %(kept)d left unchanged."
-msgstr "Révision terminée : %(overwritten)d entrées mises à jour, %(new)d importées comme nouvelles, %(kept)d laissées inchangées."
+msgstr "Révision terminée : %(overwritten)d entrées mises à jour, %(new)d importées comme nouvelles, %(kept)d laissées inchangées."
 
 #: app/pilots/routes.py:2192
 #, python-format
@@ -3413,7 +3413,7 @@ msgstr "La réservation est déjà annulée."
 
 #: app/reservations/routes.py:780
 msgid "Cannot cancel: this reservation has already been checked out."
-msgstr "Impossible d'annuler : cette réservation a déjà fait l'objet d'un départ."
+msgstr "Impossible d'annuler : cette réservation a déjà fait l'objet d'un départ."
 
 #: app/reservations/routes.py:803
 #, python-format
@@ -3462,7 +3462,7 @@ msgstr "Seules les réservations en attente peuvent être confirmées."
 
 #: app/reservations/routes.py:857
 msgid "Cannot confirm: overlaps an existing confirmed reservation or maintenance downtime."
-msgstr "Impossible de confirmer : chevauche une réservation confirmée ou une indisponibilité de maintenance existante."
+msgstr "Impossible de confirmer : chevauche une réservation confirmée ou une indisponibilité de maintenance existante."
 
 #: app/reservations/routes.py:872
 msgid "Cannot confirm: this renter does not have a valid rental authorization for this aircraft."
@@ -3470,7 +3470,7 @@ msgstr "Impossible de confirmer : ce locataire ne dispose pas d'une autorisati
 
 #: app/reservations/routes.py:886
 msgid "Cannot confirm: this aircraft is currently grounded."
-msgstr "Impossible de confirmer : cet appareil est actuellement immobilisé au sol."
+msgstr "Impossible de confirmer : cet appareil est actuellement immobilisé au sol."
 
 #: app/reservations/routes.py:896
 msgid "Aircraft is currently grounded — reservation confirmed, but verify airworthiness status before dispatch."
@@ -3592,12 +3592,12 @@ msgstr "Réservation enregistrée."
 #: app/reservations/routes.py:1305
 #, python-format
 msgid "flight time: dispatch shows %(d)s h, logged flights show %(f)s h"
-msgstr "temps de vol : le départ indique %(d)s h, les vols enregistrés indiquent %(f)s h"
+msgstr "temps de vol : le départ indique %(d)s h, les vols enregistrés indiquent %(f)s h"
 
 #: app/reservations/routes.py:1323
 #, python-format
 msgid "engine time: dispatch shows %(d)s h, logged flights show %(f)s h"
-msgstr "temps moteur : le départ indique %(d)s h, les vols enregistrés indiquent %(f)s h"
+msgstr "temps moteur : le départ indique %(d)s h, les vols enregistrés indiquent %(f)s h"
 
 #: app/reservations/routes.py:1333
 #, python-format
@@ -3890,8 +3890,8 @@ msgstr "Document bientôt expiré : %(title)s"
 #, python-format
 msgid "'%(title)s' on %(reg)s expires on %(date)s (one day remaining)."
 msgid_plural "'%(title)s' on %(reg)s expires on %(date)s (%(days)s days remaining)."
-msgstr[0] "« %(title)s » sur %(reg)s expire le %(date)s (un jour restant)."
-msgstr[1] "« %(title)s » sur %(reg)s expire le %(date)s (%(days)s jours restants)."
+msgstr[0] "« %(title)s » sur %(reg)s expire le %(date)s (un jour restant)."
+msgstr[1] "« %(title)s » sur %(reg)s expire le %(date)s (%(days)s jours restants)."
 
 #: app/services/notification_service.py:890
 #: app/services/notification_service.py:957
@@ -3973,13 +3973,13 @@ msgstr "%(items)s ou dates de validité médicale expirent dans %(days)s."
 #: app/templates/pilots/logbook.html:87
 #, python-format
 msgid "no matching flight on record yet (comfort zone: %(threshold)s days)."
-msgstr "aucun vol correspondant enregistré pour l'instant (zone de confort : %(threshold)s jours)."
+msgstr "aucun vol correspondant enregistré pour l'instant (zone de confort : %(threshold)s jours)."
 
 #: app/services/notification_service.py:1130
 #: app/templates/pilots/logbook.html:89
 #, python-format
 msgid "%(days)s days since your last matching flight (comfort zone: %(threshold)s days)."
-msgstr "%(days)s jours depuis votre dernier vol correspondant (zone de confort : %(threshold)s jours)."
+msgstr "%(days)s jours depuis votre dernier vol correspondant (zone de confort : %(threshold)s jours)."
 
 #: app/services/notification_service.py:1141
 #, python-format
@@ -4014,11 +4014,11 @@ msgid ""
 "\n"
 "The OpenHangar team"
 msgstr ""
-"Bienvenue dans OpenHangar ! Votre instance est configurée et l'envoi d'e-mails fonctionne correctement.\n"
+"Bienvenue dans OpenHangar ! Votre instance est configurée et l'envoi d'e-mails fonctionne correctement.\n"
 "\n"
 "Vous pouvez configurer les préférences de notification pour tous les utilisateurs dans Configuration → Notifications e-mail.\n"
 "\n"
-"Bon vol !\n"
+"Bon vol !\n"
 "\n"
 "L'équipe OpenHangar"
 
@@ -4052,12 +4052,12 @@ msgstr "La date de résolution ne peut pas être antérieure à la date de signa
 #: app/snags/routes.py:248
 #, python-format
 msgid "Grounding snag reported: %(title)s — %(reg)s"
-msgstr "Anomalie clouante signalée : %(title)s — %(reg)s"
+msgstr "Anomalie clouante signalée : %(title)s — %(reg)s"
 
 #: app/snags/routes.py:249
 #, python-format
 msgid "Grounding snag reported: %(title)s"
-msgstr "Anomalie clouante signalée : %(title)s"
+msgstr "Anomalie clouante signalée : %(title)s"
 
 #: app/snags/routes.py:250
 #, python-format
@@ -4104,12 +4104,12 @@ msgstr "Déclarant"
 #: app/snags/routes.py:301
 #, python-format
 msgid "Aircraft grounded — check your reservation: %(reg)s"
-msgstr "Appareil immobilisé au sol — vérifiez votre réservation : %(reg)s"
+msgstr "Appareil immobilisé au sol — vérifiez votre réservation : %(reg)s"
 
 #: app/snags/routes.py:304
 #, python-format
 msgid "Aircraft grounded: %(reg)s"
-msgstr "Appareil immobilisé au sol : %(reg)s"
+msgstr "Appareil immobilisé au sol : %(reg)s"
 
 #: app/snags/routes.py:307
 #, python-format
@@ -4129,7 +4129,7 @@ msgstr "Dates de réservation concernées"
 #: app/snags/routes.py:328
 #, python-format
 msgid "Snag '%(title)s' saved."
-msgstr "Anomalie « %(title)s » enregistrée."
+msgstr "Anomalie « %(title)s » enregistrée."
 
 #: app/snags/routes.py:345
 msgid "Snag is already closed."
@@ -4138,7 +4138,7 @@ msgstr "L'anomalie est déjà clôturée."
 #: app/snags/routes.py:384
 #, python-format
 msgid "Snag '%(title)s' closed."
-msgstr "Anomalie « %(title)s » clôturée."
+msgstr "Anomalie « %(title)s » clôturée."
 
 #: app/snags/routes.py:405
 msgid "Snag is already open."
@@ -4147,7 +4147,7 @@ msgstr "L'anomalie est déjà ouverte."
 #: app/snags/routes.py:421
 #, python-format
 msgid "Snag '%(title)s' reopened."
-msgstr "Anomalie « %(title)s » rouverte."
+msgstr "Anomalie « %(title)s » rouverte."
 
 #: app/snags/routes.py:437
 msgid "Closed snags are archived and cannot be deleted."
@@ -4156,7 +4156,7 @@ msgstr "Les anomalies fermées sont archivées et ne peuvent pas être supprimé
 #: app/snags/routes.py:442
 #, python-format
 msgid "Snag '%(title)s' deleted."
-msgstr "Anomalie « %(title)s » supprimée."
+msgstr "Anomalie « %(title)s » supprimée."
 
 #: app/templates/_doc_viewer_modal.html:12
 #: app/templates/aircraft/detail.html:962
@@ -5561,7 +5561,7 @@ msgstr "TBO / limite de vie en heures"
 
 #: app/templates/aircraft/component_form.html:106
 msgid "Hours between overhauls; the aircraft is flagged when the component approaches or exceeds it."
-msgstr "Heures entre révisions générales ; l'avion est signalé lorsque le composant s'en approche ou la dépasse."
+msgstr "Heures entre révisions générales ; l'avion est signalé lorsque le composant s'en approche ou la dépasse."
 
 #: app/templates/aircraft/component_form.html:109
 msgid "Calendar life limit"
@@ -5620,8 +5620,8 @@ msgstr "Ajouter des composants ?"
 #, python-format
 msgid "This looks like a single-engine piston aircraft — add an engine and a propeller component now?"
 msgid_plural "This looks like a %(n)s-engine piston aircraft — add %(n)s engine and propeller components now?"
-msgstr[0] "Cet appareil semble être un monoplace à piston — ajouter un moteur et une hélice maintenant ?"
-msgstr[1] "Cet appareil semble être un %(n)s-moteurs à piston — ajouter %(n)s moteurs et hélices maintenant ?"
+msgstr[0] "Cet appareil semble être un monoplace à piston — ajouter un moteur et une hélice maintenant ?"
+msgstr[1] "Cet appareil semble être un %(n)s-moteurs à piston — ajouter %(n)s moteurs et hélices maintenant ?"
 
 #: app/templates/aircraft/detail.html:74
 msgid "Add components"
@@ -5657,7 +5657,7 @@ msgstr "Désarchiver"
 #: app/templates/aircraft/detail.html:123
 #, python-format
 msgid "Archive %(reg)s? Its history stays available, but it is removed from the active fleet, reservations and notifications."
-msgstr "Archiver %(reg)s ? Son historique reste disponible, mais il est retiré de la flotte active, des réservations et des notifications."
+msgstr "Archiver %(reg)s ? Son historique reste disponible, mais il est retiré de la flotte active, des réservations et des notifications."
 
 #: app/templates/aircraft/detail.html:125
 msgid "Archive"
@@ -8775,7 +8775,7 @@ msgstr "Sauvegardes automatiques non planifiées — définissez OPENHANGAR_BACK
 #: app/templates/config/settings.html:281
 #, python-format
 msgid "Last successful backup: %(when)s"
-msgstr "Dernière sauvegarde réussie : %(when)s"
+msgstr "Dernière sauvegarde réussie : %(when)s"
 
 #: app/templates/config/settings.html:283
 msgid "older than 2 days despite daily scheduling — check the container logs"
@@ -9206,7 +9206,7 @@ msgstr "Générer un lien de réinitialisation du mot de passe pour cet utilisat
 
 #: app/templates/config/tenant_list.html:80
 msgid "Toggle active status for this tenant?"
-msgstr "Modifier le statut actif de cette organisation ?"
+msgstr "Modifier le statut actif de cette organisation ?"
 
 #: app/templates/config/tenant_list.html:83
 msgid "Deactivate"
@@ -9228,7 +9228,7 @@ msgstr "Lien de réinitialisation du mot de passe"
 #: app/templates/config/tenant_reset_token.html:12
 #, python-format
 msgid "Tenant: %(name)s"
-msgstr "Organisation : %(name)s"
+msgstr "Organisation : %(name)s"
 
 #: app/templates/config/tenant_reset_token.html:16
 msgid "Back to tenants"
@@ -10049,7 +10049,7 @@ msgstr "Compteur moteur final"
 #: app/templates/flights/airframe_import_review.html:73
 #, python-format
 msgid "Pilot in this file: %(name)s"
-msgstr "Pilote dans ce fichier : %(name)s"
+msgstr "Pilote dans ce fichier : %(name)s"
 
 #: app/templates/flights/airframe_import_review.html:82
 #: app/templates/pilots/import_review.html:85
@@ -10124,7 +10124,7 @@ msgstr "Fichier du carnet de vol"
 #: app/templates/flights/airframe_import_upload.html:32
 #: app/templates/pilots/import_upload.html:32
 msgid "Supported formats: Excel (.xlsx, .xls) or CSV. Maximum 10 MB."
-msgstr "Formats pris en charge : Excel (.xlsx, .xls) ou CSV. Maximum 10 Mo."
+msgstr "Formats pris en charge : Excel (.xlsx, .xls) ou CSV. Maximum 10 Mo."
 
 #: app/templates/flights/airframe_import_upload.html:38
 #: app/templates/pilots/import_upload.html:38
@@ -10169,7 +10169,7 @@ msgstr "Marquer comme historique"
 #: app/templates/flights/airframe_import_upload.html:95
 #, python-format
 msgid "Delete this import and all %(n)s flight entries it created?"
-msgstr "Supprimer cet import et les %(n)s entrées de vol qu'il a créées ?"
+msgstr "Supprimer cet import et les %(n)s entrées de vol qu'il a créées ?"
 
 #: app/templates/flights/crew_entry.html:3
 #: app/templates/flights/crew_entry.html:10
@@ -13796,11 +13796,11 @@ msgstr "Aucun de ces vols — traiter comme sans correspondance"
 
 #: app/templates/pilots/gps_import_review.html:223
 msgid "If no match selected:"
-msgstr "Si aucune correspondance sélectionnée :"
+msgstr "Si aucune correspondance sélectionnée :"
 
 #: app/templates/pilots/gps_import_review.html:223
 msgid "No existing flight found — how do you want to create an entry?"
-msgstr "Aucun vol existant trouvé — comment souhaitez-vous créer une entrée ?"
+msgstr "Aucun vol existant trouvé — comment souhaitez-vous créer une entrée ?"
 
 #: app/templates/pilots/gps_import_review.html:229
 msgid "Create a new flight in an aircraft managed here"
@@ -14097,7 +14097,7 @@ msgstr "Descendre"
 
 #: app/templates/pilots/minimums_edit.html:37
 msgid "Remove this section and all its items?"
-msgstr "Supprimer cette section et tous ses éléments ?"
+msgstr "Supprimer cette section et tous ses éléments ?"
 
 #: app/templates/pilots/minimums_edit.html:38
 msgid "Remove section"
@@ -14124,7 +14124,7 @@ msgstr "Enregistrer l'élément"
 
 #: app/templates/pilots/minimums_edit.html:73
 msgid "Remove this item?"
-msgstr "Supprimer cet élément ?"
+msgstr "Supprimer cet élément ?"
 
 #: app/templates/pilots/minimums_edit.html:74
 msgid "Remove item"
@@ -14157,7 +14157,7 @@ msgstr "Publier"
 
 #: app/templates/pilots/minimums_edit.html:116
 msgid "Discard this draft? This cannot be undone."
-msgstr "Abandonner ce brouillon ? Cette action est irréversible."
+msgstr "Abandonner ce brouillon ? Cette action est irréversible."
 
 #: app/templates/pilots/minimums_edit.html:118
 msgid "Discard draft"
@@ -14605,7 +14605,7 @@ msgstr "Ajouter le coût"
 
 #: app/templates/refuels/list.html:181
 msgid "Delete this refuel?"
-msgstr "Supprimer ce plein ?"
+msgstr "Supprimer ce plein ?"
 
 #: app/templates/refuels/list.html:197
 msgid "No refuels in this period."
@@ -14680,7 +14680,7 @@ msgstr "Motif"
 #: app/templates/reservations/calendar.html:157
 #: app/templates/reservations/downtime_form.html:76
 msgid "Remove this downtime period?"
-msgstr "Supprimer cette période d'indisponibilité ?"
+msgstr "Supprimer cette période d'indisponibilité ?"
 
 #: app/templates/reservations/calendar.html:185
 msgid "Pending Approvals"
@@ -14779,7 +14779,7 @@ msgstr "Check-in"
 #: app/templates/reservations/checkin.html:20
 #, python-format
 msgid "Counters at check-out: engine %(eng)s, flight %(fl)s."
-msgstr "Compteurs au départ : moteur %(eng)s, vol %(fl)s."
+msgstr "Compteurs au départ : moteur %(eng)s, vol %(fl)s."
 
 #: app/templates/reservations/checkin.html:40
 #: app/templates/reservations/checkout.html:64
@@ -14793,11 +14793,11 @@ msgstr "p. ex. plein, 40 L"
 
 #: app/templates/reservations/checkin.html:46
 msgid "Anything to report?"
-msgstr "Quelque chose à signaler ?"
+msgstr "Quelque chose à signaler ?"
 
 #: app/templates/reservations/checkin.html:49
 msgid "Found a snag during the flight or on return?"
-msgstr "Une anomalie constatée pendant le vol ou au retour ?"
+msgstr "Une anomalie constatée pendant le vol ou au retour ?"
 
 #: app/templates/reservations/checkin.html:50
 msgid "Report a snag"
@@ -15134,7 +15134,7 @@ msgstr "Une ou plusieurs anomalies clouantes ouvertes empêchent cet avion de vo
 
 #: app/templates/snags/list.html:94
 msgid "Delete this snag?"
-msgstr "Supprimer cette anomalie ?"
+msgstr "Supprimer cette anomalie ?"
 
 #: app/templates/snags/list.html:110
 msgid "No open snags — aircraft is clear."
@@ -15158,7 +15158,7 @@ msgstr "Note de résolution"
 
 #: app/templates/snags/list.html:154
 msgid "Reopen this snag?"
-msgstr "Rouvrir cette anomalie ?"
+msgstr "Rouvrir cette anomalie ?"
 
 #: app/templates/snags/list.html:155
 msgid "Reopen"
