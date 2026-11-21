@@ -10,7 +10,7 @@ from uuid import uuid4
 from xml.etree import ElementTree as ET
 
 import pytest
-from playwright.sync_api import BrowserContext, Page, Route, expect
+from playwright.sync_api import Browser, Page, Route, expect
 
 from tests.e2e.conftest import _block_external_network
 
@@ -18,11 +18,8 @@ pytestmark = [pytest.mark.e2e, pytest.mark.destructive]
 
 
 @pytest.fixture
-def passport_page(
-    browser_context: BrowserContext, live_server_url: str
-) -> Iterator[Page]:
-    browser = browser_context.browser
-    assert browser is not None
+def passport_page(traced_browser: Browser, live_server_url: str) -> Iterator[Page]:
+    browser = traced_browser
     context = browser.new_context(
         base_url=live_server_url,
         service_workers="block",
@@ -1012,7 +1009,17 @@ def test_private_passport_print_with_selected_photo_htmx_and_no_javascript(
     page.locator("#stamp-photo").set_input_files(
         {"name": "stamp.jpg", "mimeType": "image/jpeg", "buffer": image_bytes()}
     )
-    page.get_by_role("button", name="Upload photo", exact=True).click()
+    with page.expect_response(
+        lambda response: (
+            response.request.method == "POST"
+            and "multipart/form-data"
+            in response.request.headers.get("content-type", "")
+        )
+    ) as uploaded:
+        page.get_by_role("button", name="Upload photo", exact=True).click()
+    assert uploaded.value.status == 302
+    expect(page.get_by_role("button", name="Delete photo", exact=True)).to_be_visible()
+    expect(page.get_by_alt_text("Private stamp photo", exact=True)).to_be_visible()
     page.goto(passport_url)
     page.get_by_role("link", name="Print passport", exact=True).click()
     expect(page.locator("#passport-print")).to_have_attribute("data-oh-inited", "1")

@@ -28,4 +28,5 @@ without JavaScript using the browser’s Print command.
 - Background navigation prefetches no longer create competing sign-in forms,
   which could replace the login CSRF cookie while switching accounts.
 
-- Passport browser checks also exercise personal ZIP downloads outside the signup flow.
+- Passport browser checks exercise personal ZIP downloads outside the signup flow,
+  wait for photo uploads to finish and keep failure traces for diagnosis.
