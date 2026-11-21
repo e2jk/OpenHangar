@@ -5,7 +5,8 @@ Used by .github/workflows/auto-pr-merge.yml. Commit subjects (conventional
 commits, one per line) come on stdin, oldest first.
 
     release_notes.py title [--later] < subjects
-    release_notes.py body [--summary-file FILE] [--later] < subjects
+    release_notes.py body [--summary-file FILE [--base-summary-file FILE]]
+        [--later] < subjects
 
 The title counts the batch by kind ("Release: 7 features, 9 fixes, 1
 performance") — or is the commit's own subject when there's only one. The
@@ -16,7 +17,10 @@ grouped by kind, with routine dependency updates collapsed into one line.
 --later: the batch was shipped to `ship-later` (scripts/ship.sh --later) —
 it merges without a release of its own and goes out with the next daily
 release: its title starts with "[later]" and names its own commits, not the
-summary's title line (which names the whole release).
+summary's title line (which names the whole release). Its body shows only
+what this batch added to or changed in the summary (--base-summary-file:
+next.md as it was before the batch), because next.md keeps everything since
+the previous release and the earlier batches' items are in their own PRs.
 
 The summary may start with a title line, `# <title>` (at most
 MAX_TITLE characters — scripts/ship.sh checks before pushing): it is then
@@ -134,7 +138,108 @@ def title(subjects: list[str], later: bool = False, summary: str | None = None) 
     return f"Release: {counts(subjects)}"
 
 
-def body(subjects: list[str], summary: str | None, later: bool = False) -> str:
+_NO_NEW_ENTRIES = (
+    "This batch adds nothing new to the release summary "
+    "(`docs/release-notes/next.md`); it only edits or removes existing text."
+)
+
+
+def _reworded_note(n: int) -> str:
+    entries = "one earlier entry" if n == 1 else f"{n} earlier entries"
+    return (
+        f"_This batch also rewords {entries} of the release summary "
+        "(`docs/release-notes/next.md`), which shipped in earlier pull requests._"
+    )
+
+
+# A block that is only a section heading inside the summary ("**Maintenance**",
+# "## Fixes"): kept in front of a new entry it introduces, never on its own.
+_SECTION_RE = re.compile(r"^(\*\*[^*\n]+\*\*|#{2,6} .+)$")
+
+
+def _blocks(text: str) -> list[str]:
+    """The summary's paragraphs and list items, in order: a list item is a
+    block of its own even when the list has no blank lines between items."""
+    blocks: list[str] = []
+    for para in re.split(r"\n\s*\n", text.strip()):
+        lines = para.strip().splitlines()
+        current: list[str] = []
+        for line in lines:
+            if re.match(r"^\s{0,3}[-*+] ", line) and current:
+                blocks.append("\n".join(current))
+                current = []
+            current.append(line)
+        if current:
+            blocks.append("\n".join(current))
+    return [b for b in blocks if b.strip()]
+
+
+def _norm(block: str) -> str:
+    return " ".join(block.split())
+
+
+# Share of a new block's words found in the text the batch removed from
+# which the block counts as a rewording of earlier entries, not a new entry.
+# Measured on real batches: rewordings ≥ 0.7, new entries ≤ 0.55.
+REWORDED = 0.6
+_WORD_RE = re.compile(r"[^\W\d_]{4,}")
+
+
+def _words(text: str) -> set[str]:
+    return set(_WORD_RE.findall(text.casefold()))
+
+
+def _list_item(block: str) -> bool:
+    return bool(re.match(r"^\s{0,3}[-*+] ", block))
+
+
+def batch_summary(summary: str | None, base: str | None) -> tuple[str, int]:
+    """(new entries, number of reworded ones) of *summary* (next.md after the
+    batch) compared with *base* (next.md before it).
+
+    New entries are the paragraphs and list items that aren't in *base*,
+    each still under its section heading. A block resembling one the batch
+    removed is a rewording of an earlier entry, not news of this batch: it
+    is only counted, so the PR never presents an earlier batch's feature as
+    its own. Removed text and title-line changes are not listed."""
+    _h, rest = split_summary(summary)
+    _bh, base_rest = split_summary(base)
+    base_blocks = _blocks(base_rest)
+    new_blocks = _blocks(rest)
+    known = {_norm(b) for b in base_blocks}
+    current = {_norm(b) for b in new_blocks}
+    removed = _words(" ".join(b for b in base_blocks if _norm(b) not in current))
+    out = ""
+    previous = ""
+    reworded = 0
+    section: str | None = None
+    shown: str | None = None
+    for block in new_blocks:
+        if _SECTION_RE.match(block.strip()):
+            section = block.strip()
+            continue
+        if _norm(block) in known:
+            continue
+        words = _words(block)
+        if words and len(words & removed) / len(words) >= REWORDED:
+            reworded += 1
+            continue
+        if section and section != shown:
+            out += ("\n\n" if out else "") + section
+            shown = previous = section
+        # Keep a tight list tight: consecutive items stay on adjacent lines.
+        tight = _list_item(block) and _list_item(previous)
+        out += ("\n" if tight else "\n\n" if out else "") + block
+        previous = block
+    return out, reworded
+
+
+def body(
+    subjects: list[str],
+    summary: str | None,
+    later: bool = False,
+    base: str | None = None,
+) -> str:
     if later:
         intro = (
             "Auto-opened from `ship-later` — will merge once CI passes, "
@@ -150,8 +255,18 @@ def body(subjects: list[str], summary: str | None, later: bool = False) -> str:
         n = len(subjects)
         out += [f"{n} commit{'' if n == 1 else 's'}: {counts(subjects)}.", ""]
     _heading, rest = split_summary(summary)
-    if rest:
-        out += ["## Summary", "", rest, ""]
+    reworded = 0
+    if later and summary is not None:
+        # One batch towards a release: only what it added to the summary.
+        rest, reworded = batch_summary(summary, base)
+        if not rest and not reworded:
+            out += ["## Summary", "", _NO_NEW_ENTRIES, ""]
+    if rest or reworded:
+        out += ["## Summary", ""]
+        if rest:
+            out += [rest, ""]
+        if reworded:
+            out += [_reworded_note(reworded), ""]
     groups, deps = group(subjects)
     for _k, heading, _w in [*_KINDS, (None, *_OTHER)]:
         if heading in groups:
@@ -374,6 +489,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--heading", default="")
     parser.add_argument("--summary-file")
+    parser.add_argument("--base-summary-file")
     parser.add_argument("--later", action="store_true")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args(argv)
@@ -430,11 +546,15 @@ def main(argv: list[str] | None = None) -> int:
         if out:
             print(out)
         return 0
+    base = None
+    if args.base_summary_file:
+        with open(args.base_summary_file, encoding="utf-8") as fh:
+            base = fh.read()
     subjects = [line.strip() for line in sys.stdin if line.strip()]
     if args.mode == "title":
         print(title(subjects, args.later, summary))
     else:
-        sys.stdout.write(body(subjects, summary, args.later))
+        sys.stdout.write(body(subjects, summary, args.later, base))
     return 0
 
 

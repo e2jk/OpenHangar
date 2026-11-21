@@ -129,7 +129,8 @@ jobs:
           # shipping again while the PR is still open keeps both current.
           # docs/release-notes/next.md, the hand-written release summary,
           # goes on top only when it changed in this batch: a summary left
-          # over from an earlier release is never reused.
+          # over from an earlier release is never reused. A ship-later PR
+          # gets only the entries its own batch added (see below).
           compare=$(gh api "repos/$GH_REPO/compare/main...$HEAD_SHA")
           subjects=$(printf '%s' "$compare" | jq -r '.commits[].commit.message | split("\n")[0]')
           summary_args=()
@@ -141,6 +142,26 @@ jobs:
           later_args=()
           if [ "$HEAD_BRANCH" = "ship-later" ]; then
             later_args=(--later)
+            # next.md keeps everything since the previous release, so a
+            # ship-later PR shows only what its own batch added: pass next.md
+            # as it was at the merge base (empty if it didn't exist yet).
+            if [ "${#summary_args[@]}" -gt 0 ]; then
+              base_sha=$(printf '%s' "$compare" | jq -r '.merge_base_commit.sha')
+              gh api -H "Accept: application/vnd.github.raw" \
+                "repos/$GH_REPO/contents/docs/release-notes/next.md?ref=$base_sha" \
+                > "$RUNNER_TEMP/next-base.md" 2>/dev/null || : > "$RUNNER_TEMP/next-base.md"
+              # A batch that empties next.md after a release starts the next
+              # summary: its base is the previous release's text, so compare
+              # with nothing (else a new entry could pass for a rewording).
+              if gh release view --json name,body > "$RUNNER_TEMP/latest.json" 2>/dev/null; then
+                jq -r '.body' "$RUNNER_TEMP/latest.json" > "$RUNNER_TEMP/latest-notes.md"
+                if ! python3 scripts/release_notes.py already-released "$RUNNER_TEMP/next-base.md" \
+                    "$RUNNER_TEMP/latest-notes.md" --heading "$(jq -r '.name' "$RUNNER_TEMP/latest.json")" >/dev/null; then
+                  : > "$RUNNER_TEMP/next-base.md"
+                fi
+              fi
+              summary_args+=(--base-summary-file "$RUNNER_TEMP/next-base.md")
+            fi
           fi
           # A `# <title>` first line in next.md (when it changed in this
           # batch) is the PR title; otherwise the count of commits by kind.

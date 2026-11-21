@@ -41,3 +41,9 @@ without JavaScript using the browser’s Print command.
   ULM / microlight fields, and cleaning every stored photo of its location data
   after reading what's useful from it — such as suggesting the departure or
   arrival airfield from where a counter photo was taken.
+
+- A ship-later pull request's description now shows only the release-summary
+  entries its own changes added, instead of the whole summary of the coming
+  release, which presented earlier changes as its own. The descriptions of the
+  56 affected pull requests since 7 November, three of their titles and the
+  corresponding lines in the v3.38.0 and v3.44.0 release notes were corrected.
