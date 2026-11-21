@@ -30,3 +30,9 @@ without JavaScript using the browser’s Print command.
 
 - Passport browser checks exercise personal ZIP downloads outside the signup flow,
   wait for photo uploads to finish and keep failure traces for diagnosis.
+
+- Planning only, no code yet: the roadmap now has a Phase 42 “Explore” —
+  shareable collections of places worth flying to (towns, attractions,
+  restaurants) linked to nearby airfields, with **Where next?** becoming one
+  search over places and passports, and *Personal* accounts. Later phases moved
+  up by one number.

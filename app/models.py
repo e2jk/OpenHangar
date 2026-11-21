@@ -3803,7 +3803,7 @@ class BillingAccountKind:
 
     RENTER = "renter"  # Phase 37 — scoped to the tenant (all aircraft)
     CO_OWNER = "co_owner"  # Phase 39 — scoped to one aircraft
-    MEMBER = "member"  # Phase 42 — scoped to the tenant
+    MEMBER = "member"  # Phase 43 — scoped to the tenant
 
     ALL: ClassVar[set[str]] = {RENTER, CO_OWNER, MEMBER}
 
