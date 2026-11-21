@@ -32,8 +32,8 @@ to yours.
 On group passports you can now share a stamp photo with your friends. Open an
 airfield and choose **Share with this group**: the edition's other participants
 see it with your group name under **Photos shared by friends**. Photos stay
-private until you share them, are never public, and **Stop sharing with the
-group** hides them again straight away. Uploading a new photo makes it private
+private until you share them, sharing with the group never publishes them on a
+public link, and **Stop sharing with the group** hides them again straight away. Uploading a new photo makes it private
 again.
 
 Friends with a passport-only account who fly can now keep their own pilot

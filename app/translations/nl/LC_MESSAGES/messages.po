@@ -13303,8 +13303,8 @@ msgid "Stamp photo shared with this group"
 msgstr "Stempelfoto gedeeld met deze groep"
 
 #: app/templates/passports/target.html:39
-msgid "Participants of this edition who share their visits see this photo with your group display name. It is never public. Uploading a new photo makes it private again."
-msgstr "Deelnemers aan deze editie die hun bezoeken delen, zien deze foto met je weergavenaam in de groep. De foto is nooit openbaar. Als je een nieuwe foto uploadt, is die weer privé."
+msgid "Participants of this edition who share their visits see this photo with your group display name. Sharing it with the group does not publish it on a public link. Uploading a new photo makes it private again."
+msgstr "Deelnemers aan deze editie die hun bezoeken delen, zien deze foto met je weergavenaam in de groep. Delen met de groep publiceert de foto niet via een openbare link. Als je een nieuwe foto uploadt, is die weer privé."
 
 #: app/templates/passports/target.html:40
 msgid "This photo is visible only to you. Uploading it does not earn a visit or publish it."
@@ -13323,8 +13323,8 @@ msgid "Delete photo"
 msgstr "Foto verwijderen"
 
 #: app/templates/passports/target.html:44
-msgid "Participants of this edition who share their visits will see it with your group display name. You can stop sharing at any time. It never becomes public."
-msgstr "Deelnemers aan deze editie die hun bezoeken delen, zien de foto met je weergavenaam in de groep. Je kunt het delen op elk moment stoppen. De foto wordt nooit openbaar."
+msgid "Participants of this edition who share their visits will see it with your group display name. You can stop sharing at any time. It appears on a public link only if you publish it there separately."
+msgstr "Deelnemers aan deze editie die hun bezoeken delen, zien de foto met je weergavenaam in de groep. Je kunt het delen op elk moment stoppen. De foto verschijnt alleen via een openbare link als je hem daar apart publiceert."
 
 #: app/templates/passports/target.html:45
 msgid "JPEG, PNG or WebP, up to 10 MB and 20 megapixels"

@@ -177,8 +177,10 @@ the page and every image request recheck this server-side. **Stop sharing with
 the group** withdraws it at once, and still works on an archived edition, where
 new sharing is refused. Uploading a replacement makes the photo private again,
 and a share made before your current acceptance (after leaving and rejoining)
-no longer counts. Shared photos stay within their edition: they appear neither
-on other editions nor publicly, and the separate `public_consent` stays off.
+no longer counts. Group sharing stays within its edition: it never shows the
+photo on other editions, and it never sets `public_consent`. Publishing a photo
+on a public link is a separate choice the participant makes in the public-link
+settings.
 
 
 ## Where next?
