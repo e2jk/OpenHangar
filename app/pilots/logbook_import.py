@@ -1513,6 +1513,23 @@ def _score_candidate(kwargs: dict[str, Any], existing: Any) -> float:
     return score
 
 
+def full_tenant_ids(user_id: int) -> set[int]:
+    """Organisations whose aircraft a pilot's logbook may be matched against.
+
+    Only full memberships: a passport-only membership (with or without a
+    personal logbook) gives no aircraft access, so its organisation's
+    aircraft and their flights are never offered or written to.
+    """
+    from models import TenantUser  # pyright: ignore[reportMissingImports]
+
+    return {
+        row.tenant_id
+        for row in TenantUser.query.filter_by(
+            user_id=user_id, access_scope="full"
+        ).all()
+    }
+
+
 def find_conflicting_rows(
     parsed: ParsedFile,
     mapping: dict[str, str],
@@ -1544,7 +1561,6 @@ def find_conflicting_rows(
     from models import (  # pyright: ignore[reportMissingImports]
         Aircraft,
         Flight,
-        TenantUser,
     )
     from sqlalchemy import and_, or_  # pyright: ignore[reportMissingImports]
 
@@ -1554,9 +1570,7 @@ def find_conflicting_rows(
     existing = _fetch_existing_dedup_index(pilot_user_id)
     conflicts: list[ConflictRow] = []
 
-    tenant_ids = [
-        row.tenant_id for row in TenantUser.query.filter_by(user_id=pilot_user_id).all()
-    ]
+    tenant_ids = sorted(full_tenant_ids(pilot_user_id))
 
     for row_num, row in enumerate(parsed.data_rows, start=1):
         if row_num in exclude_row_nums:
@@ -1837,7 +1851,6 @@ def link_entries_to_aircraft(entries: list[Any]) -> int:
     """
     from models import (  # pyright: ignore[reportMissingImports]
         Aircraft,
-        TenantUser,
         User,
         db,
     )
@@ -1853,10 +1866,7 @@ def link_entries_to_aircraft(entries: list[Any]) -> int:
 
     def _tenants_for_pilot(pilot_user_id: int) -> set[int]:
         if pilot_user_id not in pilot_tenant_ids:
-            pilot_tenant_ids[pilot_user_id] = {
-                row.tenant_id
-                for row in TenantUser.query.filter_by(user_id=pilot_user_id).all()
-            }
+            pilot_tenant_ids[pilot_user_id] = full_tenant_ids(pilot_user_id)
         return pilot_tenant_ids[pilot_user_id]
 
     def _place_icao(place: str | None) -> str:
