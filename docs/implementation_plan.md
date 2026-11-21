@@ -2067,7 +2067,7 @@ than following separate code paths, so an AMP round-trips (import → edit in Op
 
 ---
 
-## Phase 41 — Airfield Passports
+## Phase 41 — Airfield Passports ✅
 
 Goal: let a pilot build collections of airfields to visit, collect stamps from
 full-stop landings, and choose where to fly next. Support personal challenges,
@@ -2082,8 +2082,7 @@ Each increment includes its own tests, translations and documentation before
 moving on. Unchecked boxes below describe remaining work; completed increments
 are ticked.
 
-### 41a — Airfield identity and passport data
-
+### 41a — Airfield identity and passport data ✅
 - [x] Add a `passports` blueprint (`/passports/`), service modules for catalogue,
   eligibility, discovery and imports, and templates under `templates/passports/`.
   Keep calculations independent of routes. Use the existing pilot-access policy
@@ -2144,8 +2143,7 @@ Discovery and publisher-import module boundaries are reserved for 41d/41e, not
 implemented there yet. The builder, map, automatic stamp calculation and photo
 upload controls remain in 41b/41c. See [foundation notes](airfield_passports.md).
 
-### 41b — Passport builder and management
-
+### 41b — Passport builder and management ✅
 - [x] Add list/create/detail/edit/archive/delete flows for personal passports.
   Owner-only management; confirmation before deletion. Private by default.
 - [x] Builder: choose one or more countries/regions, preview matching airfields,
@@ -2178,8 +2176,7 @@ checks extend this guard when voucher accounting is introduced in 41f. Map data
 uses escaped data attributes, so boosted navigation and validation responses keep
 working with the strict CSP and HTMX script stripping.
 
-### 41c — Stamps, map and completion
-
+### 41c — Stamps, map and completion ✅
 - [x] Implement one eligibility service shared by list/map/detail/exports: registered
   participants use only flights in their own pilot logbook (PIC or accepted second
   crew under the existing logbook policy), including unmanaged aircraft. Merely
@@ -2226,7 +2223,7 @@ working with the strict CSP and HTMX script stripping.
   so someone who records only a first stamp may have incomplete repeat-visit data.
   Flight edits/deletions and eligibility changes recalculate counts as well as stamps.
 - [x] Personal frequency uses the viewer's visits.
-- [ ] Integration with shared/public maps (41g/41h): in shared maps default to the
+- [x] Integration with shared/public maps (41g/41h): in shared maps default to the
   viewer's counts, with an explicit participant/group selector for other scopes;
   label the scope and never mix the viewer's count with others' counts implicitly.
   Group totals count participant-visits (one flight with two participating pilots
@@ -2234,8 +2231,9 @@ working with the strict CSP and HTMX script stripping.
   is limited to aggregates explicitly authorised for publication; it must not
   disclose private repeat-visit patterns by default. *Shared maps done:* a "Count
   visits by" selector (you by default, the whole group, or one participant) drives
-  marker size, list and popup counts, with the scope named beside them. The public
-  part follows with public sharing (41h).
+  marker size, list and popup counts, with the scope named beside them. *Public
+  maps done (41h):* repeat counts appear only for participants who separately
+  opt in to publishing them; otherwise a public map shows visited/unvisited only.
 - [x] Completion per participant: numerator = stamped targets; denominator = all
   open targets plus stamped closed targets. Closed unvisited targets remain visible
   but are excluded from the achievable total. Show the excluded count and avoid
@@ -2260,8 +2258,7 @@ will be wired with shared maps in 41g, combined-edition deduplication/year styli
 uses the viewer's own visits; private logbook evidence is never shared implicitly.
 GPS candidate detection remains the explicitly later enhancement above.
 
-### 41d — Where next
-
+### 41d — Where next ✅
 - [x] Add explicit optional home-airfield references to Aircraft and PilotProfile,
   editable through the respective existing permission checks and setup/edit forms.
   Add optional positive cruise speed in knots to Aircraft. No guessing the home
@@ -2296,8 +2293,7 @@ and never override the explicit distance/time limit. No tank-capacity inference.
 Licensed runway/restriction comparison remains optional and pending; the UI states
 suitability is unknown rather than deriving it from location data.
 
-### 41e — Imported lists and known sources
-
+### 41e — Imported lists and known sources ✅
 - [x] Add source selection/discovery for known booklet editions, initially a
   Landegutscheinheft adapter, plus a URL-entry flow for other pages. Verify the
   current source endpoints/data format during implementation; do not hardcode the
@@ -2341,8 +2337,7 @@ A worker-shared two-fetch admission cap prevents request-thread starvation; crea
 and edit share the fetch quota. Imports batch tenant alias lookups, reject HTTPS
 downgrades and show localised retrieval timestamps.
 
-### 41f — Voucher editions and history
-
+### 41f — Voucher editions and history ✅
 - [x] Personal-edition increment: owner-managed series links, copy-and-review through
   the existing builder, date-based default selection, archived edition access,
   stable-identity combined map, independent completion/target comparison and
@@ -2449,7 +2444,7 @@ downgrades and show localised retrieval timestamps.
   merely belonging to the 2027 list does not override a sole 2026 stamp. Popups
   retain all visit years regardless of display priority. Never alter stamp data,
   per-edition progress or voucher accounting when switching presentation.
-- [ ] Combine year colour with the shared-map hierarchy in 41g: the viewer's own
+- [x] Combine year colour with the shared-map hierarchy in 41g: the viewer's own
   stamps retain strongest emphasis; fields visited only by others retain intermediate
   emphasis and use newest/oldest eligible group-visit year; nobody visited stays
   muted with no earned year colour. Other members' visits never override the
@@ -2461,8 +2456,8 @@ downgrades and show localised retrieval timestamps.
   another edition's private evidence.
   *Audit 2026-11-21:* the private hierarchy is done (own stamps strongest, friends'
   newest/oldest year, muted unvisited, separate closure and "not in the current
-  edition" badges, scoped cross-year totals). Open only for the public aggregate
-  year priority, which comes with 41h.
+  edition" badges, scoped cross-year totals). Public links (41h) show a single
+  edition's published aggregate, so there is no cross-year priority to leak.
 - [x] Expiry-reminder increment: accepted participants of any existing role can
   opt in, choose their warning period, follow an edition link and snooze the
   current deadline. Daily checks revalidate membership/participation, skip inactive
@@ -2474,8 +2469,7 @@ downgrades and show localised retrieval timestamps.
   expiry status.
   *Done:* delivered by the expiry-reminder increment above.
 
-### 41g — Group passports and invitation-based accounts
-
+### 41g — Group passports and invitation-based accounts ✅
 - [x] Before enabling large group collections, batch list-page eligibility across
   passports: load the viewer's logbook once per request and reuse the snapshot,
   then batch participant/target evidence as appropriate. Add query-count tests
@@ -2650,7 +2644,7 @@ downgrades and show localised retrieval timestamps.
   On account deletion remove the author's comments; leaving/removal revokes access
   while existing comments retain their stated group audience until deleted under
   the documented retention policy. Group deletion removes its discussion.
-- [ ] Keep visitor-name lists and comments out of internet-public passport pages,
+- [x] Keep visitor-name lists and comments out of internet-public passport pages,
   public JSON/photo/print/export endpoints and shared-link caches, even if other
   passport information is publicly shared. Participant data export includes their
   own comments. Never automatically publish private flight/visit notes into a
@@ -2658,8 +2652,10 @@ downgrades and show localised retrieval timestamps.
   (see the Flight Debriefs & Shared Experience backlog entry). Phase 41 does
   not depend on building the full debrief feature.
   *Audit 2026-11-21:* the private part is done (the export includes your own
-  comments, and notes are never published into discussions). Open until the 41h
-  public pages and endpoints exist and are proven to leave names and comments out.
+  comments, and notes are never published into discussions). The public
+  projection is an allowlist with no comments or visitor names;
+  `test_passport_public_group_privacy.py` proves a group edition's public HTML,
+  JSON and print omit the discussion and members' display names.
 - [x] Manual visit correction increment: participants, including passport-only
   friends, can edit their own manual date/note/supporting-flight association in a
   normal mobile-friendly form. Existing date/eligibility and read-only guards apply;
@@ -2681,7 +2677,7 @@ downgrades and show localised retrieval timestamps.
   Airfield details and single/combined-edition popups list friends once each with
   their shared visit dates grouped by edition; identifiers and private evidence
   stay server-side. Participant statistics/filtering and public maps remain below.
-- [ ] Default shared map is personalised to the signed-in viewing participant, showing every passport target with
+- [x] Default shared map is personalised to the signed-in viewing participant, showing every passport target with
   coordinates together in three distinct states:
   - Not visited by any active participant: muted/greyed-out, visibly not yet activated.
   - Visited by others, but not by the viewer: activated, with intermediate emphasis.
@@ -2696,8 +2692,8 @@ downgrades and show localised retrieval timestamps.
   without a participant identity get aggregate visited/unvisited styling (41h),
   never an assumed member identity or access to private visit evidence.
   *Audit 2026-11-21:* the three-state map, legend, outlines, list/popup labels,
-  closure badge and coordinate-less list rows are done. Open only for the public
-  aggregate styling (41h).
+  closure badge and coordinate-less list rows are done; public viewers get the
+  aggregate visited/unvisited view from 41h.
 - [x] Shared map/stats: participant filter, visited by anyone/everyone, per-pilot
   coverage and leaderboard with tied ranks. Use a common group denominator of open
   targets plus closed targets stamped by any active participant; explain closure
@@ -2744,8 +2740,7 @@ downgrades and show localised retrieval timestamps.
   the export without granting current private group metadata; missing photos are
   explicitly marked. Exports stay within the authenticated organisation.
 
-### 41i — Integration, validation and documentation
-
+### 41i — Integration, validation and documentation ✅
 - [x] External `passports.js` in the always-load list in base.html, IIFE/root guard,
   DOMContentLoaded + htmx:afterSettle initialisation, Jinja JSON/data bridges and
   correct Leaflet cleanup on swaps. No executable inline child-template scripts.
@@ -2787,14 +2782,14 @@ downgrades and show localised retrieval timestamps.
   arrival exclusions, first-visit ties, rollback/edit/delete recalculation, alias
   reuse/ambiguity, closure/reopening, no-target denominator, duplicate imports,
   participant lifecycle, mixed currencies and concurrent voucher redemption.
-- [ ] Access tests: cross-owner/tenant and guessed IDs, invitations before acceptance,
+- [x] Access tests: cross-owner/tenant and guessed IDs, invitations before acceptance,
   member versus owner evidence, passport-only writes/CSRF, expired/rotated/revoked
   links, public HTML/JSON/photos/export leakage, publication withdrawal, staging
   tampering, malicious URLs and upload validation. Include route write-matrix and
   service-worker/history-privacy tests where applicable.
   *Audit 2026-11-21:* private access, CSRF, tampering, upload and write-matrix
-  cases are covered. Open for the public HTML/JSON/photo/export leakage and
-  publication-withdrawal cases (41h).
+  cases are covered; the 41h public tests cover HTML/JSON/print/photo leakage,
+  withdrawal, rotation and revocation.
 - [x] Invitation/account tests: shared-link signup and existing-account login land
   in the correct passport after verification/2FA; link previews do not enrol;
   repeated/concurrent joins are idempotent; wrong-passport tampering and open
@@ -2805,21 +2800,22 @@ downgrades and show localised retrieval timestamps.
   *Done:* covered by the invitation, registration, membership and personal
   logbook tests; `test_passport_admission_redirects.py` adds hostile redirect
   targets.
-- [ ] Shared-map tests: the same target appears as "visited by you" to its visitor
+- [x] Shared-map tests: the same target appears as "visited by you" to its visitor
   and "visited by others" to another member; targets nobody visited stay muted.
   Cover viewer-and-others precedence, pilot and passport-only viewers, filters,
   closure overlays, evidence edits/removals, and public aggregate fallback; verify
   legend/list accessibility without relying on colour alone.
-  *Audit 2026-11-21:* the member cases are covered. Open for the public
-  aggregate fallback (41h).
-- [ ] Airfield-social tests: visitor-name list follows edition/history scope and
+  *Audit 2026-11-21:* the member cases are covered; the public aggregate view is
+  tested with 41h.
+- [x] Airfield-social tests: visitor-name list follows edition/history scope and
   deduplicates friends; comments persist across editions/code aliases, accept
   questions from unvisited members and remain separate across groups. Cover
   author editing/deletion, owner moderation, membership revocation, later-joiner
   visibility, archived-edition versus live discussion behaviour, XSS/CSRF, pagination,
   account/group deletion, own-data export and exclusion from public responses.
-  *Audit 2026-11-21:* covered except exclusion from public responses (41h);
-  `test_passport_comments_later_joiner.py` adds later-joiner visibility.
+  *Audit 2026-11-21:* covered; `test_passport_comments_later_joiner.py` adds
+  later-joiner visibility and `test_passport_public_group_privacy.py` the
+  exclusion from public responses.
 - [x] Edition-history tests: date-based current-edition selection and fallback,
   yearly/monthly/custom dates, overlapping periods and stable selection, undated
   passports, several distinct editions in one year, archived access, changing lists,
@@ -2834,7 +2830,7 @@ downgrades and show localised retrieval timestamps.
   and unchanged historical vouchers/leaderboards/own completion. Verify membership
   reuse without duplicate accounts, group removal revoking history access, and
   privacy boundaries for older participants' evidence and unrelated series.
-- [ ] Frequency tests: checklist markers stay equally weighted after repeat visits;
+- [x] Frequency tests: checklist markers stay equally weighted after repeat visits;
   toggle on/off, zero/one/many visits, busy-home-base scaling, separate same-day
   arrivals, linked-evidence deduplication, overlapping editions, yearly versus
   combined totals, independent year priority, viewer/group scope and public privacy.
@@ -2842,7 +2838,8 @@ downgrades and show localised retrieval timestamps.
   completion percentages or voucher balances; map/list/legend agree.
   *Audit 2026-11-21:* covered, including marker weighting and the busy-base cap
   (browser test), separate same-day arrivals and toggle invariance
-  (`test_passport_frequency_counts.py`). Open for public privacy (41h).
+  (`test_passport_frequency_counts.py`); public repeat counts need a separate
+  opt-in (41h tests).
 - [x] Browser tests: builder preview/confirmation, map/list agreement, manual stamp,
   HTMX away/back, narrow-screen invitation enrolment and visit submission, filters and exports. Exercise
   keyboard/no-JS fallbacks and visible failure states. Add representative screenshots
@@ -2851,13 +2848,17 @@ downgrades and show localised retrieval timestamps.
   no-JavaScript and public views (41h). The screenshot manifest adds the group
   passport seen by a passport-only friend and the record-visit form, both shown
   in the user guide.
-- [ ] Run sanctioned i18n extraction/update, fill all fr/nl strings, compile and
+- [x] Run sanctioned i18n extraction/update, fill all fr/nl strings, compile and
   validate completeness; review French typography and ngettext singulars. Update
   user guide, data/import provenance documentation and release notes per increment.
-- [ ] Pass ruff/format, mypy, bandit, migration-chain and translation checks plus
+- [x] Pass ruff/format, mypy, bandit, migration-chain and translation checks plus
   the full 100% coverage gate; validate migration upgrade and model parity against
   PostgreSQL and browser flows through the established e2e runner. Tick checkboxes
   per increment; mark Phase 41 complete only when all agreed scope above is done.
+  *Sign-off 2026-11-21:* ruff/format, mypy, bandit, migration chain and fr/nl
+  completeness clean; full suite 5769 passed at 100% coverage; 134 PostgreSQL
+  tests and the passport/public browser tests pass. The Phase 41 French strings
+  use U+202F and every passport `ngettext` has a distinct singular.
 
 **Outside this phase:** automatic cross-instance federation. Keep visit submission
 in a small service with stable validation/idempotency semantics so a future

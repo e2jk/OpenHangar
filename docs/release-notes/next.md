@@ -111,3 +111,9 @@ access immediately, including photo requests.
   intermediate stops, a runway suitability comparison in **Where next?** and a
   publisher-operated passport-only instance — moved from the roadmap to the
   backlog, so the passport phase can be completed without them.
+
+- Airfield passports (the roadmap's Phase 41) are complete: the remaining
+  checklist items were verified and ticked after a final run of every check,
+  including the PostgreSQL and browser tests. A check now also proves that a
+  public link to a group passport never shows the group's discussion or its
+  members' names.
