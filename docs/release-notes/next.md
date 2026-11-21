@@ -40,3 +40,5 @@ airfields and validity dates use consistent wording across pages.
   and exercise downloads separately from page navigation.
 
 - Snag resolution tests use UTC dates consistently around local midnight.
+
+- Preparation for group airfield discussions adds scoped storage and author/moderation checks.

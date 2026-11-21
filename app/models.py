@@ -4477,6 +4477,56 @@ class PassportVisit(db.Model):
     )
 
 
+class PassportAirfieldComment(db.Model):
+    """A deliberately group-visible discussion, independent of annual visits."""
+
+    __tablename__ = "passport_airfield_comments"
+    __table_args__ = (
+        db.ForeignKeyConstraint(
+            ["tenant_id", "series_id"],
+            ["passport_series.tenant_id", "passport_series.id"],
+            ondelete="CASCADE",
+        ),
+        db.ForeignKeyConstraint(
+            ["tenant_id", "airfield_id"],
+            [
+                "passport_airfield_identities.tenant_id",
+                "passport_airfield_identities.id",
+            ],
+            ondelete="CASCADE",
+        ),
+        db.CheckConstraint("category IN ('airfield', 'nearby', 'question')"),
+        db.CheckConstraint("length(body) BETWEEN 1 AND 8000"),
+        db.Index(
+            "ix_passport_comments_group_field_created",
+            "series_id",
+            "airfield_id",
+            "created_at",
+            "id",
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(db.Integer, nullable=False)
+    series_id = db.Column(db.Integer, nullable=False)
+    airfield_id = db.Column(db.Integer, nullable=False)
+    author_user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # Retain the explicitly shared group alias if the member subsequently leaves.
+    author_display_name = db.Column(db.String(128), nullable=False)
+    category = db.Column(db.String(16), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    experience_date = db.Column(db.Date, nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    edited_at = db.Column(db.DateTime(timezone=True), nullable=True)
+
+
 class PassportVoucherAllocation(db.Model):
     """One personal entitlement or explicitly shared pool for a target."""
 

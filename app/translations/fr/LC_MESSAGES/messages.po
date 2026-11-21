@@ -2136,6 +2136,39 @@ msgstr "Confirmez le retrait des aérodromes avec des visites ou photos enregist
 msgid "Unknown passport builder action."
 msgstr "Action inconnue dans l’éditeur de passeport."
 
+#: app/passports/comments.py:48 app/passports/comments.py:56
+#: app/passports/comments.py:77
+msgid "Group discussion not found."
+msgstr "Discussion du groupe introuvable."
+
+#: app/passports/comments.py:84
+msgid "Write a comment of 1 to 8,000 characters."
+msgstr "Rédigez un commentaire de 1 à 8 000 caractères."
+
+#: app/passports/comments.py:87
+msgid "Choose a comment category."
+msgstr "Choisissez une catégorie de commentaire."
+
+#: app/passports/comments.py:93
+msgid "Enter a valid experience date."
+msgstr "Saisissez une date d’expérience valide."
+
+#: app/passports/comments.py:95
+msgid "Experience date cannot be in the future."
+msgstr "La date d’expérience ne peut pas être dans le futur."
+
+#: app/passports/comments.py:104
+msgid "The group changed. Reload the discussion and try again."
+msgstr "Le groupe a changé. Rechargez la discussion et réessayez."
+
+#: app/passports/comments.py:148
+msgid "Comment not found."
+msgstr "Commentaire introuvable."
+
+#: app/passports/comments.py:151
+msgid "You cannot change this comment."
+msgstr "Vous ne pouvez pas modifier ce commentaire."
+
 #: app/passports/discovery.py:44
 #, python-format
 msgid "Enter a valid %(label)s."
