@@ -367,3 +367,123 @@ def test_generated_pr_grouping_noop_and_cli(tmp_path):
         path.read_text()
         == "## What's Changed\n* fix: maps by @p in url\n* chore: tidy by @p in url\n"
     )
+
+
+BASE_SUMMARY = """# Airfield tips
+
+Group passports now have a conversation for each airfield.
+
+**Maintenance**
+
+- Prefetches no longer create competing sign-in forms.
+"""
+
+
+def test_later_body_shows_only_this_batch_entries():
+    # next.md keeps everything since the previous release; a ship-later PR
+    # must not present the earlier batches' features as its own.
+    summary = BASE_SUMMARY + (
+        "\n- Planning only: a new Phase 42.\n- Two ideas added to the backlog.\n"
+    )
+    body = release_notes.body(["docs: plan"], summary, later=True, base=BASE_SUMMARY)
+    assert "conversation for each airfield" not in body
+    assert "Prefetches" not in body
+    assert "**Maintenance**\n\n- Planning only: a new Phase 42." in body
+    assert "- Two ideas added to the backlog." in body
+    # The release title line is never repeated in the body.
+    assert "Airfield tips" not in body
+
+
+def test_later_body_new_paragraph_and_reworded_entry():
+    summary = BASE_SUMMARY.replace(
+        "Group passports now have a conversation for each airfield.",
+        "Group passports now have a conversation for each airfield.\n\n"
+        "Print a personal passport.",
+    ).replace("competing sign-in forms.", "competing sign-in forms any more.")
+    body = release_notes.body(["feat: print"], summary, later=True, base=BASE_SUMMARY)
+    summary_part = body.split("## Summary")[1]
+    assert "Print a personal passport." in summary_part
+    assert "conversation for each airfield" not in summary_part
+    # A reworded earlier entry isn't presented as this batch's news: counted.
+    assert "Prefetches" not in summary_part
+    assert "rewords one earlier entry" in summary_part
+
+
+def test_later_body_only_rewordings():
+    summary = BASE_SUMMARY.replace("each airfield.", "each airfield they fly to.")
+    summary = summary.replace("sign-in forms.", "sign-in forms any more.")
+    text, reworded = release_notes.batch_summary(summary, BASE_SUMMARY)
+    assert (text, reworded) == ("", 2)
+    body = release_notes.body(["docs: reword"], summary, later=True, base=BASE_SUMMARY)
+    assert "rewords 2 earlier entries" in body
+    assert "adds nothing new" not in body
+
+
+def test_later_body_list_items_without_blank_lines():
+    base = "**Maintenance**\n\n- one\n- two\n"
+    summary = "**Maintenance**\n\n- one\n- two\n- three\n"
+    assert release_notes.batch_summary(summary, base) == (
+        "**Maintenance**\n\n- three",
+        0,
+    )
+
+
+def test_later_body_when_batch_only_removed_text():
+    summary = "# Airfield tips\n\nGroup passports now have a conversation for each airfield.\n"
+    body = release_notes.body(["docs: trim"], summary, later=True, base=BASE_SUMMARY)
+    assert "adds nothing new to the release summary" in body
+    assert "conversation for each airfield" not in body
+
+
+def test_later_body_first_batch_after_release_and_unchanged_summary():
+    # No base (next.md emptied or new): everything in it is this batch's.
+    body = release_notes.body(["feat: x"], BASE_SUMMARY, later=True, base="")
+    assert "conversation for each airfield" in body and "Prefetches" in body
+    # next.md untouched by the batch: no summary at all, as before.
+    assert "## Summary" not in release_notes.body(["feat: x"], None, later=True)
+
+
+def test_ship_body_keeps_the_whole_summary():
+    # A ship PR becomes the release: it lists everything since the last one.
+    body = release_notes.body(["feat: x"], BASE_SUMMARY, base=BASE_SUMMARY)
+    assert "conversation for each airfield" in body and "Prefetches" in body
+
+
+def test_body_cli_with_base_summary(monkeypatch, capsys, tmp_path):
+    base = tmp_path / "base.md"
+    base.write_text(BASE_SUMMARY, encoding="utf-8")
+    new = tmp_path / "next.md"
+    new.write_text(BASE_SUMMARY + "\n- New entry.\n", encoding="utf-8")
+    monkeypatch.setattr(sys, "stdin", io.StringIO("docs: a\n"))
+    release_notes.main(
+        [
+            "body",
+            "--later",
+            "--summary-file",
+            str(new),
+            "--base-summary-file",
+            str(base),
+        ]
+    )
+    out = capsys.readouterr().out
+    assert "- New entry." in out and "conversation for each airfield" not in out
+
+
+def test_later_body_merged_rewording_and_tight_lists():
+    base = (
+        "Friends with passport-only accounts can also create and edit their own\n"
+        "passports, add missing airfields and prepare a linked next edition.\n"
+    )
+    summary = (
+        "An airfield passport is a list of places. Friends with passport-only\n"
+        "accounts can create and edit their own passports, add missing airfields\n"
+        "and prepare a linked next edition.\n\n"
+        "**Export my passport data** downloads a ZIP with your visits.\n\n"
+        "**Maintenance**\n\n- one new check\n\n- another new check\n"
+    )
+    text, reworded = release_notes.batch_summary(summary, base)
+    assert reworded == 1
+    assert text == (
+        "**Export my passport data** downloads a ZIP with your visits.\n\n"
+        "**Maintenance**\n\n- one new check\n- another new check"
+    )

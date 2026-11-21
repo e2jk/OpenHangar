@@ -59,7 +59,13 @@ since the previous release**, so `next.md` must too:
   and that the title line fits the whole release.
 - The daily release takes `next.md` as its summary (and its title line as its
   name) when it changed since the latest release, exactly like a ship's
-  release does, and the `ship-later` PR's description shows it too.
+  release does.
+- A `ship-later` PR's description shows only what **its own batch** added to
+  `next.md`: entries already there before the batch belong to earlier PRs,
+  and an entry the batch merely reworded is counted in one line rather than
+  shown as new. A batch that empties `next.md` after a release is compared
+  with an empty file. So write each change's entry in the same batch as the
+  change itself.
 
 ## Commits made on GitHub
 
