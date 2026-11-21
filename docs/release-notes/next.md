@@ -65,3 +65,8 @@
   tokens, waypoint documents and destination-search utilities. Passport behavior
   and existing links stay unchanged. Account ZIP exports add a versioned feature
   manifest while retaining the existing passport JSON and photo paths.
+
+- Add the internal Places collection model and permission checks. Collection
+  membership controls reading and editing independently of aircraft roles;
+  destinations and visit history are retained when a member leaves. The Places
+  screens are still being built.

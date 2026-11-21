@@ -885,6 +885,7 @@ def create_app() -> Flask:
     app.register_blueprint(auth_bp)
 
     from passports.routes import passports_bp
+    from places import lifecycle as _places_lifecycle  # noqa: F401
 
     app.register_blueprint(passports_bp)
 
