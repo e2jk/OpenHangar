@@ -16,7 +16,8 @@ recommendations and questions before a visit. It stays with the group across
 editions, so advice from earlier years remains useful. Members see who posted
 it and when, can filter the discussion, and can edit their own comments. Owners
 can remove comments. Private flight and visit notes stay separate; your personal
-data export includes only your own contributions.
+data export includes only your own contributions. Access is checked again when
+opening or posting to a conversation.
 
 **Where next?** helps those friends find unvisited destinations using public
 airfield data and fields shared through their passports. They can enter speed

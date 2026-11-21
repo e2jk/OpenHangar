@@ -589,9 +589,9 @@ def target_detail(passport_id: int, target_id: int) -> ResponseReturnValue:
             scope = comments.context(
                 passport.tenant_id, session["user_id"], passport.series_id, target["id"]
             )
+            discussion_comments = comments.feed(scope).limit(3).all()
         except BuilderError as exc:
             abort(exc.status, description=str(exc))
-        discussion_comments = comments.feed(scope).limit(3).all()
     return _builder_response(
         render_template(
             "passports/target.html",
