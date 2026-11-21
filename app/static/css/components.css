@@ -251,3 +251,6 @@ tr.clickable-row { cursor: pointer; }
 .passport-edition-colour-5 { color: #56b4e9; }
 .passport-edition-colour-6 { color: #332288; }
 .passport-edition-colour-7 { color: #882255; }
+
+/* Preserve authors’ paragraph breaks without allowing user HTML. */
+.passport-comment-body { white-space: pre-wrap; }

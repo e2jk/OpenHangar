@@ -206,6 +206,19 @@ retained evidence after withdrawal, without exposing the group’s later private
 changes. Missing photo files are marked in the export. Other friends’ private
 evidence is excluded, including when you own the group.
 
+A group airfield’s **Group airfield discussion** is visible to active members of
+that group, including friends who join later. Ask a question before visiting,
+share flying tips or recommend somewhere nearby. An optional experience date
+helps others judge how current your advice is. The conversation continues across
+editions, independently of the visit years selected on the map. Private visit
+and flight notes are never copied into it. These are personal experiences;
+check current official airfield publications before flying.
+
+Authors can edit or delete their comments; the group owner can remove them but
+cannot rewrite another person’s words. Leaving the group ends your access while
+keeping your comments visible to its members. Deleting your account removes your
+comments. Your personal data export includes your own comments only.
+
 Open a manual visit’s **Edit manual visit** form to correct its date or note,
 or change its supporting flight. Removing that link keeps the visit as an
 independent manual entry; editing the visit never changes the flight itself.

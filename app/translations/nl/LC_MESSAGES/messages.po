@@ -203,7 +203,7 @@ msgstr "Stel voor het reservefonds een bijdrage per uur óf per maand in, niet b
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Dit GPS-bestand bevat te veel punten om te importeren (meer dan %(n)s). Splits de opname op in meerdere bestanden."
 
-#: app/aircraft/routes.py:555 app/passports/routes.py:701
+#: app/aircraft/routes.py:555 app/passports/routes.py:714
 msgid "cruise speed"
 msgstr "kruissnelheid"
 
@@ -2145,7 +2145,7 @@ msgstr "Groepsdiscussie niet gevonden."
 msgid "Write a comment of 1 to 8,000 characters."
 msgstr "Schrijf een reactie van 1 tot 8.000 tekens."
 
-#: app/passports/comments.py:87
+#: app/passports/comments.py:87 app/passports/comments.py:166
 msgid "Choose a comment category."
 msgstr "Kies een categorie voor de reactie."
 
@@ -2169,6 +2169,14 @@ msgstr "Reactie niet gevonden."
 msgid "You cannot change this comment."
 msgstr "U kunt deze reactie niet wijzigen."
 
+#: app/passports/comments.py:171
+msgid "Enter a valid posting date."
+msgstr "Voer een geldige plaatsingsdatum in."
+
+#: app/passports/comments.py:173
+msgid "The posting date range is reversed."
+msgstr "De begindatum voor geplaatste reacties ligt na de einddatum."
+
 #: app/passports/discovery.py:44
 #, python-format
 msgid "Enter a valid %(label)s."
@@ -2177,6 +2185,20 @@ msgstr "Voer een geldige waarde in voor %(label)s."
 #: app/passports/discovery.py:56 app/passports/discovery.py:105
 msgid "Choose an unambiguous airfield code or a saved field reference."
 msgstr "Kies een eenduidige vliegveldcode of een opgeslagen veldreferentie."
+
+#: app/passports/discussion_routes.py:121
+msgid "Flying and airfield tips"
+msgstr "Tips voor de vlucht en het vliegveld"
+
+#: app/passports/discussion_routes.py:122
+msgid "Nearby recommendations"
+msgstr "Aanraders in de buurt"
+
+#: app/passports/discussion_routes.py:123
+#: app/templates/airworthiness/dashboard.html:46
+#: app/templates/airworthiness/dashboard.html:72
+msgid "Question"
+msgstr "Vraag"
 
 #: app/passports/drafts.py:116 app/passports/drafts.py:128
 msgid "This passport draft has expired. Start again."
@@ -2481,75 +2503,75 @@ msgstr "Je paspoort %(title)s eindigt op %(date)s. Open de editie om je nog te b
 msgid "Open passport"
 msgstr "Paspoort openen"
 
-#: app/passports/routes.py:254
+#: app/passports/routes.py:257
 msgid "Small airfields"
 msgstr "Kleine vliegvelden"
 
-#: app/passports/routes.py:255
+#: app/passports/routes.py:258
 msgid "Medium airports"
 msgstr "Middelgrote luchthavens"
 
-#: app/passports/routes.py:256
+#: app/passports/routes.py:259
 msgid "Large airports"
 msgstr "Grote luchthavens"
 
-#: app/passports/routes.py:257
+#: app/passports/routes.py:260
 msgid "Heliports"
 msgstr "Helihavens"
 
-#: app/passports/routes.py:258
+#: app/passports/routes.py:261
 msgid "Seaplane bases"
 msgstr "Watervliegbases"
 
-#: app/passports/routes.py:259
+#: app/passports/routes.py:262
 msgid "Balloon ports"
 msgstr "Ballonhavens"
 
-#: app/passports/routes.py:260
+#: app/passports/routes.py:263
 msgid "Closed airfields"
 msgstr "Gesloten vliegvelden"
 
-#: app/passports/routes.py:370
+#: app/passports/routes.py:373
 msgid "Passport saved."
 msgstr "Paspoort opgeslagen."
 
-#: app/passports/routes.py:411
+#: app/passports/routes.py:414
 msgid "An airfield code conflicts with an existing identity. Review or remove that selection."
 msgstr "Een vliegveldcode conflicteert met een bestaande identiteit. Controleer of verwijder die selectie."
 
-#: app/passports/routes.py:473
+#: app/passports/routes.py:476
 msgid "Passport deleted."
 msgstr "Paspoort verwijderd."
 
-#: app/passports/routes.py:674
+#: app/passports/routes.py:687
 msgid "Choose a reference airfield from the search results."
 msgstr "Kies een referentievliegveld uit de zoekresultaten."
 
-#: app/passports/routes.py:677
+#: app/passports/routes.py:690
 msgid "This reference airfield has no coordinates. Choose another."
 msgstr "Dit referentievliegveld heeft geen coördinaten. Kies een ander."
 
-#: app/passports/routes.py:702
+#: app/passports/routes.py:715
 msgid "distance/time limit"
 msgstr "afstands-/tijdslimiet"
 
-#: app/passports/routes.py:703
+#: app/passports/routes.py:716
 msgid "usable fuel"
 msgstr "bruikbare brandstof"
 
-#: app/passports/routes.py:704
+#: app/passports/routes.py:717
 msgid "fuel flow"
 msgstr "brandstofverbruik"
 
-#: app/passports/routes.py:705
+#: app/passports/routes.py:718
 msgid "reserve minutes"
 msgstr "reserve in minuten"
 
-#: app/passports/routes.py:717
+#: app/passports/routes.py:730
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Voer een kruissnelheid in voor de tijdsmodus of gebruik de afstandsmodus."
 
-#: app/passports/routes.py:726
+#: app/passports/routes.py:739
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "Het theoretische bereik is onbekend. Voer bruikbare brandstof, verbruik, snelheid en een expliciete reserve in die positieve vliegtijd overlaten. Het afstands-/tijdfilter blijft van toepassing."
 
@@ -6832,8 +6854,8 @@ msgstr "Betaling registreren"
 
 #: app/templates/aircraft/owners_billing.html:101
 #: app/templates/aircraft/owners_billing.html:158
-#: app/templates/passports/target.html:25
 #: app/templates/passports/target.html:31
+#: app/templates/passports/target.html:37
 msgid "Note (optional)"
 msgstr "Notitie (optioneel)"
 
@@ -7316,11 +7338,6 @@ msgstr "Document toevoegen"
 msgid "Pending review"
 msgstr "Ter beoordeling"
 
-#: app/templates/airworthiness/dashboard.html:46
-#: app/templates/airworthiness/dashboard.html:72
-msgid "Question"
-msgstr "Vraag"
-
 #: app/templates/airworthiness/dashboard.html:47
 #: app/templates/airworthiness/dashboard.html:73
 #: app/templates/airworthiness/status_form.html:26
@@ -7343,8 +7360,10 @@ msgstr[1] "%(n)s documenten totaal"
 #: app/templates/airworthiness/dashboard.html:68
 #: app/templates/documents/list.html:102 app/templates/documents/list.html:104
 #: app/templates/flights/list.html:105 app/templates/flights/list.html:107
-#: app/templates/passports/detail.html:30 app/templates/pilots/logbook.html:142
-#: app/templates/pilots/logbook.html:144 app/templates/users/list.html:76
+#: app/templates/passports/detail.html:30
+#: app/templates/passports/discussion.html:14
+#: app/templates/pilots/logbook.html:142 app/templates/pilots/logbook.html:144
+#: app/templates/users/list.html:76
 msgid "All"
 msgstr "Alle"
 
@@ -9163,6 +9182,9 @@ msgstr "optioneel — wordt getoond in plaats van bestandsnaam"
 #: app/templates/documents/upload_form.html:66
 #: app/templates/maintenance/_amp_export_body.html:283
 #: app/templates/maintenance/amp_import_review.html:40
+#: app/templates/passports/discussion.html:14
+#: app/templates/passports/discussion.html:29
+#: app/templates/passports/discussion.html:45
 #: app/templates/pwa/share_target.html:90
 msgid "Category"
 msgstr "Categorie"
@@ -9976,6 +9998,7 @@ msgstr "Dit is een andere vlucht — als nieuwe vermelding importeren"
 
 #: app/templates/flights/airframe_import_review.html:150
 #: app/templates/passports/detail.html:32
+#: app/templates/passports/discussion.html:17
 #: app/templates/passports/series.html:12
 #: app/templates/pilots/import_review.html:158
 #: app/templates/reports/utilization.html:54
@@ -12223,6 +12246,111 @@ msgstr "Geen coördinaten — alleen in de lijst getoond."
 msgid "No airfields match this view."
 msgstr "Geen vliegvelden komen overeen met deze weergave."
 
+#: app/templates/passports/discussion.html:3
+#: app/templates/passports/discussion.html:7
+#: app/templates/passports/target.html:14
+msgid "Group airfield discussion"
+msgstr "Groepsgesprek over het vliegveld"
+
+#: app/templates/passports/discussion.html:9
+#: app/templates/passports/target.html:15
+msgid "Visible to members of this group"
+msgstr "Zichtbaar voor leden van deze groep"
+
+#: app/templates/passports/discussion.html:10
+msgid "Comments are shared across group editions, independently of the selected visit years."
+msgstr "Reacties worden gedeeld tussen groepsedities, ongeacht de geselecteerde bezoekjaren."
+
+#: app/templates/passports/discussion.html:11
+msgid "Community tips are personal experience, not official operational information. Check current airfield publications before flying."
+msgstr "Tips van leden zijn persoonlijke ervaringen, geen officiële operationele informatie. Raadpleeg vóór uw vlucht de actuele vliegveldpublicaties."
+
+#: app/templates/passports/discussion.html:15
+msgid "Posted from"
+msgstr "Geplaatst vanaf"
+
+#: app/templates/passports/discussion.html:16
+msgid "Posted until"
+msgstr "Geplaatst tot en met"
+
+#: app/templates/passports/discussion.html:19
+#, python-format
+msgid "One comment"
+msgid_plural "%(n)s comments"
+msgstr[0] "Eén reactie"
+msgstr[1] "%(n)s reacties"
+
+#: app/templates/passports/discussion.html:22
+msgid "Posted"
+msgstr "Geplaatst"
+
+#: app/templates/passports/discussion.html:22
+msgid "Edited"
+msgstr "Bewerkt"
+
+#: app/templates/passports/discussion.html:23
+msgid "Experience date"
+msgstr "Datum van de ervaring"
+
+#: app/templates/passports/discussion.html:26
+msgid "Edit comment"
+msgstr "Reactie bewerken"
+
+#: app/templates/passports/discussion.html:28
+#: app/templates/passports/discussion.html:44
+msgid "Group comment"
+msgstr "Groepsreactie"
+
+#: app/templates/passports/discussion.html:30
+#: app/templates/passports/discussion.html:46
+msgid "Experience date (optional)"
+msgstr "Datum van de ervaring (optioneel)"
+
+#: app/templates/passports/discussion.html:31
+#: app/templates/passports/target.html:34
+#: app/templates/pilots/entry_form.html:312
+msgid "Save Changes"
+msgstr "Wijzigingen opslaan"
+
+#: app/templates/passports/discussion.html:33
+msgid "Delete comment"
+msgstr "Reactie verwijderen"
+
+#: app/templates/passports/discussion.html:35
+msgid "No comments match this view yet."
+msgstr "Er zijn nog geen reacties die bij deze selectie passen."
+
+#: app/templates/passports/discussion.html:36
+msgid "Comment pages"
+msgstr "Reactiepagina’s"
+
+#: app/templates/passports/discussion.html:37
+#: app/templates/reports/utilization.html:76
+#: app/templates/reports/utilization.html:84
+#: app/templates/reports/utilization.html:92
+#: app/templates/reports/utilization.html:100
+#: app/templates/reports/utilization.html:119
+#: app/templates/share/showcase.html:36
+msgid "Previous"
+msgstr "Vorige"
+
+#: app/templates/passports/discussion.html:38
+#: app/templates/share/showcase.html:40
+msgid "Next"
+msgstr "Volgende"
+
+#: app/templates/passports/discussion.html:41
+msgid "Post a group comment"
+msgstr "Een groepsreactie plaatsen"
+
+#: app/templates/passports/discussion.html:42
+msgid "Leaving the group ends your access but keeps your comments visible to its members. The group owner can remove comments. Deleting your account removes your comments."
+msgstr "Als u de groep verlaat, vervalt uw toegang maar blijven uw reacties zichtbaar voor de leden. De groepseigenaar kan reacties verwijderen. Als u uw account verwijdert, worden uw reacties verwijderd."
+
+#: app/templates/passports/discussion.html:47
+msgid "Post comment"
+msgstr "Reactie plaatsen"
+
 #: app/templates/passports/draft_error.html:7
 msgid "Start again"
 msgstr "Opnieuw beginnen"
@@ -12687,101 +12815,100 @@ msgstr "Vrienden die hier zijn geweest"
 msgid "No friends have shared a qualifying visit here yet."
 msgstr "Nog geen vrienden hebben hier een geldig bezoek gedeeld."
 
-#: app/templates/passports/target.html:13
+#: app/templates/passports/target.html:17
+msgid "Open discussion"
+msgstr "Gesprek openen"
+
+#: app/templates/passports/target.html:19
 msgid "Visit evidence"
 msgstr "Bezoekbewijs"
 
-#: app/templates/passports/target.html:15
+#: app/templates/passports/target.html:21
 msgid "Logged arrival"
 msgstr "Vastgelegde aankomst"
 
-#: app/templates/passports/target.html:15
+#: app/templates/passports/target.html:21
 msgid "Confirmed GPS visit"
 msgstr "Bevestigd GPS-bezoek"
 
-#: app/templates/passports/target.html:15
+#: app/templates/passports/target.html:21
 msgid "Manual visit"
 msgstr "Handmatig bezoek"
 
-#: app/templates/passports/target.html:15
+#: app/templates/passports/target.html:21
 msgid "Excluded from credit"
 msgstr "Telt niet mee"
 
-#: app/templates/passports/target.html:17
+#: app/templates/passports/target.html:23
 msgid "View flight"
 msgstr "Vlucht bekijken"
 
-#: app/templates/passports/target.html:18
+#: app/templates/passports/target.html:24
 msgid "Restore arrival credit"
 msgstr "Aankomst weer laten meetellen"
 
-#: app/templates/passports/target.html:18
+#: app/templates/passports/target.html:24
 msgid "Exclude this arrival"
 msgstr "Deze aankomst uitsluiten"
 
-#: app/templates/passports/target.html:18
+#: app/templates/passports/target.html:24
 msgid "Delete manual visit"
 msgstr "Handmatig bezoek verwijderen"
 
-#: app/templates/passports/target.html:21
+#: app/templates/passports/target.html:27
 msgid "Edit manual visit"
 msgstr "Handmatig bezoek bewerken"
 
-#: app/templates/passports/target.html:24
-#: app/templates/passports/target.html:31
+#: app/templates/passports/target.html:30
+#: app/templates/passports/target.html:37
 msgid "Visit date"
 msgstr "Bezoekdatum"
 
-#: app/templates/passports/target.html:26
-#: app/templates/passports/target.html:31
+#: app/templates/passports/target.html:32
+#: app/templates/passports/target.html:37
 #: app/templates/passports/vouchers.html:21
 msgid "Supporting flight (optional, latest 200 eligible flights)"
 msgstr "Ondersteunende vlucht (optioneel, laatste 200 geldige vluchten)"
 
-#: app/templates/passports/target.html:27
-#: app/templates/passports/target.html:31
+#: app/templates/passports/target.html:33
+#: app/templates/passports/target.html:37
 msgid "Independent manual visit"
 msgstr "Onafhankelijk handmatig bezoek"
 
-#: app/templates/passports/target.html:27
+#: app/templates/passports/target.html:33
 msgid "Current supporting flight"
 msgstr "Huidige ondersteunende vlucht"
 
-#: app/templates/passports/target.html:28
-#: app/templates/pilots/entry_form.html:312
-msgid "Save Changes"
-msgstr "Wijzigingen opslaan"
-
-#: app/templates/passports/target.html:30
+#: app/templates/passports/target.html:36
 msgid "No qualifying visits recorded yet."
 msgstr "Nog geen geldige bezoeken vastgelegd."
 
-#: app/templates/passports/target.html:31
+#: app/templates/passports/target.html:37
 msgid "Record a manual visit"
 msgstr "Handmatig bezoek vastleggen"
 
-#: app/templates/passports/target.html:31
+#: app/templates/passports/target.html:37
 msgid "Save visit"
 msgstr "Bezoek opslaan"
 
-#: app/templates/passports/target.html:32
-#: app/templates/passports/target.html:33
+#: app/templates/passports/target.html:38
+#: app/templates/passports/target.html:39
 msgid "Private stamp photo"
 msgstr "Privéfoto van de stempel"
 
-#: app/templates/passports/target.html:32
+#: app/templates/passports/target.html:38
 msgid "This photo is visible only to you. Uploading it does not earn a visit or publish it."
 msgstr "Deze foto is alleen voor jou zichtbaar. Uploaden telt niet als bezoek en maakt de foto niet openbaar."
 
-#: app/templates/passports/target.html:33
+#: app/templates/passports/target.html:39
 msgid "Delete photo"
 msgstr "Foto verwijderen"
 
-#: app/templates/passports/target.html:34
+#: app/templates/passports/target.html:40
 msgid "JPEG, PNG or WebP, up to 10 MB and 20 megapixels"
 msgstr "JPEG, PNG of WebP, maximaal 10 MB en 20 megapixels"
 
-#: app/templates/passports/target.html:34
+#: app/templates/passports/target.html:40
 msgid "Upload photo"
 msgstr "Foto uploaden"
 
@@ -14083,15 +14210,6 @@ msgstr "of"
 msgid "To"
 msgstr "Naar"
 
-#: app/templates/reports/utilization.html:76
-#: app/templates/reports/utilization.html:84
-#: app/templates/reports/utilization.html:92
-#: app/templates/reports/utilization.html:100
-#: app/templates/reports/utilization.html:119
-#: app/templates/share/showcase.html:36
-msgid "Previous"
-msgstr "Vorige"
-
 #: app/templates/reports/utilization.html:127
 msgid "Compared to the previous period of the same length"
 msgstr "Vergeleken met de vorige periode van dezelfde lengte"
@@ -14574,10 +14692,6 @@ msgstr "OpenHangar"
 #: app/templates/share/public.html:130
 msgid "Read-only shared view"
 msgstr "Gedeelde alleen-lezenweergave"
-
-#: app/templates/share/showcase.html:40
-msgid "Next"
-msgstr "Volgende"
 
 #: app/templates/share/showcase.html:46
 #, python-format

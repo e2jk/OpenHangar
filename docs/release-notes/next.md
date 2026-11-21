@@ -11,6 +11,13 @@ participant, alongside the airfields added or removed. Each edition has its own
 percentage, with read-only history clearly separated from participation. Older
 shared maps also open reliably while a newer edition is active.
 
+Group passports now have an airfield conversation for flying tips, nearby
+recommendations and questions before a visit. It stays with the group across
+editions, so advice from earlier years remains useful. Members see who posted
+it and when, can filter the discussion, and can edit their own comments. Owners
+can remove comments. Private flight and visit notes stay separate; your personal
+data export includes only your own contributions.
+
 **Where next?** helps those friends find unvisited destinations using public
 airfield data and fields shared through their passports. They can enter speed
 and range estimates manually, with access checked against their current
@@ -40,5 +47,3 @@ airfields and validity dates use consistent wording across pages.
   and exercise downloads separately from page navigation.
 
 - Snag resolution tests use UTC dates consistently around local midnight.
-
-- Preparation for group airfield discussions adds scoped storage and author/moderation checks.

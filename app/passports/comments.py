@@ -156,3 +156,38 @@ def change(
             setattr(comment, key, value)
         comment.edited_at = datetime.now(UTC)
     _flush()
+
+
+def feed(
+    scope: Context, *, category: str = "", after: str = "", before: str = ""
+) -> Any:
+    """A date/category-filtered query for a freshly authorised group context."""
+    if category and category not in CATEGORIES:
+        raise BuilderError(_("Choose a comment category."))
+    try:
+        first = date.fromisoformat(after) if after else None
+        last = date.fromisoformat(before) if before else None
+    except ValueError as exc:
+        raise BuilderError(_("Enter a valid posting date.")) from exc
+    if first and last and first > last:
+        raise BuilderError(_("The posting date range is reversed."))
+    query = PassportAirfieldComment.query.filter_by(
+        tenant_id=scope.series.tenant_id,
+        series_id=scope.series.id,
+        airfield_id=scope.airfield.id,
+    )
+    if category:
+        query = query.filter(PassportAirfieldComment.category == category)
+    if first:
+        query = query.filter(
+            PassportAirfieldComment.created_at
+            >= datetime.combine(first, datetime.min.time(), UTC)
+        )
+    if last:
+        query = query.filter(
+            PassportAirfieldComment.created_at
+            <= datetime.combine(last, datetime.max.time(), UTC)
+        )
+    return query.order_by(
+        PassportAirfieldComment.created_at.desc(), PassportAirfieldComment.id.desc()
+    )

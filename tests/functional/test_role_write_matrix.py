@@ -263,6 +263,7 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
 
 # Routes with a POST method that this sweep deliberately does not drive.
 _EXCLUDED_ENDPOINTS = {
+    "passports.discussion": "active group membership and authorship govern writes; covered by passport discussion route tests",
     # Real external side effects if actually invoked by an allowed
     # (ADMIN/OWNER) role -- pg_dump subprocess, a real SMTP send, a real
     # network fetch. Their role gate is the *same* config_bp.before_request

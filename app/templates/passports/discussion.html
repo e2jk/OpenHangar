@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% set no_history_cache = true %}
+{% block title %}{{ scope.airfield.name }} — {{ _('Group airfield discussion') }}{% endblock %}
+{% block content %}
+<div class="container py-4" id="passport-discussion">
+<a href="{{ url_for('passports.series_detail', series_id=scope.series.id) }}">{{ scope.series.title }}</a>
+<h1 class="text-break">{{ _('Group airfield discussion') }}</h1>
+<h2 class="h4 text-break">{{ scope.airfield.ident or '—' }} — {{ scope.airfield.name }}</h2>
+<p><strong>{{ _('Visible to members of this group') }}</strong></p>
+<p>{{ _('Comments are shared across group editions, independently of the selected visit years.') }}</p>
+<p class="form-text">{{ _('Community tips are personal experience, not official operational information. Check current airfield publications before flying.') }}</p>
+{% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+<form method="get" class="row g-2 align-items-end mb-4">
+<div class="col-md-4"><label for="comment-category-filter" class="form-label">{{ _('Category') }}</label><select id="comment-category-filter" name="category" class="form-select"><option value="">{{ _('All') }}</option>{% for key, label in category_labels.items() %}<option value="{{ key }}" {{ 'selected' if filters.category == key }}>{{ label }}</option>{% endfor %}</select></div>
+<div class="col-md-3"><label for="comment-after" class="form-label">{{ _('Posted from') }}</label><input type="date" id="comment-after" name="after" class="form-control" value="{{ filters.after }}"></div>
+<div class="col-md-3"><label for="comment-before" class="form-label">{{ _('Posted until') }}</label><input type="date" id="comment-before" name="before" class="form-control" value="{{ filters.before }}"></div>
+<div class="col-md-2"><button class="btn btn-ac-ghost">{{ _('Apply') }}</button></div>
+</form>
+<p>{{ ngettext('One comment', '%(n)s comments', pagination.total, n=pagination.total) }}</p>
+{% for comment in pagination.items %}
+<article class="card mb-3" id="group-comment-{{ comment.id }}"><div class="card-body">
+<p class="text-break"><strong>{{ comment.author_display_name }}</strong> · {{ category_labels[comment.category] }} · {{ _('Posted') }} {{ format_datetime(comment.created_at) }}{% if comment.edited_at %} · {{ _('Edited') }} {{ format_datetime(comment.edited_at) }}{% endif %}</p>
+{% if comment.experience_date %}<p>{{ _('Experience date') }} · {{ format_date(comment.experience_date) }}</p>{% endif %}
+<p class="passport-comment-body text-break">{{ comment.body }}</p>
+{% if can_post and comment.author_user_id == user_id %}
+<details {% if editing_id == comment.id %}open{% endif %}><summary>{{ _('Edit comment') }}</summary>
+<form method="post" class="mt-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="edit"><input type="hidden" name="comment_id" value="{{ comment.id }}">
+<label class="form-label" for="edit-comment-body-{{ comment.id }}">{{ _('Group comment') }}</label><textarea class="form-control" name="body" id="edit-comment-body-{{ comment.id }}" maxlength="8000" required>{{ request.form.get('body', '') if editing_id == comment.id else comment.body }}</textarea>
+<label class="form-label" for="edit-comment-category-{{ comment.id }}">{{ _('Category') }}</label><select class="form-select" name="category" id="edit-comment-category-{{ comment.id }}">{% for key, label in category_labels.items() %}<option value="{{ key }}" {{ 'selected' if (request.form.get('category') if editing_id == comment.id else comment.category) == key }}>{{ label }}</option>{% endfor %}</select>
+<label class="form-label" for="edit-comment-date-{{ comment.id }}">{{ _('Experience date (optional)') }}</label><input type="date" class="form-control" name="experience_date" id="edit-comment-date-{{ comment.id }}" max="{{ today }}" value="{{ request.form.get('experience_date', '') if editing_id == comment.id else (comment.experience_date or '') }}">
+<button class="btn btn-ac-primary mt-2">{{ _('Save Changes') }}</button>
+</form></details>{% endif %}
+{% if can_post and (comment.author_user_id == user_id or scope.series.owner_user_id == user_id) %}<form method="post" class="mt-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="delete"><input type="hidden" name="comment_id" value="{{ comment.id }}"><button class="btn btn-outline-danger">{{ _('Delete comment') }}</button></form>{% endif %}
+</div></article>
+{% else %}<p>{{ _('No comments match this view yet.') }}</p>{% endfor %}
+<nav aria-label="{{ _('Comment pages') }}" class="d-flex gap-3 mb-4">
+{% if pagination.has_prev %}<a href="{{ url_for('passports.discussion', series_id=scope.series.id, airfield_id=scope.airfield.id, page=pagination.prev_num, **filters) }}">{{ _('Previous') }}</a>{% endif %}
+{% if pagination.has_next %}<a href="{{ url_for('passports.discussion', series_id=scope.series.id, airfield_id=scope.airfield.id, page=pagination.next_num, **filters) }}">{{ _('Next') }}</a>{% endif %}
+</nav>
+{% if can_post %}
+<section aria-labelledby="post-comment-heading"><h2 class="h4" id="post-comment-heading">{{ _('Post a group comment') }}</h2>
+<p>{{ _('Leaving the group ends your access but keeps your comments visible to its members. The group owner can remove comments. Deleting your account removes your comments.') }}</p>
+<form method="post" id="passport-comment-form"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="action" value="add">
+<label class="form-label" for="comment-body">{{ _('Group comment') }}</label><textarea class="form-control" name="body" id="comment-body" maxlength="8000" required>{{ request.form.get('body', '') if error and request.form.get('action') == 'add' else '' }}</textarea>
+<label class="form-label" for="comment-category">{{ _('Category') }}</label><select class="form-select" name="category" id="comment-category">{% for key, label in category_labels.items() %}<option value="{{ key }}" {{ 'selected' if request.form.get('category', 'airfield') == key and request.form.get('action') == 'add' }}>{{ label }}</option>{% endfor %}</select>
+<label class="form-label" for="comment-date">{{ _('Experience date (optional)') }}</label><input type="date" class="form-control" name="experience_date" id="comment-date" max="{{ today }}" value="{{ request.form.get('experience_date', '') if error and request.form.get('action') == 'add' else '' }}">
+<button class="btn btn-ac-primary mt-3">{{ _('Post comment') }}</button>
+</form></section>{% endif %}
+</div>
+{% endblock %}

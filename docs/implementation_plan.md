@@ -2607,8 +2607,8 @@ downgrades and show localised retrieval timestamps.
   alias, category and dates. Active group membership is rechecked under the group
   mutation lock; authors edit/delete, owners moderate by deletion. Account/group
   deletion cascades, and discussions survive edition/target removal. Discussion
-  pages, export integration and browser validation remain below.
-- [ ] Add a group-visible airfield discussion, separate from private visit notes
+  pages, own-comment export integration and browser validation are delivered below.
+- [x] Add a group-visible airfield discussion, separate from private visit notes
   and Flight.notes. Categories cover flying/airfield experience (approach complexity,
   practical timing, arrival procedures) and nearby recommendations (restaurants,
   hotels, transport, places to visit). A comment does not require a stamp: members
@@ -2616,7 +2616,7 @@ downgrades and show localised retrieval timestamps.
   optional experience date and category; distinguish personal experience from an
   official operational source, with dated information rather than an authoritative
   replacement for current airfield publications.
-- [ ] Store comments against stable airfield identity and group series (or the
+- [x] Store comments against stable airfield identity and group series (or the
   standalone group passport), not solely a flight or annual participant row.
   Carry the discussion across 2027/2028 and later editions without copying it.
   Show it on the airfield detail independently of the selected visit years; allow
@@ -2624,7 +2624,7 @@ downgrades and show localised retrieval timestamps.
   remain accessible through the authorised historical field detail. Archived
   editions remain read-only; an active group's continuing airfield discussion can
   receive new comments without editing historical edition records.
-- [ ] Clearly label the audience "Visible to members of this group" in the composer.
+- [x] Clearly label the audience "Visible to members of this group" in the composer.
   All active group members, including passport-only accounts and later joiners,
   can read/post in that group's discussion; other groups on the same airfield
   have separate discussions. Authors edit/delete their own comments; owners can

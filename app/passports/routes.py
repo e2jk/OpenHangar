@@ -37,6 +37,8 @@ from utils import (
 
 from passports import (
     builder,
+    comments,
+    discussion_routes,  # Register private group airfield discussions.
     evidence,
     groups,
     invitation_routes,  # Register edition admission views.
@@ -70,6 +72,7 @@ from passports.management import (
 )
 
 __all__ = [
+    "discussion_routes",
     "invitation_routes",
     "lifecycle",
     "passports_bp",
@@ -580,9 +583,19 @@ def target_detail(passport_id: int, target_id: int) -> ResponseReturnValue:
         can_record = True
     except BuilderError:
         can_record = False
+    discussion_comments = []
+    if passport.is_group:
+        try:
+            scope = comments.context(
+                passport.tenant_id, session["user_id"], passport.series_id, target["id"]
+            )
+        except BuilderError as exc:
+            abort(exc.status, description=str(exc))
+        discussion_comments = comments.feed(scope).limit(3).all()
     return _builder_response(
         render_template(
             "passports/target.html",
+            discussion_comments=discussion_comments,
             passport=passport,
             target=target,
             friends=next(
