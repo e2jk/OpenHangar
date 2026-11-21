@@ -2232,7 +2232,10 @@ working with the strict CSP and HTMX script stripping.
   Group totals count participant-visits (one flight with two participating pilots
   contributes one visit for each), not unique aircraft movements. Public frequency
   is limited to aggregates explicitly authorised for publication; it must not
-  disclose private repeat-visit patterns by default.
+  disclose private repeat-visit patterns by default. *Shared maps done:* a "Count
+  visits by" selector (you by default, the whole group, or one participant) drives
+  marker size, list and popup counts, with the scope named beside them. The public
+  part follows with public sharing (41h).
 - [x] Completion per participant: numerator = stamped targets; denominator = all
   open targets plus stamped closed targets. Closed unvisited targets remain visible
   but are excluded from the achievable total. Show the excluded count and avoid
@@ -2432,7 +2435,7 @@ downgrades and show localised retrieval timestamps.
   show which editions included it, and the eligible visit history per edition.
   Visits count only within the dates and target list of their own edition: a
   historical stamp must not activate an unvisited current-edition target.
-- [ ] Combined-edition frequency sums distinct eligible visits across the editions being
+- [x] Combined-edition frequency sums distinct eligible visits across the editions being
   viewed, counting an event only once per participant/airfield even if represented
   in overlapping editions. Choosing newest/oldest edition changes the marker's edition
   colour, not the frequency period: a field visited once in 2026 and three times

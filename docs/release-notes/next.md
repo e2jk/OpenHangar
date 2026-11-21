@@ -23,6 +23,12 @@ it as a PDF through your browser. Choose which of your stamp photos to include;
 private notes and other participants’ photos stay out. The preview also works
 without JavaScript using the browser’s Print command.
 
+On group maps, visit frequency now counts **your own visits** by default. Choose
+**Count visits by** to see the whole group or one participant instead; the map,
+list and popups always say whose visits they count, and the per-edition counts
+follow the same choice. Previously the counts silently added your friends' visits
+to yours.
+
 **Maintenance**
 
 - Background navigation prefetches no longer create competing sign-in forms,

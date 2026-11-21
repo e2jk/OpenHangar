@@ -1,0 +1,7 @@
+{# Whole sentences per frequency scope: translations never glue fragments. #}
+{% macro recorded(scope, name) -%}
+{% if scope == 'you' %}{{ _('Your recorded visits') }}{% elif scope == 'group' %}{{ _('Recorded visits by the whole group') }}{% else %}{{ _('Recorded visits by %(name)s', name=name) }}{% endif %}
+{%- endmacro %}
+{% macro explanation(scope, name) -%}
+{% if scope == 'you' %}{{ _('Visit counts show your own visits. Use “Count visits by” to see the whole group or one participant. Repeat-visit data may be incomplete.') }}{% elif scope == 'group' %}{{ _('Visit counts show the whole group: every participant sharing visits, each visit once per person. Repeat-visit data may be incomplete.') }}{% else %}{{ _('Visit counts show the visits of %(name)s. Repeat-visit data may be incomplete.', name=name) }}{% endif %}
+{%- endmacro %}
