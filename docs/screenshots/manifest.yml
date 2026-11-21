@@ -18,6 +18,10 @@ auth:
     email: "admin@openhangar.dev"
     password: "openhangar-dev-1"
     totp_secret: "JBSWY3DPEHPK3PXP"
+  # Passport-only friend of the seeded "Flying friends" group (no role, no 2FA).
+  friend:
+    email: "friend@openhangar.dev"
+    password: "openhangar-dev-friend"
 
 screenshots:
 
@@ -225,3 +229,19 @@ screenshots:
     wait_for: "#passport-discovery-map .leaflet-tile-loaded"
     full_page: true
     output: "passport_where_next.png"
+
+  - id: passport_group
+    description: "Group passport seen by a passport-only friend — own, friends' and unvisited airfields in three states, with group progress"
+    url_template: "/passports/{passport_id}/"
+    resolve_passport_title: "Flying friends"
+    auth: friend
+    wait_for: "#passport-progress-map .leaflet-tile-loaded"
+    full_page: true
+    output: "passport_group.png"
+
+  - id: passport_record_visit
+    description: "Record a visit — the minimal form for a phone: choose the airfield and date, save"
+    url_template: "/passports/{passport_id}/record-visit"
+    resolve_passport_title: "Flying friends"
+    auth: friend
+    output: "passport_record_visit.png"

@@ -248,14 +248,16 @@ and edits are checked live. Arrivals are assumed full-stop: open an airfield to
 exclude a touch-and-go or low approach. You can also record a dated manual visit,
 optionally linked to your own flight, and upload a private stamp photo. On a
 phone, **Record a visit** on the passport page is the quickest way: choose the
-airfield and date, add a note if you like, and save. Photos do
-not earn credit. On a group passport you can share a photo with the edition's
-other participants (**Share with this group**) and stop sharing at any time;
-uploading a new photo makes it private again. The default map gives every visited field equal weight; **Show
-visit frequency** sizes markers by recorded visit counts. Closed unvisited fields
-remain visible but are excluded from the achievable total.
+airfield and date, add a note if you like, and save. Photos do not earn credit.
+On a group passport you can share a photo with the edition's other participants
+(**Share with this group**) and stop sharing at any time; uploading a new photo
+makes it private again. The default map gives every visited field equal weight;
+**Show visit frequency** sizes markers by recorded visit counts. Closed
+unvisited fields remain visible but are excluded from the achievable total.
 
 ![Airfield passport progress map](screenshots/passport_detail.png)
+
+![Record a visit — the quick form for a phone](screenshots/passport_record_visit.png)
 
 Use **Where next?** to find open unvisited fields within a distance or still-air
 time limit. You can save a home airfield on your pilot profile and a home/cruise
@@ -285,6 +287,8 @@ everyone, and a leaderboard of each participant's coverage, all measured against
 the same airfields (open ones, plus closed ones someone visited). Use **Show
 airfields** and **Visited by participant** to narrow the map and list; your own
 progress and marker styles stay yours. See [the passport guide](airfield_passports.md#group-progress-and-filters).
+
+![A group passport as a passport-only friend sees it: own visits, friends' visits and unvisited airfields](screenshots/passport_group.png)
 
 A friend without an account selects **Create an account and join this passport**,
 chooses a password and verifies the code sent to their email. They then complete

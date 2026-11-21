@@ -85,6 +85,9 @@ access immediately, including photo requests.
 - Public links use shared storage and revocable, expiring tokens. Existing visits
   and photos remain private until their participants choose to publish them.
 
+- The user guide shows a group passport as a passport-only friend sees it, and
+  the new **Record a visit** form.
+
 - The demo and development data now include a group passport shared by two
   pilots and a friend with a passport-only account, to try the group features.
 

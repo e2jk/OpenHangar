@@ -2843,10 +2843,14 @@ downgrades and show localised retrieval timestamps.
   *Audit 2026-11-21:* covered, including marker weighting and the busy-base cap
   (browser test), separate same-day arrivals and toggle invariance
   (`test_passport_frequency_counts.py`). Open for public privacy (41h).
-- [ ] Browser tests: builder preview/confirmation, map/list agreement, manual stamp,
+- [x] Browser tests: builder preview/confirmation, map/list agreement, manual stamp,
   HTMX away/back, narrow-screen invitation enrolment and visit submission, filters and exports. Exercise
   keyboard/no-JS fallbacks and visible failure states. Add representative screenshots
   to the screenshot manifest and user guide.
+  *Done:* the passport browser suite covers these flows, including mobile,
+  no-JavaScript and public views (41h). The screenshot manifest adds the group
+  passport seen by a passport-only friend and the record-visit form, both shown
+  in the user guide.
 - [ ] Run sanctioned i18n extraction/update, fill all fr/nl strings, compile and
   validate completeness; review French typography and ngettext singulars. Update
   user guide, data/import provenance documentation and release notes per increment.
