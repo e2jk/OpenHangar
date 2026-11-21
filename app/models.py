@@ -4745,6 +4745,200 @@ class PassportStampPhoto(db.Model):
     )
 
 
+class PlaceCollection(db.Model):
+    """An independently shared set of destinations, separate from fleet roles."""
+
+    __tablename__ = "place_collections"
+    __table_args__ = (
+        db.UniqueConstraint("tenant_id", "id"),
+        db.Index(
+            "uq_place_personal_collection",
+            "tenant_id",
+            "created_by_user_id",
+            unique=True,
+            postgresql_where=db.text("is_personal"),
+            sqlite_where=db.text("is_personal = 1"),
+        ),
+    )
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(
+        db.Integer,
+        db.ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    name = db.Column(db.String(128), nullable=False)
+    created_by_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    is_personal = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
+    )
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+
+
+class PlaceCollectionMember(db.Model):
+    __tablename__ = "place_collection_members"
+    __table_args__ = (
+        db.ForeignKeyConstraint(
+            ["tenant_id", "collection_id"],
+            ["place_collections.tenant_id", "place_collections.id"],
+            ondelete="CASCADE",
+        ),
+        db.ForeignKeyConstraint(
+            ["user_id", "tenant_id"],
+            ["tenant_users.user_id", "tenant_users.tenant_id"],
+            ondelete="CASCADE",
+        ),
+    )
+    collection_id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(db.Integer, nullable=False, index=True)
+    can_edit = db.Column(
+        db.Boolean, nullable=False, default=True, server_default=db.true()
+    )
+    joined_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+
+
+class PlacePreference(db.Model):
+    """Defaults belong to a user within one tenant, never to their global profile."""
+
+    __tablename__ = "place_preferences"
+    __table_args__ = (
+        db.ForeignKeyConstraint(
+            ["user_id", "tenant_id"],
+            ["tenant_users.user_id", "tenant_users.tenant_id"],
+            ondelete="CASCADE",
+        ),
+    )
+    user_id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(db.Integer, primary_key=True)
+    default_collection_id = db.Column(
+        db.Integer,
+        db.ForeignKey("place_collections.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+
+class Place(db.Model):
+    __tablename__ = "places"
+    __table_args__ = (
+        db.UniqueConstraint("collection_id", "id"),
+        db.CheckConstraint("latitude BETWEEN -90 AND 90", name="ck_place_latitude"),
+        db.CheckConstraint("longitude BETWEEN -180 AND 180", name="ck_place_longitude"),
+    )
+    id = db.Column(db.Integer, primary_key=True)
+    collection_id = db.Column(
+        db.Integer,
+        db.ForeignKey("place_collections.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    owner_user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+    address = db.Column(db.String(500), nullable=True)
+    external_url = db.Column(db.String(2048), nullable=True)
+    photo_filename = db.Column(db.String(128), nullable=True, unique=True)
+    archived = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
+    )
+    deleted_at = db.Column(db.DateTime(timezone=True), nullable=True, index=True)
+    deleted_by_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_by_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    updated_by_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    updated_at = db.Column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+
+class PlaceTag(db.Model):
+    __tablename__ = "place_tags"
+    __table_args__ = (
+        db.UniqueConstraint("collection_id", "id"),
+        db.UniqueConstraint("collection_id", "name"),
+    )
+    id = db.Column(db.Integer, primary_key=True)
+    collection_id = db.Column(
+        db.Integer,
+        db.ForeignKey("place_collections.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    name = db.Column(db.String(80), nullable=False)
+
+
+class PlaceTagAssignment(db.Model):
+    """Composite references prevent tags leaking across collection boundaries."""
+
+    __tablename__ = "place_tag_assignments"
+    __table_args__ = (
+        db.ForeignKeyConstraint(
+            ["collection_id", "place_id"],
+            ["places.collection_id", "places.id"],
+            ondelete="CASCADE",
+        ),
+        db.ForeignKeyConstraint(
+            ["collection_id", "tag_id"],
+            ["place_tags.collection_id", "place_tags.id"],
+            ondelete="CASCADE",
+        ),
+    )
+    place_id = db.Column(db.Integer, primary_key=True)
+    tag_id = db.Column(db.Integer, primary_key=True)
+    collection_id = db.Column(db.Integer, nullable=False)
+
+
+class PlaceVisit(db.Model):
+    """An explicit personal visit; losing a membership does not erase history."""
+
+    __tablename__ = "place_visits"
+    id = db.Column(db.Integer, primary_key=True)
+    place_id = db.Column(
+        db.Integer,
+        db.ForeignKey("places.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    visit_date = db.Column(db.Date, nullable=False)
+    flight_id = db.Column(
+        db.Integer, db.ForeignKey("flights.id", ondelete="SET NULL"), nullable=True
+    )
+    note = db.Column(db.Text, nullable=True)
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+
+
 # ---------------------------------------------------------------------------
 # Numbers too large, and text too long, for their column
 # ---------------------------------------------------------------------------

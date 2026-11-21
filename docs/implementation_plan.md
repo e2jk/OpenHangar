@@ -2932,7 +2932,7 @@ passport behaviour unchanged.
 
 ### 42b — Collections and places
 
-- [ ] Models + migration: `PlaceCollection` (tenant, name, created_by,
+- [x] Models + migration: `PlaceCollection` (tenant, name, created_by,
   is_personal), `PlaceCollectionMember` (collection, user, can_edit, joined_at),
   per-user default collection, `Place` (collection, owner, title, optional plain
   text description, required latitude/longitude, optional address text, external
