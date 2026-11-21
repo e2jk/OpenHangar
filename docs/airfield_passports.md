@@ -704,3 +704,25 @@ it. Leaving or removal revokes access while the deliberately group-visible post
 remains; deleting the author removes their comments. Deleting a group removes
 its discussion, following the existing requirement to remove its editions first.
 The migration refuses a downgrade that would discard stored discussion records.
+
+### Private destination waypoints
+
+The edition map/list and **Where next?** offer GPX and KML downloads of open
+airfields the authenticated viewer has not visited. Edition state/participant
+filters and discovery distance, time and range inputs are preserved; choosing
+another participant never changes whose own stamps exclude a destination.
+Discovery refuses downloads with missing reference fields or invalid filters.
+
+The serializer projects only names, codes and coordinates. Files contain no
+flights, tracks, visitor lists, conversations, private notes or voucher records.
+Fields without usable coordinates are named on the page and in file metadata;
+they cannot be tested against a distance limit and never become invented points.
+Downloads remain authenticated, private and non-cacheable.
+
+Outputs follow the [GPX 1.1 schema](https://www.topografix.com/GPX/1/1/) and
+[KML 2.2 Point format](https://developers.google.com/kml/documentation/kmlreference#point).
+Fixtures check namespaces, waypoint element ordering and coordinate order.
+GPX represents the positive 180° meridian as −180° to respect its exclusive upper
+longitude bound. XML-invalid text characters are omitted; KML descriptions are
+escaped as HTML before XML serialization. No navigation track or altitude is
+inferred.

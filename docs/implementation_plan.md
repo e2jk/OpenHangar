@@ -2698,7 +2698,7 @@ downgrades and show localised retrieval timestamps.
   private and public versions follow their respective field permissions. Use
   print-friendly HTML first, reusing the established PDF pipeline if a downloadable
   PDF is included; no dependency on completing Advanced Reporting.
-- [ ] GPX/KML export of unvisited open fields with names/codes/coordinates, escaped
+- [x] GPX/KML export of unvisited open fields with names/codes/coordinates, escaped
   XML and correct MIME types/filenames; list omitted fields without coordinates.
   Support the current participant/discovery selection and never include flight
   tracks or private evidence. Verify files against navigation-app-compatible
