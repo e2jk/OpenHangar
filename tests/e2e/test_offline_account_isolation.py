@@ -657,6 +657,13 @@ def test_back_button_cache_does_not_outlive_the_account(
 
         page.goto(origin + "/logout", wait_until="load")
         assert page.evaluate(history) == ""
+        # A stale navigation hint must not mint a competing login CSRF cookie.
+        speculative = context.request.get(
+            origin + "/login", headers={"Sec-Purpose": "prefetch"}
+        )
+        assert speculative.status == 204
+        assert speculative.headers["cache-control"] == "no-store"
+        assert "set-cookie" not in speculative.headers
 
         login(page, origin, "Bravo")
         _boosted_visit(page, "/pilot/minimums")

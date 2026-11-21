@@ -108,6 +108,14 @@ def _is_demo() -> bool:
     exempt_when=_rate_limiting_disabled,
 )
 def login() -> ResponseReturnValue:
+    purpose = request.headers.get("Sec-Purpose") or request.headers.get("Purpose", "")
+    if (
+        request.method in {"GET", "HEAD"}
+        and purpose.lower().split(";", 1)[0].strip() == "prefetch"
+    ):
+        # Retired navigation hints can follow redirects here after logout.
+        # Rendering them would mint competing CSRF cookies for the visible form.
+        return "", 204, {"Cache-Control": "no-store"}
     if _no_users():
         return redirect(url_for("auth.setup"))
 

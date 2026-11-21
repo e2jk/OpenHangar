@@ -14,6 +14,7 @@ import tempfile
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
+from flask.testing import FlaskClient
 from init import create_app  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Role,
@@ -214,3 +215,47 @@ def test_boosted_forms_show_the_expired_form_page():
     ui = (Path(__file__).parent.parent / "app" / "static" / "js" / "ui.js").read_text()
     assert "xhr.getResponseHeader('X-OH-Form-Expired') === '1'" in ui
     assert "evt.detail.shouldSwap = true;" in ui
+
+
+@pytest.mark.parametrize(
+    "method,header,value",
+    [
+        ("GET", "Sec-Purpose", "prefetch"),
+        ("HEAD", "Purpose", "prefetch"),
+        ("GET", "Sec-Purpose", "prefetch;anonymous-client-ip"),
+    ],
+)
+def test_speculative_login_does_not_create_or_replace_csrf_cookies(
+    csrf_client: FlaskClient, method: str, header: str, value: str
+) -> None:
+    response = csrf_client.open("/login", method=method, headers={header: value})
+    assert response.status_code == 204 and response.data == b""
+    assert response.headers["Cache-Control"] == "no-store"
+    assert "Set-Cookie" not in response.headers
+    token = _token_from_html(csrf_client.get("/login").data)
+    cookie = csrf_client.get_cookie("session")
+    response = csrf_client.open("/login", method=method, headers={header: value})
+    assert response.status_code == 204 and "Set-Cookie" not in response.headers
+    assert csrf_client.get_cookie("session") == cookie
+    response = csrf_client.post(
+        "/login",
+        data={
+            "email": "csrf@test.com",
+            "password": "TestPassword1!",
+            "csrf_token": token,
+        },
+    )
+    assert response.status_code == 302
+    with csrf_client.session_transaction() as saved:
+        assert saved.get("user_id") is not None
+
+
+def test_speculative_header_does_not_bypass_post_csrf(csrf_client: FlaskClient) -> None:
+    response = csrf_client.post(
+        "/login",
+        headers={"Sec-Purpose": "prefetch"},
+        data={"email": "csrf@test.com", "password": "TestPassword1!"},
+    )
+    assert response.status_code == 302 and response.location.endswith("/login")
+    with csrf_client.session_transaction() as saved:
+        assert "user_id" not in saved
