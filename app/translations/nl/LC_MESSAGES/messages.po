@@ -2136,6 +2136,39 @@ msgstr "Bevestig het verwijderen van vliegvelden met opgeslagen bezoeken of foto
 msgid "Unknown passport builder action."
 msgstr "Onbekende actie in de paspoortsamensteller."
 
+#: app/passports/comments.py:48 app/passports/comments.py:56
+#: app/passports/comments.py:77
+msgid "Group discussion not found."
+msgstr "Groepsdiscussie niet gevonden."
+
+#: app/passports/comments.py:84
+msgid "Write a comment of 1 to 8,000 characters."
+msgstr "Schrijf een reactie van 1 tot 8.000 tekens."
+
+#: app/passports/comments.py:87
+msgid "Choose a comment category."
+msgstr "Kies een categorie voor de reactie."
+
+#: app/passports/comments.py:93
+msgid "Enter a valid experience date."
+msgstr "Voer een geldige datum voor uw ervaring in."
+
+#: app/passports/comments.py:95
+msgid "Experience date cannot be in the future."
+msgstr "De datum van de ervaring mag niet in de toekomst liggen."
+
+#: app/passports/comments.py:104
+msgid "The group changed. Reload the discussion and try again."
+msgstr "De groep is gewijzigd. Laad de discussie opnieuw en probeer het nogmaals."
+
+#: app/passports/comments.py:148
+msgid "Comment not found."
+msgstr "Reactie niet gevonden."
+
+#: app/passports/comments.py:151
+msgid "You cannot change this comment."
+msgstr "U kunt deze reactie niet wijzigen."
+
 #: app/passports/discovery.py:44
 #, python-format
 msgid "Enter a valid %(label)s."

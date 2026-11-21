@@ -2602,6 +2602,12 @@ downgrades and show localised retrieval timestamps.
   so a member knows whom to ask about a destination. Respect series-history access
   and membership/visibility rules; no automatic disclosure of email, telephone,
   flight links or other contact information, and no in-app messaging required.
+- [x] Discussion data/access foundation: comments belong to a group series and
+  stable airfield identity, with tenant-composite foreign keys, explicit author
+  alias, category and dates. Active group membership is rechecked under the group
+  mutation lock; authors edit/delete, owners moderate by deletion. Account/group
+  deletion cascades, and discussions survive edition/target removal. Discussion
+  pages, export integration and browser validation remain below.
 - [ ] Add a group-visible airfield discussion, separate from private visit notes
   and Flight.notes. Categories cover flying/airfield experience (approach complexity,
   practical timing, arrival procedures) and nearby recommendations (restaurants,

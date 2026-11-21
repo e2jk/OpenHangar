@@ -677,3 +677,26 @@ added to its leaderboard or everyone count. Withheld historical visits do not
 contribute even to aggregate counts. Existing request-batched evidence supplies
 the comparison; no per-edition statistics queries are added. Selecting an older
 map while another edition is current never indexes evidence outside that map.
+
+### Group discussion storage and access foundation
+
+Discussion records belong to a group series and stable airfield identity, with
+composite tenant foreign keys. They contain the explicitly shared author alias,
+category (airfield, nearby recommendation or question), body, optional experience
+date, posted time and optional edited time. Bodies are bounded to 8,000 characters.
+This foundation does not expose a posting page yet; UI and own-comment export
+integration follow separately.
+
+Comments do not create stamps, participants or voucher use. They survive target
+or edition removal while the group exists. Active group members may discuss the
+group's airfields independently of edition participation; this permission never
+exposes private flights, notes or voucher ledgers. A private passport linked to
+the series does not make its unique airfields discussion topics.
+
+Writes use the same bounded group mutex as membership/ownership changes and
+recheck membership and ownership after acquiring it. Authors edit/delete their
+comments; group owners can delete another author's comment but cannot rewrite
+it. Leaving or removal revokes access while the deliberately group-visible post
+remains; deleting the author removes their comments. Deleting a group removes
+its discussion, following the existing requirement to remove its editions first.
+The migration refuses a downgrade that would discard stored discussion records.
