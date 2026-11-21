@@ -70,7 +70,7 @@ ACCOUNT_ENDPOINTS = frozenset(
         "pwa_manifest",
         "service_worker",
         "favicon",
-        "robots",
+        "robots_txt",
         "health",
         "api_banners",
     }
