@@ -14,6 +14,7 @@ import shutil
 import pw_hash as _pw  # pyright: ignore[reportMissingImports]
 from _seed_helpers import (
     seed_fleet,
+    seed_group_passport,
     seed_passports,
     seed_pilot_profiles,
     seed_reservations,
@@ -95,6 +96,13 @@ def seed() -> None:
             if sub_tenant:
                 db.session.delete(sub_tenant)
         if tenant:
+            # Passport-only friends (no role) belong to the slot's tenant only.
+            for friend_tu in TenantUser.query.filter(
+                TenantUser.tenant_id == tenant.id, TenantUser.access_scope != "full"
+            ).all():
+                friend = db.session.get(User, friend_tu.user_id)
+                if friend:
+                    db.session.delete(friend)
             db.session.delete(tenant)
     db.session.flush()
 
@@ -155,6 +163,13 @@ def seed() -> None:
         seed_pilot_profiles(owner_user.id)
         seed_pilot_profiles(pilot_user.id)
         seed_passports(tenant.id, owner_user.id, aircraft)
+        seed_group_passport(
+            tenant.id,
+            owner_user.id,
+            pilot_user.id,
+            f"demo-friend-{i}@openhangar.demo",
+            dummy_hash,
+        )
 
         # ── Sole-pilot sub-tenant (logbook only, no fleet) ────────────────────
         sp_tenant = Tenant(

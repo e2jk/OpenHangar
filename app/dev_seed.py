@@ -15,6 +15,7 @@ import pw_hash as _pw  # pyright: ignore[reportMissingImports]
 import pyotp  # pyright: ignore[reportMissingImports]
 from _seed_helpers import (  # pyright: ignore[reportMissingImports]
     seed_fleet,
+    seed_group_passport,
     seed_passports,
     seed_personal_minimums,
     seed_pilot_profiles,
@@ -37,6 +38,8 @@ from models import (
 # authenticator app and it will always work across DB resets.
 _DEV_TOTP_SECRET = "JBSWY3DPEHPK3PXP"  # nosec B105  # intentional dev-only constant
 
+# A passport-only friend (no role, no fleet access) in the seeded group passport.
+_FRIEND = ("friend@openhangar.dev", "openhangar-dev-friend")
 _USERS = [
     # (email, password, role, language, name)
     ("admin@openhangar.dev", "openhangar-dev-1", Role.ADMIN, None, "Alex Admin"),
@@ -212,6 +215,14 @@ def seed() -> None:
             date_offset_days=lambda: random.randint(1, 4),  # nosec B311  # seed data, not security-sensitive
             license_number="BE.PPL(A).20387",
         )
+    # A group passport with a passport-only friend, after both logbooks exist.
+    seed_group_passport(
+        tenant.id,
+        admin_user.id,
+        pilot_user.id if pilot_user else None,
+        _FRIEND[0],
+        _pw.hash(_FRIEND[1]),
+    )
 
     db.session.commit()
 
@@ -231,6 +242,7 @@ def seed() -> None:
     print("-" * 60)
     for email, password, role, *_ in _USERS:
         print(f"  {role.value:<{role_width}}  {email}  /  {password}")
+    print(f"  {'passport':<{role_width}}  {_FRIEND[0]}  /  {_FRIEND[1]}")
     print("-" * 60)
     print("  Shared-ownership co-owners (Dev Hangar — Shared Ownership / OO-SH1):")
     for email, password, _name in _SHARED_OWNERSHIP_USERS:

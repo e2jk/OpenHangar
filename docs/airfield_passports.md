@@ -797,6 +797,17 @@ waits for selected images to finish loading or fail before opening the dialog.
 Without JavaScript the selection form and browser Print command still work.
 Public printing remains a separate integration under the public-sharing scope.
 
+## Demo and development data
+
+The demo and development seeds add personal passports for the main pilot
+(`seed_passports`) and a group passport, "Flying friends" (`seed_group_passport`):
+two yearly editions of one group series shared by the owner, the seeded pilot
+and a passport-only friend. The pilots' stamps come live from their seeded
+logbooks; the friend records manual visits and posts a group comment. No
+invitation is seeded, so screenshots and documentation never show a real
+invitation link. In development the friend signs in as
+`friend@openhangar.dev` (the seed prints the password).
+
 ## Backups
 
 Instance backups are a full database dump plus the uploads folder, so every
