@@ -903,7 +903,7 @@ def pilot_tracks_gif() -> ResponseReturnValue:
         f"pilot-{uid}",
         f"{'portrait' if portrait else 'landscape'}-{'hires' if hires else 'std'}",
         {"tracks": track_rows, "openaip_key": openaip_key},
-        lambda: generate_tracks_gif(
+        render=lambda: generate_tracks_gif(
             track_rows,
             _openaip_key=openaip_key,
             canvas_w=canvas_w,

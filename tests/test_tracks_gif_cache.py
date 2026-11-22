@@ -48,18 +48,18 @@ def _age(path: str, days: float) -> None:
 def test_the_same_inputs_give_the_kept_gif(tmp_path) -> None:
     render = Renderer()
     args = (str(tmp_path), "aircraft-1", "landscape-std")
-    first = tracks_gif_cache.cached_gif(*args, {"tracks": [1]}, render)
-    again = tracks_gif_cache.cached_gif(*args, {"tracks": [1]}, render)
+    first = tracks_gif_cache.cached_gif(*args, {"tracks": [1]}, render=render)
+    again = tracks_gif_cache.cached_gif(*args, {"tracks": [1]}, render=render)
     assert first == again == b"GIF89a-1" and render.calls == 1
 
 
 def test_other_inputs_replace_only_that_variant(tmp_path) -> None:
     render = Renderer()
     folder = str(tmp_path)
-    tracks_gif_cache.cached_gif(folder, "pilot-3", "landscape-std", [1], render)
-    tracks_gif_cache.cached_gif(folder, "pilot-3", "portrait-hires", [1], render)
+    tracks_gif_cache.cached_gif(folder, "pilot-3", "landscape-std", [1], render=render)
+    tracks_gif_cache.cached_gif(folder, "pilot-3", "portrait-hires", [1], render=render)
     newer = tracks_gif_cache.cached_gif(
-        folder, "pilot-3", "landscape-std", [1, 2], render
+        folder, "pilot-3", "landscape-std", [1, 2], render=render
     )
     assert newer == b"GIF89a-3"
     kept = _kept(folder, "pilot-3")
@@ -70,25 +70,29 @@ def test_other_inputs_replace_only_that_variant(tmp_path) -> None:
 def test_an_old_gif_is_drawn_again(tmp_path) -> None:
     render = Renderer()
     args = (str(tmp_path), "aircraft-1", "landscape-std", [1])
-    tracks_gif_cache.cached_gif(*args, render)
+    tracks_gif_cache.cached_gif(*args, render=render)
     (name,) = _kept(str(tmp_path), "aircraft-1")
     _age(os.path.join(tmp_path, TRACKS_GIF_CACHE_DIRNAME, "aircraft-1", name), 31)
-    assert tracks_gif_cache.cached_gif(*args, render) == b"GIF89a-2"
+    assert tracks_gif_cache.cached_gif(*args, render=render) == b"GIF89a-2"
 
 
 def test_a_disk_that_cannot_keep_it_still_gets_the_gif(tmp_path) -> None:
     (tmp_path / TRACKS_GIF_CACHE_DIRNAME).write_text("not a folder")
     render = Renderer()
     args = (str(tmp_path), "aircraft-1", "landscape-std", [1])
-    assert tracks_gif_cache.cached_gif(*args, render) == b"GIF89a-1"
-    assert tracks_gif_cache.cached_gif(*args, render) == b"GIF89a-2"
+    assert tracks_gif_cache.cached_gif(*args, render=render) == b"GIF89a-1"
+    assert tracks_gif_cache.cached_gif(*args, render=render) == b"GIF89a-2"
 
 
 def test_the_daily_job_deletes_old_gifs(tmp_path, monkeypatch) -> None:
     folder = str(tmp_path)
     render = Renderer()
-    tracks_gif_cache.cached_gif(folder, "aircraft-1", "landscape-std", [1], render)
-    tracks_gif_cache.cached_gif(folder, "aircraft-2", "landscape-std", [1], render)
+    tracks_gif_cache.cached_gif(
+        folder, "aircraft-1", "landscape-std", [1], render=render
+    )
+    tracks_gif_cache.cached_gif(
+        folder, "aircraft-2", "landscape-std", [1], render=render
+    )
     (old,) = _kept(folder, "aircraft-1")
     _age(os.path.join(folder, TRACKS_GIF_CACHE_DIRNAME, "aircraft-1", old), 31)
     assert tracks_gif_cache.cleanup_stale_gifs(folder) == 1
