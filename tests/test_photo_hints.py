@@ -8,7 +8,7 @@ import pytest
 from flask import Flask
 from flask.testing import FlaskClient
 from PIL import Image
-from services.photo_hints import read_hints
+from services import photo_hints
 
 from tests.test_flights import _add_aircraft, _create_user_and_tenant, _login
 
@@ -51,7 +51,7 @@ def photo(
 
 
 def test_camera_time_and_airfield() -> None:
-    hints = read_hints(photo(), "IMG_0001.jpg", 60)
+    hints = photo_hints.read_hints(photo(), "IMG_0001.jpg", 60)
     assert hints["time"] == "12:30" and hints["date"] == "2026-05-12"
     assert hints["time_source"] == "camera"
     assert hints["airfield"]["ident"] == "EBOS"
@@ -59,11 +59,14 @@ def test_camera_time_and_airfield() -> None:
 
 
 def test_without_camera_offset_the_device_offset_is_used() -> None:
-    hints = read_hints(photo(offset=None), "x.jpg", 120)
+    hints = photo_hints.read_hints(photo(offset=None), "x.jpg", 120)
     assert hints["time"] == "12:30" and hints["time_source"] == "device"
-    assert read_hints(photo(offset=None), "x.jpg", None)["time"] is None
+    assert photo_hints.read_hints(photo(offset=None), "x.jpg", None)["time"] is None
     # A camera offset beyond any real time zone is ignored.
-    assert read_hints(photo(offset="+23:00"), "x.jpg", 0)["time_source"] == "device"
+    assert (
+        photo_hints.read_hints(photo(offset="+23:00"), "x.jpg", 0)["time_source"]
+        == "device"
+    )
 
 
 @pytest.mark.parametrize(
@@ -80,28 +83,30 @@ def test_without_camera_offset_the_device_offset_is_used() -> None:
 def test_file_name_time_when_the_photo_has_none(
     name: str, expected: str | None
 ) -> None:
-    hints = read_hints(photo(taken=None, offset=None, position=None), name, 0)
+    hints = photo_hints.read_hints(
+        photo(taken=None, offset=None, position=None), name, 0
+    )
     assert hints["time"] == expected
     if expected:
         assert hints["time_source"] == "filename"
 
 
 def test_no_airfield_when_far_or_ambiguous(monkeypatch: pytest.MonkeyPatch) -> None:
-    far = read_hints(photo(position=(51.25, 2.874673)), "x.jpg", 0)  # ~5.6 km north
+    far = photo_hints.read_hints(
+        photo(position=(51.25, 2.874673)), "x.jpg", 0
+    )  # ~5.6 km north
     assert far["airfield"] is None
-    import services.photo_hints as module
-
     fields = {
         "AAAA": {"lat": 50.0, "lon": 4.0, "name": "A"},
         "BBBB": {"lat": 50.0, "lon": 4.012, "name": "B"},
     }
-    monkeypatch.setattr(module, "_load_airport_geo", lambda: fields)
-    between = read_hints(photo(position=(50.0, 4.006)), "x.jpg", 0)
+    monkeypatch.setattr(photo_hints, "_load_airport_geo", lambda: fields)
+    between = photo_hints.read_hints(photo(position=(50.0, 4.006)), "x.jpg", 0)
     assert between["airfield"] is None
-    near_a = read_hints(photo(position=(50.0, 4.0005)), "x.jpg", 0)
+    near_a = photo_hints.read_hints(photo(position=(50.0, 4.0005)), "x.jpg", 0)
     assert near_a["airfield"]["ident"] == "AAAA"
-    monkeypatch.setattr(module, "_load_airport_geo", dict)
-    assert read_hints(photo(), "x.jpg", 0)["airfield"] is None
+    monkeypatch.setattr(photo_hints, "_load_airport_geo", dict)
+    assert photo_hints.read_hints(photo(), "x.jpg", 0)["airfield"] is None
 
 
 @pytest.mark.parametrize(
@@ -112,7 +117,7 @@ def test_no_airfield_when_far_or_ambiguous(monkeypatch: pytest.MonkeyPatch) -> N
     ],
 )
 def test_unreadable_or_oversized_photos_give_no_hints(data: bytes) -> None:
-    assert read_hints(data, "x.jpg", 0) == {
+    assert photo_hints.read_hints(data, "x.jpg", 0) == {
         "time": None,
         "date": None,
         "time_source": None,
@@ -121,14 +126,12 @@ def test_unreadable_or_oversized_photos_give_no_hints(data: bytes) -> None:
 
 
 def test_odd_metadata_is_ignored(monkeypatch: pytest.MonkeyPatch) -> None:
-    import services.photo_hints as module
-
-    assert module._exif_time("not a date") is None
-    assert module._degrees(("a", "b", "c"), "N") is None
-    assert module._degrees((1.0, 2.0, 3.0), "W") < 0
-    assert module._offset("bogus") is None
-    monkeypatch.setattr(module, "MAX_PHOTO_PIXELS", 10)
-    assert read_hints(photo(), "x.jpg", 0)["time"] is None
+    assert photo_hints._exif_time("not a date") is None
+    assert photo_hints._degrees(("a", "b", "c"), "N") is None
+    assert photo_hints._degrees((1.0, 2.0, 3.0), "W") < 0
+    assert photo_hints._offset("bogus") is None
+    monkeypatch.setattr(photo_hints, "MAX_PHOTO_PIXELS", 10)
+    assert photo_hints.read_hints(photo(), "x.jpg", 0)["time"] is None
 
 
 def test_the_endpoint_reads_and_discards(app: Flask, client: FlaskClient) -> None:

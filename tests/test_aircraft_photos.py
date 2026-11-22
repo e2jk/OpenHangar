@@ -269,8 +269,8 @@ class TestUploadPhoto:
         """A thumbnail-generation error (corrupt upload, decode failure, disk
         error, ...) must not block the upload itself -- only the thumbnail
         file is missing afterwards, and serve_photo_thumb falls back."""
-        import aircraft.routes as aircraft_routes
         import PIL.Image
+        from aircraft import routes as aircraft_routes
 
         real = aircraft_routes._generate_photo_thumbnail
 
