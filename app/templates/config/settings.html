@@ -57,7 +57,7 @@
   {% if nav_data_checks_open %}
   <div class="alert alert-warning d-flex flex-wrap align-items-center gap-2 mb-4">
     <i class="bi bi-bell-fill"></i>
-    <span class="me-auto">{{ ngettext('One difference found between a flight and its GPS track.', '%(n)d differences found between flights and their GPS tracks.', nav_data_checks_open, n=nav_data_checks_open) }}</span>
+    <span class="me-auto">{{ ngettext('One data check to review: a flight differs from its GPS track or its counters don\'t follow on.', '%(n)d data checks to review: flights that differ from their GPS tracks or whose counters don\'t follow on.', nav_data_checks_open, n=nav_data_checks_open) }}</span>
     <a href="{{ url_for('config.data_checks') }}" class="btn btn-sm btn-warning">{{ _('Review') }}</a>
   </div>
   {% endif %}

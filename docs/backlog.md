@@ -219,35 +219,6 @@ exposing any personal health data (medical expiry) to other users.
 
 ---
 
-## Logbook: counter continuity discrepancy detection
-
-**Likely related to** the "data integrity" audit-view idea below (from a
-friend's single-aircraft records site) — that item's "conflicting hour-meter
-readings" case is essentially this same check, generalized into a
-first-class audit page rather than a narrower per-aircraft view. Worth
-designing together rather than building this one first and a separate,
-overlapping page later.
-
-Each flight entry's counter start values are pre-filled from the previous
-flight's end values and are not directly editable in the UI. However, direct
-database manipulation (or a future API call) could introduce a mismatch where
-a flight's start value differs from the previous flight's end value, breaking
-the continuity of the running total.
-
-Future enhancement: scan all flight entries per aircraft and flag any entry
-where `engine_time_counter_start` ≠ previous entry's `engine_time_counter_end`
-(or same for flight time counter). Surface these discrepancies on the aircraft
-detail page and in a dedicated admin view, requiring an explicit acknowledgement
-or correction before the logbook can be considered complete.
-
-**Where to build it now:** the Data checks page (Configuration → Data
-checks, `services/data_checks.py`) exists since the flight ↔ GPS-track
-checks — add this as another kind of finding there (same per-aircraft
-cache, dismissals, navbar bell), rather than a separate page. See "Data
-checks: follow-ups" below.
-
----
-
 ## Data checks: follow-ups
 
 The Data checks page (Configuration → Data checks, `services/data_checks.py`)
@@ -273,9 +244,10 @@ for later:
 - **Pilots' own view:** the page is for admins/owners and covers aircraft
   flights only; standalone pilot-logbook flights with a GPS track (another
   aircraft) aren't checked, and a pilot can't see findings on their flights.
-- **More kinds of checks** on the same page: counter continuity (item
-  above), overlapping flights of one aircraft, a flight's pilot-logbook
-  figures disagreeing with the aircraft log.
+- **More kinds of checks** on the same page (counter gaps are there now):
+  overlapping flights of one aircraft, a flight's pilot-logbook figures
+  disagreeing with the aircraft log. The aircraft detail page could also
+  flag its own counter gaps.
 - **Email digest** of new findings, for admins who rarely open the
   configuration page.
 
@@ -1027,8 +999,8 @@ prioritised; recorded here as raw inspiration.
   scoped only, same granularity as `InstalledSTC`.
 
 - **A "data integrity" page that discloses record-keeping gaps as a first-class
-  feature** (see also "Logbook: counter continuity discrepancy detection"
-  above — likely the same underlying check, generalized), instead of only
+  feature** (the Data checks page now lists counter gaps — likely the
+  place to grow this, see "Data checks: follow-ups" above), instead of only
   tracking what's compliant. Their site has a
   dedicated page listing every place their own paper trail contradicts itself
   (e.g. three different computed "hours since overhaul" figures that don't
