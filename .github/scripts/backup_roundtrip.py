@@ -167,7 +167,7 @@ def _populate_passports(tenant_id: int, pilot: Any, upload_folder: Path) -> None
     db.session.flush()
     db.session.add(
         TenantUser(
-            user_id=friend.id, tenant_id=tenant_id, role=None, access_scope="passport"
+            user_id=friend.id, tenant_id=tenant_id, role=None, access_scope="personal"
         )
     )
     field = create_custom(

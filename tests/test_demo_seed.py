@@ -50,7 +50,7 @@ class TestDemoSeedEndToEnd:
             slot = DemoSlot.query.one()
             assert Passport.query.count() == 5
             # ...and its single passport-only friend, never the first run's.
-            friends = TenantUser.query.filter(TenantUser.access_scope == "passport")
+            friends = TenantUser.query.filter(TenantUser.access_scope == "personal")
             assert [tu.tenant_id for tu in friends] == [slot.tenant_id]
             assert {p.tenant_id for p in Passport.query} == {slot.tenant_id}
             assert {f.tenant_id for f in PassportAirfieldIdentity.query} == {

@@ -1,4 +1,4 @@
-"""'Start my pilot logbook' for a passport-only account, on the same account.
+"""'Start my pilot logbook' for a Personal account, on the same account.
 
 The account keeps its identity, visits and group memberships. The logbook
 holds only its own flights: no role is granted, so no aircraft, reservation,
@@ -31,7 +31,7 @@ def start_logbook() -> ResponseReturnValue:
     membership = current_membership()
     if membership is None:
         abort(403)
-    if membership.access_scope != "passport":
+    if membership.access_scope != "personal":
         # Full accounts already have their logbook through their role, and a
         # personal logbook is already on.
         return redirect(url_for("pilots.logbook"))

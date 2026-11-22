@@ -96,7 +96,7 @@ def seed() -> None:
             if sub_tenant:
                 db.session.delete(sub_tenant)
         if tenant:
-            # Passport-only friends (no role) belong to the slot's tenant only.
+            # Personal-account friends (no role) belong to the slot's tenant only.
             for friend_tu in TenantUser.query.filter(
                 TenantUser.tenant_id == tenant.id, TenantUser.access_scope != "full"
             ).all():

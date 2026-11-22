@@ -82,7 +82,7 @@ def test_passport_only_account_sees_the_activation_path(
 ) -> None:
     with app.app_context():
         tu = TenantUser.query.filter_by(user_id=owner["user"]).one()
-        tu.role, tu.access_scope = None, "passport"
+        tu.role, tu.access_scope = None, "personal"
         db.session.commit()
     signin(client, owner["user"])
     page = client.get(_path(owner)).text

@@ -7,7 +7,7 @@ from models import Role, Tenant, TenantUser, User, db
 from services.account_scope import (
     ACCOUNT_ENDPOINTS,
     LOGBOOK_ENDPOINTS,
-    PASSPORT_ENDPOINTS,
+    PERSONAL_ENDPOINTS,
 )
 
 from tests.test_passport_builder import signin
@@ -15,7 +15,7 @@ from tests.test_passport_builder import signin
 
 def test_every_allowlisted_endpoint_exists(app: Flask) -> None:
     registered = {rule.endpoint for rule in app.url_map.iter_rules()}
-    allowlisted = PASSPORT_ENDPOINTS | ACCOUNT_ENDPOINTS | LOGBOOK_ENDPOINTS
+    allowlisted = PERSONAL_ENDPOINTS | ACCOUNT_ENDPOINTS | LOGBOOK_ENDPOINTS
     assert sorted(allowlisted - registered) == []
 
 
@@ -35,7 +35,7 @@ def test_passport_only_account_can_read_robots_txt(
                     user_id=friend.id,
                     tenant_id=tenant.id,
                     role=None,
-                    access_scope="passport",
+                    access_scope="personal",
                 ),
             ]
         )

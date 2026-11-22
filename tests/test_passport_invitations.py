@@ -147,7 +147,7 @@ def test_join_preserves_roles_and_personal_vouchers(
             db.session.flush()
             membership = db.session.get(TenantUser, (uid, p.tenant_id))
             assert membership.role == old_role
-            assert membership.access_scope == ("full" if previous else "passport")
+            assert membership.access_scope == ("full" if previous else "personal")
             participant = PassportParticipant.query.filter_by(
                 passport_id=p.id, user_id=uid
             ).one()

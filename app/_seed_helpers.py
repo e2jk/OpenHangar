@@ -3822,7 +3822,7 @@ def seed_passports(tenant_id: int, user_id: int, aircraft: list) -> None:
     db.session.flush()
 
 
-# Manual visits by the passport-only friend of the seeded group, in the
+# Manual visits by the Personal-account friend of the seeded group, in the
 # current edition: (code, days ago, note).
 _PASSPORT_FRIEND_VISITS = [
     ("EBSP", 30, None),
@@ -3842,7 +3842,7 @@ def seed_group_passport(
 
     Two yearly editions of one group series: the owner and an optional
     second pilot earn stamps live from their seeded logbooks, and a
-    passport-only friend (no tenant role, no fleet access) records manual
+    Personal-account friend (no tenant role, no fleet access) records manual
     visits and shares a comment. No invitation is created, so no
     invitation link can appear in documentation or screenshots.
     Call after seed_pilot_profiles and seed_passports.
@@ -3870,7 +3870,7 @@ def seed_group_passport(
     db.session.flush()
     db.session.add(
         TenantUser(
-            user_id=friend.id, tenant_id=tenant_id, role=None, access_scope="passport"
+            user_id=friend.id, tenant_id=tenant_id, role=None, access_scope="personal"
         )
     )
 

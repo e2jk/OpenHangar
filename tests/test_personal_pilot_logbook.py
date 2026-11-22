@@ -43,7 +43,7 @@ def personal(app: Flask, owner: dict[str, int]) -> dict[str, int]:
         user = db.session.get(User, owner["user"])
         user.is_pilot = True  # a global flag a restricted account never inherits
         tu = TenantUser.query.filter_by(user_id=owner["user"]).one()
-        tu.role, tu.access_scope = None, "passport"
+        tu.role, tu.access_scope = None, "personal"
         TenantUser.query.filter_by(user_id=owner["other"]).one().role = Role.OWNER
         db.session.add_all(
             [
@@ -97,7 +97,7 @@ def test_default_policy_leaves_activation_to_an_administrator(
         client.post("/passports/start-logbook", data={"confirm": "yes"}).status_code
         == 403
     )
-    assert _scope(app, personal["user"]) == "passport"
+    assert _scope(app, personal["user"]) == "personal"
 
 
 def test_self_start_keeps_the_session_and_fills_passports(
@@ -212,12 +212,12 @@ def test_administrator_enables_and_removes_personal_logbooks(
     assert "users.personal_logbook" in caplog.text
     assert _scope(app, personal["user"]) == "logbook"
     users = client.get("/config/users/").text
-    assert "Passport and personal logbook" in users
+    assert "Personal account with pilot logbook" in users
     assert "Remove personal logbook access" in users
     with app.app_context():
         version = db.session.get(User, personal["user"]).auth_version
     assert client.post(url, data={"enable": "no"}).status_code == 302
-    assert _scope(app, personal["user"]) == "passport"
+    assert _scope(app, personal["user"]) == "personal"
     with app.app_context():
         # Narrowing access signs the account out everywhere.
         assert db.session.get(User, personal["user"]).auth_version != version

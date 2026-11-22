@@ -165,7 +165,7 @@
             {% endif %}
           </div>
           <div class="mb-3">
-            <label class="form-label fw-semibold" for="personal_logbook_policy">{{ _('Personal pilot logbooks for passport-only accounts') }}</label>
+            <label class="form-label fw-semibold" for="personal_logbook_policy">{{ _('Personal pilot logbooks for Personal accounts') }}</label>
             {% set _lpol = tenant_profile.personal_logbook_policy if tenant_profile else 'admin' %}
             <select name="personal_logbook_policy" id="personal_logbook_policy" class="form-select form-select-sm" aria-describedby="personal-logbook-policy-help">
               <option value="admin" {% if _lpol == 'admin' %}selected{% endif %}>{{ _('Only an administrator enables them, from the user list') }}</option>

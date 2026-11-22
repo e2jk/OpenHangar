@@ -114,7 +114,7 @@ def test_verified_signup_is_scoped_and_no_identity_exists_before_proof(
             not user.is_pilot and not user.is_maintenance and not user.is_instance_admin
         )
         membership = db.session.get(TenantUser, (user.id, invited["tenant"]))
-        assert membership.role is None and membership.access_scope == "passport"
+        assert membership.role is None and membership.access_scope == "personal"
         assert (
             PassportParticipant.query.filter_by(user_id=user.id).one().passport_id
             == invited["passport"]

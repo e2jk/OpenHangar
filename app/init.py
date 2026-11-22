@@ -1112,7 +1112,7 @@ def create_app() -> Flask:
         return {
             "has_passports": _has_passports,
             "passport_only": _restricted_account,
-            # A passport-only account that also keeps its own pilot logbook.
+            # A Personal account that also keeps its own pilot logbook.
             "personal_logbook": _personal_logbook,
             "logged_in": bool(uid),
             "has_users": User.query.count() > 0,

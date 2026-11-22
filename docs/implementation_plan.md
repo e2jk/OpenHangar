@@ -3064,7 +3064,7 @@ reader-owned visit form with 42e.
   URLs); leaving/removal keeps places and visits; Where next? with only places,
   only passports, both or neither; the old passport URL redirects.
 
-### 42h — Personal accounts
+### 42h — Personal accounts ✅
 
 Every account gets the **personal features** (passports, Places, Where next?,
 own profile, own data export), whatever its role. Organisation access (aircraft,
@@ -3072,19 +3072,21 @@ maintenance, flights) is a separate layer: *Personal* account = none, *Viewer
 (read-only)* = read-only, other roles = as today. What a user can do with a place
 depends only on their collection membership. No new role.
 
-- [ ] Rename the Phase 41 passport-only account type to **Personal**:
+- [x] Rename the Phase 41 passport-only account type to **Personal**:
   `TenantUser.access_scope` `"passport"` → `"personal"` (data migration, updated
   check constraint, older backups still restore), `services/account_scope.py`
   allowlist renamed, labels and translations updated. Places and Where next?
   endpoints added to the allowlist one by one, each with a test (the standalone
   Where next? page in the same commit as the move from passports).
-- [ ] "Pilot-logbook activation" (Phase 41) upgrades a Personal account without
+  *Done 2026-11-22:* migration `eba8e84fe90d`, `PERSONAL_ENDPOINTS` with every
+  Places page; the standalone Where next? page joins it with 42f.
+- [x] "Pilot-logbook activation" (Phase 41) upgrades a Personal account without
   fleet access and keeps its places and collection memberships.
-- [ ] Viewer keeps its stored value and name, shown as "Viewer (read-only)", with
+- [x] Viewer keeps its stored value and name, shown as "Viewer (read-only)", with
   the description "Read-only access to aircraft, maintenance and flights, plus
   personal features (passports, Places)". User-management UI and user guide
   explain when to choose Personal or Viewer for a non-pilot.
-- [ ] Tests: a Viewer or Personal account can edit places in a collection where
+- [x] Tests: a Viewer or Personal account can edit places in a collection where
   they are an editor and gains no organisation access through Places.
 
 ### 42i — Share a link to a new place

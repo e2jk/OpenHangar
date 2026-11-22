@@ -1516,7 +1516,7 @@ def _score_candidate(kwargs: dict[str, Any], existing: Any) -> float:
 def full_tenant_ids(user_id: int) -> set[int]:
     """Organisations whose aircraft a pilot's logbook may be matched against.
 
-    Only full memberships: a passport-only membership (with or without a
+    Only full memberships: a Personal membership (with or without a
     personal logbook) gives no aircraft access, so its organisation's
     aircraft and their flights are never offered or written to.
     """

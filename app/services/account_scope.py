@@ -1,4 +1,4 @@
-"""Fail-closed route capabilities for passport-only tenant memberships.
+"""Fail-closed route capabilities for Personal tenant memberships (no role).
 
 Role-less memberships never inherit VIEWER or a user's global pilot/maintenance
 flags. Add endpoints deliberately, after checking their own-data boundaries.
@@ -9,7 +9,9 @@ from flask.typing import ResponseReturnValue
 from models import TenantUser
 from utils import current_membership
 
-PASSPORT_ENDPOINTS = frozenset(
+# A Personal account ('personal' scope, and 'logbook' on top): the personal
+# features only — passports, Places, Where next?, its own account data.
+PERSONAL_ENDPOINTS = frozenset(
     {
         "passports.public_view",
         "passports.public_photo",
@@ -105,7 +107,7 @@ def enforce() -> ResponseReturnValue | None:
         return None
     if request.endpoint == "index":
         return redirect(url_for("passports.index"))
-    allowed = PASSPORT_ENDPOINTS | ACCOUNT_ENDPOINTS
+    allowed = PERSONAL_ENDPOINTS | ACCOUNT_ENDPOINTS
     if personal_logbook(current_membership()):
         allowed |= LOGBOOK_ENDPOINTS
     if request.endpoint not in allowed:

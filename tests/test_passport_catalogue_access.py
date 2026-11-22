@@ -258,7 +258,7 @@ def test_cached_full_membership_cannot_survive_scope_downgrade(
             .where(
                 TenantUser.user_id == c["other"], TenantUser.tenant_id == c["tenant"]
             )
-            .values(access_scope="passport", role=None),
+            .values(access_scope="personal", role=None),
             execution_options={"synchronize_session": False},
         )
         assert membership.access_scope == "full"  # An intentionally stale ORM row.
@@ -307,7 +307,7 @@ def test_personal_builder_keeps_public_projection_and_local_classifications(
             == c["public_name"]
         )
         membership = db.session.get(TenantUser, (c["basic"], c["tenant"]))
-        assert membership.role is None and membership.access_scope == "passport"
+        assert membership.role is None and membership.access_scope == "personal"
     edit = f"/passports/{passport_id}/edit"
     response = client.get(edit)
     assert response.status_code == 200 and "PRIVATE OVERRIDE" not in response.text

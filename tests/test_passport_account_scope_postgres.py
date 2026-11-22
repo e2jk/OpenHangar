@@ -66,7 +66,7 @@ def test_scope_upgrade_preserves_roles_and_downgrade_never_promotes_accounts(
     with engine.begin() as conn:
         conn.execute(
             text(
-                "INSERT INTO tenant_users(user_id, tenant_id, role, access_scope) VALUES (:u,:t,NULL,'passport')"
+                "INSERT INTO tenant_users(user_id, tenant_id, role, access_scope) VALUES (:u,:t,NULL,'personal')"
             ),
             {"u": friend, "t": tenant},
         )
@@ -92,3 +92,48 @@ def test_scope_upgrade_preserves_roles_and_downgrade_never_promotes_accounts(
         c["name"] for c in inspect(engine).get_columns("tenant_users")
     }
     _upgrade(app, "head")
+
+
+def test_passport_only_accounts_become_personal_and_back(
+    empty_schema: tuple[Flask, Engine],
+) -> None:
+    """An older database (or backup) keeps its friends: 'passport' rows become
+    'personal'; 'logbook' rows and full members are untouched."""
+    app, engine = empty_schema
+    previous = "38faafd5e24b"
+    _upgrade(app, previous)
+    tenant = _insert(engine, "tenants", name="Older backup")
+    ids = [
+        _insert(engine, "users", email=f"{name}@rename.test", password_hash="unused")
+        for name in ("friend", "flyer", "member")
+    ]
+    with engine.begin() as conn:
+        for user, role, scope in zip(
+            ids, (None, None, "PILOT"), ("passport", "logbook", "full"), strict=True
+        ):
+            conn.execute(
+                text(
+                    "INSERT INTO tenant_users(user_id, tenant_id, role, access_scope) "
+                    "VALUES (:u,:t,:r,:s)"
+                ),
+                {"u": user, "t": tenant, "r": role, "s": scope},
+            )
+
+    def scopes() -> list[str]:
+        with engine.connect() as conn:
+            return list(
+                conn.execute(
+                    text("SELECT access_scope FROM tenant_users ORDER BY user_id")
+                ).scalars()
+            )
+
+    _upgrade(app, "head")
+    assert scopes() == ["personal", "logbook", "full"]
+    with engine.begin() as conn, pytest.raises(Exception, match="access_scope"):
+        conn.execute(text("UPDATE tenant_users SET access_scope='passport'"))
+    with app.app_context():
+        downgrade(directory=MIGRATIONS, revision=previous)
+        db.session.remove()
+    assert scopes() == ["passport", "logbook", "full"]
+    _upgrade(app, "head")
+    assert scopes() == ["personal", "logbook", "full"]

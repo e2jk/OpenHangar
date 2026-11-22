@@ -40,7 +40,7 @@ def test_later_joiner_sees_earlier_comments_only_after_joining(
                 tenant_id=tenant,
                 user_id=newcomer.id,
                 role=None,
-                access_scope="passport",
+                access_scope="personal",
             )
         )
         db.session.flush()

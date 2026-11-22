@@ -142,7 +142,7 @@ def test_scoped_export_retains_own_withdrawn_records_without_current_group_data(
     s = owner
     with app.app_context():
         membership = db.session.get(TenantUser, (s["other"], s["tenant"]))
-        membership.access_scope, membership.role = "passport", None
+        membership.access_scope, membership.role = "personal", None
         passport = db.session.get(Passport, s["passport"])
         participant = PassportParticipant(
             passport_id=passport.id,

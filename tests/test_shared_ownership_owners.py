@@ -553,7 +553,7 @@ class TestManageOwnersEligibility:
                         user_id=friend.id,
                         tenant_id=tid,
                         role=None,
-                        access_scope="passport",
+                        access_scope="personal",
                     )
                 )
                 db.session.commit()

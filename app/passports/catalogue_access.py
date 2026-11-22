@@ -1,4 +1,4 @@
-"""Private catalogue identities are scoped before passport-only tools expose them.
+"""Private catalogue identities are scoped before Personal-account tools expose them.
 
 Public CSV data stays available. A reference to a hidden materialised public
 field must never reveal its tenant overrides or manually maintained aliases.
@@ -47,7 +47,7 @@ def visible_identity_ids(
     )
     if scope == "full":
         return None
-    if scope not in ("passport", "logbook"):
+    if scope not in ("personal", "logbook"):
         return empty
     accepted = db.select(PassportParticipant.passport_id).where(
         PassportParticipant.user_id == user_id,

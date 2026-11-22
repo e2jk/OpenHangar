@@ -15,7 +15,7 @@ from pilots.logbook_import import (
 from tests.test_logbook_import import _make_parsed_file, _make_user
 
 
-@pytest.mark.parametrize("scope", ["passport", "logbook"])
+@pytest.mark.parametrize("scope", ["personal", "logbook"])
 def test_restricted_membership_aircraft_stay_out_of_the_logbook(
     app: Flask, scope: str
 ) -> None:

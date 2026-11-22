@@ -123,11 +123,11 @@ msgstr "Carburant"
 msgid "Parts & Maintenance"
 msgstr "Pièces et entretien"
 
-#: app/models.py:2325 app/pwa/routes.py:89 app/templates/dashboard.html:406
+#: app/models.py:2325 app/pwa/routes.py:84 app/templates/dashboard.html:406
 msgid "Insurance"
 msgstr "Assurance"
 
-#: app/models.py:2326 app/pwa/routes.py:94 app/templates/dashboard.html:164
+#: app/models.py:2326 app/pwa/routes.py:89 app/templates/dashboard.html:164
 #: app/templates/maintenance/list.html:90
 #: app/templates/maintenance/trigger_form.html:69
 msgid "Other"
@@ -963,7 +963,7 @@ msgid "'Valid from' must not be after 'Valid until'."
 msgstr "« Valide à partir du » ne doit pas être postérieur à « Valide jusqu'au »."
 
 #: app/documents/routes.py:643 app/documents/routes.py:959
-#: app/pwa/routes.py:300
+#: app/pwa/routes.py:264
 msgid "Document uploaded."
 msgstr "Document téléchargé."
 
@@ -1501,7 +1501,7 @@ msgstr "Fichier GPS %(filename)s traité — champs pré-remplis ci-dessous. Vé
 msgid "GPS file parsed — fields pre-filled. Review and save."
 msgstr "Fichier GPS traité — champs pré-remplis. Vérifiez et enregistrez."
 
-#: app/flights/routes.py:1811 app/pilots/routes.py:2527 app/pwa/routes.py:223
+#: app/flights/routes.py:1811 app/pilots/routes.py:2527 app/pwa/routes.py:200
 msgid "Please select an aircraft."
 msgstr "Veuillez sélectionner un avion."
 
@@ -3321,23 +3321,23 @@ msgstr "Famille"
 msgid "Enter a tag name of at most 80 characters."
 msgstr "Saisissez un nom d’étiquette de 80 caractères maximum."
 
-#: app/pwa/routes.py:79
+#: app/pwa/routes.py:74
 msgid "Aircraft document"
 msgstr "Document d'avion"
 
-#: app/pwa/routes.py:80
+#: app/pwa/routes.py:75
 msgid "Expense receipt"
 msgstr "Reçu de dépense"
 
-#: app/pwa/routes.py:81
+#: app/pwa/routes.py:76
 msgid "Maintenance record"
 msgstr "Compte rendu de maintenance"
 
-#: app/pwa/routes.py:82
+#: app/pwa/routes.py:77
 msgid "Flight photo"
 msgstr "Photo de vol"
 
-#: app/pwa/routes.py:88 app/templates/aircraft/detail.html:221
+#: app/pwa/routes.py:83 app/templates/aircraft/detail.html:221
 #: app/templates/base.html:215 app/templates/landing.html:39
 #: app/templates/landing.html:247
 #: app/templates/maintenance/amp_declaration_form.html:23
@@ -3352,11 +3352,11 @@ msgstr "Photo de vol"
 msgid "Maintenance"
 msgstr "Maintenance"
 
-#: app/pwa/routes.py:90
+#: app/pwa/routes.py:85
 msgid "POH / Flight Manual"
 msgstr "POH / Manuel de vol"
 
-#: app/pwa/routes.py:91 app/templates/aircraft/detail.html:270
+#: app/pwa/routes.py:86 app/templates/aircraft/detail.html:270
 #: app/templates/airworthiness/adsb_board.html:17
 #: app/templates/airworthiness/dashboard.html:3
 #: app/templates/airworthiness/dashboard.html:12
@@ -3364,7 +3364,7 @@ msgstr "POH / Manuel de vol"
 msgid "Airworthiness"
 msgstr "Navigabilité"
 
-#: app/pwa/routes.py:92 app/templates/aircraft/detail.html:385
+#: app/pwa/routes.py:87 app/templates/aircraft/detail.html:385
 #: app/templates/aircraft/flight_detail.html:26
 #: app/templates/config/data_checks.html:41 app/templates/dashboard.html:237
 #: app/templates/flights/logbook_component.html:4
@@ -3379,31 +3379,31 @@ msgstr "Navigabilité"
 msgid "Logbook"
 msgstr "Carnet de vol"
 
-#: app/pwa/routes.py:93
+#: app/pwa/routes.py:88
 msgid "Invoice"
 msgstr "Facture"
 
-#: app/pwa/routes.py:95
+#: app/pwa/routes.py:90
 msgid "Uncategorised"
 msgstr "Non catégorisé"
 
-#: app/pwa/routes.py:188
+#: app/pwa/routes.py:165
 msgid "No files were shared."
 msgstr "Aucun fichier n'a été partagé."
 
-#: app/pwa/routes.py:199
+#: app/pwa/routes.py:176
 msgid "The shared file was discarded."
 msgstr "Le fichier partagé a été abandonné."
 
-#: app/pwa/routes.py:208
+#: app/pwa/routes.py:185
 msgid "No pending shared files. Please try sharing again."
 msgstr "Aucun fichier partagé en attente. Veuillez réessayer de partager."
 
-#: app/pwa/routes.py:214
+#: app/pwa/routes.py:191
 msgid "Unknown destination."
 msgstr "Destination inconnue."
 
-#: app/pwa/routes.py:234
+#: app/pwa/routes.py:211
 msgid "Choose the item you serviced: your shared file is attached to its form."
 msgstr "Choisissez l'élément entretenu : votre fichier partagé est joint à son formulaire."
 
@@ -8866,8 +8866,8 @@ msgid "Days a co-owner capital balance may stay negative before the billing dash
 msgstr "Nombre de jours pendant lesquels le solde du capital d'un copropriétaire peut rester négatif avant que le tableau de bord ne le signale."
 
 #: app/templates/config/settings.html:168
-msgid "Personal pilot logbooks for passport-only accounts"
-msgstr "Carnets de vol personnels pour les comptes limités aux passeports"
+msgid "Personal pilot logbooks for Personal accounts"
+msgstr "Carnets de vol personnels pour les comptes personnels"
 
 #: app/templates/config/settings.html:171
 msgid "Only an administrator enables them, from the user list"
@@ -15856,7 +15856,7 @@ msgstr "Gérer les accès et les rôles de votre hangar"
 msgid "Current Users"
 msgstr "Utilisateurs actuels"
 
-#: app/templates/users/list.html:35 app/templates/users/list.html:246
+#: app/templates/users/list.html:35 app/templates/users/list.html:250
 msgid "Aircraft access"
 msgstr "Accès aux avions"
 
@@ -15869,12 +15869,12 @@ msgid "inactive"
 msgstr "inactif"
 
 #: app/templates/users/list.html:54 app/templates/users/list.html:59
-msgid "Passport and personal logbook"
-msgstr "Passeports et carnet de vol personnel"
+msgid "Personal account with pilot logbook"
+msgstr "Compte personnel avec carnet de vol"
 
 #: app/templates/users/list.html:54 app/templates/users/list.html:59
-msgid "Passport-only account"
-msgstr "Compte limité aux passeports"
+msgid "Personal account"
+msgstr "Compte personnel"
 
 #: app/templates/users/list.html:68
 msgid "No aircraft access"
@@ -15933,19 +15933,27 @@ msgstr "Inviter des utilisateurs"
 msgid "user@example.com"
 msgstr "utilisateur@exemple.com"
 
-#: app/templates/users/list.html:246
+#: app/templates/users/list.html:243
+msgid "Viewer (read-only): read-only access to aircraft, maintenance and flights, plus personal features (passports, Places)."
+msgstr "Observateur (lecture seule) : accès en lecture seule aux avions, à la maintenance et aux vols, plus les fonctions personnelles (passeports, Lieux)."
+
+#: app/templates/users/list.html:244
+msgid "For someone who only needs passports and Places, with no access to the aircraft, invite them to a passport instead: they get a Personal account."
+msgstr "Pour une personne qui n'a besoin que des passeports et des Lieux, sans accès aux avions, invitez-la plutôt à un passeport : elle obtient un compte personnel."
+
+#: app/templates/users/list.html:250
 msgid "leave empty for none"
 msgstr "laisser vide pour aucun"
 
-#: app/templates/users/list.html:263
+#: app/templates/users/list.html:267
 msgid "Add another person"
 msgstr "Ajouter une autre personne"
 
-#: app/templates/users/list.html:269
+#: app/templates/users/list.html:273
 msgid "Create invitations"
 msgstr "Créer des invitations"
 
-#: app/templates/users/list.html:272
+#: app/templates/users/list.html:276
 msgid "Invitation links are valid for 7 days. If email is provided and SMTP is configured, the link is sent automatically."
 msgstr "Les liens d'invitation sont valables 7 jours. Si un e-mail est fourni et que le SMTP est configuré, le lien est envoyé automatiquement."
 

@@ -218,13 +218,13 @@ class TenantUser(db.Model):
     __tablename__ = "tenant_users"
     __table_args__ = (
         db.CheckConstraint(
-            "access_scope IN ('full', 'passport', 'logbook')",
+            "access_scope IN ('full', 'personal', 'logbook')",
             name="ck_tenant_users_access_scope",
         ),
-        # 'logbook' is a passport-only account that also keeps its own pilot
+        # 'logbook' is a Personal account that also keeps its own pilot
         # logbook: still no role, so no fleet, reservation or maintenance access.
         db.CheckConstraint(
-            "(access_scope = 'full' AND role IS NOT NULL) OR (access_scope IN ('passport', 'logbook') AND role IS NULL)",
+            "(access_scope = 'full' AND role IS NOT NULL) OR (access_scope IN ('personal', 'logbook') AND role IS NULL)",
             name="ck_tenant_users_scoped_role",
         ),
     )
@@ -408,7 +408,7 @@ class TenantProfile(db.Model):
         db.String(8), nullable=False, default="warn"
     )
     # Phase 41: "admin" | "self" — who may start a personal pilot logbook on a
-    # passport-only account: only an administrator, or the account holder too.
+    # Personal account: only an administrator, or the account holder too.
     personal_logbook_policy = db.Column(
         db.String(8), nullable=False, default="admin", server_default="admin"
     )
@@ -5054,9 +5054,9 @@ def _revoke_changed_account_scope(
     history = inspect(membership).attrs.access_scope.history
     if not history.has_changes():
         return
-    # Adding a personal logbook only widens a passport-only account to its own
+    # Adding a personal logbook only widens a Personal account to its own
     # entries; every other scope change signs the account out everywhere.
-    if list(history.deleted) == ["passport"] and list(history.added) == ["logbook"]:
+    if list(history.deleted) == ["personal"] and list(history.added) == ["logbook"]:
         return
     connection.execute(
         update(User)

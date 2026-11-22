@@ -49,7 +49,7 @@ def test_no_stamp_required_and_same_thread_survives_edition_archive(
         old = db.session.get(Passport, s["old"])
         old.archived_at = datetime.now(UTC)
         membership = db.session.get(TenantUser, (s["other"], s["tenant"]))
-        membership.role, membership.access_scope = None, "passport"
+        membership.role, membership.access_scope = None, "personal"
         first = post(
             s, category="nearby", experience_date=datetime.now(UTC).date().isoformat()
         )

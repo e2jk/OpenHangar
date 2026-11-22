@@ -38,7 +38,7 @@ from models import (
 # authenticator app and it will always work across DB resets.
 _DEV_TOTP_SECRET = "JBSWY3DPEHPK3PXP"  # nosec B105  # intentional dev-only constant
 
-# A passport-only friend (no role, no fleet access) in the seeded group passport.
+# A Personal-account friend (no role, no fleet access) in the seeded group passport.
 _FRIEND = ("friend@openhangar.dev", "openhangar-dev-friend")
 _USERS = [
     # (email, password, role, language, name)
@@ -215,7 +215,7 @@ def seed() -> None:
             date_offset_days=lambda: random.randint(1, 4),  # nosec B311  # seed data, not security-sensitive
             license_number="BE.PPL(A).20387",
         )
-    # A group passport with a passport-only friend, after both logbooks exist.
+    # A group passport with a Personal-account friend, after both logbooks exist.
     seed_group_passport(
         tenant.id,
         admin_user.id,
@@ -242,7 +242,7 @@ def seed() -> None:
     print("-" * 60)
     for email, password, role, *_ in _USERS:
         print(f"  {role.value:<{role_width}}  {email}  /  {password}")
-    print(f"  {'passport':<{role_width}}  {_FRIEND[0]}  /  {_FRIEND[1]}")
+    print(f"  {'personal':<{role_width}}  {_FRIEND[0]}  /  {_FRIEND[1]}")
     print("-" * 60)
     print("  Shared-ownership co-owners (Dev Hangar — Shared Ownership / OO-SH1):")
     for email, password, _name in _SHARED_OWNERSHIP_USERS:

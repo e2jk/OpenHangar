@@ -38,7 +38,7 @@ def test_roleless_member_posts_edits_and_exports_only_their_own_comments(
     s = group
     with app.app_context():
         membership = db.session.get(TenantUser, (s["other"], s["tenant"]))
-        membership.role, membership.access_scope = None, "passport"
+        membership.role, membership.access_scope = None, "personal"
         comments.add(
             s["tenant"],
             s["user"],
