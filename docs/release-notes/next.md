@@ -117,6 +117,6 @@ Every account has it, including friends with a Personal account.
   fallbacks.
 - Shipping: `scripts/ship.sh --later` run in a parallel `git worktree` pushes
   to that worktree's own lane and pull request, so two lines of work can land
-  side by side. It also runs the browser tests before every push (about 5
-  minutes, a failing test retried once): every pull request that failed at
+  side by side. It also runs the browser tests before every push (2 workers,
+  about 7 minutes, a failing test retried once): every pull request that failed at
   first in the past week had failed in them.

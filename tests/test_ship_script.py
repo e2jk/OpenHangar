@@ -57,7 +57,7 @@ def repo(tmp_path: Path) -> dict[str, Path]:
         'echo "$*" >> "$E2E_LOG"\n'
         'case "$E2E_MODE" in\n'
         "  fail) exit 1 ;;\n"
-        '  flaky) case "$*" in *"-n 4"*) exit 1 ;; esac ;;\n'
+        '  flaky) case "$*" in *"-n "*) exit 1 ;; esac ;;\n'
         "esac\n"
         "exit 0\n"
     )
@@ -147,7 +147,7 @@ def test_browser_tests_run_before_pushing(repo: dict[str, Path]) -> None:
     _commit(repo["main"], "feature.py")
     out = _run("bash", "scripts/ship.sh", "--later", cwd=repo["main"], env=_env(repo))
     (run,) = _e2e_runs(repo)
-    assert run.startswith("tests/e2e --e2e") and "-n 4" in run
+    assert run.startswith("tests/e2e --e2e") and run.endswith("-n 2")
     assert "Running the browser tests" in out
     assert "ship-later" in _remote_branches(repo)
 
@@ -158,7 +158,7 @@ def test_a_flaky_browser_test_is_retried_once(repo: dict[str, Path]) -> None:
         "bash", "scripts/ship.sh", "--later", cwd=repo["main"], env=_env(repo, "flaky")
     )
     first, retry = _e2e_runs(repo)
-    assert "-n 4" in first and "--last-failed" in retry and "-n 4" not in retry
+    assert "-n 2" in first and "--last-failed" in retry and "-n " not in retry
     assert "Rerunning the failed browser tests" in out
     assert "ship-later" in _remote_branches(repo)
 
@@ -193,3 +193,11 @@ def test_browser_tests_skipped_for_docs_or_on_request(repo: dict[str, Path]) -> 
         env=_env(repo, "fail"),
     )
     assert "Skipping the browser tests" in out and _e2e_runs(repo) == []
+
+
+def test_browser_workers_can_be_raised(repo: dict[str, Path]) -> None:
+    _commit(repo["main"], "feature.py")
+    env = {**_env(repo), "SHIP_BROWSER_WORKERS": "4"}
+    _run("bash", "scripts/ship.sh", "--later", cwd=repo["main"], env=env)
+    (run,) = _e2e_runs(repo)
+    assert run.endswith("-n 4")
