@@ -350,7 +350,7 @@ def test_unlocated_place_can_be_copied_and_enriched_by_another_editor(
         assert place_label(changed) == "Found it"
         assert changed.latitude == 50.5 and changed.updated_by_user_id == v
         blank = save_place(t, u, source.id, {})
-        assert place_label(blank) == "Place to locate"
+        assert place_label(blank) == "Unnamed place"
         # A legacy row may have a non-http URL; the label must still be useful.
         blank.external_url = "not-a-host"
-        assert place_label(blank) == "Place to locate"
+        assert place_label(blank) == "Unnamed place"

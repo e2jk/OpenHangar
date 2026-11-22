@@ -13,4 +13,4 @@ def place_label(place: Place) -> str:
         hostname = urlsplit(place.external_url).hostname
         if hostname:
             return str(hostname)
-    return str(_("Place to locate"))
+    return str(_("Unnamed place"))
