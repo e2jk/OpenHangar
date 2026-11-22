@@ -110,7 +110,7 @@ Each aircraft has a detail page showing current status, components, recent fligh
 ### Logging a flight
 
 1. Click **Log a flight** in the navbar.
-2. Check the pre-filled counter start values and enter the end values (flight and engine time counters); attach a photo of the instruments, or upload a GPS file to autofill times and route.
+2. Check the pre-filled counter start values and enter the end values (flight and engine time counters); attach a photo of the instruments — OpenHangar then offers the time it was taken (in UTC) and the airfield it was taken at as arrival (or, for a pre-flight photo, departure) suggestions to use or ignore — or upload a GPS file to autofill times and route. Photos are stored without their metadata (GPS position included).
 3. Save — the system updates component totals and re-evaluates all maintenance triggers automatically. If you were flying, the same form creates the matching entry in your personal pilot logbook.
 
 ![Log a flight form](screenshots/flight_form.png)

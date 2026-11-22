@@ -183,6 +183,7 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
     "documents.ignore_reconcile": _OWNER_ROLES,
     # flights_bp
     "flights.log_flight": _PILOT_ACCESS_ROLES,
+    "flights.photo_hints": _PILOT_ACCESS_ROLES,
     "flights.edit_flight": _PILOT_ACCESS_ROLES,
     "flights.parse_gps_api": _PILOT_ACCESS_ROLES,
     "flights.delete_flight": _PILOT_ACCESS_ROLES,
