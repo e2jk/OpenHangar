@@ -26,6 +26,7 @@ from services.account_exports import ExportContext, ExportFile, ExportSection
 from utils import current_membership, db_id, login_required
 
 from places.access import PlaceError, collection_access
+from places.airfields import linked_airfields
 from places.management import photo_path
 from places.queries import list_places
 from places.routes import places_bp
@@ -98,6 +99,29 @@ def places_section(tenant_id: int, user_id: int) -> ExportSection:
             for visit, title in visits
         ],
     }
+    links: dict[int, list[dict[str, Any]]] = {}
+    if places:
+        for link in linked_airfields(
+            tenant_id,
+            user_id,
+            place_ids=[p.id for p in places],
+            include_archived=True,
+        ):
+            links.setdefault(link["place_id"], []).append(
+                {
+                    key: link[key]
+                    for key in (
+                        "name",
+                        "ident",
+                        "icao_code",
+                        "latitude",
+                        "longitude",
+                        "distance_km",
+                        "note",
+                        "preferred",
+                    )
+                }
+            )
     files: list[ExportFile] = []
     for place in places:
         entry: dict[str, Any] = {
@@ -111,6 +135,7 @@ def places_section(tenant_id: int, user_id: int) -> ExportSection:
             "external_url": place.external_url,
             "archived": bool(place.archived),
             "tags": tags.get(place.id, []),
+            "airfields": links.get(place.id, []),
             "created_at": _iso(place.created_at),
             "updated_at": _iso(place.updated_at),
         }

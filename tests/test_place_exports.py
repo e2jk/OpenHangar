@@ -182,3 +182,28 @@ def test_export_requires_a_membership(
         assert client.get("/places/export.gpx").status_code == 403
     with patch("places.exports.list_places", side_effect=PlaceError("x")):
         assert client.get("/places/export.gpx").status_code == 404
+
+
+def test_export_holds_the_airfield_links_of_own_places(
+    app: Flask, client: FlaskClient, people: dict[str, int], shared: dict[str, int]
+) -> None:
+    from passports.catalogue import create_custom
+    from places.airfields import add_link
+
+    with app.app_context():
+        field = create_custom(
+            people["tenant"], "Castle strip", code="CSTL", latitude=50.4, longitude=4.2
+        )
+        db.session.flush()
+        add_link(
+            people["tenant"], people["creator"], shared["mine"], field.id, note="Walk"
+        )
+        db.session.commit()
+    signin(client, people)
+    data, _files = _account_section(client)
+    castle = next(p for p in data["places"] if p["title"] == "Castle")
+    (link,) = castle["airfields"]
+    assert link["name"] == "Castle strip" and link["note"] == "Walk"
+    assert link["distance_km"] is not None and link["preferred"] is False
+    link_only = next(p for p in data["places"] if p["title"] is None)
+    assert link_only["airfields"] == []

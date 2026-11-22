@@ -203,7 +203,7 @@ msgstr "Définissez soit une contribution horaire, soit une contribution mensuel
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Ce fichier GPS contient trop de points pour être importé (plus de %(n)s). Découpez l'enregistrement en plusieurs fichiers."
 
-#: app/aircraft/routes.py:555 app/explore/routes.py:256
+#: app/aircraft/routes.py:555 app/explore/routes.py:257
 msgid "cruise speed"
 msgstr "vitesse de croisière"
 
@@ -1116,39 +1116,39 @@ msgstr "Ce type de fichier n'est pas autorisé pour les justificatifs."
 msgid "Expense receipt %(date)s"
 msgstr "Justificatif de dépense %(date)s"
 
-#: app/explore/routes.py:229
+#: app/explore/routes.py:230
 msgid "Choose a reference airfield from the search results."
 msgstr "Choisissez un aérodrome de référence parmi les résultats de recherche."
 
-#: app/explore/routes.py:232
+#: app/explore/routes.py:233
 msgid "This reference airfield has no coordinates. Choose another."
 msgstr "Cet aérodrome de référence n’a pas de coordonnées. Choisissez-en un autre."
 
-#: app/explore/routes.py:257
+#: app/explore/routes.py:258
 msgid "distance/time limit"
 msgstr "limite de distance/durée"
 
-#: app/explore/routes.py:258
+#: app/explore/routes.py:259
 msgid "usable fuel"
 msgstr "carburant utilisable"
 
-#: app/explore/routes.py:259
+#: app/explore/routes.py:260
 msgid "fuel flow"
 msgstr "consommation"
 
-#: app/explore/routes.py:260
+#: app/explore/routes.py:261
 msgid "reserve minutes"
 msgstr "réserve en minutes"
 
-#: app/explore/routes.py:272
+#: app/explore/routes.py:273
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Saisissez une vitesse de croisière pour le mode durée, ou utilisez le mode distance."
 
-#: app/explore/routes.py:281
+#: app/explore/routes.py:282
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "L’autonomie théorique est inconnue. Saisissez le carburant utilisable, la consommation, la vitesse et une réserve explicite laissant une durée de vol positive. Le filtre distance/durée reste appliqué."
 
-#: app/explore/routes.py:323
+#: app/explore/routes.py:324
 msgid "Choose a reference airfield and correct the destination filters before downloading."
 msgstr "Choisissez un aérodrome de référence et corrigez les filtres de destination avant de télécharger."
 
@@ -3273,11 +3273,11 @@ msgstr "Saisissez une latitude et une longitude valides."
 msgid "Paste decimal or DMS coordinates, or a map link containing coordinates."
 msgstr "Collez des coordonnées décimales ou en degrés, minutes et secondes, ou un lien de carte contenant des coordonnées."
 
-#: app/places/exports.py:151 app/places/presentation.py:16
+#: app/places/exports.py:176 app/places/presentation.py:16
 msgid "Unnamed place"
 msgstr "Lieu sans nom"
 
-#: app/places/exports.py:162 app/templates/base.html:233
+#: app/places/exports.py:187 app/templates/base.html:233
 #: app/templates/explore/where_next.html:10
 #: app/templates/explore/where_next.html:38
 #: app/templates/explore/where_next.html:39

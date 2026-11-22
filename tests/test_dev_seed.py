@@ -55,6 +55,13 @@ class TestDevSeedEndToEnd:
                 ).count()
                 == 2
             )
+            from models import PlaceAirfield
+
+            linked = {
+                link.place_id
+                for link in PlaceAirfield.query.filter_by(collection_id=collection.id)
+            }
+            assert len(linked) == 3
 
     def test_shared_ownership_seeded_on_robin(self, app, monkeypatch):
         """Phase 39: the Robin (OO-GRN) gets 3 co-owners via the legacy
