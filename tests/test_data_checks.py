@@ -272,7 +272,7 @@ class TestDataChecksPage:
         # The page refreshed the count: bell and warning on the config page.
         config = client.get("/config/").data.decode()
         assert "Data checks to review" in config
-        assert "2 differences found between flights and their GPS tracks." in config
+        assert "2 data checks to review" in config
 
         rv = client.post(f"/config/data-checks/{fid}/fix", data={"key": "arrival:EDRK"})
         assert rv.headers["Location"].endswith("/config/data-checks")
@@ -440,3 +440,78 @@ class TestPageWording:
         assert "Changes only the date." in page
         assert "Change only the date from 2025-03-18 to 2025-03-19?" in page
         assert "Nothing to correct automatically" in page
+
+
+def _countered(fid, day, dep=None, fc=(None, None), ec=(None, None)):
+    return SimpleNamespace(
+        id=fid,
+        aircraft_id=1,
+        date=date(2025, 3, day),
+        departure_time=dep,
+        flight_time_counter_start=fc[0],
+        flight_time_counter_end=fc[1],
+        engine_time_counter_start=ec[0],
+        engine_time_counter_end=ec[1],
+    )
+
+
+class TestCounterGaps:
+    def test_a_start_away_from_the_previous_end(self):
+        flights = [
+            _countered(3, 20, fc=(101.5, 102.5), ec=(201.0, 202.0)),
+            _countered(1, 18, time(9, 0), fc=(100.0, 101.0), ec=(200.0, 201.0)),
+            _countered(2, 18, None, fc=(101.04, 101.5), ec=(201.0, 201.0)),
+        ]
+        assert dc.check_counters(flights) == []  # within 0.05 h, in order
+        flights.append(_countered(4, 21, fc=(105.0, 106.0), ec=(202.0, 203.0)))
+        (gap,) = dc.check_counters(flights)
+        assert (gap.flight_id, gap.kind, gap.logged, gap.gps) == (
+            4,
+            dc.FLIGHT_COUNTER,
+            "105.0",
+            "102.5",
+        )
+        assert gap.key == "flight_counter:102.5" and gap.suggestion == ""
+
+    def test_a_missing_end_breaks_the_chain(self):
+        flights = [
+            _countered(1, 18, ec=(200.0, 201.0)),
+            _countered(2, 19, ec=(201.0, None)),
+            _countered(3, 20, ec=(250.0, 251.0)),
+            _countered(4, 21, ec=(None, 252.0)),
+            _countered(5, 22, ec=(260.0, 261.0)),
+        ]
+        (gap,) = dc.check_counters(flights)
+        assert (gap.flight_id, gap.kind, gap.gps) == (5, dc.ENGINE_COUNTER, "252.0")
+
+    def test_listed_dismissed_and_refound(self, client, app):
+        uid, _tid, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        with app.app_context():
+            for day, start, end in ((1, 10.0, 11.0), (2, 12.0, 13.0)):
+                db.session.add(
+                    Flight(
+                        aircraft_id=ac_id,
+                        date=date(2025, 3, day),
+                        departure_icao="EBAW",
+                        arrival_icao="EBAW",
+                        engine_time_counter_start=start,
+                        engine_time_counter_end=end,
+                    )
+                )
+            db.session.commit()
+            later = Flight.query.filter_by(date=date(2025, 3, 2)).one().id
+        page = client.get("/config/data-checks").data.decode()
+        assert "Engine counter start" in page
+        assert "Previous flight ended at 11.0" in page
+        assert "Open the flight to check its counters" in page
+        assert "Use the GPS value" not in page
+        client.post(
+            f"/config/data-checks/{later}/dismiss", data={"key": "engine_counter:11.0"}
+        )
+        page = client.get("/config/data-checks").data.decode()
+        assert "Engine counter start" not in page
+        with app.app_context():
+            assert dc.find(db.session.get(Flight, later), "engine_counter:11.0")
+            assert dc.find(db.session.get(Flight, later), "flight_counter:11.0") is None
+            assert dc.find(db.session.get(Flight, later), "arrival:EDRK") is None

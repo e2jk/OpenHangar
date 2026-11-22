@@ -7,7 +7,7 @@
   <div class="page-header mb-4">
     <div>
       <h1 class="page-title"><i class="bi bi-clipboard-check me-2"></i>{{ _('Data checks') }}</h1>
-      <p class="page-sub">{{ _('Differences between logged flights and their GPS tracks') }}</p>
+      <p class="page-sub">{{ _('Differences between logged flights and their GPS tracks, and gaps in the counters') }}</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
       <a href="{{ url_for('config.index') }}" class="btn btn-ac-ghost btn-sm">
@@ -18,11 +18,12 @@
 
   <p class="text-muted oh-fs-09">
     {{ _('The logbook is never changed on its own: each difference below is only corrected when you choose to use the GPS value. That changes only the one field named on its line — the departure airfield, the arrival airfield or the date; times, counters and everything else stay as logged — and adds a note to the flight with what the paper logbook says, so the paper logbook can stay as written. Dismiss the ones that are right as logged — they are not listed again unless the GPS track changes. Checked daily, and whenever this page is opened.') }}
+    {{ _('A counter gap is a flight whose flight or engine counter doesn\'t start where the previous flight\'s ended: a typo, or flights missing from the log.') }}
   </p>
 
   {% if not groups %}
   <div class="alert alert-success">
-    <i class="bi bi-check-circle me-1"></i>{{ _('No differences found between the flights and their GPS tracks.') }}
+    <i class="bi bi-check-circle me-1"></i>{{ _('No differences found between the flights and their GPS tracks, and no gaps in the counters.') }}
   </div>
   {% endif %}
 
@@ -53,12 +54,18 @@
               {% if f.kind == 'departure' %}{{ _('Departure airfield') }}
               {% elif f.kind == 'arrival' %}{{ _('Arrival airfield') }}
               {% elif f.kind == 'date' %}{{ _('Date') }}
+              {% elif f.kind == 'flight_counter' %}{{ _('Flight counter start') }}
+              {% elif f.kind == 'engine_counter' %}{{ _('Engine counter start') }}
               {% else %}{{ _('GPS track outside the logged times') }}{% endif %}
             </td>
             <td class="align-middle fw-semibold">{{ f.logged or '—' }}</td>
             <td class="align-middle">
+              {% if f.kind in ('flight_counter', 'engine_counter') %}
+              {{ _('Previous flight ended at %(value)s', value=f.gps) }}
+              {% else %}
               {{ f.gps or _('no airfield nearby') }}
               {% if f.distance_km is not none %}<div class="text-muted small">{{ _('%(km)s km from %(icao)s', km='%.0f'|format(f.distance_km), icao=f.logged) }}</div>{% endif %}
+              {% endif %}
             </td>
             <td class="pe-3 align-middle text-end text-nowrap">
               {% if f.suggestion %}
@@ -82,7 +89,7 @@
                 <input type="hidden" name="key" value="{{ f.key }}">
                 <button type="submit" class="btn btn-ac-ghost btn-sm">{{ _('Dismiss') }}</button>
               </form>
-              {% if f.suggestion %}<div class="text-muted small mt-1">{{ _scope }}</div>{% else %}<div class="text-muted small mt-1">{{ _('Nothing to correct automatically — open the flight to check its times.') }}</div>{% endif %}
+              {% if f.suggestion %}<div class="text-muted small mt-1">{{ _scope }}</div>{% elif f.kind in ('flight_counter', 'engine_counter') %}<div class="text-muted small mt-1">{{ _('Open the flight to check its counters — or dismiss it if flights are missing from the log or the counter was replaced.') }}</div>{% else %}<div class="text-muted small mt-1">{{ _('Nothing to correct automatically — open the flight to check its times.') }}</div>{% endif %}
             </td>
           </tr>
           {% endfor %}

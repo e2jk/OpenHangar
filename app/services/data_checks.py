@@ -8,6 +8,11 @@ does it; the Data checks page (config.data_checks) lists the findings with a
 way to correct the logbook or dismiss them, and the daily checks keep the
 count of open findings that the navbar bell and the configuration page show.
 
+The same page also lists counter gaps (check_counters): a flight whose
+flight or engine counter starts somewhere else than the previous flight's
+ended — a typo, or flights missing from the log. Nothing to apply there:
+open the flight, or dismiss it (flights not logged, a counter replaced).
+
 Cost: a check reads the track's points, which is the heavy part on a large
 fleet. Findings are therefore cached per aircraft with a fingerprint of its
 tracked flights (how many, the latest change to any of them, the newest
@@ -37,6 +42,8 @@ DEPARTURE = "departure"
 ARRIVAL = "arrival"
 DATE = "date"
 OUTSIDE_TIMES = "outside_times"
+FLIGHT_COUNTER = "flight_counter"
+ENGINE_COUNTER = "engine_counter"
 
 # A GPS end within this distance of the logged airfield agrees with it
 # (same radius services.gps_import uses to name the nearest airfield).
@@ -46,6 +53,9 @@ _SAME_FIELD_KM = 5.0
 # power-on to shutdown, so only a clear gap counts.
 _OUTSIDE_TIMES_MARGIN = timedelta(minutes=30)
 _UNKNOWN_ICAO = ("", "????")
+# A counter start this far from the previous flight's end is a gap (the
+# airframe import's own continuity warning uses the same tolerance).
+_COUNTER_TOLERANCE = 0.05
 
 _CACHE_PREFIX = "data_checks:aircraft:"
 _COUNT_PREFIX = "data_checks:open:"
@@ -60,7 +70,9 @@ class Finding:
     flight_date: str  # the logged date, ISO
     kind: str
     logged: str  # what the logbook says ("" when empty)
-    gps: str  # what the GPS says ("" when it can't name it)
+    # What the GPS says ("" when it can't name it) — for a counter gap, the
+    # previous flight's end value.
+    gps: str
     suggestion: str  # the value "use the GPS value" would set ("" = none)
     distance_km: float | None = None  # departure/arrival: GPS end ↔ logged field
 
@@ -195,23 +207,67 @@ def check_flight(
     return found
 
 
+def check_counters(flights: list[Any]) -> list[Finding]:
+    """Counter gaps among one aircraft's *flights*: each flight whose flight
+    or engine counter start differs from the previous flight's end (in
+    logbook order: date, departure time, id). A flight without an end value
+    breaks the chain — the next start isn't compared with an older one."""
+    ordered = sorted(
+        flights,
+        key=lambda f: (
+            f.date or date.min,
+            f.departure_time is None,
+            f.departure_time or datetime.min.time(),
+            f.id,
+        ),
+    )
+    found: list[Finding] = []
+    for kind, start_attr, end_attr in (
+        (FLIGHT_COUNTER, "flight_time_counter_start", "flight_time_counter_end"),
+        (ENGINE_COUNTER, "engine_time_counter_start", "engine_time_counter_end"),
+    ):
+        previous_end: float | None = None
+        for flight in ordered:
+            start = getattr(flight, start_attr)
+            end = getattr(flight, end_attr)
+            if (
+                start is not None
+                and previous_end is not None
+                and abs(float(start) - previous_end) > _COUNTER_TOLERANCE
+            ):
+                found.append(
+                    Finding(
+                        flight_id=flight.id,
+                        aircraft_id=flight.aircraft_id,
+                        flight_date=flight.date.isoformat() if flight.date else "",
+                        kind=kind,
+                        logged=f"{float(start):.1f}",
+                        gps=f"{previous_end:.1f}",
+                        suggestion="",
+                    )
+                )
+            previous_end = float(end) if end is not None else None
+    return found
+
+
 # ── Per-aircraft cache ────────────────────────────────────────────────────────
 
 
 def _fingerprint(aircraft_id: int) -> str:
-    """Changes whenever a tracked flight of the aircraft is added, edited or
-    removed, or a track is added or combined (the flight changes too)."""
+    """Changes whenever a flight of the aircraft is added, edited or removed
+    (its counters), or a track is added or combined (the flight changes
+    too)."""
     count, last_change, newest_track = (
         db.session.query(
             db.func.count(Flight.id),
             db.func.max(Flight.updated_at),
             db.func.max(Flight.gps_track_id),
         )
-        .filter(Flight.aircraft_id == aircraft_id, Flight.gps_track_id.isnot(None))
+        .filter(Flight.aircraft_id == aircraft_id)
         .one()
     )
     stamp = _utc(last_change).isoformat() if last_change else ""
-    return f"{count}|{stamp}|{newest_track or ''}"
+    return f"2|{count}|{stamp}|{newest_track or ''}"
 
 
 def _check_aircraft(aircraft_id: int) -> list[Finding]:
@@ -225,7 +281,11 @@ def _check_aircraft(aircraft_id: int) -> list[Finding]:
         .order_by(Flight.date.desc(), Flight.id.desc())
         .all()
     )
-    return [f for flight, track in rows for f in check_flight(flight, track, airports)]
+    gps = [f for flight, track in rows for f in check_flight(flight, track, airports)]
+    counters = check_counters(Flight.query.filter_by(aircraft_id=aircraft_id).all())
+    return sorted(
+        gps + counters, key=lambda f: (f.flight_date, f.flight_id), reverse=True
+    )
 
 
 def aircraft_findings(aircraft_id: int, force: bool = False) -> list[Finding]:
@@ -323,16 +383,14 @@ def find(flight: Any, key: str) -> Finding | None:
     no longer applies — already corrected, or the track changed)."""
     from aircraft.gps_import import _load_airports  # pyright: ignore[reportMissingImports]
 
-    if flight.gps_track is None:
+    if key.startswith((f"{FLIGHT_COUNTER}:", f"{ENGINE_COUNTER}:")):
+        siblings = Flight.query.filter_by(aircraft_id=flight.aircraft_id).all()
+        found = [f for f in check_counters(siblings) if f.flight_id == flight.id]
+    elif flight.gps_track is not None:
+        found = check_flight(flight, flight.gps_track, _load_airports())
+    else:
         return None
-    return next(
-        (
-            f
-            for f in check_flight(flight, flight.gps_track, _load_airports())
-            if f.key == key
-        ),
-        None,
-    )
+    return next((f for f in found if f.key == key), None)
 
 
 def apply_suggestion(flight: Any, finding: Finding) -> bool:
