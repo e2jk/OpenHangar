@@ -196,7 +196,9 @@ def stored(app: Flask, owner: int) -> dict[str, str]:
 
 
 def test_a_dry_run_only_reports(app: Flask, stored: dict[str, str]) -> None:
-    from services.photo_reencode import reencode
+    from services import photo_reencode
+
+    reencode = photo_reencode.reencode
 
     with app.app_context():
         report = reencode(app.config["UPLOAD_FOLDER"])
@@ -215,7 +217,9 @@ def test_apply_reencodes_and_retires_the_originals(
     app: Flask, stored: dict[str, str], keep: bool
 ) -> None:
     from aircraft.routes import thumb_path_for
-    from services.photo_reencode import reencode
+    from services import photo_reencode
+
+    reencode = photo_reencode.reencode
 
     folder = Path(app.config["UPLOAD_FOLDER"])
     with app.app_context():
@@ -240,7 +244,7 @@ def test_apply_reencodes_and_retires_the_originals(
 def test_unreadable_photos_are_left_alone_on_apply(
     app: Flask, stored: dict[str, str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    import services.photo_reencode as module
+    from services import photo_reencode as module
 
     monkeypatch.setattr(module, "_cleaned_bytes", lambda path: None)
     with app.app_context():
@@ -262,7 +266,7 @@ def test_the_cli_command(app: Flask, stored: dict[str, str]) -> None:
 def test_stored_gifs_and_refused_files_are_reported_not_changed(
     app: Flask, owner: int, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    import services.photo_reencode as module
+    from services import photo_reencode as module
     from services.images import PhotoError
 
     folder = Path(app.config["UPLOAD_FOLDER"])
