@@ -216,30 +216,44 @@ def test_passport_only_discovery_uses_public_or_visible_origins_and_no_fleet(
     signin(client, c["basic"])
     path = f"/passports/{c['passport']}/where-next"
     with (
-        patch("utils.accessible_aircraft", side_effect=AssertionError("fleet lookup")),
+        patch(
+            "explore.routes.accessible_aircraft",
+            side_effect=AssertionError("fleet lookup"),
+        ),
         patch(
             "passports.routes.current_membership",
             return_value=SimpleNamespace(access_scope="full"),
         ),
     ):
-        response = client.get(path, query_string={"q": "SECRET"})
+        response = client.get(path, follow_redirects=True, query_string={"q": "SECRET"})
         assert (
             response.status_code == 200 and b"PRIVATE STRIP NAME" not in response.data
         )
         assert b'id="discovery-aircraft"' not in response.data
         for origin in (f"field:{c['hidden']}", f"field:{c['public']}"):
-            response = client.get(path, query_string={"origin": origin})
+            response = client.get(
+                path, follow_redirects=True, query_string={"origin": origin}
+            )
             assert response.status_code == 200
             assert (
                 b"PRIVATE OVERRIDE" not in response.data
                 and b"PRIVATE STRIP NAME" not in response.data
             )
-        response = client.get(path, query_string={"origin": "catalogue:" + c["source"]})
+        response = client.get(
+            path,
+            follow_redirects=True,
+            query_string={"origin": "catalogue:" + c["source"]},
+        )
         assert (
             response.status_code == 200 and c["public_name"].encode() in response.data
         )
         assert b"PRIVATE OVERRIDE" not in response.data
-        assert client.get(path, query_string={"aircraft": "1"}).status_code == 404
+        assert (
+            client.get(
+                path, follow_redirects=True, query_string={"aircraft": "1"}
+            ).status_code
+            == 404
+        )
     assert b"Where next?" in client.get(f"/passports/{c['passport']}/").data
     assert client.get("/passports/999999/where-next").status_code == 404
     assert client.get("/passports/new").status_code == 200

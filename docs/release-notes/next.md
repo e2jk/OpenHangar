@@ -33,6 +33,12 @@ Found a place to fly to in an Instagram reel or a video? Share it to the
 installed app on Android: OpenHangar opens a new place with the link and a
 suggested name, ready to save now and locate later — Personal accounts too.
 
+**Where next?** has its own page, in the new **Explore** menu next to Places:
+search all your active airfield passports at once, or tick the ones you want.
+Each airfield appears once, with every passport where it is still to stamp.
+A passport's **Where next?** link and older bookmarks open it with that passport
+selected.
+
 **Maintenance**
 
 - A shared aircraft document is now stored by the same code as a document

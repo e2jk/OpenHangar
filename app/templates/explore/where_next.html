@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% set no_history_cache = true %}
-{% block title %}{{ _('Where next?') }} — {{ passport.title }}{% endblock %}
+{% block title %}{{ _('Where next?') }}{% endblock %}
 {% block content %}
 <div class="container py-4">
-<a href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ passport.title }}</a>
 <h1>{{ _('Where next?') }}</h1>
-<p>{{ _('Discover open airfields you have not yet visited in this passport. Distances are great-circle nautical miles; times assume constant cruise speed, still air and direct flight, excluding climb, approach and routing.') }}</p>
+<p>{{ _('Discover open airfields you have not yet visited in your passports. Distances are great-circle nautical miles; times assume constant cruise speed, still air and direct flight, excluding climb, approach and routing.') }}</p>
 {% for error in errors %}<div class="alert alert-warning" role="alert">{{ error }}</div>{% endfor %}
 <form method="get" class="ac-form-card p-3 mb-4" id="passport-discovery-form">
+{% if passports %}<fieldset class="mb-3"><legend class="form-label fs-6">{{ _('Search in passports') }}</legend><div class="d-flex flex-wrap gap-3">{% for p in passports %}<div class="form-check"><input class="form-check-input" type="checkbox" name="passport" value="{{ p.id }}" id="discovery-passport-{{ p.id }}" {% if p.id in chosen_ids %}checked{% endif %}><label class="form-check-label" for="discovery-passport-{{ p.id }}">{{ p.title }}</label></div>{% endfor %}</div><div class="form-text">{{ _('All your active passports when none is ticked.') }}</div></fieldset>{% endif %}
 <div class="row g-3">
 {% if not passport_only %}<div class="col-md-6"><label for="discovery-aircraft" class="form-label">{{ _('Aircraft (optional)') }}</label><select class="form-select" name="aircraft" id="discovery-aircraft"><option value="">{{ _('Unmanaged aircraft / session inputs') }}</option>{% for ac in aircraft %}<option value="{{ ac.id }}" {% if selected and selected.id == ac.id %}selected{% endif %}>{{ ac.registration }}</option>{% endfor %}</select></div>{% endif %}
 <div class="col-md-6"><label for="discovery-origin" class="form-label">{{ _('Reference airfield') }}</label><select class="form-select" name="origin" id="discovery-origin"><option value="">{{ _('Use aircraft home, then pilot home') }}</option>{% for field in origin_options %}<option value="{{ field.key }}" {% if field.key == origin_key %}selected{% endif %}>{{ field.ident or field.key }} — {{ field.name }}</option>{% endfor %}</select></div>
@@ -28,10 +28,11 @@
 <button class="btn btn-ac-primary mt-3">{{ _('Find destinations') }}</button>
 </form>
 {% if not origin %}<p>{{ _('Choose a reference airfield to find destinations.') }}</p>{% else %}<p>{{ _('Starting from') }}: {{ origin.name }}</p>{% endif %}
-<div id="passport-discovery" data-map="{{ map_data | tojson | forceescape }}" data-target-url="{{ url_for('passports.target_detail', passport_id=passport.id, target_id=0) }}"><div id="passport-discovery-map" class="passport-selection-map border rounded" role="region" aria-label="{{ _('Destination discovery map') }}"></div></div>
+<div id="passport-discovery" data-map="{{ map_data | tojson | forceescape }}"><div id="passport-discovery-map" class="passport-selection-map border rounded" role="region" aria-label="{{ _('Destination discovery map') }}"></div></div>
 <p>{{ _('Targets without coordinates cannot be distance-filtered; they remain in the passport list.') }} ({{ missing }})</p>
 <p>{{ _('Suitability unknown: no licensed runway or restriction dataset is loaded. Check current aerodrome information before planning a flight.') }}</p>
 {% include "passports/_waypoint_downloads.html" %}
-{% if rows %}<div class="table-responsive"><table class="table"><thead><tr><th>{{ _('Airfield') }}</th><th>{{ _('Distance (NM)') }}</th><th>{{ _('Still-air time (minutes)') }}</th></tr></thead><tbody>{% for row in rows %}<tr><td><a href="{{ url_for('passports.target_detail', passport_id=passport.id, target_id=row.target_id) }}">{{ row.name }}</a></td><td>{{ '%.1f'|format(row.distance_nm) }}</td><td>{{ '%.1f'|format(row.minutes) if row.minutes is not none else _('Unknown') }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p>{{ _('No open, unvisited airfields match these inputs.') }}</p>{% endif %}
+{% if not passports %}<p>{{ _('Create or join an airfield passport to find airfields you have not visited yet.') }} <a href="{{ url_for('passports.index') }}">{{ _('Airfield passports') }}</a></p>
+{% elif rows %}<div class="table-responsive"><table class="table"><thead><tr><th>{{ _('Airfield') }}</th><th>{{ _('Why') }}</th><th>{{ _('Distance (NM)') }}</th><th>{{ _('Still-air time (minutes)') }}</th></tr></thead><tbody>{% for row in rows %}<tr><td><a href="{{ row.reasons[0].url }}">{{ row.name }}</a></td><td><ul class="list-unstyled mb-0">{% for reason in row.reasons %}<li><a href="{{ reason.url }}">{{ _('Not yet stamped in %(passport)s', passport=reason.passport) }}</a></li>{% endfor %}</ul></td><td>{{ '%.1f'|format(row.distance_nm) }}</td><td>{{ '%.1f'|format(row.minutes) if row.minutes is not none else _('Unknown') }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<p>{{ _('No open, unvisited airfields match these inputs.') }}</p>{% endif %}
 </div>
 {% endblock %}

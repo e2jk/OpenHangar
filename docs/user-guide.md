@@ -272,8 +272,11 @@ unvisited fields remain visible but are excluded from the achievable total.
 
 ![Record a visit — the quick form for a phone](screenshots/passport_record_visit.png)
 
-Use **Where next?** to find open unvisited fields within a distance or still-air
-time limit. You can save a home airfield on your pilot profile and a home/cruise
+Use **Where next?** (in the **Explore** menu, or from a passport's page) to find
+open unvisited fields within a distance or still-air time limit, across all your
+active passports or the ones you tick. Each airfield is listed once, with every
+passport where it is still to stamp; at equal distance, the airfields that tick
+more passports come first. You can save a home airfield on your pilot profile and a home/cruise
 speed on an aircraft, or use session-only inputs. Optional range estimates need
 explicit usable fuel, flow and reserve assumptions.
 

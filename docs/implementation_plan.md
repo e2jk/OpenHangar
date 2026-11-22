@@ -3041,9 +3041,15 @@ reader-owned visit form with 42e.
   (all or chosen collections; not yet visited by default, "include visited"),
   *Passports* (all active or chosen ones), or *Both* (default when both have
   content; selector hidden when only one has).
+  *Passports done (2026-11-22):* `/explore/where-next` (`explore/routes.py`)
+  searches all active or ticked passports with the existing origin, distance /
+  time and range controls; **Search in** *Places* comes with 42d's
+  `places.airfields.linked_airfields`.
 - [ ] Entry points: Explore menu, a passport's page (passport preselected;
   `/passports/<id>/where-next` redirects there so existing links keep working),
   Places (places preselected), a place's page.
+  *Done:* the Explore menu, the passport page and the redirect (with the page's
+  own inputs); the Places and place-page links follow 42d (Codex).
 - [ ] Results are airfields, deduplicated, each with its reasons ("Not yet
   stamped in *Belgian passport 2026*", "4 km from *Pairi Daiza* (taxi)"). Sorted by
   distance; at equal distance more reasons first; no opaque scoring. Unlinked
