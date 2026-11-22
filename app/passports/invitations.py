@@ -258,7 +258,7 @@ def join(
                 user_id=user_id,
                 tenant_id=passport.tenant_id,
                 role=None,
-                access_scope="passport",
+                access_scope="personal",
             )
         )
         db.session.flush()

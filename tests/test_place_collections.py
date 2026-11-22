@@ -62,7 +62,7 @@ def people(app: Flask) -> dict[str, int]:
                     user_id=user.id,
                     tenant_id=tenant.id,
                     role=None if user.name == "personal" else Role.VIEWER,
-                    access_scope="passport" if user.name == "personal" else "full",
+                    access_scope="personal" if user.name == "personal" else "full",
                 )
             )
         db.session.add(

@@ -266,7 +266,7 @@ def verify(token: str, code: str) -> tuple[User, bool, str | None]:
                 user_id=user.id,
                 tenant_id=passport.tenant_id,
                 role=None,
-                access_scope="passport",
+                access_scope="personal",
             )
         )
     proof = auth_challenges.credential_binding(user) if created else None

@@ -26,7 +26,7 @@ __all__ = ["group", "owner"]
 def scoped(app: Flask, owner: dict[str, int]) -> Iterator[dict[str, int]]:
     with app.app_context():
         membership = db.session.get(TenantUser, (owner["user"], owner["tenant"]))
-        membership.access_scope = "passport"
+        membership.access_scope = "personal"
         membership.role = None
         user = db.session.get(User, owner["user"])
         # Global account flags cannot bypass a restricted tenant membership.
@@ -159,7 +159,7 @@ def test_scope_and_null_role_are_constrained(app: Flask, owner: dict[str, int]) 
             with pytest.raises(IntegrityError):
                 db.session.commit()
             db.session.rollback()
-        membership.access_scope, membership.role = "passport", None
+        membership.access_scope, membership.role = "personal", None
         db.session.commit()
         assert membership.role is None
 
@@ -173,7 +173,7 @@ def test_scope_change_revokes_existing_login(
         user = db.session.get(User, owner["user"])
         old = user.auth_version
         membership = db.session.get(TenantUser, (owner["user"], owner["tenant"]))
-        membership.access_scope, membership.role = "passport", None
+        membership.access_scope, membership.role = "personal", None
         db.session.commit()
         db.session.expire_all()
         assert db.session.get(User, owner["user"]).auth_version != old
@@ -190,7 +190,7 @@ def test_operator_sees_and_deliberately_promotes_a_restricted_member(
         db.session.commit()
     signin(client, scoped["other"])
     listing = client.get("/config/users/")
-    assert listing.status_code == 200 and b"Passport-only account" in listing.data
+    assert listing.status_code == 200 and b"Personal account" in listing.data
     response = client.post(
         f"/config/users/{scoped['user']}/role", data={"role": "pilot"}
     )
@@ -271,7 +271,7 @@ def test_scoped_friend_keeps_only_authorised_group_history(
 ) -> None:
     with app.app_context():
         membership = db.session.get(TenantUser, (group["other"], group["tenant"]))
-        membership.access_scope, membership.role = "passport", None
+        membership.access_scope, membership.role = "personal", None
         db.session.commit()
     signin(client, group["other"])
     url = f"/passports/series/{group['series']}/"

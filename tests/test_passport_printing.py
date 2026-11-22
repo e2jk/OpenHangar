@@ -176,7 +176,7 @@ def test_roleless_group_viewer_cannot_select_another_participants_photo(
     other_photo = upload(client, same_edition)
     with app.app_context():
         member = db.session.get(TenantUser, (s["other"], s["tenant"]))
-        member.role, member.access_scope = None, "passport"
+        member.role, member.access_scope = None, "personal"
         db.session.commit()
     signin(client, s["other"])
     own = f"/passports/{s['new']}/print"

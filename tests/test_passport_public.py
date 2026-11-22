@@ -320,7 +320,7 @@ def test_passport_only_account_can_open_capabilities_without_private_chrome(
     token = enable(app, client, owner)
     with app.app_context():
         member = db.session.get(TenantUser, (owner["user"], owner["tenant"]))
-        member.access_scope, member.role = "passport", None
+        member.access_scope, member.role = "personal", None
         db.session.commit()
         invitation_token = tokens.create("invite", owner["passport"])[1]
     with client.session_transaction() as sess:

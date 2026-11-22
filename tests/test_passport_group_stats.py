@@ -195,7 +195,7 @@ def test_linked_editions_compare_group_and_each_participant_independently(
         # A roleless friend sees only authorised history, with no own retroactive
         # participation or progress in the old edition.
         member = db.session.get(TenantUser, (group["other"], group["tenant"]))
-        member.role, member.access_scope = None, "passport"
+        member.role, member.access_scope = None, "personal"
         db.session.commit()
     signin(client, group["other"])
     page = client.get(

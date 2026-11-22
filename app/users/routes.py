@@ -64,7 +64,7 @@ ROLE_LABELS = {
     Role.STUDENT: "Student",
     Role.INSTRUCTOR: "Instructor",
     Role.MAINTENANCE: "Maintenance",
-    Role.VIEWER: "Viewer",
+    Role.VIEWER: "Viewer (read-only)",
 }
 
 
@@ -301,14 +301,14 @@ def accept_invite(token: str) -> ResponseReturnValue:
     return redirect(url_for("auth.login"))
 
 
-# ── Personal pilot logbook for a passport-only account ───────────────────────
+# ── Personal pilot logbook for a Personal account ───────────────────────
 
 
 @users_bp.route("/<int:user_id>/personal-logbook", methods=["POST"])
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
 def personal_logbook(user_id: int) -> ResponseReturnValue:
-    """Give a passport-only account its own pilot logbook, or take it away.
+    """Give a Personal account its own pilot logbook, or take it away.
 
     The account keeps no role: no aircraft, reservation, maintenance or other
     pilots' logbook access. Removing it keeps the entries but hides them.
@@ -318,7 +318,7 @@ def personal_logbook(user_id: int) -> ResponseReturnValue:
     if tu.access_scope == "full" or user_id == session["user_id"]:
         abort(400)
     enable = request.form.get("enable") == "yes"
-    tu.access_scope = "logbook" if enable else "passport"
+    tu.access_scope = "logbook" if enable else "personal"
     db.session.commit()
     _log.warning(
         "[SECURITY] users.personal_logbook target_user_id=%s enabled=%s admin_user_id=%s ip=%s",
@@ -366,7 +366,7 @@ def change_role(user_id: int) -> ResponseReturnValue:
     _log.warning(
         "[SECURITY] users.role.changed target_user_id=%s old_role=%s new_role=%s admin_user_id=%s ip=%s",
         _sl(str(user_id)),
-        _sl(old_role.value if old_role else "passport"),
+        _sl(old_role.value if old_role else "personal"),
         _sl(new_role.value),
         _sl(str(session["user_id"])),
         _sl(request.remote_addr),

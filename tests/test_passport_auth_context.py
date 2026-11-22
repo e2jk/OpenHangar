@@ -52,7 +52,7 @@ def memberships(app: Flask) -> Iterator[dict[str, int]]:
                     user_id=user.id,
                     tenant_id=guest.id,
                     role=None,
-                    access_scope="passport",
+                    access_scope="personal",
                 ),
             ]
         )

@@ -221,7 +221,7 @@ def test_group_filters_keep_the_viewers_own_unvisited_state(
         f.latitude, f.longitude = 50.5, 4.5
         member = db.session.get(TenantUser, (s["other"], s["tenant"]))
         member.role = None
-        member.access_scope = "passport"
+        member.access_scope = "personal"
         db.session.commit()
     signin(client, s["other"])
     with app.app_context():

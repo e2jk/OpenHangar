@@ -123,11 +123,11 @@ msgstr "Brandstof"
 msgid "Parts & Maintenance"
 msgstr "Onderdelen en onderhoud"
 
-#: app/models.py:2325 app/pwa/routes.py:89 app/templates/dashboard.html:406
+#: app/models.py:2325 app/pwa/routes.py:84 app/templates/dashboard.html:406
 msgid "Insurance"
 msgstr "Verzekering"
 
-#: app/models.py:2326 app/pwa/routes.py:94 app/templates/dashboard.html:164
+#: app/models.py:2326 app/pwa/routes.py:89 app/templates/dashboard.html:164
 #: app/templates/maintenance/list.html:90
 #: app/templates/maintenance/trigger_form.html:69
 msgid "Other"
@@ -963,7 +963,7 @@ msgid "'Valid from' must not be after 'Valid until'."
 msgstr "'Geldig vanaf' mag niet later zijn dan 'Geldig tot'."
 
 #: app/documents/routes.py:643 app/documents/routes.py:959
-#: app/pwa/routes.py:300
+#: app/pwa/routes.py:264
 msgid "Document uploaded."
 msgstr "Document geüpload."
 
@@ -1501,7 +1501,7 @@ msgstr "GPS-bestand %(filename)s verwerkt — velden zijn vooraf ingevuld. Contr
 msgid "GPS file parsed — fields pre-filled. Review and save."
 msgstr "GPS-bestand verwerkt — velden zijn vooraf ingevuld. Controleer en sla op."
 
-#: app/flights/routes.py:1811 app/pilots/routes.py:2527 app/pwa/routes.py:223
+#: app/flights/routes.py:1811 app/pilots/routes.py:2527 app/pwa/routes.py:200
 msgid "Please select an aircraft."
 msgstr "Selecteer een vliegtuig."
 
@@ -3321,23 +3321,23 @@ msgstr "Gezin"
 msgid "Enter a tag name of at most 80 characters."
 msgstr "Voer een tagnaam van maximaal 80 tekens in."
 
-#: app/pwa/routes.py:79
+#: app/pwa/routes.py:74
 msgid "Aircraft document"
 msgstr "Vliegtuigdocument"
 
-#: app/pwa/routes.py:80
+#: app/pwa/routes.py:75
 msgid "Expense receipt"
 msgstr "Onkostenbewijs"
 
-#: app/pwa/routes.py:81
+#: app/pwa/routes.py:76
 msgid "Maintenance record"
 msgstr "Onderhoudsregistratie"
 
-#: app/pwa/routes.py:82
+#: app/pwa/routes.py:77
 msgid "Flight photo"
 msgstr "Vluchtfoto"
 
-#: app/pwa/routes.py:88 app/templates/aircraft/detail.html:221
+#: app/pwa/routes.py:83 app/templates/aircraft/detail.html:221
 #: app/templates/base.html:215 app/templates/landing.html:39
 #: app/templates/landing.html:247
 #: app/templates/maintenance/amp_declaration_form.html:23
@@ -3352,11 +3352,11 @@ msgstr "Vluchtfoto"
 msgid "Maintenance"
 msgstr "Onderhoud"
 
-#: app/pwa/routes.py:90
+#: app/pwa/routes.py:85
 msgid "POH / Flight Manual"
 msgstr "POH / Vlieghandboek"
 
-#: app/pwa/routes.py:91 app/templates/aircraft/detail.html:270
+#: app/pwa/routes.py:86 app/templates/aircraft/detail.html:270
 #: app/templates/airworthiness/adsb_board.html:17
 #: app/templates/airworthiness/dashboard.html:3
 #: app/templates/airworthiness/dashboard.html:12
@@ -3364,7 +3364,7 @@ msgstr "POH / Vlieghandboek"
 msgid "Airworthiness"
 msgstr "Luchtwaardigheid"
 
-#: app/pwa/routes.py:92 app/templates/aircraft/detail.html:385
+#: app/pwa/routes.py:87 app/templates/aircraft/detail.html:385
 #: app/templates/aircraft/flight_detail.html:26
 #: app/templates/config/data_checks.html:41 app/templates/dashboard.html:237
 #: app/templates/flights/logbook_component.html:4
@@ -3379,31 +3379,31 @@ msgstr "Luchtwaardigheid"
 msgid "Logbook"
 msgstr "Logboek"
 
-#: app/pwa/routes.py:93
+#: app/pwa/routes.py:88
 msgid "Invoice"
 msgstr "Factuur"
 
-#: app/pwa/routes.py:95
+#: app/pwa/routes.py:90
 msgid "Uncategorised"
 msgstr "Niet gecategoriseerd"
 
-#: app/pwa/routes.py:188
+#: app/pwa/routes.py:165
 msgid "No files were shared."
 msgstr "Er zijn geen bestanden gedeeld."
 
-#: app/pwa/routes.py:199
+#: app/pwa/routes.py:176
 msgid "The shared file was discarded."
 msgstr "Het gedeelde bestand is verwijderd."
 
-#: app/pwa/routes.py:208
+#: app/pwa/routes.py:185
 msgid "No pending shared files. Please try sharing again."
 msgstr "Geen gedeelde bestanden in behandeling. Probeer opnieuw te delen."
 
-#: app/pwa/routes.py:214
+#: app/pwa/routes.py:191
 msgid "Unknown destination."
 msgstr "Onbekende bestemming."
 
-#: app/pwa/routes.py:234
+#: app/pwa/routes.py:211
 msgid "Choose the item you serviced: your shared file is attached to its form."
 msgstr "Kies het onderhouden item: je gedeelde bestand is aan het formulier ervan toegevoegd."
 
@@ -8866,8 +8866,8 @@ msgid "Days a co-owner capital balance may stay negative before the billing dash
 msgstr "Aantal dagen dat het kapitaalsaldo van een mede-eigenaar negatief mag blijven voordat het factureringsdashboard dit signaleert."
 
 #: app/templates/config/settings.html:168
-msgid "Personal pilot logbooks for passport-only accounts"
-msgstr "Persoonlijke pilootlogboeken voor accounts voor alleen paspoorten"
+msgid "Personal pilot logbooks for Personal accounts"
+msgstr "Persoonlijke pilootlogboeken voor persoonlijke accounts"
 
 #: app/templates/config/settings.html:171
 msgid "Only an administrator enables them, from the user list"
@@ -15856,7 +15856,7 @@ msgstr "Toegang en rollen voor uw hangar beheren"
 msgid "Current Users"
 msgstr "Huidige gebruikers"
 
-#: app/templates/users/list.html:35 app/templates/users/list.html:246
+#: app/templates/users/list.html:35 app/templates/users/list.html:250
 msgid "Aircraft access"
 msgstr "Toegang tot vliegtuigen"
 
@@ -15869,12 +15869,12 @@ msgid "inactive"
 msgstr "inactief"
 
 #: app/templates/users/list.html:54 app/templates/users/list.html:59
-msgid "Passport and personal logbook"
-msgstr "Paspoorten en persoonlijk logboek"
+msgid "Personal account with pilot logbook"
+msgstr "Persoonlijk account met pilootlogboek"
 
 #: app/templates/users/list.html:54 app/templates/users/list.html:59
-msgid "Passport-only account"
-msgstr "Account voor alleen paspoorten"
+msgid "Personal account"
+msgstr "Persoonlijk account"
 
 #: app/templates/users/list.html:68
 msgid "No aircraft access"
@@ -15933,19 +15933,27 @@ msgstr "Gebruikers uitnodigen"
 msgid "user@example.com"
 msgstr "gebruiker@voorbeeld.com"
 
-#: app/templates/users/list.html:246
+#: app/templates/users/list.html:243
+msgid "Viewer (read-only): read-only access to aircraft, maintenance and flights, plus personal features (passports, Places)."
+msgstr "Waarnemer (alleen lezen): alleen-lezen toegang tot vliegtuigen, onderhoud en vluchten, plus de persoonlijke functies (paspoorten, Plaatsen)."
+
+#: app/templates/users/list.html:244
+msgid "For someone who only needs passports and Places, with no access to the aircraft, invite them to a passport instead: they get a Personal account."
+msgstr "Voor iemand die alleen paspoorten en Plaatsen nodig heeft, zonder toegang tot de vliegtuigen: nodig die persoon uit voor een paspoort, dan krijgt die een persoonlijk account."
+
+#: app/templates/users/list.html:250
 msgid "leave empty for none"
 msgstr "leeg laten voor geen"
 
-#: app/templates/users/list.html:263
+#: app/templates/users/list.html:267
 msgid "Add another person"
 msgstr "Nog een persoon toevoegen"
 
-#: app/templates/users/list.html:269
+#: app/templates/users/list.html:273
 msgid "Create invitations"
 msgstr "Uitnodigingen aanmaken"
 
-#: app/templates/users/list.html:272
+#: app/templates/users/list.html:276
 msgid "Invitation links are valid for 7 days. If email is provided and SMTP is configured, the link is sent automatically."
 msgstr "Uitnodigingslinks zijn 7 dagen geldig. Als een e-mailadres is opgegeven en SMTP is geconfigureerd, wordt de link automatisch verzonden."
 

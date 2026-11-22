@@ -707,7 +707,7 @@ def manage_owners(aircraft_id: int) -> ResponseReturnValue:
         abort(404)
 
     # Only full members of this organisation can co-own its aircraft; never a
-    # passport-only friend or a user of another organisation.
+    # Personal-account friend or a user of another organisation.
     tenant_users = (
         User.query.join(TenantUser, TenantUser.user_id == User.id)
         .filter(

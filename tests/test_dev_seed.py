@@ -105,7 +105,7 @@ class TestDevSeedEndToEnd:
 
             friend = User.query.filter_by(email="friend@openhangar.dev").one()
             friend_tu = TenantUser.query.filter_by(user_id=friend.id).one()
-            assert friend_tu.access_scope == "passport" and friend_tu.role is None
+            assert friend_tu.access_scope == "personal" and friend_tu.role is None
             group = max(
                 (p for p in Passport.query if p.title.startswith("Flying friends")),
                 key=lambda p: p.start_date,

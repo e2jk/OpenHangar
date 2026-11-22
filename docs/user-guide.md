@@ -201,7 +201,7 @@ retrieval dates are retained as provenance; publisher descriptions are not impor
 Unreleased or unsupported sources offer a pasted-code fallback. Unknown codes require correction or explicit
 removal. Military/ULM classification can remain unknown or be entered manually.
 
-Friends with passport-only accounts can build their own passports and prepare
+Friends with Personal accounts can build their own passports and prepare
 a linked next edition too. A friend who flies can also keep a personal pilot
 logbook on the same account (**Start my pilot logbook** on the passports page):
 their logged arrivals then fill their passports automatically. It holds only
@@ -299,7 +299,7 @@ the same airfields (open ones, plus closed ones someone visited). Use **Show
 airfields** and **Visited by participant** to narrow the map and list; your own
 progress and marker styles stay yours. See [the passport guide](airfield_passports.md#group-progress-and-filters).
 
-![A group passport as a passport-only friend sees it: own visits, friends' visits and unvisited airfields](screenshots/passport_group.png)
+![A group passport as a friend with a Personal account sees it: own visits, friends' visits and unvisited airfields](screenshots/passport_group.png)
 
 A friend without an account selects **Create an account and join this passport**,
 chooses a password and verifies the code sent to their email. They then complete
@@ -485,9 +485,16 @@ OpenHangar uses a role-based model combined with per-aircraft access grants.
 | **Owner** | Full access to fleet, maintenance, flights, and user management |
 | **Pilot** | Log flights, create reservations; access limited to assigned aircraft |
 | **Maintenance** | View and update maintenance; access limited to assigned aircraft |
-| **Viewer** | Read-only; access limited to assigned aircraft |
+| **Viewer (read-only)** | Read-only access to aircraft, maintenance and flights (limited to assigned aircraft), plus personal features (passports, Places) |
 
 Two additional roles — **Student** and **Instructor** — exist in preparation for the flight-school features.
+
+A **Personal account** has no role at all: only the personal features (its own passports, Places, Where next?, profile and data export), with no access to the aircraft, reservations, maintenance or other pilots' logbooks. Friends who join through a passport invitation get one. For a non-pilot, choose:
+
+- **Personal account** (invite them to a passport) when they only need passports and Places;
+- **Viewer (read-only)** when they should also see the aircraft, maintenance and flights.
+
+A Personal account can also keep its own pilot logbook (**Start my pilot logbook**, see the airfield passports section); its places and collections stay as they are.
 
 When inviting a user, the owner selects their role and checks which aircraft they are allowed to access.  Admin and Owner roles automatically see every aircraft.
 

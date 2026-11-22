@@ -19,6 +19,11 @@ file attached, and it is saved with the form (before, OpenHangar only asked
 you to attach it again by hand). The share page lists only what your role can
 use, and Cancel drops the shared file.
 
+Passport-only accounts are now **Personal accounts**: the same friends'
+accounts, now with Places too, and still no access to the aircraft. The user
+list explains when to choose a Personal account or a **Viewer (read-only)**
+for someone who doesn't fly.
+
 **Maintenance**
 
 - A shared aircraft document is now stored by the same code as a document
