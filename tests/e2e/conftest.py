@@ -17,6 +17,7 @@ Adding data needed for a new E2E test:
 """
 
 import contextlib
+import http.client
 import json
 import os
 import shutil
@@ -165,6 +166,27 @@ def _load_seed(samples: dict) -> None:
 # ── Live server ────────────────────────────────────────────────────────────────
 
 
+def _wait_until_serving(port: int, timeout: float = 15.0) -> None:
+    """Return once the in-process server on *port* answers /health (it
+    doesn't touch the database, so it answers before setup too), instead of
+    sleeping a fixed time and hoping the thread was up by then. Plain
+    http.client: the suite's autouse fixture blocks urllib's urlopen."""
+    deadline = time.monotonic() + timeout
+    while True:
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=1)
+        try:
+            conn.request("GET", "/health")
+            if conn.getresponse().status == 200:
+                return
+        except OSError:
+            pass  # not listening yet: poll again
+        finally:
+            conn.close()
+        if time.monotonic() > deadline:
+            raise RuntimeError(f"the test server on port {port} did not start")
+        time.sleep(0.1)
+
+
 @pytest.fixture(scope="session")
 def live_server():
     """Start a live Flask server, or delegate to an external server when E2E_BASE_URL is set."""
@@ -240,7 +262,7 @@ def live_server():
         daemon=True,
     )
     t.start()
-    time.sleep(0.8)
+    _wait_until_serving(port)
 
     yield f"http://127.0.0.1:{port}", app, SEED
 
@@ -687,7 +709,7 @@ def fresh_server():
         daemon=True,
     )
     t.start()
-    time.sleep(0.8)
+    _wait_until_serving(port)
 
     yield f"http://127.0.0.1:{port}"
 
