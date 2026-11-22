@@ -915,31 +915,16 @@ can do:
   spent by someone else's workflow before this one runs.
 
 ### 4. Reduce `networkidle` reliance (incremental, one file per commit)
-
 `wait_for_load_state("networkidle")` appears ~145 times; it is both slow
 (≥500 ms idle wait each) and racy — HTMX fires `htmx:afterSettle` on a
 timer *after* network goes idle (see the comment in
 `test_htmx_boost.py::test_widget_reinitializes_via_aftersettle`). Replace
-it with event-based waits:
-
-1. In `conftest.py`, add to every created context (put it next to the
-   `_block_external_network(context)` calls):
-   ```python
-   context.add_init_script(
-       "document.addEventListener('htmx:afterSettle',"
-       " () => { window.__ohSettleCount = (window.__ohSettleCount || 0) + 1; });"
-   )
-   ```
-2. Add a helper:
-   ```python
-   def click_and_settle(page, locator, timeout=10000):
-       before = page.evaluate("() => window.__ohSettleCount || 0")
-       locator.click()
-       page.wait_for_function(
-           f"() => (window.__ohSettleCount || 0) > {before}", timeout=timeout
-       )
-   ```
-3. Conversion rules, applied one test file per commit (start with
+it with event-based waits. `tests/e2e/conftest.py` already counts settles
+on every context built through `_block_external_network`, and
+`click_and_settle(page, locator)` clicks a boosted control and waits for
+the next settle (used by the passport builder tests; not for pages with
+JavaScript off, whose clicks are real navigations).
+1. Conversion rules, applied one test file per commit (start with
    `test_htmx_boost.py`, the biggest offender):
    - hx-boost click + `networkidle` → `click_and_settle(...)`.
    - `page.goto(...)` + `networkidle` → plain `page.goto(...)` followed by
@@ -950,15 +935,7 @@ it with event-based waits:
    - `page.wait_for_timeout(...)` sleeps (10 occurrences) → replace with a
      settle/`expect` wait; keep only where the test intentionally verifies
      that *nothing* happens (e.g. the action-cell no-navigation test).
-4. Run the converted file 3× in a row before committing.
-
-### 5. Replace fixed-sleep server startup with a readiness poll
-
-Both in-process servers (`live_server` and `fresh_server` in
-`tests/e2e/conftest.py`) do `time.sleep(0.8)` after starting the Flask
-thread. Replace each with a poll of the `/health` endpoint
-(up to ~15 s, 0.1 s interval, `urllib.request.urlopen(..., timeout=1)`
-in a `try/except`), failing the fixture with a clear message on timeout.
+2. Run the converted file 3× in a row before committing.
 
 ### 6. Optional: local disposable-Docker e2e runner (CI-mode repro)
 

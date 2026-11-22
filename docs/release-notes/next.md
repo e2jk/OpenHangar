@@ -27,6 +27,8 @@
 - Browser tests sign in as the admin through one helper that, when another
   sign-in already used the current authenticator code, waits for the next
   one instead of failing.
+- The browser tests' in-process servers are used as soon as they answer,
+  instead of after a fixed pause.
 - Browser tests now use the same disposable test data locally and in CI.
   Missing fixture IDs fail clearly, and deletion tests use dedicated synthetic
   flights.
