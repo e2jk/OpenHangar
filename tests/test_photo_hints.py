@@ -11,10 +11,11 @@ from PIL import Image
 from services import photo_hints
 
 from tests.test_flights import _add_aircraft, _create_user_and_tenant, _login
+from tests.test_passport_management import owner
 from tests.test_place_collections import people
 from tests.test_place_sharing import signin
 
-__all__ = ["people"]
+__all__ = ["owner", "people"]
 
 EBOS = (51.1998, 2.874673)
 
@@ -196,3 +197,80 @@ def test_a_place_photo_offers_its_position(
     assert client.post("/places/photo-position", data={}).status_code == 400
     form = client.get("/places/new").get_data(as_text=True)
     assert 'id="place-photo-hint"' in form and "/places/photo-position" in form
+
+
+def _passport_targets(app: Flask, owner: dict[str, int], fields: list[tuple]) -> None:
+    from models import PassportAirfield, db
+    from passports.catalogue import create_custom
+
+    with app.app_context():
+        for name, code, lat, lon in fields:
+            field = create_custom(
+                owner["tenant"], name, code=code, latitude=lat, longitude=lon
+            )
+            db.session.flush()
+            db.session.add(
+                PassportAirfield(
+                    tenant_id=owner["tenant"],
+                    passport_id=owner["passport"],
+                    airfield_id=field.id,
+                )
+            )
+        db.session.commit()
+
+
+def test_a_stamp_photo_suggests_the_passport_airfield_and_date(
+    app: Flask, client: FlaskClient, owner: dict[str, int]
+) -> None:
+    from tests.test_passport_builder import signin as passport_signin
+
+    _passport_targets(
+        app,
+        owner,
+        [("Coast strip", "CSTP", 51.2, 2.875), ("Inland strip", "INLD", 50.5, 4.0)],
+    )
+    passport_signin(client, owner["user"])
+    url = f"/passports/{owner['passport']}/photo-target"
+    found = client.post(
+        url,
+        data={"photo": (io.BytesIO(photo()), "stamp.jpg"), "offset": "60"},
+        content_type="multipart/form-data",
+    ).json
+    assert found["target"]["name"] == "Coast strip"
+    assert found["target"]["distance_km"] < 1 and found["date"] == "2026-05-12"
+    far = client.post(
+        url,
+        data={"photo": (io.BytesIO(photo(position=(48.0, 2.0))), "x.jpg")},
+        content_type="multipart/form-data",
+    ).json
+    assert far["target"] is None
+    no_gps = client.post(
+        url,
+        data={"photo": (io.BytesIO(photo(position=None)), "x.jpg")},
+        content_type="multipart/form-data",
+    ).json
+    assert no_gps == {"target": None, "date": "2026-05-12"}  # the camera time stays
+    assert client.post(url, data={}).status_code == 400
+    page = client.get(f"/passports/{owner['passport']}/record-visit").get_data(
+        as_text=True
+    )
+    assert 'id="visit-photo-finder"' in page and "the photo is not saved" in page
+
+
+def test_two_equally_close_passport_airfields_suggest_none(
+    app: Flask, client: FlaskClient, owner: dict[str, int]
+) -> None:
+    from tests.test_passport_builder import signin as passport_signin
+
+    _passport_targets(
+        app,
+        owner,
+        [("West", "WEST", 51.1998, 2.8650), ("East", "EAST", 51.1998, 2.8843)],
+    )
+    passport_signin(client, owner["user"])
+    found = client.post(
+        f"/passports/{owner['passport']}/photo-target",
+        data={"photo": (io.BytesIO(photo()), "stamp.jpg")},
+        content_type="multipart/form-data",
+    ).json
+    assert found["target"] is None

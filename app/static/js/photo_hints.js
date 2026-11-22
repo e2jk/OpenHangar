@@ -91,6 +91,66 @@
     });
   }
 
+  // The passport "Record a visit" form: a photo suggests the airfield and date.
+  function initVisitFinder() {
+    var root = document.getElementById('visit-photo-finder');
+    if (!root || root.dataset.ohInited) return;
+    root.dataset.ohInited = '1';
+    root.hidden = false;
+    var labels = JSON.parse(root.dataset.labels);
+    var input = root.querySelector('#visit-photo');
+    var hint = root.querySelector('#visit-photo-hint');
+    var form = root.closest('form');
+    function use(text, apply) {
+      var el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'btn btn-sm btn-ac-ghost ms-1';
+      el.textContent = text;
+      el.addEventListener('click', apply);
+      return el;
+    }
+    input.addEventListener('change', function () {
+      var file = input.files && input.files[0];
+      if (!file) return;
+      var body = new FormData();
+      body.append('photo', file);
+      body.append('offset', String(-new Date().getTimezoneOffset()));
+      fetch(root.dataset.url, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'X-CSRFToken': form.querySelector('input[name="csrf_token"]').value },
+        body: body
+      }).then(function (response) {
+        return response.ok ? response.json() : null;
+      }).then(function (data) {
+        if (!data || !root.isConnected || input.files[0] !== file) return;
+        hint.replaceChildren();
+        if (data.target) {
+          var line = document.createElement('div');
+          line.textContent = labels.found
+            .replace('{km}', String(data.target.distance_km))
+            .replace('{name}', data.target.name);
+          line.appendChild(use(labels.use, function () {
+            form.querySelector('#visit-target').value = String(data.target.target_id);
+          }));
+          hint.appendChild(line);
+        } else {
+          hint.textContent = labels.none;
+        }
+        if (data.date) {
+          var when = document.createElement('div');
+          when.textContent = labels.date.replace('{date}', data.date);
+          when.appendChild(use(labels.use_date, function () {
+            form.querySelector('#visit-date').value = data.date;
+          }));
+          hint.appendChild(when);
+        }
+      }).catch(function () { /* No suggestion: the form works as before. */ });
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', init);
   document.addEventListener('htmx:afterSettle', init);
+  document.addEventListener('DOMContentLoaded', initVisitFinder);
+  document.addEventListener('htmx:afterSettle', initVisitFinder);
 })();

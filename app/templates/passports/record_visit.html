@@ -13,6 +13,17 @@
 <option value="">{{ _('Choose an airfield') }}</option>
 {% for row in targets %}<option value="{{ row.target_id }}" {% if request.form.get('target') == row.target_id|string %}selected{% endif %}>{{ row.name }}{% if row.ident %} ({{ row.ident }}){% endif %}{% if row.is_closed %} · {{ _('Closed') }}{% endif %}{% if row.visited %} · {{ _('Visited') }}{% endif %}</option>{% endfor %}
 </select>
+<div id="visit-photo-finder" class="mt-2" hidden data-url="{{ url_for('passports.photo_target', passport_id=passport.id) }}" data-labels="{{ {
+  'found': _('This photo was taken {km} km from {name}.'),
+  'use': _('Choose this airfield'),
+  'date': _('Taken on {date}.'),
+  'use_date': _('Use this date'),
+  'none': _('This photo has no position near one of this passport\'s airfields.'),
+} | tojson | forceescape }}">
+<label for="visit-photo" class="form-label">{{ _('Find the airfield from a photo (optional)') }}</label>
+<input id="visit-photo" class="form-control" type="file" accept="image/jpeg,image/png,image/webp" capture="environment">
+<div class="form-text" id="visit-photo-hint" aria-live="polite">{{ _('Only read to suggest the airfield and date; the photo is not saved.') }}</div>
+</div>
 <label for="visit-date" class="form-label mt-2">{{ _('Visit date') }}</label>
 <input id="visit-date" class="form-control" type="date" name="visit_date" value="{{ request.form.get('visit_date', today) }}" required>
 <label for="visit-note" class="form-label mt-2">{{ _('Note (optional)') }}</label>

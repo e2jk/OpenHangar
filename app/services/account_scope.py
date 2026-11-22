@@ -65,6 +65,7 @@ PERSONAL_ENDPOINTS = frozenset(
         "passports.link_series",
         "passports.start_logbook",
         "passports.record_visit",
+        "passports.photo_target",
     }
 )
 # A personal pilot logbook ('logbook' scope): only the account's own entries.
