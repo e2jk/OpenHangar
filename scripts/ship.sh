@@ -35,7 +35,8 @@
 # Before pushing it runs the browser tests (tests/e2e, the same suite CI's
 # browser jobs run) against the rebased commits: they catch what the unit
 # tests can't — JavaScript, htmx swaps, maps, downloads — and a CI failure
-# costs a full round trip. The whole suite, 4 workers (about 5 minutes);
+# costs a full round trip. The whole suite, 2 workers by default (about 7
+# minutes; SHIP_BROWSER_WORKERS=4 halves that on a machine with the memory);
 # any test that fails is rerun once on its own, since a loaded machine can
 # time out a page; still failing, nothing is pushed. Skipped when the batch
 # only changes documentation (docs/, *.md), or with --no-browser-tests.
@@ -274,8 +275,11 @@ if [ "${BROWSER_TESTS}" = 1 ]; then
   else
     E2E_PYTEST="${SHIP_BROWSER_PYTEST:-.venv/bin/pytest}"
     E2E_ARGS=(tests/e2e --e2e --override-ini=addopts= -q -p no:randomly)
-    echo "Running the browser tests (tests/e2e, 4 workers, about 5 minutes)..."
-    if ! "${E2E_PYTEST}" "${E2E_ARGS[@]}" -n 4; then
+    # Each worker runs its own app server and browser: 2 fit a laptop that
+    # also runs the agents; more need the memory (4 ran a 7.5 GB host out).
+    E2E_WORKERS="${SHIP_BROWSER_WORKERS:-2}"
+    echo "Running the browser tests (tests/e2e, ${E2E_WORKERS} workers)..."
+    if ! "${E2E_PYTEST}" "${E2E_ARGS[@]}" -n "${E2E_WORKERS}"; then
       echo "Rerunning the failed browser tests once, one at a time..."
       if ! "${E2E_PYTEST}" "${E2E_ARGS[@]}" --last-failed --last-failed-no-failures none; then
         echo "Browser tests failed — not pushing. Fix them and run this again"

@@ -757,8 +757,9 @@ a change:
   `bash scripts/ship.sh --no-verify` skips the pre-push
   hook, same flag and meaning as `git push --no-verify`.
   Right before pushing, it runs the browser tests (`tests/e2e`, the suite CI's
-  browser jobs run) on the rebased commits: the whole suite with 4 workers,
-  about 5 minutes on a typical dev machine (8 minutes one at a time). A test
+  browser jobs run) on the rebased commits: the whole suite with 2 workers by default,
+  about 7 minutes (`SHIP_BROWSER_WORKERS=4` takes about 5 on a machine with
+  the memory; 8 minutes one at a time). A test
   that fails is rerun once on its own, since a loaded machine can time out a
   page; still failing, nothing is pushed. A batch that only changes
   documentation (`docs/`, `*.md`) skips them, and so does
