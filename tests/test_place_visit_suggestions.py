@@ -209,12 +209,21 @@ def test_the_aircraft_logbook_shows_them_too(
         aircraft = Aircraft(
             tenant_id=people["tenant"], registration="OO-VIS", make="T", model="M"
         )
-        db.session.add(aircraft)
+        other = Aircraft(
+            tenant_id=people["tenant"], registration="OO-OTH", make="T", model="M"
+        )
+        db.session.add_all([aircraft, other])
+        db.session.flush()
+        db.session.get(Flight, landed["flight"]).aircraft_id = aircraft.id
         db.session.commit()
-        aid = aircraft.id
+        aid, oid = aircraft.id, other.id
     signin(client, people)
     page = client.get(f"/aircraft/{aid}/flights").get_data(as_text=True)
     assert "You landed at EBCS" in page
+    assert f'name="aircraft" value="{aid}"' in page
+    # Another aircraft's logbook offers only that aircraft's flights.
+    other_page = client.get(f"/aircraft/{oid}/flights").get_data(as_text=True)
+    assert "You landed at" not in other_page
 
 
 def test_at_most_three_suggestions_at_once(
@@ -230,3 +239,36 @@ def test_at_most_three_suggestions_at_once(
         )
         db.session.commit()
     assert len(_suggestions(app, people, "creator")) == visits.MAX_SUGGESTIONS
+
+
+def test_an_airfields_former_code_matches_flights_of_its_time(
+    app: Flask, people: dict[str, int], landed: dict[str, int]
+) -> None:
+    from models import PassportAirfieldAlias, PassportAirfieldIdentity
+
+    today = date.today()
+    with app.app_context():
+        field = PassportAirfieldIdentity.query.filter_by(name="Castle strip").one()
+        db.session.add_all(
+            [
+                PassportAirfieldAlias(
+                    airfield_id=field.id,
+                    code="EBOLD",
+                    valid_until=today - timedelta(days=5),
+                ),
+                Flight(
+                    pic_user_id=people["creator"],
+                    date=today - timedelta(days=10),
+                    arrival_icao="EBOLD",
+                ),
+                Flight(pic_user_id=people["creator"], date=today, arrival_icao="EBOLD"),
+            ]
+        )
+        db.session.query(Flight).filter(
+            db.func.upper(Flight.arrival_icao) == "EBCS"
+        ).update({"arrival_icao": "EBXX"}, synchronize_session=False)
+        db.session.commit()
+    rows = _suggestions(app, people, "creator")
+    # Only the flight from when EBOLD was this airfield's code.
+    assert {r["date"] for r in rows} == {today - timedelta(days=10)}
+    assert {r["code"] for r in rows} == {"EBOLD"}
