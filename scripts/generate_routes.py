@@ -27,7 +27,7 @@ import argparse
 import json
 import os
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
@@ -121,6 +121,7 @@ def _query_samples(app) -> dict:
         LogbookImportBatch,
         MaintenanceDowntime,
         MaintenanceTrigger,
+        PasswordResetToken,
         PendingReconcile,
         PersonalMinimumsRevision,
         RenterAuthorization,
@@ -149,7 +150,7 @@ def _query_samples(app) -> dict:
         # Most-recent flights match what appears at the top of each date-desc list
         flight = (
             Flight.query.filter_by(aircraft_id=ac_id)
-            .order_by(Flight.date.desc())
+            .order_by(Flight.date.desc(), Flight.id.desc())
             .first()
             if ac_id
             else None
@@ -157,14 +158,14 @@ def _query_samples(app) -> dict:
         # Extra flights for delete/action-cell tests in Docker E2E mode
         flight2 = (
             Flight.query.filter_by(aircraft_id=ac2.id)
-            .order_by(Flight.date.desc())
+            .order_by(Flight.date.desc(), Flight.id.desc())
             .first()
             if ac2
             else None
         )
         flight3 = (
             Flight.query.filter_by(aircraft_id=ac3.id)
-            .order_by(Flight.date.desc())
+            .order_by(Flight.date.desc(), Flight.id.desc())
             .first()
             if ac3
             else None
@@ -200,8 +201,8 @@ def _query_samples(app) -> dict:
         )
         gps_batch = AircraftGpsImportBatch.query.first()
         logbook_batch = LogbookImportBatch.query.first()
-        tenant = Tenant.query.first()
-        user = User.query.first()
+        tenant = Tenant.query.order_by(Tenant.id).first()
+        user = User.query.order_by(User.id).first()
         from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
 
         pilot_entry = (
@@ -213,9 +214,14 @@ def _query_samples(app) -> dict:
             if user
             else None
         )
-        # Phase 38l e2e extras — None unless the dev seed happens to carry a
-        # standalone FSTD session; those tests skip cleanly when absent.
-        pilot_entry_fstd = Flight.query.filter_by(entry_type="fstd").first()
+        # E2E extras are opt-in; ordinary development seeds remain unchanged.
+        pilot_entry_fstd = (
+            Flight.query.filter_by(entry_type="fstd", pic_user_id=user.id)
+            .filter(Flight.date > date.today())
+            .first()
+            if user
+            else None
+        )
         pilot_doc = Document.query.filter(Document.pilot_user_id.isnot(None)).first()
         pending = PendingReconcile.query.first()
         inv = UserInvitation.query.first()
@@ -244,7 +250,29 @@ def _query_samples(app) -> dict:
         )
         renter_auth = RenterAuthorization.query.first()
 
-        return {
+        # Query the same synthetic extras in local and Docker mode. Never use
+        # an ordinary seed flight as a destructive test's fallback.
+        deletable = []
+        for aircraft in (ac3, ac2):
+            deletable.append(
+                Flight.query.filter(
+                    Flight.aircraft_id == aircraft.id,
+                    Flight.date > date.today(),
+                    Flight.departure_icao == "EBOS",
+                    Flight.arrival_icao == "EBBR",
+                ).first()
+                if aircraft
+                else None
+            )
+        e2e_invite = UserInvitation.query.filter_by(
+            token="e2e-crawl-invite-token"
+        ).first()
+        e2e_reset = PasswordResetToken.query.filter_by(
+            token="e2e-crawl-reset-token"
+        ).first()
+        pilot = User.query.filter_by(email="pilot@openhangar.dev").first()
+
+        samples = {
             "aircraft_id": ac_id,
             "aircraft_registration": ac.registration if ac else None,
             # Extra aircraft IDs for Docker E2E mode (ac2=seminole, ac3=robin, ac4=jodel)
@@ -284,8 +312,36 @@ def _query_samples(app) -> dict:
             # Literal values for non-int params
             "lang": "fr",
             "code": 7700,
-            "token": None,  # invite/reset tokens can't be queried safely
+            "token": None,  # no generic token; only known E2E routes resolve below
         }
+
+        from dev_seed import _DEV_TOTP_SECRET  # pyright: ignore[reportMissingImports]
+
+        # Route parameters and browser fixture IDs share one query result.
+        # Fixed E2E token rows identify an explicitly disposable seed; do not
+        # export real share tokens from an ordinary instance's route inventory.
+        samples.update(
+            admin_id=samples["user_id"],
+            ac_flt=ac_id,
+            ac_flt_reg=samples["aircraft_registration"],
+            ac_stop=samples["aircraft_id_2"],
+            ac_del1=samples["aircraft_id_3"],
+            ac_del2=samples["aircraft_id_2"],
+            ac_gps=ac_id,
+            ac_dup=samples["aircraft_id_4"],
+            fe_flt=samples["flight_id"],
+            fe_del1=deletable[0].id if deletable[0] else None,
+            fe_del2=deletable[1].id if deletable[1] else None,
+            pilot_id=pilot.id if pilot else None,
+            totp_secret=_DEV_TOTP_SECRET,
+            pe_linked_id=samples["flight_id"],
+            invite_token=e2e_invite.token if e2e_invite else None,
+            reset_token=e2e_reset.token if e2e_reset else None,
+            share_token=(
+                share_token.token if share_token and e2e_invite and e2e_reset else None
+            ),
+        )
+        return samples
 
 
 def _resolve_params(
@@ -370,7 +426,12 @@ def _resolve_params(
         elif arg == "code":
             value = samples["code"]
         elif arg == "token":
-            value = samples["token"]
+            token_key = {
+                "/share/<token>": "share_token",
+                "/reset-password/<token>": "reset_token",
+                "/config/users/invite/<token>": "invite_token",
+            }.get(rule_str)
+            value = samples.get(token_key) if token_key else None
         elif arg == "filename":
             value = "example.pdf"
 

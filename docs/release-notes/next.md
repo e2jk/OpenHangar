@@ -21,3 +21,6 @@
 
 - The photo cleaning and photo suggestion tests import each module one way,
   as static analysis asked.
+- Browser tests now use the same disposable test data locally and in CI.
+  Missing fixture IDs fail clearly, and deletion tests use dedicated synthetic
+  flights.

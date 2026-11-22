@@ -231,6 +231,9 @@ def seed() -> None:
         _FRIEND[0],
     )
 
+    if _os.environ.get("OPENHANGAR_E2E_SEED") == "1":
+        _seed_e2e_extras()
+
     db.session.commit()
 
     # ── Log credentials ───────────────────────────────────────────────────────
@@ -257,3 +260,74 @@ def seed() -> None:
     print("-" * 60)
     print(f"  Aircraft seeded : {len(aircraft) + 1}")
     print("=" * 60)
+
+
+def _seed_e2e_extras() -> None:
+    """Synthetic disposable rows shared by local and container browser tests."""
+    from datetime import UTC, date, datetime, timedelta
+
+    from models import (
+        Aircraft,
+        Flight,
+        LogbookEntryType,
+        PasswordResetToken,
+        UserInvitation,
+    )
+
+    tenant = Tenant.query.filter_by(slug="dev-hangar").one()
+    admin = User.query.filter_by(email=_USERS[0][0]).one()
+    c172 = Aircraft.query.filter_by(registration="OO-PNH").one()
+    seminole = Aircraft.query.filter_by(registration="OO-ABC").one()
+    robin = Aircraft.query.filter_by(registration="OO-GRN").one()
+    latest = (
+        Flight.query.filter_by(aircraft_id=c172.id)
+        .order_by(Flight.date.desc(), Flight.id.desc())
+        .first()
+    )
+    if latest is None:
+        raise RuntimeError("E2E seed requires the standard C172 flight history")
+    if latest.pic_user_id is None:
+        latest.pic_user_id = admin.id
+        latest.pic_name = latest.pic_name or admin.display_name
+        if latest.function_pic is None:
+            latest.function_pic = float(latest.flight_time or 1)
+        if latest.landings_day is None:
+            latest.landings_day = latest.landing_count or 1
+    future = date.today() + timedelta(days=365)
+    far_future = datetime.now(UTC) + timedelta(days=3650)
+    db.session.add_all(
+        [
+            Flight(
+                aircraft_id=aircraft.id,
+                date=future,
+                departure_icao="EBOS",
+                arrival_icao="EBBR",
+            )
+            for aircraft in (robin, seminole)
+        ]
+        + [
+            Flight(
+                pic_user_id=admin.id,
+                date=future,
+                entry_type=LogbookEntryType.FSTD,
+                fstd_type="FNPT",
+                fstd_duration=1.5,
+                pic_name=admin.display_name,
+            ),
+            UserInvitation(
+                token="e2e-crawl-invite-token",
+                tenant_id=tenant.id,
+                invited_by_user_id=admin.id,
+                email="crawl-invite@example.com",
+                role=Role.PILOT,
+                expires_at=far_future,
+            ),
+            PasswordResetToken(
+                token="e2e-crawl-reset-token",
+                user_id=admin.id,
+                generated_by_user_id=admin.id,
+                expires_at=far_future,
+            ),
+        ]
+    )
+    db.session.flush()

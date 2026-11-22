@@ -19,6 +19,7 @@ documented inline in [`docker/.env.example`](../docker/.env.example).
 | [`OPENHANGAR_DATABASE_URL`](#openhangar_database_url) | Yes | — | [Database](#database) |
 | [`OPENHANGAR_SECRET_KEY`](#openhangar_secret_key) | Yes | — | [Core](#core) |
 | [`OPENHANGAR_ENV`](#openhangar_env) | No | `production` | [Core](#core) |
+| [`OPENHANGAR_E2E_SEED`](#openhangar_e2e_seed) | No | *(disabled)* | [Core](#core) |
 | [`OPENHANGAR_SW_ENABLED`](#openhangar_sw_enabled) | No | `false` (in dev) | [Core](#core) |
 | [`OPENHANGAR_PROXY_HOPS`](#openhangar_proxy_hops) | No | `1` | [Core](#core) |
 | [`OPENHANGAR_TRUSTED_HOSTS`](#openhangar_trusted_hosts) | No | *(unrestricted)* | [Core](#core) |
@@ -152,6 +153,19 @@ suppression.
 - **Allowed values**: `production`, `development`, `test`, `demo`
 - **Default**: `production`
 - Never set to `development` on an internet-facing host.
+
+### `OPENHANGAR_E2E_SEED`
+
+Add the synthetic fixtures used by browser tests when creating a fresh
+**development** seed. This includes future-dated flights reserved for deletion
+and fixed, non-secret test invitation/reset tokens.
+
+- **Allowed values:** `1` enables it; any other value leaves it disabled.
+- **Default:** disabled.
+- **Effect:** only applies when the development seed is first created with
+  `OPENHANGAR_ENV=development`; it does not modify an existing database.
+- **Use case:** disposable local or CI browser-test instances. Leave unset for
+  ordinary development and never enable development seeding in production.
 
 ### `OPENHANGAR_SW_ENABLED`
 

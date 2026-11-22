@@ -1243,6 +1243,7 @@ jobs:
             -e OPENHANGAR_DATABASE_URL="postgresql://postgres:postgres@$E2E_DB:5432/openhangar" \
             -e OPENHANGAR_DB_HOST="$E2E_DB" \
             -e OPENHANGAR_ENV=development \
+            -e OPENHANGAR_E2E_SEED=1 \
             -e OPENHANGAR_SECRET_KEY=e2e-ci-secret-not-for-production-use-only \
             -e OPENHANGAR_RATELIMIT_ENABLED=false \
             openhangar:ci
