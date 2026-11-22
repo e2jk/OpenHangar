@@ -55,6 +55,9 @@ plan a trip.
 
 **Maintenance**
 
+- Two members choosing the same airfield at the same time now keep a single
+  link, preserving its saved directions instead of failing with a database error.
+
 - Groundwork for place visits: recording, correcting and removing your own
   visits, and the "Last visited … by Anna and you" history, ready for the
   place page.

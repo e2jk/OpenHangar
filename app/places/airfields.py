@@ -17,6 +17,7 @@ from models import (
 from passports import catalogue
 from passports.catalogue_access import visible_identity_ids
 from services.destination_search import distance_nm
+from sqlalchemy.exc import IntegrityError
 
 from places.access import PlaceError, actor, place_access
 from places.presentation import place_label
@@ -91,18 +92,28 @@ def add_link(
     text = _note(note)
     link = db.session.get(PlaceAirfield, (place_id, field.id))
     if link is None:
-        link = PlaceAirfield(
-            tenant_id=tenant_id,
-            collection_id=place.collection_id,
-            place_id=place.id,
-            airfield_id=field.id,
-            public_catalogue=public,
-            note=text,
-            preferred=preferred,
-        )
-        db.session.add(link)
-        _touch(place, user_id)
-        db.session.flush()
+        try:
+            with db.session.begin_nested():
+                link = PlaceAirfield(
+                    tenant_id=tenant_id,
+                    collection_id=place.collection_id,
+                    place_id=place.id,
+                    airfield_id=field.id,
+                    public_catalogue=public,
+                    note=text,
+                    preferred=preferred,
+                )
+                db.session.add(link)
+                _touch(place, user_id)
+                db.session.flush()
+        except IntegrityError:
+            # Another editor can create this same link after our first lookup.
+            # Roll back only this savepoint and keep the winning link's data.
+            link = db.session.get(PlaceAirfield, (place_id, field.id))
+            if link is None:
+                raise
+            db.session.expire(place)
+            place_access(tenant_id, user_id, place_id, editing=True)
     return link
 
 
