@@ -182,12 +182,18 @@ def _own_flight(user_id: int, flight_id: int) -> Flight:
     return flight
 
 
-def flight_suggestions(tenant_id: int, user_id: int) -> list[dict[str, Any]]:
+def flight_suggestions(
+    tenant_id: int, user_id: int, aircraft_id: int | None = None
+) -> list[dict[str, Any]]:
     """Recent own flights (as pilot or second crew) that arrived at an airfield
     linked to a place in one of the user's collections, not yet recorded as a
     visit from that flight nor dismissed: "You landed at EBXX, 4 km from
-    Pairi Daiza — record a visit?". Never recorded automatically."""
+    Pairi Daiza — record a visit?". Never recorded automatically. An arrival
+    matches an airfield's current codes or a code it had on that date; on an
+    aircraft's logbook, only that aircraft's flights are offered."""
     from datetime import timedelta
+
+    from models import PassportAirfieldAlias
 
     from places.airfields import linked_airfields
 
@@ -195,25 +201,29 @@ def flight_suggestions(tenant_id: int, user_id: int) -> list[dict[str, Any]]:
         links = linked_airfields(tenant_id, user_id)
     except PlaceError:
         return []
-    by_code: dict[str, list[dict[str, Any]]] = {}
+    by_airfield: dict[int, list[dict[str, Any]]] = {}
+    by_code: dict[str, set[int]] = {}
     for link in links:
+        by_airfield.setdefault(link["airfield_id"], []).append(link)
         for code in {link["ident"], link["icao_code"]}:
             if code:
-                by_code.setdefault(str(code).upper(), []).append(link)
-    if not by_code:
+                by_code.setdefault(str(code).upper(), set()).add(link["airfield_id"])
+    if not by_airfield:
         return []
-    flights = (
-        Flight.query.filter(
-            db.or_(
-                Flight.pic_user_id == user_id, Flight.second_crew_user_id == user_id
-            ),
-            Flight.date >= date.today() - timedelta(days=SUGGESTION_DAYS),
-            Flight.date <= date.today(),
-            Flight.arrival_icao.isnot(None),
-        )
-        .order_by(Flight.date.desc(), Flight.id.desc())
-        .all()
+    aliases: dict[str, list[PassportAirfieldAlias]] = {}
+    for alias in PassportAirfieldAlias.query.filter(
+        PassportAirfieldAlias.airfield_id.in_(list(by_airfield))
+    ):
+        aliases.setdefault(alias.code.strip().upper(), []).append(alias)
+    query = Flight.query.filter(
+        db.or_(Flight.pic_user_id == user_id, Flight.second_crew_user_id == user_id),
+        Flight.date >= date.today() - timedelta(days=SUGGESTION_DAYS),
+        Flight.date <= date.today(),
+        Flight.arrival_icao.isnot(None),
     )
+    if aircraft_id is not None:
+        query = query.filter(Flight.aircraft_id == aircraft_id)
+    flights = query.order_by(Flight.date.desc(), Flight.id.desc()).all()
     recorded = {
         (row.flight_id, row.place_id)
         for row in PlaceVisit.query.filter(
@@ -230,22 +240,29 @@ def flight_suggestions(tenant_id: int, user_id: int) -> list[dict[str, Any]]:
     suggestions: list[dict[str, Any]] = []
     for flight in flights:
         code = (flight.arrival_icao or "").strip().upper()
-        for link in by_code.get(code, []):
-            if (flight.id, link["place_id"]) in recorded:
-                continue
-            recorded.add((flight.id, link["place_id"]))
-            suggestions.append(
-                {
-                    "flight_id": flight.id,
-                    "date": flight.date,
-                    "code": code,
-                    "place_id": link["place_id"],
-                    "place": link["place_name"],
-                    "distance_km": link["distance_km"],
-                }
-            )
-            if len(suggestions) == MAX_SUGGESTIONS:
-                return suggestions
+        airfield_ids = set(by_code.get(code, set())) | {
+            alias.airfield_id
+            for alias in aliases.get(code, [])
+            if (alias.valid_from is None or alias.valid_from <= flight.date)
+            and (alias.valid_until is None or flight.date <= alias.valid_until)
+        }
+        for airfield_id in sorted(airfield_ids):
+            for link in by_airfield[airfield_id]:
+                if (flight.id, link["place_id"]) in recorded:
+                    continue
+                recorded.add((flight.id, link["place_id"]))
+                suggestions.append(
+                    {
+                        "flight_id": flight.id,
+                        "date": flight.date,
+                        "code": code,
+                        "place_id": link["place_id"],
+                        "place": link["place_name"],
+                        "distance_km": link["distance_km"],
+                    }
+                )
+                if len(suggestions) == MAX_SUGGESTIONS:
+                    return suggestions
     return suggestions
 
 

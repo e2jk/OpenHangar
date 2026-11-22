@@ -1,6 +1,6 @@
 {# "You landed at EBXX, 4 km from Pairi Daiza — record a visit?" after a
    flight (42e): offered once per flight and place, never recorded by itself. #}
-{% set suggestions = place_visit_suggestions() %}
+{% set suggestions = place_visit_suggestions(aircraft.id if aircraft is defined and aircraft else none) %}
 {% for s in suggestions %}
 <div class="alert alert-info d-flex flex-wrap align-items-center gap-2" role="status">
   <span class="me-auto"><i class="bi bi-geo-alt me-1"></i>{% if s.distance_km is not none %}{{ _('You landed at %(code)s on %(date)s, %(km)s km from %(place)s. Record a visit?', code=s.code, date=format_date(s.date, 'medium'), km='%.1f'|format(s.distance_km), place=s.place) }}{% else %}{{ _('You landed at %(code)s on %(date)s, the airfield for %(place)s. Record a visit?', code=s.code, date=format_date(s.date, 'medium'), place=s.place) }}{% endif %}</span>

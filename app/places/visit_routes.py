@@ -109,10 +109,14 @@ def _suggestion_helper() -> dict[str, object]:
     """`place_visit_suggestions()` for the pages a flight is saved to; it only
     queries when a template calls it."""
 
-    def place_visit_suggestions() -> list[dict[str, object]]:
+    def place_visit_suggestions(
+        aircraft_id: int | None = None,
+    ) -> list[dict[str, object]]:
         membership = current_membership()
         if membership is None or not session.get("user_id"):
             return []
-        return visits.flight_suggestions(membership.tenant_id, session["user_id"])
+        return visits.flight_suggestions(
+            membership.tenant_id, session["user_id"], aircraft_id
+        )
 
     return {"place_visit_suggestions": place_visit_suggestions}
