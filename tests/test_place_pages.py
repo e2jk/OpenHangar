@@ -259,7 +259,6 @@ def test_invalid_forms_preserve_values_and_coordinate_api_never_fetches(
     p, d = people, destinations
     signin(client, p)
     for values in (
-        {"title": " "},
         {"latitude": "NaN"},
         {"external_url": "javascript:alert(1)"},
     ):
@@ -493,3 +492,68 @@ def test_coordinate_api_uses_a_fixed_public_validation_message(
     assert response.status_code == 400
     assert "Paste decimal or DMS coordinates" in response.json["error"]
     assert "private diagnostic" not in response.text
+
+
+def test_link_only_prefill_capture_and_later_location(
+    app: Flask,
+    client: FlaskClient,
+    people: dict[str, int],
+    destinations: dict[str, int],
+) -> None:
+    p, d = people, destinations
+    signin(client, p)
+    page = client.get(
+        "/places/new",
+        query_string={
+            "title": "A shared idea",
+            "external_url": "https://example.org/idea",
+        },
+    )
+    assert 'value="A shared idea"' in page.text
+    assert 'value="https://example.org/idea"' in page.text
+    response = client.post(
+        "/places/new",
+        data={
+            "external_url": "https://example.org/idea?igsh=tracking&utm_source=phone"
+        },
+    )
+    assert response.status_code == 302
+    detail_url = response.headers["Location"]
+    page = client.get(detail_url)
+    assert "example.org" in page.text and "Location still to add" in page.text
+    assert 'id="places-map"' not in page.text
+    with app.app_context():
+        saved = Place.query.filter_by(external_url="https://example.org/idea").one()
+        assert (
+            saved.title is None and saved.latitude is None and saved.longitude is None
+        )
+        assert saved.collection_id == d["destination"]
+        saved_id = saved.id
+    page = client.get("/places/?location=missing")
+    assert "example.org" in page.text and points(page) == []
+    assert "example.org" not in client.get("/places/?location=located").text
+    edit = client.get(f"/places/{saved_id}/edit")
+    assert 'value="None"' not in edit.text
+    response = client.post(
+        f"/places/{saved_id}/edit",
+        data={
+            "title": "The museum",
+            "external_url": "https://example.org/idea",
+            "latitude": "0",
+            "longitude": "4",
+        },
+    )
+    assert response.status_code == 302
+    assert len(points(client.get(detail_url))) == 1
+    assert "The museum" not in client.get("/places/?location=missing").text
+    assert (
+        client.post(f"/places/{saved_id}/edit", data={"latitude": "0"}).status_code
+        == 400
+    )
+    assert (
+        client.post(
+            f"/places/{saved_id}/edit", data={"title": "The museum"}
+        ).status_code
+        == 302
+    )
+    assert "Location still to add" in client.get(detail_url).text

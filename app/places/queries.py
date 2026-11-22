@@ -64,6 +64,13 @@ def list_places(
         elif state != "all":
             state = "active"
             query = query.filter(Place.archived.is_(False))
+    location = args.get("location", "all")
+    if location == "missing":
+        query = query.filter(Place.latitude.is_(None))
+    elif location == "located":
+        query = query.filter(Place.latitude.is_not(None))
+    else:
+        location = "all"
     visited = args.get("visited", "all")
     if visited == "visited":
         query = query.filter(count > 0)
@@ -110,6 +117,7 @@ def list_places(
         by_place.setdefault(place_id, []).append(name)
     return {
         "rows": rows,
+        "location": location,
         "tags": tags,
         "place_tags": by_place,
         "state": state,

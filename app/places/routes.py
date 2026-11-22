@@ -30,8 +30,14 @@ from utils import current_membership, db_id, list_index, login_required
 
 from places import collections, sharing, tags
 from places.access import PlaceError, actor, collection_access, collections_for_user
+from places.presentation import place_label
 
 places_bp = Blueprint("places", __name__, url_prefix="/places")
+
+
+@places_bp.context_processor
+def place_template_helpers() -> dict[str, Any]:
+    return {"place_label": place_label}
 
 
 @places_bp.after_request

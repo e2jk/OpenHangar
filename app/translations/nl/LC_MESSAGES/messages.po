@@ -3197,8 +3197,8 @@ msgstr "De maker van de collectie moet bewerkingsrechten behouden."
 msgid "The creator must transfer or delete the collection before leaving."
 msgstr "De maker moet de collectie overdragen of verwijderen voordat die de collectie verlaat."
 
-#: app/places/collections.py:187 app/places/routes.py:206
-#: app/places/routes.py:212 app/places/routes.py:219
+#: app/places/collections.py:187 app/places/routes.py:212
+#: app/places/routes.py:218 app/places/routes.py:225
 msgid "Choose a member of this collection."
 msgstr "Kies een lid van deze collectie."
 
@@ -3206,7 +3206,7 @@ msgstr "Kies een lid van deze collectie."
 msgid "Enter valid latitude and longitude coordinates."
 msgstr "Voer een geldige breedtegraad en lengtegraad in."
 
-#: app/places/coordinates.py:98 app/places/place_routes.py:221
+#: app/places/coordinates.py:98 app/places/place_routes.py:233
 msgid "Paste decimal or DMS coordinates, or a map link containing coordinates."
 msgstr "Plak decimale coördinaten of graden, minuten en seconden, of een kaartlink met coördinaten."
 
@@ -3214,70 +3214,70 @@ msgstr "Plak decimale coördinaten of graden, minuten en seconden, of een kaartl
 msgid "A place field is too long."
 msgstr "Een veld van de plaats is te lang."
 
-#: app/places/management.py:44
-msgid "Enter a place name."
-msgstr "Voer een plaatsnaam in."
-
-#: app/places/management.py:57
+#: app/places/management.py:46
 msgid "Enter a full http or https website address."
 msgstr "Voer een volledig websiteadres in dat begint met http of https."
 
-#: app/places/management.py:72
+#: app/places/management.py:64
 msgid "Use tag names of at most 80 characters."
 msgstr "Gebruik tagnamen van maximaal 80 tekens."
 
-#: app/places/management.py:126
+#: app/places/management.py:118
 msgid "Use Move to change a place's collection."
 msgstr "Gebruik Verplaatsen om een plaats naar een andere collectie te verplaatsen."
 
-#: app/places/management.py:174
+#: app/places/management.py:166
 msgid "The place photo could not be copied."
 msgstr "De foto van de plaats kon niet worden gekopieerd."
 
-#: app/places/management.py:189
+#: app/places/management.py:181
 msgid "Only the place owner can move it."
 msgstr "Alleen de eigenaar van de plaats kan deze verplaatsen."
 
-#: app/places/management.py:200
+#: app/places/management.py:192
 msgid "Every visitor must belong to the destination collection. Copy this place instead."
 msgstr "Elke bezoeker moet lid zijn van de doelcollectie. Maak anders een kopie van deze plaats."
 
-#: app/places/management.py:247
+#: app/places/management.py:239
 msgid "Only the place owner or collection creator can permanently delete it."
 msgstr "Alleen de eigenaar van de plaats of de maker van de collectie kan deze definitief verwijderen."
 
-#: app/places/place_routes.py:128 app/places/place_routes.py:249
+#: app/places/place_routes.py:140 app/places/place_routes.py:261
 msgid "Choose a collection you can edit."
 msgstr "Kies een collectie die je mag bewerken."
 
-#: app/places/place_routes.py:166
+#: app/places/place_routes.py:178
 #: app/templates/places/collection_settings.html:9
 #: app/templates/places/collection_settings.html:15
 #: app/templates/places/collection_settings.html:19
 msgid "Unnamed member"
 msgstr "Lid zonder naam"
 
-#: app/places/place_routes.py:186 app/places/place_routes.py:187
+#: app/places/place_routes.py:198 app/places/place_routes.py:199
 msgid "Former member"
 msgstr "Voormalig lid"
 
-#: app/places/place_routes.py:264
+#: app/places/place_routes.py:276
 msgid "Confirm the permanent deletion of this place."
 msgstr "Bevestig de definitieve verwijdering van deze plaats."
 
-#: app/places/routes.py:230
+#: app/places/presentation.py:16
+msgid "Place to locate"
+msgstr "Nog te lokaliseren plek"
+
+#: app/places/routes.py:236
 msgid "Invitation saved. Ask your friend to sign in and open Places."
 msgstr "Uitnodiging opgeslagen. Vraag je vriend om in te loggen en Plaatsen te openen."
 
-#: app/places/routes.py:236 app/places/sharing.py:74 app/places/sharing.py:98
+#: app/places/routes.py:242 app/places/sharing.py:74 app/places/sharing.py:98
 msgid "Invitation not found or expired."
 msgstr "Uitnodiging niet gevonden of verlopen."
 
-#: app/places/routes.py:241 app/places/tags.py:29 app/places/tags.py:62
+#: app/places/routes.py:247 app/places/tags.py:29 app/places/tags.py:62
 msgid "Tag not found."
 msgstr "Tag niet gevonden."
 
-#: app/places/routes.py:257
+#: app/places/routes.py:263
 msgid "Review the collection totals and confirm its deletion."
 msgstr "Controleer het aantal plaatsen en bezoeken in de collectie en bevestig de verwijdering."
 
@@ -4588,7 +4588,7 @@ msgstr "Status"
 #: app/templates/pilots/minimums_edit.html:15
 #: app/templates/places/join_collection.html:5
 #: app/templates/places/new_collection.html:6
-#: app/templates/places/place_form.html:20
+#: app/templates/places/place_form.html:12
 #: app/templates/pwa/share_target.html:15
 #: app/templates/refuels/refuel_form.html:61
 #: app/templates/reservations/charge.html:108
@@ -7011,7 +7011,7 @@ msgstr "Rekeninguittreksel downloaden (CSV)"
 #: app/templates/expenses/expense_form.html:128
 #: app/templates/expenses/list.html:88 app/templates/passports/builder.html:18
 #: app/templates/passports/next_edition.html:12
-#: app/templates/places/place_form.html:10
+#: app/templates/places/place_form.html:13
 #: app/templates/snags/snag_form.html:37
 msgid "Description"
 msgstr "Omschrijving"
@@ -12309,12 +12309,12 @@ msgid "Optional airfield code"
 msgstr "Optionele vliegveldcode"
 
 #: app/templates/passports/builder.html:58
-#: app/templates/places/place_form.html:15
+#: app/templates/places/place_form.html:18
 msgid "Latitude"
 msgstr "Breedtegraad"
 
 #: app/templates/passports/builder.html:58
-#: app/templates/places/place_form.html:15
+#: app/templates/places/place_form.html:18
 msgid "Longitude"
 msgstr "Lengtegraad"
 
@@ -14781,7 +14781,7 @@ msgid "Leave collection"
 msgstr "Collectie verlaten"
 
 #: app/templates/places/collection_settings.html:11
-#: app/templates/places/place_form.html:18
+#: app/templates/places/place_form.html:20
 msgid "Tags"
 msgstr "Tags"
 
@@ -14937,6 +14937,19 @@ msgid "Last visit"
 msgstr "Laatste bezoek"
 
 #: app/templates/places/index.html:10
+msgid "Location"
+msgstr "Locatie"
+
+#: app/templates/places/index.html:10 app/templates/places/index.html:13
+#: app/templates/places/place_detail.html:12
+msgid "Location still to add"
+msgstr "Locatie nog toe te voegen"
+
+#: app/templates/places/index.html:10
+msgid "Located"
+msgstr "Locatie bekend"
+
+#: app/templates/places/index.html:10
 msgid "Apply filters"
 msgstr "Filters toepassen"
 
@@ -15042,64 +15055,68 @@ msgid "Coordinates could not be read. Enter latitude and longitude directly."
 msgstr "De coördinaten konden niet worden gelezen. Voer de breedtegraad en lengtegraad rechtstreeks in."
 
 #: app/templates/places/place_form.html:8
+msgid "Link (optional)"
+msgstr "Link (optioneel)"
+
+#: app/templates/places/place_form.html:9
+msgid "Save a link now and add the name, location and other details later."
+msgstr "Sla nu een link op en voeg de naam, locatie en andere details later toe."
+
+#: app/templates/places/place_form.html:10
 msgid "Collection"
 msgstr "Collectie"
 
-#: app/templates/places/place_form.html:9
-msgid "Place name"
-msgstr "Plaatsnaam"
-
 #: app/templates/places/place_form.html:11
+msgid "Place name (optional)"
+msgstr "Naam van de plek (optioneel)"
+
+#: app/templates/places/place_form.html:12
+msgid "Save place"
+msgstr "Plaats opslaan"
+
+#: app/templates/places/place_form.html:14
 msgid "Place name or address"
 msgstr "Plaatsnaam of adres"
 
-#: app/templates/places/place_form.html:11
+#: app/templates/places/place_form.html:14
 msgid "Search"
 msgstr "Zoeken"
 
-#: app/templates/places/place_form.html:11
+#: app/templates/places/place_form.html:14
 msgid "Choose a result to set the pin and address. An empty place name is filled in too."
 msgstr "Kies een resultaat om de speld te plaatsen en het adres in te vullen. Een lege plaatsnaam wordt ook ingevuld."
 
-#: app/templates/places/place_form.html:12
+#: app/templates/places/place_form.html:15
 msgid "Click the map to drop a pin, then drag it to the right spot. You can also paste coordinates or a map link."
 msgstr "Klik op de kaart om een speld te plaatsen en sleep deze naar de juiste plek. Je kunt ook coördinaten of een kaartlink plakken."
 
-#: app/templates/places/place_form.html:13
+#: app/templates/places/place_form.html:16
 msgid "Coordinates or map link"
 msgstr "Coördinaten of kaartlink"
 
-#: app/templates/places/place_form.html:13
+#: app/templates/places/place_form.html:16
 msgid "Use coordinates"
 msgstr "Coördinaten gebruiken"
 
-#: app/templates/places/place_form.html:14
+#: app/templates/places/place_form.html:17
 msgid "Place location"
 msgstr "Locatie van de plaats"
 
-#: app/templates/places/place_form.html:16
+#: app/templates/places/place_form.html:19
 msgid "Address (optional)"
 msgstr "Adres (optioneel)"
 
-#: app/templates/places/place_form.html:17
-msgid "Website (optional)"
-msgstr "Website (optioneel)"
-
-#: app/templates/places/place_form.html:18
+#: app/templates/places/place_form.html:20
 msgid "One tag per line. You can also choose suggestions below."
 msgstr "Eén tag per regel. Je kunt ook uit de onderstaande suggesties kiezen."
 
-#: app/templates/places/place_form.html:19
+#: app/templates/places/place_form.html:21
 msgid "Place photo (optional)"
 msgstr "Foto van de plaats (optioneel)"
 
-#: app/templates/places/place_form.html:19
+#: app/templates/places/place_form.html:21
 msgid "Remove current photo"
 msgstr "Huidige foto verwijderen"
-
-#: app/templates/places/place_form.html:20
-msgid "Save place"
-msgstr "Plaats opslaan"
 
 #: app/templates/pwa/share_target.html:3 app/templates/pwa/share_target.html:10
 msgid "Shared files"

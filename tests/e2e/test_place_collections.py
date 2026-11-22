@@ -65,7 +65,7 @@ def test_place_pin_photo_map_and_edit_survive_boosted_navigation(
     page.get_by_role("link", name="Add place", exact=True).click()
     expect(page.locator("#place-editor")).to_have_attribute("data-oh-inited", "1")
     expect(page.locator("#place-editor-map .leaflet-map-pane")).to_have_count(1)
-    page.get_by_label("Place name", exact=True).fill(title)
+    page.get_by_label("Place name (optional)", exact=True).fill(title)
     page.get_by_label("Coordinates or map link", exact=True).fill("50°30'N 4°12'E")
     page.get_by_role("button", name="Use coordinates", exact=True).click()
     expect(page.get_by_label("Latitude", exact=True)).to_have_value("50.5000000")
@@ -80,7 +80,7 @@ def test_place_pin_photo_map_and_edit_survive_boosted_navigation(
     expect(page.locator("img.place-detail-photo")).to_be_visible()
     page.get_by_role("link", name="Edit place", exact=True).click()
     expect(page.locator("#place-editor")).to_have_attribute("data-oh-inited", "1")
-    page.get_by_label("Place name", exact=True).fill(title + " edited")
+    page.get_by_label("Place name (optional)", exact=True).fill(title + " edited")
     # A map click updates the coordinates and leaves one draggable pin.
     before = page.get_by_label("Latitude", exact=True).input_value()
     page.locator("#place-editor-map").click(position={"x": 80, "y": 100})
@@ -131,7 +131,7 @@ def test_address_search_is_submit_only_and_selection_preserves_a_title(
     page.get_by_role(
         "button", name="Museum <example> — Museum street", exact=True
     ).click()
-    expect(page.get_by_label("Place name", exact=True)).to_have_value(
+    expect(page.get_by_label("Place name (optional)", exact=True)).to_have_value(
         "Museum <example>"
     )
     expect(page.get_by_label("Address (optional)", exact=True)).to_have_value(
@@ -139,12 +139,14 @@ def test_address_search_is_submit_only_and_selection_preserves_a_title(
     )
     expect(page.get_by_label("Latitude", exact=True)).to_have_value("50.5000000")
     assert len(requests) == 1
-    page.get_by_label("Place name", exact=True).fill("My own title")
+    page.get_by_label("Place name (optional)", exact=True).fill("My own title")
     page.get_by_label("Place name or address", exact=True).press("Enter")
     page.get_by_role(
         "button", name="Museum <example> — Museum street", exact=True
     ).click()
-    expect(page.get_by_label("Place name", exact=True)).to_have_value("My own title")
+    expect(page.get_by_label("Place name (optional)", exact=True)).to_have_value(
+        "My own title"
+    )
     page.unroute("**/places/geocode")
     page.route("**/places/geocode", lambda route: route.fulfill(json={"results": []}))
     page.get_by_role("button", name="Search", exact=True).click()
@@ -159,3 +161,32 @@ def test_address_search_is_submit_only_and_selection_preserves_a_title(
     page.get_by_role("button", name="Search", exact=True).click()
     expect(page.locator("#place-address-error")).to_contain_text("Search is busy")
     expect(page.locator("#place-editor-map .leaflet-marker-icon")).to_have_count(1)
+
+
+def test_save_a_link_without_locating_it(passport_page: Page) -> None:
+    page = passport_page
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto("/places/new?external_url=https%3A%2F%2Fexample.org%2Fidea")
+    expect(page.get_by_label("Link (optional)", exact=True)).to_have_value(
+        "https://example.org/idea"
+    )
+    expect(page.get_by_label("Place name (optional)", exact=True)).to_have_value("")
+    expect(page.get_by_label("Latitude", exact=True)).to_have_value("")
+    button = page.get_by_role("button", name="Save place", exact=True)
+    expect(button).to_be_in_viewport()
+    button.click()
+    page.wait_for_url(re.compile(r"/places/\d+$"))
+    expect(page.get_by_role("heading", name="example.org", exact=True)).to_be_visible()
+    expect(page.get_by_text("Location still to add", exact=True)).to_be_visible()
+    expect(page.locator("#places-map")).to_have_count(0)
+    page.get_by_role("link", name="Edit place", exact=True).click()
+    page.get_by_label("Place name (optional)", exact=True).fill("An idea to finish")
+    page.get_by_role("button", name="Save place", exact=True).click()
+    expect(
+        page.get_by_role("heading", name="An idea to finish", exact=True)
+    ).to_be_visible()
+    page.get_by_label(
+        "I confirm the permanent deletion of this place and its visits."
+    ).check()
+    page.get_by_role("button", name="Permanently delete place", exact=True).click()
+    page.wait_for_url(re.compile(r"/places/\?collection=\d+&state=bin$"))

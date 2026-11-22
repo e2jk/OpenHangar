@@ -4857,6 +4857,10 @@ class Place(db.Model):
         db.UniqueConstraint("collection_id", "id"),
         db.CheckConstraint("latitude BETWEEN -90 AND 90", name="ck_place_latitude"),
         db.CheckConstraint("longitude BETWEEN -180 AND 180", name="ck_place_longitude"),
+        db.CheckConstraint(
+            "(latitude IS NULL AND longitude IS NULL) OR (latitude IS NOT NULL AND longitude IS NOT NULL)",
+            name="ck_place_coordinate_pair",
+        ),
     )
     id = db.Column(db.Integer, primary_key=True)
     collection_id = db.Column(
@@ -4871,10 +4875,10 @@ class Place(db.Model):
         nullable=True,
         index=True,
     )
-    title = db.Column(db.String(200), nullable=False)
+    title = db.Column(db.String(200), nullable=True)
     description = db.Column(db.Text, nullable=True)
-    latitude = db.Column(db.Float, nullable=False)
-    longitude = db.Column(db.Float, nullable=False)
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
     address = db.Column(db.String(500), nullable=True)
     external_url = db.Column(db.String(2048), nullable=True)
     photo_filename = db.Column(db.String(128), nullable=True, unique=True)
