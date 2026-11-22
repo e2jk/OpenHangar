@@ -3026,6 +3026,10 @@ reader-owned visit form with 42e.
   place can be visited many times by different members; "visited" means at least
   one visit; the place page shows the history ("Last visited 12 May 2026 by Anna
   and you"). One-click visit from the place page, date defaulting to today.
+  *Service and partial done (2026-11-22, Claude):* `places/visits.py`
+  (`record`/`update`/`delete`, own visits only; `panel(tid, uid, place)`),
+  `places/visit_routes.py` (`places.add_visit`, `edit_visit`, `delete_visit`)
+  and `templates/places/_visits.html`; Codex wires the panel into the place page.
 - [ ] **After logging a flight** whose arrival or an intermediate full-stop
   landing is at an airfield linked to a place in one of the user's collections,
   the post-save page offers a dismissible "You landed at EBXX, 4 km from *Pairi

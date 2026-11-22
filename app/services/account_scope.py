@@ -29,6 +29,9 @@ PERSONAL_ENDPOINTS = frozenset(
         "places.geocode",
         "places.place_action",
         "places.export_places",
+        "places.add_visit",
+        "places.edit_visit",
+        "places.delete_visit",
         # Sharing a link from the phone opens a new place (42i); a file share
         # only shows that nothing can take it, with Cancel.
         "pwa.share_target",
