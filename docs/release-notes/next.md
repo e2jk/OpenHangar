@@ -90,6 +90,14 @@ Every account has it, including friends with a Personal account.
   aircraft. The Viewer role is shown as **Viewer (read-only)**, and the user
   list explains which to choose for someone who doesn't fly.
 
+**Flight logging**
+
+- Attach a counter photo and OpenHangar suggests when it was taken (in UTC)
+  and the airfield it was taken at, as the arrival — or, for a pre-flight
+  photo, the departure: **Use as arrival time**, **Use as arrival airfield**.
+  Nothing is filled in by itself, and the photo is still stored without its
+  metadata.
+
 **Maintenance**
 
 - Address search runs through the OpenHangar server, using OpenStreetMap's

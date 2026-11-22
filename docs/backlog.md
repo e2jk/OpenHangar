@@ -164,16 +164,14 @@ pre-selected on the flight form's fuel section.
 
 ## Pilot logbook: timezone detection from ICAO airfield location
 
-Counter photo EXIF timestamps are in local time; OpenHangar currently converts
-them to UTC using the browser's reported timezone offset. This is unreliable for:
-- Flights that cross a timezone boundary (departure and arrival in different zones).
-- Pilots entering data from a different location than where they flew.
-
-Future enhancement: look up the UTC offset for the departure and arrival ICAO
-codes using a timezone-by-coordinates database (e.g. `timezonefinder` Python
-library against the OurAirports dataset). Use the departure airfield timezone
-to convert the EXIF timestamp to UTC, and flag if departure and arrival timezones
-differ so the pilot can confirm.
+A counter photo's time is converted to UTC with the camera's own UTC offset
+(`OffsetTimeOriginal`, written by current phones) when it has one, else with
+the device's offset — marked "about" in the suggestion (Phase 46). Still
+unreliable without a camera offset when the flight crosses a time zone or the
+pilot fills the form somewhere else. Remaining: look up the UTC offset of the
+photo's GPS position or of the departure/arrival airfield with a
+timezone-by-coordinates database (e.g. `timezonefinder`, a new dependency to
+weigh), and flag when departure and arrival time zones differ.
 
 ---
 
@@ -1301,26 +1299,14 @@ import it as a separate dataset rather than mixing it into the main catalogue.
 - Measure the size impact on search lists and the map before choosing the
   default; keep the existing behaviour when disabled.
 
-## Photos: suggestions from a photo's metadata
+## Photos: more suggestions from a photo's metadata
 
-Every stored photo is now cleaned on upload through `services/images.py`
-(aircraft, flight counter/fuel, shared and place photos; `flask clean-photos`
-re-encodes older ones). What remains is to **read the metadata first** and
-offer it as a *suggestion*, never applied silently and never stored:
+Counter and fuel photos already suggest the flight's arrival/departure time
+and airfield (Phase 46, `services/photo_hints.py`), read before the photo is
+cleaned. Left:
 
-- capture time → arrival/departure time suggestions (Phase 46 "Photo EXIF &
-  arrival time auto-fill"), counter-photo OCR context (backlog "Logbook: OCR
-  auto-fill from counter photos");
-- GPS position of a **counter photo** → airfield suggestion when registering a
-  flight: the end-of-flight photo suggests the **arrival** airfield, the
-  pre-flight photo (`flight_counter_photo_preflight`) the **departure**
-  airfield. Nearest catalogue airfield within a small radius (e.g. 2 km, so a
-  photo taken on the apron matches its field), shown with its distance; no
-  suggestion when nothing is close enough or two fields are about equally
-  close;
 - GPS position → pin suggestion for a new place (Places) or the nearest
-  passport target for a stamp photo.
-
-The photo form fields upload with the form, so the read happens server-side
-on submit (or a small preview endpoint read before submit, discarding the
-file). Documents (`documents/` uploads) stay originals by design.
+  passport target for a stamp photo — the same read-only hint, from the place
+  and stamp photo inputs;
+- capture time as context for counter-photo OCR (backlog "Logbook: OCR
+  auto-fill from counter photos").

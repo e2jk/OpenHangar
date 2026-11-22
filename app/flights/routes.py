@@ -285,6 +285,30 @@ def _save_upload(file: Any, flight_id: int, label: str) -> str | None:
     return stored
 
 
+@flights_bp.route("/flights/photo-hints", methods=["POST"])
+@login_required
+@require_pilot_access
+@_limiter.limit("60 per minute", exempt_when=_rate_limiting_disabled)
+def photo_hints() -> ResponseReturnValue:
+    """What a chosen counter/fuel photo suggests for the form — when it was
+    taken (UTC) and the airfield it was taken at — read and discarded, never
+    stored (services.photo_hints). The form offers them; nothing is filled in
+    by itself."""
+    from services.images import MAX_PHOTO_BYTES
+    from services.photo_hints import read_hints
+
+    upload = request.files.get("photo")
+    if upload is None or not upload.filename:
+        abort(400)
+    offset = request.form.get("offset", type=int)
+    if offset is not None and not -14 * 60 <= offset <= 14 * 60:
+        offset = None
+    data = upload.stream.read(MAX_PHOTO_BYTES + 1)
+    response = jsonify(read_hints(data, upload.filename, offset))
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
+
+
 def _delete_upload(filename: str | None) -> None:
     if not filename:
         return
