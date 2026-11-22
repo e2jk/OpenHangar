@@ -15,6 +15,8 @@ from models import (  # pyright: ignore[reportMissingImports]
     db,
 )
 
+from tests.test_passport_stamps import image_bytes
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
@@ -121,7 +123,7 @@ class TestUploadPhoto:
 
         rv = client.post(
             f"/aircraft/{ac_id}/photos/upload",
-            data={"photos": (BytesIO(b"\xff\xd8\xff"), "cover.jpg", "image/jpeg")},
+            data={"photos": (BytesIO(image_bytes()), "cover.jpg", "image/jpeg")},
             content_type="multipart/form-data",
         )
         assert rv.status_code == 302
@@ -141,8 +143,8 @@ class TestUploadPhoto:
             f"/aircraft/{ac_id}/photos/upload",
             data={
                 "photos": [
-                    (BytesIO(b"\xff\xd8\xff"), "a.jpg", "image/jpeg"),
-                    (BytesIO(b"\xff\xd8\xff"), "b.png", "image/png"),
+                    (BytesIO(image_bytes()), "a.jpg", "image/jpeg"),
+                    (BytesIO(image_bytes()), "b.png", "image/png"),
                 ]
             },
             content_type="multipart/form-data",
@@ -166,7 +168,7 @@ class TestUploadPhoto:
 
         client.post(
             f"/aircraft/{ac_id}/photos/upload",
-            data={"photos": (BytesIO(b"\xff\xd8\xff"), "new.jpg", "image/jpeg")},
+            data={"photos": (BytesIO(image_bytes()), "new.jpg", "image/jpeg")},
             content_type="multipart/form-data",
         )
         with app.app_context():
@@ -221,7 +223,7 @@ class TestUploadPhoto:
             data={
                 "photos": [
                     (BytesIO(b""), "", "application/octet-stream"),
-                    (BytesIO(b"\xff\xd8\xff"), "real.jpg", "image/jpeg"),
+                    (BytesIO(image_bytes()), "real.jpg", "image/jpeg"),
                 ]
             },
             content_type="multipart/form-data",
@@ -267,12 +269,24 @@ class TestUploadPhoto:
         """A thumbnail-generation error (corrupt upload, decode failure, disk
         error, ...) must not block the upload itself -- only the thumbnail
         file is missing afterwards, and serve_photo_thumb falls back."""
+        import aircraft.routes as aircraft_routes
         import PIL.Image
 
-        def boom(*a, **kw):
-            raise OSError("cannot identify image file")
+        real = aircraft_routes._generate_photo_thumbnail
 
-        monkeypatch.setattr(PIL.Image, "open", boom)
+        def failing_thumbnail(original_path, thumb_path):
+            # The photo itself is cleaned and stored; only decoding it again
+            # for the thumbnail fails here.
+            def boom(*_args, **_kwargs):
+                raise OSError("cannot identify image file")
+
+            with monkeypatch.context() as patch:
+                patch.setattr(PIL.Image, "open", boom)
+                real(original_path, thumb_path)
+
+        monkeypatch.setattr(
+            aircraft_routes, "_generate_photo_thumbnail", failing_thumbnail
+        )
 
         _uid, tid = _make_user_tenant(app, "tgf@x.com", "tgf-hangar")
         ac_id = _add_aircraft(app, tid, "OO-TG")
@@ -280,7 +294,7 @@ class TestUploadPhoto:
 
         rv = client.post(
             f"/aircraft/{ac_id}/photos/upload",
-            data={"photos": (BytesIO(b"\xff\xd8\xff"), "cover.jpg", "image/jpeg")},
+            data={"photos": (BytesIO(image_bytes()), "cover.jpg", "image/jpeg")},
             content_type="multipart/form-data",
         )
         assert rv.status_code == 302

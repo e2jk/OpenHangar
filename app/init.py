@@ -2045,6 +2045,36 @@ def create_app() -> Flask:
             print(f"Backup FAILED: {exc}")
             sys.exit(1)
 
+    @app.cli.command("clean-photos")
+    @click.option("--apply", is_flag=True, help="Re-encode; without it, only report.")
+    @click.option(
+        "--keep-originals",
+        is_flag=True,
+        help="Move the originals to _trash/ instead of deleting them.",
+    )
+    def clean_photos_command(apply: bool, keep_originals: bool) -> None:
+        """Re-encode stored aircraft and flight photos without EXIF/GPS."""
+        from services.photo_reencode import reencode
+
+        report = reencode(
+            app.config["UPLOAD_FOLDER"], apply=apply, keep_originals=keep_originals
+        )
+        for label, items in (
+            (
+                "Re-encoded" if apply else "To re-encode (run with --apply)",
+                report.cleaned or report.to_clean,
+            ),
+            (
+                "Cannot be decoded (HEIC, GIF or damaged) — replace by hand",
+                report.unreadable,
+            ),
+            ("Missing from disk", report.missing),
+        ):
+            print(f"{label}: {len(items)}")
+            for item in items:
+                print(f"  {item}")
+        print(f"Already clean: {len(report.clean)}")
+
     # Flask CLI command used by demo/refresh.sh to drop and recreate the schema.
     # Only works in demo mode — production uses Alembic migrations.
     @app.cli.command("reset-db")

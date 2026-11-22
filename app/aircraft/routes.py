@@ -3418,7 +3418,8 @@ def flight_tracks_gif(aircraft_id: int) -> ResponseReturnValue:
 
 # ── Aircraft photos ───────────────────────────────────────────────────────────
 
-_PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".heic"}
+# Photos are cleaned and re-encoded as JPEG (services.images): no HEIC decoder.
+_PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 
 
 def _photo_folder(app: Any, tenant_slug: str, safe_reg: str) -> str:
@@ -3477,17 +3478,21 @@ def _save_photo_file(
     safe_reg: str,
     sort_order: int,
 ) -> tuple[str, str]:
-    """Save photo to canonical path; return (relpath, original_filename)."""
+    """Save a cleaned photo (services.images: orientation applied, JPEG
+    without EXIF/GPS) to the canonical path; return (relpath,
+    original_filename). Raises services.images.PhotoError for an invalid one."""
+    from services.images import clean_photo
 
     original = secure_filename(file.filename or "photo.jpg")
-    ext = os.path.splitext(original)[1].lower() or ".jpg"
+    data = clean_photo(file)
     short_id = _uuid_mod.uuid4().hex[:6]
-    fname = f"{sort_order:02d}-{short_id}{ext}"
+    fname = f"{sort_order:02d}-{short_id}.jpg"
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
     dest_dir = os.path.join(folder, tenant_slug, safe_reg, "photos")
     os.makedirs(dest_dir, exist_ok=True)
     dest_path = os.path.join(dest_dir, fname)
-    file.save(dest_path)
+    with open(dest_path, "wb") as fh:
+        fh.write(data)
     relpath = os.path.join(tenant_slug, safe_reg, "photos", fname).replace("\\", "/")
     _generate_photo_thumbnail(dest_path, os.path.join(folder, thumb_path_for(relpath)))
     return relpath, original
@@ -3565,6 +3570,7 @@ def upload_photo(aircraft_id: int) -> ResponseReturnValue:
         _ensure_tenant_slug,
         _get_tenant,
     )
+    from services.images import PhotoError
 
     ac = _get_aircraft_or_404(aircraft_id)
     tenant = _get_tenant()
@@ -3591,13 +3597,17 @@ def upload_photo(aircraft_id: int) -> ResponseReturnValue:
         if ext not in _PHOTO_EXTS:
             flash(
                 _(
-                    "%(name)s: unsupported format (use JPEG, PNG, WEBP or HEIC).",
+                    "%(name)s: unsupported format (use JPEG, PNG or WEBP).",
                     name=f.filename,
                 ),
                 "warning",
             )
             continue
-        relpath, original = _save_photo_file(f, tenant_slug, safe_reg, next_order)
+        try:
+            relpath, original = _save_photo_file(f, tenant_slug, safe_reg, next_order)
+        except PhotoError as exc:
+            flash(_("%(name)s: %(error)s", name=f.filename, error=exc), "warning")
+            continue
         photo = AircraftPhoto(
             aircraft_id=ac.id,
             filename=relpath,
