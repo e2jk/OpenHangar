@@ -39,7 +39,14 @@ Each airfield appears once, with every passport where it is still to stamp.
 A passport's **Where next?** link and older bookmarks open it with that passport
 selected.
 
+Places can be downloaded as GPX or KML waypoints, and your personal data export
+now holds the places you own, their photos and tags, and your own visits. The
+demo has a shared "Our places" collection to try it.
+
 **Maintenance**
+
+- The backup round-trip check now also restores a shared Places collection,
+  with a photo, a tag, visits and a link-only place.
 
 - A shared aircraft document is now stored by the same code as a document
   uploaded from the aircraft's documents page, instead of a copy of it.

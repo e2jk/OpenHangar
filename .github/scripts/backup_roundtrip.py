@@ -135,6 +135,7 @@ def populate() -> None:
         )
         db.session.commit()
         _populate_passports(tenant.id, users[1], upload_folder)
+        _populate_places(tenant.id, users[1], upload_folder)
     print("Populated the round-trip fixture.")
 
 
@@ -305,6 +306,82 @@ def _populate_passports(tenant_id: int, pilot: Any, upload_folder: Path) -> None
     db.session.commit()
 
 
+def _populate_places(tenant_id: int, pilot: Any, upload_folder: Path) -> None:
+    """A shared collection with a located place (tag, photo, visits) and a
+    link-only place still to locate, shared with the passport friend."""
+    from models import (
+        Place,
+        PlaceCollection,
+        PlaceCollectionMember,
+        PlaceTag,
+        PlaceTagAssignment,
+        PlaceVisit,
+        User,
+        db,
+    )
+
+    friend = User.query.filter_by(email="friend@roundtrip.test").one()
+    collection = PlaceCollection(
+        tenant_id=tenant_id, name="Round-trip places", created_by_user_id=pilot.id
+    )
+    db.session.add(collection)
+    db.session.flush()
+    for user, can_edit in ((pilot, True), (friend, False)):
+        db.session.add(
+            PlaceCollectionMember(
+                tenant_id=tenant_id,
+                collection_id=collection.id,
+                user_id=user.id,
+                can_edit=can_edit,
+            )
+        )
+    photo = "0123456789abcdef0123456789abcdef.jpg"  # an app-generated name
+    photo_file = upload_folder / "place_photos" / photo
+    photo_file.parent.mkdir(parents=True, exist_ok=True)
+    photo_file.write_bytes(b"\xff\xd8\xff\xe0" + bytes(range(256)) * 16)
+    castle = Place(
+        collection_id=collection.id,
+        owner_user_id=pilot.id,
+        created_by_user_id=pilot.id,
+        updated_by_user_id=pilot.id,
+        title="Château de Round-trip",
+        description="Accents kept: é ü ß",
+        latitude=50.4836,
+        longitude=4.0,
+        external_url="https://example.org/castle",
+        photo_filename=photo,
+    )
+    later = Place(
+        collection_id=collection.id,
+        owner_user_id=friend.id,
+        created_by_user_id=friend.id,
+        updated_by_user_id=friend.id,
+        external_url="https://www.instagram.com/reel/roundtrip/",
+    )
+    tag = PlaceTag(collection_id=collection.id, name="Museum")
+    db.session.add_all([castle, later, tag])
+    db.session.flush()
+    db.session.add(
+        PlaceTagAssignment(
+            place_id=castle.id, tag_id=tag.id, collection_id=collection.id
+        )
+    )
+    db.session.add_all(
+        [
+            PlaceVisit(
+                place_id=castle.id, user_id=pilot.id, visit_date=date(2026, 5, 3)
+            ),
+            PlaceVisit(
+                place_id=castle.id,
+                user_id=friend.id,
+                visit_date=date(2026, 5, 4),
+                note="By bike from the field",
+            ),
+        ]
+    )
+    db.session.commit()
+
+
 def fingerprint(out: str) -> None:
     from models import db
     from sqlalchemy import text
@@ -369,6 +446,15 @@ def fingerprint(out: str) -> None:
                     text(
                         "SELECT filename, group_shared_at FROM passport_stamp_photos "
                         "ORDER BY id"
+                    )
+                )
+            ],
+            "places": [
+                list(map(str, row))
+                for row in conn.execute(
+                    text(
+                        "SELECT title, description, latitude, longitude, external_url, "
+                        "photo_filename FROM places ORDER BY id"
                     )
                 )
             ],

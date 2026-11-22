@@ -315,6 +315,27 @@ instance needs working SMTP settings for verification emails. See
 
 ![Where next? — unvisited airfields near the home airfield](screenshots/passport_where_next.png)
 
+### Places
+
+**Explore → Places** collects places worth flying to — a town, a theme park, a
+restaurant, a viewpoint — as pins on a map. Places have nothing to do with the
+aircraft: every account has them, Personal accounts and viewers included.
+
+- **Collections:** your own **My places**, plus any number of collections you
+  share with chosen users of the instance ("Our places", "Club fly-outs"…).
+  Members are editors or readers; what you can do with a place depends only on
+  the collection, never on your role.
+- **Adding a place:** drop a pin on the map, paste coordinates or a map link,
+  search an address, or just save a link (from a phone share, see below) and add
+  its location later. Tags, a photo, an address and a website are optional.
+- **List and map** of one or all collections, filtered by tag, visited or not,
+  archived, or still to locate; places without a location stay in the list but
+  not on the map.
+- **Downloads:** the places of the list as filtered, as GPX or KML waypoints
+  (names and coordinates only). Your personal data export (on the airfield
+  passports page) also holds the places you own, their tags and photos, your
+  own visits, and the collections you belong to — not other members' places.
+
 ### Personal minimums
 
 Alongside the legal limits, most pilots fly to a stricter set of **personal minimums** — self-imposed limits on wind, weather, and other conditions that guide go/no-go decisions. OpenHangar keeps this document next to your logbook instead of on a piece of paper:

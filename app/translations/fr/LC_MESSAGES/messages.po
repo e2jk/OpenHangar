@@ -60,20 +60,20 @@ msgstr[1] "🎉 Cela fait %(n)s ans que vous avez obtenu votre PPL !"
 msgid "🎉 Today is the anniversary of your PPL!"
 msgstr "🎉 Aujourd'hui, c'est l'anniversaire de l'obtention de votre PPL !"
 
-#: app/init.py:1180
+#: app/init.py:1181
 #, python-format
 msgid "This upload is too large (maximum %(mb)s MB in total). Please upload the files in smaller batches."
 msgstr "Cet envoi est trop volumineux (maximum %(mb)s Mo au total). Veuillez envoyer les fichiers en plusieurs fois."
 
-#: app/init.py:1207
+#: app/init.py:1208
 msgid "Some text entered is too long, so nothing was saved. Please shorten it and try again."
 msgstr "Un texte saisi est trop long, rien n’a donc été enregistré. Veuillez le raccourcir et réessayer."
 
-#: app/flights/form_parsing.py:459 app/init.py:1212
+#: app/flights/form_parsing.py:459 app/init.py:1213
 msgid "A number entered is far too large, so nothing was saved. Please check the values and try again."
 msgstr "Un nombre saisi est beaucoup trop grand, rien n’a donc été enregistré. Veuillez vérifier les valeurs et réessayer."
 
-#: app/init.py:1265
+#: app/init.py:1266
 msgid "The sign-in form had expired. Please sign in again."
 msgstr "Le formulaire de connexion avait expiré. Veuillez vous reconnecter."
 
@@ -1148,7 +1148,7 @@ msgstr "Saisissez une vitesse de croisière pour le mode durée, ou utilisez le 
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "L’autonomie théorique est inconnue. Saisissez le carburant utilisable, la consommation, la vitesse et une réserve explicite laissant une durée de vol positive. Le filtre distance/durée reste appliqué."
 
-#: app/explore/routes.py:228 app/passports/routes.py:263
+#: app/explore/routes.py:228
 msgid "Choose a reference airfield and correct the destination filters before downloading."
 msgstr "Choisissez un aérodrome de référence et corrigez les filtres de destination avant de télécharger."
 
@@ -2577,47 +2577,47 @@ msgstr "Votre passeport %(title)s se termine le %(date)s. Ouvrez cette édition 
 msgid "Open passport"
 msgstr "Ouvrir le passeport"
 
-#: app/passports/routes.py:359
+#: app/passports/routes.py:346
 msgid "Small airfields"
 msgstr "Petits aérodromes"
 
-#: app/passports/routes.py:360
+#: app/passports/routes.py:347
 msgid "Medium airports"
 msgstr "Aéroports moyens"
 
-#: app/passports/routes.py:361
+#: app/passports/routes.py:348
 msgid "Large airports"
 msgstr "Grands aéroports"
 
-#: app/passports/routes.py:362
+#: app/passports/routes.py:349
 msgid "Heliports"
 msgstr "Héliports"
 
-#: app/passports/routes.py:363
+#: app/passports/routes.py:350
 msgid "Seaplane bases"
 msgstr "Hydrobases"
 
-#: app/passports/routes.py:364
+#: app/passports/routes.py:351
 msgid "Balloon ports"
 msgstr "Bases de ballons"
 
-#: app/passports/routes.py:365
+#: app/passports/routes.py:352
 msgid "Closed airfields"
 msgstr "Aérodromes fermés"
 
-#: app/passports/routes.py:475
+#: app/passports/routes.py:462
 msgid "Passport saved."
 msgstr "Passeport enregistré."
 
-#: app/passports/routes.py:516
+#: app/passports/routes.py:503
 msgid "An airfield code conflicts with an existing identity. Review or remove that selection."
 msgstr "Un code d’aérodrome entre en conflit avec une identité existante. Vérifiez ou retirez cette sélection."
 
-#: app/passports/routes.py:578
+#: app/passports/routes.py:565
 msgid "Passport deleted."
 msgstr "Passeport supprimé."
 
-#: app/passports/routes.py:600
+#: app/passports/routes.py:587
 msgid "Share your visits with this group before sharing photos."
 msgstr "Partagez vos visites avec ce groupe avant de partager des photos."
 
@@ -3210,6 +3210,16 @@ msgstr "Saisissez une latitude et une longitude valides."
 msgid "Paste decimal or DMS coordinates, or a map link containing coordinates."
 msgstr "Collez des coordonnées décimales ou en degrés, minutes et secondes, ou un lien de carte contenant des coordonnées."
 
+#: app/places/exports.py:153 app/places/presentation.py:16
+msgid "Unnamed place"
+msgstr "Lieu sans nom"
+
+#: app/places/exports.py:164 app/templates/base.html:233
+#: app/templates/places/collection_settings.html:20
+#: app/templates/places/index.html:3 app/templates/places/index.html:6
+msgid "Places"
+msgstr "Lieux"
+
 #: app/places/management.py:41
 msgid "A place field is too long."
 msgstr "Un champ du lieu est trop long."
@@ -3260,10 +3270,6 @@ msgstr "Ancien membre"
 #: app/places/place_routes.py:276
 msgid "Confirm the permanent deletion of this place."
 msgstr "Confirmez la suppression définitive de ce lieu."
-
-#: app/places/presentation.py:16
-msgid "Unnamed place"
-msgstr "Lieu sans nom"
 
 #: app/places/routes.py:236
 msgid "Invitation saved. Ask your friend to sign in and open Places."
@@ -4461,11 +4467,6 @@ msgstr "Carnet de vol pilote"
 #: app/templates/base.html:231
 msgid "Explore"
 msgstr "Explorer"
-
-#: app/templates/base.html:233 app/templates/places/collection_settings.html:20
-#: app/templates/places/index.html:3 app/templates/places/index.html:6
-msgid "Places"
-msgstr "Lieux"
 
 #: app/templates/base.html:234 app/templates/explore/where_next.html:3
 #: app/templates/explore/where_next.html:6

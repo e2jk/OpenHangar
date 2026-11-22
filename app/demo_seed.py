@@ -17,6 +17,7 @@ from _seed_helpers import (
     seed_group_passport,
     seed_passports,
     seed_pilot_profiles,
+    seed_places,
     seed_reservations,
     seed_shared_ownership_tenant,
     seed_sole_operator_tenant,
@@ -169,6 +170,12 @@ def seed() -> None:
             pilot_user.id,
             f"demo-friend-{i}@openhangar.demo",
             dummy_hash,
+        )
+        seed_places(
+            tenant.id,
+            owner_user.id,
+            pilot_user.id,
+            f"demo-friend-{i}@openhangar.demo",
         )
 
         # ── Sole-pilot sub-tenant (logbook only, no fleet) ────────────────────
