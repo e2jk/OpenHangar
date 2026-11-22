@@ -1023,6 +1023,13 @@ def test_private_passport_print_with_selected_photo_htmx_and_no_javascript(
     page.locator("#visit-date").fill("2001-01-01")
     page.locator("#visit-note").fill("PRIVATE PRINT NOTE")
     page.get_by_role("button", name="Save visit", exact=True).click()
+    # Wait for the saved visit's page: a file chosen in the form it replaces
+    # would be lost, and the upload click would send nothing.
+    expect(
+        page.locator("p.text-break").filter(
+            has_text=re.compile(r"^PRIVATE PRINT NOTE$")
+        )
+    ).to_be_visible()
     page.locator("#stamp-photo").set_input_files(
         {"name": "stamp.jpg", "mimeType": "image/jpeg", "buffer": image_bytes()}
     )
