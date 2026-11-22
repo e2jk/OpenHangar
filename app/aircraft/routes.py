@@ -3372,6 +3372,9 @@ def flight_tracks(aircraft_id: int) -> ResponseReturnValue:
 @login_required
 @require_role(*_PILOT_ROLES)
 def flight_tracks_gif(aircraft_id: int) -> ResponseReturnValue:
+    from services.tracks_gif_cache import (  # pyright: ignore[reportMissingImports]
+        cached_gif,
+    )
     from utils import (  # pyright: ignore[reportMissingImports]
         generate_tracks_gif,
         sort_tracks_oldest_first,
@@ -3400,12 +3403,19 @@ def flight_tracks_gif(aircraft_id: int) -> ResponseReturnValue:
     base_w, base_h = (480, 800) if portrait else (800, 480)
     mul = 2 if hires else 1
     canvas_w, canvas_h = base_w * mul, base_h * mul
-    gif_bytes = generate_tracks_gif(
-        track_rows,
-        _openaip_key=tile_s.value if tile_s and tile_s.value else None,
-        canvas_w=canvas_w,
-        canvas_h=canvas_h,
-        high_res=hires,
+    openaip_key = tile_s.value if tile_s and tile_s.value else None
+    gif_bytes = cached_gif(
+        current_app.config.get("UPLOAD_FOLDER", "/data/uploads"),
+        f"aircraft-{ac.id}",
+        f"{'portrait' if portrait else 'landscape'}-{'hires' if hires else 'std'}",
+        {"tracks": track_rows, "openaip_key": openaip_key},
+        lambda: generate_tracks_gif(
+            track_rows,
+            _openaip_key=openaip_key,
+            canvas_w=canvas_w,
+            canvas_h=canvas_h,
+            high_res=hires,
+        ),
     )
     orient_sfx = "-portrait" if portrait else ""
     qual_sfx = "-hires" if hires else ""

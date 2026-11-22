@@ -871,6 +871,9 @@ def pilot_tracks() -> ResponseReturnValue:
 @require_pilot_access
 def pilot_tracks_gif() -> ResponseReturnValue:
     from flask import Response  # pyright: ignore[reportMissingImports]
+    from services.tracks_gif_cache import (  # pyright: ignore[reportMissingImports]
+        cached_gif,
+    )
     from utils import (  # pyright: ignore[reportMissingImports]
         generate_tracks_gif,
         sort_tracks_oldest_first,
@@ -894,12 +897,19 @@ def pilot_tracks_gif() -> ResponseReturnValue:
     base_w, base_h = (480, 800) if portrait else (800, 480)
     mul = 2 if hires else 1
     canvas_w, canvas_h = base_w * mul, base_h * mul
-    gif_bytes = generate_tracks_gif(
-        track_rows,
-        _openaip_key=_openaip_key(),
-        canvas_w=canvas_w,
-        canvas_h=canvas_h,
-        high_res=hires,
+    openaip_key = _openaip_key()
+    gif_bytes = cached_gif(
+        current_app.config.get("UPLOAD_FOLDER", "/data/uploads"),
+        f"pilot-{uid}",
+        f"{'portrait' if portrait else 'landscape'}-{'hires' if hires else 'std'}",
+        {"tracks": track_rows, "openaip_key": openaip_key},
+        lambda: generate_tracks_gif(
+            track_rows,
+            _openaip_key=openaip_key,
+            canvas_w=canvas_w,
+            canvas_h=canvas_h,
+            high_res=hires,
+        ),
     )
     orient_sfx = "-portrait" if portrait else ""
     qual_sfx = "-hires" if hires else ""

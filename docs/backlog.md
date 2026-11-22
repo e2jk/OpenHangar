@@ -345,13 +345,14 @@ track comes off, the file goes to the trash for 7 days, restorable from
   parts recording their batch — the pilot import would have to record one
   too) and offer the segment's choices again.
 
-## Tracks GIF: keep it instead of rendering it on each download
+## Tracks GIF: extend the kept GIF instead of drawing it again
 
-The tracks GIF of an aircraft or a pilot is rendered from scratch on every
-download (87 tracks: ~4 s with the tile cache warm, ~25 s cold). Mostly a
-new flight only adds a frame at the end, so the GIF could be stored and
-extended — but a few things tie every frame to the whole set today, to
-change first:
+The tracks GIF of an aircraft or a pilot is now kept once drawn
+(`services/tracks_gif_cache.py`, per owner, orientation and quality) and
+served again until its tracks change — but any change still draws it from
+scratch (87 tracks: ~4 s with the tile cache warm, ~25 s cold). Mostly a
+new flight only adds a frame at the end, so the kept GIF could be extended
+— but a few things tie every frame to the whole set today, to change first:
 - the "k / N" counter on each frame (N changes with every new flight);
 - frames ordered by date: a backfilled older flight goes in the middle,
   and its frames' views (the zoom-out) shift for everything after it;
@@ -359,9 +360,8 @@ change first:
   (`quantize` on the last frame) shared by all frames.
 With those changed (no total on frames, per-frame palettes, the final
 frame kept apart), append frames for flights newer than the last one, and
-rebuild only when a track is removed, changed or inserted earlier. Store
-it like the single-flight renders (`GpsTrack.cached_png`), per aircraft /
-pilot, orientation and quality.
+draw it all again only when a track is removed, changed or inserted
+earlier.
 
 ---
 
