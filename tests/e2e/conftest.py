@@ -519,6 +519,25 @@ def _block_external_network(context) -> None:
             route.fulfill(status=204, body="")
 
     context.route("**/*", _handler)
+    # Count htmx settles, so a test can wait for the swap its click started
+    # (click_and_settle) instead of racing it.
+    context.add_init_script(
+        "window.__ohSettled = 0;"
+        "document.addEventListener('htmx:afterSettle', function () {"
+        " window.__ohSettled += 1; });"
+    )
+
+
+def click_and_settle(page, locator, *, timeout: float = 15000) -> None:
+    """Click an htmx-boosted control and wait until htmx has settled the
+    response it swapped in: the next action then acts on the new page, not on
+    one still being replaced (a click there is lost). Only for boosted
+    actions — a full navigation starts a new document and never settles."""
+    before = page.evaluate("() => window.__ohSettled || 0")
+    locator.click()
+    page.wait_for_function(
+        "(n) => (window.__ohSettled || 0) > n", arg=before, timeout=timeout
+    )
 
 
 @pytest.fixture(scope="session")
