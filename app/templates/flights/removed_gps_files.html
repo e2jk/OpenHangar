@@ -37,7 +37,7 @@
             <td>
               <span class="oh-mono">{{ r.removed_at.strftime('%Y-%m-%d %H:%M') }}</span>
               {% if r.removed_by %}<br><span class="text-muted">{{ r.removed_by.display_name }}</span>{% endif %}
-              {% if r.reason == 'import_undone' %}<br><span class="badge text-bg-secondary">{{ _('Import undone') }}</span>{% endif %}
+              {% if r.reason == 'import_undone' %}<br><span class="badge text-bg-secondary">{{ _('Import undone') }}</span>{% elif r.reason == 'flight_deleted' %}<br><span class="badge text-bg-secondary">{{ _('Flight deleted') }}</span>{% endif %}
             </td>
             <td class="pe-3 text-end">
               {% if restorable(r) %}

@@ -344,9 +344,6 @@ track comes off, the file goes to the trash for 7 days, restorable from
   could take that part off the flight (services.gps_removal.remove_part,
   parts recording their batch — the pilot import would have to record one
   too) and offer the segment's choices again.
-- **Deleting a flight** (logbook delete, deleting an aircraft) still leaves
-  its GPS track row and original files behind: send them to the trash the
-  same way, like "Undo import" now does.
 
 ## Tracks GIF: keep it instead of rendering it on each download
 

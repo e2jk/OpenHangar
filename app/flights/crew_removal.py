@@ -12,11 +12,37 @@ helpers instead, following one rule: you can only ever remove yourself.
   deletion): ``remove_from_aircraft_log`` / ``detach_from_aircraft`` take the
   flight off the aircraft's log but keep it in the linked pilots' logbooks as
   an "other aircraft" flight, with the registration and type preserved.
+
+A flight that is deleted (``delete_flight_row``) takes its GPS track with it: the
+track's files go to the trash like a GPS file removed from a flight's page
+(services.gps_removal), restorable to the archive for a week.
 """
 
-from flask import flash  # pyright: ignore[reportMissingImports]
+from flask import current_app, flash  # pyright: ignore[reportMissingImports]
 from flask_babel import ngettext  # pyright: ignore[reportMissingImports]
 from models import Flight, db  # pyright: ignore[reportMissingImports]
+from utils import current_membership  # pyright: ignore[reportMissingImports]
+
+
+def delete_flight_row(fe: Flight, actor_id: int | None) -> None:
+    """Delete *fe*. Its GPS track, if any, comes off first and its files go
+    to the trash, recorded as removed by *actor_id* ("flight_deleted")."""
+    if fe.gps_track_id is not None:
+        from services.gps_removal import (  # pyright: ignore[reportMissingImports]
+            remove_whole_track,
+        )
+
+        removals = remove_whole_track(
+            fe,
+            tenant_id=int(current_membership().tenant_id),
+            user_id=actor_id,
+            upload_folder=current_app.config.get("UPLOAD_FOLDER", "/data/uploads"),
+            reason="flight_deleted",
+        )
+        for removal in removals:
+            # The flight is gone: restoring puts the files back in the archive.
+            removal.flight_id = None
+    db.session.delete(fe)
 
 
 def unlink_user(fe: Flight, user_id: int | None) -> None:
@@ -43,7 +69,7 @@ def remove_flight_for_user(fe: Flight, user_id: int) -> bool:
     if fe.other_linked_user_ids(user_id):
         unlink_user(fe, user_id)
         return False
-    db.session.delete(fe)
+    delete_flight_row(fe, user_id)
     return True
 
 
@@ -70,7 +96,7 @@ def remove_from_aircraft_log(fe: Flight, actor_id: int | None) -> bool:
         unlink_user(fe, actor_id)
         detach_from_aircraft(fe)
         return False
-    db.session.delete(fe)
+    delete_flight_row(fe, actor_id)
     return True
 
 

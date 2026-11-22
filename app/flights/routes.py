@@ -98,6 +98,7 @@ from flights.crew_invites import (  # pyright: ignore[reportMissingImports]
     sync_crew_invites,
 )
 from flights.crew_removal import (  # pyright: ignore[reportMissingImports]
+    delete_flight_row,
     flash_kept_in_pilot_logbooks,
     remove_from_aircraft_log,
     unlink_user,
@@ -2287,7 +2288,7 @@ def delete_flight(aircraft_id: int, flight_id: int) -> ResponseReturnValue:
     _delete_upload(fe.engine_counter_photo)
     _delete_upload(fe.flight_counter_photo_preflight)
     _delete_upload(fe.engine_counter_photo_preflight)
-    db.session.delete(fe)
+    delete_flight_row(fe, session.get("user_id"))
     db.session.commit()
     flash(_("Flight %(label)s deleted.", label=label), "success")
     return redirect(flights_list_url(ac.id))
