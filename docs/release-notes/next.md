@@ -61,6 +61,10 @@ of your places, your logbook offers to record the visit in one click.
 
 **Maintenance**
 
+- The user guide now illustrates Places, airfield links and visits, and searching
+  Places together with passports. The screenshot tool finds places by name and
+  waits for the sign-in code to submit automatically.
+
 - Two members choosing the same airfield at the same time now keep a single
   link, preserving its saved directions instead of failing with a database error.
 

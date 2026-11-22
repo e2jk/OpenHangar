@@ -18,7 +18,7 @@ auth:
     email: "admin@openhangar.dev"
     password: "openhangar-dev-1"
     totp_secret: "JBSWY3DPEHPK3PXP"
-  # Passport-only friend of the seeded "Flying friends" group (no role, no 2FA).
+  # Personal-account friend in "Flying friends" and "Our places" (no role or 2FA).
   friend:
     email: "friend@openhangar.dev"
     password: "openhangar-dev-friend"
@@ -222,8 +222,8 @@ screenshots:
     output: "passport_detail.png"
 
   - id: passport_where_next
-    description: "Where next? — unvisited Belgian airfields within 100 nm of the pilot's home airfield (EBCI), with flying times at 115 kt"
-    url_template: "/passports/{passport_id}/where-next?speed=115"
+    description: "Where next? — unvisited Belgian airfields within 20 nm of the pilot's home airfield (EBCI), with flying times at 115 kt"
+    url_template: "/passports/{passport_id}/where-next?speed=115&limit=20"
     resolve_passport_title: "Belgian airfields"
     auth: admin
     wait_for: "#passport-discovery-map .leaflet-tile-loaded"
@@ -231,7 +231,7 @@ screenshots:
     output: "passport_where_next.png"
 
   - id: passport_group
-    description: "Group passport seen by a passport-only friend — own, friends' and unvisited airfields in three states, with group progress"
+    description: "Group passport seen by a Personal-account friend — own, friends' and unvisited airfields in three states, with group progress"
     url_template: "/passports/{passport_id}/"
     resolve_passport_title: "Flying friends"
     auth: friend
@@ -245,3 +245,38 @@ screenshots:
     resolve_passport_title: "Flying friends"
     auth: friend
     output: "passport_record_visit.png"
+
+  # ── Places and destination discovery ──────────────────────────────────────
+
+  - id: places_list
+    description: "Places — shared collection, place and airfield markers, list and links still to locate"
+    url: "/places/"
+    auth: admin
+    wait_for: "#places-map-canvas .leaflet-tile-loaded"
+    full_page: true
+    output: "places_list.png"
+
+  - id: place_detail
+    description: "Place details — linked airfield, getting-there directions and personal visit history"
+    url_template: "/places/{place_id}"
+    resolve_place_title: "Pairi Daiza"
+    auth: admin
+    wait_for: "#places-map-canvas .leaflet-tile-loaded"
+    full_page: true
+    output: "place_detail.png"
+
+  - id: place_form
+    description: "Add a place — save a link first; location, address and other details can follow"
+    url: "/places/new"
+    auth: admin
+    full_page: true
+    output: "place_form.png"
+
+  - id: explore_where_next
+    description: "Where next? — search both Places and passports from the home airfield, with reasons for each destination"
+    url_template: "/explore/where-next?source=both&passport={passport_id}&speed=115&visited=1"
+    resolve_passport_title: "Flying friends"
+    auth: admin
+    wait_for: "#passport-discovery-map .leaflet-tile-loaded"
+    full_page: true
+    output: "explore_where_next.png"

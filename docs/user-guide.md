@@ -321,6 +321,8 @@ instance needs working SMTP settings for verification emails. See
 
 ![Where next? — unvisited airfields near the home airfield](screenshots/passport_where_next.png)
 
+![Where next? — Places and a group passport searched together](screenshots/explore_where_next.png)
+
 ### Places
 
 **Explore → Places** collects places worth flying to — a town, a theme park, a
@@ -349,6 +351,12 @@ aircraft: every account has them, Personal accounts and viewers included.
   (names and coordinates only). Your personal data export (on the airfield
   passports page) also holds the places you own, their tags and photos, your
   own visits, and the collections you belong to — not other members' places.
+
+![Places — shared collection map, filters and saved links](screenshots/places_list.png)
+
+![Add a place — save a link and add its location later](screenshots/place_form.png)
+
+![Place details — linked airfield, directions and visit history](screenshots/place_detail.png)
 
 ### Personal minimums
 
