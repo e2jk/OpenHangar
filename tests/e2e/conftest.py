@@ -28,6 +28,7 @@ import urllib.parse
 from pathlib import Path
 
 import pytest
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 os.environ.setdefault("OPENHANGAR_SECRET_KEY", "e2e-test-secret-not-for-production")
 # dev_seed.seed() refuses to run unless FLASK_ENV=development
@@ -477,6 +478,52 @@ def unauthenticated_page(browser_context, live_server_url):
     fresh_ctx.close()
 
 
+def _admin_login(page) -> None:
+    """Sign in as the dev-seed admin from the login page *page* is on.
+
+    The admin has TOTP (JBSWY3DPEHPK3PXP), and the app refuses a code from a
+    30-second step already used (replay protection): two browser workers,
+    or a logout test, signing in within the same step would see the second
+    refused. A refused code — or one about to expire — waits for the next
+    step and types that step's fresh code. The auto-submit JS submits on the
+    6th digit (press_sequentially fires one input event per digit); an
+    explicit click covers a slow runner where it didn't.
+    """
+    import pyotp
+
+    page.fill('input[name="email"]', "admin@openhangar.dev")
+    page.fill('input[name="password"]', "openhangar-dev-1")
+    page.click('button[type="submit"]')
+    page.wait_for_load_state("networkidle")
+    totp = pyotp.TOTP(SEED["totp_secret"])
+    for _attempt in range(3):
+        if page.locator("#totp_code").count() == 0:
+            return
+        remaining = 30 - time.time() % 30
+        if remaining < 3:
+            time.sleep(remaining + 0.2)
+        step = int(time.time() // 30)
+        page.locator("#totp_code").fill("")
+        page.locator("#totp_code").press_sequentially(totp.now())
+        try:
+            page.wait_for_url(lambda url: "/login" not in url, timeout=5000)
+            return
+        except PlaywrightTimeoutError:
+            if "/login" not in page.url:
+                return
+            # Still holding the typed digits: the auto-submit never fired.
+            # A refused code comes back as the TOTP step with an empty field.
+            field = page.locator("#totp_code")
+            if field.count() and len(field.input_value()) == 6:
+                page.locator('button[type="submit"]').click()
+                page.wait_for_load_state("networkidle")
+                if "/login" not in page.url:
+                    return
+        # Refused (another login took this step): wait for the next one.
+        time.sleep(max(0.0, (step + 1) * 30 - time.time()) + 0.2)
+    raise AssertionError("the admin could not sign in: every TOTP code was refused")
+
+
 @pytest.fixture
 def fresh_logged_in_page(browser_context, live_server_url):
     """Authenticated admin page in a fresh, isolated browser context.
@@ -486,7 +533,6 @@ def fresh_logged_in_page(browser_context, live_server_url):
     out (e.g. clicking the logout link) so the shared session auth state is
     not destroyed and subsequent tests are unaffected.
     """
-    import pyotp
 
     fresh_ctx = browser_context.browser.new_context(
         base_url=live_server_url,
@@ -498,18 +544,7 @@ def fresh_logged_in_page(browser_context, live_server_url):
     pg = fresh_ctx.new_page()
     pg.goto(f"{live_server_url}/login")
     pg.wait_for_load_state("networkidle")
-    pg.fill('input[name="email"]', "admin@openhangar.dev")
-    pg.fill('input[name="password"]', "openhangar-dev-1")
-    pg.click('button[type="submit"]')
-    pg.wait_for_load_state("networkidle")
-    if pg.locator("#totp_code").count() > 0:
-        code = pyotp.TOTP(SEED["totp_secret"]).now()
-        pg.locator("#totp_code").press_sequentially(code)
-        try:
-            pg.wait_for_url(lambda url: "/login" not in url, timeout=5000)
-        except Exception:  # noqa: BLE001 -- JS auto-submit timeout fallback, exact Playwright exception varies
-            pg.locator('button[type="submit"]').click()
-            pg.wait_for_url(lambda url: "/login" not in url, timeout=10000)
+    _admin_login(pg)
     yield pg
     pg.close()
     fresh_ctx.close()
@@ -557,28 +592,11 @@ def logged_in_page(page, live_server_url):
     auto-submit JS handles form submission; we just wait for navigation away
     from /login after filling the code.
     """
-    import pyotp
 
     page.goto(f"{live_server_url}/login")
     page.wait_for_load_state("networkidle")
     if "/login" in page.url:
-        page.fill('input[name="email"]', "admin@openhangar.dev")
-        page.fill('input[name="password"]', "openhangar-dev-1")
-        page.click('button[type="submit"]')
-        page.wait_for_load_state("networkidle")
-        # TOTP step — admin has TOTP enabled in the dev seed
-        if page.locator("#totp_code").count() > 0:
-            code = pyotp.TOTP(SEED["totp_secret"]).now()
-            # press_sequentially fires one keystroke event per digit so the
-            # auto-submit JS (which counts digits on input events) triggers correctly.
-            page.locator("#totp_code").press_sequentially(code)
-            # Fall back to an explicit submit click on slow CI runners where the
-            # JS auto-submit doesn't fire within 5 s.
-            try:
-                page.wait_for_url(lambda url: "/login" not in url, timeout=5000)
-            except Exception:  # noqa: BLE001 -- JS auto-submit timeout fallback, exact Playwright exception varies
-                page.locator('button[type="submit"]').click()
-                page.wait_for_url(lambda url: "/login" not in url, timeout=10000)
+        _admin_login(page)
     return page
 
 

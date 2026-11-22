@@ -21,6 +21,9 @@
 
 - The photo cleaning and photo suggestion tests import each module one way,
   as static analysis asked.
+- Browser tests sign in as the admin through one helper that, when another
+  sign-in already used the current authenticator code, waits for the next
+  one instead of failing.
 - Browser tests now use the same disposable test data locally and in CI.
   Missing fixture IDs fail clearly, and deletion tests use dedicated synthetic
   flights.

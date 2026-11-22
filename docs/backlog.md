@@ -865,42 +865,6 @@ behaviour changes, no migrations, no translations. Test files keep their
 feature-based names. **Any `.github/workflows/ci.yml` edit (task 3)
 must be explicitly approved by the maintainer first.**
 
-### 2. Log in once per session (Playwright storage state) + TOTP window guard
-
-Every fixture that logs in as admin types a TOTP code, which has two race
-conditions: (a) a code computed just before typing can expire mid-submit
-when it straddles the 30-second window boundary; (b) the app has TOTP
-**replay protection** (`app/auth/routes.py`, log tag `auth.totp.replay`),
-so two fresh admin logins within one 30-second window reject the second.
-
-1. Add a module-level helper `_admin_login(page, live_server_url)` in
-   `conftest.py` containing the current login sequence from
-   `logged_in_page`, prefixed with a window guard so the code is never
-   typed with <3 s of validity left:
-   ```python
-   remaining = 30 - (time.time() % 30)
-   if remaining < 3:
-       time.sleep(remaining + 0.2)
-   ```
-   Keep the existing fallback (explicit submit click if auto-submit
-   doesn't navigate within 5 s).
-2. Add a session-scoped fixture `admin_storage_state(browser_context, live_server_url, tmp_path_factory)`:
-   open a temporary context, `_admin_login(...)` once, save
-   `context.storage_state(path=...)`, close the context, return the path.
-3. Rewire `logged_in_page` (and the shared `page` fixture's authenticated
-   consumers) to create their context/page with
-   `storage_state=admin_storage_state` instead of logging in — the TOTP
-   dance then happens exactly once per session.
-4. Keep `fresh_logged_in_page` doing a real login via `_admin_login()`:
-   it is used by logout-flow tests, and reusing a shared state there is
-   unsafe if logout ever invalidates the session server-side. It no longer
-   collides with other logins thanks to the window guard + single shared
-   login.
-5. `fresh_viewer_page` is unchanged (viewer account has no TOTP).
-
-Acceptance: grep shows exactly two call sites performing TOTP entry
-(`admin_storage_state` and `fresh_logged_in_page`); full suite green 3×.
-
 ### 3. Failure observability: per-test Playwright traces + screenshots
 
 CI failures currently offer only pytest text output. Add:
