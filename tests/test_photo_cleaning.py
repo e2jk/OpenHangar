@@ -36,6 +36,13 @@ def _clean(path: Path) -> None:
         assert not img.getexif()
 
 
+@pytest.fixture(autouse=True)
+def uploads(app: Flask, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # Its own uploads folder: other tests' photos never count here.
+    monkeypatch.setitem(app.config, "UPLOAD_FOLDER", str(tmp_path / "uploads"))
+    (tmp_path / "uploads").mkdir()
+
+
 @pytest.fixture
 def owner(app: Flask, client: FlaskClient) -> int:
     _uid, tid = _make_user_tenant(app, "clean@x.com", "clean-hangar")
