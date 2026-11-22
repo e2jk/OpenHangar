@@ -122,6 +122,7 @@ var NOT_CACHED_ROUTES = {
 var NOT_CACHED_PATTERNS = [
   [/^\/places(?:\/|$)/, 'private collection membership and invitations must stay current'],
   [/^\/passports(?:\/|$)/, 'private passport membership and evidence must stay current'],
+  [/^\/explore(?:\/|$)/, 'searches over private passports and collections must stay current, same reasoning as passports'],
   [/\/(new|add|create|edit|upload|service|charge|checkin|checkout|resolve|permissions|publish|settings|config|status)$/,
     'one-shot create/edit/action form — needs fresh state on every open, not revisited'],
   [/\/gps-import(\/.*)?$/, 'one-shot GPS-import wizard flow'],

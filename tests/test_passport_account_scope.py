@@ -96,7 +96,12 @@ def test_home_navigation_profile_and_own_stamps(
     detail = client.get(f"/passports/{scoped['passport']}/")
     assert detail.status_code == 200 and b"Create next edition" in detail.data
     assert b"Where next?" in detail.data
-    assert client.get(f"/passports/{scoped['passport']}/where-next").status_code == 200
+    assert (
+        client.get(
+            f"/passports/{scoped['passport']}/where-next", follow_redirects=True
+        ).status_code
+        == 200
+    )
     # The real target route remains participant-scoped; find its canonical URL.
     with app.test_request_context():
         from flask import url_for

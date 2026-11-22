@@ -179,9 +179,15 @@ def test_private_routes_discovery_filters_and_safe_download_links(
         client.get(path, query_string={"download": "gpx", "state": "visited"}).data
     ).findall("n:wpt", GPX)
     discovery = path + "where-next"
-    assert client.get(discovery, query_string={"download": "gpx"}).status_code == 400
+    assert (
+        client.get(
+            discovery, follow_redirects=True, query_string={"download": "gpx"}
+        ).status_code
+        == 400
+    )
     result = client.get(
         discovery,
+        follow_redirects=True,
         query_string={
             "download": "kml",
             "origin": f"field:{s['field']}",
@@ -200,6 +206,7 @@ def test_private_routes_discovery_filters_and_safe_download_links(
     assert (
         client.get(
             discovery,
+            follow_redirects=True,
             query_string={
                 "download": "gpx",
                 "origin": f"field:{s['field']}",

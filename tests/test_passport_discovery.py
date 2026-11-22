@@ -35,7 +35,7 @@ def test_discovery_page_and_aircraft_access(
     uid, tid, pid = owner["user"], owner["tenant"], owner["passport"]
     signin(client, uid)
     path = f"/passports/{pid}/where-next"
-    assert "Choose a reference" in client.get(path).text
+    assert "Choose a reference" in client.get(path, follow_redirects=True).text
     with app.app_context():
         ac = Aircraft(
             tenant_id=tid,
@@ -60,12 +60,18 @@ def test_discovery_page_and_aircraft_access(
         flight = Flight(pic_user_id=uid, date=date(2025, 1, 1), arrival_icao="NEAR")
         db.session.add(flight)
         db.session.commit()
-    assert client.get(path, query_string={"aircraft": aid}).status_code == 404
+    assert (
+        client.get(
+            path, follow_redirects=True, query_string={"aircraft": aid}
+        ).status_code
+        == 404
+    )
     with app.app_context():
         db.session.get(TenantUser, (uid, tid)).role = Role.ADMIN
         db.session.commit()
     automatic = client.get(
         path,
+        follow_redirects=True,
         query_string={
             "aircraft": aid,
             "origin": "",
@@ -83,6 +89,7 @@ def test_discovery_page_and_aircraft_access(
     )
     response = client.get(
         path,
+        follow_redirects=True,
         query_string={
             "aircraft": aid,
             "q": "Nam",
@@ -111,11 +118,12 @@ def test_discovery_page_and_aircraft_access(
         ({"range": 1}, "range is unknown"),
         ({"speed": "NaN"}, "valid cruise"),
     ]:
-        result = client.get(path, query_string=args)
+        result = client.get(path, follow_redirects=True, query_string=args)
         assert result.status_code == 200 and message in result.text
     assert (
         client.get(
             path,
+            follow_redirects=True,
             query_string={
                 "mode": "invalid",
                 "start": "home",
@@ -124,9 +132,14 @@ def test_discovery_page_and_aircraft_access(
         ).status_code
         == 200
     )
-    assert client.get(path, query_string={"aircraft": "9" * 80}).status_code == 404
+    assert (
+        client.get(
+            path, follow_redirects=True, query_string={"aircraft": "9" * 80}
+        ).status_code
+        == 404
+    )
     signin(client, owner["other"])
-    assert client.get(path).status_code == 404
+    assert client.get(path, follow_redirects=True).status_code == 404
 
 
 def test_discovery_uses_published_reserve_and_new_aircraft_home(
@@ -169,7 +182,9 @@ def test_discovery_uses_published_reserve_and_new_aircraft_home(
         aid = ac.id
         assert ac.home_airfield.source_id == "4"
     response = client.get(
-        f"/passports/{owner['passport']}/where-next", query_string={"aircraft": aid}
+        f"/passports/{owner['passport']}/where-next",
+        query_string={"aircraft": aid},
+        follow_redirects=True,
     )
     assert response.status_code == 200 and "published personal minimum" in response.text
 
@@ -183,7 +198,7 @@ def test_discovery_slider_range_follows_mode(
     signin(client, owner["user"])
     path = f"/passports/{owner['passport']}/where-next"
     for mode, maximum in [("distance", "500"), ("time", "300")]:
-        html = client.get(path, query_string={"mode": mode}).text
+        html = client.get(path, follow_redirects=True, query_string={"mode": mode}).text
         slider = re.search(r'<input[^>]*id="discovery-slider"[^>]*>', html)
         assert slider is not None
         assert f'max="{maximum}"' in slider.group(0)

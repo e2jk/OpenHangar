@@ -32,7 +32,8 @@
     data.fields.forEach(function (field) {
       var link = document.createElement('a');
       link.textContent = field.name + ' · ' + field.distance_nm.toFixed(1) + ' nm';
-      link.href = root.dataset.targetUrl.replace(/\/0$/, '/' + field.target_id);
+      // A same-site path built by the server for the passport target page.
+      if (typeof field.url === 'string' && /^\/[^/\\]/.test(field.url)) link.href = field.url;
       L.circleMarker([field.latitude, field.longitude], { radius: 6, color: '#6c757d' }).bindPopup(link).addTo(map);
     });
     function cleanup(event) {

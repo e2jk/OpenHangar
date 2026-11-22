@@ -42,6 +42,7 @@ PERSONAL_ENDPOINTS = frozenset(
         "passports.discussion",
         "passports.target_detail",
         "passports.where_next",
+        "explore.where_next",
         "passports.stamp_photo",
         "passports.voucher_ledger",
         "passports.series_detail",

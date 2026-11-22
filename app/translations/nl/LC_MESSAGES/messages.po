@@ -60,20 +60,20 @@ msgstr[1] "🎉 Het is vandaag %(n)s jaar geleden dat u uw PPL behaalde!"
 msgid "🎉 Today is the anniversary of your PPL!"
 msgstr "🎉 Vandaag is het de verjaardag van uw PPL!"
 
-#: app/init.py:1178
+#: app/init.py:1180
 #, python-format
 msgid "This upload is too large (maximum %(mb)s MB in total). Please upload the files in smaller batches."
 msgstr "Deze upload is te groot (maximaal %(mb)s MB in totaal). Upload de bestanden in kleinere delen."
 
-#: app/init.py:1205
+#: app/init.py:1207
 msgid "Some text entered is too long, so nothing was saved. Please shorten it and try again."
 msgstr "Een ingevoerde tekst is te lang, dus er is niets opgeslagen. Maak hem korter en probeer het opnieuw."
 
-#: app/flights/form_parsing.py:459 app/init.py:1210
+#: app/flights/form_parsing.py:459 app/init.py:1212
 msgid "A number entered is far too large, so nothing was saved. Please check the values and try again."
 msgstr "Een ingevoerd getal is veel te groot, dus er is niets opgeslagen. Controleer de waarden en probeer het opnieuw."
 
-#: app/init.py:1263
+#: app/init.py:1265
 msgid "The sign-in form had expired. Please sign in again."
 msgstr "Het aanmeldformulier was verlopen. Meld u opnieuw aan."
 
@@ -203,7 +203,7 @@ msgstr "Stel voor het reservefonds een bijdrage per uur óf per maand in, niet b
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Dit GPS-bestand bevat te veel punten om te importeren (meer dan %(n)s). Splits de opname op in meerdere bestanden."
 
-#: app/aircraft/routes.py:555 app/passports/routes.py:871
+#: app/aircraft/routes.py:555 app/explore/routes.py:179
 msgid "cruise speed"
 msgstr "kruissnelheid"
 
@@ -1116,6 +1116,42 @@ msgstr "Dit bestandstype is niet toegestaan voor bewijsstukken."
 msgid "Expense receipt %(date)s"
 msgstr "Bewijsstuk uitgave %(date)s"
 
+#: app/explore/routes.py:152
+msgid "Choose a reference airfield from the search results."
+msgstr "Kies een referentievliegveld uit de zoekresultaten."
+
+#: app/explore/routes.py:155
+msgid "This reference airfield has no coordinates. Choose another."
+msgstr "Dit referentievliegveld heeft geen coördinaten. Kies een ander."
+
+#: app/explore/routes.py:180
+msgid "distance/time limit"
+msgstr "afstands-/tijdslimiet"
+
+#: app/explore/routes.py:181
+msgid "usable fuel"
+msgstr "bruikbare brandstof"
+
+#: app/explore/routes.py:182
+msgid "fuel flow"
+msgstr "brandstofverbruik"
+
+#: app/explore/routes.py:183
+msgid "reserve minutes"
+msgstr "reserve in minuten"
+
+#: app/explore/routes.py:195
+msgid "Enter a cruise speed for time mode, or use distance mode."
+msgstr "Voer een kruissnelheid in voor de tijdsmodus of gebruik de afstandsmodus."
+
+#: app/explore/routes.py:204
+msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
+msgstr "Het theoretische bereik is onbekend. Voer bruikbare brandstof, verbruik, snelheid en een expliciete reserve in die positieve vliegtijd overlaten. Het afstands-/tijdfilter blijft van toepassing."
+
+#: app/explore/routes.py:228 app/passports/routes.py:263
+msgid "Choose a reference airfield and correct the destination filters before downloading."
+msgstr "Kies een referentievliegveld en corrigeer de bestemmingsfilters voordat u downloadt."
+
 #: app/flights/airframe_import.py:716
 msgid "matches a flight already in this aircraft's log (same date, route, duration and landings)"
 msgstr "komt overeen met een vlucht die al in het logboek van dit toestel staat (zelfde datum, route, duur en landingen)"
@@ -1264,7 +1300,7 @@ msgstr "Route"
 #: app/services/notification_service.py:959 app/snags/routes.py:266
 #: app/snags/routes.py:316 app/templates/aircraft/wb_list.html:30
 #: app/templates/auth/setup.html:365 app/templates/base.html:210
-#: app/templates/base.html:329 app/templates/config/renter_form.html:33
+#: app/templates/base.html:335 app/templates/config/renter_form.html:33
 #: app/templates/config/tenant_list.html:32 app/templates/dashboard.html:130
 #: app/templates/dashboard.html:752 app/templates/documents/list.html:35
 #: app/templates/documents/list.html:217
@@ -2467,7 +2503,7 @@ msgid "Choose a public-sharing action."
 msgstr "Kies een actie voor openbaar delen."
 
 #: app/passports/registration.py:75 app/places/sharing.py:42
-#: app/templates/base.html:441
+#: app/templates/base.html:447
 msgid "Enter a valid email address."
 msgstr "Voer een geldig e-mailadres in."
 
@@ -2541,85 +2577,49 @@ msgstr "Je paspoort %(title)s eindigt op %(date)s. Open de editie om je nog te b
 msgid "Open passport"
 msgstr "Paspoort openen"
 
-#: app/passports/routes.py:264
-msgid "Choose a reference airfield and correct the destination filters before downloading."
-msgstr "Kies een referentievliegveld en corrigeer de bestemmingsfilters voordat u downloadt."
-
-#: app/passports/routes.py:360
+#: app/passports/routes.py:359
 msgid "Small airfields"
 msgstr "Kleine vliegvelden"
 
-#: app/passports/routes.py:361
+#: app/passports/routes.py:360
 msgid "Medium airports"
 msgstr "Middelgrote luchthavens"
 
-#: app/passports/routes.py:362
+#: app/passports/routes.py:361
 msgid "Large airports"
 msgstr "Grote luchthavens"
 
-#: app/passports/routes.py:363
+#: app/passports/routes.py:362
 msgid "Heliports"
 msgstr "Helihavens"
 
-#: app/passports/routes.py:364
+#: app/passports/routes.py:363
 msgid "Seaplane bases"
 msgstr "Watervliegbases"
 
-#: app/passports/routes.py:365
+#: app/passports/routes.py:364
 msgid "Balloon ports"
 msgstr "Ballonhavens"
 
-#: app/passports/routes.py:366
+#: app/passports/routes.py:365
 msgid "Closed airfields"
 msgstr "Gesloten vliegvelden"
 
-#: app/passports/routes.py:476
+#: app/passports/routes.py:475
 msgid "Passport saved."
 msgstr "Paspoort opgeslagen."
 
-#: app/passports/routes.py:517
+#: app/passports/routes.py:516
 msgid "An airfield code conflicts with an existing identity. Review or remove that selection."
 msgstr "Een vliegveldcode conflicteert met een bestaande identiteit. Controleer of verwijder die selectie."
 
-#: app/passports/routes.py:579
+#: app/passports/routes.py:578
 msgid "Passport deleted."
 msgstr "Paspoort verwijderd."
 
-#: app/passports/routes.py:601
+#: app/passports/routes.py:600
 msgid "Share your visits with this group before sharing photos."
 msgstr "Deel je bezoeken met deze groep voordat je foto's deelt."
-
-#: app/passports/routes.py:844
-msgid "Choose a reference airfield from the search results."
-msgstr "Kies een referentievliegveld uit de zoekresultaten."
-
-#: app/passports/routes.py:847
-msgid "This reference airfield has no coordinates. Choose another."
-msgstr "Dit referentievliegveld heeft geen coördinaten. Kies een ander."
-
-#: app/passports/routes.py:872
-msgid "distance/time limit"
-msgstr "afstands-/tijdslimiet"
-
-#: app/passports/routes.py:873
-msgid "usable fuel"
-msgstr "bruikbare brandstof"
-
-#: app/passports/routes.py:874
-msgid "fuel flow"
-msgstr "brandstofverbruik"
-
-#: app/passports/routes.py:875
-msgid "reserve minutes"
-msgstr "reserve in minuten"
-
-#: app/passports/routes.py:887
-msgid "Enter a cruise speed for time mode, or use distance mode."
-msgstr "Voer een kruissnelheid in voor de tijdsmodus of gebruik de afstandsmodus."
-
-#: app/passports/routes.py:896
-msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
-msgstr "Het theoretische bereik is onbekend. Voer bruikbare brandstof, verbruik, snelheid en een expliciete reserve in die positieve vliegtijd overlaten. Het afstands-/tijdfilter blijft van toepassing."
 
 #: app/passports/series_routes.py:367 app/passports/series_routes.py:370
 msgid "Choose a valid edition."
@@ -4351,8 +4351,8 @@ msgstr "Downloaden"
 #: app/templates/_doc_viewer_modal.html:14
 #: app/templates/aircraft/owner_account.html:22
 #: app/templates/aircraft/owners_billing.html:20 app/templates/base.html:174
-#: app/templates/base.html:199 app/templates/base.html:284
-#: app/templates/base.html:293 app/templates/base.html:305
+#: app/templates/base.html:199 app/templates/base.html:290
+#: app/templates/base.html:299 app/templates/base.html:311
 #: app/templates/dashboard.html:814
 #: app/templates/partials/_flight_tracks_map.html:70
 #: app/templates/pilots/logbook.html:95
@@ -4360,7 +4360,7 @@ msgid "Close"
 msgstr "Sluiten"
 
 #: app/templates/auth/login.html:4 app/templates/auth/login.html:43
-#: app/templates/base.html:58 app/templates/base.html:260
+#: app/templates/base.html:58 app/templates/base.html:266
 #: app/templates/errors/403.html:31 app/templates/landing.html:281
 #: app/templates/welcome.html:20
 msgid "Log in"
@@ -4403,7 +4403,7 @@ msgid "The demo environment is being reset. Please wait — the page will reload
 msgstr "De demo-omgeving wordt opnieuw ingesteld. Even geduld — de pagina wordt automatisch herladen zodra ze gereed is."
 
 #: app/templates/base.html:171 app/templates/base.html:173
-#: app/templates/base.html:433
+#: app/templates/base.html:439
 msgid "Install app"
 msgstr "App installeren"
 
@@ -4415,19 +4415,19 @@ msgstr "Voeg OpenHangar toe aan uw startscherm voor snelle toegang."
 msgid "Not now"
 msgstr "Niet nu"
 
-#: app/templates/base.html:182 app/templates/base.html:432
+#: app/templates/base.html:182 app/templates/base.html:438
 msgid "Offline"
 msgstr "Offline"
 
 #: app/templates/auth/profile.html:16 app/templates/base.html:206
-#: app/templates/base.html:324 app/templates/config/settings.html:52
+#: app/templates/base.html:330 app/templates/config/settings.html:52
 #: app/templates/dashboard.html:3 app/templates/dashboard.html:116
 #: app/templates/errors/403.html:27 app/templates/errors/404.html:27
 #: app/templates/users/list.html:18
 msgid "Dashboard"
 msgstr "Dashboard"
 
-#: app/templates/base.html:221 app/templates/base.html:340
+#: app/templates/base.html:221 app/templates/base.html:346
 #: app/templates/dashboard.html:753 app/templates/landing.html:33
 #: app/templates/landing.html:241 app/templates/partials/_crew_claims.html:49
 #: app/templates/reservations/calendar.html:193
@@ -4443,7 +4443,7 @@ msgid "Flights waiting for your confirmation"
 msgstr "Vluchten die op uw bevestiging wachten"
 
 #: app/templates/aircraft/detail.html:488 app/templates/base.html:224
-#: app/templates/base.html:336 app/templates/dashboard.html:634
+#: app/templates/base.html:342 app/templates/dashboard.html:634
 #: app/templates/dashboard.html:654 app/templates/dashboard.html:701
 #: app/templates/dashboard.html:811 app/templates/flights/fleet.html:15
 #: app/templates/flights/flight_form.html:4
@@ -4453,17 +4453,28 @@ msgid "Log a flight"
 msgstr "Vlucht registreren"
 
 #: app/templates/aircraft/flight_detail.html:110 app/templates/base.html:228
-#: app/templates/base.html:344 app/templates/flights/flight_form.html:831
+#: app/templates/base.html:350 app/templates/flights/flight_form.html:831
 #: app/templates/pilots/logbook.html:16
 msgid "Pilot logbook"
 msgstr "Pilootlogboek"
 
-#: app/templates/base.html:230 app/templates/places/collection_settings.html:20
+#: app/templates/base.html:231
+msgid "Explore"
+msgstr "Verkennen"
+
+#: app/templates/base.html:233 app/templates/places/collection_settings.html:20
 #: app/templates/places/index.html:3 app/templates/places/index.html:6
 msgid "Places"
 msgstr "Plaatsen"
 
-#: app/templates/base.html:232 app/templates/base.html:347
+#: app/templates/base.html:234 app/templates/explore/where_next.html:3
+#: app/templates/explore/where_next.html:6
+#: app/templates/passports/detail.html:12
+msgid "Where next?"
+msgstr "Waarheen nu?"
+
+#: app/templates/base.html:238 app/templates/base.html:353
+#: app/templates/explore/where_next.html:35
 #: app/templates/passports/confirm.html:3 app/templates/passports/detail.html:4
 #: app/templates/passports/detail.html:7
 #: app/templates/passports/draft_error.html:3
@@ -4473,41 +4484,41 @@ msgstr "Plaatsen"
 msgid "Airfield passports"
 msgstr "Vliegveldpaspoorten"
 
-#: app/templates/base.html:236
+#: app/templates/base.html:242
 msgid "My account"
 msgstr "Mijn rekening"
 
-#: app/templates/base.html:241 app/templates/config/data_checks.html:14
+#: app/templates/base.html:247 app/templates/config/data_checks.html:14
 #: app/templates/config/notifications.html:16
 #: app/templates/config/settings.html:3 app/templates/config/settings.html:44
 msgid "Configuration"
 msgstr "Configuratie"
 
-#: app/templates/base.html:241
+#: app/templates/base.html:247
 msgid "Update available"
 msgstr "Update beschikbaar"
 
-#: app/templates/base.html:241
+#: app/templates/base.html:247
 msgid "Data checks to review"
 msgstr "Gegevenscontroles na te kijken"
 
-#: app/templates/auth/profile.html:3 app/templates/base.html:252
+#: app/templates/auth/profile.html:3 app/templates/base.html:258
 msgid "Profile"
 msgstr "Profiel"
 
-#: app/templates/base.html:255
+#: app/templates/base.html:261
 msgid "Log Out"
 msgstr "Uitloggen"
 
-#: app/templates/base.html:291
+#: app/templates/base.html:297
 msgid "This instance still has pre-upgrade pilot-logbook/crew data that wasn't automatically converted to the new unified logbook. It's preserved as-is in the database but no longer reachable from the interface."
 msgstr "Deze instantie bevat nog pilotenlogboek-/bemanningsgegevens van vóór de upgrade die niet automatisch zijn geconverteerd naar het nieuwe unified logboek. Deze gegevens blijven ongewijzigd bewaard in de database, maar zijn niet meer bereikbaar via de interface."
 
-#: app/templates/base.html:292
+#: app/templates/base.html:298
 msgid "Please open an issue if you need help extracting it."
 msgstr "Open een issue als u hulp nodig heeft om deze gegevens te extraheren."
 
-#: app/templates/base.html:360
+#: app/templates/base.html:366
 msgid "open-source aircraft ops"
 msgstr "open-source vliegtuigbeheer"
 
@@ -4517,7 +4528,7 @@ msgstr "open-source vliegtuigbeheer"
 #: app/templates/airworthiness/avionics_unit_form.html:47
 #: app/templates/airworthiness/dashboard.html:95
 #: app/templates/airworthiness/equipment_board.html:50
-#: app/templates/airworthiness/status_form.html:21 app/templates/base.html:364
+#: app/templates/airworthiness/status_form.html:21 app/templates/base.html:370
 #: app/templates/config/renters_list.html:33
 #: app/templates/config/settings.html:300
 #: app/templates/config/settings.html:399
@@ -4557,7 +4568,7 @@ msgstr "Status"
 #: app/templates/airworthiness/status_form.html:61
 #: app/templates/airworthiness/stc_form.html:50
 #: app/templates/airworthiness/wishlist_form.html:45
-#: app/templates/base.html:380 app/templates/config/renter_form.html:104
+#: app/templates/base.html:386 app/templates/config/renter_form.html:104
 #: app/templates/documents/edit_form.html:16
 #: app/templates/documents/edit_form.html:103
 #: app/templates/documents/pilot_upload_form.html:16
@@ -4602,7 +4613,7 @@ msgstr "Status"
 msgid "Cancel"
 msgstr "Annuleren"
 
-#: app/templates/base.html:381 app/templates/partials/_crew_invites.html:33
+#: app/templates/base.html:387 app/templates/partials/_crew_invites.html:33
 #: app/templates/partials/_crew_invites.html:72
 #: app/templates/pilots/gps_import_review.html:303
 #: app/templates/reservations/calendar.html:220
@@ -4610,55 +4621,55 @@ msgstr "Annuleren"
 msgid "Confirm"
 msgstr "Bevestigen"
 
-#: app/templates/base.html:434
+#: app/templates/base.html:440
 msgid "You're offline — this can't be saved right now. Reconnect and try again."
 msgstr "U bent offline — dit kan nu niet worden opgeslagen. Maak opnieuw verbinding en probeer het opnieuw."
 
-#: app/templates/base.html:437
+#: app/templates/base.html:443
 msgid "Please fill out this field."
 msgstr "Vul dit veld in."
 
-#: app/templates/base.html:438
+#: app/templates/base.html:444
 msgid "Please select an item in the list."
 msgstr "Selecteer een item in de lijst."
 
-#: app/templates/base.html:439
+#: app/templates/base.html:445
 msgid "Please check this box if you want to proceed."
 msgstr "Vink dit vakje aan om door te gaan."
 
-#: app/templates/base.html:440
+#: app/templates/base.html:446
 msgid "Please select one of these options."
 msgstr "Selecteer een van deze opties."
 
-#: app/templates/base.html:442
+#: app/templates/base.html:448
 msgid "Please enter a valid URL."
 msgstr "Voer een geldige URL in."
 
-#: app/templates/base.html:443
+#: app/templates/base.html:449
 msgid "Please match the requested format."
 msgstr "Gebruik de gevraagde opmaak."
 
-#: app/templates/base.html:444
+#: app/templates/base.html:450
 #, python-brace-format
 msgid "Please use at least {min} characters (currently {n})."
 msgstr "Gebruik ten minste {min} tekens (momenteel {n})."
 
-#: app/templates/base.html:445
+#: app/templates/base.html:451
 #, python-brace-format
 msgid "Please use no more than {max} characters (currently {n})."
 msgstr "Gebruik maximaal {max} tekens (momenteel {n})."
 
-#: app/templates/base.html:446
+#: app/templates/base.html:452
 #, python-brace-format
 msgid "Value must be {min} or more."
 msgstr "De waarde moet {min} of hoger zijn."
 
-#: app/templates/base.html:447
+#: app/templates/base.html:453
 #, python-brace-format
 msgid "Value must be {max} or less."
 msgstr "De waarde moet {max} of lager zijn."
 
-#: app/templates/base.html:448
+#: app/templates/base.html:454
 msgid "Please enter a valid value."
 msgstr "Voer een geldige waarde in."
 
@@ -5389,7 +5400,7 @@ msgid "Enter an airfield code or a saved field reference such as field:123. Neve
 msgstr "Voer een vliegveldcode of een opgeslagen veldreferentie zoals field:123 in. Wordt nooit afgeleid uit de vlieghistorie."
 
 #: app/templates/aircraft/aircraft_form.html:68
-#: app/templates/passports/where_next.html:16
+#: app/templates/explore/where_next.html:16
 msgid "Cruise speed (knots, optional)"
 msgstr "Kruissnelheid (knopen, optioneel)"
 
@@ -6145,10 +6156,10 @@ msgid "Fuel on board"
 msgstr "Brandstof aan boord"
 
 #: app/templates/aircraft/detail.html:746
+#: app/templates/explore/where_next.html:26
+#: app/templates/explore/where_next.html:36
 #: app/templates/passports/builder.html:42
 #: app/templates/passports/builder.html:63
-#: app/templates/passports/where_next.html:26
-#: app/templates/passports/where_next.html:35
 msgid "Unknown"
 msgstr "Onbekend"
 
@@ -10085,6 +10096,174 @@ msgstr "Geen uitgaven geregistreerd."
 msgid "Add first expense"
 msgstr "Eerste uitgave toevoegen"
 
+#: app/templates/explore/where_next.html:7
+msgid "Discover open airfields you have not yet visited in your passports. Distances are great-circle nautical miles; times assume constant cruise speed, still air and direct flight, excluding climb, approach and routing."
+msgstr "Ontdek open vliegvelden die je nog niet hebt bezocht in je paspoorten. Afstanden zijn grootcirkelafstanden in zeemijlen; tijden gaan uit van constante kruissnelheid, windstilte en directe vlucht, zonder klim, nadering of omwegen."
+
+#: app/templates/explore/where_next.html:10
+msgid "Search in passports"
+msgstr "Zoeken in paspoorten"
+
+#: app/templates/explore/where_next.html:10
+msgid "All your active passports when none is ticked."
+msgstr "Al je actieve paspoorten als er geen is aangevinkt."
+
+#: app/templates/explore/where_next.html:12
+msgid "Aircraft (optional)"
+msgstr "Luchtvaartuig (optioneel)"
+
+#: app/templates/explore/where_next.html:12
+msgid "Unmanaged aircraft / session inputs"
+msgstr "Niet beheerd luchtvaartuig / sessie-invoer"
+
+#: app/templates/explore/where_next.html:13
+msgid "Reference airfield"
+msgstr "Referentievliegveld"
+
+#: app/templates/explore/where_next.html:13
+msgid "Use aircraft home, then pilot home"
+msgstr "Thuisveld luchtvaartuig, anders thuisveld piloot"
+
+#: app/templates/explore/where_next.html:14
+msgid "Search reference airfield by code or name"
+msgstr "Referentievliegveld zoeken op code of naam"
+
+#: app/templates/explore/where_next.html:14
+#: app/templates/passports/builder.html:44
+msgid "Search airfields"
+msgstr "Vliegvelden zoeken"
+
+#: app/templates/explore/where_next.html:14
+msgid "Up to 50 matches appear in the reference-airfield list. Narrow the search if needed."
+msgstr "De lijst met referentievliegvelden toont maximaal 50 resultaten. Verfijn zo nodig de zoekopdracht."
+
+#: app/templates/explore/where_next.html:15
+msgid "Use home airfield"
+msgstr "Thuisveld gebruiken"
+
+#: app/templates/explore/where_next.html:15
+msgid "Use my latest logged arrival"
+msgstr "Mijn laatste vastgelegde aankomst gebruiken"
+
+#: app/templates/explore/where_next.html:17
+msgid "Filter mode"
+msgstr "Filtermodus"
+
+#: app/templates/explore/where_next.html:17
+#: app/templates/explore/where_next.html:36
+msgid "Distance (NM)"
+msgstr "Afstand (NM)"
+
+#: app/templates/explore/where_next.html:17
+#: app/templates/explore/where_next.html:36
+msgid "Still-air time (minutes)"
+msgstr "Vliegtijd bij windstilte (minuten)"
+
+#: app/templates/explore/where_next.html:18
+msgid "Maximum distance / minutes"
+msgstr "Maximale afstand / minuten"
+
+#: app/templates/explore/where_next.html:18
+msgid "Adjust distance / minutes"
+msgstr "Afstand / minuten aanpassen"
+
+#: app/templates/explore/where_next.html:20
+msgid "Optional theoretical range"
+msgstr "Optioneel theoretisch bereik"
+
+#: app/templates/explore/where_next.html:21
+msgid "Destination discovery only, not fuel dispatch advice. Enter explicitly usable fuel; total tank capacity is never assumed usable. Fuel and flow must both use litres. Reserve is in minutes; return mode budgets both legs without refuelling."
+msgstr "Alleen voor het ontdekken van bestemmingen, niet als brandstofplanning. Voer expliciet bruikbare brandstof in; de totale tankinhoud geldt nooit automatisch als bruikbaar. Gebruik liters voor brandstof en verbruik. Reserve is in minuten; retour rekent met beide trajecten zonder bijtanken."
+
+#: app/templates/explore/where_next.html:22
+msgid "Reserve defaults to your published personal minimum. You can change it for this session."
+msgstr "De reserve is standaard je gepubliceerde persoonlijke minimum. Je kunt dit voor deze sessie aanpassen."
+
+#: app/templates/explore/where_next.html:23
+msgid "Usable fuel (L)"
+msgstr "Bruikbare brandstof (L)"
+
+#: app/templates/explore/where_next.html:23
+msgid "Fuel flow (L/h)"
+msgstr "Brandstofverbruik (L/u)"
+
+#: app/templates/explore/where_next.html:23
+msgid "Reserve (minutes)"
+msgstr "Reserve (minuten)"
+
+#: app/templates/explore/where_next.html:24
+msgid "Trip assumption"
+msgstr "Trajectaanname"
+
+#: app/templates/explore/where_next.html:24
+msgid "One way"
+msgstr "Enkele reis"
+
+#: app/templates/explore/where_next.html:24
+msgid "Return without refuelling"
+msgstr "Retour zonder bijtanken"
+
+#: app/templates/explore/where_next.html:25
+msgid "Also filter by theoretical range"
+msgstr "Ook op theoretisch bereik filteren"
+
+#: app/templates/explore/where_next.html:26
+msgid "Theoretical radius"
+msgstr "Theoretische straal"
+
+#: app/templates/explore/where_next.html:28
+msgid "Find destinations"
+msgstr "Bestemmingen zoeken"
+
+#: app/templates/explore/where_next.html:30
+msgid "Choose a reference airfield to find destinations."
+msgstr "Kies een referentievliegveld om bestemmingen te vinden."
+
+#: app/templates/explore/where_next.html:30
+msgid "Starting from"
+msgstr "Vertrek vanaf"
+
+#: app/templates/explore/where_next.html:31
+msgid "Destination discovery map"
+msgstr "Kaart met bestemmingen"
+
+#: app/templates/explore/where_next.html:32
+msgid "Targets without coordinates cannot be distance-filtered; they remain in the passport list."
+msgstr "Doelen zonder coördinaten kunnen niet op afstand worden gefilterd; ze blijven in de paspoortlijst."
+
+#: app/templates/explore/where_next.html:33
+msgid "Suitability unknown: no licensed runway or restriction dataset is loaded. Check current aerodrome information before planning a flight."
+msgstr "Geschiktheid onbekend: er zijn geen gelicentieerde baan- of beperkingsgegevens geladen. Controleer actuele vliegveldinformatie voordat je een vlucht plant."
+
+#: app/templates/explore/where_next.html:35
+msgid "Create or join an airfield passport to find airfields you have not visited yet."
+msgstr "Maak of word lid van een vliegveldpaspoort om vliegvelden te vinden die je nog niet hebt bezocht."
+
+#: app/templates/explore/where_next.html:36
+#: app/templates/passports/builder.html:62
+#: app/templates/passports/detail.html:42 app/templates/passports/print.html:24
+#: app/templates/passports/public_view.html:19
+#: app/templates/passports/record_visit.html:11
+#: app/templates/passports/series.html:19
+#: app/templates/passports/vouchers.html:12
+#: app/templates/passports/vouchers.html:33
+#: app/templates/passports/vouchers.html:40
+msgid "Airfield"
+msgstr "Vliegveld"
+
+#: app/templates/explore/where_next.html:36
+msgid "Why"
+msgstr "Waarom"
+
+#: app/templates/explore/where_next.html:36
+#, python-format
+msgid "Not yet stamped in %(passport)s"
+msgstr "Nog niet gestempeld in %(passport)s"
+
+#: app/templates/explore/where_next.html:36
+msgid "No open, unvisited airfields match these inputs."
+msgstr "Geen open, onbezochte vliegvelden komen overeen met deze invoer."
+
 #: app/templates/flights/airframe_import_map.html:3
 #: app/templates/flights/airframe_import_map.html:12
 #: app/templates/flights/airframe_import_map.html:40
@@ -12246,11 +12425,6 @@ msgstr "Nee"
 msgid "Military and ULM status are unknown unless classified manually; unknown does not mean no."
 msgstr "Militaire en ULM-status zijn onbekend zonder handmatige classificatie; onbekend betekent niet nee."
 
-#: app/templates/passports/builder.html:44
-#: app/templates/passports/where_next.html:14
-msgid "Search airfields"
-msgstr "Vliegvelden zoeken"
-
 #: app/templates/passports/builder.html:46
 #, python-format
 msgid "one matching airfield"
@@ -12330,18 +12504,6 @@ msgstr "Eigen vliegveld toevoegen"
 msgid "Selected airfields"
 msgstr "Geselecteerde vliegvelden"
 
-#: app/templates/passports/builder.html:62
-#: app/templates/passports/detail.html:42 app/templates/passports/print.html:24
-#: app/templates/passports/public_view.html:19
-#: app/templates/passports/record_visit.html:11
-#: app/templates/passports/series.html:19
-#: app/templates/passports/vouchers.html:12
-#: app/templates/passports/vouchers.html:33
-#: app/templates/passports/vouchers.html:40
-#: app/templates/passports/where_next.html:35
-msgid "Airfield"
-msgstr "Vliegveld"
-
 #: app/templates/passports/builder.html:63
 #: app/templates/passports/review.html:17
 msgid "No coordinates"
@@ -12405,12 +12567,6 @@ msgstr "Paspoort afdrukken"
 #: app/templates/passports/vouchers.html:6
 msgid "Vouchers"
 msgstr "Bonnen"
-
-#: app/templates/passports/detail.html:12
-#: app/templates/passports/where_next.html:3
-#: app/templates/passports/where_next.html:7
-msgid "Where next?"
-msgstr "Waarheen nu?"
 
 #: app/templates/passports/detail.html:13
 msgid "Edit passport"
@@ -13752,136 +13908,6 @@ msgstr "Ingestelde aantallen"
 #: app/templates/passports/vouchers.html:40
 msgid "Delete unused allocation"
 msgstr "Ongebruikte toewijzing verwijderen"
-
-#: app/templates/passports/where_next.html:8
-msgid "Discover open airfields you have not yet visited in this passport. Distances are great-circle nautical miles; times assume constant cruise speed, still air and direct flight, excluding climb, approach and routing."
-msgstr "Ontdek open vliegvelden die je nog niet hebt bezocht in dit paspoort. Afstanden zijn grootcirkelafstanden in zeemijlen; tijden gaan uit van constante kruissnelheid, windstilte en directe vlucht, zonder klim, nadering of omwegen."
-
-#: app/templates/passports/where_next.html:12
-msgid "Aircraft (optional)"
-msgstr "Luchtvaartuig (optioneel)"
-
-#: app/templates/passports/where_next.html:12
-msgid "Unmanaged aircraft / session inputs"
-msgstr "Niet beheerd luchtvaartuig / sessie-invoer"
-
-#: app/templates/passports/where_next.html:13
-msgid "Reference airfield"
-msgstr "Referentievliegveld"
-
-#: app/templates/passports/where_next.html:13
-msgid "Use aircraft home, then pilot home"
-msgstr "Thuisveld luchtvaartuig, anders thuisveld piloot"
-
-#: app/templates/passports/where_next.html:14
-msgid "Search reference airfield by code or name"
-msgstr "Referentievliegveld zoeken op code of naam"
-
-#: app/templates/passports/where_next.html:14
-msgid "Up to 50 matches appear in the reference-airfield list. Narrow the search if needed."
-msgstr "De lijst met referentievliegvelden toont maximaal 50 resultaten. Verfijn zo nodig de zoekopdracht."
-
-#: app/templates/passports/where_next.html:15
-msgid "Use home airfield"
-msgstr "Thuisveld gebruiken"
-
-#: app/templates/passports/where_next.html:15
-msgid "Use my latest logged arrival"
-msgstr "Mijn laatste vastgelegde aankomst gebruiken"
-
-#: app/templates/passports/where_next.html:17
-msgid "Filter mode"
-msgstr "Filtermodus"
-
-#: app/templates/passports/where_next.html:17
-#: app/templates/passports/where_next.html:35
-msgid "Distance (NM)"
-msgstr "Afstand (NM)"
-
-#: app/templates/passports/where_next.html:17
-#: app/templates/passports/where_next.html:35
-msgid "Still-air time (minutes)"
-msgstr "Vliegtijd bij windstilte (minuten)"
-
-#: app/templates/passports/where_next.html:18
-msgid "Maximum distance / minutes"
-msgstr "Maximale afstand / minuten"
-
-#: app/templates/passports/where_next.html:18
-msgid "Adjust distance / minutes"
-msgstr "Afstand / minuten aanpassen"
-
-#: app/templates/passports/where_next.html:20
-msgid "Optional theoretical range"
-msgstr "Optioneel theoretisch bereik"
-
-#: app/templates/passports/where_next.html:21
-msgid "Destination discovery only, not fuel dispatch advice. Enter explicitly usable fuel; total tank capacity is never assumed usable. Fuel and flow must both use litres. Reserve is in minutes; return mode budgets both legs without refuelling."
-msgstr "Alleen voor het ontdekken van bestemmingen, niet als brandstofplanning. Voer expliciet bruikbare brandstof in; de totale tankinhoud geldt nooit automatisch als bruikbaar. Gebruik liters voor brandstof en verbruik. Reserve is in minuten; retour rekent met beide trajecten zonder bijtanken."
-
-#: app/templates/passports/where_next.html:22
-msgid "Reserve defaults to your published personal minimum. You can change it for this session."
-msgstr "De reserve is standaard je gepubliceerde persoonlijke minimum. Je kunt dit voor deze sessie aanpassen."
-
-#: app/templates/passports/where_next.html:23
-msgid "Usable fuel (L)"
-msgstr "Bruikbare brandstof (L)"
-
-#: app/templates/passports/where_next.html:23
-msgid "Fuel flow (L/h)"
-msgstr "Brandstofverbruik (L/u)"
-
-#: app/templates/passports/where_next.html:23
-msgid "Reserve (minutes)"
-msgstr "Reserve (minuten)"
-
-#: app/templates/passports/where_next.html:24
-msgid "Trip assumption"
-msgstr "Trajectaanname"
-
-#: app/templates/passports/where_next.html:24
-msgid "One way"
-msgstr "Enkele reis"
-
-#: app/templates/passports/where_next.html:24
-msgid "Return without refuelling"
-msgstr "Retour zonder bijtanken"
-
-#: app/templates/passports/where_next.html:25
-msgid "Also filter by theoretical range"
-msgstr "Ook op theoretisch bereik filteren"
-
-#: app/templates/passports/where_next.html:26
-msgid "Theoretical radius"
-msgstr "Theoretische straal"
-
-#: app/templates/passports/where_next.html:28
-msgid "Find destinations"
-msgstr "Bestemmingen zoeken"
-
-#: app/templates/passports/where_next.html:30
-msgid "Choose a reference airfield to find destinations."
-msgstr "Kies een referentievliegveld om bestemmingen te vinden."
-
-#: app/templates/passports/where_next.html:30
-msgid "Starting from"
-msgstr "Vertrek vanaf"
-
-#: app/templates/passports/where_next.html:31
-msgid "Destination discovery map"
-msgstr "Kaart met bestemmingen"
-
-#: app/templates/passports/where_next.html:32
-msgid "Targets without coordinates cannot be distance-filtered; they remain in the passport list."
-msgstr "Doelen zonder coördinaten kunnen niet op afstand worden gefilterd; ze blijven in de paspoortlijst."
-
-#: app/templates/passports/where_next.html:33
-msgid "Suitability unknown: no licensed runway or restriction dataset is loaded. Check current aerodrome information before planning a flight."
-msgstr "Geschiktheid onbekend: er zijn geen gelicentieerde baan- of beperkingsgegevens geladen. Controleer actuele vliegveldinformatie voordat je een vlucht plant."
-
-#: app/templates/passports/where_next.html:35
-msgid "No open, unvisited airfields match these inputs."
-msgstr "Geen open, onbezochte vliegvelden komen overeen met deze invoer."
 
 #: app/templates/pilots/entry_detail.html:19
 #: app/templates/pilots/entry_form.html:58

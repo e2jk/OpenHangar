@@ -156,7 +156,12 @@ class TestDevSeedEndToEnd:
         assert client.get("/passports/").status_code == 200
         for pid in ids:
             assert client.get(f"/passports/{pid}/").status_code == 200
-            assert client.get(f"/passports/{pid}/where-next").status_code == 200
+            assert (
+                client.get(
+                    f"/passports/{pid}/where-next", follow_redirects=True
+                ).status_code
+                == 200
+            )
         assert client.get(f"/passports/{lifetime_id}/?frequency=1").status_code == 200
 
 
