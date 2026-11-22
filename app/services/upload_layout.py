@@ -58,6 +58,10 @@ TEMP_MAX_AGE_HOURS = 24
 # kept for a few weeks so each is fetched once, not on every request.
 # Top-level, so never walked by the document scanners; never backed up.
 TILE_CACHE_DIRNAME = "tile_cache"
+# Tracks GIFs as last drawn, per aircraft/pilot and variant
+# (services.tracks_gif_cache), so a download doesn't draw them again.
+# Top-level, never walked by the document scanners; never backed up.
+TRACKS_GIF_CACHE_DIRNAME = "tracks_gif_cache"
 # Empty lock files capping concurrent passport source imports across workers
 # (passports.source_fetch.fetch_slot). Kept, never cleaned up (removing one
 # could let two workers each lock a different file); never backed up.
@@ -69,6 +73,7 @@ GEOCODER_LOCKS_DIRNAME = "geocoder_locks"
 # Top-level folders a backup leaves out: nothing in them is worth restoring.
 NOT_BACKED_UP_DIRNAMES = TEMP_DIRNAMES | {
     TILE_CACHE_DIRNAME,
+    TRACKS_GIF_CACHE_DIRNAME,
     PASSPORT_FETCH_LOCKS_DIRNAME,
     GEOCODER_LOCKS_DIRNAME,
 }

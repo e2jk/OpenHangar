@@ -490,6 +490,11 @@ def run_daily_checks(app: Any) -> None:
                 )
 
                 purge_expired(app.config.get("UPLOAD_FOLDER", "/data/uploads"))
+                from services.tracks_gif_cache import (  # pyright: ignore[reportMissingImports]
+                    cleanup_stale_gifs,
+                )
+
+                cleanup_stale_gifs(app.config.get("UPLOAD_FOLDER", "/data/uploads"))
                 from places.cleanup import purge_retired
 
                 purge_retired()

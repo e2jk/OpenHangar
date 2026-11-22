@@ -10,6 +10,9 @@
   aircraft — now also takes its GPS files off: they go to **Removed GPS
   files** for a week, where they can still be put back in the archive,
   instead of staying behind unused.
+- The tracks animation of an aircraft or of your logbook downloads at once
+  the second time: it's kept once drawn, and drawn again only when its
+  flights change (or after a month, for map updates).
 
 **Maintenance**
 

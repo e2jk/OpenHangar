@@ -113,6 +113,23 @@ def _clear_excel_parse_cache():
 
 
 @pytest.fixture(autouse=True)
+def _clear_tracks_gif_cache(request):
+    """The uploads folder lasts the whole session: drop the tracks GIFs a
+    test using the app kept (services.tracks_gif_cache) so another never
+    gets them."""
+    if "app" not in request.fixturenames:
+        yield
+        return
+    from services.upload_layout import (  # pyright: ignore[reportMissingImports]
+        TRACKS_GIF_CACHE_DIRNAME,
+    )
+
+    folder = request.getfixturevalue("app").config["UPLOAD_FOLDER"]
+    yield
+    shutil.rmtree(os.path.join(folder, TRACKS_GIF_CACHE_DIRNAME), ignore_errors=True)
+
+
+@pytest.fixture(autouse=True)
 def _block_tile_fetches():
     """Prevent real HTTP tile fetches in every test.
 
