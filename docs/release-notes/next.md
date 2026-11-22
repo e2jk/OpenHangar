@@ -9,5 +9,8 @@
 
 **Maintenance**
 
+- The slow-connection browser check now waits for a known cached page and
+  controls when its network response arrives, avoiding a cache-warming race.
+
 - The photo cleaning and photo suggestion tests import each module one way,
   as static analysis asked.
