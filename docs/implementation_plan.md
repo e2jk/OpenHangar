@@ -3070,7 +3070,7 @@ connections, and the reader-owned visit panel, are now connected through 42d/42e
 - [ ] Map with origin, radius, result airfields and the place pins they serve.
   Filters: tag, "airfields I've never landed at", hide closed. GPX/KML download
   of the combined result.
-- [ ] Privacy unchanged: never reveal another pilot's itinerary; group passports
+- [x] Privacy unchanged: never reveal another pilot's itinerary; group passports
   contribute their targets only; collection visits shown to members only.
   Aircraft defaults (home, cruise speed) only for users with aircraft access;
   anyone can enter origin and speed by hand.
@@ -3090,10 +3090,12 @@ connections, and the reader-owned visit panel, are now connected through 42d/42e
   Personal-account friend as editors), `/places` and `/explore` never cached
   offline, the user guide's Places section; screenshots once 42d/42e settle the
   pages.
-- [ ] Validation: shared-collection members see and edit the same places,
+- [x] Validation: shared-collection members see and edit the same places,
   readers can't edit, non-members get 404 everywhere (Where next?, exports, photo
   URLs); leaving/removal keeps places and visits; Where next? with only places,
   only passports, both or neither; the old passport URL redirects.
+  *Done:* `tests/test_places_integration.py` (one shared collection end to end),
+  with `test_where_next.py` for the sources and the old passport URL.
 
 ### 42h — Personal accounts ✅
 
