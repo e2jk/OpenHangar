@@ -491,10 +491,10 @@ class TestShareTargetEdgeCases:
 
     def test_ensure_tenant_slug_deduplication(self, app):
         """Lines 114-115: slug collision loop increments suffix until unique."""
-        from models import Tenant, db
-        from pwa.routes import (
+        from documents.routes import (
             _ensure_tenant_slug,  # pyright: ignore[reportMissingImports]
         )
+        from models import Tenant, db
 
         with app.app_context():
             # Simulate two tenants that would derive the same base slug

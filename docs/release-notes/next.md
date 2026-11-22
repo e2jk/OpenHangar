@@ -21,6 +21,9 @@ use, and Cancel drops the shared file.
 
 **Maintenance**
 
+- A shared aircraft document is now stored by the same code as a document
+  uploaded from the aircraft's documents page, instead of a copy of it.
+
 - Groundwork for sharing a link from a phone to create a place: finding the
   link in what apps such as Instagram share, removing its tracking
   parameters, and suggesting a title from the shared text.
