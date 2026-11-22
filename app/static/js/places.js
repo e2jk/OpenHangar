@@ -91,6 +91,37 @@
       if (!clearPaste) pasted.value = original;
     }
     fromInputs(false);
+    // Where the chosen photo was taken, offered as the pin (never applied by itself).
+    var photo = document.getElementById('place-photo');
+    var photoHint = document.getElementById('place-photo-hint');
+    if (photo && photoHint && root.dataset.photoPositionUrl) {
+      photo.addEventListener('change', function () {
+        var file = photo.files && photo.files[0];
+        photoHint.replaceChildren();
+        if (!file) return;
+        var body = new FormData();
+        body.append('photo', file);
+        fetch(root.dataset.photoPositionUrl, { method: 'POST', credentials: 'same-origin',
+          headers: { 'X-CSRFToken': root.querySelector('input[name="csrf_token"]').value }, body: body
+        }).then(function (response) {
+          return response.ok ? response.json() : null;
+        }).then(function (data) {
+          if (!data || !data.position || !root.isConnected || photo.files[0] !== file) return;
+          var position = data.position;
+          photoHint.textContent = root.dataset.photoPositionText
+            .replace('{latitude}', position.latitude.toFixed(5))
+            .replace('{longitude}', position.longitude.toFixed(5)) + ' ';
+          var use = document.createElement('button');
+          use.type = 'button';
+          use.className = 'btn btn-sm btn-ac-ghost';
+          use.textContent = root.dataset.photoPositionUse;
+          use.addEventListener('click', function () {
+            setPoint(L.latLng(position.latitude, position.longitude), true);
+          });
+          photoHint.appendChild(use);
+        }).catch(function () { /* No suggestion: the form works as before. */ });
+      });
+    }
     lat.addEventListener('change', function () { fromInputs(true); });
     lon.addEventListener('change', function () { fromInputs(true); });
     map.on('click', function (event) { setPoint(event.latlng, false); });

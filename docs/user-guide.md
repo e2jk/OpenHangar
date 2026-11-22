@@ -335,7 +335,8 @@ aircraft: every account has them, Personal accounts and viewers included.
   the collection, never on your role.
 - **Adding a place:** drop a pin on the map, paste coordinates or a map link,
   search an address, or just save a link (from a phone share, see below) and add
-  its location later. Tags, a photo, an address and a website are optional.
+  its location later. Tags, a photo, an address and a website are optional; a
+  photo taken with a phone offers where it was taken as the place's pin.
 - **List and map** of one or all collections, filtered by tag, visited or not,
   archived, or still to locate; places without a location stay in the list but
   not on the map.

@@ -100,6 +100,7 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
     "places.delete_visit": _ANY_ROLE,
     "places.visit_from_flight": _ANY_ROLE,
     "places.dismiss_visit_suggestion": _ANY_ROLE,
+    "places.photo_position": _ANY_ROLE,
     "places.new_collection": _ANY_ROLE,
     "places.collection_settings": _ANY_ROLE,
     "places.join_collection": _ANY_ROLE,

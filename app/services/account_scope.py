@@ -34,6 +34,7 @@ PERSONAL_ENDPOINTS = frozenset(
         "places.delete_visit",
         "places.visit_from_flight",
         "places.dismiss_visit_suggestion",
+        "places.photo_position",
         "places.airfield_links",
         # Sharing a link from the phone opens a new place (42i); a file share
         # only shows that nothing can take it, with Cancel.

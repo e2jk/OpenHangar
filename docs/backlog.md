@@ -1302,11 +1302,11 @@ import it as a separate dataset rather than mixing it into the main catalogue.
 ## Photos: more suggestions from a photo's metadata
 
 Counter and fuel photos already suggest the flight's arrival/departure time
-and airfield (Phase 46, `services/photo_hints.py`), read before the photo is
-cleaned. Left:
+and airfield (Phase 46, `services/photo_hints.py`), and a place photo its
+pin, read before the photo is cleaned. Left:
 
-- GPS position → pin suggestion for a new place (Places) or the nearest
-  passport target for a stamp photo — the same read-only hint, from the place
-  and stamp photo inputs;
+- GPS position → the nearest passport target for a stamp photo (a place
+  photo already suggests its pin) — the same read-only hint, from the stamp
+  photo input;
 - capture time as context for counter-photo OCR (backlog "Logbook: OCR
   auto-fill from counter photos").
