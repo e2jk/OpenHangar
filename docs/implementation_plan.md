@@ -2877,7 +2877,7 @@ customer community. It needs an agreed operating-model decision first; see
 
 ---
 
-## Phase 42 — Explore: Places and Where next?
+## Phase 42 — Explore: Places and Where next? ✅
 
 Goal: let users collect **places worth flying to** (a town, a theme park, a
 restaurant, a viewpoint) as pins on a map, link them to nearby airfields, share
@@ -3075,21 +3075,22 @@ connections, and the reader-owned visit panel, are now connected through 42d/42e
   Aircraft defaults (home, cruise speed) only for users with aircraft access;
   anyone can enter origin and speed by hand.
 
-### 42g — Integration
+### 42g — Integration ✅
 
 - [x] Backup/restore, the account data export (places, visits, own photos) and
   GPX/KML export of places. *Done (2026-11-22):* `places/exports.py` — the
   "places" account-export section (own places with tags and photo, own visits,
   collection names) and `places.export_places` (`/places/export.gpx|kml`, the
   list's filters); backup round-trip fixture with a shared collection, a photo,
-  a tag, visits and a link-only place. Download buttons on the Places page
+  a tag, visits, an airfield link, a dismissed visit offer and a link-only
+  place. Download buttons on the Places page
   preserve its current filters.
-- [ ] Demo seed with a shared "Our places" collection; offline/PWA cache
+- [x] Demo seed with a shared "Our places" collection; offline/PWA cache
   classification; screenshots; user guide; configuration docs.
   *Done:* the demo and dev seeds' "Our places" (owner, second pilot and the
-  Personal-account friend as editors), `/places` and `/explore` never cached
-  offline, the user guide's Places section; screenshots once 42d/42e settle the
-  pages.
+  Personal-account friend as editors, airfield links, visits), `/places` and
+  `/explore` never cached offline, the user guide's Places section, and the
+  Places, place, place form and Where next? screenshots (#569).
 - [x] Validation: shared-collection members see and edit the same places,
   readers can't edit, non-members get 404 everywhere (Where next?, exports, photo
   URLs); leaving/removal keeps places and visits; Where next? with only places,
