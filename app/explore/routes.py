@@ -58,6 +58,8 @@ QUERY_KEYS = (
     "source",
     "visited",
     "place",
+    "tag",
+    "never_landed",
 )
 
 
@@ -118,6 +120,9 @@ def _place_reasons(
             continue
         reason = {
             "kind": "place",
+            "place_id": link["place_id"],
+            "place_latitude": link["place_latitude"],
+            "place_longitude": link["place_longitude"],
             "place": link["place_name"],
             "distance_km": link["distance_km"],
             "note": link["note"],
@@ -137,6 +142,72 @@ def _place_reasons(
             }
         else:
             row["reasons"].append(reason)
+
+
+def _tag_names(collection_ids: list[int]) -> list[str]:
+    from models import PlaceTag
+
+    return sorted(
+        {
+            str(name)
+            for (name,) in db.session.query(PlaceTag.name).filter(
+                PlaceTag.collection_id.in_(collection_ids)
+            )
+        },
+        key=str.casefold,
+    )
+
+
+def _tagged_places(collection_ids: list[int], tag: str) -> list[int]:
+    from models import Place, PlaceTag, PlaceTagAssignment
+
+    return [
+        pid
+        for (pid,) in db.session.query(PlaceTagAssignment.place_id)
+        .join(PlaceTag, PlaceTag.id == PlaceTagAssignment.tag_id)
+        .join(Place, Place.id == PlaceTagAssignment.place_id)
+        .filter(
+            PlaceTag.collection_id.in_(collection_ids),
+            db.func.lower(PlaceTag.name) == tag.casefold(),
+        )
+    ]
+
+
+def _landed_codes(user_id: int) -> set[str]:
+    """Codes of every airfield the user ever arrived at, as pilot or crew."""
+    from models import Flight
+
+    return {
+        str(code).strip().upper()
+        for (code,) in db.session.query(Flight.arrival_icao).filter(
+            db.or_(
+                Flight.pic_user_id == user_id, Flight.second_crew_user_id == user_id
+            ),
+            Flight.arrival_icao.isnot(None),
+        )
+    }
+
+
+def _map_places(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The located places the result airfields serve, each with the
+    airfields it links to among the results (lines on the map)."""
+    places: dict[int, dict[str, Any]] = {}
+    for row in rows:
+        for reason in row["reasons"]:
+            if reason["kind"] != "place" or reason["place_latitude"] is None:
+                continue
+            place = places.setdefault(
+                reason["place_id"],
+                {
+                    "name": reason["place"],
+                    "latitude": float(reason["place_latitude"]),
+                    "longitude": float(reason["place_longitude"]),
+                    "url": reason["url"],
+                    "airfields": [],
+                },
+            )
+            place["airfields"].append([float(row["latitude"]), float(row["longitude"])])
+    return list(places.values())
 
 
 def _unlinked(tenant_id: int, collection_ids: list[int]) -> int:
@@ -184,12 +255,23 @@ def where_next() -> ResponseReturnValue:
         for name, present in (("places", collections), ("passports", passports))
         if present
     ]
+    # Opened from a place or a passport, that source is preselected.
     source = request.args.get("source") or (
-        "both" if len(sources) == 2 else sources[0] if sources else "passports"
+        "places"
+        if place_id is not None
+        else "passports"
+        if request.args.get("passport")
+        else "both"
+        if len(sources) == 2
+        else sources[0]
+        if sources
+        else "passports"
     )
     if source not in {"places", "passports", "both"}:
         source = "both"
     include_visited = request.args.get("visited") == "1"
+    never_landed = request.args.get("never_landed") == "1"
+    tag = (request.args.get("tag") or "").strip()[:80]
     aircraft = (
         []
         if visible_identity_ids(tenant_id) is not None
@@ -286,8 +368,14 @@ def where_next() -> ResponseReturnValue:
         _passport_reasons(chosen, uid) if source in {"passports", "both"} else ({}, [])
     )
     unlinked = 0
+    tags: list[str] = []
     if source in {"places", "both"} and chosen_collections:
         collection_ids = [c.id for c in chosen_collections]
+        tags = _tag_names(collection_ids)
+        place_ids = [place_id] if place_id is not None else None
+        if tag:
+            tagged = set(_tagged_places(collection_ids, tag))
+            place_ids = [p for p in (place_ids or tagged) if p in tagged]
         _place_reasons(
             merged,
             linked_airfields(
@@ -295,12 +383,24 @@ def where_next() -> ResponseReturnValue:
                 uid,
                 collection_ids,
                 include_visited=include_visited,
-                place_ids=[place_id] if place_id is not None else None,
+                place_ids=place_ids,
             ),
         )
-        if place_id is None:
+        if place_id is None and not tag:
             unlinked = _unlinked(tenant_id, collection_ids)
     candidates = list(merged.values())
+    if never_landed:
+        landed = _landed_codes(uid)
+        candidates = [
+            row
+            for row in candidates
+            if not {
+                str(code).upper()
+                for code in (row.get("ident"), row.get("icao_code"))
+                if code
+            }
+            & landed
+        ]
     rows, missing = search.nearby(
         candidates,
         origin,
@@ -384,6 +484,7 @@ def where_next() -> ResponseReturnValue:
             }
             for row in rows
         ],
+        "places": _map_places(rows),
     }
     return render_template(
         "explore/where_next.html",
@@ -396,6 +497,9 @@ def where_next() -> ResponseReturnValue:
         include_visited=include_visited,
         place_id=place_id,
         unlinked=unlinked,
+        tags=tags,
+        tag=tag,
+        never_landed=never_landed,
         aircraft=aircraft,
         selected=selected,
         home=home,

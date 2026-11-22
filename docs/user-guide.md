@@ -279,7 +279,10 @@ active passports or the ones you tick, and the airfields linked to your places
 include them). Each airfield is listed once with all its reasons — "Not yet
 stamped in *Belgian passport 2026*", "4.0 km from *Pairi Daiza* (taxi)" — and at
 equal distance the airfields with more reasons come first. Places with no
-airfield yet are counted, so you can link one. You can save a home airfield on your pilot profile and a home/cruise
+airfield yet are counted, so you can link one. Narrow places to one tag, or
+keep only airfields you have never landed at; closed airfields never appear. The
+map shows the places and lines to the airfields that serve them. Opened from a
+passport, Where next? searches that passport; from a place, that place. You can save a home airfield on your pilot profile and a home/cruise
 speed on an aircraft, or use session-only inputs. Optional range estimates need
 explicit usable fuel, flow and reserve assumptions.
 

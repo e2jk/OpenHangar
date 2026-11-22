@@ -36,6 +36,15 @@
       if (typeof field.url === 'string' && /^\/[^/\\]/.test(field.url)) link.href = field.url;
       L.circleMarker([field.latitude, field.longitude], { radius: 6, color: '#6c757d' }).bindPopup(link).addTo(map);
     });
+    (data.places || []).forEach(function (place) {
+      var link = document.createElement('a');
+      link.textContent = place.name;
+      if (typeof place.url === 'string' && /^\/[^/\\]/.test(place.url)) link.href = place.url;
+      L.circleMarker([place.latitude, place.longitude], { radius: 5, color: '#198754' }).bindPopup(link).addTo(map);
+      (place.airfields || []).forEach(function (field) {
+        L.polyline([[place.latitude, place.longitude], field], { color: '#198754', weight: 1, dashArray: '4 4' }).addTo(map);
+      });
+    });
     function cleanup(event) {
       if (event.detail.elt === root || event.detail.elt.contains(root)) {
         map.remove();
