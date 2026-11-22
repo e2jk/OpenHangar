@@ -21,6 +21,10 @@ use, and Cancel drops the shared file.
 
 **Maintenance**
 
+- Groundwork for sharing a link from a phone to create a place: finding the
+  link in what apps such as Instagram share, removing its tracking
+  parameters, and suggesting a title from the shared text.
+
 - Shipping from a parallel worktree: `scripts/ship.sh --later` run in another
   agent's `git worktree` now pushes to that worktree's own
   `ship-later--<branch>` lane with its own pull request, so two lines of work
