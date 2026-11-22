@@ -46,6 +46,7 @@ def cached_gif(
     owner: str,
     variant: str,
     inputs: Any,
+    *,
     render: Callable[[], bytes],
 ) -> bytes:
     """The GIF drawn from *inputs* for *owner*'s *variant*: the kept one
