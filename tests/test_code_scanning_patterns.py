@@ -10,7 +10,10 @@ also flags code CodeQL accepts), so these checks mirror CodeQL's own:
   on the ``try``) without a comment saying why that's fine;
 - py/uninitialized-local-variable: CodeQL doesn't know ``abort()`` never
   returns, so a bare ``abort(...)`` ending an ``except`` reads as falling
-  through with the ``try``'s variables unset — write ``return abort(...)``.
+  through with the ``try``'s variables unset — write ``return abort(...)``;
+- py/unreachable-statement: nor that ``pytest.raises`` swallows what is
+  raised, so code after a ``with`` block ending in ``raise`` reads as never
+  run — raise from a helper called in the block instead.
 """
 
 import ast
@@ -81,6 +84,18 @@ def bare_aborts_ending_excepts(tree: ast.Module) -> list[int]:
     ]
 
 
+def raises_ending_with_blocks(tree: ast.Module) -> list[int]:
+    return [
+        statement.lineno
+        for node in ast.walk(tree)
+        for field in ("body", "orelse", "finalbody")
+        for statements in [getattr(node, field, None)]
+        if isinstance(statements, list)
+        for statement in statements[:-1]
+        if isinstance(statement, ast.With) and isinstance(statement.body[-1], ast.Raise)
+    ]
+
+
 def test_each_module_is_imported_one_way() -> None:
     found = [
         f"{name}: {module}"
@@ -108,6 +123,26 @@ def test_an_except_ending_in_abort_returns_it() -> None:
         for line in bare_aborts_ending_excepts(tree)
     ]
     assert not found, "use return abort(...) to end an except:\n" + "\n".join(found)
+
+
+def test_code_follows_a_with_that_raises_only_through_a_helper() -> None:
+    found = [
+        f"{name}:{line}"
+        for name, _source, tree in _parsed()
+        for line in raises_ending_with_blocks(tree)
+    ]
+    assert not found, "raise from a helper, not directly in the with:\n" + "\n".join(
+        found
+    )
+
+
+def test_the_raise_in_a_with_check() -> None:
+    flagged = "with pytest.raises(E):\n    raise E()\nx = 1\n"
+    last = "with pytest.raises(E):\n    raise E()\n"
+    helper = "with pytest.raises(E):\n    boom()\nx = 1\n"
+    assert raises_ending_with_blocks(ast.parse(flagged)) == [1]
+    assert raises_ending_with_blocks(ast.parse(last)) == []
+    assert raises_ending_with_blocks(ast.parse(helper)) == []
 
 
 @pytest.mark.parametrize(

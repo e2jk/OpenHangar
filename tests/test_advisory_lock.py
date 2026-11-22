@@ -48,8 +48,11 @@ class TestAdvisoryLockScope:
         mock_conn = mock_db.engine.connect.return_value
         mock_conn.execute.return_value.scalar.return_value = True
 
-        with pytest.raises(RuntimeError), advisory_lock_scope(mock_db, 123):
+        def boom():
             raise RuntimeError("boom")
+
+        with pytest.raises(RuntimeError), advisory_lock_scope(mock_db, 123):
+            boom()
 
         assert mock_conn.execute.call_count == 2  # lock + unlock
         mock_conn.close.assert_called_once()
