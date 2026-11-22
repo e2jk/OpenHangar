@@ -13,6 +13,10 @@
 - The tracks animation of an aircraft or of your logbook downloads at once
   the second time: it's kept once drawn, and drawn again only when its
   flights change (or after a month, for map updates).
+- An aircraft can say whether it's usually refuelled **before** or **after**
+  the flight (aircraft settings): its flight form then lists that fuel line
+  first, and the logbook import puts a fuel quantity with no before/after
+  note on that side. Left as "It varies", nothing changes.
 
 **Maintenance**
 

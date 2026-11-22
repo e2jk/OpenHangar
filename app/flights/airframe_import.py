@@ -153,7 +153,8 @@ _AIRFRAME_PARSERS: dict[str, Any] = {
 # that line of the log. fuel_timing: the log's note of whether that was
 # before or after the flight (e.g. "FFBF" = full fuel before flight, "FFAF"
 # = after) — when it doesn't say (or says both, with only the total known),
-# it's recorded as added after the flight, the most common practice.
+# it's recorded at the aircraft's usual refuel timing (Aircraft.refuel_timing,
+# "after" unless set otherwise: the most common practice).
 # fuel_remaining_fraction: fuel left at the end of the flight as a fraction
 # of the tanks (0.25, "2/8", or a count of eighths), turned into litres with
 # the aircraft's configured tank capacity.
@@ -236,11 +237,16 @@ _BEFORE_RE = re.compile(r"BF(?![A-Z])|BEFORE|AVANT|VOOR")
 _AFTER_RE = re.compile(r"AF(?![A-Z])|AFTER|APR[EÈ]S|NA(?:DIEN|[ ]?DE VLUCHT)")
 
 
-def _fuel_added_before_flight(timing: Any) -> bool:
-    """True only when the timing note says before the flight and not after
-    (e.g. "FFBF"); anything else — after, both, or no note — is after."""
+def _fuel_added_before_flight(timing: Any, usually_before: bool = False) -> bool:
+    """Whether the fuel was added before the flight: as the timing note says
+    when it names one side only ("FFBF", "6/8 AF"), else — no note, or both
+    sides — as the aircraft is usually refuelled (*usually_before*)."""
     text = str(timing or "").upper()
-    return bool(_BEFORE_RE.search(text)) and not _AFTER_RE.search(text)
+    before = bool(_BEFORE_RE.search(text))
+    after = bool(_AFTER_RE.search(text))
+    if before != after:
+        return before
+    return usually_before
 
 
 # How far apart a row's start counter may be from the previous row's end
@@ -455,6 +461,7 @@ def _build_airframe_fields(
     col_index: dict[str, int],
     date_val: date,
     tanks: list[tuple[str, float]] | None = None,
+    usually_before: bool = False,
 ) -> tuple[dict[str, Any], str | None, list[tuple[str, str, str]]]:
     """Build Flight field values (+ crew name) for one data row.
 
@@ -501,7 +508,7 @@ def _build_airframe_fields(
     eng_end = fields.get("engine_counter_end")
     if eng_start is not None and eng_end is not None and eng_end >= eng_start:
         fields["engine_time"] = round(eng_end - eng_start, 1)
-    unmatched = _apply_fuel_fields(fields, mapping, tanks)
+    unmatched = _apply_fuel_fields(fields, mapping, tanks, usually_before)
     if unmatched is not None:
         col = next(c for c, t in mapping.items() if t == "fuel_remaining_by_tank")
         parse_warnings.append(
@@ -518,6 +525,7 @@ def _apply_fuel_fields(
     fields: dict[str, Any],
     mapping: dict[str, str],
     tanks: list[tuple[str, float]] | None,
+    usually_before: bool = False,
 ) -> list[float] | None:
     """Turn the fuel mapping targets into Flight fuel fields (see the "Fuel
     columns" note above): the quantity goes to fuel added before or after
@@ -531,7 +539,9 @@ def _apply_fuel_fields(
     if qty is not None:
         qty_col = next((c for c, t in mapping.items() if t == "fuel_added"), "")
         unit = "gal" if "gal" in qty_col else "L"
-        side = "before" if _fuel_added_before_flight(timing) else "after"
+        side = (
+            "before" if _fuel_added_before_flight(timing, usually_before) else "after"
+        )
         fields[f"fuel_added_{side}_qty"] = qty
         fields[f"fuel_added_{side}_unit"] = unit
     fraction = fields.pop("fuel_remaining_fraction", None)
@@ -682,6 +692,7 @@ def execute_airframe_import(
 
     existing = _fetch_existing_dedup_index(aircraft.id)
     tanks = aircraft_tanks(aircraft)
+    usually_before = aircraft.refuel_timing == "before"
     rows: list[tuple[int, dict[str, Any], str | None]] = []
     for row_num, row in enumerate(parsed.data_rows, start=1):
         if row_num in skip_row_nums:
@@ -699,7 +710,7 @@ def execute_airframe_import(
             continue
 
         fields, crew_name, parse_warnings = _build_airframe_fields(
-            row, mapping, col_index, date_val, tanks
+            row, mapping, col_index, date_val, tanks, usually_before
         )
         for col, target, raw_repr in parse_warnings:
             result.parse_warnings.append((row_num, col, target, raw_repr))
@@ -918,6 +929,7 @@ def find_conflicting_airframe_rows(
     aircraft = db.session.get(Aircraft, aircraft_id)
     offset_hours = float(aircraft.flight_counter_offset) if aircraft else 0.0
     tanks = aircraft_tanks(aircraft) if aircraft else None
+    usually_before = aircraft is not None and aircraft.refuel_timing == "before"
     existing = _fetch_existing_dedup_index(aircraft_id)
     conflicts: list[AirframeConflictRow] = []
 
@@ -931,7 +943,7 @@ def find_conflicting_airframe_rows(
             continue
 
         fields, crew_name, _parse_warnings = _build_airframe_fields(
-            row, mapping, col_index, date_val, tanks
+            row, mapping, col_index, date_val, tanks, usually_before
         )
         if existing.contains(_dup_key(fields), _fields_dup_detail(fields)):
             continue  # exact duplicate — execute_airframe_import's own dedup handles this

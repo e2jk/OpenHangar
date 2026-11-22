@@ -152,16 +152,6 @@ is scheduled, but each is a plausible follow-up if a real need surfaces:
 
 ---
 
-## Fuel: per-aircraft default refuel timing
-
-The airframe logbook import records fuel as added **after** the flight
-whenever the log doesn't say (no *before/after* note, or a combined
-before+after total) — the most common practice, but operators differ (e.g. a
-school that always refuels before each lesson). Add an aircraft setting,
-"refuels are usually made before / after the flight", used as that default by
-the import (`_apply_fuel_fields` in `app/flights/airframe_import.py`) and
-pre-selected on the flight form's fuel section.
-
 ## Pilot logbook: timezone detection from ICAO airfield location
 
 A counter photo's time is converted to UTC with the camera's own UTC offset

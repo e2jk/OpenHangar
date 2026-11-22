@@ -117,6 +117,31 @@
         </div>
       </div>
 
+      <div class="mb-4">
+        <label class="form-label">{{ _('Usually refuelled') }}</label>
+        <div class="d-flex gap-3">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="refuel_timing"
+                   id="refuel_varies" value=""
+                   {{ 'checked' if not aircraft or aircraft.refuel_timing not in ('before', 'after') else '' }}>
+            <label class="form-check-label" for="refuel_varies">{{ _('It varies') }}</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="refuel_timing"
+                   id="refuel_before" value="before"
+                   {{ 'checked' if aircraft and aircraft.refuel_timing == 'before' else '' }}>
+            <label class="form-check-label" for="refuel_before">{{ _('Before the flight') }}</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="refuel_timing"
+                   id="refuel_after" value="after"
+                   {{ 'checked' if aircraft and aircraft.refuel_timing == 'after' else '' }}>
+            <label class="form-check-label" for="refuel_after">{{ _('After the flight') }}</label>
+          </div>
+        </div>
+        <div class="form-text">{{ _('Listed first on the flight form, and used by the logbook import when a fuel quantity doesn\'t say (otherwise after the flight).') }}</div>
+      </div>
+
       <div class="row g-3 mb-4">
         <div class="col-sm-6">
           <label for="reserve_hourly_rate" class="form-label">

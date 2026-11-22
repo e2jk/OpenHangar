@@ -472,6 +472,11 @@ class Aircraft(db.Model):
     fuel_type = db.Column(
         db.String(8), nullable=False, default="avgas"
     )  # "avgas" | "jet_a1"
+    # When this aircraft is usually refuelled ("before" | "after"): the
+    # airframe import's side for a fuel quantity with no before/after note,
+    # and the side the flight form lists first. None: not set — the import
+    # takes after, the form lists before then after.
+    refuel_timing = db.Column(db.String(8), nullable=True)
     # Oil consumption warning threshold in L/h; null = no warning on the
     # cost dashboard.
     oil_warning_lph = db.Column(db.Numeric(4, 2), nullable=True)
