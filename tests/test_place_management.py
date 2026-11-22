@@ -96,7 +96,6 @@ def test_editor_saves_plain_text_clean_photo_and_collection_tags(
 @pytest.mark.parametrize(
     "values",
     [
-        {"title": " "},
         {"title": "x" * 201},
         {"description": "x" * 8001},
         {"address": "x" * 501},
@@ -325,3 +324,33 @@ def test_collection_tag_rename_merge_delete_and_editor_boundary(
                 operation(t, u, c.id, 99999)
         with pytest.raises(PlaceError):
             rename_tag(t, u, c.id, 99999, "Missing")
+
+
+def test_unlocated_place_can_be_copied_and_enriched_by_another_editor(
+    app: Flask, people: dict[str, int]
+) -> None:
+    from places.presentation import place_label
+
+    p = people
+    with app.app_context():
+        t, u, v = p["tenant"], p["creator"], p["reader"]
+        source = create_collection(t, u, "Shared ideas")
+        target = create_collection(t, v, "My ideas")
+        set_member(t, u, source.id, v)
+        place = save_place(
+            t, u, source.id, {"external_url": "https://example.org/idea"}
+        )
+        db.session.commit()
+        assert place_label(place) == "example.org"
+        copy = copy_place(t, v, place.id, target.id)
+        db.session.commit()
+        assert copy.title is None and copy.latitude is None and copy.longitude is None
+        assert copy.external_url == place.external_url
+        changed = save_place(t, v, source.id, form(title="Found it"), place_id=place.id)
+        assert place_label(changed) == "Found it"
+        assert changed.latitude == 50.5 and changed.updated_by_user_id == v
+        blank = save_place(t, u, source.id, {})
+        assert place_label(blank) == "Place to locate"
+        # A legacy row may have a non-http URL; the label must still be useful.
+        blank.external_url = "not-a-host"
+        assert place_label(blank) == "Place to locate"

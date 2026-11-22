@@ -73,3 +73,57 @@ def test_places_migration_is_additive_and_can_be_reapplied(
     assert "places" not in inspect(engine).get_table_names()
     _upgrade(app, "head")
     assert "places" in inspect(engine).get_table_names()
+
+
+def test_optional_place_location_migration_preserves_data_and_guards_downgrade(
+    empty_schema: tuple[Flask, Engine],
+) -> None:
+    app, engine = empty_schema
+    _upgrade(app, "38faafd5e24b")
+    tenant = _insert(engine, "tenants", name="Ideas")
+    collection = _insert(
+        engine, "place_collections", tenant_id=tenant, name="Ideas", is_personal=False
+    )
+    place = _insert(
+        engine,
+        "places",
+        collection_id=collection,
+        title="Known place",
+        latitude=50.5,
+        longitude=4.2,
+        archived=False,
+    )
+    _upgrade(app, "head")
+    with engine.begin() as connection:
+        assert connection.execute(
+            text("SELECT title, latitude, longitude FROM places WHERE id=:id"),
+            {"id": place},
+        ).one() == ("Known place", 50.5, 4.2)
+        connection.execute(
+            text(
+                "UPDATE places SET title=NULL, latitude=NULL, longitude=NULL WHERE id=:id"
+            ),
+            {"id": place},
+        )
+    with (
+        app.app_context(),
+        pytest.raises(SystemExit),
+    ):
+        downgrade(directory=MIGRATIONS, revision="38faafd5e24b")
+    with engine.begin() as connection:
+        assert (
+            connection.execute(
+                text("SELECT count(*) FROM places WHERE id=:id AND latitude IS NULL"),
+                {"id": place},
+            ).scalar_one()
+            == 1
+        )
+        connection.execute(
+            text(
+                "UPDATE places SET title='Located', latitude=0, longitude=0 WHERE id=:id"
+            ),
+            {"id": place},
+        )
+    with app.app_context():
+        downgrade(directory=MIGRATIONS, revision="38faafd5e24b")
+    _upgrade(app, "head")

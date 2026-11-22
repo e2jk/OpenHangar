@@ -59,9 +59,17 @@ def show_form(
             )
         }
     )
+    if place is None and request.method == "GET":
+        # Share targets prefill only these editable fields; POST still validates.
+        values.update(
+            {key: request.args.get(key, "") for key in ("title", "external_url")}
+        )
     # Zero is a valid latitude or longitude and must survive the edit form.
     if place is not None and request.method != "POST":
-        values.update(latitude=str(place.latitude), longitude=str(place.longitude))
+        values.update(
+            latitude=str(place.latitude) if place.latitude is not None else "",
+            longitude=str(place.longitude) if place.longitude is not None else "",
+        )
     tags = (
         request.form.get("tags", "")
         if request.method == "POST"
@@ -123,7 +131,11 @@ def new_place() -> ResponseReturnValue:
     except PlaceError:
         abort(403)
     if request.method == "POST":
-        collection_id = request.form.get("collection", type=db_id)
+        collection_id = (
+            request.form.get("collection", type=db_id)
+            if request.form.get("collection", "").strip()
+            else default_collection(tid, uid).id
+        )
         if collection_id is None:
             flash(_("Choose a collection you can edit."), "danger")
             return show_form(tid, uid, None, None, status=400)

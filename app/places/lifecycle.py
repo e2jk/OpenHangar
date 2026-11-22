@@ -48,12 +48,15 @@ def prepare_places(session: Session, _context: Any, _instances: Any) -> None:
     for obj in (*session.new, *session.dirty):
         if isinstance(obj, Place):
             if not (
-                isinstance(obj.latitude, int | float)
-                and math.isfinite(obj.latitude)
-                and -90 <= obj.latitude <= 90
-                and isinstance(obj.longitude, int | float)
-                and math.isfinite(obj.longitude)
-                and -180 <= obj.longitude <= 180
+                (obj.latitude is None and obj.longitude is None)
+                or (
+                    isinstance(obj.latitude, int | float)
+                    and math.isfinite(obj.latitude)
+                    and -90 <= obj.latitude <= 90
+                    and isinstance(obj.longitude, int | float)
+                    and math.isfinite(obj.longitude)
+                    and -180 <= obj.longitude <= 180
+                )
             ):
                 raise ValueError("Invalid place coordinates")
             if obj.photo_filename is not None and not re.fullmatch(

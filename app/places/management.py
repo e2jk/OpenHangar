@@ -4,7 +4,6 @@ from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
 
 from flask import current_app
 from flask_babel import gettext as _
@@ -17,6 +16,7 @@ from models import (
     db,
     fits_column,
 )
+from pwa.shared_links import clean_link
 from services import images
 from werkzeug.datastructures import FileStorage
 
@@ -40,25 +40,17 @@ def place_values(data: Mapping[str, str]) -> dict[str, Any]:
         if len(text) > maximum or not fits_column(getattr(Place, key), text):
             raise PlaceError(_("A place field is too long."))
         result[key] = text or None
-    if not result["title"]:
-        raise PlaceError(_("Enter a place name."))
     if result["external_url"]:
-        try:
-            url = urlsplit(result["external_url"])
-            if (
-                url.scheme not in {"http", "https"}
-                or not url.hostname
-                or url.username
-                or url.password
-                or any(ord(c) < 32 for c in result["external_url"])
-            ):
-                raise ValueError
-        except ValueError:
-            raise PlaceError(_("Enter a full http or https website address.")) from None
+        cleaned = clean_link(result["external_url"])
+        if cleaned is None:
+            raise PlaceError(_("Enter a full http or https website address."))
+        result["external_url"] = cleaned
     if data.get("coordinates", "").strip():
         lat, lon = parse_coordinates(data["coordinates"])
-    else:
+    elif data.get("latitude", "").strip() or data.get("longitude", "").strip():
         lat, lon = coordinate_pair(data.get("latitude", ""), data.get("longitude", ""))
+    else:
+        lat, lon = None, None
     result.update(latitude=lat, longitude=lon)
     return result
 
@@ -158,12 +150,12 @@ def copy_place(tenant_id: int, user_id: int, place_id: int, target_id: int) -> P
         user_id,
         target_id,
         {
-            "title": source.title,
+            "title": source.title or "",
             "description": source.description or "",
             "address": source.address or "",
             "external_url": source.external_url or "",
-            "latitude": str(source.latitude),
-            "longitude": str(source.longitude),
+            "latitude": str(source.latitude) if source.latitude is not None else "",
+            "longitude": str(source.longitude) if source.longitude is not None else "",
         },
         tags=tag_names(source.id),
     )

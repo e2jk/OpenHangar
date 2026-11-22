@@ -18,6 +18,7 @@ from tests.test_place_pages import (
     test_collection_and_tag_filters_remain_private,
     test_daily_purge_retains_recent_entries_and_rolls_back_on_failure,
     test_filters_drive_identical_list_and_map,
+    test_link_only_prefill_capture_and_later_location,
     test_place_photo_and_forms_respect_readers_nonmembers_and_view_only,
 )
 
@@ -27,6 +28,7 @@ __all__ = [
     "test_collection_and_tag_filters_remain_private",
     "test_daily_purge_retains_recent_entries_and_rolls_back_on_failure",
     "test_filters_drive_identical_list_and_map",
+    "test_link_only_prefill_capture_and_later_location",
     "test_place_photo_and_forms_respect_readers_nonmembers_and_view_only",
 ]
 

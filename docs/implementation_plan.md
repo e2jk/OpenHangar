@@ -2936,7 +2936,7 @@ passport behaviour unchanged.
 - [x] Models + migration: `PlaceCollection` (tenant, name, created_by,
   is_personal), `PlaceCollectionMember` (collection, user, can_edit, joined_at),
   per-user default collection, `Place` (collection, owner, title, optional plain
-  text description, required latitude/longitude, optional address text, external
+  text description, optional latitude/longitude pair, optional address text, external
   URL, photo, archived flag, `deleted_at`/`deleted_by` for the bin, created/updated
   by and timestamps), `PlaceTag` per collection + association table.
 - [x] Collections: each user gets a personal "My places" on first use; any
@@ -2965,6 +2965,9 @@ passport behaviour unchanged.
 - [x] When an owner leaves or their account is removed, their places and visits
   stay ("former member"), ownership passes to the collection creator; before
   leaving, the owner can copy places to another of their collections.
+- [x] Quick capture: save a link alone, with an optional title; add location and
+  details later. The list includes places still to locate; maps show located places
+  only. GET `/places/new` accepts `title` and `external_url` for share-page prefill.
 - [x] Creating a place: click the map to drop the pin (draggable), or paste
   coordinates (decimal or DMS) or a map link containing coordinates.
 - [x] Tags: any number per place; free tags per collection with a translated
@@ -3110,8 +3113,9 @@ add-place form (42b) and Personal accounts (42h).
 - [ ] It opens the add-place form with the link in the place's external URL
   field and a suggested title (the shared title, else the shared text without
   the link), in the user's default collection. Nothing is saved until the user
-  sets the pin and saves; coordinates stay required, and the address search
-  (42c) is offered with the suggested title.
+  presses Save. Coordinates, title and address are optional: capture the link
+  first, then any collection editor can locate it later. GET `/places/new` reads
+  `title` and `external_url`; address search (42c) remains available.
 - [ ] Link hygiene: http(s) only, within the column length, tracking parameters
   removed (`igsh`, `utm_*`, `si`, `fbclid`…), shown as a link with
   `rel="noopener noreferrer"`. The server never fetches the shared page (most
