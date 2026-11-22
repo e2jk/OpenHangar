@@ -13,11 +13,11 @@ from flask import (
 from flask.typing import ResponseReturnValue
 from flask_babel import get_locale
 from flask_babel import gettext as _
-from models import Place, PlaceCollection, PlaceCollectionMember, PlaceVisit, User, db
+from models import Place, PlaceCollection, PlaceCollectionMember, User, db
 from services import geocoding
 from utils import db_id, login_required
 
-from places import management
+from places import airfields, management, visits
 from places.access import (
     PlaceError,
     actor,
@@ -27,6 +27,7 @@ from places.access import (
 )
 from places.collections import default_collection
 from places.coordinates import parse_coordinates
+from places.maps import airfield_map_data
 from places.routes import context, places_bp
 from places.tags import STARTER_TAGS
 
@@ -185,10 +186,16 @@ def place_detail(place_id: int) -> ResponseReturnValue:
     }
     collection = db.session.get(PlaceCollection, place.collection_id)
     assert collection is not None
+    linked = airfields.linked_airfields(
+        tid, uid, place_ids=[place.id], include_archived=True
+    )
+    visit_panel = visits.panel(tid, uid, place)
     return render_template(
         "places/place_detail.html",
-        visited=PlaceVisit.query.filter_by(place_id=place.id, user_id=uid).first()
-        is not None,
+        visited=visit_panel["visited"],
+        visit_panel=visit_panel,
+        linked_airfields=linked,
+        **airfield_map_data(linked),
         place=place,
         collection=collection,
         tags=management.tag_names(place.id),

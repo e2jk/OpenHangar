@@ -190,3 +190,78 @@ def test_save_a_link_without_locating_it(passport_page: Page) -> None:
     ).check()
     page.get_by_role("button", name="Permanently delete place", exact=True).click()
     page.wait_for_url(re.compile(r"/places/\?collection=\d+&state=bin$"))
+
+
+def test_link_only_idea_can_gain_an_airfield_location_and_own_visit(
+    passport_page: Page,
+) -> None:
+    import json
+
+    page = passport_page
+    errors: list[str] = []
+    page.on("pageerror", lambda error: errors.append(str(error)))
+    page.set_viewport_size({"width": 390, "height": 844})
+    title = "Airfield-linked museum " + uuid4().hex[:8]
+    page.goto("/places/new?external_url=https%3A%2F%2Fexample.org%2Ftrip")
+    page.get_by_role("button", name="Save place", exact=True).click()
+    page.wait_for_url(re.compile(r"/places/\d+$"))
+    detail = page.url
+    expect(page.get_by_text("No linked airfield", exact=True)).to_be_visible()
+    page.get_by_role("link", name="Manage airfield links", exact=True).click()
+    page.get_by_label("Airfield name or code", exact=True).fill("EBNM")
+    page.get_by_role("button", name="Search", exact=True).click()
+    row = page.locator("#airfield-candidates > li").filter(has_text="EBNM")
+    row.get_by_role("button", name="Link airfield", exact=True).click()
+    page.get_by_label("How to get there", exact=True).fill("Taxi then walk")
+    page.get_by_label("Preferred", exact=True).check()
+    page.get_by_role("button", name="Save airfield link", exact=True).click()
+    expect(page.get_by_label("How to get there", exact=True)).to_have_text(
+        "Taxi then walk"
+    )
+    page.get_by_role("link", name="Back to place", exact=True).click()
+    expect(page.get_by_text("Taxi then walk", exact=True)).to_be_visible()
+    expect(page.locator("#places-map")).to_have_attribute("data-oh-inited", "1")
+    assert json.loads(page.locator("#places-map").get_attribute("data-links")) == []
+    page.get_by_role("link", name="Edit place", exact=True).click()
+    page.get_by_label("Place name (optional)", exact=True).fill(title)
+    page.get_by_label("Coordinates or map link", exact=True).fill("50.49, 4.77")
+    page.get_by_role("button", name="Use coordinates", exact=True).click()
+    expect(page.get_by_label("Latitude", exact=True)).to_have_value("50.4900000")
+    page.get_by_role("button", name="Save place", exact=True).click()
+    expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()
+    assert len(json.loads(page.locator("#places-map").get_attribute("data-links"))) == 1
+    page.get_by_role("button", name="I was here", exact=True).click()
+    expect(page.locator("#place-visits")).to_contain_text("Last visited")
+    assert json.loads(page.locator("#places-map").get_attribute("data-points"))[0][
+        "visited"
+    ]
+    page.locator("#place-visits summary").click()
+    page.get_by_role("button", name="Remove this visit", exact=True).click()
+    expect(page.locator("#place-visits")).to_contain_text(
+        "Nobody has recorded a visit yet"
+    )
+    assert not json.loads(page.locator("#places-map").get_attribute("data-points"))[0][
+        "visited"
+    ]
+    assert page.evaluate(
+        "document.documentElement.scrollWidth <= window.innerWidth + 1"
+    )
+    page.goto("/places/")
+    page.get_by_label("Airfield links", exact=True).select_option("linked")
+    page.get_by_role("button", name="Apply filters", exact=True).click()
+    page.wait_for_url(re.compile(r"[?&]linked=linked(?:&|$)"))
+    expect(page.get_by_role("link", name=title, exact=True)).to_be_visible()
+    expect(page.get_by_role("link", name="Download GPX", exact=True)).to_have_attribute(
+        "hx-boost", "false"
+    )
+    page.get_by_label("Airfield links", exact=True).select_option("unlinked")
+    page.get_by_role("button", name="Apply filters", exact=True).click()
+    page.wait_for_url(re.compile(r"[?&]linked=unlinked(?:&|$)"))
+    expect(page.get_by_role("link", name=title, exact=True)).to_have_count(0)
+    page.goto(detail)
+    page.get_by_label(
+        "I confirm the permanent deletion of this place and its visits."
+    ).check()
+    page.get_by_role("button", name="Permanently delete place", exact=True).click()
+    page.wait_for_url(re.compile(r"/places/\?collection=\d+&state=bin$"))
+    assert errors == []

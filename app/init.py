@@ -886,6 +886,7 @@ def create_app() -> Flask:
 
     from explore.routes import explore_bp
     from passports.routes import passports_bp
+    from places import airfield_routes as _place_airfield_routes  # noqa: F401
     from places import exports as _places_exports  # noqa: F401
     from places import lifecycle as _places_lifecycle  # noqa: F401
     from places import visit_routes as _places_visit_routes  # noqa: F401

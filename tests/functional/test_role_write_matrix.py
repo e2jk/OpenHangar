@@ -94,6 +94,7 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
     "places.place_action": _ANY_ROLE,
     "places.coordinates": _ANY_ROLE,
     "places.geocode": _ANY_ROLE,
+    "places.airfield_links": _ANY_ROLE,
     "places.add_visit": _ANY_ROLE,
     "places.edit_visit": _ANY_ROLE,
     "places.delete_visit": _ANY_ROLE,

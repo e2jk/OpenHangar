@@ -4,6 +4,7 @@ from typing import Any
 
 from models import (
     Place,
+    PlaceAirfield,
     PlaceCollection,
     PlaceCollectionMember,
     PlaceTag,
@@ -64,6 +65,14 @@ def list_places(
         elif state != "all":
             state = "active"
             query = query.filter(Place.archived.is_(False))
+    linked = args.get("linked", "all")
+    linked_places = db.select(PlaceAirfield.place_id)
+    if linked == "linked":
+        query = query.filter(Place.id.in_(linked_places))
+    elif linked == "unlinked":
+        query = query.filter(Place.id.not_in(linked_places))
+    else:
+        linked = "all"
     location = args.get("location", "all")
     if location == "missing":
         query = query.filter(Place.latitude.is_(None))
@@ -117,6 +126,16 @@ def list_places(
         by_place.setdefault(place_id, []).append(name)
     return {
         "rows": rows,
+        "linked": linked,
+        "linked_place_ids": set(
+            db.session.scalars(
+                db.select(PlaceAirfield.place_id).where(
+                    PlaceAirfield.place_id.in_(
+                        [place.id for place, _count, _last in rows]
+                    )
+                )
+            )
+        ),
         "location": location,
         "tags": tags,
         "place_tags": by_place,

@@ -43,15 +43,21 @@ Places can be downloaded as GPX or KML waypoints, and your personal data export
 now holds the places you own, their photos and tags, and your own visits. The
 demo has a shared "Our places" collection to try it.
 
+Places now helps with the part between landing and your destination. Choose a
+nearby airfield, search by name or code, or add one missing from the catalogue.
+Save how to get there, mark your preferred airfields, and see the connections on
+the map. A filter finds places still needing an airfield.
+
+Each place also shows the collection's visit history. Record a visit with one
+click, choose another date or add a short note, and correct your own entries
+later. Download the filtered Places list as GPX or KML, or open Where next? to
+plan a trip.
+
 **Maintenance**
 
 - Groundwork for place visits: recording, correcting and removing your own
   visits, and the "Last visited … by Anna and you" history, ready for the
   place page.
-
-- Internal support for linking a place to its airfields keeps those links within
-  the collection, preserves them when copying or moving a place, and supplies
-  distances and getting-there notes to route planning.
 
 
 - The backup round-trip check now also restores a shared Places collection,
