@@ -45,6 +45,10 @@ demo has a shared "Our places" collection to try it.
 
 **Maintenance**
 
+- Groundwork for place visits: recording, correcting and removing your own
+  visits, and the "Last visited … by Anna and you" history, ready for the
+  place page.
+
 - The backup round-trip check now also restores a shared Places collection,
   with a photo, a tag, visits and a link-only place.
 

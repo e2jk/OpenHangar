@@ -888,6 +888,7 @@ def create_app() -> Flask:
     from passports.routes import passports_bp
     from places import exports as _places_exports  # noqa: F401
     from places import lifecycle as _places_lifecycle  # noqa: F401
+    from places import visit_routes as _places_visit_routes  # noqa: F401
     from places.routes import places_bp
 
     app.register_blueprint(places_bp)

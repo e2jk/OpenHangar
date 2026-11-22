@@ -1,0 +1,38 @@
+{# Visits on a place's page (42e). Needs `place` and `visit_panel`
+   (places.visits.panel). Members only: the page itself checks membership. #}
+<section class="mb-4" id="place-visits" aria-labelledby="place-visits-title">
+<h2 id="place-visits-title">{{ _('Visits') }}</h2>
+{% if visit_panel.summary %}<p class="fw-semibold">{{ visit_panel.summary }}</p>{% else %}<p>{{ _('Nobody has recorded a visit yet.') }}</p>{% endif %}
+{% if visit_panel.can_record %}
+<form method="post" action="{{ url_for('places.add_visit', place_id=place.id) }}" class="row g-2 align-items-end mb-3">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<div class="col-sm-4"><label for="visit-date" class="form-label">{{ _('Date') }}</label><input type="date" class="form-control" id="visit-date" name="visit_date" value="{{ visit_panel.today }}" max="{{ visit_panel.today }}" required></div>
+<div class="col-sm-5"><label for="visit-note" class="form-label">{{ _('Note (optional)') }}</label><input class="form-control" id="visit-note" name="note" maxlength="500"></div>
+<div class="col-sm-3"><button class="btn btn-ac-primary w-100">{{ _('I was here') }}</button></div>
+</form>
+{% endif %}
+{% if visit_panel.history %}
+<ul class="list-unstyled">
+{% for visit in visit_panel.history %}
+<li class="border-bottom py-2">
+<strong>{{ format_date(visit.date, 'long') }}</strong> · {{ visit.by }}{% if visit.flight_id %} · <a href="{{ url_for('pilots.view_entry', entry_id=visit.flight_id) }}">{{ _('Flight') }}</a>{% endif %}
+{% if visit.note %}<p class="mb-1 text-break">{{ visit.note }}</p>{% endif %}
+{% if visit.mine and visit_panel.can_record %}
+<details><summary class="small">{{ _('Correct or remove') }}</summary>
+<form method="post" action="{{ url_for('places.edit_visit', place_id=place.id, visit_id=visit.id) }}" class="row g-2 align-items-end mt-1">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<div class="col-sm-4"><label class="form-label" for="visit-date-{{ visit.id }}">{{ _('Date') }}</label><input type="date" class="form-control" id="visit-date-{{ visit.id }}" name="visit_date" value="{{ visit.date.isoformat() }}" max="{{ visit_panel.today }}" required></div>
+<div class="col-sm-5"><label class="form-label" for="visit-note-{{ visit.id }}">{{ _('Note (optional)') }}</label><input class="form-control" id="visit-note-{{ visit.id }}" name="note" maxlength="500" value="{{ visit.note or '' }}"></div>
+<div class="col-sm-3"><button class="btn btn-ac-ghost w-100">{{ _('Save visit') }}</button></div>
+</form>
+<form method="post" action="{{ url_for('places.delete_visit', place_id=place.id, visit_id=visit.id) }}" class="mt-2">
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<button class="btn btn-sm btn-outline-danger">{{ _('Remove this visit') }}</button>
+</form>
+</details>
+{% endif %}
+</li>
+{% endfor %}
+</ul>
+{% endif %}
+</section>
