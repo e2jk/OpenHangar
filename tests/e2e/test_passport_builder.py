@@ -12,7 +12,7 @@ from xml.etree import ElementTree as ET
 import pytest
 from playwright.sync_api import Browser, Page, Route, expect
 
-from tests.e2e.conftest import _block_external_network
+from tests.e2e.conftest import _block_external_network, click_and_settle
 
 pytestmark = [pytest.mark.e2e, pytest.mark.destructive]
 
@@ -51,7 +51,9 @@ def test_passport_builder_map_survives_htmx_navigation(
     expect(page.locator("#passport-builder")).to_have_attribute("data-oh-inited", "1")
     expect(page.locator("#passport-map-data")).to_have_count(1)
     expect(page.locator("#passport-selection-map .leaflet-map-pane")).to_have_count(1)
-    page.get_by_role("button", name="Review passport", exact=True).click()
+    click_and_settle(
+        page, page.get_by_role("button", name="Review passport", exact=True)
+    )
     expect(page.get_by_role("alert")).to_contain_text("Enter a passport name.")
     expect(page.locator("#passport-selection-map .leaflet-map-pane")).to_have_count(1)
     page.locator("#passport-title").fill(title)
@@ -70,7 +72,9 @@ def test_passport_builder_map_survives_htmx_navigation(
     expect(
         page.locator("#passport-selection-map .leaflet-overlay-pane path")
     ).to_have_count(2)
-    page.get_by_role("button", name="Review passport", exact=True).click()
+    click_and_settle(
+        page, page.get_by_role("button", name="Review passport", exact=True)
+    )
     expect(page.get_by_role("button", name="Save passport", exact=True)).to_be_visible()
     expect(page.locator("#passport-selection-map .leaflet-map-pane")).to_have_count(1)
     page.get_by_role("button", name="Back to selection", exact=True).click()
@@ -81,7 +85,9 @@ def test_passport_builder_map_survives_htmx_navigation(
     assert page.evaluate(
         "document.documentElement.scrollWidth <= window.innerWidth + 1"
     )
-    page.get_by_role("button", name="Review passport", exact=True).click()
+    click_and_settle(
+        page, page.get_by_role("button", name="Review passport", exact=True)
+    )
     page.get_by_role("button", name="Save passport", exact=True).click()
     page.wait_for_url(re.compile(r"/passports/\d+/$"))
     expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()
@@ -97,7 +103,9 @@ def test_passport_builder_map_survives_htmx_navigation(
     page.get_by_role("link", name="Create passport", exact=True).click()
     expect(page.locator("#passport-builder")).to_have_attribute("data-oh-inited", "1")
     page.locator('input[name="draft"]').evaluate("el => { el.value = 'expired'; }")
-    page.get_by_role("button", name="Review passport", exact=True).click()
+    click_and_settle(
+        page, page.get_by_role("button", name="Review passport", exact=True)
+    )
     expect(page.get_by_role("link", name="Start again", exact=True)).to_be_visible()
     page.get_by_role("link", name="Start again", exact=True).click()
     expect(page.locator("#passport-selection-map .leaflet-map-pane")).to_have_count(1)
@@ -148,7 +156,9 @@ def test_passport_visits_frequency_and_htmx_map(
     page.goto(live_server_url + "/passports/new")
     page.locator("#passport-title").fill(title)
     page.locator("#passport-codes").fill("EBNM")
-    page.get_by_role("button", name="Review passport", exact=True).click()
+    click_and_settle(
+        page, page.get_by_role("button", name="Review passport", exact=True)
+    )
     page.get_by_role("button", name="Save passport", exact=True).click()
     page.wait_for_url(re.compile(r"/passports/\d+/$"))
     passport_url = page.url
@@ -207,7 +217,9 @@ def test_passport_destination_discovery(
     page.locator("#custom-longitude").fill("4.7")
     page.get_by_role("button", name="Add custom airfield", exact=True).click()
     expect(page.locator("#passport-builder table")).to_contain_text(destination)
-    page.get_by_role("button", name="Review passport", exact=True).click()
+    click_and_settle(
+        page, page.get_by_role("button", name="Review passport", exact=True)
+    )
     page.get_by_role("button", name="Save passport", exact=True).click()
     page.wait_for_url(re.compile(r"/passports/\d+/$"))
     passport_url = page.url
@@ -339,7 +351,9 @@ def test_passport_source_import_review_and_no_javascript(
     expect(page.locator("#passport-codes")).to_have_value("ZZZZ")
     page.get_by_role("button", name="Drop these unresolved codes", exact=True).click()
     expect(page.locator("#passport-codes")).to_have_value("")
-    page.get_by_role("button", name="Review passport", exact=True).click()
+    click_and_settle(
+        page, page.get_by_role("button", name="Review passport", exact=True)
+    )
     page.get_by_role("button", name="Save passport", exact=True).click()
     page.wait_for_url(re.compile(r"/passports/\d+/$"))
     passport_url = page.url
@@ -385,7 +399,9 @@ def test_linked_editions_copy_combined_map_and_no_js(
     page.goto(live_server_url + "/passports/new")
     page.locator("#passport-title").fill(title)
     page.locator("#passport-codes").fill("EBNM")
-    page.get_by_role("button", name="Review passport", exact=True).click()
+    click_and_settle(
+        page, page.get_by_role("button", name="Review passport", exact=True)
+    )
     page.get_by_role("button", name="Save passport", exact=True).click()
     page.wait_for_url(re.compile(r"/passports/\d+/$"))
     source_url = page.url
@@ -406,7 +422,9 @@ def test_linked_editions_copy_combined_map_and_no_js(
     page.locator("#next-end").fill("2027-08-31")
     page.get_by_role("button", name="Copy and review targets", exact=True).click()
     expect(page.locator("#passport-builder table")).to_contain_text("EBNM")
-    page.get_by_role("button", name="Review passport", exact=True).click()
+    click_and_settle(
+        page, page.get_by_role("button", name="Review passport", exact=True)
+    )
     page.get_by_role("button", name="Save passport", exact=True).click()
     page.wait_for_url(re.compile(r"/passports/\d+/$"))
     new_url = page.url
@@ -472,7 +490,9 @@ def test_individual_vouchers_stay_separate_from_stamps_and_work_without_js(
     page.locator("#custom-longitude").fill("4.7")
     page.get_by_role("button", name="Add custom airfield", exact=True).click()
     expect(page.locator("#passport-builder table")).to_contain_text(destination)
-    page.get_by_role("button", name="Review passport", exact=True).click()
+    click_and_settle(
+        page, page.get_by_role("button", name="Review passport", exact=True)
+    )
     page.get_by_role("button", name="Save passport", exact=True).click()
     page.wait_for_url(re.compile(r"/passports/\d+/$"))
     passport_url = page.url
@@ -565,7 +585,9 @@ def test_group_consent_series_map_mobile_and_without_js(
     page.locator("#passport-codes").fill("EBNM EBOS")
     page.get_by_role("button", name="Add codes", exact=True).click()
     expect(page.locator("#passport-builder table")).to_contain_text("EBOS")
-    page.get_by_role("button", name="Review passport", exact=True).click()
+    click_and_settle(
+        page, page.get_by_role("button", name="Review passport", exact=True)
+    )
     page.get_by_role("button", name="Save passport", exact=True).click()
     page.wait_for_url(re.compile(r"/passports/\d+/$"))
     passport_url = page.url
@@ -684,7 +706,9 @@ def test_invitation_mobile_login_join_and_no_js(
     page.locator("#passport-codes").fill("EBNM EBOS")
     page.get_by_role("button", name="Add codes", exact=True).click()
     expect(page.locator("#passport-builder table")).to_contain_text("EBOS")
-    page.get_by_role("button", name="Review passport", exact=True).click()
+    click_and_settle(
+        page, page.get_by_role("button", name="Review passport", exact=True)
+    )
     page.get_by_role("button", name="Save passport", exact=True).click()
     page.wait_for_url(re.compile(r"/passports/\d+/$"))
     passport_url = page.url
@@ -862,7 +886,9 @@ def test_invited_friend_registration_without_javascript(
     page.goto(live_server_url + "/passports/new")
     page.locator("#passport-title").fill(title)
     page.locator("#passport-codes").fill("EBNM")
-    page.get_by_role("button", name="Review passport", exact=True).click()
+    click_and_settle(
+        page, page.get_by_role("button", name="Review passport", exact=True)
+    )
     page.get_by_role("button", name="Save passport", exact=True).click()
     page.wait_for_url(re.compile(r"/passports/\d+/$"))
     passport_url = page.url
@@ -1015,7 +1041,9 @@ def test_private_passport_print_with_selected_photo_htmx_and_no_javascript(
     page.locator("#passport-codes").fill("EBNM EBOS")
     page.get_by_role("button", name="Add codes", exact=True).click()
     expect(page.locator("#passport-builder table")).to_contain_text("EBOS")
-    page.get_by_role("button", name="Review passport", exact=True).click()
+    click_and_settle(
+        page, page.get_by_role("button", name="Review passport", exact=True)
+    )
     page.get_by_role("button", name="Save passport", exact=True).click()
     page.wait_for_url(re.compile(r"/passports/\d+/$"))
     passport_url = page.url
