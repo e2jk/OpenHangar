@@ -10,9 +10,11 @@
       <h1 class="page-title"><i class="bi bi-share me-2"></i>{{ _('Shared files') }}</h1>
       <p class="page-sub">{{ _('Where would you like to save these files?') }}</p>
     </div>
-    <a href="{{ url_for('index') }}" class="btn btn-ac-ghost">
-      <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
-    </a>
+    <form method="post" action="{{ url_for('pwa.share_discard') }}">
+      <button type="submit" class="btn btn-ac-ghost">
+        <i class="bi bi-x-lg me-1"></i>{{ _('Cancel') }}
+      </button>
+    </form>
   </div>
 
   <div class="row justify-content-center">

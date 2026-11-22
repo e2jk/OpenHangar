@@ -13,6 +13,12 @@ Copy a place with an independent photo, or move it while keeping every visitor
 in the destination collection. The bin gives editors 30 days to restore a
 place, and leaving a group preserves its places and visit history.
 
+Sharing a file to the installed app on Android now goes all the way: an
+expense receipt, a flight photo or a maintenance file opens that form with the
+file attached, and it is saved with the form (before, OpenHangar only asked
+you to attach it again by hand). The share page lists only what your role can
+use, and Cancel drops the shared file.
+
 **Maintenance**
 
 - Shipping from a parallel worktree: `scripts/ship.sh --later` run in another

@@ -606,6 +606,20 @@
             <hr class="my-3">
             <h6 class="text-muted mb-2"><i class="bi bi-camera me-1"></i>{{ _('Photos') }}
               <span class="fw-normal small">({{ _('optional') }})</span></h6>
+            {% if shared_file %}
+            {% set shared_file_hint = _('Saved with this flight, in the place you choose here, unless you upload another photo there.') %}
+            {% include "partials/shared_file.html" %}
+            <div class="mb-3">
+              <label for="shared_photo_slot" class="form-label">{{ _('Use the shared photo as') }}</label>
+              <select class="form-select form-select-sm" id="shared_photo_slot" name="shared_photo_slot">
+                <option value="flight_counter_photo">{{ _('Flight counter, after the flight') }}</option>
+                <option value="engine_counter_photo">{{ _('Engine counter, after the flight') }}</option>
+                <option value="fuel_photo">{{ _('Fuel, after the flight') }}</option>
+                <option value="flight_counter_photo_preflight">{{ _('Flight counter, before the flight') }}</option>
+                <option value="engine_counter_photo_preflight">{{ _('Engine counter, before the flight') }}</option>
+              </select>
+            </div>
+            {% endif %}
             <div class="form-text mb-2">{{ _('Pre-flight photos — taken before departure (e.g. at block-off), for cross-checking the counter readings below.') }}</div>
             <div class="row mb-3">
               <div class="col-6">

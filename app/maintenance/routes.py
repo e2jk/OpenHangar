@@ -33,15 +33,19 @@ from models import (
     AmpRevision,
     Component,
     ComponentType,
+    DocCategory,
+    Document,
     HoursBasis,
     MaintenanceImportBatch,
     MaintenanceRecord,
     MaintenanceTrigger,
     Role,
     Snag,
+    Tenant,
     TriggerType,
     db,
 )  # pyright: ignore[reportMissingImports]
+from pwa import pending  # pyright: ignore[reportMissingImports]
 from services.authorization import (
     AuthorizationService,  # pyright: ignore[reportMissingImports]
 )
@@ -400,6 +404,7 @@ def list_triggers(aircraft_id: int) -> ResponseReturnValue:
         current_flight_hours=current_flight_hours,
         projected_dates=projected_dates,
         maint_view=maint_view,
+        shared_file=pending.current("maintenance", ac.id),
     )
 
 
@@ -549,6 +554,7 @@ def service_trigger(aircraft_id: int, trigger_id: int) -> ResponseReturnValue:
                 current_landings=ac.total_landings,
                 current_flight_hours=ac.total_flight_hours,
                 today=_date.today().isoformat(),
+                shared_file=pending.current("maintenance", ac.id),
             )
 
         record = MaintenanceRecord(
@@ -578,7 +584,18 @@ def service_trigger(aircraft_id: int, trigger_id: int) -> ResponseReturnValue:
         ):
             t.due_landings = landings_at_service + t.interval_landings
 
+        shared = pending.submitted("maintenance", ac.id)
+        if shared is not None:
+            _attach_shared_file(shared, ac, t, performed_at)
         db.session.commit()
+        if shared is not None:
+            pending.discard()
+            flash(
+                _(
+                    "The shared file was saved with the aircraft's maintenance documents."
+                ),
+                "success",
+            )
         activity(
             "maintenance.serviced",
             trigger_id=t.id,
@@ -597,6 +614,46 @@ def service_trigger(aircraft_id: int, trigger_id: int) -> ResponseReturnValue:
         current_landings=ac.total_landings,
         current_flight_hours=ac.total_flight_hours,
         today=_date.today().isoformat(),
+        shared_file=pending.current("maintenance", ac.id),
+    )
+
+
+def _attach_shared_file(
+    share: pending.PendingShare,
+    ac: Aircraft,
+    trigger: MaintenanceTrigger,
+    performed_at: _date,
+) -> None:
+    """Save the file shared to this service form (pwa.pending) as an aircraft
+    maintenance document named after the item and the service date."""
+    from documents.routes import (  # pyright: ignore[reportMissingImports]
+        _save_upload_canonical,
+    )
+
+    tenant = db.session.get(Tenant, ac.tenant_id)
+    if tenant is None:  # pragma: no cover — the aircraft FK guarantees it exists
+        abort(404)
+    title = str(
+        _(
+            "%(item)s, serviced %(date)s",
+            item=trigger.name,
+            date=performed_at.isoformat(),
+        )
+    )[:128]
+    with share.upload() as upload:
+        relpath, mime, size = _save_upload_canonical(
+            upload, tenant, ac, DocCategory.MAINTENANCE, title
+        )
+    db.session.add(
+        Document(
+            aircraft_id=ac.id,
+            filename=relpath,
+            original_filename=share.files[0].original,
+            mime_type=mime,
+            size_bytes=size,
+            title=title,
+            category=DocCategory.MAINTENANCE,
+        )
     )
 
 

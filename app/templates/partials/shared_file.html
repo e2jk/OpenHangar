@@ -1,0 +1,16 @@
+{# A file shared from another app, attached to this form until it is saved
+   (pwa.pending). Pass shared_file (a PendingShare) and shared_file_hint. #}
+{% if shared_file %}
+{% set shared = shared_file.files[0] %}
+<div class="border rounded p-2 mb-2" id="shared-file-card">
+  <div class="form-check mb-0">
+    <input class="form-check-input" type="checkbox" name="use_shared_file"
+           id="use_shared_file" value="{{ shared_file.token }}" checked>
+    <label class="form-check-label" for="use_shared_file">
+      <i class="bi bi-share me-1"></i>{{ _('Shared file:') }}
+      <strong class="text-break">{{ shared.original }}</strong>
+    </label>
+  </div>
+  {% if shared_file_hint %}<div class="form-text">{{ shared_file_hint }}</div>{% endif %}
+</div>
+{% endif %}

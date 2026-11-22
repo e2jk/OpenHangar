@@ -17,6 +17,7 @@ from models import (
     Tenant,
     TenantUser,
     User,
+    UserAircraftAccess,
     UserAllAircraftAccess,
     db,
 )
@@ -260,6 +261,10 @@ def test_full_context_queries_and_roles_agree_across_feature_helpers(
     with app.app_context():
         tu = db.session.get(TenantUser, (m["user"], m["guest"]))
         tu.access_scope, tu.role = "full", Role.VIEWER
+        # A viewer sees only the aircraft they were given access to.
+        db.session.add(
+            UserAircraftAccess(user_id=m["user"], aircraft_id=m["guest_plane"])
+        )
         db.session.commit()
     with app.test_request_context():
         user = db.session.get(User, m["user"])

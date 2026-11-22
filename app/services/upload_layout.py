@@ -41,8 +41,16 @@ TRASH_ROOT = "_trash"
 IMPORT_TMP_DIRNAME = "import_tmp"  # pilot + airframe logbook imports
 GPS_IMPORT_TMP_DIRNAME = "gps_import_tmp"  # aircraft + pilot GPS imports
 AMP_IMPORT_TMP_DIRNAME = "amp_import_tmp"  # maintenance programme import
+# Files shared from another app, kept until the chosen form uses them
+# (pwa.pending); a share abandoned on its form leaves them.
+SHARE_TMP_DIRNAME = "share_tmp"
 TEMP_DIRNAMES = frozenset(
-    {IMPORT_TMP_DIRNAME, GPS_IMPORT_TMP_DIRNAME, AMP_IMPORT_TMP_DIRNAME}
+    {
+        IMPORT_TMP_DIRNAME,
+        GPS_IMPORT_TMP_DIRNAME,
+        AMP_IMPORT_TMP_DIRNAME,
+        SHARE_TMP_DIRNAME,
+    }
 )
 TEMP_MAX_AGE_HOURS = 24
 

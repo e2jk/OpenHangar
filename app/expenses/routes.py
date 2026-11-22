@@ -22,6 +22,7 @@ from models import (
     Role,
     db,
 )  # pyright: ignore[reportMissingImports]
+from pwa import pending  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
     current_membership,
     login_required,
@@ -29,6 +30,7 @@ from utils import (  # pyright: ignore[reportMissingImports]
     require_role,
     user_can_access_aircraft,
 )
+from werkzeug.datastructures import FileStorage
 
 from expenses.cost_dashboard import (  # pyright: ignore[reportMissingImports]
     DEFAULT_PERIOD_MONTHS,
@@ -242,6 +244,7 @@ def add_expense(aircraft_id: int) -> ResponseReturnValue:
         units=_UNITS,
         today=_date.today().isoformat(),
         prefill=_fuel_expense_prefill(ac) if request.method == "GET" else None,
+        shared_file=pending.current("expense", ac.id),
     )
 
 
@@ -274,6 +277,7 @@ def edit_expense(aircraft_id: int, expense_id: int) -> ResponseReturnValue:
         units=_UNITS,
         today=_date.today().isoformat(),
         prefill=None,
+        shared_file=None,
     )
 
 
@@ -301,6 +305,31 @@ def delete_expense(aircraft_id: int, expense_id: int) -> ResponseReturnValue:
 def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | None:
     """Validate POST data, persist, return error string or None on success.
 
+    The receipt is the uploaded file, else a file shared to this expense
+    form from another app (pwa.pending), used through the same checks.
+    """
+    receipt_file = request.files.get("receipt")
+    if receipt_file is not None and not receipt_file.filename:
+        receipt_file = None
+    shared = (
+        pending.submitted("expense", aircraft.id)
+        if receipt_file is None and expense is None
+        else None
+    )
+    if shared is None:
+        return _save_expense(aircraft, expense, receipt_file)
+    with shared.upload() as shared_receipt:
+        error = _save_expense(aircraft, expense, shared_receipt)
+    if error is None:
+        pending.discard()
+    return error
+
+
+def _save_expense(
+    aircraft: Aircraft, expense: Expense | None, receipt_file: FileStorage | None
+) -> str | None:
+    """Validate the form fields, persist, return error string or None.
+
     Field validation (excluding the receipt file) is delegated to
     parse_expense_fields(); note this checks the receipt file extension
     *after* all other fields now rather than interleaved between coverage
@@ -312,9 +341,6 @@ def _validate_and_save(aircraft: Aircraft, expense: Expense | None) -> str | Non
     if error:
         return error
 
-    receipt_file = request.files.get("receipt")
-    if receipt_file is not None and not receipt_file.filename:
-        receipt_file = None
     if receipt_file is not None:
         import os as _os
 
