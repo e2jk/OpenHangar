@@ -862,61 +862,8 @@ the full e2e suite three consecutive times locally
 
 All work is in `tests/e2e/`, `app/dev_seed.py`, and `scripts/` — no app
 behaviour changes, no migrations, no translations. Test files keep their
-feature-based names. **Any `.github/workflows/ci.yml` edit (tasks 1 and 3)
+feature-based names. **Any `.github/workflows/ci.yml` edit (task 3)
 must be explicitly approved by the maintainer first.**
-
-### 1. Unify the two seed paths (single source of truth)
-
-Today `tests/e2e/conftest.py` builds the `SEED` id dict two different ways:
-
-- **In-process mode** (no `E2E_BASE_URL`): runs `dev_seed.seed()`, then
-  creates e2e-only extras inline (two future-dated deletable `Flight` rows
-  `fe_del1`/`fe_del2`, the admin's most recent flight claimed in place as
-  their own pilot-log row, a standalone FSTD `Flight` row, and
-  `UserInvitation`/`PasswordResetToken` rows with the fixed tokens
-  `e2e-crawl-invite-token`/`e2e-crawl-reset-token`), then queries ORM objects
-  directly.
-- **Docker/CI mode** (`E2E_BASE_URL` set): reads `tests/e2e/seed.json`
-  written by `scripts/generate_routes.py --seed-out`, which samples
-  *pre-existing* dev-seed rows — the extras above don't exist there, so some
-  ids are `None` (tests skip silently) and destructive tests delete real
-  seed rows. Silent fallbacks like `_s("aircraft_id_3", "aircraft_id")` can
-  also alias two logically distinct fixtures to the same aircraft. This
-  drift is what broke CI three ways in `c0460e9`.
-
-Fix — make the database the single source of truth for both modes:
-
-1. Move the e2e-extras block out of `conftest.py` into a new function
-   `_seed_e2e_extras()` at the end of `app/dev_seed.py`, called from
-   `seed()` only when `os.environ.get("OPENHANGAR_E2E_SEED") == "1"`.
-   Reuse the exact object definitions currently in `conftest.py` (search
-   for "E2E-only extras"). `dev_seed.py` is omitted in `.coveragerc`, so
-   this adds no coverage obligation.
-2. In-process mode: set `os.environ["OPENHANGAR_E2E_SEED"] = "1"` in
-   `conftest.py` before `_dev_seed()` runs, and delete the inline extras
-   block.
-3. Docker/CI mode: add `-e OPENHANGAR_E2E_SEED=1` to the `$E2E_WEB`
-   `docker run` in both `browser-tests-seeded-crawl` and
-   `browser-tests-seeded-rest` jobs of `.github/workflows/ci.yml`
-   (⚠ maintainer approval required).
-4. Extend `_query_samples()` in `scripts/generate_routes.py` to also emit
-   the extras' ids, queried by their distinguishing properties (future
-   date + registration for the deletable flights, `entry_type == FSTD` for
-   the standalone entry, the two fixed token strings). Emit them under the
-   exact key names `conftest.py` uses (`fe_del1`, `fe_del2`,
-   `pe_linked_id`, `pe_standalone_fstd_id`, `invite_token`, `reset_token`).
-5. Replace *both* SEED-building blocks in `conftest.py` with one code path:
-   in-process mode imports and calls `_query_samples(app)` directly
-   (add `scripts/` to `sys.path` or move `_query_samples` into a small
-   shared module) instead of hand-querying ORM objects; Docker mode keeps
-   reading `seed.json` (same dict, produced by the same function).
-6. Remove the fallback-key mechanism (`_s(key, fallback_key)`): once the
-   extras are guaranteed in both modes, a missing id is a bug — `assert`
-   the required keys are non-None at session start so it fails loudly with
-   a clear message rather than skipping or aliasing.
-
-Acceptance: zero e2e tests skipped for missing seed ids in either mode;
-destructive tests consume only the synthetic future-dated rows.
 
 ### 2. Log in once per session (Playwright storage state) + TOTP window guard
 
