@@ -5010,6 +5010,25 @@ class PlaceVisit(db.Model):
     )
 
 
+class PlaceVisitDismissal(db.Model):
+    """A "record a visit?" suggestion after a flight that its pilot dismissed:
+    each flight and place is suggested once (Phase 42e)."""
+
+    __tablename__ = "place_visit_dismissals"
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    flight_id = db.Column(
+        db.Integer, db.ForeignKey("flights.id", ondelete="CASCADE"), primary_key=True
+    )
+    place_id = db.Column(
+        db.Integer, db.ForeignKey("places.id", ondelete="CASCADE"), primary_key=True
+    )
+    created_at = db.Column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+
+
 # ---------------------------------------------------------------------------
 # Numbers too large, and text too long, for their column
 # ---------------------------------------------------------------------------

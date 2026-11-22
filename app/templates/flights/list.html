@@ -6,6 +6,8 @@
 {% block content %}
 <div class="container py-4" data-oh-aircraft-id="{{ aircraft.id }}" data-oh-logbook-views>
 
+  {% include "places/_visit_suggestions.html" %}
+
   <div class="page-header mb-4">
     <div>
       <h1 class="page-title"><i class="bi bi-book me-2"></i>{{ _('Aircraft logbook') }}</h1>

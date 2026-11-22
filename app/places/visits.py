@@ -13,7 +13,7 @@ from typing import Any
 
 from flask_babel import format_date
 from flask_babel import gettext as _
-from models import Place, PlaceVisit, User, db
+from models import Flight, Place, PlaceVisit, PlaceVisitDismissal, User, db
 
 from places.access import PlaceError, actor, place_access
 
@@ -37,11 +37,11 @@ def _values(data: Mapping[str, str]) -> tuple[date, str | None]:
     try:
         visited = date.fromisoformat(raw) if raw else date.today()
     except ValueError as exc:
-        raise PlaceError(_("Enter the visit date as a valid date.")) from exc
+        raise PlaceError(_("Enter a valid visit date.")) from exc
     if visited > date.today():
         raise PlaceError(_("A visit cannot be in the future."))
     if visited.year < 1900:
-        raise PlaceError(_("Enter the visit date as a valid date."))
+        raise PlaceError(_("Enter a valid visit date."))
     note = " ".join((data.get("note") or "").split()) or None
     if note is not None and len(note) > MAX_NOTE:
         raise PlaceError(
@@ -164,3 +164,113 @@ def panel(tenant_id: int, user_id: int, place: Place) -> dict[str, Any]:
         "can_record": can_record,
         "today": date.today().isoformat(),
     }
+
+
+# How far back logged flights are offered a "record a visit?" suggestion, and
+# how many suggestions a page shows at once.
+SUGGESTION_DAYS = 30
+MAX_SUGGESTIONS = 3
+
+
+def _own_flight(user_id: int, flight_id: int) -> Flight:
+    flight = db.session.get(Flight, flight_id)
+    if flight is None or user_id not in (
+        flight.pic_user_id,
+        flight.second_crew_user_id,
+    ):
+        raise NotFound(_("Flight not found."))
+    return flight
+
+
+def flight_suggestions(tenant_id: int, user_id: int) -> list[dict[str, Any]]:
+    """Recent own flights (as pilot or second crew) that arrived at an airfield
+    linked to a place in one of the user's collections, not yet recorded as a
+    visit from that flight nor dismissed: "You landed at EBXX, 4 km from
+    Pairi Daiza — record a visit?". Never recorded automatically."""
+    from datetime import timedelta
+
+    from places.airfields import linked_airfields
+
+    try:
+        links = linked_airfields(tenant_id, user_id)
+    except PlaceError:
+        return []
+    by_code: dict[str, list[dict[str, Any]]] = {}
+    for link in links:
+        for code in {link["ident"], link["icao_code"]}:
+            if code:
+                by_code.setdefault(str(code).upper(), []).append(link)
+    if not by_code:
+        return []
+    flights = (
+        Flight.query.filter(
+            db.or_(
+                Flight.pic_user_id == user_id, Flight.second_crew_user_id == user_id
+            ),
+            Flight.date >= date.today() - timedelta(days=SUGGESTION_DAYS),
+            Flight.date <= date.today(),
+            Flight.arrival_icao.isnot(None),
+        )
+        .order_by(Flight.date.desc(), Flight.id.desc())
+        .all()
+    )
+    recorded = {
+        (row.flight_id, row.place_id)
+        for row in PlaceVisit.query.filter(
+            PlaceVisit.user_id == user_id,
+            PlaceVisit.flight_id.in_([f.id for f in flights]),
+        )
+    } | {
+        (row.flight_id, row.place_id)
+        for row in PlaceVisitDismissal.query.filter(
+            PlaceVisitDismissal.user_id == user_id,
+            PlaceVisitDismissal.flight_id.in_([f.id for f in flights]),
+        )
+    }
+    suggestions: list[dict[str, Any]] = []
+    for flight in flights:
+        code = (flight.arrival_icao or "").strip().upper()
+        for link in by_code.get(code, []):
+            if (flight.id, link["place_id"]) in recorded:
+                continue
+            recorded.add((flight.id, link["place_id"]))
+            suggestions.append(
+                {
+                    "flight_id": flight.id,
+                    "date": flight.date,
+                    "code": code,
+                    "place_id": link["place_id"],
+                    "place": link["place_name"],
+                    "distance_km": link["distance_km"],
+                }
+            )
+            if len(suggestions) == MAX_SUGGESTIONS:
+                return suggestions
+    return suggestions
+
+
+def record_from_flight(
+    tenant_id: int, user_id: int, place_id: int, flight_id: int
+) -> PlaceVisit:
+    """The suggested visit: on the flight's date, linked to the flight."""
+    place = _place(tenant_id, user_id, place_id)
+    flight = _own_flight(user_id, flight_id)
+    visit = PlaceVisit(
+        place_id=place.id,
+        user_id=user_id,
+        visit_date=flight.date,
+        flight_id=flight.id,
+    )
+    db.session.add(visit)
+    db.session.flush()
+    return visit
+
+
+def dismiss(tenant_id: int, user_id: int, place_id: int, flight_id: int) -> None:
+    place = _place(tenant_id, user_id, place_id)
+    flight = _own_flight(user_id, flight_id)
+    if db.session.get(PlaceVisitDismissal, (user_id, flight.id, place.id)) is None:
+        db.session.add(
+            PlaceVisitDismissal(user_id=user_id, flight_id=flight.id, place_id=place.id)
+        )
+        db.session.flush()

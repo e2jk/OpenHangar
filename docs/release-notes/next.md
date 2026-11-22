@@ -54,14 +54,15 @@ click, choose another date or add a short note, and correct your own entries
 later. Download the filtered Places list as GPX or KML, or open Where next? to
 plan a trip.
 
+Visits: on a place's page, **I was here** records your visit, and the page
+shows who visited when. After a flight that landed at an airfield linked to one
+of your places, your logbook offers to record the visit in one click.
+
 **Maintenance**
 
 - Two members choosing the same airfield at the same time now keep a single
   link, preserving its saved directions instead of failing with a database error.
 
-- Groundwork for place visits: recording, correcting and removing your own
-  visits, and the "Last visited … by Anna and you" history, ready for the
-  place page.
 
 
 - The backup round-trip check now also restores a shared Places collection,

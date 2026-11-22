@@ -334,6 +334,14 @@ aircraft: every account has them, Personal accounts and viewers included.
 - **List and map** of one or all collections, filtered by tag, visited or not,
   archived, or still to locate; places without a location stay in the list but
   not on the map.
+- **Visits:** on a place's page, **I was here** records your visit (today, or
+  another past date, with a short note); you can correct or remove only your own.
+  The page shows who visited when ("Last visited 3 May 2026 by Anna and you").
+  After you log a flight that landed at an airfield linked to one of your
+  places, the flight list and your logbook offer "You landed at EBXX, 4 km
+  from *Pairi Daiza* — record a visit?": one click records it with the
+  flight, or **No, thanks** hides it. Nothing is recorded by itself, and the
+  second pilot of the flight gets the same offer.
 - **Downloads:** the places of the list as filtered, as GPX or KML waypoints
   (names and coordinates only). Your personal data export (on the airfield
   passports page) also holds the places you own, their tags and photos, your

@@ -3023,7 +3023,7 @@ connections, and the reader-owned visit panel, are now connected through 42d/42e
 - [x] **Unlinked places**: "Unlinked" badge, "Unlinked only" filter, prompt to
   link an airfield.
 
-### 42e — Visits
+### 42e — Visits ✅
 
 - [x] `PlaceVisit` (place, user, date, optional flight, optional short note). A
   place can be visited many times by different members; "visited" means at least
@@ -3033,13 +3033,18 @@ connections, and the reader-owned visit panel, are now connected through 42d/42e
   (`record`/`update`/`delete`, own visits only; `panel(tid, uid, place)`),
   `places/visit_routes.py` (`places.add_visit`, `edit_visit`, `delete_visit`)
   and `templates/places/_visits.html`; the panel is connected to the place page.
-- [ ] **After logging a flight** whose arrival or an intermediate full-stop
+- [x] **After logging a flight** whose arrival or an intermediate full-stop
   landing is at an airfield linked to a place in one of the user's collections,
   the post-save page offers a dismissible "You landed at EBXX, 4 km from *Pairi
   Daiza* — record a visit?"; one click creates the visit linked to the flight.
   Never automatic, not inside the flight form, shown once per flight and place,
   also after an offline-saved flight synchronises, and for the second crew member
   on their copy.
+  *Done (2026-11-22):* `visits.flight_suggestions` on the aircraft logbook and
+  pilot logbook pages (flights of the last 30 days, at most three at once),
+  `places.visit_from_flight` / `dismiss_visit_suggestion`, dismissals in
+  `place_visit_dismissals`. Flights record no intermediate landings, so the
+  arrival airfield is the one matched.
 
 ### 42f — Where next? on its own
 

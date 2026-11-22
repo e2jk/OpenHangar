@@ -65,8 +65,8 @@ def test_every_member_records_a_visit_today_by_default(
     ("data", "message"),
     [
         ({"visit_date": (date.today() + timedelta(days=1)).isoformat()}, "future"),
-        ({"visit_date": "not a date"}, "valid date"),
-        ({"visit_date": "1850-01-01"}, "valid date"),
+        ({"visit_date": "not a date"}, "valid visit date"),
+        ({"visit_date": "1850-01-01"}, "valid visit date"),
         ({"note": "x" * 501}, "under 500"),
     ],
 )
