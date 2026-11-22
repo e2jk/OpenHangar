@@ -662,7 +662,9 @@ def test_back_button_cache_does_not_outlive_the_account(
             origin + "/login", headers={"Sec-Purpose": "prefetch"}
         )
         assert speculative.status == 204
-        assert speculative.headers["cache-control"] == "no-store"
+        # "no-store", or "no-store, private" when the request still saw the
+        # session it just ended (timing): both forbid any cache.
+        assert "no-store" in speculative.headers["cache-control"]
         assert "set-cookie" not in speculative.headers
 
         login(page, origin, "Bravo")

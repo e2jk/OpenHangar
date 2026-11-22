@@ -130,7 +130,9 @@ from flights.shared_flight import (  # pyright: ignore[reportMissingImports]
 
 flights_bp = Blueprint("flights", __name__)
 
-_ALLOWED_PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic"}
+# Counter/fuel photos are cleaned and re-encoded as JPEG (services.images):
+# GIF and HEIC can't be decoded without extra dependencies, so they're refused.
+_ALLOWED_PHOTO_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 _FUEL_UNITS = ["L", "gal"]
 _NATURE_SUGGESTIONS = [
     "Local flight",
@@ -258,20 +260,53 @@ _PHOTO_SLOTS: dict[str, str] = {
 
 
 def _save_upload(file: Any, flight_id: int, label: str) -> str | None:
+    """Store a counter/fuel photo cleaned (services.images): orientation
+    applied, re-encoded as JPEG without EXIF/GPS or other metadata. A file of
+    another type, or one that isn't a valid photo, is refused with a message
+    and None is returned."""
+    from services.images import PhotoError, clean_photo
+
     # secure_filename() raises TypeError on None — file.filename is None
-    # (not just "") when a multipart part omits the filename= attribute
-    # entirely. The only current caller already guards this, but this
-    # function shouldn't rely on that (found auditing every secure_filename
-    # call site for the fuzzing backlog's "extension-allowlist logic"
-    # entry).
-    ext = os.path.splitext(secure_filename(file.filename or ""))[1].lower()
-    if ext not in _ALLOWED_PHOTO_EXTS:
+    # (not just "") when a multipart part omits the filename= attribute.
+    name = file.filename or ""
+    ext = os.path.splitext(secure_filename(name))[1].lower()
+    try:
+        if ext not in _ALLOWED_PHOTO_EXTS:
+            raise PhotoError(_("Upload a JPEG, PNG or WebP photo."))
+        data = clean_photo(file)
+    except PhotoError as exc:
+        flash(_("%(name)s: %(error)s", name=name, error=exc), "warning")
         return None
-    stored = f"flight_{flight_id}_{label}_{uuid.uuid4().hex[:8]}{ext}"
+    stored = f"flight_{flight_id}_{label}_{uuid.uuid4().hex[:8]}.jpg"
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
     os.makedirs(folder, exist_ok=True)
-    file.save(os.path.join(folder, stored))
+    with open(os.path.join(folder, stored), "wb") as fh:
+        fh.write(data)
     return stored
+
+
+@flights_bp.route("/flights/photo-hints", methods=["POST"])
+@login_required
+@require_pilot_access
+@_limiter.limit("60 per minute", exempt_when=_rate_limiting_disabled)
+def photo_hints() -> ResponseReturnValue:
+    """What a chosen counter/fuel photo suggests for the form — when it was
+    taken (UTC) and the airfield it was taken at — read and discarded, never
+    stored (services.photo_hints). The form offers them; nothing is filled in
+    by itself."""
+    from services.images import MAX_PHOTO_BYTES
+    from services.photo_hints import read_hints
+
+    upload = request.files.get("photo")
+    if upload is None or not upload.filename:
+        abort(400)
+    offset = request.form.get("offset", type=int)
+    if offset is not None and not -14 * 60 <= offset <= 14 * 60:
+        offset = None
+    data = upload.stream.read(MAX_PHOTO_BYTES + 1)
+    response = jsonify(read_hints(data, upload.filename, offset))
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
 
 
 def _delete_upload(filename: str | None) -> None:

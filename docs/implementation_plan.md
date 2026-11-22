@@ -3258,20 +3258,32 @@ logging a flight on the aircraft form fills both logbooks in one step.
 
 ---
 
-## Phase 46 — Photo EXIF & Arrival Time Auto-fill
+## Phase 46 — Photo EXIF & Arrival Time Auto-fill ✅
 
 Goal: extract the arrival time automatically from counter photos so pilots
 don't need to type it in after every flight.
 
 **EXIF timestamp extraction:**
-- [ ] On counter photo upload, extract EXIF `DateTimeOriginal` tag → suggest as arrival time (converted to UTC, floored to nearest 0.1 h); user can accept or override
-- [ ] If EXIF tags are absent, attempt to parse a timestamp from the original filename (common patterns: `IMG_YYYYMMDD_HHmmss`, `YYYY-MM-DD HH.mm.ss`, etc.) as a fallback
-- [ ] No OCR of counter values yet (tracked in [`docs/backlog.md`](backlog.md))
+- [x] On counter photo upload, extract EXIF `DateTimeOriginal` tag → suggest as arrival time (converted to UTC, floored to nearest 0.1 h); user can accept or override
+- [x] If EXIF tags are absent, attempt to parse a timestamp from the original filename (common patterns: `IMG_YYYYMMDD_HHmmss`, `YYYY-MM-DD HH.mm.ss`, etc.) as a fallback
+- [x] No OCR of counter values yet (tracked in [`docs/backlog.md`](backlog.md))
 
 **Tests:**
-- [ ] Known-good JPEG with EXIF `DateTimeOriginal` → correct UTC arrival suggestion, floored to 0.1 h
-- [ ] JPEG with stripped EXIF but timestamp in filename → correct fallback suggestion
-- [ ] JPEG with neither EXIF nor recognisable filename → no suggestion, no error
+- [x] Known-good JPEG with EXIF `DateTimeOriginal` → correct UTC arrival suggestion, floored to 0.1 h
+- [x] JPEG with stripped EXIF but timestamp in filename → correct fallback suggestion
+- [x] JPEG with neither EXIF nor recognisable filename → no suggestion, no error
+
+---
+
+*Done (2026-11-22):* `services/photo_hints.py` and `/flights/photo-hints`
+read a chosen counter/fuel photo in memory (never stored; the saved photo is
+cleaned of its metadata) and `static/js/photo_hints.js` offers its time and
+airfield under the photo input with "Use as…" buttons — a post-flight photo
+for the arrival, a pre-flight one for the departure. The time is exact UTC
+with the camera's `OffsetTimeOriginal`, else converted with the device's UTC
+offset and marked "about"; the airfield is the catalogue field within 2 km of
+the photo's GPS position, none when two are about as close. Times are offered
+to the minute, as the form's time fields take them.
 
 ---
 

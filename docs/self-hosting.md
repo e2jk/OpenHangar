@@ -803,6 +803,16 @@ See [configuration reference](configuration.md#monitoring) for details.
 - Terminate TLS at the reverse proxy; do not expose port 5000 directly to the internet.
 - The container runs as a non-root user (`appuser`).
 - Users can enable TOTP 2FA from their profile page; enforce it by policy.
+- Photos are cleaned when they're uploaded — aircraft photos (also shown on public
+  showcase links), flight counter and fuel photos, photos shared from a phone and
+  place photos: re-encoded as JPEG without EXIF metadata, so a phone's GPS
+  position is never stored or published. Photos stored by versions before
+  that keep theirs: list them with
+  `docker compose exec web flask clean-photos`, then re-encode them with
+  `flask clean-photos --apply` (the originals are deleted, or moved to
+  `_trash/` with `--keep-originals`). HEIC and GIF photos can't be decoded
+  and are listed for you to replace; new uploads take JPEG, PNG or WebP
+  (iPhones convert to JPEG when uploading from a browser).
 - `OPENHANGAR_ENV` defaults to `production`; never set it to `development` on an internet-facing host.
 - Traefik never gets a raw Docker socket mount. A dedicated `socket-proxy`
   service (`wollomatic/socket-proxy`, digest-pinned) holds the **read-only**

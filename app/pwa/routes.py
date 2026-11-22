@@ -58,9 +58,8 @@ _DEST_ACCEPT: dict[str, frozenset[str]] = {
         {"application/pdf", "image/jpeg", "image/png", "image/gif", "image/webp"}
     ),
     "maintenance": frozenset({"application/pdf", "image/jpeg", "image/png"}),
-    "flight_photo": frozenset(
-        {"image/jpeg", "image/png", "image/gif", "image/webp", "image/heic"}
-    ),
+    # Cleaned and re-encoded on save (services.images): JPEG, PNG, WebP only.
+    "flight_photo": frozenset({"image/jpeg", "image/png", "image/webp"}),
 }
 
 

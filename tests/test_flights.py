@@ -26,6 +26,8 @@ from models import (
     db,
 )  # pyright: ignore[reportMissingImports]
 
+from tests.test_passport_stamps import image_bytes
+
 
 def _login_orphan_user(app, client):
     """Create a User with no TenantUser and inject into session."""
@@ -870,7 +872,7 @@ class TestPhotoUpload:
                 "flight_time_counter_end": "101.5",
                 "crew_name_0": "Test Pilot",
                 "crew_role_0": "PIC",
-                "flight_counter_photo": (BytesIO(b"fake image data"), "flight.jpg"),
+                "flight_counter_photo": (BytesIO(image_bytes()), "flight.jpg"),
             },
             content_type="multipart/form-data",
             follow_redirects=False,
@@ -899,14 +901,14 @@ class TestPhotoUpload:
                 "flight_time_counter_end": "101.5",
                 "crew_name_0": "Test Pilot",
                 "crew_role_0": "PIC",
-                "engine_counter_photo": (BytesIO(b"fake tach image"), "engine.png"),
+                "engine_counter_photo": (BytesIO(image_bytes()), "engine.png"),
             },
             content_type="multipart/form-data",
         )
         with app.app_context():
             fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe.engine_counter_photo is not None
-            assert fe.engine_counter_photo.endswith(".png")
+            assert fe.engine_counter_photo.endswith(".jpg")  # re-encoded as JPEG
 
     def test_upload_ignores_invalid_extension(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
@@ -956,7 +958,7 @@ class TestPhotoUpload:
                 "flight_time_counter_end": "101.5",
                 "crew_name_0": "Test Pilot",
                 "crew_role_0": "PIC",
-                "flight_counter_photo": (BytesIO(b"new image"), "new_flight.jpg"),
+                "flight_counter_photo": (BytesIO(image_bytes()), "new_flight.jpg"),
             },
             content_type="multipart/form-data",
         )
@@ -997,7 +999,7 @@ class TestPhotoUpload:
                 "flight_time_counter_end": "101.5",
                 "crew_name_0": "Test Pilot",
                 "crew_role_0": "PIC",
-                "fuel_photo": (BytesIO(b"fake fuel image"), "fuel.jpg"),
+                "fuel_photo": (BytesIO(image_bytes()), "fuel.jpg"),
             },
             content_type="multipart/form-data",
         )
@@ -1025,7 +1027,7 @@ class TestPhotoUpload:
                 "crew_name_0": "Test Pilot",
                 "crew_role_0": "PIC",
                 "flight_counter_photo_preflight": (
-                    BytesIO(b"fake preflight image"),
+                    BytesIO(image_bytes()),
                     "preflight_flight.jpg",
                 ),
             },
@@ -1059,7 +1061,7 @@ class TestPhotoUpload:
                 "crew_name_0": "Test Pilot",
                 "crew_role_0": "PIC",
                 "engine_counter_photo_preflight": (
-                    BytesIO(b"fake preflight tach image"),
+                    BytesIO(image_bytes()),
                     "preflight_engine.png",
                 ),
             },
@@ -1068,7 +1070,7 @@ class TestPhotoUpload:
         with app.app_context():
             fe = Flight.query.filter_by(aircraft_id=acid).first()
             assert fe.engine_counter_photo_preflight is not None
-            assert fe.engine_counter_photo_preflight.endswith(".png")
+            assert fe.engine_counter_photo_preflight.endswith(".jpg")
 
     def test_delete_flight_removes_preflight_photos(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
@@ -1115,7 +1117,7 @@ class TestSaveUploadNoneFilename:
         from flights.routes import _save_upload  # pyright: ignore[reportMissingImports]
         from werkzeug.datastructures import FileStorage
 
-        with app.app_context():
+        with app.test_request_context():
             file = FileStorage(stream=BytesIO(b"data"), filename=None)
             assert _save_upload(file, flight_id=1, label="flight") is None
 

@@ -31,6 +31,8 @@ from pwa import pending
 from services.temp_cleanup import cleanup_temp_uploads
 from services.upload_layout import NOT_BACKED_UP_DIRNAMES, SHARE_TMP_DIRNAME
 
+from tests.test_passport_stamps import image_bytes
+
 
 def _member(app: Flask, email: str, role: str = Role.OWNER) -> tuple[int, int]:
     with app.app_context():
@@ -56,7 +58,7 @@ def _login(client: FlaskClient, user_id: int) -> None:
 
 def _jpeg(name: str = "IMG_2041") -> tuple[io.BytesIO, str, str]:
     # Android often sends a name without extension: the type decides it.
-    return io.BytesIO(b"\xff\xd8\xff shared photo"), name, "image/jpeg"
+    return io.BytesIO(image_bytes()), name, "image/jpeg"
 
 
 def _pdf(name: str = "invoice.pdf") -> tuple[io.BytesIO, str, str]:
@@ -403,7 +405,7 @@ def test_a_photo_uploaded_in_that_slot_wins_and_the_share_stays(
             ac_id,
             use_shared_file=_token(client),
             shared_photo_slot="flight_counter_photo",
-            flight_counter_photo=(io.BytesIO(b"mine"), "mine.jpg"),
+            flight_counter_photo=(io.BytesIO(image_bytes()), "mine.jpg"),
         ),
         content_type="multipart/form-data",
     )

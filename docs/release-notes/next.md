@@ -1,5 +1,15 @@
 # Places to fly to, shared with friends, and Where next?
 
+**Security:** uploaded photos are now cleaned of their metadata. A photo
+taken with a phone carries the GPS position where it was taken, and aircraft
+photos were stored with it — and shown on public showcase links. Aircraft,
+flight counter and fuel photos, and photos shared from a phone, are now
+re-encoded without any metadata, like passport and place photos already were.
+New photos must be JPEG, PNG or WebP (HEIC and GIF can't be cleaned; iPhones
+convert to JPEG when uploading). **Administrators:** clean the photos stored
+before this version once with `docker compose exec web flask clean-photos
+--apply` (without `--apply` it only lists them).
+
 **Places** is a new map of destinations worth a flight — a town, a museum, a
 restaurant, a viewpoint or a place to stay — in the new **Explore** menu.
 Every account has it, including friends with a Personal account.
@@ -80,6 +90,14 @@ Every account has it, including friends with a Personal account.
   aircraft. The Viewer role is shown as **Viewer (read-only)**, and the user
   list explains which to choose for someone who doesn't fly.
 
+**Flight logging**
+
+- Attach a counter photo and OpenHangar suggests when it was taken (in UTC)
+  and the airfield it was taken at, as the arrival — or, for a pre-flight
+  photo, the departure: **Use as arrival time**, **Use as arrival airfield**.
+  Nothing is filled in by itself, and the photo is still stored without its
+  metadata.
+
 **Maintenance**
 
 - Address search runs through the OpenHangar server, using OpenStreetMap's
@@ -99,6 +117,6 @@ Every account has it, including friends with a Personal account.
   fallbacks.
 - Shipping: `scripts/ship.sh --later` run in a parallel `git worktree` pushes
   to that worktree's own lane and pull request, so two lines of work can land
-  side by side. It also runs the browser tests before every push (about 5
-  minutes, a failing test retried once): every pull request that failed at
+  side by side. It also runs the browser tests before every push (2 workers,
+  about 7 minutes, a failing test retried once): every pull request that failed at
   first in the past week had failed in them.

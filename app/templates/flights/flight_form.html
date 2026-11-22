@@ -603,6 +603,17 @@
             </div>
 
             {# Photos #}
+            {# Suggestions read from a chosen photo (static/js/photo_hints.js). #}
+            <div id="photo-hints" hidden data-url="{{ url_for('flights.photo_hints') }}"
+                 data-labels="{{ {
+                   'taken': _('Photo taken at {time} UTC on {date}.'),
+                   'taken_about': _('Photo taken at about {time} UTC on {date} (this device\'s time zone).'),
+                   'taken_at': _('Taken at {ident} — {name} ({km} km).'),
+                   'use_arrival_time': _('Use as arrival time'),
+                   'use_departure_time': _('Use as departure time'),
+                   'use_arrival_airfield': _('Use as arrival airfield'),
+                   'use_departure_airfield': _('Use as departure airfield'),
+                 } | tojson | forceescape }}"></div>
             <hr class="my-3">
             <h6 class="text-muted mb-2"><i class="bi bi-camera me-1"></i>{{ _('Photos') }}
               <span class="fw-normal small">({{ _('optional') }})</span></h6>
