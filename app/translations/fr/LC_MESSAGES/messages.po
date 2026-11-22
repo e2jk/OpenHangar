@@ -3262,8 +3262,8 @@ msgid "Confirm the permanent deletion of this place."
 msgstr "Confirmez la suppression définitive de ce lieu."
 
 #: app/places/presentation.py:16
-msgid "Place to locate"
-msgstr "Lieu à localiser"
+msgid "Unnamed place"
+msgstr "Lieu sans nom"
 
 #: app/places/routes.py:236
 msgid "Invitation saved. Ask your friend to sign in and open Places."

@@ -27,6 +27,7 @@ for someone who doesn't fly.
 Paste a link and save it for later, even without a name or location. The new-place
 form accepts shared titles and links, and a “Location still to add” filter helps
 you find ideas to finish together. Only located places appear on the map.
+A missing name is shown as “Unnamed place”, separately from a missing location.
 
 **Maintenance**
 

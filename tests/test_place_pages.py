@@ -520,7 +520,7 @@ def test_link_only_prefill_capture_and_later_location(
     assert response.status_code == 302
     detail_url = response.headers["Location"]
     page = client.get(detail_url)
-    assert "example.org" in page.text and "Location still to add" in page.text
+    assert "Location still to add" in page.text
     assert 'id="places-map"' not in page.text
     with app.app_context():
         saved = Place.query.filter_by(external_url="https://example.org/idea").one()
@@ -530,8 +530,8 @@ def test_link_only_prefill_capture_and_later_location(
         assert saved.collection_id == d["destination"]
         saved_id = saved.id
     page = client.get("/places/?location=missing")
-    assert "example.org" in page.text and points(page) == []
-    assert "example.org" not in client.get("/places/?location=located").text
+    assert f'href="{detail_url}"' in page.text and points(page) == []
+    assert f'href="{detail_url}"' not in client.get("/places/?location=located").text
     edit = client.get(f"/places/{saved_id}/edit")
     assert 'value="None"' not in edit.text
     response = client.post(
