@@ -366,6 +366,35 @@ def _populate_places(tenant_id: int, pilot: Any, upload_folder: Path) -> None:
             place_id=castle.id, tag_id=tag.id, collection_id=collection.id
         )
     )
+    # The castle's airfield (with directions), and a dismissed "record a
+    # visit?" offer for the round-trip landing there.
+    from models import (
+        Flight,
+        PassportAirfieldIdentity,
+        PlaceAirfield,
+        PlaceVisitDismissal,
+    )
+
+    field = PassportAirfieldIdentity.query.filter_by(
+        tenant_id=tenant_id, name="Round-trip Field"
+    ).one()
+    db.session.add(
+        PlaceAirfield(
+            tenant_id=tenant_id,
+            collection_id=collection.id,
+            place_id=castle.id,
+            airfield_id=field.id,
+            note="Taxi, 10 minutes — é",
+            preferred=True,
+        )
+    )
+    landing = Flight.query.filter_by(pic_user_id=pilot.id, arrival_icao="EBRT").first()
+    if landing is not None:
+        db.session.add(
+            PlaceVisitDismissal(
+                user_id=pilot.id, flight_id=landing.id, place_id=castle.id
+            )
+        )
     db.session.add_all(
         [
             PlaceVisit(
