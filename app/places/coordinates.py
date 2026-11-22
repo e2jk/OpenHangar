@@ -92,6 +92,7 @@ def parse_coordinates(value: str) -> tuple[float, float]:
                 if pair:
                     return coordinate_pair(pair[1], pair[2])
         except ValueError:
+            # Unsupported URLs use the same validation message below; never log pasted data.
             pass
     raise PlaceError(
         _("Paste decimal or DMS coordinates, or a map link containing coordinates.")

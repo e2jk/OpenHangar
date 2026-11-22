@@ -477,3 +477,19 @@ def test_daily_purge_retains_recent_entries_and_rolls_back_on_failure(
         assert purge_retired() == (1, 1)
         assert not photo_path(filename).exists()
         assert db.session.get(PlaceCollectionInvitation, fresh_id) is not None
+
+
+def test_coordinate_api_uses_a_fixed_public_validation_message(
+    client: FlaskClient, people: dict[str, int]
+) -> None:
+    from places.access import PlaceError
+
+    signin(client, people)
+    with patch(
+        "places.place_routes.parse_coordinates",
+        side_effect=PlaceError("private diagnostic"),
+    ):
+        response = client.post("/places/coordinates", data={"coordinates": "invalid"})
+    assert response.status_code == 400
+    assert "Paste decimal or DMS coordinates" in response.json["error"]
+    assert "private diagnostic" not in response.text

@@ -135,7 +135,7 @@ def new_place() -> ResponseReturnValue:
     try:
         collection_access(tid, uid, selected, editing=True)
     except PlaceError:
-        abort(404)
+        return abort(404)
     return show_form(tid, uid, None, selected)
 
 
@@ -146,7 +146,7 @@ def edit_place(place_id: int) -> ResponseReturnValue:
     try:
         place = place_access(tid, uid, place_id, editing=True)
     except PlaceError:
-        abort(404)
+        return abort(404)
     if request.method == "POST":
         return save_form(tid, uid, place, place.collection_id)
     return show_form(tid, uid, place, place.collection_id)
@@ -159,7 +159,7 @@ def place_detail(place_id: int) -> ResponseReturnValue:
     try:
         place = place_access(tid, uid, place_id)
     except PlaceError:
-        abort(404)
+        return abort(404)
     member = db.session.get(PlaceCollectionMember, (place.collection_id, uid))
     user = actor(tid, uid)
     names = {
@@ -196,7 +196,7 @@ def place_photo(place_id: int) -> ResponseReturnValue:
     try:
         place = place_access(tid, uid, place_id)
     except PlaceError:
-        abort(404)
+        return abort(404)
     if not place.photo_filename:
         abort(404)
     path = management.photo_path(place.photo_filename)
@@ -214,8 +214,13 @@ def coordinates() -> ResponseReturnValue:
     actor(tid, uid)
     try:
         lat, lon = parse_coordinates(request.form.get("coordinates", ""))
-    except PlaceError as exc:
-        return jsonify(error=str(exc)), 400
+    except PlaceError:
+        # This API has one public validation contract, never exception details.
+        return jsonify(
+            error=_(
+                "Paste decimal or DMS coordinates, or a map link containing coordinates."
+            )
+        ), 400
     return jsonify(latitude=lat, longitude=lon)
 
 
@@ -233,7 +238,7 @@ def place_action(place_id: int) -> ResponseReturnValue:
             include_deleted=action in {"restore", "purge"},
         )
     except PlaceError:
-        abort(404)
+        return abort(404)
     cid = place.collection_id
     new_name = None
     redirect_id = place.id

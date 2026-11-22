@@ -142,7 +142,7 @@ def settings_context(tid: int, uid: int, cid: int) -> dict[str, Any]:
     try:
         collection = collection_access(tid, uid, cid, managing=user.is_instance_admin)
     except PlaceError:
-        abort(404)
+        return abort(404)
     members = (
         db.session.query(PlaceCollectionMember, User)
         .join(User, User.id == PlaceCollectionMember.user_id)
@@ -317,4 +317,6 @@ def join_collection(collection_id: int) -> ResponseReturnValue:
     )
 
 
-from places import place_routes  # noqa: F401 -- register destination views after the blueprint
+from places import place_routes  # Register destination views after the blueprint.
+
+__all__ = ["place_routes", "places_bp"]

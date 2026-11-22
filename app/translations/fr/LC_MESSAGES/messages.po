@@ -3197,7 +3197,7 @@ msgstr "Choisissez un membre de cette collection."
 msgid "Enter valid latitude and longitude coordinates."
 msgstr "Saisissez une latitude et une longitude valides."
 
-#: app/places/coordinates.py:97
+#: app/places/coordinates.py:98 app/places/place_routes.py:221
 msgid "Paste decimal or DMS coordinates, or a map link containing coordinates."
 msgstr "Collez des coordonnées décimales ou en degrés, minutes et secondes, ou un lien de carte contenant des coordonnées."
 
@@ -3237,7 +3237,7 @@ msgstr "Chaque personne ayant enregistré une visite doit faire partie de la col
 msgid "Only the place owner or collection creator can permanently delete it."
 msgstr "Seuls le propriétaire du lieu ou la personne qui a créé la collection peuvent le supprimer définitivement."
 
-#: app/places/place_routes.py:128 app/places/place_routes.py:244
+#: app/places/place_routes.py:128 app/places/place_routes.py:249
 msgid "Choose a collection you can edit."
 msgstr "Choisissez une collection que vous pouvez modifier."
 
@@ -3252,7 +3252,7 @@ msgstr "Membre sans nom"
 msgid "Former member"
 msgstr "Ancien membre"
 
-#: app/places/place_routes.py:259
+#: app/places/place_routes.py:264
 msgid "Confirm the permanent deletion of this place."
 msgstr "Confirmez la suppression définitive de ce lieu."
 
@@ -3877,7 +3877,7 @@ msgstr "Date corrigée d’après la trace GPS ; le carnet papier indique %(va
 msgid "Enter a valid %(label)s."
 msgstr "Saisissez une valeur valide pour %(label)s."
 
-#: app/services/destination_search.py:59
+#: app/services/destination_search.py:60
 msgid "Choose an unambiguous airfield code or a saved field reference."
 msgstr "Choisissez un code d’aérodrome non ambigu ou une référence de terrain enregistrée."
 
