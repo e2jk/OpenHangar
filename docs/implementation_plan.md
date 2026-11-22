@@ -3007,10 +3007,14 @@ reader-owned visit form with 42e.
 
 ### 42d — Airfield linking
 
-- [ ] `PlaceAirfield`: place ↔ `PassportAirfieldIdentity` (existing tenant-scoped
+- [x] `PlaceAirfield`: place ↔ `PassportAirfieldIdentity` (existing tenant-scoped
   identities and offline catalogue; no second airfield table), with an optional
   "how to get there" note (walk, bike, taxi, bus…) and "preferred" flag; distance
   computed for display.
+  *Model and service:* collection-scoped composite references, public-source
+  provenance, copy/move retention, and `places.airfields.linked_airfields` for
+  membership-filtered route-planning results. The linking screens follow with
+  the suggestions and unlinked filter below.
 - [ ] Suggest airfields within **15 km** (adjustable), nearest first, with type
   and distance; one click links one. Suggested: small/medium/large airports,
   seaplane bases and airfields added manually in this instance; never heliports

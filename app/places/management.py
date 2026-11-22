@@ -9,6 +9,7 @@ from flask import current_app
 from flask_babel import gettext as _
 from models import (
     Place,
+    PlaceAirfield,
     PlaceCollectionMember,
     PlaceTag,
     PlaceTagAssignment,
@@ -159,6 +160,18 @@ def copy_place(tenant_id: int, user_id: int, place_id: int, target_id: int) -> P
         },
         tags=tag_names(source.id),
     )
+    for link in PlaceAirfield.query.filter_by(place_id=source.id):
+        db.session.add(
+            PlaceAirfield(
+                tenant_id=tenant_id,
+                collection_id=target_id,
+                place_id=copy.id,
+                airfield_id=link.airfield_id,
+                note=link.note,
+                preferred=link.preferred,
+                public_catalogue=link.public_catalogue,
+            )
+        )
     if source.photo_filename:
         try:
             data = photo_path(source.photo_filename).read_bytes()

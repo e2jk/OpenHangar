@@ -49,6 +49,11 @@ demo has a shared "Our places" collection to try it.
   visits, and the "Last visited … by Anna and you" history, ready for the
   place page.
 
+- Internal support for linking a place to its airfields keeps those links within
+  the collection, preserves them when copying or moving a place, and supplies
+  distances and getting-there notes to route planning.
+
+
 - The backup round-trip check now also restores a shared Places collection,
   with a photo, a tag, visits and a link-only place.
 
