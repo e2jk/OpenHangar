@@ -2645,6 +2645,14 @@ def _analyse_pilot_gps_review(
     full_segs = [_segment_to_dict(seg, i) for i, seg in enumerate(segments)]
 
     for seg in full_segs:
+        seg["matched_ground_role"] = ""
+        seg["matched_ground_when"] = ""
+        if seg["is_ground_only"]:
+            # Never a flight of its own: see _pilot_match_ground_runs below.
+            seg.update(_pilot_seg_match_dict([]))
+            seg["matched_near_date"] = False
+            seg["linked_pilot_entries"] = []
+            continue
         block_off = _datetime.fromisoformat(seg["block_off_utc"])
         block_on = _datetime.fromisoformat(seg["block_on_utc"])
         matches = _pilot_match_segment(uid, seg, block_off, block_on)
@@ -2695,7 +2703,54 @@ def _analyse_pilot_gps_review(
         )
         seg.update(_pilot_seg_match_dict(parts))
 
+    _pilot_match_ground_runs(uid, full_segs)
     return full_segs
+
+
+def _pilot_match_ground_runs(uid: int, full_segs: list[dict[str, Any]]) -> None:
+    """Link each ground-only recording (engine running, never airborne) the
+    way the aircraft GPS import does (services.gps_link.ground_run_target),
+    among the pilot's own flights that day: a logged ground entry it is the
+    recording of, or the flight departing or arriving within the taxi window
+    at that airfield — added to its track as a taxi part. Longest first: of
+    several that day, the longest is a ground entry's own recording."""
+    from aircraft.routes import _matched_gps_spans
+    from services.gps_link import (  # pyright: ignore[reportMissingImports]
+        ground_run_target,
+    )
+    from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
+
+    gps_spans = _matched_gps_spans(full_segs)
+    claimed = {s["matched_flight_id"] for s in full_segs if s["matched_flight_id"]}
+    for seg in sorted(
+        (s for s in full_segs if s["is_ground_only"]),
+        key=lambda s: (
+            _datetime.fromisoformat(s["block_off_utc"])
+            - _datetime.fromisoformat(s["block_on_utc"])
+        ),
+    ):
+        off = _datetime.fromisoformat(seg["block_off_utc"])
+        on = _datetime.fromisoformat(seg["block_on_utc"])
+        day_flights = (
+            Flight.query.filter(
+                or_(Flight.pic_user_id == uid, Flight.second_crew_user_id == uid),
+                Flight.date == off.date(),
+            )
+            .order_by(Flight.departure_time, Flight.id)
+            .all()
+        )
+        target = ground_run_target(
+            off, on, seg.get("departure_icao"), day_flights, gps_spans, claimed
+        )
+        if target is None:
+            continue
+        flight, role, when = target
+        if role == "entry":
+            claimed.add(flight.id)
+            gps_spans[flight.id] = (off, on)
+        seg.update(_pilot_seg_match_dict([flight]))
+        seg["matched_ground_role"] = role
+        seg["matched_ground_when"] = when
 
 
 @pilots_bp.route("/pilot/gps-import/review", methods=["GET"])
@@ -2921,6 +2976,8 @@ def _pilot_confirm_segment(
                 device_id=device_id,
                 departure_icao=dep_icao,
                 arrival_icao=arr_icao,
+                # A taxi before or after the flight: never its times.
+                taxi=seg.get("matched_ground_role") == "taxi",
             )
             # Unified model: this Flight row already covers both crew slots
             # (pic_user_id/second_crew_user_id), so setting gps_track_id

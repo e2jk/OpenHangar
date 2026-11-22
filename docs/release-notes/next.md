@@ -17,6 +17,10 @@
   the flight (aircraft settings): its flight form then lists that fuel line
   first, and the logbook import puts a fuel quantity with no before/after
   note on that side. Left as "It varies", nothing changes.
+- Your own GPS import (My Flight Tracks) now handles a ground-only recording
+  like the aircraft's import: the taxi to the fuel station before a flight,
+  or back to the hangar after it, joins that flight's track without changing
+  its times, and an engine run joins the ground entry you logged for it.
 
 **Maintenance**
 
