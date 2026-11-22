@@ -18,7 +18,6 @@ Usage:
 from __future__ import annotations
 
 import argparse
-import contextlib
 import sys
 from pathlib import Path
 
@@ -30,9 +29,6 @@ try:
         BrowserContext,
         Page,
         sync_playwright,
-    )
-    from playwright.sync_api import (
-        TimeoutError as PlaywrightTimeoutError,
     )
 except ImportError as e:
     print(f"Missing dependency: {e}")
@@ -61,10 +57,9 @@ def _login(page: Page, base_url: str, creds: dict) -> None:
     if "step=totp" in page.url or page.locator('input[name="totp_code"]').count():
         totp_code = pyotp.TOTP(creds["totp_secret"]).now()
         page.fill('input[name="totp_code"]', totp_code)
-        # The TOTP form auto-submits once all digits are entered; clicking the
-        # button races that navigation. Click only if the form is still there.
-        with contextlib.suppress(PlaywrightTimeoutError):
-            page.click('button[type="submit"]', timeout=3000)
+        # Entering the last digit submits automatically. Wait for the form to
+        # disappear rather than racing that navigation with another submit.
+        page.wait_for_function("!document.querySelector('input[name=\"totp_code\"]')")
         page.wait_for_load_state("networkidle")
 
 
@@ -192,6 +187,25 @@ def _resolve_passport_id(page: Page, base_url: str, title_prefix: str) -> str:
     return passport_id
 
 
+def _resolve_place_id(page: Page, base_url: str, title: str) -> str:
+    """Find a seeded place by its displayed name, without assuming its DB ID."""
+    page.goto(f"{base_url}/places/")
+    page.wait_for_load_state("networkidle")
+    place_id: str | None = page.evaluate(
+        r"""(title) => {
+            for (const link of document.querySelectorAll('#places-list a')) {
+                const match = link.getAttribute('href').match(/^\/places\/(\d+)$/);
+                if (match && link.textContent.trim() === title) return match[1];
+            }
+            return null;
+        }""",
+        title,
+    )
+    if not place_id:
+        raise ValueError(f"Could not find a place named {title!r} on /places/")
+    return place_id
+
+
 # ── Screenshot ────────────────────────────────────────────────────────────────
 
 
@@ -247,10 +261,18 @@ def _take(
                 )
             fmt_args["passport_id"] = id_cache[cache_key]
 
+        place_title = entry.get("resolve_place_title")
+        if place_title:
+            cache_key = f"place:{place_title}"
+            if cache_key not in id_cache:
+                id_cache[cache_key] = _resolve_place_id(page, base_url, place_title)
+            fmt_args["place_id"] = id_cache[cache_key]
+
         if not fmt_args:
             raise ValueError(
                 f"url_template requires a resolve_aircraft / "
-                f"resolve_renter_name / resolve_passport_title key in entry "
+                f"resolve_renter_name / resolve_passport_title / resolve_place_title "
+                f"key in entry "
                 f"{entry['id']!r}"
             )
         url = base_url + entry["url_template"].format(**fmt_args)
