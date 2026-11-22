@@ -203,7 +203,7 @@ msgstr "Stel voor het reservefonds een bijdrage per uur óf per maand in, niet b
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Dit GPS-bestand bevat te veel punten om te importeren (meer dan %(n)s). Splits de opname op in meerdere bestanden."
 
-#: app/aircraft/routes.py:555 app/explore/routes.py:256
+#: app/aircraft/routes.py:555 app/explore/routes.py:257
 msgid "cruise speed"
 msgstr "kruissnelheid"
 
@@ -1116,39 +1116,39 @@ msgstr "Dit bestandstype is niet toegestaan voor bewijsstukken."
 msgid "Expense receipt %(date)s"
 msgstr "Bewijsstuk uitgave %(date)s"
 
-#: app/explore/routes.py:229
+#: app/explore/routes.py:230
 msgid "Choose a reference airfield from the search results."
 msgstr "Kies een referentievliegveld uit de zoekresultaten."
 
-#: app/explore/routes.py:232
+#: app/explore/routes.py:233
 msgid "This reference airfield has no coordinates. Choose another."
 msgstr "Dit referentievliegveld heeft geen coördinaten. Kies een ander."
 
-#: app/explore/routes.py:257
+#: app/explore/routes.py:258
 msgid "distance/time limit"
 msgstr "afstands-/tijdslimiet"
 
-#: app/explore/routes.py:258
+#: app/explore/routes.py:259
 msgid "usable fuel"
 msgstr "bruikbare brandstof"
 
-#: app/explore/routes.py:259
+#: app/explore/routes.py:260
 msgid "fuel flow"
 msgstr "brandstofverbruik"
 
-#: app/explore/routes.py:260
+#: app/explore/routes.py:261
 msgid "reserve minutes"
 msgstr "reserve in minuten"
 
-#: app/explore/routes.py:272
+#: app/explore/routes.py:273
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Voer een kruissnelheid in voor de tijdsmodus of gebruik de afstandsmodus."
 
-#: app/explore/routes.py:281
+#: app/explore/routes.py:282
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "Het theoretische bereik is onbekend. Voer bruikbare brandstof, verbruik, snelheid en een expliciete reserve in die positieve vliegtijd overlaten. Het afstands-/tijdfilter blijft van toepassing."
 
-#: app/explore/routes.py:323
+#: app/explore/routes.py:324
 msgid "Choose a reference airfield and correct the destination filters before downloading."
 msgstr "Kies een referentievliegveld en corrigeer de bestemmingsfilters voordat u downloadt."
 
@@ -3273,11 +3273,11 @@ msgstr "Voer een geldige breedtegraad en lengtegraad in."
 msgid "Paste decimal or DMS coordinates, or a map link containing coordinates."
 msgstr "Plak decimale coördinaten of graden, minuten en seconden, of een kaartlink met coördinaten."
 
-#: app/places/exports.py:151 app/places/presentation.py:16
+#: app/places/exports.py:176 app/places/presentation.py:16
 msgid "Unnamed place"
 msgstr "Plek zonder naam"
 
-#: app/places/exports.py:162 app/templates/base.html:233
+#: app/places/exports.py:187 app/templates/base.html:233
 #: app/templates/explore/where_next.html:10
 #: app/templates/explore/where_next.html:38
 #: app/templates/explore/where_next.html:39

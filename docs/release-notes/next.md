@@ -41,7 +41,7 @@ A passport's **Where next?** link and older bookmarks open it with that passport
 selected.
 
 Places can be downloaded as GPX or KML waypoints, and your personal data export
-now holds the places you own, their photos and tags, and your own visits. The
+now holds the places you own, their photos, tags and airfield links, and your own visits. The
 demo has a shared "Our places" collection to try it.
 
 Places now helps with the part between landing and your destination. Choose a

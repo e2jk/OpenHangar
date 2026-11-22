@@ -3995,12 +3995,14 @@ def seed_places(
 ) -> None:
     """A shared "Our places" collection (Phase 42g): the owner, the second
     pilot and the Personal-account friend all edit it; a few located places
-    with tags, a saved Instagram link still to locate, and a visit each by
-    the owner and the friend. Call after seed_group_passport (it needs the
+    with tags and airfield links, a saved Instagram link still to locate, and
+    a visit each by the owner and the friend. Call after seed_group_passport (it needs the
     friend's account)."""
     from datetime import date
 
     from models import PlaceVisit, User
+    from passports import catalogue as cat  # pyright: ignore[reportMissingImports]
+    from places.airfields import add_link  # pyright: ignore[reportMissingImports]
     from places.collections import (  # pyright: ignore[reportMissingImports]
         create_collection,
         set_member,
@@ -4022,6 +4024,18 @@ def seed_places(
         )
         for title, lat, lon, address, tags in _OUR_PLACES
     ]
+    # Airfields to fly to each place from (42d), with how to get there;
+    # Bouillon Castle stays unlinked, so "1 place has no airfield yet" shows.
+    by_ident = {row.ident: row for row in cat.load_catalogue()}
+    for place, code, note in (
+        (places[0], "EBCI", "Taxi, 25 minutes"),
+        (places[1], "EBSH", "Taxi or bus"),
+        (places[3], "EBOS", "Train from Ostend"),
+    ):
+        if code in by_ident:
+            field = cat.materialise(tenant_id, by_ident[code])
+            db.session.flush()
+            add_link(tenant_id, owner_id, place.id, field.id, note=note)
     save_place(
         tenant_id,
         friend.id,

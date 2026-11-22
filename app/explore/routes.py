@@ -95,6 +95,7 @@ def _passport_reasons(
             reason = {
                 "kind": "passport",
                 "passport": passport.title,
+                "note": "",
                 "url": url_for(
                     "passports.target_detail",
                     passport_id=passport.id,

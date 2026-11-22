@@ -3052,7 +3052,7 @@ connections, and the reader-owned visit panel, are now connected through 42d/42e
   searches all active or ticked passports with the existing origin, distance /
   time and range controls; **Search in** *Places* uses 42d's
   `places.airfields.linked_airfields` (collections, include visited, `?place=`).
-- [ ] Entry points: Explore menu, a passport's page (passport preselected;
+- [x] Entry points: Explore menu, a passport's page (passport preselected;
   `/passports/<id>/where-next` redirects there so existing links keep working),
   Places (places preselected), a place's page.
   *Done:* the Explore menu, the passport page and the redirect (with the page's
