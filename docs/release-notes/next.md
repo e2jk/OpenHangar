@@ -1,106 +1,104 @@
-# Places worth visiting, with collections to share
+# Places to fly to, shared with friends, and Where next?
 
-Places is a map of destinations beyond the airfield: a museum, restaurant,
-viewpoint or overnight stop worth a trip. Drop a pin, paste coordinates or a
-map link, add a photo and tags, and keep the map and list together as you filter
-or sort. Your default collection is preselected for new places. Search for a
-place name or address and choose a result to set its pin; manual coordinates
-and the map stay available when address search is disabled or unavailable.
+**Places** is a new map of destinations worth a flight — a town, a museum, a
+restaurant, a viewpoint or a place to stay — in the new **Explore** menu.
+Every account has it, including friends with a Personal account.
 
-Keep collections to yourself or share each one with its own friends, choosing
-who can edit. Friends invited by exact email accept from their own account.
-Copy a place with an independent photo, or move it while keeping every visitor
-in the destination collection. The bin gives editors 30 days to restore a
-place, and leaving a group preserves its places and visit history.
+**Collecting places**
 
-Sharing a file to the installed app on Android now goes all the way: an
-expense receipt, a flight photo or a maintenance file opens that form with the
-file attached, and it is saved with the form (before, OpenHangar only asked
-you to attach it again by hand). The share page lists only what your role can
-use, and Cancel drops the shared file.
+- Add a place by clicking the map, pasting coordinates or a map link, or
+  searching a name or address. Add a description, a photo, an address, a
+  website and tags (a starter set is offered).
+- In a hurry? Save just a link, with or without a name, and add the location
+  later. The **Location still to add** filter finds these ideas; only located
+  places appear on the map.
+- Filter and sort the list and map together: by collection, tag, visited or
+  not, archived, location or airfield.
 
-Passport-only accounts are now **Personal accounts**: the same friends'
-accounts, now with Places too, and still no access to the aircraft. The user
-list explains when to choose a Personal account or a **Viewer (read-only)**
-for someone who doesn't fly.
+**Sharing with friends**
 
-Paste a link and save it for later, even without a name or location. The new-place
-form accepts shared titles and links, and a “Location still to add” filter helps
-you find ideas to finish together. Only located places appear on the map.
-A missing name is shown as “Unnamed place”, separately from a missing location.
+- Keep places in your own **My places**, or create collections to share, each
+  with its own members. Members are editors or readers; invite friends by
+  their exact email address, and they accept from their own account.
+- Copy a place to another collection, or move it there when everyone who
+  visited it is a member. Deleted places stay in the bin for 30 days, and
+  leaving a collection keeps its places and visits.
 
-Found a place to fly to in an Instagram reel or a video? Share it to the
-installed app on Android: OpenHangar opens a new place with the link and a
-suggested name, ready to save now and locate later — Personal accounts too.
+**Getting there from the airfield**
 
-**Where next?** has its own page, in the new **Explore** menu next to Places:
-search all your active airfield passports at once, or tick the ones you want,
-and the airfields near your places. Each airfield appears once, with all its
-reasons: the passports where it is still to stamp and the places it serves. Filter places by tag, or keep only
-airfields you have never landed at; the map links each place to its airfields.
-A passport's **Where next?** link and older bookmarks open it with that passport
-selected.
+- Link a place to the airfields you fly to: OpenHangar suggests open airfields
+  within 15 km, nearest first, or you search by name or code, or add a field
+  missing from the catalogue. Note how to get there (walk, taxi, bus…) and mark
+  your preferred airfield; the map draws the connections.
 
-Places can be downloaded as GPX or KML waypoints, and your personal data export
-now holds the places you own, their photos, tags and airfield links, and your own visits. The
-demo has a shared "Our places" collection to try it.
+**Visits**
 
-Places now helps with the part between landing and your destination. Choose a
-nearby airfield, search by name or code, or add one missing from the catalogue.
-Save how to get there, mark your preferred airfields, and see the connections on
-the map. A filter finds places still needing an airfield.
+- On a place's page, **I was here** records your visit — today, or another
+  date with a short note — and the page shows who visited when ("Last visited
+  3 May 2026 by Anna and you"). You can correct or remove your own visits.
+- After a flight that landed at an airfield linked to one of your places, your
+  logbook offers "You landed at EBXX, 4 km from Pairi Daiza — record a visit?":
+  one click, or **No, thanks**. The second pilot of the flight gets the same
+  offer, and nothing is ever recorded by itself.
 
-Each place also shows the collection's visit history. Record a visit with one
-click, choose another date or add a short note, and correct your own entries
-later. Download the filtered Places list as GPX or KML, or open Where next? to
-plan a trip.
+**Where next?**
 
-Visits: on a place's page, **I was here** records your visit, and the page
-shows who visited when. After a flight that landed at an airfield linked to one
-of your places, your logbook offers to record the visit in one click.
+- Where next? now has its own page in the **Explore** menu. It searches all
+  your active airfield passports — or the ones you tick — together with the
+  airfields near your places, within a distance, flight time or theoretical
+  range of your starting airfield.
+- Each airfield appears once with all its reasons: "Not yet stamped in
+  *Belgian passport 2026*", "4.0 km from *Pairi Daiza* (taxi)". Filter places by
+  tag, or keep only airfields you have never landed at; closed airfields never
+  appear. The map shows the places and the airfields that serve them.
+- Opened from a passport it searches that passport, and from a place that
+  place. Older Where next? links and bookmarks keep working.
+
+**Downloads and your data**
+
+- Download the places of the list, as filtered, as GPX or KML waypoints, and
+  Where next? results as before.
+- Your personal data export now also holds the places you own, with their
+  photos, tags and airfield links, and your own visits.
+- The demo has a shared **Our places** collection to try it all.
+
+**Sharing to OpenHangar from your phone**
+
+- With OpenHangar installed as an app on Android, share a **link** — an
+  Instagram reel, a video, a web page — and it opens a new place with the link
+  and a suggested name, ready to save now and locate later.
+- Share a **file** and it now goes all the way: an expense receipt, a flight
+  photo or a maintenance paper opens that form with the file attached and is
+  saved with it (before, you had to attach it again by hand). The share page
+  only offers what your role can use, and Cancel drops the file. (iPhone
+  browsers can't receive shares: copy the link or upload the file instead.)
+
+**Accounts**
+
+- Passport-only accounts are now **Personal accounts**: the same friends'
+  accounts, now with Places and Where next? too, and still no access to the
+  aircraft. The Viewer role is shown as **Viewer (read-only)**, and the user
+  list explains which to choose for someone who doesn't fly.
 
 **Maintenance**
 
-- `scripts/ship.sh` now runs the browser tests before pushing (about 5
+- Address search runs through the OpenHangar server, using OpenStreetMap's
+  Nominatim by default — or another compatible server set with the new
+  `OPENHANGAR_GEOCODER_URL`, empty to turn it off — at most one request per
+  second for the instance, with a cache, and never logging what was searched.
+- Places and passports now share their image cleaning, file cleanup, sharing
+  tokens, waypoint files and distance calculations. The personal data export
+  gains a versioned list of its sections, keeping the existing passport files.
+- A shared aircraft document is stored by the same code as an upload from the
+  aircraft's documents page.
+- The backup round-trip check restores a shared Places collection with a
+  photo, a tag, visits, an airfield link and a link-only place.
+- The user guide illustrates Places, airfield links, visits and Where next?;
+  the screenshot tool finds places by name.
+- Static analysis recognises the Places routes and the expected validation
+  fallbacks.
+- Shipping: `scripts/ship.sh --later` run in a parallel `git worktree` pushes
+  to that worktree's own lane and pull request, so two lines of work can land
+  side by side. It also runs the browser tests before every push (about 5
   minutes, a failing test retried once): every pull request that failed at
-  first in the last week failed in them, which nothing ran locally.
-
-- The user guide now illustrates Places, airfield links and visits, and searching
-  Places together with passports. The screenshot tool finds places by name and
-  waits for the sign-in code to submit automatically.
-
-- Two members choosing the same airfield at the same time now keep a single
-  link, preserving its saved directions instead of failing with a database error.
-
-
-
-- The backup round-trip check now also restores a shared Places collection,
-  with a photo, a tag, visits and a link-only place.
-
-- A shared aircraft document is now stored by the same code as a document
-  uploaded from the aircraft's documents page, instead of a copy of it.
-
-- Groundwork for sharing a link from a phone to create a place: finding the
-  link in what apps such as Instagram share, removing its tracking
-  parameters, and suggesting a title from the shared text.
-
-- Shipping from a parallel worktree: `scripts/ship.sh --later` run in another
-  agent's `git worktree` now pushes to that worktree's own
-  `ship-later--<branch>` lane with its own pull request, so two lines of work
-  can land side by side. Releases straight away (and security fixes) still go
-  through the main worktree.
-
-- Address and place-name queries go through the server to OpenStreetMap's
-  Nominatim — or another
-  compatible server set with the new `OPENHANGAR_GEOCODER_URL`, empty to turn
-  it off — at most one request per second for the instance, with a cache, and
-  without ever logging what was searched.
-
-- Places and passports share image cleaning, committed-file cleanup, capability
-  tokens, waypoint documents and destination calculations. Account ZIP exports
-  add a versioned feature manifest while retaining the existing passport JSON
-  and photo paths.
-
-- Static analysis now recognises the Places route-registration and pytest
-  exports, explicit denied-request returns and expected validation fallbacks.
-  The coordinate API returns a fixed translated validation message.
+  first in the past week had failed in them.
