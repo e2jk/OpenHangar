@@ -279,13 +279,14 @@ for later:
 - **Email digest** of new findings, for admins who rarely open the
   configuration page.
 
-## GPS import: ground runs in the pilot GPS import
+## GPS import: further ground runs in the pilot GPS import
 
-The aircraft GPS import links ground-only recordings to a logged ground
-entry or, as a taxi part, to the flight departing/arriving within 45 min at
-that airfield (`services.gps_link.ground_run_target`, `link_track(taxi=True)`).
-The pilot GPS import (any aircraft) still skips them; it could use the same
-two helpers on the pilot's flights of that day.
+The pilot GPS import now links a ground-only recording like the aircraft
+import does — to a logged ground entry, or as a taxi part of the pilot's
+flight departing/arriving within 45 minutes at that airfield. Left: the
+aircraft import's choice for one further away (up to 3 hours, same day
+and airfield: `nearby_flights(..., NEARBY_TAXI_WINDOW)` and the
+`ground_candidates` picker on its review page).
 
 ## GPS import: one import instead of the aircraft and pilot ones
 

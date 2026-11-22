@@ -128,6 +128,20 @@
     </div>
     {% elif already_confirmed %}
     {# Skipped: nothing to show — the badge says so. #}
+    {% elif seg.get('matched_ground_role') == 'taxi' %}
+    <div class="alert alert-info py-2 mt-2 mb-2 small">
+      <i class="bi bi-signpost-split me-1"></i>
+      {% if seg.get('matched_ground_when') == 'before' %}
+      {{ _("Ground movement shortly before flight %(info)s, at the same airfield (e.g. to the fuel station or customs) — it will be added to that flight's track as a taxi part. The flight's times and other data don't change.", info=seg.matched_flight_str) }}
+      {% else %}
+      {{ _("Ground movement shortly after flight %(info)s, at the same airfield (e.g. back to the hangar) — it will be added to that flight's track as a taxi part. The flight's times and other data don't change.", info=seg.matched_flight_str) }}
+      {% endif %}
+    </div>
+    {% elif seg.get('matched_ground_role') == 'entry' %}
+    <div class="alert alert-info py-2 mt-2 mb-2 small">
+      <i class="bi bi-link-45deg me-1"></i>
+      {{ _('Matches the logged ground entry %(info)s (no flight time) — this recording will be linked as its GPS track. Its logged data is kept.', info=seg.matched_flight_str) }}
+    </div>
     {% elif has_match and not is_ambiguous %}
     <div class="alert alert-info py-2 mt-2 mb-2 small">
       <i class="bi bi-link-45deg me-1"></i>

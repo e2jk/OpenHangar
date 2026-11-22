@@ -853,6 +853,71 @@ def test_unreadable_geometry_and_part_times():
     assert _when({}, "start") is None
 
 
+class TestPilotGroundRuns:
+    """The pilot GPS import links ground runs the same way, among the
+    pilot's own flights that day (any aircraft)."""
+
+    def _upload(self, client):
+        gpx = _gpx_bytes(speeds_ms=[0.0, 3.0, 4.0, 3.0, 0.0])
+        client.post(
+            "/pilot/gps-import",
+            data={"gps_files": (io.BytesIO(gpx), "taxi.gpx")},
+            content_type="multipart/form-data",
+        )
+        page = client.get("/pilot/gps-import/review").data.decode()
+        with client.session_transaction() as sess:
+            return _session_segments(sess, "pilot_gps_import"), page
+
+    def _logged(self, app, uid, dep, arr, t0, t1, **kw):
+        with app.app_context():
+            f = Flight(
+                pic_user_id=uid,
+                other_aircraft_registration="OO-OTH",
+                date=date(2024, 6, 1),
+                departure_icao=dep,
+                arrival_icao=arr,
+                departure_time=t0,
+                arrival_time=t1,
+                **kw,
+            )
+            db.session.add(f)
+            db.session.commit()
+            return f.id
+
+    def test_taxi_before_a_flight_joins_its_track(self, client, app):
+        uid, _tid, _ac = _make_user_and_aircraft(app)
+        _login(client, uid)
+        fid = self._logged(app, uid, "EBNM", "EBAW", time(10, 30), time(11, 30))
+        (seg,), page = self._upload(client)
+        assert (seg["matched_flight_id"], seg["matched_ground_role"]) == (fid, "taxi")
+        assert "Ground movement shortly before flight" in page
+        client.post("/pilot/gps-import/confirm-all", data={"pilot_role": "pic"})
+        with app.app_context():
+            f = db.session.get(Flight, fid)
+            assert f.gps_track.geojson["properties"]["parts"][0]["taxi"] is True
+            assert (f.departure_time, f.arrival_time) == (time(10, 30), time(11, 30))
+            assert f.block_off_utc is None
+
+    def test_a_ground_entry_and_nothing_near(self, client, app):
+        uid, _tid, _ac = _make_user_and_aircraft(app)
+        _login(client, uid)
+        (seg,), page = self._upload(client)
+        assert seg["matched_flight_id"] is None and seg["matched_ground_role"] == ""
+        assert "Ground movement shortly" not in page
+        entry = self._logged(
+            app, uid, "EBNM", "EBNM", None, None, flight_time=decimal.Decimal(0)
+        )
+        (seg,), page = self._upload(client)
+        assert (seg["matched_flight_id"], seg["matched_ground_role"]) == (
+            entry,
+            "entry",
+        )
+        assert "Matches the logged ground entry" in page
+        client.post("/pilot/gps-import/confirm-all", data={"pilot_role": "pic"})
+        with app.app_context():
+            assert db.session.get(Flight, entry).gps_track_id is not None
+
+
 def _gpx_at(start, minutes, speed_ms=4.0):
     """A GPX recording of *minutes* one-minute points from *start* (a
     datetime), slow (a ground run)."""
