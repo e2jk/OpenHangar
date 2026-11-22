@@ -29,6 +29,10 @@ form accepts shared titles and links, and a “Location still to add” filter h
 you find ideas to finish together. Only located places appear on the map.
 A missing name is shown as “Unnamed place”, separately from a missing location.
 
+Found a place to fly to in an Instagram reel or a video? Share it to the
+installed app on Android: OpenHangar opens a new place with the link and a
+suggested name, ready to save now and locate later — Personal accounts too.
+
 **Maintenance**
 
 - A shared aircraft document is now stored by the same code as a document

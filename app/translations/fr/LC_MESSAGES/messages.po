@@ -123,11 +123,11 @@ msgstr "Carburant"
 msgid "Parts & Maintenance"
 msgstr "Pièces et entretien"
 
-#: app/models.py:2325 app/pwa/routes.py:84 app/templates/dashboard.html:406
+#: app/models.py:2325 app/pwa/routes.py:85 app/templates/dashboard.html:406
 msgid "Insurance"
 msgstr "Assurance"
 
-#: app/models.py:2326 app/pwa/routes.py:89 app/templates/dashboard.html:164
+#: app/models.py:2326 app/pwa/routes.py:90 app/templates/dashboard.html:164
 #: app/templates/maintenance/list.html:90
 #: app/templates/maintenance/trigger_form.html:69
 msgid "Other"
@@ -963,7 +963,7 @@ msgid "'Valid from' must not be after 'Valid until'."
 msgstr "« Valide à partir du » ne doit pas être postérieur à « Valide jusqu'au »."
 
 #: app/documents/routes.py:643 app/documents/routes.py:959
-#: app/pwa/routes.py:264
+#: app/pwa/routes.py:284
 msgid "Document uploaded."
 msgstr "Document téléchargé."
 
@@ -1501,7 +1501,7 @@ msgstr "Fichier GPS %(filename)s traité — champs pré-remplis ci-dessous. Vé
 msgid "GPS file parsed — fields pre-filled. Review and save."
 msgstr "Fichier GPS traité — champs pré-remplis. Vérifiez et enregistrez."
 
-#: app/flights/routes.py:1811 app/pilots/routes.py:2527 app/pwa/routes.py:200
+#: app/flights/routes.py:1811 app/pilots/routes.py:2527 app/pwa/routes.py:220
 msgid "Please select an aircraft."
 msgstr "Veuillez sélectionner un avion."
 
@@ -3321,23 +3321,23 @@ msgstr "Famille"
 msgid "Enter a tag name of at most 80 characters."
 msgstr "Saisissez un nom d’étiquette de 80 caractères maximum."
 
-#: app/pwa/routes.py:74
+#: app/pwa/routes.py:75
 msgid "Aircraft document"
 msgstr "Document d'avion"
 
-#: app/pwa/routes.py:75
+#: app/pwa/routes.py:76
 msgid "Expense receipt"
 msgstr "Reçu de dépense"
 
-#: app/pwa/routes.py:76
+#: app/pwa/routes.py:77
 msgid "Maintenance record"
 msgstr "Compte rendu de maintenance"
 
-#: app/pwa/routes.py:77
+#: app/pwa/routes.py:78
 msgid "Flight photo"
 msgstr "Photo de vol"
 
-#: app/pwa/routes.py:83 app/templates/aircraft/detail.html:221
+#: app/pwa/routes.py:84 app/templates/aircraft/detail.html:221
 #: app/templates/base.html:215 app/templates/landing.html:39
 #: app/templates/landing.html:247
 #: app/templates/maintenance/amp_declaration_form.html:23
@@ -3352,11 +3352,11 @@ msgstr "Photo de vol"
 msgid "Maintenance"
 msgstr "Maintenance"
 
-#: app/pwa/routes.py:85
+#: app/pwa/routes.py:86
 msgid "POH / Flight Manual"
 msgstr "POH / Manuel de vol"
 
-#: app/pwa/routes.py:86 app/templates/aircraft/detail.html:270
+#: app/pwa/routes.py:87 app/templates/aircraft/detail.html:270
 #: app/templates/airworthiness/adsb_board.html:17
 #: app/templates/airworthiness/dashboard.html:3
 #: app/templates/airworthiness/dashboard.html:12
@@ -3364,7 +3364,7 @@ msgstr "POH / Manuel de vol"
 msgid "Airworthiness"
 msgstr "Navigabilité"
 
-#: app/pwa/routes.py:87 app/templates/aircraft/detail.html:385
+#: app/pwa/routes.py:88 app/templates/aircraft/detail.html:385
 #: app/templates/aircraft/flight_detail.html:26
 #: app/templates/config/data_checks.html:41 app/templates/dashboard.html:237
 #: app/templates/flights/logbook_component.html:4
@@ -3379,31 +3379,31 @@ msgstr "Navigabilité"
 msgid "Logbook"
 msgstr "Carnet de vol"
 
-#: app/pwa/routes.py:88
+#: app/pwa/routes.py:89
 msgid "Invoice"
 msgstr "Facture"
 
-#: app/pwa/routes.py:90
+#: app/pwa/routes.py:91
 msgid "Uncategorised"
 msgstr "Non catégorisé"
 
-#: app/pwa/routes.py:165
-msgid "No files were shared."
-msgstr "Aucun fichier n'a été partagé."
+#: app/pwa/routes.py:185
+msgid "Nothing that OpenHangar can save was shared."
+msgstr "Rien de ce qui a été partagé ne peut être enregistré dans OpenHangar."
 
-#: app/pwa/routes.py:176
+#: app/pwa/routes.py:196
 msgid "The shared file was discarded."
 msgstr "Le fichier partagé a été abandonné."
 
-#: app/pwa/routes.py:185
+#: app/pwa/routes.py:205
 msgid "No pending shared files. Please try sharing again."
 msgstr "Aucun fichier partagé en attente. Veuillez réessayer de partager."
 
-#: app/pwa/routes.py:191
+#: app/pwa/routes.py:211
 msgid "Unknown destination."
 msgstr "Destination inconnue."
 
-#: app/pwa/routes.py:211
+#: app/pwa/routes.py:231
 msgid "Choose the item you serviced: your shared file is attached to its form."
 msgstr "Choisissez l'élément entretenu : votre fichier partagé est joint à son formulaire."
 
