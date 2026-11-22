@@ -3092,13 +3092,13 @@ depends only on their collection membership. No new role.
 - [x] Tests: a Viewer or Personal account can edit places in a collection where
   they are an editor and gains no organisation access through Places.
 
-### 42i — Share a link to a new place
+### 42i — Share a link to a new place ✅
 
 Use case: someone finds a place in a video (Instagram, YouTube, TikTok…) on
 their phone and shares it straight to OpenHangar to make it a place. Needs the
 add-place form (42b) and Personal accounts (42h).
 
-- [ ] Share target: the installed app already declares a `share_target` with
+- [x] Share target: the installed app already declares a `share_target` with
   `title`, `text` and `url`, but a share without files is refused today ("No
   files were shared."). OpenHangar appears once in the phone's share sheet;
   its share page then lists what the share can become. A share that carries a
@@ -3108,26 +3108,26 @@ add-place form (42b) and Personal accounts (42h).
   *Link handling done (2026-11-22):* `pwa/shared_links.py` —
   `shared_link(url, text)`, `clean_link(url)` (http(s) only, no user/password
   part, tracking parameters removed, ≤ 2048 characters) and
-  `suggested_title(title, text, link)` (≤ 200 characters). The share page's
-  **New place** choice and the form prefill remain.
-- [ ] It opens the add-place form with the link in the place's external URL
+  `suggested_title(title, text, link)` (≤ 200 characters); the share page sends
+  a link-only share straight to `/places/new` with them (2026-11-22).
+- [x] It opens the add-place form with the link in the place's external URL
   field and a suggested title (the shared title, else the shared text without
   the link), in the user's default collection. Nothing is saved until the user
   presses Save. Coordinates, title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `/places/new` reads
   `title` and `external_url`; address search (42c) remains available.
-- [ ] Link hygiene: http(s) only, within the column length, tracking parameters
+- [x] Link hygiene: http(s) only, within the column length, tracking parameters
   removed (`igsh`, `utm_*`, `si`, `fbclid`…), shown as a link with
   `rel="noopener noreferrer"`. The server never fetches the shared page (most
   need a sign-in, and it would send a third-party request).
-- [ ] Personal accounts can use it: the share-target endpoints join the
+- [x] Personal accounts can use it: the share-target endpoints join the
   Personal allowlist, offering only **New place** (the other destinations need
   organisation access), each with a test. File shares and their destinations
   (document, expense, maintenance, flight photo) are unchanged.
-- [ ] User guide: install the app on Android, then Share → OpenHangar → New
+- [x] User guide: install the app on Android, then Share → OpenHangar → New
   place. iPhone browsers have no share target: copy the link and paste it into
   the form's URL field.
-- [ ] Tests: an Instagram-style text share, a `url` share, a share without a
+- [x] Tests: an Instagram-style text share, a `url` share, a share without a
   link, a non-http link refused, tracking parameters removed, a Personal
   account, the file flow unchanged.
 

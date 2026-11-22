@@ -143,7 +143,7 @@ The **Mass & balance** page lets you record and verify CG position before a flig
 
 ![Mass & balance calculation](screenshots/wb_calc.png)
 
-### Sharing a file to OpenHangar
+### Sharing a file or link to OpenHangar
 
 Once OpenHangar is installed as an app on an Android phone (in Chrome: **Install app** or **Add to Home screen**), it appears in the phone's **Share** menu. Share a PDF or photo to it, from your e-mail, files or camera, and OpenHangar asks what it is — only the choices your role allows:
 
@@ -152,7 +152,9 @@ Once OpenHangar is installed as an app on an Android phone (in Chrome: **Install
 - **Maintenance record**: opens the aircraft's maintenance list; press the tick on the item you serviced, and the file is saved with the aircraft's maintenance documents when you save the service record.
 - **Flight photo**: opens the new-flight form with the photo attached; choose which photo it is (flight counter, engine counter or fuel, before or after the flight).
 
-Nothing is saved until you save the form, and the form's **Shared file** box can be unticked to leave the file out; a file you choose on the form yourself takes its place. **Cancel** on the share page, or **Discard** on the maintenance list, drops the shared file; one left unused is deleted after a day. iPhone browsers don't let web apps receive shares: upload the file from the form instead.
+Share a **link** instead — an Instagram reel, a YouTube video or a web page about a place you'd like to fly to — and OpenHangar opens a **new place** with the link filled in and a title suggested from the shared text, in your default collection. Tracking parameters are removed from the link, and OpenHangar never opens it itself. Add the location now or later (address search, the map, or coordinates), or just press Save to keep the link and locate it another day. This also works for Personal accounts.
+
+Nothing is saved until you save the form, and the form's **Shared file** box can be unticked to leave the file out; a file you choose on the form yourself takes its place. **Cancel** on the share page, or **Discard** on the maintenance list, drops the shared file; one left unused is deleted after a day. iPhone browsers don't let web apps receive shares: upload the file from the form instead, or copy the link and paste it into a new place's **Website** field.
 
 ### Working offline
 

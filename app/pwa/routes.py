@@ -21,6 +21,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     Tenant,
     db,
 )
+from services import account_scope  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
     accessible_aircraft,
     current_membership,
@@ -29,7 +30,7 @@ from utils import (  # pyright: ignore[reportMissingImports]
     login_required,
 )
 
-from pwa import pending
+from pwa import pending, shared_links
 
 pwa_bp = Blueprint("pwa", __name__)
 
@@ -104,6 +105,9 @@ def _permitted_destinations(mimetypes: list[str]) -> list[str]:
     maintenance users, flight photos for anyone with pilot access. A form
     takes one file: several files can only become aircraft documents."""
     tu = current_membership()
+    if account_scope.restricted(tu):
+        # A Personal account has no organisation pages to send a file to.
+        return []
     role = tu.role if tu else None
     allowed = {
         "document": role in _OWNER_ROLES,
@@ -162,7 +166,23 @@ def share_target() -> ResponseReturnValue:
 
     valid_files = [f for f in files if f.filename]
     if not valid_files:
-        flash(_("No files were shared."), "warning")
+        # A link without files (an Instagram reel, a YouTube video…) can only
+        # become a new place: straight to its form, nothing saved yet. The
+        # server never fetches the link.
+        link = shared_links.shared_link(
+            request.form.get("url"), request.form.get("text")
+        )
+        if link is not None:
+            return redirect(
+                url_for(
+                    "places.new_place",
+                    title=shared_links.suggested_title(
+                        title, request.form.get("text"), link
+                    ),
+                    external_url=link,
+                )
+            )
+        flash(_("Nothing that OpenHangar can save was shared."), "warning")
         return redirect(url_for("index"))
 
     share = pending.start(valid_files, title[:255], int(session["user_id"]))
