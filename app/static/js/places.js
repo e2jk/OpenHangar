@@ -98,6 +98,58 @@
         }
       }).finally(function () { use.disabled = false; });
     });
+    var search = root.querySelector('#place-address-search');
+    if (search) {
+      var query = root.querySelector('#place-address-query');
+      var results = root.querySelector('#place-address-results');
+      var searchError = root.querySelector('#place-address-error');
+      function searchAddress() {
+        var requested = query.value;
+        search.disabled = true;
+        searchError.hidden = true;
+        results.replaceChildren();
+        fetch(root.dataset.geocoderUrl, { method: 'POST', credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8', 'X-CSRFToken': root.querySelector('input[name="csrf_token"]').value },
+          body: new URLSearchParams({ query: requested }).toString()
+        }).then(function (response) {
+          return response.json().then(function (data) {
+            if (!root.isConnected || query.value !== requested) return;
+            if (!response.ok) {
+              searchError.textContent = data.error || root.dataset.geocoderError;
+              searchError.hidden = false;
+              return;
+            }
+            if (!data.results.length) {
+              searchError.textContent = root.dataset.noResults;
+              searchError.hidden = false;
+            }
+            data.results.forEach(function (result) {
+              var choice = document.createElement('button');
+              choice.type = 'button';
+              choice.className = 'list-group-item list-group-item-action text-break';
+              choice.textContent = result.name + ' — ' + result.address;
+              choice.addEventListener('click', function () {
+                setPoint(L.latLng(result.latitude, result.longitude), true);
+                var title = root.querySelector('#place-title');
+                if (!title.value.trim()) title.value = (result.name || result.address).slice(0, 200);
+                root.querySelector('#place-address').value = result.address.slice(0, 500);
+                results.replaceChildren();
+              });
+              results.appendChild(choice);
+            });
+          });
+        }).catch(function () {
+          if (root.isConnected && query.value === requested) {
+            searchError.textContent = root.dataset.geocoderError;
+            searchError.hidden = false;
+          }
+        }).finally(function () { search.disabled = false; });
+      }
+      search.addEventListener('click', searchAddress);
+      query.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') { event.preventDefault(); if (!search.disabled) searchAddress(); }
+      });
+    }
     cleanMap(root, map);
   }
 

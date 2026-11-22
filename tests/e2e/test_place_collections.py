@@ -5,7 +5,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Page, Route, expect
 
 from tests.e2e.test_passport_builder import passport_page
 
@@ -100,3 +100,62 @@ def test_place_pin_photo_map_and_edit_survive_boosted_navigation(
     page.get_by_role("button", name="Permanently delete place", exact=True).click()
     page.wait_for_url(re.compile(r"/places/\?.*state=bin"))
     assert errors == []
+
+
+def test_address_search_is_submit_only_and_selection_preserves_a_title(
+    passport_page: Page,
+) -> None:
+    page = passport_page
+    requests: list[str] = []
+
+    def search_response(route: Route) -> None:
+        requests.append(route.request.post_data or "")
+        route.fulfill(
+            json={
+                "results": [
+                    {
+                        "name": "Museum <example>",
+                        "address": "Museum street",
+                        "latitude": 50.5,
+                        "longitude": 4.2,
+                    }
+                ]
+            }
+        )
+
+    page.route("**/places/geocode", search_response)
+    page.goto("/places/new")
+    page.get_by_label("Place name or address", exact=True).fill("Museum")
+    assert requests == []
+    page.get_by_role("button", name="Search", exact=True).click()
+    page.get_by_role(
+        "button", name="Museum <example> — Museum street", exact=True
+    ).click()
+    expect(page.get_by_label("Place name", exact=True)).to_have_value(
+        "Museum <example>"
+    )
+    expect(page.get_by_label("Address (optional)", exact=True)).to_have_value(
+        "Museum street"
+    )
+    expect(page.get_by_label("Latitude", exact=True)).to_have_value("50.5000000")
+    assert len(requests) == 1
+    page.get_by_label("Place name", exact=True).fill("My own title")
+    page.get_by_label("Place name or address", exact=True).press("Enter")
+    page.get_by_role(
+        "button", name="Museum <example> — Museum street", exact=True
+    ).click()
+    expect(page.get_by_label("Place name", exact=True)).to_have_value("My own title")
+    page.unroute("**/places/geocode")
+    page.route("**/places/geocode", lambda route: route.fulfill(json={"results": []}))
+    page.get_by_role("button", name="Search", exact=True).click()
+    expect(page.locator("#place-address-error")).to_contain_text(
+        "No matching places found"
+    )
+    page.unroute("**/places/geocode")
+    page.route(
+        "**/places/geocode",
+        lambda route: route.fulfill(status=429, json={"error": "Search is busy"}),
+    )
+    page.get_by_role("button", name="Search", exact=True).click()
+    expect(page.locator("#place-address-error")).to_contain_text("Search is busy")
+    expect(page.locator("#place-editor-map .leaflet-marker-icon")).to_have_count(1)

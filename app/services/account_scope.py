@@ -24,6 +24,7 @@ PASSPORT_ENDPOINTS = frozenset(
         "places.place_detail",
         "places.place_photo",
         "places.coordinates",
+        "places.geocode",
         "places.place_action",
         "passports.export_account",
         "passports.new_passport",

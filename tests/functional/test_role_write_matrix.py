@@ -93,6 +93,7 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
     "places.edit_place": _ANY_ROLE,
     "places.place_action": _ANY_ROLE,
     "places.coordinates": _ANY_ROLE,
+    "places.geocode": _ANY_ROLE,
     "places.new_collection": _ANY_ROLE,
     "places.collection_settings": _ANY_ROLE,
     "places.join_collection": _ANY_ROLE,

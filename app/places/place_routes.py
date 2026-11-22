@@ -11,8 +11,10 @@ from flask import (
     url_for,
 )
 from flask.typing import ResponseReturnValue
+from flask_babel import get_locale
 from flask_babel import gettext as _
 from models import Place, PlaceCollection, PlaceCollectionMember, PlaceVisit, User, db
+from services import geocoding
 from utils import db_id, login_required
 
 from places import management
@@ -75,6 +77,9 @@ def show_form(
         values=values,
         tags=tags,
         starter_tags=[_(name) for name in STARTER_TAGS],
+        geocoder_enabled=geocoding.enabled(),
+        geocoder_attribution=geocoding.attribution(),
+        geocoder_disabled=geocoding.GeocoderError("disabled").message,
     ), status
 
 
@@ -271,3 +276,32 @@ def place_action(place_id: int) -> ResponseReturnValue:
     if action in {"trash", "purge"}:
         return redirect(url_for("places.index", collection=cid, state="bin"))
     return redirect(url_for("places.place_detail", place_id=redirect_id))
+
+
+@places_bp.route("/geocode", methods=["POST"])
+@login_required
+def geocode() -> ResponseReturnValue:
+    tid, uid = context()
+    actor(tid, uid)
+    try:
+        results = geocoding.search(
+            request.form.get("query", ""),
+            language=str(get_locale() or "en"),
+            limit=5,
+        )
+    except geocoding.GeocoderError as exc:
+        status = (
+            400 if exc.reason == "invalid" else 429 if exc.reason == "busy" else 503
+        )
+        return jsonify(error=exc.message, reason=exc.reason), status
+    return jsonify(
+        results=[
+            {
+                "name": item.name,
+                "address": item.address,
+                "latitude": item.latitude,
+                "longitude": item.longitude,
+            }
+            for item in results
+        ]
+    )
