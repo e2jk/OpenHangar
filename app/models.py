@@ -4894,11 +4894,12 @@ class Place(db.Model):
     created_at = db.Column(
         db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )
+    # User edits set this explicitly. Automatic ownership transfers must not
+    # change the date attributed to the last human editor.
     updated_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,
         default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
     )
 
 

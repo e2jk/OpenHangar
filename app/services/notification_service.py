@@ -490,6 +490,9 @@ def run_daily_checks(app: Any) -> None:
                 )
 
                 purge_expired(app.config.get("UPLOAD_FOLDER", "/data/uploads"))
+                from places.cleanup import purge_retired
+
+                purge_retired()
                 _refresh_data_checks()
                 run_co_owner_billing_pass_all()
                 _check_maintenance(app)

@@ -2,10 +2,16 @@
 
 # Airfield tips and questions for your passport group
 
-Places now has private collections for trips or groups of friends. Choose who
-can edit each collection, manage membership separately from aircraft access,
-and transfer a collection before leaving. Friends invited by exact email accept
-from their own account; the sender gets no account-directory lookup.
+Places is a map of destinations beyond the airfield: a museum, restaurant,
+viewpoint or overnight stop worth a trip. Drop a pin, paste coordinates or a
+map link, add a photo and tags, and keep the map and list together as you filter
+or sort. Your default collection is preselected for new places.
+
+Keep collections to yourself or share each one with its own friends, choosing
+who can edit. Friends invited by exact email accept from their own account.
+Copy a place with an independent photo, or move it while keeping every visitor
+in the destination collection. The bin gives editors 30 days to restore a
+place, and leaving a group preserves its places and visit history.
 
 Group passports now have a conversation for each airfield. Ask about an approach
 before your first visit, share flying tips or recommend a restaurant nearby.

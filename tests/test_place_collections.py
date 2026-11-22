@@ -222,6 +222,7 @@ def test_departure_retains_places_and_visits(
         set_default(t, v, c.id)
         db.session.commit()
         cid, pid, vid = c.id, place.id, visit.id
+        last_edit = place.updated_at
         if departure == "leave":
             remove_member(t, v, cid, v)
         elif departure == "remove":
@@ -236,6 +237,7 @@ def test_departure_retains_places_and_visits(
         db.session.commit()
         db.session.expire_all()
         assert db.session.get(Place, pid).owner_user_id == u
+        assert db.session.get(Place, pid).updated_at == last_edit
         assert db.session.get(PlaceVisit, vid).user_id == (
             None if departure == "account" else v
         )
