@@ -66,6 +66,19 @@
     </div>
   </div>
 
+  {% if shared_file and is_maint %}
+  <div class="alert alert-info d-flex flex-wrap align-items-center gap-2" role="status" id="shared-file-banner">
+    <span>
+      <i class="bi bi-share me-1"></i>{{ _('Shared file:') }}
+      <strong class="text-break">{{ shared_file.files[0].original }}</strong> —
+      {{ _('press the tick (Mark as serviced) on the item it belongs to.') }}
+    </span>
+    <form method="post" action="{{ url_for('pwa.share_discard') }}" class="ms-auto">
+      <button type="submit" class="btn btn-sm btn-ac-ghost">{{ _('Discard') }}</button>
+    </form>
+  </div>
+  {% endif %}
+
   {% if maint_view == 'limited' %}
   <div class="alert alert-info py-2 mb-3 oh-fs-0875">
     <i class="bi bi-info-circle me-1"></i>{{ _('You are seeing a limited view: open and active items only. Service history and detailed notes are restricted.') }}

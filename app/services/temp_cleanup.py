@@ -11,6 +11,7 @@ progress is never that old.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import time
@@ -34,7 +35,7 @@ def cleanup_temp_uploads(
         root = os.path.join(upload_folder, dirname)
         if not os.path.isdir(root):
             continue
-        for dirpath, _dirs, files in os.walk(root):
+        for dirpath, _dirs, files in os.walk(root, topdown=False):
             for name in files:
                 path = os.path.join(dirpath, name)
                 try:
@@ -43,6 +44,13 @@ def cleanup_temp_uploads(
                         removed += 1
                 except FileNotFoundError:
                     continue  # removed meanwhile, e.g. by its import finishing
+            if dirpath != root:
+                # A stale per-upload folder left empty (a shared file's):
+                # drop it. Fails harmlessly while it still holds a file; a
+                # folder created moments ago is never old enough.
+                with contextlib.suppress(OSError):
+                    if os.path.getmtime(dirpath) < cutoff:
+                        os.rmdir(dirpath)
     if removed:
         log.info("Removed %d stale temporary import file(s)", removed)
     return removed

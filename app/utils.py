@@ -1517,26 +1517,31 @@ def require_pilot_access(f: Callable[..., Any]) -> Callable[..., Any]:
 
     @wraps(f)
     def decorated(*args: Any, **kwargs: Any) -> Any:
-        from models import Role, User, db
-
-        role = current_user_role()
-        if role in (Role.ADMIN, Role.OWNER, Role.PILOT, Role.STUDENT, Role.INSTRUCTOR):
+        if has_pilot_access():
             return f(*args, **kwargs)
-        membership = current_membership()
-        if membership is not None and membership.access_scope != "full":
-            # Restricted accounts never inherit the global is_pilot flag; a
-            # personal logbook grants only its allowlisted own-entry pages.
-            if membership.access_scope == "logbook":
-                return f(*args, **kwargs)
-            return abort(403)
-        uid = session.get("user_id")
-        if uid:
-            user = db.session.get(User, uid)
-            if user and user.is_pilot:
-                return f(*args, **kwargs)
         return abort(403)
 
     return decorated
+
+
+def has_pilot_access() -> bool:
+    """Whether the signed-in user has pilot access (see require_pilot_access)."""
+    from models import Role, User, db
+
+    role = current_user_role()
+    if role in (Role.ADMIN, Role.OWNER, Role.PILOT, Role.STUDENT, Role.INSTRUCTOR):
+        return True
+    membership = current_membership()
+    if membership is not None and membership.access_scope != "full":
+        # Restricted accounts never inherit the global is_pilot flag; a
+        # personal logbook grants only its allowlisted own-entry pages.
+        return bool(membership.access_scope == "logbook")
+    uid = session.get("user_id")
+    if uid:
+        user = db.session.get(User, uid)
+        if user and user.is_pilot:
+            return True
+    return False
 
 
 def require_maint_access(f: Callable[..., Any]) -> Callable[..., Any]:

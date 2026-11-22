@@ -542,28 +542,6 @@ Notes:
 
 ---
 
-## PWA: Share Target — complete expense / maintenance / flight photo flows
-
-The manifest `share_target`, `/pwa/shared` disambiguation page, and the
-"aircraft document" upload flow are fully implemented in `app/pwa/routes.py`.
-
-The three remaining destinations currently redirect to the relevant section
-with a flash message; the shared file is not carried forward to the form.
-To complete them, the shared file (stored in a temp dir, path in
-`session["share_pending"]`) needs to be passed into each destination's upload
-form. Approaches per destination:
-
-- **Expense receipt** (`expenses.add_expense`): store the temp path in session;
-  the expense add form picks it up as a pre-attached receipt image/PDF.
-  Requires the expenses form to support a receipt attachment field first.
-- **Maintenance record** (`maintenance.list_triggers`): same session-stash
-  approach, pre-attaching to the service notes or a new attachment field.
-- **Flight photo** (`flights.log_flight`): stash in session under a key like
-  `share_flight_photo`; `/flights/new` reads it and pre-fills one of the
-  counter photo inputs.
-
----
-
 ## PWA: File Handling
 
 Let the OS offer OpenHangar as an option when the user opens a `.csv` or `.pdf`

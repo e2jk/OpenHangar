@@ -104,6 +104,13 @@
           </div>
           {% endif %}
 
+          {% if shared_file %}
+          <div class="mb-3">
+            {% set shared_file_hint = _("Saved with the aircraft's maintenance documents when you save this service record.") %}
+            {% include "partials/shared_file.html" %}
+          </div>
+          {% endif %}
+
           <div class="mb-4">
             <label for="notes" class="form-label">
               {{ _('Notes') }} <span class="text-muted small">({{ _('optional') }})</span>

@@ -256,23 +256,27 @@ class TestShareConfirm:
             assert doc is not None
             assert doc.valid_until is None
 
-    def test_document_missing_aircraft_id_redirects(self, client, app):
+    def test_document_missing_aircraft_id_asks_again(self, client, app):
         self._setup_pending(client, app, "noac@test.com")
         r = client.post(
             "/pwa/shared/confirm",
             data={"destination": "document", "aircraft_id": ""},
         )
-        assert r.status_code == 302
+        # Back to the choice, the share kept: nothing is lost.
+        assert r.status_code == 200
+        assert b"Please select an aircraft" in r.data
+        with client.session_transaction() as sess:
+            assert "share_pending" in sess
 
-    def test_document_non_numeric_aircraft_id_redirects(self, client, app):
+    def test_document_non_numeric_aircraft_id_asks_again(self, client, app):
         self._setup_pending(client, app, "badac@test.com")
         r = client.post(
             "/pwa/shared/confirm",
             data={"destination": "document", "aircraft_id": "abc"},
         )
-        assert r.status_code == 302
+        assert r.status_code == 200
 
-    def test_document_cross_tenant_aircraft_returns_404(self, client, app):
+    def test_document_cross_tenant_aircraft_is_not_chosen(self, client, app):
 
         from models import Aircraft, Tenant, db
 
@@ -293,9 +297,15 @@ class TestShareConfirm:
             "/pwa/shared/confirm",
             data={"destination": "document", "aircraft_id": str(other_ac_id)},
         )
-        assert r.status_code == 404
+        # Another organisation's aircraft is treated as no aircraft chosen.
+        assert r.status_code == 200
+        assert b"Please select an aircraft" in r.data
+        from models import Document
 
-    def test_document_non_owner_role_returns_403(self, client, app):
+        with app.app_context():
+            assert Document.query.filter_by(aircraft_id=other_ac_id).count() == 0
+
+    def test_document_not_offered_to_a_pilot(self, client, app):
         from models import Role
 
         self._setup_pending(client, app, "pilot@test.com", role=Role.PILOT)
@@ -304,7 +314,10 @@ class TestShareConfirm:
             "/pwa/shared/confirm",
             data={"destination": "document", "aircraft_id": str(ac_id)},
         )
-        assert r.status_code == 403
+        # A pilot is never offered aircraft documents: refused, share dropped.
+        assert r.status_code == 302
+        with client.session_transaction() as sess:
+            assert "share_pending" not in sess
 
     def test_expense_redirects_with_aircraft(self, client, app):
         _uid, ac_id = self._setup_pending(client, app, "exp@test.com")
@@ -315,21 +328,21 @@ class TestShareConfirm:
         assert r.status_code == 302
         assert "expenses" in r.headers["Location"]
 
-    def test_expense_no_aircraft_falls_back_to_index(self, client, app):
+    def test_expense_no_aircraft_asks_again(self, client, app):
         self._setup_pending(client, app, "expnoac@test.com")
         r = client.post(
             "/pwa/shared/confirm",
             data={"destination": "expense", "aircraft_id": ""},
         )
-        assert r.status_code == 302
+        assert r.status_code == 200
 
-    def test_expense_non_numeric_aircraft_falls_back(self, client, app):
+    def test_expense_non_numeric_aircraft_asks_again(self, client, app):
         self._setup_pending(client, app, "expbadac@test.com")
         r = client.post(
             "/pwa/shared/confirm",
             data={"destination": "expense", "aircraft_id": "notanumber"},
         )
-        assert r.status_code == 302
+        assert r.status_code == 200
 
     def test_maintenance_redirects_with_aircraft(self, client, app):
         _uid, ac_id = self._setup_pending(client, app, "maint@test.com")
@@ -340,21 +353,21 @@ class TestShareConfirm:
         assert r.status_code == 302
         assert "maintenance" in r.headers["Location"]
 
-    def test_maintenance_no_aircraft_falls_back(self, client, app):
+    def test_maintenance_no_aircraft_asks_again(self, client, app):
         self._setup_pending(client, app, "maintnoac@test.com")
         r = client.post(
             "/pwa/shared/confirm",
             data={"destination": "maintenance", "aircraft_id": ""},
         )
-        assert r.status_code == 302
+        assert r.status_code == 200
 
-    def test_maintenance_non_numeric_aircraft_falls_back(self, client, app):
+    def test_maintenance_non_numeric_aircraft_asks_again(self, client, app):
         self._setup_pending(client, app, "maintbadac@test.com")
         r = client.post(
             "/pwa/shared/confirm",
             data={"destination": "maintenance", "aircraft_id": "xyz"},
         )
-        assert r.status_code == 302
+        assert r.status_code == 200
 
     def test_flight_photo_redirects_to_new_flight(self, client, app):
         # jpeg is compatible with every destination, including flight_photo.

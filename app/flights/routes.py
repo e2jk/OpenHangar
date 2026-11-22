@@ -62,6 +62,7 @@ from pilots.personal_minimums import (  # pyright: ignore[reportMissingImports]
     get_active_revision,
     recency_breaches,
 )
+from pwa import pending  # pyright: ignore[reportMissingImports]
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
     IMPORT_TMP_DIRNAME,
 )
@@ -244,6 +245,16 @@ def _get_flight_or_404(flight_id: int) -> Flight:
         if fe.pic_user_id != uid and fe.second_crew_user_id != uid:
             abort(404)
     return fe
+
+
+# Photo fields of a flight (form field = Flight column) → file name label.
+_PHOTO_SLOTS: dict[str, str] = {
+    "flight_counter_photo": "flight",
+    "engine_counter_photo": "engine",
+    "fuel_photo": "fuel",
+    "flight_counter_photo_preflight": "flight_preflight",
+    "engine_counter_photo_preflight": "engine_preflight",
+}
 
 
 def _save_upload(file: Any, flight_id: int, label: str) -> str | None:
@@ -866,6 +877,7 @@ def log_flight() -> ResponseReturnValue:
         covering_reservation=covering_reservation,
         active_minimums=active_minimums,
         minimums_breaches=minimums_breaches,
+        shared_file=pending.current("flight_photo"),
     )
 
 
@@ -894,6 +906,7 @@ def edit_flight(flight_id: int) -> ResponseReturnValue:
 
     return render_template(
         "flights/flight_form.html",
+        shared_file=None,
         flight=fe,
         pilot_entry=None,
         aircraft=aircraft,
@@ -2038,6 +2051,7 @@ def _handle_log_flight_post(
             taxi=f.get("gps_ground_only") == "1",
         )
 
+    used_shared_photo = False
     if ac:
         if _fe_is_new and flight_date is not None:
             anchor = _datetime.combine(
@@ -2048,27 +2062,24 @@ def _handle_log_flight_post(
 
         db.session.flush()
 
-        for photo_field, label, attr in [
-            ("flight_counter_photo", "flight", "flight_counter_photo"),
-            ("engine_counter_photo", "engine", "engine_counter_photo"),
-            ("fuel_photo", "fuel", "fuel_photo"),
-            (
-                "flight_counter_photo_preflight",
-                "flight_preflight",
-                "flight_counter_photo_preflight",
-            ),
-            (
-                "engine_counter_photo_preflight",
-                "engine_preflight",
-                "engine_counter_photo_preflight",
-            ),
-        ]:
+        for photo_field, label in _PHOTO_SLOTS.items():
             photo_file = request.files.get(photo_field)
             if photo_file and photo_file.filename:
                 stored = _save_upload(photo_file, fe.id, label)
                 if stored:
-                    _delete_upload(getattr(fe, attr))
-                    setattr(fe, attr, stored)
+                    _delete_upload(getattr(fe, photo_field))
+                    setattr(fe, photo_field, stored)
+
+        # A photo shared from another app to this new flight (pwa.pending),
+        # in the slot the pilot chose — unless they uploaded one there.
+        shared_photo = pending.submitted("flight_photo") if _fe_is_new else None
+        slot = request.form.get("shared_photo_slot", "")
+        if shared_photo is not None and slot in _PHOTO_SLOTS and not getattr(fe, slot):
+            with shared_photo.upload() as photo_file:
+                stored = _save_upload(photo_file, fe.id, _PHOTO_SLOTS[slot])
+            if stored:
+                setattr(fe, slot, stored)
+                used_shared_photo = True
 
     # ── Pilot log figures ──────────────────────────────────────────────────────
     if create_pilot:
@@ -2095,6 +2106,8 @@ def _handle_log_flight_post(
     new_invites = sync_crew_invites(fe, uid, requested_invites(f, uid, tid, pilot_role))
 
     db.session.commit()
+    if used_shared_photo:
+        pending.discard()
     notify_invites(new_invites, tid)
     if shared_before is not None:
         notify_shared_changes(fe, uid, shared_before)
@@ -2195,6 +2208,7 @@ def _render_form(
         covering_reservation=None,
         active_minimums=None,
         minimums_breaches=[],
+        shared_file=pending.current("flight_photo") if flight is None else None,
     )
 
 

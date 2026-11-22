@@ -228,6 +228,7 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
     # pwa_bp
     "pwa.share_target": _ANY_ROLE,
     "pwa.share_confirm": _ANY_ROLE,
+    "pwa.share_discard": _ANY_ROLE,
     # reservations_bp
     "reservations.downtime_new": _MAINT_ROLES,
     "reservations.downtime_edit": _MAINT_ROLES,

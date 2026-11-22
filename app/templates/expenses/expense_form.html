@@ -219,6 +219,8 @@
               <span class="text-muted">— {{ _('uploading a new file replaces it') }}</span>
             </div>
             {% endif %}
+            {% set shared_file_hint = _('Saved as this expense\'s receipt, unless you choose another file below.') %}
+            {% include "partials/shared_file.html" %}
             <input type="file" class="form-control" id="receipt" name="receipt"
                    accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.pdf,.doc,.docx">
           </div>
