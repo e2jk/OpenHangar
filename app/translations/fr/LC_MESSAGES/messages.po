@@ -2675,8 +2675,8 @@ msgid "Voucher validity must stay within the edition dates."
 msgstr "La validité des bons doit rester dans les dates de l’édition."
 
 #: app/passports/vouchers.py:87 app/places/airfield_routes.py:44
-#: app/places/airfields.py:62 app/places/airfields.py:121
-#: app/places/airfields.py:132 app/places/candidates.py:139
+#: app/places/airfields.py:63 app/places/airfields.py:132
+#: app/places/airfields.py:143 app/places/candidates.py:140
 msgid "Airfield not found."
 msgstr "Aérodrome introuvable."
 
@@ -3212,31 +3212,31 @@ msgstr "Héliport"
 msgid "Closed airfield"
 msgstr "Aérodrome fermé"
 
-#: app/places/airfields.py:69
+#: app/places/airfields.py:70
 msgid "Use a getting-there note of at most 2,000 characters."
 msgstr "Limitez les indications pour s’y rendre à 2 000 caractères."
 
-#: app/places/candidates.py:98
+#: app/places/candidates.py:99
 msgid "Choose a search radius greater than zero and at most 200 km."
 msgstr "Choisissez un rayon de recherche supérieur à zéro et inférieur ou égal à 200 km."
 
-#: app/places/candidates.py:101
+#: app/places/candidates.py:102
 msgid "Use a search of at most 200 characters."
 msgstr "Limitez la recherche à 200 caractères."
 
-#: app/places/candidates.py:152
+#: app/places/candidates.py:160
 msgid "This airfield conflicts with an existing code. Review the catalogue first."
 msgstr "Le code de cet aérodrome est déjà attribué. Vérifiez le catalogue avant de continuer."
 
-#: app/places/candidates.py:177
+#: app/places/candidates.py:187
 msgid "Enter an airfield name of at most 255 characters."
 msgstr "Saisissez un nom d’aérodrome de 255 caractères maximum."
 
-#: app/places/candidates.py:179
+#: app/places/candidates.py:189
 msgid "Use an airfield code of at most 64 characters."
 msgstr "Limitez le code de l’aérodrome à 64 caractères."
 
-#: app/places/candidates.py:191
+#: app/places/candidates.py:201
 msgid "That code cannot be used. Choose another code or leave it blank."
 msgstr "Ce code ne peut pas être utilisé. Choisissez-en un autre ou laissez le champ vide."
 

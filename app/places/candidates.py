@@ -8,6 +8,7 @@ from flask_babel import gettext as _
 from models import PassportAirfieldIdentity, Place, db, fits_column
 from passports import catalogue
 from services.destination_search import distance_nm
+from sqlalchemy.exc import IntegrityError
 
 from places import airfields
 from places.access import PlaceError, actor, place_access
@@ -145,13 +146,22 @@ def select_airfield(tenant_id: int, user_id: int, place_id: int, key: str) -> No
             if row.source_id == choice["source_id"]
         )
         try:
-            field_id = catalogue.materialise(tenant_id, row).id
-        except catalogue.AirfieldConflict:
-            raise PlaceError(
-                _(
-                    "This airfield conflicts with an existing code. Review the catalogue first."
-                )
-            ) from None
+            with db.session.begin_nested():
+                field_id = catalogue.materialise(tenant_id, row).id
+        except (IntegrityError, catalogue.AirfieldConflict) as exc:
+            # Another selection can win at the insert or the alias check.
+            winner = PassportAirfieldIdentity.query.filter_by(
+                tenant_id=tenant_id, source="ourairports", source_id=row.source_id
+            ).first()
+            if winner is None:
+                if isinstance(exc, catalogue.AirfieldConflict):
+                    raise PlaceError(
+                        _(
+                            "This airfield conflicts with an existing code. Review the catalogue first."
+                        )
+                    ) from None
+                raise
+            field_id = winner.id
     airfields.add_link(
         tenant_id,
         user_id,

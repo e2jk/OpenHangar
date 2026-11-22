@@ -2675,8 +2675,8 @@ msgid "Voucher validity must stay within the edition dates."
 msgstr "De geldigheid van de bonnen moet binnen de editiedatums vallen."
 
 #: app/passports/vouchers.py:87 app/places/airfield_routes.py:44
-#: app/places/airfields.py:62 app/places/airfields.py:121
-#: app/places/airfields.py:132 app/places/candidates.py:139
+#: app/places/airfields.py:63 app/places/airfields.py:132
+#: app/places/airfields.py:143 app/places/candidates.py:140
 msgid "Airfield not found."
 msgstr "Vliegveld niet gevonden."
 
@@ -3212,31 +3212,31 @@ msgstr "Helihaven"
 msgid "Closed airfield"
 msgstr "Gesloten vliegveld"
 
-#: app/places/airfields.py:69
+#: app/places/airfields.py:70
 msgid "Use a getting-there note of at most 2,000 characters."
 msgstr "Gebruik maximaal 2.000 tekens voor de routebeschrijving."
 
-#: app/places/candidates.py:98
+#: app/places/candidates.py:99
 msgid "Choose a search radius greater than zero and at most 200 km."
 msgstr "Kies een zoekstraal groter dan nul en maximaal 200 km."
 
-#: app/places/candidates.py:101
+#: app/places/candidates.py:102
 msgid "Use a search of at most 200 characters."
 msgstr "Gebruik maximaal 200 tekens voor de zoekopdracht."
 
-#: app/places/candidates.py:152
+#: app/places/candidates.py:160
 msgid "This airfield conflicts with an existing code. Review the catalogue first."
 msgstr "Deze vliegveldcode is al in gebruik. Controleer eerst de catalogus."
 
-#: app/places/candidates.py:177
+#: app/places/candidates.py:187
 msgid "Enter an airfield name of at most 255 characters."
 msgstr "Voer een vliegveldnaam van maximaal 255 tekens in."
 
-#: app/places/candidates.py:179
+#: app/places/candidates.py:189
 msgid "Use an airfield code of at most 64 characters."
 msgstr "Gebruik een vliegveldcode van maximaal 64 tekens."
 
-#: app/places/candidates.py:191
+#: app/places/candidates.py:201
 msgid "That code cannot be used. Choose another code or leave it blank."
 msgstr "Deze code kan niet worden gebruikt. Kies een andere code of laat het veld leeg."
 
