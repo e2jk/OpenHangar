@@ -113,7 +113,8 @@ def _airfield(latitude: float, longitude: float) -> dict[str, Any] | None:
 def read_hints(
     data: bytes, filename: str, device_offset_minutes: int | None
 ) -> dict[str, Any]:
-    """{"time", "date", "time_source", "airfield"}, each None when unknown.
+    """{"time", "date", "time_source", "airfield", "position"}, each None when
+    unknown; `position` is {"latitude", "longitude"} from the photo's GPS.
     `time` is "HH:MM" UTC; `time_source` is "camera" (exact), "device"
     (converted with the device's offset) or "filename" (likewise)."""
     hints: dict[str, Any] = {
@@ -121,6 +122,7 @@ def read_hints(
         "date": None,
         "time_source": None,
         "airfield": None,
+        "position": None,
     }
     if len(data) > MAX_PHOTO_BYTES:
         return hints
@@ -168,4 +170,8 @@ def read_hints(
         and -180 <= longitude <= 180
     ):
         hints["airfield"] = _airfield(latitude, longitude)
+        hints["position"] = {
+            "latitude": round(latitude, 6),
+            "longitude": round(longitude, 6),
+        }
     return hints

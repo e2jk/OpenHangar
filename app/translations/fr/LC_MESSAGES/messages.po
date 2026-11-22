@@ -60,20 +60,20 @@ msgstr[1] "🎉 Cela fait %(n)s ans que vous avez obtenu votre PPL !"
 msgid "🎉 Today is the anniversary of your PPL!"
 msgstr "🎉 Aujourd'hui, c'est l'anniversaire de l'obtention de votre PPL !"
 
-#: app/init.py:1183
+#: app/init.py:1184
 #, python-format
 msgid "This upload is too large (maximum %(mb)s MB in total). Please upload the files in smaller batches."
 msgstr "Cet envoi est trop volumineux (maximum %(mb)s Mo au total). Veuillez envoyer les fichiers en plusieurs fois."
 
-#: app/init.py:1210
+#: app/init.py:1211
 msgid "Some text entered is too long, so nothing was saved. Please shorten it and try again."
 msgstr "Un texte saisi est trop long, rien n’a donc été enregistré. Veuillez le raccourcir et réessayer."
 
-#: app/flights/form_parsing.py:459 app/init.py:1215
+#: app/flights/form_parsing.py:459 app/init.py:1216
 msgid "A number entered is far too large, so nothing was saved. Please check the values and try again."
 msgstr "Un nombre saisi est beaucoup trop grand, rien n’a donc été enregistré. Veuillez vérifier les valeurs et réessayer."
 
-#: app/init.py:1268
+#: app/init.py:1269
 msgid "The sign-in form had expired. Please sign in again."
 msgstr "Le formulaire de connexion avait expiré. Veuillez vous reconnecter."
 
@@ -15456,6 +15456,15 @@ msgstr "Déplacer le lieu"
 #: app/templates/places/place_detail.html:18
 msgid "Copies keep the content and photo, but no visits. Moving requires every visitor to belong to the destination collection."
 msgstr "Les copies conservent le contenu et la photo, sans les visites. Pour déplacer un lieu, toutes les personnes ayant enregistré une visite doivent faire partie de la collection de destination."
+
+#: app/templates/places/place_form.html:5
+#, python-brace-format
+msgid "This photo was taken at {latitude}, {longitude}."
+msgstr "Cette photo a été prise à {latitude}, {longitude}."
+
+#: app/templates/places/place_form.html:5
+msgid "Use as the place's location"
+msgstr "Utiliser comme emplacement du lieu"
 
 #: app/templates/places/place_form.html:5
 msgid "Address search failed. Use the map or coordinates, or try again."

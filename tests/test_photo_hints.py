@@ -11,6 +11,10 @@ from PIL import Image
 from services import photo_hints
 
 from tests.test_flights import _add_aircraft, _create_user_and_tenant, _login
+from tests.test_place_collections import people
+from tests.test_place_sharing import signin
+
+__all__ = ["people"]
 
 EBOS = (51.1998, 2.874673)
 
@@ -56,6 +60,7 @@ def test_camera_time_and_airfield() -> None:
     assert hints["time_source"] == "camera"
     assert hints["airfield"]["ident"] == "EBOS"
     assert hints["airfield"]["distance_km"] < 0.1
+    assert hints["position"] == {"latitude": 51.1998, "longitude": 2.874673}
 
 
 def test_without_camera_offset_the_device_offset_is_used() -> None:
@@ -122,6 +127,7 @@ def test_unreadable_or_oversized_photos_give_no_hints(data: bytes) -> None:
         "date": None,
         "time_source": None,
         "airfield": None,
+        "position": None,
     }
 
 
@@ -168,3 +174,25 @@ def test_the_form_offers_the_hints(app: Flask, client: FlaskClient) -> None:
     page = client.get("/flights/new").get_data(as_text=True)
     assert 'id="photo-hints"' in page and "/flights/photo-hints" in page
     assert "js/photo_hints.js" in page
+
+
+def test_a_place_photo_offers_its_position(
+    app: Flask, client: FlaskClient, people: dict[str, int]
+) -> None:
+    signin(client, people, "personal")
+    response = client.post(
+        "/places/photo-position",
+        data={"photo": (io.BytesIO(photo()), "castle.jpg")},
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 200
+    assert response.json == {"position": {"latitude": 51.1998, "longitude": 2.874673}}
+    none = client.post(
+        "/places/photo-position",
+        data={"photo": (io.BytesIO(photo(position=None)), "x.jpg")},
+        content_type="multipart/form-data",
+    )
+    assert none.json == {"position": None}
+    assert client.post("/places/photo-position", data={}).status_code == 400
+    form = client.get("/places/new").get_data(as_text=True)
+    assert 'id="place-photo-hint"' in form and "/places/photo-position" in form
