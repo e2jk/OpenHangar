@@ -3393,7 +3393,7 @@ msgstr "Gezin"
 msgid "Enter a tag name of at most 80 characters."
 msgstr "Voer een tagnaam van maximaal 80 tekens in."
 
-#: app/places/visit_routes.py:38 app/places/visit_routes.py:84
+#: app/places/visit_routes.py:38 app/places/visit_routes.py:85
 msgid "Visit recorded."
 msgstr "Bezoek opgeslagen."
 

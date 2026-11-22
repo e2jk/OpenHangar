@@ -113,10 +113,9 @@ def test_shown_on_the_logbook_and_recorded_with_one_click(
     assert "the airfield for Fair" in page
     response = client.post(
         f"/places/{landed['castle']}/visits/from-flight/{landed['flight']}",
-        data={"next": "/pilot/logbook?tab=1"},
     )
     assert response.status_code == 302
-    assert response.headers["Location"].endswith("/pilot/logbook?tab=1")
+    assert response.headers["Location"].endswith("/pilot/logbook")
     with app.app_context():
         visit = PlaceVisit.query.filter_by(place_id=landed["castle"]).one()
         flight = db.session.get(Flight, landed["flight"])
@@ -132,12 +131,12 @@ def test_dismissed_once_and_for_all(
     signin(client, people)
     url = f"/places/{landed['fair']}/visits/from-flight/{landed['flight']}/dismiss"
     for _attempt in range(2):
-        assert client.post(url, data={"next": "//evil.example/"}).status_code == 302
+        assert client.post(url, data={"aircraft": "not a number"}).status_code == 302
     with app.app_context():
         assert PlaceVisitDismissal.query.count() == 1
     assert [r["place"] for r in _suggestions(app, people, "creator")] == ["Castle"]
-    response = client.post(url, data={"next": "/\\evil.example"})
-    assert response.headers["Location"].endswith("/pilot/logbook")
+    response = client.post(url, data={"aircraft": "7"})
+    assert response.headers["Location"].endswith("/flights")
 
 
 def test_never_for_someone_elses_flight_or_place(
