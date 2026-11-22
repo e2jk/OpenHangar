@@ -16,7 +16,6 @@ Covers:
 import io
 import zipfile
 from datetime import date, timedelta
-from io import BytesIO
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest
@@ -115,7 +114,7 @@ def _add_document(
 
 
 def _fake_file(name="doc.txt", content=b"hello", content_type="text/plain"):
-    return (BytesIO(content), name, content_type)
+    return (io.BytesIO(content), name, content_type)
 
 
 # ── DocType constants ─────────────────────────────────────────────────────────

@@ -757,7 +757,7 @@ def parse_date_value(val: Any) -> date | None:
         try:
             return datetime.strptime(s, fmt).date()
         except ValueError:
-            pass
+            pass  # not this format: try the next one
     return None
 
 

@@ -152,6 +152,17 @@ Weblate quality checks are also surfaced as Code Scanning alerts via
   its own fields with it keeps what was typed, anything else is refused by the
   `DoesNotFitColumn` handler.
 
+- CodeQL (code scanning, on every PR) keeps raising the same few notes, so
+  `tests/test_code_scanning_patterns.py` checks three of them locally: a
+  module imported both `import x` and `from x import y`; an `except: pass`
+  with no comment saying why; a bare `abort(...)` ending an `except` (CodeQL
+  doesn't know `abort()` never returns — write `return abort(...)`). The
+  security findings worth avoiding up front: pick a redirect target
+  server-side (a known endpoint, or a page validated as this site's own),
+  never a URL taken as-is from the form; store files only through the existing upload helpers,
+  never a copy of their path code; never put `str(exc)` in a response; no
+  nested or adjacent repeated quantifiers in a regex on user input.
+
 ### Naming conventions
 - Blueprint directories and URL prefixes match (e.g. blueprint `aircraft` → `/aircraft/`).
 - Test files describe the feature under test, never a phase number:

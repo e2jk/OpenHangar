@@ -9,7 +9,6 @@ import os
 from collections import defaultdict
 from collections.abc import Callable
 from datetime import UTC, datetime
-from functools import wraps
 from typing import Any
 
 from flask import (  # pyright: ignore[reportMissingImports]
@@ -1381,7 +1380,7 @@ class AircraftRefConverter(BaseConverter):
 def login_required(f: Callable[..., Any]) -> Callable[..., Any]:
     """Redirect unauthenticated users to the login page."""
 
-    @wraps(f)
+    @functools.wraps(f)
     def decorated(*args: Any, **kwargs: Any) -> Any:
         if not session.get("user_id"):
             return redirect(url_for("auth.login"))
@@ -1393,7 +1392,7 @@ def login_required(f: Callable[..., Any]) -> Callable[..., Any]:
 def require_instance_admin(f: Callable[..., Any]) -> Callable[..., Any]:
     """Abort 403 unless the current user is the instance admin."""
 
-    @wraps(f)
+    @functools.wraps(f)
     def decorated(*args: Any, **kwargs: Any) -> Any:
         from models import User, db
 
@@ -1497,7 +1496,7 @@ def require_role(*roles: str) -> Callable[..., Any]:
     """Decorator: abort 403 if the current user's role is not in *roles*."""
 
     def decorator(f: Callable[..., Any]) -> Callable[..., Any]:
-        @wraps(f)
+        @functools.wraps(f)
         def decorated(*args: Any, **kwargs: Any) -> Any:
             if current_user_role() not in roles:
                 abort(403)
@@ -1515,7 +1514,7 @@ def require_pilot_access(f: Callable[..., Any]) -> Callable[..., Any]:
     or by the per-user is_pilot capability flag.
     """
 
-    @wraps(f)
+    @functools.wraps(f)
     def decorated(*args: Any, **kwargs: Any) -> Any:
         if has_pilot_access():
             return f(*args, **kwargs)
@@ -1551,7 +1550,7 @@ def require_maint_access(f: Callable[..., Any]) -> Callable[..., Any]:
     or by the per-user is_maintenance capability flag.
     """
 
-    @wraps(f)
+    @functools.wraps(f)
     def decorated(*args: Any, **kwargs: Any) -> Any:
         from models import Role, User, db
 

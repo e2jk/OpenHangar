@@ -431,7 +431,7 @@ def _builder_page(passport: Passport | None) -> ResponseReturnValue:
     try:
         require_actor(tenant_id, user_id, creating=passport is None)
     except BuilderError as exc:
-        abort(exc.status, description=str(exc))
+        return abort(exc.status, description=str(exc))
     if request.method == "GET":
         token, draft = new_draft(tenant_id, user_id, passport)
         db.session.commit()
@@ -712,7 +712,7 @@ def target_detail(passport_id: int, target_id: int) -> ResponseReturnValue:
             )
             discussion_comments = comments.feed(scope).limit(3).all()
         except BuilderError as exc:
-            abort(exc.status, description=str(exc))
+            return abort(exc.status, description=str(exc))
     return _builder_response(
         render_template(
             "passports/target.html",

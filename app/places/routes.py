@@ -70,7 +70,7 @@ def index() -> ResponseReturnValue:
         try:
             collection_access(tid, uid, collection_id)
         except PlaceError:
-            abort(404)
+            return abort(404)
     choices = (
         collections_for_user(tid, uid)
         .order_by(PlaceCollection.name, PlaceCollection.id)
@@ -134,7 +134,7 @@ def new_collection() -> ResponseReturnValue:
     try:
         actor(tid, uid, writing=True)
     except PlaceError:
-        abort(403)
+        return abort(403)
     if request.method == "POST":
         try:
             collection = collections.create_collection(
@@ -333,7 +333,7 @@ def join_collection(collection_id: int) -> ResponseReturnValue:
             db.session.commit()
         except PlaceError:
             db.session.rollback()
-            abort(404)
+            return abort(404)
         return redirect(url_for("places.index", collection=collection_id))
     return render_template(
         "places/join_collection.html", collection=collection, invitation=invitation

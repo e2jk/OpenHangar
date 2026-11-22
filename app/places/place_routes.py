@@ -130,7 +130,7 @@ def new_place() -> ResponseReturnValue:
     try:
         actor(tid, uid, writing=True)
     except PlaceError:
-        abort(403)
+        return abort(403)
     if request.method == "POST":
         collection_id = (
             request.form.get("collection", type=db_id)
