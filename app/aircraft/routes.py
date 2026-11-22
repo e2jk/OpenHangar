@@ -534,6 +534,9 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     fuel_type = request.form.get("fuel_type", "avgas").strip()
     if fuel_type not in ("avgas", "ul91", "mogas", "jet_a1"):
         fuel_type = "avgas"
+    refuel_timing = request.form.get("refuel_timing")
+    if refuel_timing not in ("before", "after"):
+        refuel_timing = None
     reserve_hourly_rate_raw = request.form.get("reserve_hourly_rate", "").strip()
     oil_warning_lph_raw = request.form.get("oil_warning_lph", "").strip()
     showcase_blurb = request.form.get("showcase_blurb", "").strip() or None
@@ -661,6 +664,7 @@ def _save_aircraft(ac: Aircraft | None) -> ResponseReturnValue:
     ac.flight_counter_offset = flight_counter_offset
     ac.fuel_flow = fuel_flow
     ac.fuel_type = fuel_type
+    ac.refuel_timing = refuel_timing
     ac.logbook_time_precision = logbook_time_precision
     ac.reserve_hourly_rate = reserve_hourly_rate
     ac.oil_warning_lph = oil_warning_lph

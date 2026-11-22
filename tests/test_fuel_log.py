@@ -105,12 +105,25 @@ class TestFuelParsing:
     def test_timing(self, timing, before):
         assert _fuel_added_before_flight(timing) is before
 
+    @pytest.mark.parametrize(
+        ("timing", "before"),
+        [("FFAF", False), ("FFBF", True), ("", True), ("FFBF+FFAF", True)],
+    )
+    def test_timing_for_an_aircraft_usually_refuelled_before(self, timing, before):
+        # A note naming one side wins; no note, or both, takes the usual side.
+        assert _fuel_added_before_flight(timing, usually_before=True) is before
+
 
 class TestApplyFuelFields:
     def test_quantity_defaults_to_after_the_flight(self):
         fields = {"fuel_added": 50.0}
         _apply_fuel_fields(fields, {"fuel (l)": "fuel_added"}, None)
         assert fields == {"fuel_added_after_qty": 50.0, "fuel_added_after_unit": "L"}
+
+    def test_quantity_without_a_note_goes_to_the_usual_side(self):
+        fields = {"fuel_added": 50.0}
+        _apply_fuel_fields(fields, {"fuel (l)": "fuel_added"}, None, True)
+        assert fields == {"fuel_added_before_qty": 50.0, "fuel_added_before_unit": "L"}
 
     def test_before_and_gallons(self):
         fields = {"fuel_added": 10.0, "fuel_timing": "FFBF"}
@@ -731,3 +744,73 @@ class TestFuelOnBoard:
         assert "left after the flight of 2026-11-02 (EGHF → EBAW)" in page
         assert "plus 10 L added since" in page
         assert "One later flight has no fuel remaining recorded" in page
+
+
+class TestUsualRefuelTiming:
+    """Aircraft.refuel_timing: set on the aircraft form, used by the import
+    for a quantity with no note, and the side the flight form lists first."""
+
+    def _edit(self, client, acid, value):
+        return client.post(
+            f"/aircraft/{acid}/edit",
+            data={
+                "registration": "OO-RFT",
+                "make": "Cessna",
+                "model": "172",
+                "refuel_timing": value,
+            },
+        )
+
+    def test_set_on_the_aircraft_form(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="rft1@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-RFT")
+        _login(app, client, email="rft1@example.com")
+        page = client.get(f"/aircraft/{acid}/edit").data.decode()
+        assert 'id="refuel_varies" value=""\n                   checked' in page
+        for value, stored in (
+            ("before", "before"),
+            ("after", "after"),
+            ("", None),
+            ("x", None),
+        ):
+            self._edit(client, acid, value)
+            with app.app_context():
+                assert db.session.get(Aircraft, acid).refuel_timing == stored
+
+    def test_the_import_uses_it_without_a_note(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="rft2@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-RF2")
+        _login(app, client, email="rft2@example.com")
+        with app.app_context():
+            db.session.get(Aircraft, acid).refuel_timing = "before"
+            db.session.commit()
+        _import(
+            client,
+            acid,
+            "Date,From,To,Duration,Landings,Fuel (L),Refuel,Fuel left (8ths)\n"
+            "2026-10-04,EBAW,LFAT,1.3,1,50,FFAF,\n"
+            "2026-10-05,EBAW,EBAW,1.0,1,30,,\n",
+        )
+        with app.app_context():
+            by_date = {f.date: f for f in Flight.query.filter_by(aircraft_id=acid)}
+            assert by_date[date(2026, 10, 4)].fuel_added_after_qty == Decimal(50)
+            assert by_date[date(2026, 10, 5)].fuel_added_before_qty == Decimal(30)
+            assert by_date[date(2026, 10, 5)].fuel_added_after_qty is None
+
+    def test_the_flight_form_lists_the_usual_side_first(self, app, client):
+        _uid, tid = _create_user_and_tenant(app, email="rft3@example.com")
+        acid = _add_aircraft(app, tid, registration="OO-RF3")
+        _login(app, client, email="rft3@example.com")
+
+        def order():
+            page = client.get(f"/flights/new?aircraft_id={acid}").data.decode()
+            return page.index('id="fuel_added_before_qty"') < page.index(
+                'id="fuel_added_after_qty"'
+            )
+
+        assert order()  # not set: before, then after
+        for value, before_first in (("after", False), ("before", True)):
+            with app.app_context():
+                db.session.get(Aircraft, acid).refuel_timing = value
+                db.session.commit()
+            assert order() is before_first
