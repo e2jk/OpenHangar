@@ -3100,6 +3100,11 @@ add-place form (42b) and Personal accounts (42h).
   link and no files offers **New place**, and goes straight to the form while
   that is the only choice. Android apps such as Instagram put the link inside `text`, not `url`:
   use `url`, else the first http(s) link found in `text`.
+  *Link handling done (2026-11-22):* `pwa/shared_links.py` —
+  `shared_link(url, text)`, `clean_link(url)` (http(s) only, no user/password
+  part, tracking parameters removed, ≤ 2048 characters) and
+  `suggested_title(title, text, link)` (≤ 200 characters). The share page's
+  **New place** choice and the form prefill remain.
 - [ ] It opens the add-place form with the link in the place's external URL
   field and a suggested title (the shared title, else the shared text without
   the link), in the user's default collection. Nothing is saved until the user
