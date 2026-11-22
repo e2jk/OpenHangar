@@ -9,12 +9,18 @@ from flask_babel import gettext as _
 from places.access import PlaceError
 
 _NUMBER = r"[+-]?\d{1,3}(?:\.\d+)?"
-_PAIR = re.compile(rf"^\s*({_NUMBER})\s*[,;\s]\s*({_NUMBER})\s*$")
+# One separator — a comma or semicolon with optional spaces, or spaces alone —
+# with possessive space runs: three adjacent optional-space parts backtracked
+# quadratically on a long run of spaces.
+_PAIR = re.compile(rf"^\s*+({_NUMBER})(?:\s*+[,;]\s*+|\s++)({_NUMBER})\s*+$")
 _DMS = re.compile(
-    r"(?P<prefix>[NSWE])?\s*(\d{1,3})\s*[°d]\s*"
-    r"(?:(\d{1,2}(?:\.\d+)?)\s*['′m]\s*)?"
-    r"(?:(\d{1,2}(?:\.\d+)?)\s*[\"″s]\s*)?"
-    r"(?(prefix)(?:\s*(?P=prefix))?|\s*([NSWE]))",
+    # Possessive space runs (\s*+) and spaces only after a hemisphere letter:
+    # nothing that follows a run is a space, so it is never given back;
+    # backtracking into runs made long spaces quadratic.
+    r"(?:(?P<prefix>[NSWE])\s*+)?(\d{1,3})\s*+[°d]\s*+"
+    r"(?:(\d{1,2}(?:\.\d+)?)\s*+['′m]\s*+)?"
+    r"(?:(\d{1,2}(?:\.\d+)?)\s*+[\"″s]\s*+)?"
+    r"(?(prefix)(?:\s*+(?P=prefix))?|\s*+([NSWE]))",
     re.IGNORECASE,
 )
 

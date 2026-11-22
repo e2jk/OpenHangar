@@ -11,6 +11,9 @@ from places.coordinates import coordinate_pair, parse_coordinates
         ("50.5, 4.2", (50.5, 4.2)),
         ("-50.5 ; -4.2", (-50.5, -4.2)),
         ("50.5 4.2", (50.5, 4.2)),
+        ("50.5\t 4.2", (50.5, 4.2)),
+        (" 50.5 ,  4.2 ", (50.5, 4.2)),
+        ("N 50° 30' E 4° 12'", (50.5, 4.2)),
         ("90,180", (90, 180)),
         ("50°30′0″N, 4°12′0″E", (50.5, 4.2)),
         ("S50°30'0\" W4°12'0\"", (-50.5, -4.2)),
@@ -79,3 +82,24 @@ def test_form_coordinates_refuse_non_finite_unbounded_or_missing_values(
 ) -> None:
     with pytest.raises(PlaceError):
         coordinate_pair(latitude, longitude)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "1" + " " * 2000 + "x",
+        "1," + " " * 2000 + "x",
+        "1°" + " " * 2000 + "x",
+        "1" + "\t " * 1000 + "1x",
+        "N 1° " * 400,
+    ],
+)
+def test_long_space_runs_are_refused_without_backtracking(value: str) -> None:
+    """Possessive space runs: these took up to half a second each when the
+    patterns could backtrack into a run of spaces (now well under 10 ms)."""
+    import time
+
+    start = time.perf_counter()
+    with pytest.raises(PlaceError):
+        parse_coordinates(value)
+    assert time.perf_counter() - start < 0.1
