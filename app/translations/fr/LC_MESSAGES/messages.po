@@ -3237,22 +3237,22 @@ msgstr "Chaque personne ayant enregistré une visite doit faire partie de la col
 msgid "Only the place owner or collection creator can permanently delete it."
 msgstr "Seuls le propriétaire du lieu ou la personne qui a créé la collection peuvent le supprimer définitivement."
 
-#: app/places/place_routes.py:123 app/places/place_routes.py:239
+#: app/places/place_routes.py:128 app/places/place_routes.py:244
 msgid "Choose a collection you can edit."
 msgstr "Choisissez une collection que vous pouvez modifier."
 
-#: app/places/place_routes.py:161
+#: app/places/place_routes.py:166
 #: app/templates/places/collection_settings.html:9
 #: app/templates/places/collection_settings.html:15
 #: app/templates/places/collection_settings.html:19
 msgid "Unnamed member"
 msgstr "Membre sans nom"
 
-#: app/places/place_routes.py:181 app/places/place_routes.py:182
+#: app/places/place_routes.py:186 app/places/place_routes.py:187
 msgid "Former member"
 msgstr "Ancien membre"
 
-#: app/places/place_routes.py:254
+#: app/places/place_routes.py:259
 msgid "Confirm the permanent deletion of this place."
 msgstr "Confirmez la suppression définitive de ce lieu."
 
@@ -4583,7 +4583,7 @@ msgstr "Statut"
 #: app/templates/pilots/minimums_edit.html:15
 #: app/templates/places/join_collection.html:5
 #: app/templates/places/new_collection.html:6
-#: app/templates/places/place_form.html:19
+#: app/templates/places/place_form.html:20
 #: app/templates/pwa/share_target.html:14
 #: app/templates/refuels/refuel_form.html:61
 #: app/templates/reservations/charge.html:108
@@ -12255,12 +12255,12 @@ msgid "Optional airfield code"
 msgstr "Code d’aérodrome facultatif"
 
 #: app/templates/passports/builder.html:58
-#: app/templates/places/place_form.html:14
+#: app/templates/places/place_form.html:15
 msgid "Latitude"
 msgstr "Latitude"
 
 #: app/templates/passports/builder.html:58
-#: app/templates/places/place_form.html:14
+#: app/templates/places/place_form.html:15
 msgid "Longitude"
 msgstr "Longitude"
 
@@ -14727,7 +14727,7 @@ msgid "Leave collection"
 msgstr "Quitter la collection"
 
 #: app/templates/places/collection_settings.html:11
-#: app/templates/places/place_form.html:17
+#: app/templates/places/place_form.html:18
 msgid "Tags"
 msgstr "Étiquettes"
 
@@ -14976,6 +14976,14 @@ msgid "Copies keep the content and photo, but no visits. Moving requires every v
 msgstr "Les copies conservent le contenu et la photo, sans les visites. Pour déplacer un lieu, toutes les personnes ayant enregistré une visite doivent faire partie de la collection de destination."
 
 #: app/templates/places/place_form.html:5
+msgid "Address search failed. Use the map or coordinates, or try again."
+msgstr "La recherche d’adresse a échoué. Utilisez la carte ou les coordonnées, ou réessayez."
+
+#: app/templates/places/place_form.html:5
+msgid "No matching places found. Try another search or set the pin yourself."
+msgstr "Aucun lieu correspondant trouvé. Essayez une autre recherche ou placez vous-même le repère."
+
+#: app/templates/places/place_form.html:5
 msgid "Coordinates could not be read. Enter latitude and longitude directly."
 msgstr "Impossible de lire les coordonnées. Saisissez directement la latitude et la longitude."
 
@@ -14988,42 +14996,54 @@ msgid "Place name"
 msgstr "Nom du lieu"
 
 #: app/templates/places/place_form.html:11
+msgid "Place name or address"
+msgstr "Nom de lieu ou adresse"
+
+#: app/templates/places/place_form.html:11
+msgid "Search"
+msgstr "Rechercher"
+
+#: app/templates/places/place_form.html:11
+msgid "Choose a result to set the pin and address. An empty place name is filled in too."
+msgstr "Choisissez un résultat pour placer le repère et renseigner l’adresse. Le nom du lieu est aussi renseigné s’il est vide."
+
+#: app/templates/places/place_form.html:12
 msgid "Click the map to drop a pin, then drag it to the right spot. You can also paste coordinates or a map link."
 msgstr "Cliquez sur la carte pour placer un repère, puis déplacez-le au bon endroit. Vous pouvez aussi coller des coordonnées ou un lien de carte."
 
-#: app/templates/places/place_form.html:12
+#: app/templates/places/place_form.html:13
 msgid "Coordinates or map link"
 msgstr "Coordonnées ou lien de carte"
 
-#: app/templates/places/place_form.html:12
+#: app/templates/places/place_form.html:13
 msgid "Use coordinates"
 msgstr "Utiliser ces coordonnées"
 
-#: app/templates/places/place_form.html:13
+#: app/templates/places/place_form.html:14
 msgid "Place location"
 msgstr "Position du lieu"
 
-#: app/templates/places/place_form.html:15
+#: app/templates/places/place_form.html:16
 msgid "Address (optional)"
 msgstr "Adresse (facultative)"
 
-#: app/templates/places/place_form.html:16
+#: app/templates/places/place_form.html:17
 msgid "Website (optional)"
 msgstr "Site web (facultatif)"
 
-#: app/templates/places/place_form.html:17
+#: app/templates/places/place_form.html:18
 msgid "One tag per line. You can also choose suggestions below."
 msgstr "Une étiquette par ligne. Vous pouvez aussi choisir parmi les suggestions ci-dessous."
 
-#: app/templates/places/place_form.html:18
+#: app/templates/places/place_form.html:19
 msgid "Place photo (optional)"
 msgstr "Photo du lieu (facultative)"
 
-#: app/templates/places/place_form.html:18
+#: app/templates/places/place_form.html:19
 msgid "Remove current photo"
 msgstr "Retirer la photo actuelle"
 
-#: app/templates/places/place_form.html:19
+#: app/templates/places/place_form.html:20
 msgid "Save place"
 msgstr "Enregistrer le lieu"
 

@@ -3237,22 +3237,22 @@ msgstr "Elke bezoeker moet lid zijn van de doelcollectie. Maak anders een kopie 
 msgid "Only the place owner or collection creator can permanently delete it."
 msgstr "Alleen de eigenaar van de plaats of de maker van de collectie kan deze definitief verwijderen."
 
-#: app/places/place_routes.py:123 app/places/place_routes.py:239
+#: app/places/place_routes.py:128 app/places/place_routes.py:244
 msgid "Choose a collection you can edit."
 msgstr "Kies een collectie die je mag bewerken."
 
-#: app/places/place_routes.py:161
+#: app/places/place_routes.py:166
 #: app/templates/places/collection_settings.html:9
 #: app/templates/places/collection_settings.html:15
 #: app/templates/places/collection_settings.html:19
 msgid "Unnamed member"
 msgstr "Lid zonder naam"
 
-#: app/places/place_routes.py:181 app/places/place_routes.py:182
+#: app/places/place_routes.py:186 app/places/place_routes.py:187
 msgid "Former member"
 msgstr "Voormalig lid"
 
-#: app/places/place_routes.py:254
+#: app/places/place_routes.py:259
 msgid "Confirm the permanent deletion of this place."
 msgstr "Bevestig de definitieve verwijdering van deze plaats."
 
@@ -4583,7 +4583,7 @@ msgstr "Status"
 #: app/templates/pilots/minimums_edit.html:15
 #: app/templates/places/join_collection.html:5
 #: app/templates/places/new_collection.html:6
-#: app/templates/places/place_form.html:19
+#: app/templates/places/place_form.html:20
 #: app/templates/pwa/share_target.html:14
 #: app/templates/refuels/refuel_form.html:61
 #: app/templates/reservations/charge.html:108
@@ -12255,12 +12255,12 @@ msgid "Optional airfield code"
 msgstr "Optionele vliegveldcode"
 
 #: app/templates/passports/builder.html:58
-#: app/templates/places/place_form.html:14
+#: app/templates/places/place_form.html:15
 msgid "Latitude"
 msgstr "Breedtegraad"
 
 #: app/templates/passports/builder.html:58
-#: app/templates/places/place_form.html:14
+#: app/templates/places/place_form.html:15
 msgid "Longitude"
 msgstr "Lengtegraad"
 
@@ -14727,7 +14727,7 @@ msgid "Leave collection"
 msgstr "Collectie verlaten"
 
 #: app/templates/places/collection_settings.html:11
-#: app/templates/places/place_form.html:17
+#: app/templates/places/place_form.html:18
 msgid "Tags"
 msgstr "Tags"
 
@@ -14976,6 +14976,14 @@ msgid "Copies keep the content and photo, but no visits. Moving requires every v
 msgstr "Kopieën behouden de inhoud en foto, zonder bezoeken. Verplaatsen kan alleen als elke bezoeker lid is van de doelcollectie."
 
 #: app/templates/places/place_form.html:5
+msgid "Address search failed. Use the map or coordinates, or try again."
+msgstr "Het zoeken naar een adres is mislukt. Gebruik de kaart of coördinaten, of probeer het opnieuw."
+
+#: app/templates/places/place_form.html:5
+msgid "No matching places found. Try another search or set the pin yourself."
+msgstr "Geen overeenkomende plaatsen gevonden. Probeer een andere zoekopdracht of plaats de speld zelf."
+
+#: app/templates/places/place_form.html:5
 msgid "Coordinates could not be read. Enter latitude and longitude directly."
 msgstr "De coördinaten konden niet worden gelezen. Voer de breedtegraad en lengtegraad rechtstreeks in."
 
@@ -14988,42 +14996,54 @@ msgid "Place name"
 msgstr "Plaatsnaam"
 
 #: app/templates/places/place_form.html:11
+msgid "Place name or address"
+msgstr "Plaatsnaam of adres"
+
+#: app/templates/places/place_form.html:11
+msgid "Search"
+msgstr "Zoeken"
+
+#: app/templates/places/place_form.html:11
+msgid "Choose a result to set the pin and address. An empty place name is filled in too."
+msgstr "Kies een resultaat om de speld te plaatsen en het adres in te vullen. Een lege plaatsnaam wordt ook ingevuld."
+
+#: app/templates/places/place_form.html:12
 msgid "Click the map to drop a pin, then drag it to the right spot. You can also paste coordinates or a map link."
 msgstr "Klik op de kaart om een speld te plaatsen en sleep deze naar de juiste plek. Je kunt ook coördinaten of een kaartlink plakken."
 
-#: app/templates/places/place_form.html:12
+#: app/templates/places/place_form.html:13
 msgid "Coordinates or map link"
 msgstr "Coördinaten of kaartlink"
 
-#: app/templates/places/place_form.html:12
+#: app/templates/places/place_form.html:13
 msgid "Use coordinates"
 msgstr "Coördinaten gebruiken"
 
-#: app/templates/places/place_form.html:13
+#: app/templates/places/place_form.html:14
 msgid "Place location"
 msgstr "Locatie van de plaats"
 
-#: app/templates/places/place_form.html:15
+#: app/templates/places/place_form.html:16
 msgid "Address (optional)"
 msgstr "Adres (optioneel)"
 
-#: app/templates/places/place_form.html:16
+#: app/templates/places/place_form.html:17
 msgid "Website (optional)"
 msgstr "Website (optioneel)"
 
-#: app/templates/places/place_form.html:17
+#: app/templates/places/place_form.html:18
 msgid "One tag per line. You can also choose suggestions below."
 msgstr "Eén tag per regel. Je kunt ook uit de onderstaande suggesties kiezen."
 
-#: app/templates/places/place_form.html:18
+#: app/templates/places/place_form.html:19
 msgid "Place photo (optional)"
 msgstr "Foto van de plaats (optioneel)"
 
-#: app/templates/places/place_form.html:18
+#: app/templates/places/place_form.html:19
 msgid "Remove current photo"
 msgstr "Huidige foto verwijderen"
 
-#: app/templates/places/place_form.html:19
+#: app/templates/places/place_form.html:20
 msgid "Save place"
 msgstr "Plaats opslaan"
 

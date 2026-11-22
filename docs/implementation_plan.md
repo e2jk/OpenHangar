@@ -2979,16 +2979,16 @@ coordinate pin, tags, bin and defaults are implemented. The remaining
 cross-step hooks are copying/displaying airfield links with 42d and the
 reader-owned visit form with 42e.
 
-### 42c — Address search
+### 42c — Address search ✅
 
-- [ ] Type a place name or address and press Search; choosing a result drops the
+- [x] Type a place name or address and press Search; choosing a result drops the
   pin and pre-fills title/address (editable).
-- [ ] Geocoding through the OpenHangar server, never from the browser (user IP
+- [x] Geocoding through the OpenHangar server, never from the browser (user IP
   not exposed, CSP keeps `connect-src 'self'`), with a cache. **Enabled by
   default** with the public OpenStreetMap Nominatim service, within its usage
   policy: search on submit only (no type-ahead), ≤ 1 request/s for the instance,
   identifying User-Agent, attribution shown.
-- [ ] New `OPENHANGAR_GEOCODER_URL` (another Nominatim-compatible server, or
+- [x] New `OPENHANGAR_GEOCODER_URL` (another Nominatim-compatible server, or
   empty to disable address search); documented in `docs/configuration.md`.
   Disabled, unreachable or rate-limited geocoder → clear message, map pin and
   coordinates still work; search text is never logged.
@@ -2998,8 +2998,8 @@ reader-owned visit form with 42e.
   `message`); `OPENHANGAR_GEOCODER_URL` is read into `app.config["GEOCODER_URL"]`;
   one request per second for the instance through a lock file in
   `UPLOAD_FOLDER/geocoder_locks` (not backed up); per-worker in-memory cache;
-  documented in `docs/configuration.md`. The Search box, result list and pin
-  drop in the Places form remain (42b/42g, other agent).
+  documented in `docs/configuration.md`. The Search box, result list, pin
+  drop and disabled-provider fallback are now connected to the Places form.
 
 ### 42d — Airfield linking
 
