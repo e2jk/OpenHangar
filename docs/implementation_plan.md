@@ -3046,7 +3046,7 @@ connections, and the reader-owned visit panel, are now connected through 42d/42e
   `place_visit_dismissals`. Flights record no intermediate landings, so the
   arrival airfield is the one matched.
 
-### 42f — Where next? on its own
+### 42f — Where next? on its own ✅
 
 - [x] Standalone page `/explore/where-next` with the existing origin, distance /
   still-air time and theoretical-range controls, plus **Search in**: *Places*
@@ -3067,7 +3067,7 @@ connections, and the reader-owned visit panel, are now connected through 42d/42e
   stamped in *Belgian passport 2026*", "4 km from *Pairi Daiza* (taxi)"). Sorted by
   distance; at equal distance more reasons first; no opaque scoring. Unlinked
   places reported as a count ("3 places have no airfield yet").
-- [ ] Map with origin, radius, result airfields and the place pins they serve.
+- [x] Map with origin, radius, result airfields and the place pins they serve.
   Filters: tag, "airfields I've never landed at", hide closed. GPX/KML download
   of the combined result.
 - [x] Privacy unchanged: never reveal another pilot's itinerary; group passports

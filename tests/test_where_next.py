@@ -176,7 +176,11 @@ def _places(app: Flask, owner: dict[str, int]) -> dict[str, int]:
         )
         closed.is_closed = True
         castle = save_place(
-            t, u, trips.id, {"title": "Castle", "latitude": "50.1", "longitude": "4.01"}
+            t,
+            u,
+            trips.id,
+            {"title": "Castle", "latitude": "50.1", "longitude": "4.01"},
+            tags=["Museum"],
         )
         mill = save_place(
             t, u, trips.id, {"title": "Mill", "latitude": "50.06", "longitude": "4.01"}
@@ -289,3 +293,54 @@ def test_places_are_skipped_when_the_account_cannot_use_them(
     with patch("explore.routes.collections_for_user", side_effect=PlaceError("x")):
         page = _search(client, owner).get_data(as_text=True)
     assert ">Shared</a>" in page and 'name="source"' not in page
+
+
+def test_tag_and_never_landed_filters_and_the_place_pins(
+    app: Flask, client: FlaskClient, owner: dict[str, int]
+) -> None:
+    import json
+    import re
+    from html import unescape
+
+    from models import Flight
+
+    _places(app, owner)
+    signin(client, owner["user"])
+    page = _search(client, owner, source="places", tag="museum").get_data(as_text=True)
+    assert ">Shared</a>" in page and ">Lakeside</a>" in page
+    assert "Linked to Idea" not in page and "no airfield yet" not in page
+    assert '<option value="Museum" selected' in page
+    nothing = _search(client, owner, source="places", tag="Nope").get_data(as_text=True)
+    assert "km from" not in nothing
+    data = json.loads(
+        unescape(re.search(r'data-map="([^"]*)"', page).group(1))  # type: ignore[union-attr]
+    )
+    (castle,) = data["places"]
+    assert castle["name"] == "Castle" and len(castle["airfields"]) == 2
+    assert castle["url"].startswith("/places/")
+    with app.app_context():
+        db.session.add(
+            Flight(
+                pic_user_id=owner["user"], date=date(2025, 3, 1), arrival_icao="lake"
+            )
+        )
+        db.session.commit()
+    fresh = _search(client, owner, never_landed="1").get_data(as_text=True)
+    assert ">Lakeside</a>" not in fresh and ">Shared</a>" in fresh
+    assert 'id="discovery-never-landed" checked' in fresh or "checked" in fresh
+
+
+def test_a_passport_or_place_link_preselects_its_source(
+    app: Flask, client: FlaskClient, owner: dict[str, int]
+) -> None:
+    ids = _places(app, owner)
+    signin(client, owner["user"])
+    from_passport = _search(client, owner, passport=owner["passport"]).get_data(
+        as_text=True
+    )
+    assert 'value="passports" id="discovery-source-passports" checked' in from_passport
+    assert "km from Castle" not in from_passport
+    from_place = client.get(URL, query_string={"place": ids["castle"]}).get_data(
+        as_text=True
+    )
+    assert 'value="places" id="discovery-source-places" checked' in from_place
