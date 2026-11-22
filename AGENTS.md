@@ -153,10 +153,12 @@ Weblate quality checks are also surfaced as Code Scanning alerts via
   `DoesNotFitColumn` handler.
 
 - CodeQL (code scanning, on every PR) keeps raising the same few notes, so
-  `tests/test_code_scanning_patterns.py` checks three of them locally: a
+  `tests/test_code_scanning_patterns.py` checks four of them locally: a
   module imported both `import x` and `from x import y`; an `except: pass`
   with no comment saying why; a bare `abort(...)` ending an `except` (CodeQL
-  doesn't know `abort()` never returns — write `return abort(...)`). The
+  doesn't know `abort()` never returns — write `return abort(...)`); and
+  code after a `with pytest.raises(...)` block ending in `raise` (CodeQL
+  reads it as unreachable — raise from a helper called in the block). The
   security findings worth avoiding up front: pick a redirect target
   server-side (a known endpoint, or a page validated as this site's own),
   never a URL taken as-is from the form; store files only through the existing upload helpers,
