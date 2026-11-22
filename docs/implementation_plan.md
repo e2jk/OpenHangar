@@ -3043,22 +3043,22 @@ connections, and the reader-owned visit panel, are now connected through 42d/42e
 
 ### 42f — Where next? on its own
 
-- [ ] Standalone page `/explore/where-next` with the existing origin, distance /
+- [x] Standalone page `/explore/where-next` with the existing origin, distance /
   still-air time and theoretical-range controls, plus **Search in**: *Places*
   (all or chosen collections; not yet visited by default, "include visited"),
   *Passports* (all active or chosen ones), or *Both* (default when both have
   content; selector hidden when only one has).
   *Passports done (2026-11-22):* `/explore/where-next` (`explore/routes.py`)
   searches all active or ticked passports with the existing origin, distance /
-  time and range controls; **Search in** *Places* comes with 42d's
-  `places.airfields.linked_airfields`.
+  time and range controls; **Search in** *Places* uses 42d's
+  `places.airfields.linked_airfields` (collections, include visited, `?place=`).
 - [ ] Entry points: Explore menu, a passport's page (passport preselected;
   `/passports/<id>/where-next` redirects there so existing links keep working),
   Places (places preselected), a place's page.
   *Done:* the Explore menu, the passport page and the redirect (with the page's
   own inputs); Places and place-page links pass the Places source and place
-  identifier. Places preselection still awaits the Places source integration.
-- [ ] Results are airfields, deduplicated, each with its reasons ("Not yet
+  identifier, which the page honours.
+- [x] Results are airfields, deduplicated, each with its reasons ("Not yet
   stamped in *Belgian passport 2026*", "4 km from *Pairi Daiza* (taxi)"). Sorted by
   distance; at equal distance more reasons first; no opaque scoring. Unlinked
   places reported as a count ("3 places have no airfield yet").
