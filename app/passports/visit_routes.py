@@ -1,14 +1,24 @@
 """Minimal mobile visit form: choose the airfield, the date, save.
 
-A plain form with no map or JavaScript. It records the participant's own manual
-visit through the same validation as the airfield page; editing or deleting a
+A plain form with no map; it works without JavaScript. With it, a photo taken
+at the airfield can suggest the airfield and the date (read, never stored:
+photo_target below). It records the participant's own manual visit through
+the same validation as the airfield page; editing or deleting a
 visit stays on that airfield's page. Nothing about other instance users,
 aircraft or other participants' evidence is shown.
 """
 
 from datetime import date
 
-from flask import abort, redirect, render_template, request, session, url_for
+from flask import (
+    abort,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 from flask.typing import ResponseReturnValue
 from flask_babel import gettext as _
 from models import db
@@ -61,3 +71,61 @@ def record_visit(passport_id: int) -> ResponseReturnValue:
         today=date.today().isoformat(),
         error=error,
     ), status
+
+
+# A photo suggests the passport airfield nearest where it was taken, within
+# this distance, unless a second one is about as close.
+PHOTO_TARGET_KM = 3.0
+
+
+@passports_bp.route("/<int:passport_id>/photo-target", methods=["POST"])
+@login_required
+def photo_target(passport_id: int) -> ResponseReturnValue:
+    """Which of this passport's airfields a photo was taken at, and when —
+    read in memory and discarded (services.photo_hints)."""
+    from services.images import MAX_PHOTO_BYTES
+    from services.photo_hints import AMBIGUOUS_RATIO, read_hints
+    from utils import haversine_nm
+
+    passport = require_passport(passport_id)
+    uid = session["user_id"]
+    upload = request.files.get("photo")
+    if upload is None or not upload.filename:
+        abort(400)
+    hints = read_hints(
+        upload.stream.read(MAX_PHOTO_BYTES + 1),
+        upload.filename,
+        request.form.get("offset", type=int),
+    )
+    target = None
+    position = hints["position"]
+    if position is not None:
+        distances = sorted(
+            (
+                haversine_nm(
+                    position["latitude"],
+                    position["longitude"],
+                    float(row["latitude"]),
+                    float(row["longitude"]),
+                )
+                * 1.852,
+                row["target_id"],
+                row,
+            )
+            for row in passport_progress(passport, uid)["rows"]
+            if row.get("latitude") is not None and row.get("longitude") is not None
+        )
+        if distances and distances[0][0] <= PHOTO_TARGET_KM:
+            nearest_km, target_id, row = distances[0]
+            if (
+                len(distances) == 1
+                or distances[1][0] >= max(nearest_km, 0.2) * AMBIGUOUS_RATIO
+            ):
+                target = {
+                    "target_id": target_id,
+                    "name": row["name"],
+                    "distance_km": round(nearest_km, 1),
+                }
+    response = jsonify(target=target, date=hints["date"])
+    response.headers["Cache-Control"] = "private, no-store"
+    return response

@@ -2663,7 +2663,7 @@ msgstr "Er lopen andere bronimports. Probeer het zo opnieuw of plak de codes."
 msgid "Only public HTTP(S) source URLs on standard ports are supported."
 msgstr "Alleen openbare HTTP(S)-bron-URL’s op standaardpoorten worden ondersteund."
 
-#: app/passports/visit_routes.py:42
+#: app/passports/visit_routes.py:52
 msgid "Choose an airfield of this passport."
 msgstr "Kies een vliegveld uit dit paspoort."
 
@@ -7259,7 +7259,7 @@ msgstr "Betaling registreren"
 
 #: app/templates/aircraft/owners_billing.html:101
 #: app/templates/aircraft/owners_billing.html:158
-#: app/templates/passports/record_visit.html:18
+#: app/templates/passports/record_visit.html:29
 #: app/templates/passports/target.html:32
 #: app/templates/passports/target.html:38 app/templates/places/_visits.html:10
 #: app/templates/places/_visits.html:25
@@ -13311,17 +13311,17 @@ msgid "Create passport"
 msgstr "Paspoort aanmaken"
 
 #: app/templates/passports/index.html:7
-#: app/templates/passports/record_visit.html:25
+#: app/templates/passports/record_visit.html:36
 msgid "Export my passport data"
 msgstr "Mijn paspoortgegevens exporteren"
 
 #: app/templates/passports/index.html:8
-#: app/templates/passports/record_visit.html:27
+#: app/templates/passports/record_visit.html:38
 msgid "Fly yourself? Keep your own pilot logbook on this account and your logged arrivals fill your passports automatically."
 msgstr "Vlieg je zelf? Houd je eigen pilootlogboek bij op dit account en je gelogde aankomsten vullen je paspoorten automatisch."
 
 #: app/templates/passports/index.html:8
-#: app/templates/passports/record_visit.html:27
+#: app/templates/passports/record_visit.html:38
 #: app/templates/passports/start_logbook.html:2
 #: app/templates/passports/start_logbook.html:6
 #: app/templates/passports/start_logbook.html:18
@@ -13582,34 +13582,64 @@ msgstr "Gepubliceerd aantal bezoeken"
 msgid "Choose an airfield"
 msgstr "Kies een vliegveld"
 
-#: app/templates/passports/record_visit.html:16
+#: app/templates/passports/record_visit.html:17
+#, python-brace-format
+msgid "This photo was taken {km} km from {name}."
+msgstr "Deze foto is genomen op {km} km van {name}."
+
+#: app/templates/passports/record_visit.html:18
+msgid "Choose this airfield"
+msgstr "Dit vliegveld kiezen"
+
+#: app/templates/passports/record_visit.html:19
+#, python-brace-format
+msgid "Taken on {date}."
+msgstr "Genomen op {date}."
+
+#: app/templates/passports/record_visit.html:20
+msgid "Use this date"
+msgstr "Deze datum gebruiken"
+
+#: app/templates/passports/record_visit.html:21
+msgid "This photo has no position near one of this passport's airfields."
+msgstr "Deze foto heeft geen positie bij een vliegveld van dit paspoort."
+
+#: app/templates/passports/record_visit.html:23
+msgid "Find the airfield from a photo (optional)"
+msgstr "Het vliegveld vinden met een foto (optioneel)"
+
+#: app/templates/passports/record_visit.html:25
+msgid "Only read to suggest the airfield and date; the photo is not saved."
+msgstr "Alleen gelezen om het vliegveld en de datum voor te stellen; de foto wordt niet bewaard."
+
+#: app/templates/passports/record_visit.html:27
 #: app/templates/passports/target.html:31
 #: app/templates/passports/target.html:38
 msgid "Visit date"
 msgstr "Bezoekdatum"
 
-#: app/templates/passports/record_visit.html:20
+#: app/templates/passports/record_visit.html:31
 msgid "Only visits within the passport dates and not in the future count. You can edit or delete a visit later from its airfield page."
 msgstr "Alleen bezoeken binnen de paspoortdata en niet in de toekomst tellen mee. Je kunt een bezoek later wijzigen of verwijderen op de pagina van het vliegveld."
 
-#: app/templates/passports/record_visit.html:21
+#: app/templates/passports/record_visit.html:32
 #: app/templates/passports/target.html:38 app/templates/places/_visits.html:26
 msgid "Save visit"
 msgstr "Bezoek opslaan"
 
-#: app/templates/passports/record_visit.html:24
+#: app/templates/passports/record_visit.html:35
 msgid "Your records"
 msgstr "Je gegevens"
 
-#: app/templates/passports/record_visit.html:25
+#: app/templates/passports/record_visit.html:36
 msgid "Your visits stay yours: export them at any time with your other passport data."
 msgstr "Je bezoeken blijven van jou: exporteer ze op elk moment samen met je andere paspoortgegevens."
 
-#: app/templates/passports/record_visit.html:26
+#: app/templates/passports/record_visit.html:37
 msgid "Flights in your pilot logbook fill this passport automatically."
 msgstr "Vluchten in je pilootlogboek vullen dit paspoort automatisch."
 
-#: app/templates/passports/record_visit.html:26
+#: app/templates/passports/record_visit.html:37
 msgid "Open my pilot logbook"
 msgstr "Mijn pilootlogboek openen"
 
