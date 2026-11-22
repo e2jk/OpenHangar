@@ -1,14 +1,9 @@
 import contextlib
-import os
-import re as _re
-import shutil
-import uuid
 from datetime import date as _date
 from typing import cast
 
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
-    current_app,
     flash,
     redirect,
     render_template,
@@ -101,24 +96,6 @@ def _get_user_aircraft() -> list[Aircraft]:
     if not tu:
         return []
     return cast(list[Aircraft], accessible_aircraft(tu.tenant_id).all())
-
-
-def _ensure_tenant_slug(tenant: Tenant) -> str:
-    if tenant.slug:
-        return str(tenant.slug)
-    base = _re.sub(r"[^a-z0-9]+", "-", tenant.name.lower()).strip("-")[:64]
-    slug = base
-    n = 1
-    while Tenant.query.filter(Tenant.slug == slug, Tenant.id != tenant.id).first():
-        slug = f"{base}-{n}"
-        n += 1
-    tenant.slug = slug
-    db.session.flush()
-    return slug
-
-
-def _safe_path_component(s: str) -> str:
-    return _re.sub(r'[<>:"/\\|?*\x00-\x1f]', "", s).strip()
 
 
 def _permitted_destinations(mimetypes: list[str]) -> list[str]:
@@ -238,6 +215,11 @@ def share_confirm() -> ResponseReturnValue:
 
 
 def _process_document(share: pending.PendingShare, ac: Aircraft) -> ResponseReturnValue:
+    from documents.routes import (  # pyright: ignore[reportMissingImports]
+        _save_upload,
+        _save_upload_canonical,
+    )
+
     tenant = db.session.get(Tenant, ac.tenant_id)
     assert tenant is not None  # FK guarantees this
 
@@ -251,49 +233,31 @@ def _process_document(share: pending.PendingShare, ac: Aircraft) -> ResponseRetu
             valid_until = _date.fromisoformat(valid_until_str)
 
     doc_title = (request.form.get("title") or share.title).strip()[:128] or None
-    upload_folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
 
-    for shared in share.files:
-        original_name = shared.original
-        ext = pending.MIME_TO_EXT.get(shared.mime, "")
-
-        if category:
-            slug = _ensure_tenant_slug(tenant)
-            safe_reg = ac.registration.replace("/", "-").replace(" ", "-").upper()
-            today = _date.today().isoformat()
-            safe_t = os.path.basename(
-                _safe_path_component(doc_title or os.path.splitext(original_name)[0])
-            )[:100]
-            fname = f"{today} - {safe_t}{ext}"
-            rel_dir = os.path.join(slug, safe_reg, category)
-            full_dir = os.path.join(upload_folder, rel_dir)
-            os.makedirs(full_dir, exist_ok=True)
-            stored = os.path.join(rel_dir, fname)
-            dest_full = os.path.join(upload_folder, stored)
-            if os.path.exists(dest_full):
-                base, ext2 = os.path.splitext(fname)
-                stored = os.path.join(rel_dir, f"{base}_{uuid.uuid4().hex[:6]}{ext2}")
-                dest_full = os.path.join(upload_folder, stored)
-        else:
-            stored = f"doc_share_{uuid.uuid4().hex[:12]}{ext}"
-            os.makedirs(upload_folder, exist_ok=True)
-            dest_full = os.path.join(upload_folder, stored)
-
-        shutil.copy2(share.path(shared), dest_full)
-        size = os.path.getsize(dest_full)
-
-        doc = Document(
-            aircraft_id=ac.id,
-            filename=stored,
-            original_filename=original_name,
-            mime_type=shared.mime,
-            size_bytes=size,
-            title=doc_title,
-            category=category,
-            valid_until=valid_until,
-            is_sensitive=is_sensitive,
+    # The documents' own storage helpers: the canonical
+    # <tenant>/<REG>/<category>/ layout (paths checked to stay inside the
+    # uploads folder), or the flat legacy name without a category.
+    for index, shared in enumerate(share.files):
+        with share.upload(index) as upload:
+            if category:
+                stored, mime, size = _save_upload_canonical(
+                    upload, tenant, ac, category, doc_title
+                )
+            else:
+                stored, mime, size = _save_upload(upload, "share")
+        db.session.add(
+            Document(
+                aircraft_id=ac.id,
+                filename=stored,
+                original_filename=shared.original,
+                mime_type=mime,
+                size_bytes=size,
+                title=doc_title,
+                category=category,
+                valid_until=valid_until,
+                is_sensitive=is_sensitive,
+            )
         )
-        db.session.add(doc)
 
     db.session.commit()
     pending.discard()

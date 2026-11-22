@@ -411,7 +411,7 @@ class TestShareConfirm:
 
             tu = TenantUser.query.filter_by(user_id=uid).first()
             tenant = db.session.get(Tenant, tu.tenant_id)
-            from pwa.routes import _ensure_tenant_slug
+            from documents.routes import _ensure_tenant_slug
 
             slug = _ensure_tenant_slug(tenant)
             from models import Aircraft
