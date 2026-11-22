@@ -220,7 +220,10 @@ descriptions — propose the message and let the human commit, per "Purpose" abo
 From a parallel worktree (another agent's `git worktree`), `scripts/ship.sh
 --later` ships in that worktree's own lane (`ship-later--<branch>`, its own PR);
 lanes cannot ship a release straight away — that, and any security fix, goes
-through the main worktree. See `docs/development.md` (Landing changes on main).
+through the main worktree. `ship.sh` runs the browser tests (`tests/e2e`,
+about 5 minutes) before pushing and refuses to push if they fail; skip them
+with `--no-browser-tests` only for a documented reason. See
+`docs/development.md` (Landing changes on main).
 
 When shipping has been authorised, monitor both CI and PR review comments. Green
 checks and automatic merge do not mean every review finding has been addressed:

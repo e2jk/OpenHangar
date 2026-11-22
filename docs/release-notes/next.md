@@ -61,6 +61,10 @@ of your places, your logbook offers to record the visit in one click.
 
 **Maintenance**
 
+- `scripts/ship.sh` now runs the browser tests before pushing (about 5
+  minutes, a failing test retried once): every pull request that failed at
+  first in the last week failed in them, which nothing ran locally.
+
 - The user guide now illustrates Places, airfield links and visits, and searching
   Places together with passports. The screenshot tool finds places by name and
   waits for the sign-in code to submit automatically.
