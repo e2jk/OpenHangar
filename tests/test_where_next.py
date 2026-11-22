@@ -97,7 +97,9 @@ def test_downloads_cover_the_chosen_passports(
     assert "download=gpx" in page and f"passport={owner['passport']}" in page
     download = _search(client, owner, passport=owner["passport"], download="gpx")
     assert download.status_code == 200
-    assert 'filename="where-next.gpx"' in download.headers["Content-Disposition"]
+    assert (
+        'filename="where-next-unvisited.gpx"' in download.headers["Content-Disposition"]
+    )
     assert b"SHRD" in download.data and b"SNGL" not in download.data
     assert _search(client, owner, download="zip").status_code == 400
     assert client.get(URL, query_string={"download": "gpx"}).status_code == 400

@@ -234,7 +234,7 @@ def where_next() -> ResponseReturnValue:
             waypoints.document(selection, fmt), mimetype=waypoints.FORMATS[fmt]
         )
         response.headers["Content-Disposition"] = (
-            f'attachment; filename="where-next.{fmt}"'
+            f'attachment; filename="where-next-unvisited.{fmt}"'
         )
         response.headers["Cache-Control"] = "private, no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
