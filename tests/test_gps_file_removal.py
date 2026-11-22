@@ -569,3 +569,59 @@ class TestFlightPageAndRoutes:
         _login(client, uid)
         monkeypatch.setattr("flights.routes.can_edit_shared", lambda *_a: False)
         assert client.post(f"/flights/{fid}/gps-part/0/remove").status_code == 403
+
+
+class TestDeletingTheFlight:
+    """Deleting a flight sends its GPS track's files to the trash, like a
+    file removed from the flight's page ("flight_deleted"), restorable to the
+    archive for a week."""
+
+    def _assert_trashed(self, app, fid, uid):
+        with app.app_context():
+            assert db.session.get(Flight, fid) is None
+            assert GpsTrack.query.count() == 0
+            removals = GpsFileRemoval.query.all()
+            assert len(removals) == 3
+            assert {r.reason for r in removals} == {"flight_deleted"}
+            assert {r.flight_id for r in removals} == {None}
+            assert {r.removed_by_user_id for r in removals} == {uid}
+        for rel in (A, B, TAXI):
+            assert not _exists(app, rel)
+
+    def test_from_the_aircraft_log(self, client, app):
+        uid, _tid, ac_id, fid = _world(app)
+        _login(client, uid)
+        client.post(f"/aircraft/{ac_id}/flights/{fid}/delete")
+        self._assert_trashed(app, fid, uid)
+        listing = client.get("/flights/removed-gps-files").data.decode()
+        assert "Flight deleted" in listing and "Restore" in listing
+        with app.app_context():
+            removal_id = GpsFileRemoval.query.first().id
+        resp = client.post(
+            f"/flights/removed-gps-files/{removal_id}/restore", follow_redirects=True
+        )
+        assert b"no longer exists" in resp.data
+
+    def test_from_the_pilot_logbook(self, client, app):
+        uid, _tid, _ac, fid = _world(app, pilot=True)
+        _login(client, uid)
+        client.post(f"/pilot/logbook/{fid}/delete")
+        self._assert_trashed(app, fid, uid)
+
+    def test_with_the_aircraft(self, client, app):
+        uid, _tid, ac_id, fid = _world(app)
+        _login(client, uid)
+        client.post(f"/aircraft/{ac_id}/delete")
+        self._assert_trashed(app, fid, uid)
+
+    def test_a_flight_without_a_track(self, client, app):
+        uid, _tid, ac_id, fid = _world(app)
+        with app.app_context():
+            f = db.session.get(Flight, fid)
+            remove_whole_track(f, **_args(app, _tid, uid))
+            db.session.commit()
+        _login(client, uid)
+        client.post(f"/aircraft/{ac_id}/flights/{fid}/delete")
+        with app.app_context():
+            assert db.session.get(Flight, fid) is None
+            assert {r.reason for r in GpsFileRemoval.query.all()} == {"removed"}

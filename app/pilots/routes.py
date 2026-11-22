@@ -37,6 +37,7 @@ from flights.crew_invites import (  # pyright: ignore[reportMissingImports]
     pending_invites_for_user,
 )
 from flights.crew_removal import (  # pyright: ignore[reportMissingImports]
+    delete_flight_row,
     remove_flight_for_user,
 )
 from flights.shared_flight import (  # pyright: ignore[reportMissingImports]
@@ -1293,7 +1294,7 @@ def delete_entry(entry_id: int) -> ResponseReturnValue:
     _delete_upload(entry.engine_counter_photo)
     _delete_upload(entry.flight_counter_photo_preflight)
     _delete_upload(entry.engine_counter_photo_preflight)
-    db.session.delete(entry)
+    delete_flight_row(entry, session.get("user_id"))
     db.session.commit()
     flash(_("Logbook entry deleted."), "success")
     return redirect(logbook_list_url())

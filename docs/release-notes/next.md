@@ -6,6 +6,10 @@
 - On a phone, **Record a visit** on a passport can find the airfield from a
   photo taken there: it suggests the passport airfield and the date, and the
   photo is only read, not saved.
+- Deleting a flight — from the aircraft log, your pilot logbook, or with its
+  aircraft — now also takes its GPS files off: they go to **Removed GPS
+  files** for a week, where they can still be put back in the archive,
+  instead of staying behind unused.
 
 **Maintenance**
 

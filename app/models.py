@@ -994,7 +994,8 @@ class GpsFileRemoval(db.Model):
         nullable=False,
         default=lambda: datetime.now(UTC),
     )
-    # "removed" (from the flight's page) | "import_undone" (Undo import)
+    # "removed" (from the flight's page) | "import_undone" (Undo import) |
+    # "flight_deleted" (the flight was deleted)
     reason = db.Column(db.String(16), nullable=False, default="removed")
     # [{"path": original path under the uploads folder, "trash": its path in
     # the trash, or None when it wasn't moved (missing, or still used)}]

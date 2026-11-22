@@ -21,6 +21,7 @@ from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImp
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 from flask_babel import ngettext
 from flights.crew_removal import (  # pyright: ignore[reportMissingImports]
+    delete_flight_row,
     detach_from_aircraft,
     flash_kept_in_pilot_logbooks,
     remove_from_aircraft_log,
@@ -1271,6 +1272,9 @@ def delete_aircraft(aircraft_id: int) -> ResponseReturnValue:
         if fe.pic_user_id is not None or fe.second_crew_user_id is not None:
             detach_from_aircraft(fe)
             kept += 1
+        else:
+            # Its GPS track's files go to the trash with it.
+            delete_flight_row(fe, session.get("user_id"))
     db.session.flush()
     # The detached rows must not be swept up by Aircraft.flights'
     # delete-orphan cascade if that collection was already loaded.
