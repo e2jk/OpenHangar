@@ -5,6 +5,7 @@ import time
 from datetime import date
 
 import pytest
+from playwright.sync_api import Page
 
 pytestmark = pytest.mark.e2e
 
@@ -562,13 +563,17 @@ def _delay(app, path, seconds):
         funcs.insert(0, slow)
 
 
-def _cached_text(page, path):
-    return page.evaluate(
-        """path => caches.keys().then(names => Promise.all(names.filter(n => n.includes('-private-'))
-             .map(n => caches.open(n).then(c => c.match(location.origin + path))
-             .then(r => r ? r.text() : ''))))
-             .then(texts => texts.join(''))""",
-        path,
+def _wait_for_cached_text(page: Page, path: str, marker: str) -> None:
+    """Wait for the worker's actual cached response, including its body."""
+    wait_until(
+        page,
+        """({path, marker}) => caches.keys().then(names => Promise.all(
+            names.filter(n => n.includes('-private-')).map(n => caches.open(n)
+                .then(c => c.match(location.origin + path))
+                .then(r => r ? r.text() : ''))))
+            .then(texts => texts.some(text => text.includes(marker)))""",
+        {"path": path, "marker": marker},
+        timeout=15000,
     )
 
 
@@ -578,38 +583,40 @@ def test_slow_network_shows_this_logins_cached_page_then_refreshes_it(
 ):
     from models import Flight, db
 
-    app, origin, users, _, _, _ = isolated_offline_server
+    app, origin, users, _, slow_entered, slow_release = isolated_offline_server
     context = traced_browser.new_context(service_workers="allow")
     page = context.new_page()
-    login(page, origin, "Alpha")  # ends on /pilot/logbook, now cached
-    wait_until(
-        page,
-        "() => caches.keys().then(n => Promise.all(n.filter(x => x.includes('-private-')).map(x => caches.open(x).then(c => c.match(location.origin + '/pilot/logbook'))))).then(f => f.some(Boolean))",
-    )
+    login(page, origin, "Alpha")
     wait_for_settled_worker(page)
-    with app.app_context():
-        flight = Flight.query.filter_by(pic_user_id=users["Alpha"]).one()
-        flight.other_aircraft_registration = "ALPHA-FRESH"
-        db.session.commit()
 
-    _delay(app, "/pilot/logbook", 6)
+    # Warm a real, distinct navigation response. Background precaching of the
+    # ordinary logbook URL must not replace this test's baseline after the DB
+    # changes. The fixture's gate lets the warm request finish immediately.
+    probe = "/pilot/logbook?hold=1"
+    slow_release.set()
+    page.goto(origin + probe, wait_until="load")
+    _wait_for_cached_text(page, probe, "ALPHA-PRIVATE")
+    slow_entered.clear()
+    slow_release.clear()
     try:
-        started = time.monotonic()
-        page.goto(origin + "/pilot/logbook", wait_until="commit")
+        with app.app_context():
+            flight = Flight.query.filter_by(pic_user_id=users["Alpha"]).one()
+            flight.other_aircraft_registration = "ALPHA-FRESH"
+            db.session.commit()
+
+        page.goto(origin + probe, wait_until="commit")
         page.wait_for_function(
             "() => document.body && document.body.textContent.includes('ALPHA-PRIVATE')",
-            timeout=5000,
+            timeout=10000,
         )
-        assert time.monotonic() - started < 5.5  # the cached copy, not the network
-        # The request carried on: the fresh page replaces the cached copy.
-        deadline = time.monotonic() + 15
-        while "ALPHA-FRESH" not in _cached_text(page, "/pilot/logbook"):
-            assert time.monotonic() < deadline, (
-                "the slow response never refreshed the cache"
-            )
-            page.wait_for_timeout(200)
+        # The cached copy is visible while the actual request is still held;
+        # no wall-clock race against an arbitrary server sleep is necessary.
+        assert slow_entered.is_set()
+        assert not slow_release.is_set()
+        slow_release.set()
+        _wait_for_cached_text(page, probe, "ALPHA-FRESH")
     finally:
-        _delay(app, "/pilot/logbook", 0)
+        slow_release.set()
 
     # Another account: Alpha's copy is gone with the switch, so a slow
     # network makes Bravo wait for the real page, never see Alpha's.
@@ -618,7 +625,8 @@ def test_slow_network_shows_this_logins_cached_page_then_refreshes_it(
     wait_for_settled_worker(page)
     _delay(app, "/pilot/logbook", 4)
     try:
-        page.goto(origin + "/pilot/logbook?bravo=1", wait_until="load")
+        # Use the identical cache key: a different account must never inherit it.
+        page.goto(origin + probe, wait_until="load")
         assert "ALPHA" not in page.content()
         assert "BRAVO-PRIVATE" in page.content()
     finally:
