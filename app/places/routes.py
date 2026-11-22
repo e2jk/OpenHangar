@@ -20,6 +20,7 @@ from models import (
     PlaceCollection,
     PlaceCollectionInvitation,
     PlaceCollectionMember,
+    PlaceTag,
     PlaceVisit,
     TenantUser,
     User,
@@ -27,7 +28,7 @@ from models import (
 )
 from utils import current_membership, db_id, list_index, login_required
 
-from places import collections, sharing
+from places import collections, sharing, tags
 from places.access import PlaceError, actor, collection_access, collections_for_user
 
 places_bp = Blueprint("places", __name__, url_prefix="/places")
@@ -68,11 +69,6 @@ def index() -> ResponseReturnValue:
         .order_by(PlaceCollection.name, PlaceCollection.id)
         .all()
     )
-    query = Place.query.filter(
-        Place.collection_id.in_([c.id for c in choices]), Place.deleted_at.is_(None)
-    )
-    if collection_id is not None:
-        query = query.filter_by(collection_id=collection_id)
     invitations = (
         sharing.pending_for_user(tid, uid)
         .join(
@@ -82,10 +78,26 @@ def index() -> ResponseReturnValue:
         .with_entities(PlaceCollectionInvitation, PlaceCollection.name)
         .all()
     )
+    from places.queries import list_places
+
+    listing = list_places(tid, uid, request.args, collection_id)
+    editable = (
+        {
+            m.collection_id
+            for m in PlaceCollectionMember.query.filter_by(
+                tenant_id=tid, user_id=uid, can_edit=True
+            )
+        }
+        if not user.view_only
+        else set()
+    )
     return render_template(
         "places/index.html",
+        **listing,
+        editable_ids=editable,
+        collection_owners={c.id: c.created_by_user_id for c in choices},
+        collection_names={c.id: c.name for c in choices},
         collections=choices,
-        places=query.order_by(Place.title, Place.id).all(),
         selected=collection_id,
         invitations=invitations,
         can_create=not user.view_only,
@@ -164,6 +176,9 @@ def settings_context(tid: int, uid: int, cid: int) -> dict[str, Any]:
     )
     own_member = db.session.get(PlaceCollectionMember, (cid, uid))
     return {
+        "collection_tags": PlaceTag.query.filter_by(collection_id=cid)
+        .order_by(PlaceTag.name)
+        .all(),
         "can_edit": own_member is not None
         and own_member.can_edit
         and not user.view_only,
@@ -220,6 +235,14 @@ def settings_action(tid: int, uid: int, cid: int) -> bool:
         if invitation_id is None:
             raise PlaceError(_("Invitation not found or expired."))
         sharing.revoke(tid, uid, cid, invitation_id)
+    elif action in {"tag-rename", "tag-delete"}:
+        tag_id = request.form.get("tag", type=db_id)
+        if tag_id is None:
+            raise PlaceError(_("Tag not found."))
+        if action == "tag-rename":
+            tags.rename_tag(tid, uid, cid, tag_id, request.form.get("name", ""))
+        else:
+            tags.delete_tag(tid, uid, cid, tag_id)
     elif action == "delete":
         collection_access(tid, uid, cid, managing=True)
         # Lock the parent before counting: a PostgreSQL insert referencing it
@@ -292,3 +315,6 @@ def join_collection(collection_id: int) -> ResponseReturnValue:
     return render_template(
         "places/join_collection.html", collection=collection, invitation=invitation
     )
+
+
+from places import place_routes  # noqa: F401 -- register destination views after the blueprint

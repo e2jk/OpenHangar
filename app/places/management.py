@@ -216,6 +216,7 @@ def archive_place(tenant_id: int, user_id: int, place_id: int, archived: bool) -
     place = place_access(tenant_id, user_id, place_id, editing=True)
     place.archived = archived
     place.updated_by_user_id = user_id
+    place.updated_at = datetime.now(UTC)
 
 
 def trash_place(tenant_id: int, user_id: int, place_id: int) -> None:
@@ -223,6 +224,7 @@ def trash_place(tenant_id: int, user_id: int, place_id: int) -> None:
     place.deleted_at = datetime.now(UTC)
     place.deleted_by_user_id = user_id
     place.updated_by_user_id = user_id
+    place.updated_at = datetime.now(UTC)
 
 
 def restore_place(tenant_id: int, user_id: int, place_id: int) -> None:
@@ -232,6 +234,7 @@ def restore_place(tenant_id: int, user_id: int, place_id: int) -> None:
     place.deleted_at = None
     place.deleted_by_user_id = None
     place.updated_by_user_id = user_id
+    place.updated_at = datetime.now(UTC)
 
 
 def purge_place(tenant_id: int, user_id: int, place_id: int) -> None:
@@ -249,7 +252,11 @@ def purge_place(tenant_id: int, user_id: int, place_id: int) -> None:
 def purge_expired(*, now: datetime | None = None) -> int:
     """Trusted maintenance job; ORM deletion preserves committed-file cleanup."""
     cutoff = (now or datetime.now(UTC)) - timedelta(days=30)
-    places = Place.query.filter(Place.deleted_at <= cutoff).all()
+    places = (
+        Place.query.filter(Place.deleted_at <= cutoff)
+        .with_for_update(skip_locked=True)
+        .all()
+    )
     for place in places:
         db.session.delete(place)
     return len(places)

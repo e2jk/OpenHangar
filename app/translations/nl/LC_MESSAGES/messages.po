@@ -929,7 +929,7 @@ msgstr "Verschil terzijde gelegd."
 msgid "Licence"
 msgstr "Bewijs"
 
-#: app/documents/routes.py:85 app/services/notification_service.py:776
+#: app/documents/routes.py:85 app/services/notification_service.py:779
 msgid "Medical certificate"
 msgstr "Medisch certificaat"
 
@@ -1256,15 +1256,15 @@ msgstr "Route"
 
 #: app/flights/crew_invites.py:496 app/reports/routes.py:113
 #: app/reservations/routes.py:817 app/reservations/routes.py:931
-#: app/reservations/routes.py:1234 app/services/notification_service.py:558
-#: app/services/notification_service.py:588
-#: app/services/notification_service.py:664
-#: app/services/notification_service.py:731
-#: app/services/notification_service.py:889
-#: app/services/notification_service.py:956 app/snags/routes.py:266
+#: app/reservations/routes.py:1234 app/services/notification_service.py:561
+#: app/services/notification_service.py:591
+#: app/services/notification_service.py:667
+#: app/services/notification_service.py:734
+#: app/services/notification_service.py:892
+#: app/services/notification_service.py:959 app/snags/routes.py:266
 #: app/snags/routes.py:316 app/templates/aircraft/wb_list.html:30
-#: app/templates/auth/setup.html:365 app/templates/base.html:209
-#: app/templates/base.html:328 app/templates/config/renter_form.html:33
+#: app/templates/auth/setup.html:365 app/templates/base.html:210
+#: app/templates/base.html:329 app/templates/config/renter_form.html:33
 #: app/templates/config/tenant_list.html:32 app/templates/dashboard.html:130
 #: app/templates/dashboard.html:752 app/templates/documents/list.html:35
 #: app/templates/documents/list.html:217
@@ -2458,7 +2458,7 @@ msgid "Choose a public-sharing action."
 msgstr "Kies een actie voor openbaar delen."
 
 #: app/passports/registration.py:75 app/places/sharing.py:42
-#: app/templates/base.html:440
+#: app/templates/base.html:441
 msgid "Enter a valid email address."
 msgstr "Voer een geldig e-mailadres in."
 
@@ -3188,8 +3188,8 @@ msgstr "De maker van de collectie moet bewerkingsrechten behouden."
 msgid "The creator must transfer or delete the collection before leaving."
 msgstr "De maker moet de collectie overdragen of verwijderen voordat die de collectie verlaat."
 
-#: app/places/collections.py:187 app/places/routes.py:191
-#: app/places/routes.py:197 app/places/routes.py:204
+#: app/places/collections.py:187 app/places/routes.py:206
+#: app/places/routes.py:212 app/places/routes.py:219
 msgid "Choose a member of this collection."
 msgstr "Kies een lid van deze collectie."
 
@@ -3233,19 +3233,42 @@ msgstr "Alleen de eigenaar van de plaats kan deze verplaatsen."
 msgid "Every visitor must belong to the destination collection. Copy this place instead."
 msgstr "Elke bezoeker moet lid zijn van de doelcollectie. Maak anders een kopie van deze plaats."
 
-#: app/places/management.py:244
+#: app/places/management.py:247
 msgid "Only the place owner or collection creator can permanently delete it."
 msgstr "Alleen de eigenaar van de plaats of de maker van de collectie kan deze definitief verwijderen."
 
-#: app/places/routes.py:215
+#: app/places/place_routes.py:123 app/places/place_routes.py:239
+msgid "Choose a collection you can edit."
+msgstr "Kies een collectie die je mag bewerken."
+
+#: app/places/place_routes.py:161
+#: app/templates/places/collection_settings.html:9
+#: app/templates/places/collection_settings.html:15
+#: app/templates/places/collection_settings.html:19
+msgid "Unnamed member"
+msgstr "Lid zonder naam"
+
+#: app/places/place_routes.py:181 app/places/place_routes.py:182
+msgid "Former member"
+msgstr "Voormalig lid"
+
+#: app/places/place_routes.py:254
+msgid "Confirm the permanent deletion of this place."
+msgstr "Bevestig de definitieve verwijdering van deze plaats."
+
+#: app/places/routes.py:230
 msgid "Invitation saved. Ask your friend to sign in and open Places."
 msgstr "Uitnodiging opgeslagen. Vraag je vriend om in te loggen en Plaatsen te openen."
 
-#: app/places/routes.py:221 app/places/sharing.py:74 app/places/sharing.py:98
+#: app/places/routes.py:236 app/places/sharing.py:74 app/places/sharing.py:98
 msgid "Invitation not found or expired."
 msgstr "Uitnodiging niet gevonden of verlopen."
 
-#: app/places/routes.py:234
+#: app/places/routes.py:241 app/places/tags.py:29 app/places/tags.py:62
+msgid "Tag not found."
+msgstr "Tag niet gevonden."
+
+#: app/places/routes.py:257
 msgid "Review the collection totals and confirm its deletion."
 msgstr "Controleer het aantal plaatsen en bezoeken in de collectie en bevestig de verwijdering."
 
@@ -3285,10 +3308,6 @@ msgstr "Overnachting"
 msgid "Family"
 msgstr "Gezin"
 
-#: app/places/tags.py:29 app/places/tags.py:62
-msgid "Tag not found."
-msgstr "Tag niet gevonden."
-
 #: app/places/tags.py:32
 msgid "Enter a tag name of at most 80 characters."
 msgstr "Voer een tagnaam van maximaal 80 tekens in."
@@ -3310,7 +3329,7 @@ msgid "Flight photo"
 msgstr "Vluchtfoto"
 
 #: app/pwa/routes.py:99 app/templates/aircraft/detail.html:221
-#: app/templates/base.html:214 app/templates/landing.html:39
+#: app/templates/base.html:215 app/templates/landing.html:39
 #: app/templates/landing.html:247
 #: app/templates/maintenance/amp_declaration_form.html:23
 #: app/templates/maintenance/amp_import_history.html:21
@@ -3895,29 +3914,29 @@ msgid "Upload a valid JPEG, PNG or WebP photo (up to 20 megapixels)."
 msgstr "Upload een geldige JPEG-, PNG- of WebP-foto (maximaal 20 megapixels)."
 
 #: app/services/notification_service.py:358
-#: app/services/notification_service.py:1252
+#: app/services/notification_service.py:1255
 #: app/templates/email/notif/welcome.html:1
 #, python-format
 msgid "Hello %(name)s,"
 msgstr "Hallo %(name)s,"
 
-#: app/services/notification_service.py:540
+#: app/services/notification_service.py:543
 #, python-format
 msgid "Maintenance overdue: %(name)s on %(reg)s"
 msgstr "Onderhoud achterstallig: %(name)s op %(reg)s"
 
-#: app/services/notification_service.py:547
+#: app/services/notification_service.py:550
 #, python-format
 msgid "Maintenance overdue: %(name)s"
 msgstr "Onderhoud achterstallig: %(name)s"
 
-#: app/services/notification_service.py:551
+#: app/services/notification_service.py:554
 #, python-format
 msgid "%(name)s on %(reg)s is overdue."
 msgstr "%(name)s op %(reg)s is achterstallig."
 
-#: app/services/notification_service.py:559
-#: app/services/notification_service.py:589
+#: app/services/notification_service.py:562
+#: app/services/notification_service.py:592
 #: app/templates/airworthiness/equipment_board.html:105
 #: app/templates/airworthiness/wishlist_form.html:21
 #: app/templates/maintenance/fleet.html:172
@@ -3926,44 +3945,44 @@ msgstr "%(name)s op %(reg)s is achterstallig."
 msgid "Item"
 msgstr "Item"
 
-#: app/services/notification_service.py:570
+#: app/services/notification_service.py:573
 #, python-format
 msgid "Maintenance due soon: %(name)s on %(reg)s"
 msgstr "Onderhoud binnenkort verplicht: %(name)s op %(reg)s"
 
-#: app/services/notification_service.py:577
+#: app/services/notification_service.py:580
 #, python-format
 msgid "Maintenance due soon: %(name)s"
 msgstr "Onderhoud binnenkort verplicht: %(name)s"
 
-#: app/services/notification_service.py:581
+#: app/services/notification_service.py:584
 #, python-format
 msgid "%(name)s on %(reg)s is coming due."
 msgstr "%(name)s op %(reg)s vervalt binnenkort."
 
-#: app/services/notification_service.py:643
+#: app/services/notification_service.py:646
 #, python-format
 msgid "Insurance expiring in one day: %(reg)s"
 msgid_plural "Insurance expiring in %(days)s days: %(reg)s"
 msgstr[0] "Verzekering verloopt over één dag: %(reg)s"
 msgstr[1] "Verzekering verloopt over %(days)s dagen: %(reg)s"
 
-#: app/services/notification_service.py:651
+#: app/services/notification_service.py:654
 #, python-format
 msgid "Insurance expiring soon: %(reg)s"
 msgstr "Verzekering verloopt binnenkort: %(reg)s"
 
-#: app/services/notification_service.py:655
+#: app/services/notification_service.py:658
 #, python-format
 msgid "The insurance for %(reg)s expires on %(date)s (one day remaining)."
 msgid_plural "The insurance for %(reg)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "De verzekering voor %(reg)s verloopt op %(date)s (één dag resterend)."
 msgstr[1] "De verzekering voor %(reg)s verloopt op %(date)s (%(days)s dagen resterend)."
 
-#: app/services/notification_service.py:665
-#: app/services/notification_service.py:732
-#: app/services/notification_service.py:818
-#: app/services/notification_service.py:891
+#: app/services/notification_service.py:668
+#: app/services/notification_service.py:735
+#: app/services/notification_service.py:821
+#: app/services/notification_service.py:894
 #: app/templates/config/renters_list.html:32 app/templates/dashboard.html:250
 #: app/templates/dashboard.html:270 app/templates/dashboard.html:289
 #: app/templates/dashboard.html:307
@@ -3973,132 +3992,132 @@ msgstr[1] "De verzekering voor %(reg)s verloopt op %(date)s (%(days)s dagen rest
 msgid "Expires"
 msgstr "Verloopt"
 
-#: app/services/notification_service.py:666
-#: app/services/notification_service.py:733
-#: app/services/notification_service.py:819
+#: app/services/notification_service.py:669
+#: app/services/notification_service.py:736
+#: app/services/notification_service.py:822
 msgid "Days left"
 msgstr "Dagen resterend"
 
-#: app/services/notification_service.py:712
+#: app/services/notification_service.py:715
 #, python-format
 msgid "ARC expiring in one day: %(reg)s"
 msgid_plural "ARC expiring in %(days)s days: %(reg)s"
 msgstr[0] "ARC verloopt over één dag: %(reg)s"
 msgstr[1] "ARC verloopt over %(days)s dagen: %(reg)s"
 
-#: app/services/notification_service.py:719
+#: app/services/notification_service.py:722
 #, python-format
 msgid "ARC expiring soon: %(reg)s"
 msgstr "ARC verloopt binnenkort: %(reg)s"
 
-#: app/services/notification_service.py:722
+#: app/services/notification_service.py:725
 #, python-format
 msgid "The ARC for %(reg)s expires on %(date)s (one day remaining)."
 msgid_plural "The ARC for %(reg)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "De ARC voor %(reg)s verloopt op %(date)s (één dag resterend)."
 msgstr[1] "De ARC voor %(reg)s verloopt op %(date)s (%(days)s dagen resterend)."
 
-#: app/services/notification_service.py:777
-#: app/services/notification_service.py:1019
+#: app/services/notification_service.py:780
+#: app/services/notification_service.py:1022
 msgid "medical certificate"
 msgstr "medische keuring"
 
-#: app/services/notification_service.py:785
-#: app/services/notification_service.py:786 app/templates/dashboard.html:304
+#: app/services/notification_service.py:788
+#: app/services/notification_service.py:789 app/templates/dashboard.html:304
 msgid "SEP endorsement"
 msgstr "SEP-bevoegdverklaring"
 
-#: app/services/notification_service.py:799
+#: app/services/notification_service.py:802
 #, python-format
 msgid "%(label)s expiring in one day"
 msgid_plural "%(label)s expiring in %(days)s days"
 msgstr[0] "%(label)s verloopt over één dag"
 msgstr[1] "%(label)s verloopt over %(days)s dagen"
 
-#: app/services/notification_service.py:806
+#: app/services/notification_service.py:809
 #, python-format
 msgid "%(label)s expiring soon"
 msgstr "%(label)s verloopt binnenkort"
 
-#: app/services/notification_service.py:809
+#: app/services/notification_service.py:812
 #, python-format
 msgid "Your %(label_lower)s expires on %(date)s (one day remaining)."
 msgid_plural "Your %(label_lower)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "Uw %(label_lower)s verloopt op %(date)s (één dag resterend)."
 msgstr[1] "Uw %(label_lower)s verloopt op %(date)s (%(days)s dagen resterend)."
 
-#: app/services/notification_service.py:867
+#: app/services/notification_service.py:870
 #, python-format
 msgid "Document expiring in one day: %(title)s"
 msgid_plural "Document expiring in %(days)s days: %(title)s"
 msgstr[0] "Document verloopt over één dag: %(title)s"
 msgstr[1] "Document verloopt over %(days)s dagen: %(title)s"
 
-#: app/services/notification_service.py:875
+#: app/services/notification_service.py:878
 #, python-format
 msgid "Document expiring soon: %(title)s"
 msgstr "Document verloopt binnenkort: %(title)s"
 
-#: app/services/notification_service.py:879
+#: app/services/notification_service.py:882
 #, python-format
 msgid "'%(title)s' on %(reg)s expires on %(date)s (one day remaining)."
 msgid_plural "'%(title)s' on %(reg)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "'%(title)s' op %(reg)s verloopt op %(date)s (één dag resterend)."
 msgstr[1] "'%(title)s' op %(reg)s verloopt op %(date)s (%(days)s dagen resterend)."
 
-#: app/services/notification_service.py:890
-#: app/services/notification_service.py:957
+#: app/services/notification_service.py:893
+#: app/services/notification_service.py:960
 #: app/templates/documents/list.html:140
 msgid "Document"
 msgstr "Document"
 
-#: app/services/notification_service.py:927
-#: app/services/notification_service.py:1024
+#: app/services/notification_service.py:930
+#: app/services/notification_service.py:1027
 msgid "unknown"
 msgstr "onbekend"
 
-#: app/services/notification_service.py:933
+#: app/services/notification_service.py:936
 #, python-format
 msgid "Airworthiness review due in one day: %(ref)s on %(reg)s"
 msgid_plural "Airworthiness review due in %(days)s days: %(ref)s on %(reg)s"
 msgstr[0] "Luchtwaardigheidscontrole over één dag: %(ref)s op %(reg)s"
 msgstr[1] "Luchtwaardigheidscontrole over %(days)s dagen: %(ref)s op %(reg)s"
 
-#: app/services/notification_service.py:942
+#: app/services/notification_service.py:945
 #, python-format
 msgid "Airworthiness review due: %(ref)s"
 msgstr "Luchtwaardigheidscontrole vereist: %(ref)s"
 
-#: app/services/notification_service.py:946
+#: app/services/notification_service.py:949
 #, python-format
 msgid "Document %(ref)s on %(reg)s requires review by %(date)s (one day)."
 msgid_plural "Document %(ref)s on %(reg)s requires review by %(date)s (%(days)s days)."
 msgstr[0] "Document %(ref)s op %(reg)s moet worden beoordeeld voor %(date)s (één dag)."
 msgstr[1] "Document %(ref)s op %(reg)s moet worden beoordeeld voor %(date)s (%(days)s dagen)."
 
-#: app/services/notification_service.py:958
+#: app/services/notification_service.py:961
 #: app/templates/maintenance/fleet.html:174
 #: app/templates/maintenance/list.html:95
 msgid "Due"
 msgstr "Vervaldag"
 
-#: app/services/notification_service.py:1018
+#: app/services/notification_service.py:1021
 msgid "authorization"
 msgstr "machtiging"
 
-#: app/services/notification_service.py:1030
+#: app/services/notification_service.py:1033
 #, python-format
 msgid "%(label)s expires %(date)s"
 msgstr "%(label)s verloopt op %(date)s"
 
-#: app/services/notification_service.py:1042
+#: app/services/notification_service.py:1045
 #, python-format
 msgid "One renter authorization"
 msgid_plural "%(n)s renter authorizations"
 msgstr[0] "Eén huurautorisatie"
 msgstr[1] "%(n)s huurautorisaties"
 
-#: app/services/notification_service.py:1048 app/templates/dashboard.html:292
+#: app/services/notification_service.py:1051 app/templates/dashboard.html:292
 #: app/templates/dashboard.html:310 app/templates/pilots/profile.html:145
 #, python-format
 msgid "one day"
@@ -4106,58 +4125,58 @@ msgid_plural "%(n)s days"
 msgstr[0] "één dag"
 msgstr[1] "%(n)s dagen"
 
-#: app/services/notification_service.py:1058
+#: app/services/notification_service.py:1061
 #, python-format
 msgid "One renter authorization expiring soon"
 msgid_plural "%(n)s renter authorizations expiring soon"
 msgstr[0] "Eén huurautorisatie verloopt binnenkort"
 msgstr[1] "%(n)s huurautorisaties verlopen binnenkort"
 
-#: app/services/notification_service.py:1064
+#: app/services/notification_service.py:1067
 msgid "Renter authorizations expiring soon"
 msgstr "Huurautorisaties verlopen binnenkort"
 
-#: app/services/notification_service.py:1067
+#: app/services/notification_service.py:1070
 #, python-format
 msgid "%(items)s or medical validity dates expire within %(days)s."
 msgstr "%(items)s of geldigheidsdata van medische keuring verlopen binnen %(days)s."
 
-#: app/services/notification_service.py:1125
+#: app/services/notification_service.py:1128
 #: app/templates/pilots/logbook.html:87
 #, python-format
 msgid "no matching flight on record yet (comfort zone: %(threshold)s days)."
 msgstr "nog geen overeenkomstige vlucht geregistreerd (comfortzone: %(threshold)s dagen)."
 
-#: app/services/notification_service.py:1130
+#: app/services/notification_service.py:1133
 #: app/templates/pilots/logbook.html:89
 #, python-format
 msgid "%(days)s days since your last matching flight (comfort zone: %(threshold)s days)."
 msgstr "%(days)s dagen sinds uw laatste overeenkomstige vlucht (comfortzone: %(threshold)s dagen)."
 
-#: app/services/notification_service.py:1141
+#: app/services/notification_service.py:1144
 #, python-format
 msgid "Personal minimums: one recency threshold exceeded"
 msgid_plural "Personal minimums: %(n)s recency thresholds exceeded"
 msgstr[0] "Persoonlijke minima: één recency-drempel overschreden"
 msgstr[1] "Persoonlijke minima: %(n)s recency-drempels overschreden"
 
-#: app/services/notification_service.py:1147
+#: app/services/notification_service.py:1150
 #: app/templates/config/notifications.html:47
 msgid "Personal minimums recency reminder"
 msgstr "Herinnering recency — persoonlijke minima"
 
-#: app/services/notification_service.py:1150
+#: app/services/notification_service.py:1153
 #, python-format
 msgid "You have exceeded one recency threshold in your personal minimums."
 msgid_plural "You have exceeded %(n)s recency thresholds in your personal minimums."
 msgstr[0] "U heeft één recency-drempel in uw persoonlijke minima overschreden."
 msgstr[1] "U heeft %(n)s recency-drempels in uw persoonlijke minima overschreden."
 
-#: app/services/notification_service.py:1251
+#: app/services/notification_service.py:1254
 msgid "Welcome to your OpenHangar instance"
 msgstr "Welkom bij uw OpenHangar-instantie"
 
-#: app/services/notification_service.py:1254
+#: app/services/notification_service.py:1257
 msgid ""
 "Welcome to OpenHangar! Your instance is set up and email delivery is working.\n"
 "\n"
@@ -4326,9 +4345,9 @@ msgstr "Downloaden"
 
 #: app/templates/_doc_viewer_modal.html:14
 #: app/templates/aircraft/owner_account.html:22
-#: app/templates/aircraft/owners_billing.html:20 app/templates/base.html:173
-#: app/templates/base.html:198 app/templates/base.html:283
-#: app/templates/base.html:292 app/templates/base.html:304
+#: app/templates/aircraft/owners_billing.html:20 app/templates/base.html:174
+#: app/templates/base.html:199 app/templates/base.html:284
+#: app/templates/base.html:293 app/templates/base.html:305
 #: app/templates/dashboard.html:814
 #: app/templates/partials/_flight_tracks_map.html:70
 #: app/templates/pilots/logbook.html:95
@@ -4336,74 +4355,74 @@ msgid "Close"
 msgstr "Sluiten"
 
 #: app/templates/auth/login.html:4 app/templates/auth/login.html:43
-#: app/templates/base.html:57 app/templates/base.html:259
+#: app/templates/base.html:58 app/templates/base.html:260
 #: app/templates/errors/403.html:31 app/templates/landing.html:281
 #: app/templates/welcome.html:20
 msgid "Log in"
 msgstr "Inloggen"
 
-#: app/templates/base.html:57
+#: app/templates/base.html:58
 msgid "Your account session changed. Sign in again to continue."
 msgstr "De sessie van uw account is gewijzigd. Meld u opnieuw aan om verder te gaan."
 
-#: app/templates/base.html:106
+#: app/templates/base.html:107
 msgid "Some features may not work correctly — a browser extension may be interfering."
 msgstr "Sommige functies werken mogelijk niet correct — een browserextensie kan storen."
 
-#: app/templates/base.html:113
+#: app/templates/base.html:114
 msgid "This demo environment resets at"
 msgstr "Deze demoversie wordt gereset om"
 
-#: app/templates/base.html:114
+#: app/templates/base.html:115
 msgid "from now"
 msgstr "vanaf nu"
 
-#: app/templates/base.html:114
+#: app/templates/base.html:115
 msgid "any changes will be lost."
 msgstr "alle wijzigingen gaan verloren."
 
-#: app/templates/base.html:116
+#: app/templates/base.html:117
 msgid "This is a"
 msgstr "Dit is een"
 
-#: app/templates/base.html:116
+#: app/templates/base.html:117
 msgid "demo environment"
 msgstr "demoversie"
 
-#: app/templates/base.html:116
+#: app/templates/base.html:117
 msgid "data is periodically wiped and any changes will be lost."
 msgstr "gegevens worden periodiek gewist en alle wijzigingen gaan verloren."
 
-#: app/templates/base.html:142
+#: app/templates/base.html:143
 msgid "The demo environment is being reset. Please wait — the page will reload automatically when ready."
 msgstr "De demo-omgeving wordt opnieuw ingesteld. Even geduld — de pagina wordt automatisch herladen zodra ze gereed is."
 
-#: app/templates/base.html:170 app/templates/base.html:172
-#: app/templates/base.html:432
+#: app/templates/base.html:171 app/templates/base.html:173
+#: app/templates/base.html:433
 msgid "Install app"
 msgstr "App installeren"
 
-#: app/templates/base.html:171
+#: app/templates/base.html:172
 msgid "Add OpenHangar to your home screen for quick access."
 msgstr "Voeg OpenHangar toe aan uw startscherm voor snelle toegang."
 
-#: app/templates/base.html:173
+#: app/templates/base.html:174
 msgid "Not now"
 msgstr "Niet nu"
 
-#: app/templates/base.html:181 app/templates/base.html:431
+#: app/templates/base.html:182 app/templates/base.html:432
 msgid "Offline"
 msgstr "Offline"
 
-#: app/templates/auth/profile.html:16 app/templates/base.html:205
-#: app/templates/base.html:323 app/templates/config/settings.html:52
+#: app/templates/auth/profile.html:16 app/templates/base.html:206
+#: app/templates/base.html:324 app/templates/config/settings.html:52
 #: app/templates/dashboard.html:3 app/templates/dashboard.html:116
 #: app/templates/errors/403.html:27 app/templates/errors/404.html:27
 #: app/templates/users/list.html:18
 msgid "Dashboard"
 msgstr "Dashboard"
 
-#: app/templates/base.html:220 app/templates/base.html:339
+#: app/templates/base.html:221 app/templates/base.html:340
 #: app/templates/dashboard.html:753 app/templates/landing.html:33
 #: app/templates/landing.html:241 app/templates/partials/_crew_claims.html:49
 #: app/templates/reservations/calendar.html:193
@@ -4414,12 +4433,12 @@ msgstr "Dashboard"
 msgid "Pilot"
 msgstr "Piloot"
 
-#: app/templates/base.html:220 app/templates/partials/_crew_invites.html:6
+#: app/templates/base.html:221 app/templates/partials/_crew_invites.html:6
 msgid "Flights waiting for your confirmation"
 msgstr "Vluchten die op uw bevestiging wachten"
 
-#: app/templates/aircraft/detail.html:488 app/templates/base.html:223
-#: app/templates/base.html:335 app/templates/dashboard.html:634
+#: app/templates/aircraft/detail.html:488 app/templates/base.html:224
+#: app/templates/base.html:336 app/templates/dashboard.html:634
 #: app/templates/dashboard.html:654 app/templates/dashboard.html:701
 #: app/templates/dashboard.html:811 app/templates/flights/fleet.html:15
 #: app/templates/flights/flight_form.html:4
@@ -4428,18 +4447,18 @@ msgstr "Vluchten die op uw bevestiging wachten"
 msgid "Log a flight"
 msgstr "Vlucht registreren"
 
-#: app/templates/aircraft/flight_detail.html:110 app/templates/base.html:227
-#: app/templates/base.html:343 app/templates/flights/flight_form.html:817
+#: app/templates/aircraft/flight_detail.html:110 app/templates/base.html:228
+#: app/templates/base.html:344 app/templates/flights/flight_form.html:817
 #: app/templates/pilots/logbook.html:16
 msgid "Pilot logbook"
 msgstr "Pilootlogboek"
 
-#: app/templates/base.html:229 app/templates/places/collection_settings.html:19
+#: app/templates/base.html:230 app/templates/places/collection_settings.html:20
 #: app/templates/places/index.html:3 app/templates/places/index.html:6
 msgid "Places"
 msgstr "Plaatsen"
 
-#: app/templates/base.html:231 app/templates/base.html:346
+#: app/templates/base.html:232 app/templates/base.html:347
 #: app/templates/passports/confirm.html:3 app/templates/passports/detail.html:4
 #: app/templates/passports/detail.html:7
 #: app/templates/passports/draft_error.html:3
@@ -4449,41 +4468,41 @@ msgstr "Plaatsen"
 msgid "Airfield passports"
 msgstr "Vliegveldpaspoorten"
 
-#: app/templates/base.html:235
+#: app/templates/base.html:236
 msgid "My account"
 msgstr "Mijn rekening"
 
-#: app/templates/base.html:240 app/templates/config/data_checks.html:14
+#: app/templates/base.html:241 app/templates/config/data_checks.html:14
 #: app/templates/config/notifications.html:16
 #: app/templates/config/settings.html:3 app/templates/config/settings.html:44
 msgid "Configuration"
 msgstr "Configuratie"
 
-#: app/templates/base.html:240
+#: app/templates/base.html:241
 msgid "Update available"
 msgstr "Update beschikbaar"
 
-#: app/templates/base.html:240
+#: app/templates/base.html:241
 msgid "Data checks to review"
 msgstr "Gegevenscontroles na te kijken"
 
-#: app/templates/auth/profile.html:3 app/templates/base.html:251
+#: app/templates/auth/profile.html:3 app/templates/base.html:252
 msgid "Profile"
 msgstr "Profiel"
 
-#: app/templates/base.html:254
+#: app/templates/base.html:255
 msgid "Log Out"
 msgstr "Uitloggen"
 
-#: app/templates/base.html:290
+#: app/templates/base.html:291
 msgid "This instance still has pre-upgrade pilot-logbook/crew data that wasn't automatically converted to the new unified logbook. It's preserved as-is in the database but no longer reachable from the interface."
 msgstr "Deze instantie bevat nog pilotenlogboek-/bemanningsgegevens van vóór de upgrade die niet automatisch zijn geconverteerd naar het nieuwe unified logboek. Deze gegevens blijven ongewijzigd bewaard in de database, maar zijn niet meer bereikbaar via de interface."
 
-#: app/templates/base.html:291
+#: app/templates/base.html:292
 msgid "Please open an issue if you need help extracting it."
 msgstr "Open een issue als u hulp nodig heeft om deze gegevens te extraheren."
 
-#: app/templates/base.html:359
+#: app/templates/base.html:360
 msgid "open-source aircraft ops"
 msgstr "open-source vliegtuigbeheer"
 
@@ -4493,7 +4512,7 @@ msgstr "open-source vliegtuigbeheer"
 #: app/templates/airworthiness/avionics_unit_form.html:47
 #: app/templates/airworthiness/dashboard.html:95
 #: app/templates/airworthiness/equipment_board.html:50
-#: app/templates/airworthiness/status_form.html:21 app/templates/base.html:363
+#: app/templates/airworthiness/status_form.html:21 app/templates/base.html:364
 #: app/templates/config/renters_list.html:33
 #: app/templates/config/settings.html:300
 #: app/templates/config/settings.html:399
@@ -4533,7 +4552,7 @@ msgstr "Status"
 #: app/templates/airworthiness/status_form.html:61
 #: app/templates/airworthiness/stc_form.html:50
 #: app/templates/airworthiness/wishlist_form.html:45
-#: app/templates/base.html:379 app/templates/config/renter_form.html:104
+#: app/templates/base.html:380 app/templates/config/renter_form.html:104
 #: app/templates/documents/edit_form.html:16
 #: app/templates/documents/edit_form.html:103
 #: app/templates/documents/pilot_upload_form.html:16
@@ -4564,6 +4583,7 @@ msgstr "Status"
 #: app/templates/pilots/minimums_edit.html:15
 #: app/templates/places/join_collection.html:5
 #: app/templates/places/new_collection.html:6
+#: app/templates/places/place_form.html:19
 #: app/templates/pwa/share_target.html:14
 #: app/templates/refuels/refuel_form.html:61
 #: app/templates/reservations/charge.html:108
@@ -4577,7 +4597,7 @@ msgstr "Status"
 msgid "Cancel"
 msgstr "Annuleren"
 
-#: app/templates/base.html:380 app/templates/partials/_crew_invites.html:33
+#: app/templates/base.html:381 app/templates/partials/_crew_invites.html:33
 #: app/templates/partials/_crew_invites.html:72
 #: app/templates/pilots/gps_import_review.html:303
 #: app/templates/reservations/calendar.html:220
@@ -4585,55 +4605,55 @@ msgstr "Annuleren"
 msgid "Confirm"
 msgstr "Bevestigen"
 
-#: app/templates/base.html:433
+#: app/templates/base.html:434
 msgid "You're offline — this can't be saved right now. Reconnect and try again."
 msgstr "U bent offline — dit kan nu niet worden opgeslagen. Maak opnieuw verbinding en probeer het opnieuw."
 
-#: app/templates/base.html:436
+#: app/templates/base.html:437
 msgid "Please fill out this field."
 msgstr "Vul dit veld in."
 
-#: app/templates/base.html:437
+#: app/templates/base.html:438
 msgid "Please select an item in the list."
 msgstr "Selecteer een item in de lijst."
 
-#: app/templates/base.html:438
+#: app/templates/base.html:439
 msgid "Please check this box if you want to proceed."
 msgstr "Vink dit vakje aan om door te gaan."
 
-#: app/templates/base.html:439
+#: app/templates/base.html:440
 msgid "Please select one of these options."
 msgstr "Selecteer een van deze opties."
 
-#: app/templates/base.html:441
+#: app/templates/base.html:442
 msgid "Please enter a valid URL."
 msgstr "Voer een geldige URL in."
 
-#: app/templates/base.html:442
+#: app/templates/base.html:443
 msgid "Please match the requested format."
 msgstr "Gebruik de gevraagde opmaak."
 
-#: app/templates/base.html:443
+#: app/templates/base.html:444
 #, python-brace-format
 msgid "Please use at least {min} characters (currently {n})."
 msgstr "Gebruik ten minste {min} tekens (momenteel {n})."
 
-#: app/templates/base.html:444
+#: app/templates/base.html:445
 #, python-brace-format
 msgid "Please use no more than {max} characters (currently {n})."
 msgstr "Gebruik maximaal {max} tekens (momenteel {n})."
 
-#: app/templates/base.html:445
+#: app/templates/base.html:446
 #, python-brace-format
 msgid "Value must be {min} or more."
 msgstr "De waarde moet {min} of hoger zijn."
 
-#: app/templates/base.html:446
+#: app/templates/base.html:447
 #, python-brace-format
 msgid "Value must be {max} or less."
 msgstr "De waarde moet {max} of lager zijn."
 
-#: app/templates/base.html:447
+#: app/templates/base.html:448
 msgid "Please enter a valid value."
 msgstr "Voer een geldige waarde in."
 
@@ -5533,6 +5553,7 @@ msgstr "Definieer één regel per tank (slechts één voor een enkele gecombinee
 #: app/templates/maintenance/trigger_form.html:29
 #: app/templates/passports/builder.html:16
 #: app/templates/passports/next_edition.html:8
+#: app/templates/places/index.html:10
 msgid "Name"
 msgstr "Naam"
 
@@ -6881,7 +6902,8 @@ msgstr[1] "%(n)s onderdelen"
 #: app/templates/aircraft/list.html:73 app/templates/passports/detail.html:20
 #: app/templates/passports/print.html:19 app/templates/passports/series.html:10
 #: app/templates/passports/series.html:28
-#: app/templates/passports/vouchers.html:10
+#: app/templates/passports/vouchers.html:10 app/templates/places/index.html:10
+#: app/templates/places/index.html:13 app/templates/places/place_detail.html:6
 msgid "Archived"
 msgstr "Gearchiveerd"
 
@@ -6984,6 +7006,7 @@ msgstr "Rekeninguittreksel downloaden (CSV)"
 #: app/templates/expenses/expense_form.html:128
 #: app/templates/expenses/list.html:88 app/templates/passports/builder.html:18
 #: app/templates/passports/next_edition.html:12
+#: app/templates/places/place_form.html:10
 #: app/templates/snags/snag_form.html:37
 msgid "Description"
 msgstr "Omschrijving"
@@ -7606,7 +7629,7 @@ msgstr[1] "%(n)s documenten totaal"
 #: app/templates/passports/detail.html:34
 #: app/templates/passports/discussion.html:14
 #: app/templates/pilots/logbook.html:142 app/templates/pilots/logbook.html:144
-#: app/templates/users/list.html:85
+#: app/templates/places/index.html:10 app/templates/users/list.html:85
 msgid "All"
 msgstr "Alle"
 
@@ -8576,6 +8599,7 @@ msgstr "Drempelwaarde"
 #: app/templates/config/notifications.html:170
 #: app/templates/config/tenant_list.html:47
 #: app/templates/passports/group_members.html:16
+#: app/templates/places/index.html:10
 msgid "Active"
 msgstr "Actief"
 
@@ -12231,10 +12255,12 @@ msgid "Optional airfield code"
 msgstr "Optionele vliegveldcode"
 
 #: app/templates/passports/builder.html:58
+#: app/templates/places/place_form.html:14
 msgid "Latitude"
 msgstr "Breedtegraad"
 
 #: app/templates/passports/builder.html:58
+#: app/templates/places/place_form.html:14
 msgid "Longitude"
 msgstr "Lengtegraad"
 
@@ -12486,6 +12512,7 @@ msgstr "Door jou bezocht"
 #: app/templates/passports/record_visit.html:14
 #: app/templates/passports/series.html:17
 #: app/templates/passports/series.html:19 app/templates/passports/target.html:9
+#: app/templates/places/index.html:10 app/templates/places/index.html:13
 msgid "Visited"
 msgstr "Bezocht"
 
@@ -14650,6 +14677,10 @@ msgstr[1] "%(n)s vluchten"
 msgid "All airports visited"
 msgstr "Alle bezochte luchthavens"
 
+#: app/templates/places/_map.html:1
+msgid "Places map"
+msgstr "Kaart met plaatsen"
+
 #: app/templates/places/collection_settings.html:4
 msgid "Collection rights"
 msgstr "Rechten in de collectie"
@@ -14684,12 +14715,6 @@ msgid "Collection members"
 msgstr "Collectieleden"
 
 #: app/templates/places/collection_settings.html:9
-#: app/templates/places/collection_settings.html:14
-#: app/templates/places/collection_settings.html:18
-msgid "Unnamed member"
-msgstr "Lid zonder naam"
-
-#: app/templates/places/collection_settings.html:9
 msgid "Change rights"
 msgstr "Rechten wijzigen"
 
@@ -14701,74 +14726,100 @@ msgstr "Je plaatsen en bezoeken blijven in de collectie als je vertrekt. Kopieer
 msgid "Leave collection"
 msgstr "Collectie verlaten"
 
-#: app/templates/places/collection_settings.html:12
+#: app/templates/places/collection_settings.html:11
+#: app/templates/places/place_form.html:17
+msgid "Tags"
+msgstr "Tags"
+
+#: app/templates/places/collection_settings.html:11
+msgid "Renaming to an existing tag merges them."
+msgstr "Als je een tag een bestaande naam geeft, worden beide tags samengevoegd."
+
+#: app/templates/places/collection_settings.html:11
+msgid "Tag name"
+msgstr "Tagnaam"
+
+#: app/templates/places/collection_settings.html:11
+msgid "Rename tag"
+msgstr "Tag hernoemen"
+
+#: app/templates/places/collection_settings.html:11
+msgid "Delete tag"
+msgstr "Tag verwijderen"
+
+#: app/templates/places/collection_settings.html:13
 #: app/templates/places/new_collection.html:6
 msgid "Collection name"
 msgstr "Collectienaam"
 
-#: app/templates/places/collection_settings.html:12
+#: app/templates/places/collection_settings.html:13
 msgid "Rename collection"
 msgstr "Collectie hernoemen"
 
-#: app/templates/places/collection_settings.html:13
+#: app/templates/places/collection_settings.html:14
 msgid "Add a friend"
 msgstr "Een vriend toevoegen"
 
-#: app/templates/places/collection_settings.html:14
+#: app/templates/places/collection_settings.html:15
 msgid "Choose a user"
 msgstr "Kies een gebruiker"
 
-#: app/templates/places/collection_settings.html:14
+#: app/templates/places/collection_settings.html:15
 msgid "Add member"
 msgstr "Lid toevoegen"
 
-#: app/templates/places/collection_settings.html:15
+#: app/templates/places/collection_settings.html:16
 msgid "Exact email address"
 msgstr "Exact e-mailadres"
 
-#: app/templates/places/collection_settings.html:15
+#: app/templates/places/collection_settings.html:16
 msgid "The invitation appears when your friend signs in with this email and opens Places. It expires after 30 days. No email is sent."
 msgstr "De uitnodiging verschijnt als je vriend met dit e-mailadres inlogt en Plaatsen opent. Deze verloopt na 30 dagen. Er wordt geen e-mail verstuurd."
 
-#: app/templates/places/collection_settings.html:15
+#: app/templates/places/collection_settings.html:16
 msgid "Save invitation"
 msgstr "Uitnodiging opslaan"
 
-#: app/templates/places/collection_settings.html:16
+#: app/templates/places/collection_settings.html:17
 msgid "Collection invitation link"
 msgstr "Uitnodigingslink voor de collectie"
 
-#: app/templates/places/collection_settings.html:17
+#: app/templates/places/collection_settings.html:18
 msgid "Pending invitations"
 msgstr "Openstaande uitnodigingen"
 
-#: app/templates/places/collection_settings.html:17
+#: app/templates/places/collection_settings.html:18
 msgid "Revoke invitation"
 msgstr "Uitnodiging intrekken"
 
-#: app/templates/places/collection_settings.html:18
+#: app/templates/places/collection_settings.html:19
 msgid "Transfer collection"
 msgstr "Collectie overdragen"
 
-#: app/templates/places/collection_settings.html:18
+#: app/templates/places/collection_settings.html:19
 msgid "New collection owner"
 msgstr "Nieuwe eigenaar van de collectie"
 
-#: app/templates/places/collection_settings.html:19
+#: app/templates/places/collection_settings.html:20
 msgid "Delete collection"
 msgstr "Collectie verwijderen"
 
-#: app/templates/places/collection_settings.html:19
+#: app/templates/places/collection_settings.html:20
 msgid "Deleting this collection also permanently deletes its places and visits."
 msgstr "Als je deze collectie verwijdert, worden ook de plaatsen en bezoeken definitief verwijderd."
 
-#: app/templates/places/collection_settings.html:19
+#: app/templates/places/collection_settings.html:20
 msgid "Visits"
 msgstr "Bezoeken"
 
-#: app/templates/places/collection_settings.html:19
+#: app/templates/places/collection_settings.html:20
 msgid "I confirm the permanent deletion of this collection."
 msgstr "Ik bevestig de definitieve verwijdering van deze collectie."
+
+#: app/templates/places/index.html:6 app/templates/places/place_form.html:3
+#: app/templates/places/place_form.html:6
+msgid "Add place"
+msgstr "Plaats toevoegen"
 
 #: app/templates/places/index.html:6 app/templates/places/new_collection.html:3
 #: app/templates/places/new_collection.html:5
@@ -14792,6 +14843,70 @@ msgid "All collections"
 msgstr "Alle collecties"
 
 #: app/templates/places/index.html:10
+msgid "Show places"
+msgstr "Plaatsen tonen"
+
+#: app/templates/places/index.html:10
+msgid "Active and archived"
+msgstr "Actief en gearchiveerd"
+
+#: app/templates/places/index.html:10
+msgid "Bin"
+msgstr "Prullenbak"
+
+#: app/templates/places/index.html:10
+msgid "My visits"
+msgstr "Mijn bezoeken"
+
+#: app/templates/places/index.html:10 app/templates/places/index.html:13
+msgid "Not yet visited"
+msgstr "Nog niet bezocht"
+
+#: app/templates/places/index.html:10
+msgid "Tag"
+msgstr "Tag"
+
+#: app/templates/places/index.html:10
+msgid "All tags"
+msgstr "Alle tags"
+
+#: app/templates/places/index.html:10
+msgid "Sort by"
+msgstr "Sorteren op"
+
+#: app/templates/places/index.html:10
+msgid "Date added"
+msgstr "Datum toegevoegd"
+
+#: app/templates/places/index.html:10
+msgid "Last visit"
+msgstr "Laatste bezoek"
+
+#: app/templates/places/index.html:10
+msgid "Apply filters"
+msgstr "Filters toepassen"
+
+#: app/templates/places/index.html:12
+msgid "Places in the bin are permanently deleted after 30 days. Any editor can restore them before then."
+msgstr "Plaatsen in de prullenbak worden na 30 dagen definitief verwijderd. Elk lid met bewerkingsrechten kan ze voor die tijd herstellen."
+
+#: app/templates/places/index.html:13 app/templates/places/place_detail.html:11
+msgid "Place photo"
+msgstr "Foto van de plaats"
+
+#: app/templates/places/index.html:13
+msgid "Restore place"
+msgstr "Plaats herstellen"
+
+#: app/templates/places/index.html:13 app/templates/places/place_detail.html:16
+msgid "I confirm the permanent deletion of this place and its visits."
+msgstr "Ik bevestig de definitieve verwijdering van deze plaats en de bijbehorende bezoeken."
+
+#: app/templates/places/index.html:13 app/templates/places/place_detail.html:16
+msgid "Permanently delete place"
+msgstr "Plaats definitief verwijderen"
+
+#: app/templates/places/index.html:13
 msgid "No places in this view yet."
 msgstr "Er zijn nog geen plaatsen in deze weergave."
 
@@ -14807,6 +14922,110 @@ msgstr "Als je deelneemt, kunnen de andere leden je naam en de bezoeken die je i
 #: app/templates/places/new_collection.html:6
 msgid "Create collection"
 msgstr "Collectie aanmaken"
+
+#: app/templates/places/place_detail.html:5
+#: app/templates/places/place_form.html:3
+#: app/templates/places/place_form.html:6
+msgid "Edit place"
+msgstr "Plaats bewerken"
+
+#: app/templates/places/place_detail.html:7
+#, python-format
+msgid "Place owner: %(name)s"
+msgstr "Eigenaar van de plaats: %(name)s"
+
+#: app/templates/places/place_detail.html:7
+#, python-format
+msgid "Last changed by %(name)s on %(date)s"
+msgstr "Laatst gewijzigd door %(name)s op %(date)s"
+
+#: app/templates/places/place_detail.html:9
+msgid "Visit website"
+msgstr "Website bezoeken"
+
+#: app/templates/places/place_detail.html:14
+msgid "Unarchive place"
+msgstr "Plaats uit archief halen"
+
+#: app/templates/places/place_detail.html:14
+msgid "Archive place"
+msgstr "Plaats archiveren"
+
+#: app/templates/places/place_detail.html:14
+msgid "Move to bin"
+msgstr "Naar prullenbak"
+
+#: app/templates/places/place_detail.html:15
+msgid "Copy or move"
+msgstr "Kopiëren of verplaatsen"
+
+#: app/templates/places/place_detail.html:15
+msgid "Destination collection"
+msgstr "Doelcollectie"
+
+#: app/templates/places/place_detail.html:15
+msgid "Copy place"
+msgstr "Plaats kopiëren"
+
+#: app/templates/places/place_detail.html:15
+msgid "Move place"
+msgstr "Plaats verplaatsen"
+
+#: app/templates/places/place_detail.html:15
+msgid "Copies keep the content and photo, but no visits. Moving requires every visitor to belong to the destination collection."
+msgstr "Kopieën behouden de inhoud en foto, zonder bezoeken. Verplaatsen kan alleen als elke bezoeker lid is van de doelcollectie."
+
+#: app/templates/places/place_form.html:5
+msgid "Coordinates could not be read. Enter latitude and longitude directly."
+msgstr "De coördinaten konden niet worden gelezen. Voer de breedtegraad en lengtegraad rechtstreeks in."
+
+#: app/templates/places/place_form.html:8
+msgid "Collection"
+msgstr "Collectie"
+
+#: app/templates/places/place_form.html:9
+msgid "Place name"
+msgstr "Plaatsnaam"
+
+#: app/templates/places/place_form.html:11
+msgid "Click the map to drop a pin, then drag it to the right spot. You can also paste coordinates or a map link."
+msgstr "Klik op de kaart om een speld te plaatsen en sleep deze naar de juiste plek. Je kunt ook coördinaten of een kaartlink plakken."
+
+#: app/templates/places/place_form.html:12
+msgid "Coordinates or map link"
+msgstr "Coördinaten of kaartlink"
+
+#: app/templates/places/place_form.html:12
+msgid "Use coordinates"
+msgstr "Coördinaten gebruiken"
+
+#: app/templates/places/place_form.html:13
+msgid "Place location"
+msgstr "Locatie van de plaats"
+
+#: app/templates/places/place_form.html:15
+msgid "Address (optional)"
+msgstr "Adres (optioneel)"
+
+#: app/templates/places/place_form.html:16
+msgid "Website (optional)"
+msgstr "Website (optioneel)"
+
+#: app/templates/places/place_form.html:17
+msgid "One tag per line. You can also choose suggestions below."
+msgstr "Eén tag per regel. Je kunt ook uit de onderstaande suggesties kiezen."
+
+#: app/templates/places/place_form.html:18
+msgid "Place photo (optional)"
+msgstr "Foto van de plaats (optioneel)"
+
+#: app/templates/places/place_form.html:18
+msgid "Remove current photo"
+msgstr "Huidige foto verwijderen"
+
+#: app/templates/places/place_form.html:19
+msgid "Save place"
+msgstr "Plaats opslaan"
 
 #: app/templates/pwa/share_target.html:3 app/templates/pwa/share_target.html:10
 msgid "Shared files"

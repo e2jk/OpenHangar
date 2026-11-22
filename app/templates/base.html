@@ -51,6 +51,7 @@
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='vendor/htmx/htmx.min.js') }}"></script>
 
   {% block head %}{% endblock %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/places.css') }}">
 </head>
 {% set offline_owner, offline_session = offline_identity() %}
 <body hx-boost="true" data-oh-offline-owner="{{ offline_owner }}" data-oh-offline-session="{{ offline_session }}"

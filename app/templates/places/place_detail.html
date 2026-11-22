@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% set no_history_cache = true %}
+{% block title %}{{ place.title }} — OpenHangar{% endblock %}
+{% block content %}
+<div class="container py-4"><div class="page-header mb-4"><h1 class="page-title text-break">{{ place.title }}</h1>{% if can_edit %}<a class="btn btn-ac-primary" href="{{ url_for('places.edit_place', place_id=place.id) }}">{{ _('Edit place') }}</a>{% endif %}</div>
+<p><a href="{{ url_for('places.index', collection=collection.id) }}">{{ collection.name }}</a>{% if place.archived %} <span class="badge bg-secondary">{{ _('Archived') }}</span>{% endif %}</p>
+<p>{{ _('Place owner: %(name)s', name=owner_name) }}</p><p>{{ _('Last changed by %(name)s on %(date)s', name=last_changed, date=format_datetime(place.updated_at)) }}</p>
+{% if place.description %}<p class="place-description">{{ place.description }}</p>{% endif %}
+{% if place.address %}<p class="text-break">{{ place.address }}</p>{% endif %}{% if place.external_url %}<p><a href="{{ place.external_url }}" rel="noopener noreferrer" target="_blank" hx-boost="false">{{ _('Visit website') }}</a></p>{% endif %}
+{% if tags %}<p>{% for tag in tags %}<span class="badge text-bg-secondary">{{ tag }}</span> {% endfor %}</p>{% endif %}
+{% if place.photo_filename %}<p><img class="img-fluid rounded place-detail-photo" src="{{ url_for('places.place_photo', place_id=place.id) }}" alt="{{ _('Place photo') }}"></p>{% endif %}
+{% set points = [{'name': place.title, 'latitude': place.latitude, 'longitude': place.longitude, 'url': url_for('places.place_detail', place_id=place.id), 'visited': visited}] %}{% include 'places/_map.html' %}
+{% if can_edit %}
+<form method="post" action="{{ url_for('places.place_action', place_id=place.id) }}" class="mb-3"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-ac-ghost" name="action" value="{{ 'unarchive' if place.archived else 'archive' }}">{{ _('Unarchive place') if place.archived else _('Archive place') }}</button> <button class="btn btn-ac-ghost" name="action" value="trash">{{ _('Move to bin') }}</button></form>
+<h2>{{ _('Copy or move') }}</h2><form method="post" action="{{ url_for('places.place_action', place_id=place.id) }}" class="mb-4"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label for="place-destination" class="form-label">{{ _('Destination collection') }}</label><select class="form-select mb-2" id="place-destination" name="target" required>{% for destination in destinations %}<option value="{{ destination.id }}">{{ destination.name }}</option>{% endfor %}</select><button class="btn btn-ac-ghost" name="action" value="copy">{{ _('Copy place') }}</button>{% if can_move %} <button class="btn btn-ac-ghost" name="action" value="move">{{ _('Move place') }}</button>{% endif %}<p class="form-text">{{ _('Copies keep the content and photo, but no visits. Moving requires every visitor to belong to the destination collection.') }}</p></form>
+{% if can_purge %}<form method="post" action="{{ url_for('places.place_action', place_id=place.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label class="form-check-label"><input class="form-check-input" type="checkbox" name="confirm" value="yes" required> {{ _('I confirm the permanent deletion of this place and its visits.') }}</label><br><button class="btn btn-danger mt-2" name="action" value="purge">{{ _('Permanently delete place') }}</button></form>{% endif %}
+{% endif %}</div>
+{% endblock %}

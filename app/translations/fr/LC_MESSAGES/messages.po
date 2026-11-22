@@ -929,7 +929,7 @@ msgstr "Différence écartée."
 msgid "Licence"
 msgstr "Licence"
 
-#: app/documents/routes.py:85 app/services/notification_service.py:776
+#: app/documents/routes.py:85 app/services/notification_service.py:779
 msgid "Medical certificate"
 msgstr "Certificat médical"
 
@@ -1256,15 +1256,15 @@ msgstr "Route"
 
 #: app/flights/crew_invites.py:496 app/reports/routes.py:113
 #: app/reservations/routes.py:817 app/reservations/routes.py:931
-#: app/reservations/routes.py:1234 app/services/notification_service.py:558
-#: app/services/notification_service.py:588
-#: app/services/notification_service.py:664
-#: app/services/notification_service.py:731
-#: app/services/notification_service.py:889
-#: app/services/notification_service.py:956 app/snags/routes.py:266
+#: app/reservations/routes.py:1234 app/services/notification_service.py:561
+#: app/services/notification_service.py:591
+#: app/services/notification_service.py:667
+#: app/services/notification_service.py:734
+#: app/services/notification_service.py:892
+#: app/services/notification_service.py:959 app/snags/routes.py:266
 #: app/snags/routes.py:316 app/templates/aircraft/wb_list.html:30
-#: app/templates/auth/setup.html:365 app/templates/base.html:209
-#: app/templates/base.html:328 app/templates/config/renter_form.html:33
+#: app/templates/auth/setup.html:365 app/templates/base.html:210
+#: app/templates/base.html:329 app/templates/config/renter_form.html:33
 #: app/templates/config/tenant_list.html:32 app/templates/dashboard.html:130
 #: app/templates/dashboard.html:752 app/templates/documents/list.html:35
 #: app/templates/documents/list.html:217
@@ -2458,7 +2458,7 @@ msgid "Choose a public-sharing action."
 msgstr "Choisissez une action de partage public."
 
 #: app/passports/registration.py:75 app/places/sharing.py:42
-#: app/templates/base.html:440
+#: app/templates/base.html:441
 msgid "Enter a valid email address."
 msgstr "Saisissez une adresse e-mail valide."
 
@@ -3188,8 +3188,8 @@ msgstr "La personne qui a créé la collection doit conserver les droits de modi
 msgid "The creator must transfer or delete the collection before leaving."
 msgstr "La personne qui a créé la collection doit la transférer ou la supprimer avant de la quitter."
 
-#: app/places/collections.py:187 app/places/routes.py:191
-#: app/places/routes.py:197 app/places/routes.py:204
+#: app/places/collections.py:187 app/places/routes.py:206
+#: app/places/routes.py:212 app/places/routes.py:219
 msgid "Choose a member of this collection."
 msgstr "Choisissez un membre de cette collection."
 
@@ -3233,19 +3233,42 @@ msgstr "Seul le propriétaire du lieu peut le déplacer."
 msgid "Every visitor must belong to the destination collection. Copy this place instead."
 msgstr "Chaque personne ayant enregistré une visite doit faire partie de la collection de destination. Copiez plutôt ce lieu."
 
-#: app/places/management.py:244
+#: app/places/management.py:247
 msgid "Only the place owner or collection creator can permanently delete it."
 msgstr "Seuls le propriétaire du lieu ou la personne qui a créé la collection peuvent le supprimer définitivement."
 
-#: app/places/routes.py:215
+#: app/places/place_routes.py:123 app/places/place_routes.py:239
+msgid "Choose a collection you can edit."
+msgstr "Choisissez une collection que vous pouvez modifier."
+
+#: app/places/place_routes.py:161
+#: app/templates/places/collection_settings.html:9
+#: app/templates/places/collection_settings.html:15
+#: app/templates/places/collection_settings.html:19
+msgid "Unnamed member"
+msgstr "Membre sans nom"
+
+#: app/places/place_routes.py:181 app/places/place_routes.py:182
+msgid "Former member"
+msgstr "Ancien membre"
+
+#: app/places/place_routes.py:254
+msgid "Confirm the permanent deletion of this place."
+msgstr "Confirmez la suppression définitive de ce lieu."
+
+#: app/places/routes.py:230
 msgid "Invitation saved. Ask your friend to sign in and open Places."
 msgstr "Invitation enregistrée. Demandez à votre ami de se connecter et d’ouvrir la rubrique Lieux."
 
-#: app/places/routes.py:221 app/places/sharing.py:74 app/places/sharing.py:98
+#: app/places/routes.py:236 app/places/sharing.py:74 app/places/sharing.py:98
 msgid "Invitation not found or expired."
 msgstr "Invitation introuvable ou expirée."
 
-#: app/places/routes.py:234
+#: app/places/routes.py:241 app/places/tags.py:29 app/places/tags.py:62
+msgid "Tag not found."
+msgstr "Étiquette introuvable."
+
+#: app/places/routes.py:257
 msgid "Review the collection totals and confirm its deletion."
 msgstr "Vérifiez le nombre de lieux et de visites de la collection, puis confirmez sa suppression."
 
@@ -3285,10 +3308,6 @@ msgstr "Hébergement"
 msgid "Family"
 msgstr "Famille"
 
-#: app/places/tags.py:29 app/places/tags.py:62
-msgid "Tag not found."
-msgstr "Étiquette introuvable."
-
 #: app/places/tags.py:32
 msgid "Enter a tag name of at most 80 characters."
 msgstr "Saisissez un nom d’étiquette de 80 caractères maximum."
@@ -3310,7 +3329,7 @@ msgid "Flight photo"
 msgstr "Photo de vol"
 
 #: app/pwa/routes.py:99 app/templates/aircraft/detail.html:221
-#: app/templates/base.html:214 app/templates/landing.html:39
+#: app/templates/base.html:215 app/templates/landing.html:39
 #: app/templates/landing.html:247
 #: app/templates/maintenance/amp_declaration_form.html:23
 #: app/templates/maintenance/amp_import_history.html:21
@@ -3895,29 +3914,29 @@ msgid "Upload a valid JPEG, PNG or WebP photo (up to 20 megapixels)."
 msgstr "Téléversez une photo JPEG, PNG ou WebP valide (20 mégapixels maximum)."
 
 #: app/services/notification_service.py:358
-#: app/services/notification_service.py:1252
+#: app/services/notification_service.py:1255
 #: app/templates/email/notif/welcome.html:1
 #, python-format
 msgid "Hello %(name)s,"
 msgstr "Bonjour %(name)s,"
 
-#: app/services/notification_service.py:540
+#: app/services/notification_service.py:543
 #, python-format
 msgid "Maintenance overdue: %(name)s on %(reg)s"
 msgstr "Maintenance en retard : %(name)s sur %(reg)s"
 
-#: app/services/notification_service.py:547
+#: app/services/notification_service.py:550
 #, python-format
 msgid "Maintenance overdue: %(name)s"
 msgstr "Maintenance en retard : %(name)s"
 
-#: app/services/notification_service.py:551
+#: app/services/notification_service.py:554
 #, python-format
 msgid "%(name)s on %(reg)s is overdue."
 msgstr "%(name)s sur %(reg)s est en retard."
 
-#: app/services/notification_service.py:559
-#: app/services/notification_service.py:589
+#: app/services/notification_service.py:562
+#: app/services/notification_service.py:592
 #: app/templates/airworthiness/equipment_board.html:105
 #: app/templates/airworthiness/wishlist_form.html:21
 #: app/templates/maintenance/fleet.html:172
@@ -3926,44 +3945,44 @@ msgstr "%(name)s sur %(reg)s est en retard."
 msgid "Item"
 msgstr "Tâche"
 
-#: app/services/notification_service.py:570
+#: app/services/notification_service.py:573
 #, python-format
 msgid "Maintenance due soon: %(name)s on %(reg)s"
 msgstr "Maintenance à venir : %(name)s sur %(reg)s"
 
-#: app/services/notification_service.py:577
+#: app/services/notification_service.py:580
 #, python-format
 msgid "Maintenance due soon: %(name)s"
 msgstr "Maintenance à venir : %(name)s"
 
-#: app/services/notification_service.py:581
+#: app/services/notification_service.py:584
 #, python-format
 msgid "%(name)s on %(reg)s is coming due."
 msgstr "%(name)s sur %(reg)s arrive à échéance."
 
-#: app/services/notification_service.py:643
+#: app/services/notification_service.py:646
 #, python-format
 msgid "Insurance expiring in one day: %(reg)s"
 msgid_plural "Insurance expiring in %(days)s days: %(reg)s"
 msgstr[0] "Assurance expirant dans un jour : %(reg)s"
 msgstr[1] "Assurance expirant dans %(days)s jours : %(reg)s"
 
-#: app/services/notification_service.py:651
+#: app/services/notification_service.py:654
 #, python-format
 msgid "Insurance expiring soon: %(reg)s"
 msgstr "Assurance bientôt expirée : %(reg)s"
 
-#: app/services/notification_service.py:655
+#: app/services/notification_service.py:658
 #, python-format
 msgid "The insurance for %(reg)s expires on %(date)s (one day remaining)."
 msgid_plural "The insurance for %(reg)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "L'assurance de %(reg)s expire le %(date)s (un jour restant)."
 msgstr[1] "L'assurance de %(reg)s expire le %(date)s (%(days)s jours restants)."
 
-#: app/services/notification_service.py:665
-#: app/services/notification_service.py:732
-#: app/services/notification_service.py:818
-#: app/services/notification_service.py:891
+#: app/services/notification_service.py:668
+#: app/services/notification_service.py:735
+#: app/services/notification_service.py:821
+#: app/services/notification_service.py:894
 #: app/templates/config/renters_list.html:32 app/templates/dashboard.html:250
 #: app/templates/dashboard.html:270 app/templates/dashboard.html:289
 #: app/templates/dashboard.html:307
@@ -3973,132 +3992,132 @@ msgstr[1] "L'assurance de %(reg)s expire le %(date)s (%(days)s jours restants)."
 msgid "Expires"
 msgstr "Expire"
 
-#: app/services/notification_service.py:666
-#: app/services/notification_service.py:733
-#: app/services/notification_service.py:819
+#: app/services/notification_service.py:669
+#: app/services/notification_service.py:736
+#: app/services/notification_service.py:822
 msgid "Days left"
 msgstr "Jours restants"
 
-#: app/services/notification_service.py:712
+#: app/services/notification_service.py:715
 #, python-format
 msgid "ARC expiring in one day: %(reg)s"
 msgid_plural "ARC expiring in %(days)s days: %(reg)s"
 msgstr[0] "ARC expirant dans un jour : %(reg)s"
 msgstr[1] "ARC expirant dans %(days)s jours : %(reg)s"
 
-#: app/services/notification_service.py:719
+#: app/services/notification_service.py:722
 #, python-format
 msgid "ARC expiring soon: %(reg)s"
 msgstr "ARC bientôt expiré : %(reg)s"
 
-#: app/services/notification_service.py:722
+#: app/services/notification_service.py:725
 #, python-format
 msgid "The ARC for %(reg)s expires on %(date)s (one day remaining)."
 msgid_plural "The ARC for %(reg)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "L'ARC de %(reg)s expire le %(date)s (un jour restant)."
 msgstr[1] "L'ARC de %(reg)s expire le %(date)s (%(days)s jours restants)."
 
-#: app/services/notification_service.py:777
-#: app/services/notification_service.py:1019
+#: app/services/notification_service.py:780
+#: app/services/notification_service.py:1022
 msgid "medical certificate"
 msgstr "certificat médical"
 
-#: app/services/notification_service.py:785
-#: app/services/notification_service.py:786 app/templates/dashboard.html:304
+#: app/services/notification_service.py:788
+#: app/services/notification_service.py:789 app/templates/dashboard.html:304
 msgid "SEP endorsement"
 msgstr "Qualification SEP"
 
-#: app/services/notification_service.py:799
+#: app/services/notification_service.py:802
 #, python-format
 msgid "%(label)s expiring in one day"
 msgid_plural "%(label)s expiring in %(days)s days"
 msgstr[0] "%(label)s expirant dans un jour"
 msgstr[1] "%(label)s expirant dans %(days)s jours"
 
-#: app/services/notification_service.py:806
+#: app/services/notification_service.py:809
 #, python-format
 msgid "%(label)s expiring soon"
 msgstr "%(label)s bientôt expiré"
 
-#: app/services/notification_service.py:809
+#: app/services/notification_service.py:812
 #, python-format
 msgid "Your %(label_lower)s expires on %(date)s (one day remaining)."
 msgid_plural "Your %(label_lower)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "Votre %(label_lower)s expire le %(date)s (un jour restant)."
 msgstr[1] "Votre %(label_lower)s expire le %(date)s (%(days)s jours restants)."
 
-#: app/services/notification_service.py:867
+#: app/services/notification_service.py:870
 #, python-format
 msgid "Document expiring in one day: %(title)s"
 msgid_plural "Document expiring in %(days)s days: %(title)s"
 msgstr[0] "Document expirant dans un jour : %(title)s"
 msgstr[1] "Document expirant dans %(days)s jours : %(title)s"
 
-#: app/services/notification_service.py:875
+#: app/services/notification_service.py:878
 #, python-format
 msgid "Document expiring soon: %(title)s"
 msgstr "Document bientôt expiré : %(title)s"
 
-#: app/services/notification_service.py:879
+#: app/services/notification_service.py:882
 #, python-format
 msgid "'%(title)s' on %(reg)s expires on %(date)s (one day remaining)."
 msgid_plural "'%(title)s' on %(reg)s expires on %(date)s (%(days)s days remaining)."
 msgstr[0] "« %(title)s » sur %(reg)s expire le %(date)s (un jour restant)."
 msgstr[1] "« %(title)s » sur %(reg)s expire le %(date)s (%(days)s jours restants)."
 
-#: app/services/notification_service.py:890
-#: app/services/notification_service.py:957
+#: app/services/notification_service.py:893
+#: app/services/notification_service.py:960
 #: app/templates/documents/list.html:140
 msgid "Document"
 msgstr "Document"
 
-#: app/services/notification_service.py:927
-#: app/services/notification_service.py:1024
+#: app/services/notification_service.py:930
+#: app/services/notification_service.py:1027
 msgid "unknown"
 msgstr "inconnu"
 
-#: app/services/notification_service.py:933
+#: app/services/notification_service.py:936
 #, python-format
 msgid "Airworthiness review due in one day: %(ref)s on %(reg)s"
 msgid_plural "Airworthiness review due in %(days)s days: %(ref)s on %(reg)s"
 msgstr[0] "Révision de navigabilité dans un jour : %(ref)s sur %(reg)s"
 msgstr[1] "Révision de navigabilité dans %(days)s jours : %(ref)s sur %(reg)s"
 
-#: app/services/notification_service.py:942
+#: app/services/notification_service.py:945
 #, python-format
 msgid "Airworthiness review due: %(ref)s"
 msgstr "Révision de navigabilité : %(ref)s"
 
-#: app/services/notification_service.py:946
+#: app/services/notification_service.py:949
 #, python-format
 msgid "Document %(ref)s on %(reg)s requires review by %(date)s (one day)."
 msgid_plural "Document %(ref)s on %(reg)s requires review by %(date)s (%(days)s days)."
 msgstr[0] "Le document %(ref)s sur %(reg)s doit être révisé avant le %(date)s (un jour)."
 msgstr[1] "Le document %(ref)s sur %(reg)s doit être révisé avant le %(date)s (%(days)s jours)."
 
-#: app/services/notification_service.py:958
+#: app/services/notification_service.py:961
 #: app/templates/maintenance/fleet.html:174
 #: app/templates/maintenance/list.html:95
 msgid "Due"
 msgstr "Échéance"
 
-#: app/services/notification_service.py:1018
+#: app/services/notification_service.py:1021
 msgid "authorization"
 msgstr "autorisation"
 
-#: app/services/notification_service.py:1030
+#: app/services/notification_service.py:1033
 #, python-format
 msgid "%(label)s expires %(date)s"
 msgstr "%(label)s expire le %(date)s"
 
-#: app/services/notification_service.py:1042
+#: app/services/notification_service.py:1045
 #, python-format
 msgid "One renter authorization"
 msgid_plural "%(n)s renter authorizations"
 msgstr[0] "Une autorisation de location"
 msgstr[1] "%(n)s autorisations de location"
 
-#: app/services/notification_service.py:1048 app/templates/dashboard.html:292
+#: app/services/notification_service.py:1051 app/templates/dashboard.html:292
 #: app/templates/dashboard.html:310 app/templates/pilots/profile.html:145
 #, python-format
 msgid "one day"
@@ -4106,58 +4125,58 @@ msgid_plural "%(n)s days"
 msgstr[0] "un jour"
 msgstr[1] "%(n)s jours"
 
-#: app/services/notification_service.py:1058
+#: app/services/notification_service.py:1061
 #, python-format
 msgid "One renter authorization expiring soon"
 msgid_plural "%(n)s renter authorizations expiring soon"
 msgstr[0] "Une autorisation de location arrivant bientôt à expiration"
 msgstr[1] "%(n)s autorisations de location arrivant bientôt à expiration"
 
-#: app/services/notification_service.py:1064
+#: app/services/notification_service.py:1067
 msgid "Renter authorizations expiring soon"
 msgstr "Autorisations de location bientôt expirées"
 
-#: app/services/notification_service.py:1067
+#: app/services/notification_service.py:1070
 #, python-format
 msgid "%(items)s or medical validity dates expire within %(days)s."
 msgstr "%(items)s ou dates de validité médicale expirent dans %(days)s."
 
-#: app/services/notification_service.py:1125
+#: app/services/notification_service.py:1128
 #: app/templates/pilots/logbook.html:87
 #, python-format
 msgid "no matching flight on record yet (comfort zone: %(threshold)s days)."
 msgstr "aucun vol correspondant enregistré pour l'instant (zone de confort : %(threshold)s jours)."
 
-#: app/services/notification_service.py:1130
+#: app/services/notification_service.py:1133
 #: app/templates/pilots/logbook.html:89
 #, python-format
 msgid "%(days)s days since your last matching flight (comfort zone: %(threshold)s days)."
 msgstr "%(days)s jours depuis votre dernier vol correspondant (zone de confort : %(threshold)s jours)."
 
-#: app/services/notification_service.py:1141
+#: app/services/notification_service.py:1144
 #, python-format
 msgid "Personal minimums: one recency threshold exceeded"
 msgid_plural "Personal minimums: %(n)s recency thresholds exceeded"
 msgstr[0] "Minimums personnels : un seuil de récence dépassé"
 msgstr[1] "Minimums personnels : %(n)s seuils de récence dépassés"
 
-#: app/services/notification_service.py:1147
+#: app/services/notification_service.py:1150
 #: app/templates/config/notifications.html:47
 msgid "Personal minimums recency reminder"
 msgstr "Rappel de récence — minimums personnels"
 
-#: app/services/notification_service.py:1150
+#: app/services/notification_service.py:1153
 #, python-format
 msgid "You have exceeded one recency threshold in your personal minimums."
 msgid_plural "You have exceeded %(n)s recency thresholds in your personal minimums."
 msgstr[0] "Vous avez dépassé un seuil de récence dans vos minimums personnels."
 msgstr[1] "Vous avez dépassé %(n)s seuils de récence dans vos minimums personnels."
 
-#: app/services/notification_service.py:1251
+#: app/services/notification_service.py:1254
 msgid "Welcome to your OpenHangar instance"
 msgstr "Bienvenue dans votre instance OpenHangar"
 
-#: app/services/notification_service.py:1254
+#: app/services/notification_service.py:1257
 msgid ""
 "Welcome to OpenHangar! Your instance is set up and email delivery is working.\n"
 "\n"
@@ -4326,9 +4345,9 @@ msgstr "Télécharger"
 
 #: app/templates/_doc_viewer_modal.html:14
 #: app/templates/aircraft/owner_account.html:22
-#: app/templates/aircraft/owners_billing.html:20 app/templates/base.html:173
-#: app/templates/base.html:198 app/templates/base.html:283
-#: app/templates/base.html:292 app/templates/base.html:304
+#: app/templates/aircraft/owners_billing.html:20 app/templates/base.html:174
+#: app/templates/base.html:199 app/templates/base.html:284
+#: app/templates/base.html:293 app/templates/base.html:305
 #: app/templates/dashboard.html:814
 #: app/templates/partials/_flight_tracks_map.html:70
 #: app/templates/pilots/logbook.html:95
@@ -4336,74 +4355,74 @@ msgid "Close"
 msgstr "Fermer"
 
 #: app/templates/auth/login.html:4 app/templates/auth/login.html:43
-#: app/templates/base.html:57 app/templates/base.html:259
+#: app/templates/base.html:58 app/templates/base.html:260
 #: app/templates/errors/403.html:31 app/templates/landing.html:281
 #: app/templates/welcome.html:20
 msgid "Log in"
 msgstr "Se connecter"
 
-#: app/templates/base.html:57
+#: app/templates/base.html:58
 msgid "Your account session changed. Sign in again to continue."
 msgstr "La session de votre compte a changé. Reconnectez-vous pour continuer."
 
-#: app/templates/base.html:106
+#: app/templates/base.html:107
 msgid "Some features may not work correctly — a browser extension may be interfering."
 msgstr "Certaines fonctionnalités peuvent ne pas fonctionner correctement — une extension de navigateur interfère peut-être."
 
-#: app/templates/base.html:113
+#: app/templates/base.html:114
 msgid "This demo environment resets at"
 msgstr "Cet environnement de démonstration est réinitialisé à"
 
-#: app/templates/base.html:114
+#: app/templates/base.html:115
 msgid "from now"
 msgstr "à partir de maintenant"
 
-#: app/templates/base.html:114
+#: app/templates/base.html:115
 msgid "any changes will be lost."
 msgstr "toute modification sera perdue."
 
-#: app/templates/base.html:116
+#: app/templates/base.html:117
 msgid "This is a"
 msgstr "Ceci est un"
 
-#: app/templates/base.html:116
+#: app/templates/base.html:117
 msgid "demo environment"
 msgstr "environnement de démonstration"
 
-#: app/templates/base.html:116
+#: app/templates/base.html:117
 msgid "data is periodically wiped and any changes will be lost."
 msgstr "les données sont effacées périodiquement et toute modification sera perdue."
 
-#: app/templates/base.html:142
+#: app/templates/base.html:143
 msgid "The demo environment is being reset. Please wait — the page will reload automatically when ready."
 msgstr "L'environnement de démonstration est en cours de réinitialisation. Veuillez patienter — la page se rechargera automatiquement dès qu'elle sera prête."
 
-#: app/templates/base.html:170 app/templates/base.html:172
-#: app/templates/base.html:432
+#: app/templates/base.html:171 app/templates/base.html:173
+#: app/templates/base.html:433
 msgid "Install app"
 msgstr "Installer l'application"
 
-#: app/templates/base.html:171
+#: app/templates/base.html:172
 msgid "Add OpenHangar to your home screen for quick access."
 msgstr "Ajoutez OpenHangar à votre écran d'accueil pour un accès rapide."
 
-#: app/templates/base.html:173
+#: app/templates/base.html:174
 msgid "Not now"
 msgstr "Pas maintenant"
 
-#: app/templates/base.html:181 app/templates/base.html:431
+#: app/templates/base.html:182 app/templates/base.html:432
 msgid "Offline"
 msgstr "Hors ligne"
 
-#: app/templates/auth/profile.html:16 app/templates/base.html:205
-#: app/templates/base.html:323 app/templates/config/settings.html:52
+#: app/templates/auth/profile.html:16 app/templates/base.html:206
+#: app/templates/base.html:324 app/templates/config/settings.html:52
 #: app/templates/dashboard.html:3 app/templates/dashboard.html:116
 #: app/templates/errors/403.html:27 app/templates/errors/404.html:27
 #: app/templates/users/list.html:18
 msgid "Dashboard"
 msgstr "Tableau de bord"
 
-#: app/templates/base.html:220 app/templates/base.html:339
+#: app/templates/base.html:221 app/templates/base.html:340
 #: app/templates/dashboard.html:753 app/templates/landing.html:33
 #: app/templates/landing.html:241 app/templates/partials/_crew_claims.html:49
 #: app/templates/reservations/calendar.html:193
@@ -4414,12 +4433,12 @@ msgstr "Tableau de bord"
 msgid "Pilot"
 msgstr "Pilote"
 
-#: app/templates/base.html:220 app/templates/partials/_crew_invites.html:6
+#: app/templates/base.html:221 app/templates/partials/_crew_invites.html:6
 msgid "Flights waiting for your confirmation"
 msgstr "Vols en attente de votre confirmation"
 
-#: app/templates/aircraft/detail.html:488 app/templates/base.html:223
-#: app/templates/base.html:335 app/templates/dashboard.html:634
+#: app/templates/aircraft/detail.html:488 app/templates/base.html:224
+#: app/templates/base.html:336 app/templates/dashboard.html:634
 #: app/templates/dashboard.html:654 app/templates/dashboard.html:701
 #: app/templates/dashboard.html:811 app/templates/flights/fleet.html:15
 #: app/templates/flights/flight_form.html:4
@@ -4428,18 +4447,18 @@ msgstr "Vols en attente de votre confirmation"
 msgid "Log a flight"
 msgstr "Saisir un vol"
 
-#: app/templates/aircraft/flight_detail.html:110 app/templates/base.html:227
-#: app/templates/base.html:343 app/templates/flights/flight_form.html:817
+#: app/templates/aircraft/flight_detail.html:110 app/templates/base.html:228
+#: app/templates/base.html:344 app/templates/flights/flight_form.html:817
 #: app/templates/pilots/logbook.html:16
 msgid "Pilot logbook"
 msgstr "Carnet de vol pilote"
 
-#: app/templates/base.html:229 app/templates/places/collection_settings.html:19
+#: app/templates/base.html:230 app/templates/places/collection_settings.html:20
 #: app/templates/places/index.html:3 app/templates/places/index.html:6
 msgid "Places"
 msgstr "Lieux"
 
-#: app/templates/base.html:231 app/templates/base.html:346
+#: app/templates/base.html:232 app/templates/base.html:347
 #: app/templates/passports/confirm.html:3 app/templates/passports/detail.html:4
 #: app/templates/passports/detail.html:7
 #: app/templates/passports/draft_error.html:3
@@ -4449,41 +4468,41 @@ msgstr "Lieux"
 msgid "Airfield passports"
 msgstr "Passeports d’aérodromes"
 
-#: app/templates/base.html:235
+#: app/templates/base.html:236
 msgid "My account"
 msgstr "Mon compte"
 
-#: app/templates/base.html:240 app/templates/config/data_checks.html:14
+#: app/templates/base.html:241 app/templates/config/data_checks.html:14
 #: app/templates/config/notifications.html:16
 #: app/templates/config/settings.html:3 app/templates/config/settings.html:44
 msgid "Configuration"
 msgstr "Configuration"
 
-#: app/templates/base.html:240
+#: app/templates/base.html:241
 msgid "Update available"
 msgstr "Mise à jour disponible"
 
-#: app/templates/base.html:240
+#: app/templates/base.html:241
 msgid "Data checks to review"
 msgstr "Vérifications des données à examiner"
 
-#: app/templates/auth/profile.html:3 app/templates/base.html:251
+#: app/templates/auth/profile.html:3 app/templates/base.html:252
 msgid "Profile"
 msgstr "Profil"
 
-#: app/templates/base.html:254
+#: app/templates/base.html:255
 msgid "Log Out"
 msgstr "Déconnexion"
 
-#: app/templates/base.html:290
+#: app/templates/base.html:291
 msgid "This instance still has pre-upgrade pilot-logbook/crew data that wasn't automatically converted to the new unified logbook. It's preserved as-is in the database but no longer reachable from the interface."
 msgstr "Cette instance possède encore des données de journal de bord pilote/équipage antérieures à la mise à jour qui n'ont pas été automatiquement converties vers le nouveau journal de bord unifié. Elles sont conservées telles quelles dans la base de données, mais ne sont plus accessibles depuis l'interface."
 
-#: app/templates/base.html:291
+#: app/templates/base.html:292
 msgid "Please open an issue if you need help extracting it."
 msgstr "Veuillez ouvrir un ticket si vous avez besoin d'aide pour les extraire."
 
-#: app/templates/base.html:359
+#: app/templates/base.html:360
 msgid "open-source aircraft ops"
 msgstr "gestion d'avions open source"
 
@@ -4493,7 +4512,7 @@ msgstr "gestion d'avions open source"
 #: app/templates/airworthiness/avionics_unit_form.html:47
 #: app/templates/airworthiness/dashboard.html:95
 #: app/templates/airworthiness/equipment_board.html:50
-#: app/templates/airworthiness/status_form.html:21 app/templates/base.html:363
+#: app/templates/airworthiness/status_form.html:21 app/templates/base.html:364
 #: app/templates/config/renters_list.html:33
 #: app/templates/config/settings.html:300
 #: app/templates/config/settings.html:399
@@ -4533,7 +4552,7 @@ msgstr "Statut"
 #: app/templates/airworthiness/status_form.html:61
 #: app/templates/airworthiness/stc_form.html:50
 #: app/templates/airworthiness/wishlist_form.html:45
-#: app/templates/base.html:379 app/templates/config/renter_form.html:104
+#: app/templates/base.html:380 app/templates/config/renter_form.html:104
 #: app/templates/documents/edit_form.html:16
 #: app/templates/documents/edit_form.html:103
 #: app/templates/documents/pilot_upload_form.html:16
@@ -4564,6 +4583,7 @@ msgstr "Statut"
 #: app/templates/pilots/minimums_edit.html:15
 #: app/templates/places/join_collection.html:5
 #: app/templates/places/new_collection.html:6
+#: app/templates/places/place_form.html:19
 #: app/templates/pwa/share_target.html:14
 #: app/templates/refuels/refuel_form.html:61
 #: app/templates/reservations/charge.html:108
@@ -4577,7 +4597,7 @@ msgstr "Statut"
 msgid "Cancel"
 msgstr "Annuler"
 
-#: app/templates/base.html:380 app/templates/partials/_crew_invites.html:33
+#: app/templates/base.html:381 app/templates/partials/_crew_invites.html:33
 #: app/templates/partials/_crew_invites.html:72
 #: app/templates/pilots/gps_import_review.html:303
 #: app/templates/reservations/calendar.html:220
@@ -4585,55 +4605,55 @@ msgstr "Annuler"
 msgid "Confirm"
 msgstr "Confirmer"
 
-#: app/templates/base.html:433
+#: app/templates/base.html:434
 msgid "You're offline — this can't be saved right now. Reconnect and try again."
 msgstr "Vous êtes hors ligne — cela ne peut pas être enregistré pour le moment. Reconnectez-vous et réessayez."
 
-#: app/templates/base.html:436
+#: app/templates/base.html:437
 msgid "Please fill out this field."
 msgstr "Veuillez renseigner ce champ."
 
-#: app/templates/base.html:437
+#: app/templates/base.html:438
 msgid "Please select an item in the list."
 msgstr "Veuillez sélectionner un élément dans la liste."
 
-#: app/templates/base.html:438
+#: app/templates/base.html:439
 msgid "Please check this box if you want to proceed."
 msgstr "Veuillez cocher cette case pour continuer."
 
-#: app/templates/base.html:439
+#: app/templates/base.html:440
 msgid "Please select one of these options."
 msgstr "Veuillez sélectionner une de ces options."
 
-#: app/templates/base.html:441
+#: app/templates/base.html:442
 msgid "Please enter a valid URL."
 msgstr "Veuillez saisir une URL valide."
 
-#: app/templates/base.html:442
+#: app/templates/base.html:443
 msgid "Please match the requested format."
 msgstr "Veuillez respecter le format demandé."
 
-#: app/templates/base.html:443
+#: app/templates/base.html:444
 #, python-brace-format
 msgid "Please use at least {min} characters (currently {n})."
 msgstr "Veuillez utiliser au moins {min} caractères (actuellement {n})."
 
-#: app/templates/base.html:444
+#: app/templates/base.html:445
 #, python-brace-format
 msgid "Please use no more than {max} characters (currently {n})."
 msgstr "Veuillez utiliser au maximum {max} caractères (actuellement {n})."
 
-#: app/templates/base.html:445
+#: app/templates/base.html:446
 #, python-brace-format
 msgid "Value must be {min} or more."
 msgstr "La valeur doit être supérieure ou égale à {min}."
 
-#: app/templates/base.html:446
+#: app/templates/base.html:447
 #, python-brace-format
 msgid "Value must be {max} or less."
 msgstr "La valeur doit être inférieure ou égale à {max}."
 
-#: app/templates/base.html:447
+#: app/templates/base.html:448
 msgid "Please enter a valid value."
 msgstr "Veuillez saisir une valeur valide."
 
@@ -5533,6 +5553,7 @@ msgstr "Définissez une ligne par réservoir (une seule pour un réservoir combi
 #: app/templates/maintenance/trigger_form.html:29
 #: app/templates/passports/builder.html:16
 #: app/templates/passports/next_edition.html:8
+#: app/templates/places/index.html:10
 msgid "Name"
 msgstr "Nom"
 
@@ -6881,7 +6902,8 @@ msgstr[1] "%(n)s composants"
 #: app/templates/aircraft/list.html:73 app/templates/passports/detail.html:20
 #: app/templates/passports/print.html:19 app/templates/passports/series.html:10
 #: app/templates/passports/series.html:28
-#: app/templates/passports/vouchers.html:10
+#: app/templates/passports/vouchers.html:10 app/templates/places/index.html:10
+#: app/templates/places/index.html:13 app/templates/places/place_detail.html:6
 msgid "Archived"
 msgstr "Archivé"
 
@@ -6984,6 +7006,7 @@ msgstr "Télécharger le relevé (CSV)"
 #: app/templates/expenses/expense_form.html:128
 #: app/templates/expenses/list.html:88 app/templates/passports/builder.html:18
 #: app/templates/passports/next_edition.html:12
+#: app/templates/places/place_form.html:10
 #: app/templates/snags/snag_form.html:37
 msgid "Description"
 msgstr "Description"
@@ -7606,7 +7629,7 @@ msgstr[1] "%(n)s documents au total"
 #: app/templates/passports/detail.html:34
 #: app/templates/passports/discussion.html:14
 #: app/templates/pilots/logbook.html:142 app/templates/pilots/logbook.html:144
-#: app/templates/users/list.html:85
+#: app/templates/places/index.html:10 app/templates/users/list.html:85
 msgid "All"
 msgstr "Tout"
 
@@ -8576,6 +8599,7 @@ msgstr "Seuil"
 #: app/templates/config/notifications.html:170
 #: app/templates/config/tenant_list.html:47
 #: app/templates/passports/group_members.html:16
+#: app/templates/places/index.html:10
 msgid "Active"
 msgstr "Actif"
 
@@ -12231,10 +12255,12 @@ msgid "Optional airfield code"
 msgstr "Code d’aérodrome facultatif"
 
 #: app/templates/passports/builder.html:58
+#: app/templates/places/place_form.html:14
 msgid "Latitude"
 msgstr "Latitude"
 
 #: app/templates/passports/builder.html:58
+#: app/templates/places/place_form.html:14
 msgid "Longitude"
 msgstr "Longitude"
 
@@ -12486,6 +12512,7 @@ msgstr "Visité par vous"
 #: app/templates/passports/record_visit.html:14
 #: app/templates/passports/series.html:17
 #: app/templates/passports/series.html:19 app/templates/passports/target.html:9
+#: app/templates/places/index.html:10 app/templates/places/index.html:13
 msgid "Visited"
 msgstr "Visité"
 
@@ -14650,6 +14677,10 @@ msgstr[1] "%(n)s vols"
 msgid "All airports visited"
 msgstr "Tous les aérodromes visités"
 
+#: app/templates/places/_map.html:1
+msgid "Places map"
+msgstr "Carte des lieux"
+
 #: app/templates/places/collection_settings.html:4
 msgid "Collection rights"
 msgstr "Droits dans la collection"
@@ -14684,12 +14715,6 @@ msgid "Collection members"
 msgstr "Membres de la collection"
 
 #: app/templates/places/collection_settings.html:9
-#: app/templates/places/collection_settings.html:14
-#: app/templates/places/collection_settings.html:18
-msgid "Unnamed member"
-msgstr "Membre sans nom"
-
-#: app/templates/places/collection_settings.html:9
 msgid "Change rights"
 msgstr "Modifier les droits"
 
@@ -14701,74 +14726,100 @@ msgstr "Vos lieux et vos visites restent dans la collection lorsque vous la quit
 msgid "Leave collection"
 msgstr "Quitter la collection"
 
-#: app/templates/places/collection_settings.html:12
+#: app/templates/places/collection_settings.html:11
+#: app/templates/places/place_form.html:17
+msgid "Tags"
+msgstr "Étiquettes"
+
+#: app/templates/places/collection_settings.html:11
+msgid "Renaming to an existing tag merges them."
+msgstr "Renommer une étiquette avec un nom existant fusionne les deux étiquettes."
+
+#: app/templates/places/collection_settings.html:11
+msgid "Tag name"
+msgstr "Nom de l’étiquette"
+
+#: app/templates/places/collection_settings.html:11
+msgid "Rename tag"
+msgstr "Renommer l’étiquette"
+
+#: app/templates/places/collection_settings.html:11
+msgid "Delete tag"
+msgstr "Supprimer l’étiquette"
+
+#: app/templates/places/collection_settings.html:13
 #: app/templates/places/new_collection.html:6
 msgid "Collection name"
 msgstr "Nom de la collection"
 
-#: app/templates/places/collection_settings.html:12
+#: app/templates/places/collection_settings.html:13
 msgid "Rename collection"
 msgstr "Renommer la collection"
 
-#: app/templates/places/collection_settings.html:13
+#: app/templates/places/collection_settings.html:14
 msgid "Add a friend"
 msgstr "Ajouter un ami"
 
-#: app/templates/places/collection_settings.html:14
+#: app/templates/places/collection_settings.html:15
 msgid "Choose a user"
 msgstr "Choisir un utilisateur"
 
-#: app/templates/places/collection_settings.html:14
+#: app/templates/places/collection_settings.html:15
 msgid "Add member"
 msgstr "Ajouter un membre"
 
-#: app/templates/places/collection_settings.html:15
+#: app/templates/places/collection_settings.html:16
 msgid "Exact email address"
 msgstr "Adresse e-mail exacte"
 
-#: app/templates/places/collection_settings.html:15
+#: app/templates/places/collection_settings.html:16
 msgid "The invitation appears when your friend signs in with this email and opens Places. It expires after 30 days. No email is sent."
 msgstr "L’invitation apparaît lorsque votre ami se connecte avec cette adresse e-mail et ouvre la rubrique Lieux. Elle expire après 30 jours. Aucun e-mail n’est envoyé."
 
-#: app/templates/places/collection_settings.html:15
+#: app/templates/places/collection_settings.html:16
 msgid "Save invitation"
 msgstr "Enregistrer l’invitation"
 
-#: app/templates/places/collection_settings.html:16
+#: app/templates/places/collection_settings.html:17
 msgid "Collection invitation link"
 msgstr "Lien d’invitation à la collection"
 
-#: app/templates/places/collection_settings.html:17
+#: app/templates/places/collection_settings.html:18
 msgid "Pending invitations"
 msgstr "Invitations en attente"
 
-#: app/templates/places/collection_settings.html:17
+#: app/templates/places/collection_settings.html:18
 msgid "Revoke invitation"
 msgstr "Révoquer l’invitation"
 
-#: app/templates/places/collection_settings.html:18
+#: app/templates/places/collection_settings.html:19
 msgid "Transfer collection"
 msgstr "Transférer la collection"
 
-#: app/templates/places/collection_settings.html:18
+#: app/templates/places/collection_settings.html:19
 msgid "New collection owner"
 msgstr "Nouveau propriétaire de la collection"
 
-#: app/templates/places/collection_settings.html:19
+#: app/templates/places/collection_settings.html:20
 msgid "Delete collection"
 msgstr "Supprimer la collection"
 
-#: app/templates/places/collection_settings.html:19
+#: app/templates/places/collection_settings.html:20
 msgid "Deleting this collection also permanently deletes its places and visits."
 msgstr "La suppression de cette collection supprime aussi définitivement ses lieux et ses visites."
 
-#: app/templates/places/collection_settings.html:19
+#: app/templates/places/collection_settings.html:20
 msgid "Visits"
 msgstr "Visites"
 
-#: app/templates/places/collection_settings.html:19
+#: app/templates/places/collection_settings.html:20
 msgid "I confirm the permanent deletion of this collection."
 msgstr "Je confirme la suppression définitive de cette collection."
+
+#: app/templates/places/index.html:6 app/templates/places/place_form.html:3
+#: app/templates/places/place_form.html:6
+msgid "Add place"
+msgstr "Ajouter un lieu"
 
 #: app/templates/places/index.html:6 app/templates/places/new_collection.html:3
 #: app/templates/places/new_collection.html:5
@@ -14792,6 +14843,70 @@ msgid "All collections"
 msgstr "Toutes les collections"
 
 #: app/templates/places/index.html:10
+msgid "Show places"
+msgstr "Afficher les lieux"
+
+#: app/templates/places/index.html:10
+msgid "Active and archived"
+msgstr "Actifs et archivés"
+
+#: app/templates/places/index.html:10
+msgid "Bin"
+msgstr "Corbeille"
+
+#: app/templates/places/index.html:10
+msgid "My visits"
+msgstr "Mes visites"
+
+#: app/templates/places/index.html:10 app/templates/places/index.html:13
+msgid "Not yet visited"
+msgstr "Pas encore visité"
+
+#: app/templates/places/index.html:10
+msgid "Tag"
+msgstr "Étiquette"
+
+#: app/templates/places/index.html:10
+msgid "All tags"
+msgstr "Toutes les étiquettes"
+
+#: app/templates/places/index.html:10
+msgid "Sort by"
+msgstr "Trier par"
+
+#: app/templates/places/index.html:10
+msgid "Date added"
+msgstr "Date d’ajout"
+
+#: app/templates/places/index.html:10
+msgid "Last visit"
+msgstr "Dernière visite"
+
+#: app/templates/places/index.html:10
+msgid "Apply filters"
+msgstr "Appliquer les filtres"
+
+#: app/templates/places/index.html:12
+msgid "Places in the bin are permanently deleted after 30 days. Any editor can restore them before then."
+msgstr "Les lieux dans la corbeille sont supprimés définitivement après 30 jours. Tout membre disposant des droits de modification peut les restaurer avant ce délai."
+
+#: app/templates/places/index.html:13 app/templates/places/place_detail.html:11
+msgid "Place photo"
+msgstr "Photo du lieu"
+
+#: app/templates/places/index.html:13
+msgid "Restore place"
+msgstr "Restaurer le lieu"
+
+#: app/templates/places/index.html:13 app/templates/places/place_detail.html:16
+msgid "I confirm the permanent deletion of this place and its visits."
+msgstr "Je confirme la suppression définitive de ce lieu et de ses visites."
+
+#: app/templates/places/index.html:13 app/templates/places/place_detail.html:16
+msgid "Permanently delete place"
+msgstr "Supprimer définitivement le lieu"
+
+#: app/templates/places/index.html:13
 msgid "No places in this view yet."
 msgstr "Aucun lieu dans cette vue pour le moment."
 
@@ -14807,6 +14922,110 @@ msgstr "En rejoignant cette collection, vous permettez aux autres membres de voi
 #: app/templates/places/new_collection.html:6
 msgid "Create collection"
 msgstr "Créer la collection"
+
+#: app/templates/places/place_detail.html:5
+#: app/templates/places/place_form.html:3
+#: app/templates/places/place_form.html:6
+msgid "Edit place"
+msgstr "Modifier le lieu"
+
+#: app/templates/places/place_detail.html:7
+#, python-format
+msgid "Place owner: %(name)s"
+msgstr "Propriétaire du lieu : %(name)s"
+
+#: app/templates/places/place_detail.html:7
+#, python-format
+msgid "Last changed by %(name)s on %(date)s"
+msgstr "Dernière modification par %(name)s le %(date)s"
+
+#: app/templates/places/place_detail.html:9
+msgid "Visit website"
+msgstr "Consulter le site web"
+
+#: app/templates/places/place_detail.html:14
+msgid "Unarchive place"
+msgstr "Désarchiver le lieu"
+
+#: app/templates/places/place_detail.html:14
+msgid "Archive place"
+msgstr "Archiver le lieu"
+
+#: app/templates/places/place_detail.html:14
+msgid "Move to bin"
+msgstr "Mettre à la corbeille"
+
+#: app/templates/places/place_detail.html:15
+msgid "Copy or move"
+msgstr "Copier ou déplacer"
+
+#: app/templates/places/place_detail.html:15
+msgid "Destination collection"
+msgstr "Collection de destination"
+
+#: app/templates/places/place_detail.html:15
+msgid "Copy place"
+msgstr "Copier le lieu"
+
+#: app/templates/places/place_detail.html:15
+msgid "Move place"
+msgstr "Déplacer le lieu"
+
+#: app/templates/places/place_detail.html:15
+msgid "Copies keep the content and photo, but no visits. Moving requires every visitor to belong to the destination collection."
+msgstr "Les copies conservent le contenu et la photo, sans les visites. Pour déplacer un lieu, toutes les personnes ayant enregistré une visite doivent faire partie de la collection de destination."
+
+#: app/templates/places/place_form.html:5
+msgid "Coordinates could not be read. Enter latitude and longitude directly."
+msgstr "Impossible de lire les coordonnées. Saisissez directement la latitude et la longitude."
+
+#: app/templates/places/place_form.html:8
+msgid "Collection"
+msgstr "Collection"
+
+#: app/templates/places/place_form.html:9
+msgid "Place name"
+msgstr "Nom du lieu"
+
+#: app/templates/places/place_form.html:11
+msgid "Click the map to drop a pin, then drag it to the right spot. You can also paste coordinates or a map link."
+msgstr "Cliquez sur la carte pour placer un repère, puis déplacez-le au bon endroit. Vous pouvez aussi coller des coordonnées ou un lien de carte."
+
+#: app/templates/places/place_form.html:12
+msgid "Coordinates or map link"
+msgstr "Coordonnées ou lien de carte"
+
+#: app/templates/places/place_form.html:12
+msgid "Use coordinates"
+msgstr "Utiliser ces coordonnées"
+
+#: app/templates/places/place_form.html:13
+msgid "Place location"
+msgstr "Position du lieu"
+
+#: app/templates/places/place_form.html:15
+msgid "Address (optional)"
+msgstr "Adresse (facultative)"
+
+#: app/templates/places/place_form.html:16
+msgid "Website (optional)"
+msgstr "Site web (facultatif)"
+
+#: app/templates/places/place_form.html:17
+msgid "One tag per line. You can also choose suggestions below."
+msgstr "Une étiquette par ligne. Vous pouvez aussi choisir parmi les suggestions ci-dessous."
+
+#: app/templates/places/place_form.html:18
+msgid "Place photo (optional)"
+msgstr "Photo du lieu (facultative)"
+
+#: app/templates/places/place_form.html:18
+msgid "Remove current photo"
+msgstr "Retirer la photo actuelle"
+
+#: app/templates/places/place_form.html:19
+msgid "Save place"
+msgstr "Enregistrer le lieu"
 
 #: app/templates/pwa/share_target.html:3 app/templates/pwa/share_target.html:10
 msgid "Shared files"

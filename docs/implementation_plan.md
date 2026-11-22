@@ -2938,7 +2938,7 @@ passport behaviour unchanged.
   text description, required latitude/longitude, optional address text, external
   URL, photo, archived flag, `deleted_at`/`deleted_by` for the bin, created/updated
   by and timestamps), `PlaceTag` per collection + association table.
-- [ ] Collections: each user gets a personal "My places" on first use; any
+- [x] Collections: each user gets a personal "My places" on first use; any
   number of further collections, each shared with its own set of users of the
   instance ("Our places", "Club fly-outs"…). Each place belongs to exactly one
   collection.
@@ -2952,7 +2952,7 @@ passport behaviour unchanged.
   users; Personal accounts (42h) never get a browsable user list and add by exact
   e-mail only, reusing the passport registration lookup
   (`tokens.email_digest`), without revealing whether an account exists.
-- [ ] **Default collection for new places** (per-user setting); the add-place
+- [x] **Default collection for new places** (per-user setting); the add-place
   form preselects it and allows another choice.
 - [ ] **Place owner** = creator. Only the owner moves a place, and only to a
   collection they belong to whose members include everyone who recorded a visit
@@ -2961,18 +2961,23 @@ passport behaviour unchanged.
   deleting puts the place in the collection's **bin**: any editor restores it;
   purged after 30 days or earlier by the owner or collection creator. "Last
   changed by … on …" shown on each place.
-- [ ] When an owner leaves or their account is removed, their places and visits
+- [x] When an owner leaves or their account is removed, their places and visits
   stay ("former member"), ownership passes to the collection creator; before
   leaving, the owner can copy places to another of their collections.
-- [ ] Creating a place: click the map to drop the pin (draggable), or paste
+- [x] Creating a place: click the map to drop the pin (draggable), or paste
   coordinates (decimal or DMS) or a map link containing coordinates.
-- [ ] Tags: any number per place; free tags per collection with a translated
+- [x] Tags: any number per place; free tags per collection with a translated
   starter set offered as suggestions (*Town*, *Attraction*, *Restaurant*,
   *Nature*, *Viewpoint*, *Museum*, *Beach*, *Overnight stay*, *Family*); rename,
   merge and delete in the collection settings.
 - [ ] List + map of one or all collections: place pins, linked airfields, lines
   between them; filter by tag, visited / not yet / archived, linked / unlinked;
   sort by name, date added, last visit. Place photo through `services/images.py`.
+
+Implementation status: the collection and place screens, photo handling,
+coordinate pin, tags, bin and defaults are implemented. The remaining
+cross-step hooks are copying/displaying airfield links with 42d and the
+reader-owned visit form with 42e.
 
 ### 42c — Address search
 
