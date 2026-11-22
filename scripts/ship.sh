@@ -32,7 +32,16 @@
 # whichever merges second may need this script run again in its lane to
 # rebase it (its PR then shows "This branch has conflicts").
 #
+# Before pushing it runs the browser tests (tests/e2e, the same suite CI's
+# browser jobs run) against the rebased commits: they catch what the unit
+# tests can't — JavaScript, htmx swaps, maps, downloads — and a CI failure
+# costs a full round trip. The whole suite, 4 workers (about 5 minutes);
+# any test that fails is rerun once on its own, since a loaded machine can
+# time out a page; still failing, nothing is pushed. Skipped when the batch
+# only changes documentation (docs/, *.md), or with --no-browser-tests.
+#
 # Usage: scripts/ship.sh [--later] [--lane NAME] [--no-verify | --upstream]
+#                        [--no-browser-tests]
 #   --later       merge without a release of its own (see above).
 #   --lane NAME   ship in a named lane (implies --later); automatic in a
 #                 linked worktree, named after its branch.
@@ -40,6 +49,8 @@
 #                 actionlint/pip-audit/migrations/translations) — same
 #                 flag, same meaning as `git push --no-verify`, just
 #                 passed straight through.
+#   --no-browser-tests  push without running the browser tests (e.g. a
+#                 batch whose browser behaviour was just checked by hand).
 #   --upstream    only list the commits made on GitHub (e.g. dependency
 #                 updates merged there) that aren't in a release yet and
 #                 not here either — they'll be in the next release with
@@ -53,6 +64,7 @@ NO_VERIFY=()
 UPSTREAM_ONLY=0
 LATER=0
 LANE=""
+BROWSER_TESTS=1
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --later) LATER=1 ;;
@@ -60,7 +72,8 @@ while [ "$#" -gt 0 ]; do
     --lane=*) LANE="${1#--lane=}" ;;
     --no-verify) NO_VERIFY=(--no-verify); echo "Skipping pre-push checks (--no-verify)." ;;
     --upstream) UPSTREAM_ONLY=1 ;;
-    *) echo "Unknown argument: $1 (only --later, --lane, --no-verify and --upstream are supported)" >&2; exit 1 ;;
+    --no-browser-tests) BROWSER_TESTS=0; echo "Skipping the browser tests (--no-browser-tests)." ;;
+    *) echo "Unknown argument: $1 (only --later, --lane, --no-verify, --no-browser-tests and --upstream are supported)" >&2; exit 1 ;;
   esac
   shift
 done
@@ -250,6 +263,27 @@ git rebase origin/main
 if [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ]; then
   echo "Nothing to ship — HEAD is already even with origin/main. Not pushing."
   exit 0
+fi
+
+# The browser tests, on exactly what is about to be pushed (see the top).
+# SHIP_BROWSER_PYTEST overrides the pytest used (the script's own tests).
+if [ "${BROWSER_TESTS}" = 1 ]; then
+  CHANGED_FILES="$(git diff --name-only origin/main HEAD)"
+  if ! grep -qvE '^docs/|\.md$' <<<"${CHANGED_FILES}"; then
+    echo "Browser tests skipped: this batch only changes documentation."
+  else
+    E2E_PYTEST="${SHIP_BROWSER_PYTEST:-.venv/bin/pytest}"
+    E2E_ARGS=(tests/e2e --e2e --override-ini=addopts= -q -p no:randomly)
+    echo "Running the browser tests (tests/e2e, 4 workers, about 5 minutes)..."
+    if ! "${E2E_PYTEST}" "${E2E_ARGS[@]}" -n 4; then
+      echo "Rerunning the failed browser tests once, one at a time..."
+      if ! "${E2E_PYTEST}" "${E2E_ARGS[@]}" --last-failed --last-failed-no-failures none; then
+        echo "Browser tests failed — not pushing. Fix them and run this again"
+        echo "(or --no-browser-tests to push anyway, e.g. for a known flaky test)."
+        exit 1
+      fi
+    fi
+  fi
 fi
 
 git push "${PUSH_ARGS[@]}"

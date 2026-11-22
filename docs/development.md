@@ -756,6 +756,14 @@ a change:
   successful checks alone are not a complete review audit.
   `bash scripts/ship.sh --no-verify` skips the pre-push
   hook, same flag and meaning as `git push --no-verify`.
+  Right before pushing, it runs the browser tests (`tests/e2e`, the suite CI's
+  browser jobs run) on the rebased commits: the whole suite with 4 workers,
+  about 5 minutes on a typical dev machine (8 minutes one at a time). A test
+  that fails is rerun once on its own, since a loaded machine can time out a
+  page; still failing, nothing is pushed. A batch that only changes
+  documentation (`docs/`, `*.md`) skips them, and so does
+  `--no-browser-tests`. They need the dev dependencies and the vendor assets
+  (`scripts/install_vendor_assets.py`), as for running them by hand.
   Before pushing, it lists the commits made on GitHub since the last release
   (e.g. dependency updates) that will ship along, and asks to confirm when one
   that isn't a dependency update may be missing from the release summary;
