@@ -31,6 +31,27 @@
       L.circleMarker([point.latitude, point.longitude], { radius: 7, color: point.visited ? '#0d6efd' : '#6c757d', weight: point.visited ? 3 : 1, fillOpacity: point.visited ? 0.8 : 0.3 }).bindPopup(text).addTo(map);
       bounds.push([point.latitude, point.longitude]);
     });
+    JSON.parse(root.dataset.links || '[]').forEach(function (link) {
+      L.polyline([link.start, link.end], { color: '#d97706', weight: 1, opacity: 0.6, dashArray: '4 4' }).addTo(map);
+    });
+    JSON.parse(root.dataset.airfields || '[]').forEach(function (field) {
+      var popup = document.createElement('div');
+      var name = document.createElement('strong');
+      name.textContent = field.name;
+      popup.appendChild(name);
+      var list = document.createElement('ul');
+      field.places.forEach(function (place) {
+        var item = document.createElement('li');
+        var link = document.createElement('a');
+        link.textContent = place.name;
+        link.href = place.url;
+        item.appendChild(link);
+        list.appendChild(item);
+      });
+      popup.appendChild(list);
+      L.circleMarker([field.latitude, field.longitude], { radius: 5, color: '#d97706', weight: 2, fillOpacity: 0.5 }).bindPopup(popup).addTo(map);
+      bounds.push([field.latitude, field.longitude]);
+    });
     if (bounds.length) map.fitBounds(bounds, { padding: [25, 25], maxZoom: 13 });
     cleanMap(root, map);
   }

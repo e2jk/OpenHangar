@@ -60,20 +60,20 @@ msgstr[1] "🎉 Cela fait %(n)s ans que vous avez obtenu votre PPL !"
 msgid "🎉 Today is the anniversary of your PPL!"
 msgstr "🎉 Aujourd'hui, c'est l'anniversaire de l'obtention de votre PPL !"
 
-#: app/init.py:1182
+#: app/init.py:1183
 #, python-format
 msgid "This upload is too large (maximum %(mb)s MB in total). Please upload the files in smaller batches."
 msgstr "Cet envoi est trop volumineux (maximum %(mb)s Mo au total). Veuillez envoyer les fichiers en plusieurs fois."
 
-#: app/init.py:1209
+#: app/init.py:1210
 msgid "Some text entered is too long, so nothing was saved. Please shorten it and try again."
 msgstr "Un texte saisi est trop long, rien n’a donc été enregistré. Veuillez le raccourcir et réessayer."
 
-#: app/flights/form_parsing.py:459 app/init.py:1214
+#: app/flights/form_parsing.py:459 app/init.py:1215
 msgid "A number entered is far too large, so nothing was saved. Please check the values and try again."
 msgstr "Un nombre saisi est beaucoup trop grand, rien n’a donc été enregistré. Veuillez vérifier les valeurs et réessayer."
 
-#: app/init.py:1267
+#: app/init.py:1268
 msgid "The sign-in form had expired. Please sign in again."
 msgstr "Le formulaire de connexion avait expiré. Veuillez vous reconnecter."
 
@@ -2674,8 +2674,9 @@ msgstr "Saisissez un nombre entier de bons entre 0 et 100 000 (au moins 1 pour
 msgid "Voucher validity must stay within the edition dates."
 msgstr "La validité des bons doit rester dans les dates de l’édition."
 
-#: app/passports/vouchers.py:87 app/places/airfields.py:62
-#: app/places/airfields.py:121 app/places/airfields.py:132
+#: app/passports/vouchers.py:87 app/places/airfield_routes.py:44
+#: app/places/airfields.py:62 app/places/airfields.py:121
+#: app/places/airfields.py:132 app/places/candidates.py:139
 msgid "Airfield not found."
 msgstr "Aérodrome introuvable."
 
@@ -3179,9 +3180,65 @@ msgstr "Collection introuvable."
 msgid "Place not found."
 msgstr "Lieu introuvable."
 
+#: app/places/airfield_routes.py:57
+msgid "Choose an airfield action."
+msgstr "Choisissez une action pour cet aérodrome."
+
+#: app/places/airfield_routes.py:67
+msgid "search radius"
+msgstr "rayon de recherche"
+
+#: app/places/airfield_routes.py:87
+msgid "Small airfield"
+msgstr "Petit aérodrome"
+
+#: app/places/airfield_routes.py:88
+msgid "Medium airport"
+msgstr "Aéroport de taille moyenne"
+
+#: app/places/airfield_routes.py:89
+msgid "Large airport"
+msgstr "Grand aéroport"
+
+#: app/places/airfield_routes.py:90
+msgid "Seaplane base"
+msgstr "Hydrobase"
+
+#: app/places/airfield_routes.py:91
+msgid "Heliport"
+msgstr "Héliport"
+
+#: app/places/airfield_routes.py:92
+msgid "Closed airfield"
+msgstr "Aérodrome fermé"
+
 #: app/places/airfields.py:69
 msgid "Use a getting-there note of at most 2,000 characters."
 msgstr "Limitez les indications pour s’y rendre à 2 000 caractères."
+
+#: app/places/candidates.py:98
+msgid "Choose a search radius greater than zero and at most 200 km."
+msgstr "Choisissez un rayon de recherche supérieur à zéro et inférieur ou égal à 200 km."
+
+#: app/places/candidates.py:101
+msgid "Use a search of at most 200 characters."
+msgstr "Limitez la recherche à 200 caractères."
+
+#: app/places/candidates.py:152
+msgid "This airfield conflicts with an existing code. Review the catalogue first."
+msgstr "Le code de cet aérodrome est déjà attribué. Vérifiez le catalogue avant de continuer."
+
+#: app/places/candidates.py:177
+msgid "Enter an airfield name of at most 255 characters."
+msgstr "Saisissez un nom d’aérodrome de 255 caractères maximum."
+
+#: app/places/candidates.py:179
+msgid "Use an airfield code of at most 64 characters."
+msgstr "Limitez le code de l’aérodrome à 64 caractères."
+
+#: app/places/candidates.py:191
+msgid "That code cannot be used. Choose another code or leave it blank."
+msgstr "Ce code ne peut pas être utilisé. Choisissez-en un autre ou laissez le champ vide."
 
 #: app/places/collections.py:21
 msgid "Enter a collection name of at most 128 characters."
@@ -3203,8 +3260,8 @@ msgstr "La personne qui a créé la collection doit conserver les droits de modi
 msgid "The creator must transfer or delete the collection before leaving."
 msgstr "La personne qui a créé la collection doit la transférer ou la supprimer avant de la quitter."
 
-#: app/places/collections.py:187 app/places/routes.py:212
-#: app/places/routes.py:218 app/places/routes.py:225
+#: app/places/collections.py:187 app/places/routes.py:229
+#: app/places/routes.py:235 app/places/routes.py:242
 msgid "Choose a member of this collection."
 msgstr "Choisissez un membre de cette collection."
 
@@ -3212,7 +3269,7 @@ msgstr "Choisissez un membre de cette collection."
 msgid "Enter valid latitude and longitude coordinates."
 msgstr "Saisissez une latitude et une longitude valides."
 
-#: app/places/coordinates.py:98 app/places/place_routes.py:233
+#: app/places/coordinates.py:98 app/places/place_routes.py:240
 msgid "Paste decimal or DMS coordinates, or a map link containing coordinates."
 msgstr "Collez des coordonnées décimales ou en degrés, minutes et secondes, ou un lien de carte contenant des coordonnées."
 
@@ -3258,38 +3315,38 @@ msgstr "Chaque personne ayant enregistré une visite doit faire partie de la col
 msgid "Only the place owner or collection creator can permanently delete it."
 msgstr "Seuls le propriétaire du lieu ou la personne qui a créé la collection peuvent le supprimer définitivement."
 
-#: app/places/place_routes.py:140 app/places/place_routes.py:261
+#: app/places/place_routes.py:141 app/places/place_routes.py:268
 msgid "Choose a collection you can edit."
 msgstr "Choisissez une collection que vous pouvez modifier."
 
-#: app/places/place_routes.py:178
+#: app/places/place_routes.py:179
 #: app/templates/places/collection_settings.html:9
 #: app/templates/places/collection_settings.html:15
 #: app/templates/places/collection_settings.html:19
 msgid "Unnamed member"
 msgstr "Membre sans nom"
 
-#: app/places/place_routes.py:198 app/places/place_routes.py:199
+#: app/places/place_routes.py:205 app/places/place_routes.py:206
 msgid "Former member"
 msgstr "Ancien membre"
 
-#: app/places/place_routes.py:276
+#: app/places/place_routes.py:283
 msgid "Confirm the permanent deletion of this place."
 msgstr "Confirmez la suppression définitive de ce lieu."
 
-#: app/places/routes.py:236
+#: app/places/routes.py:253
 msgid "Invitation saved. Ask your friend to sign in and open Places."
 msgstr "Invitation enregistrée. Demandez à votre ami de se connecter et d’ouvrir la rubrique Lieux."
 
-#: app/places/routes.py:242 app/places/sharing.py:74 app/places/sharing.py:98
+#: app/places/routes.py:259 app/places/sharing.py:74 app/places/sharing.py:98
 msgid "Invitation not found or expired."
 msgstr "Invitation introuvable ou expirée."
 
-#: app/places/routes.py:247 app/places/tags.py:29 app/places/tags.py:62
+#: app/places/routes.py:264 app/places/tags.py:29 app/places/tags.py:62
 msgid "Tag not found."
 msgstr "Étiquette introuvable."
 
-#: app/places/routes.py:263
+#: app/places/routes.py:280
 msgid "Review the collection totals and confirm its deletion."
 msgstr "Vérifiez le nombre de lieux et de visites de la collection, puis confirmez sa suppression."
 
@@ -4526,7 +4583,8 @@ msgstr "Explorer"
 
 #: app/templates/base.html:234 app/templates/explore/where_next.html:3
 #: app/templates/explore/where_next.html:6
-#: app/templates/passports/detail.html:12
+#: app/templates/passports/detail.html:12 app/templates/places/index.html:8
+#: app/templates/places/place_detail.html:13
 msgid "Where next?"
 msgstr "Où aller ensuite ?"
 
@@ -5626,7 +5684,7 @@ msgstr "Définissez une ligne par réservoir (une seule pour un réservoir combi
 #: app/templates/maintenance/trigger_form.html:29
 #: app/templates/passports/builder.html:16
 #: app/templates/passports/next_edition.html:8
-#: app/templates/places/index.html:10
+#: app/templates/places/index.html:11
 msgid "Name"
 msgstr "Nom"
 
@@ -6975,8 +7033,8 @@ msgstr[1] "%(n)s composants"
 #: app/templates/aircraft/list.html:73 app/templates/passports/detail.html:20
 #: app/templates/passports/print.html:19 app/templates/passports/series.html:10
 #: app/templates/passports/series.html:28
-#: app/templates/passports/vouchers.html:10 app/templates/places/index.html:10
-#: app/templates/places/index.html:13 app/templates/places/place_detail.html:6
+#: app/templates/passports/vouchers.html:10 app/templates/places/index.html:11
+#: app/templates/places/index.html:14 app/templates/places/place_detail.html:6
 msgid "Archived"
 msgstr "Archivé"
 
@@ -7515,6 +7573,8 @@ msgstr "Vérifier la référence pièce"
 #: app/templates/passports/record_visit.html:14
 #: app/templates/passports/series.html:17
 #: app/templates/passports/series.html:19 app/templates/passports/target.html:9
+#: app/templates/places/_airfields.html:3
+#: app/templates/places/airfield_links.html:13
 msgid "Closed"
 msgstr "Clos"
 
@@ -7703,7 +7763,7 @@ msgstr[1] "%(n)s documents au total"
 #: app/templates/passports/detail.html:34
 #: app/templates/passports/discussion.html:14
 #: app/templates/pilots/logbook.html:142 app/templates/pilots/logbook.html:144
-#: app/templates/places/index.html:10 app/templates/users/list.html:85
+#: app/templates/places/index.html:11 app/templates/users/list.html:85
 msgid "All"
 msgstr "Tout"
 
@@ -8673,7 +8733,7 @@ msgstr "Seuil"
 #: app/templates/config/notifications.html:170
 #: app/templates/config/tenant_list.html:47
 #: app/templates/passports/group_members.html:16
-#: app/templates/places/index.html:10
+#: app/templates/places/index.html:11
 msgid "Active"
 msgstr "Actif"
 
@@ -12533,6 +12593,7 @@ msgid "Add a missing airfield"
 msgstr "Ajouter un aérodrome manquant"
 
 #: app/templates/passports/builder.html:56
+#: app/templates/places/airfield_links.html:14
 msgid "Airfield name"
 msgstr "Nom de l’aérodrome"
 
@@ -12774,7 +12835,7 @@ msgstr "Visité par vous"
 #: app/templates/passports/record_visit.html:14
 #: app/templates/passports/series.html:17
 #: app/templates/passports/series.html:19 app/templates/passports/target.html:9
-#: app/templates/places/index.html:10 app/templates/places/index.html:13
+#: app/templates/places/index.html:11 app/templates/places/index.html:14
 msgid "Visited"
 msgstr "Visité"
 
@@ -14809,9 +14870,42 @@ msgstr[1] "%(n)s vols"
 msgid "All airports visited"
 msgstr "Tous les aérodromes visités"
 
+#: app/templates/places/_airfields.html:2
+#: app/templates/places/airfield_links.html:8
+msgid "Linked airfields"
+msgstr "Aérodromes associés"
+
+#: app/templates/places/_airfields.html:2
+msgid "Manage airfield links"
+msgstr "Gérer les aérodromes associés"
+
+#: app/templates/places/_airfields.html:3
+#: app/templates/places/airfield_links.html:8
+msgid "Preferred"
+msgstr "Préféré"
+
+#: app/templates/places/_airfields.html:3
+#: app/templates/places/airfield_links.html:8
+#: app/templates/places/airfield_links.html:13
+#, python-format
+msgid "%(distance)s km from this place"
+msgstr "À %(distance)s km de ce lieu"
+
+#: app/templates/places/_airfields.html:3 app/templates/places/index.html:14
+msgid "No linked airfield"
+msgstr "Aucun aérodrome associé"
+
+#: app/templates/places/_airfields.html:3
+msgid "No airfield is linked to this place yet."
+msgstr "Aucun aérodrome n’est encore associé à ce lieu."
+
 #: app/templates/places/_map.html:1
 msgid "Places map"
 msgstr "Carte des lieux"
+
+#: app/templates/places/_map.html:3
+msgid "Orange markers show linked airfields; dashed lines connect them to places."
+msgstr "Les repères orange indiquent les aérodromes associés ; les pointillés les relient aux lieux."
 
 #: app/templates/places/_visits.html:4
 #: app/templates/places/collection_settings.html:20
@@ -14834,6 +14928,101 @@ msgstr "Corriger ou supprimer"
 msgid "Remove this visit"
 msgstr "Supprimer cette visite"
 
+#: app/templates/places/airfield_links.html:3
+#: app/templates/places/airfield_links.html:6
+#, python-format
+msgid "Airfields for %(place)s"
+msgstr "Aérodromes pour %(place)s"
+
+#: app/templates/places/airfield_links.html:7
+msgid "Back to place"
+msgstr "Retour au lieu"
+
+#: app/templates/places/airfield_links.html:8
+msgid "How to get there"
+msgstr "Comment s’y rendre"
+
+#: app/templates/places/airfield_links.html:8
+msgid "Save airfield link"
+msgstr "Enregistrer l’association"
+
+#: app/templates/places/airfield_links.html:8
+msgid "Unlink airfield"
+msgstr "Dissocier l’aérodrome"
+
+#: app/templates/places/airfield_links.html:9
+msgid "Find an airfield"
+msgstr "Rechercher un aérodrome"
+
+#: app/templates/places/airfield_links.html:10
+msgid "Nearby suggestions exclude heliports and closed airfields. Search by name or code to choose any airfield. Nothing is linked automatically."
+msgstr "Les suggestions à proximité excluent les héliports et les aérodromes fermés. Recherchez par nom ou par code pour choisir n’importe quel aérodrome. Rien n’est associé automatiquement."
+
+#: app/templates/places/airfield_links.html:11
+msgid "Add this place’s location to see nearby suggestions, or search for an airfield by name or code."
+msgstr "Ajoutez la localisation de ce lieu pour voir les suggestions à proximité, ou recherchez un aérodrome par nom ou par code."
+
+#: app/templates/places/airfield_links.html:12
+msgid "Airfield name or code"
+msgstr "Nom ou code de l’aérodrome"
+
+#: app/templates/places/airfield_links.html:12
+msgid "Nearby radius (km)"
+msgstr "Rayon de recherche (km)"
+
+#: app/templates/places/airfield_links.html:12
+#: app/templates/places/place_form.html:14
+msgid "Search"
+msgstr "Rechercher"
+
+#: app/templates/places/airfield_links.html:13
+msgid "Manual airfield"
+msgstr "Aérodrome ajouté manuellement"
+
+#: app/templates/places/airfield_links.html:13
+msgid "Other airfield"
+msgstr "Autre aérodrome"
+
+#: app/templates/places/airfield_links.html:13
+msgid "Already linked"
+msgstr "Déjà associé"
+
+#: app/templates/places/airfield_links.html:13
+msgid "Link airfield"
+msgstr "Associer l’aérodrome"
+
+#: app/templates/places/airfield_links.html:13
+msgid "Showing the first 200 results. Refine the search to find another airfield."
+msgstr "Les 200 premiers résultats sont affichés. Affinez la recherche pour trouver un autre aérodrome."
+
+#: app/templates/places/airfield_links.html:13
+msgid "No matching airfields in this search."
+msgstr "Aucun aérodrome ne correspond à cette recherche."
+
+#: app/templates/places/airfield_links.html:14
+msgid "Airfield missing from the catalogue?"
+msgstr "Aérodrome absent du catalogue ?"
+
+#: app/templates/places/airfield_links.html:14
+msgid "Add a manual airfield, such as a microlight field. Its details will be shared with this collection."
+msgstr "Ajoutez un aérodrome manuellement, par exemple un terrain ULM. Ses informations seront partagées avec cette collection."
+
+#: app/templates/places/airfield_links.html:14
+msgid "Airfield code (optional)"
+msgstr "Code de l’aérodrome (facultatif)"
+
+#: app/templates/places/airfield_links.html:14
+msgid "Airfield latitude (optional)"
+msgstr "Latitude de l’aérodrome (facultative)"
+
+#: app/templates/places/airfield_links.html:14
+msgid "Airfield longitude (optional)"
+msgstr "Longitude de l’aérodrome (facultative)"
+
+#: app/templates/places/airfield_links.html:14
+msgid "Create and link airfield"
+msgstr "Créer et associer l’aérodrome"
+
 #: app/templates/places/collection_settings.html:4
 msgid "Collection rights"
 msgstr "Droits dans la collection"
@@ -14851,7 +15040,7 @@ msgid "Can view and record own visits"
 msgstr "Peut consulter et enregistrer ses propres visites"
 
 #: app/templates/places/collection_settings.html:5
-#: app/templates/places/index.html:9
+#: app/templates/places/index.html:10
 msgid "Collection settings"
 msgstr "Paramètres de la collection"
 
@@ -14938,8 +15127,8 @@ msgid "Collection invitation link"
 msgstr "Lien d’invitation à la collection"
 
 #: app/templates/places/collection_settings.html:18
-msgid "Pending invitations"
-msgstr "Invitations en attente"
+msgid "Pending collection invitations"
+msgstr "Invitations en attente pour cette collection"
 
 #: app/templates/places/collection_settings.html:18
 msgid "Revoke invitation"
@@ -14980,95 +15169,115 @@ msgid "Save places worth visiting and share a collection with friends."
 msgstr "Enregistrez les lieux à visiter et partagez une collection avec vos amis."
 
 #: app/templates/places/index.html:8
+msgid "Download GPX"
+msgstr "Télécharger le fichier GPX"
+
+#: app/templates/places/index.html:8
+msgid "Download KML"
+msgstr "Télécharger le fichier KML"
+
+#: app/templates/places/index.html:9
 msgid "Collection invitations"
 msgstr "Invitations à des collections"
 
-#: app/templates/places/index.html:9
-msgid "Collections"
-msgstr "Collections"
+#: app/templates/places/index.html:10
+msgid "Place collections"
+msgstr "Collections de lieux"
 
-#: app/templates/places/index.html:9
+#: app/templates/places/index.html:10
 msgid "All collections"
 msgstr "Toutes les collections"
 
-#: app/templates/places/index.html:10
+#: app/templates/places/index.html:11
 msgid "Show places"
 msgstr "Afficher les lieux"
 
-#: app/templates/places/index.html:10
+#: app/templates/places/index.html:11
 msgid "Active and archived"
 msgstr "Actifs et archivés"
 
-#: app/templates/places/index.html:10
+#: app/templates/places/index.html:11
 msgid "Bin"
 msgstr "Corbeille"
 
-#: app/templates/places/index.html:10
+#: app/templates/places/index.html:11
 msgid "My visits"
 msgstr "Mes visites"
 
-#: app/templates/places/index.html:10 app/templates/places/index.html:13
+#: app/templates/places/index.html:11 app/templates/places/index.html:14
 msgid "Not yet visited"
 msgstr "Pas encore visité"
 
-#: app/templates/places/index.html:10
+#: app/templates/places/index.html:11
 msgid "Tag"
 msgstr "Étiquette"
 
-#: app/templates/places/index.html:10
+#: app/templates/places/index.html:11
 msgid "All tags"
 msgstr "Toutes les étiquettes"
 
-#: app/templates/places/index.html:10
+#: app/templates/places/index.html:11
 msgid "Sort by"
 msgstr "Trier par"
 
-#: app/templates/places/index.html:10
+#: app/templates/places/index.html:11
 msgid "Date added"
 msgstr "Date d’ajout"
 
-#: app/templates/places/index.html:10
+#: app/templates/places/index.html:11
 msgid "Last visit"
 msgstr "Dernière visite"
 
-#: app/templates/places/index.html:10
+#: app/templates/places/index.html:11
 msgid "Location"
 msgstr "Localisation"
 
-#: app/templates/places/index.html:10 app/templates/places/index.html:13
-#: app/templates/places/place_detail.html:12
+#: app/templates/places/index.html:11 app/templates/places/index.html:14
+#: app/templates/places/place_detail.html:14
 msgid "Location still to add"
 msgstr "Localisation à ajouter"
 
-#: app/templates/places/index.html:10
+#: app/templates/places/index.html:11
 msgid "Located"
 msgstr "Localisé"
 
-#: app/templates/places/index.html:10
+#: app/templates/places/index.html:11
+msgid "Airfield links"
+msgstr "Association à un aérodrome"
+
+#: app/templates/places/index.html:11
+msgid "With linked airfields"
+msgstr "Avec aérodromes associés"
+
+#: app/templates/places/index.html:11
+msgid "Without linked airfields"
+msgstr "Sans aérodrome associé"
+
+#: app/templates/places/index.html:11
 msgid "Apply filters"
 msgstr "Appliquer les filtres"
 
-#: app/templates/places/index.html:12
+#: app/templates/places/index.html:13
 msgid "Places in the bin are permanently deleted after 30 days. Any editor can restore them before then."
 msgstr "Les lieux dans la corbeille sont supprimés définitivement après 30 jours. Tout membre disposant des droits de modification peut les restaurer avant ce délai."
 
-#: app/templates/places/index.html:13 app/templates/places/place_detail.html:11
+#: app/templates/places/index.html:14 app/templates/places/place_detail.html:11
 msgid "Place photo"
 msgstr "Photo du lieu"
 
-#: app/templates/places/index.html:13
+#: app/templates/places/index.html:14
 msgid "Restore place"
 msgstr "Restaurer le lieu"
 
-#: app/templates/places/index.html:13 app/templates/places/place_detail.html:16
+#: app/templates/places/index.html:14 app/templates/places/place_detail.html:19
 msgid "I confirm the permanent deletion of this place and its visits."
 msgstr "Je confirme la suppression définitive de ce lieu et de ses visites."
 
-#: app/templates/places/index.html:13 app/templates/places/place_detail.html:16
+#: app/templates/places/index.html:14 app/templates/places/place_detail.html:19
 msgid "Permanently delete place"
 msgstr "Supprimer définitivement le lieu"
 
-#: app/templates/places/index.html:13
+#: app/templates/places/index.html:14
 msgid "No places in this view yet."
 msgstr "Aucun lieu dans cette vue pour le moment."
 
@@ -15105,35 +15314,35 @@ msgstr "Dernière modification par %(name)s le %(date)s"
 msgid "Visit website"
 msgstr "Consulter le site web"
 
-#: app/templates/places/place_detail.html:14
+#: app/templates/places/place_detail.html:17
 msgid "Unarchive place"
 msgstr "Désarchiver le lieu"
 
-#: app/templates/places/place_detail.html:14
+#: app/templates/places/place_detail.html:17
 msgid "Archive place"
 msgstr "Archiver le lieu"
 
-#: app/templates/places/place_detail.html:14
+#: app/templates/places/place_detail.html:17
 msgid "Move to bin"
 msgstr "Mettre à la corbeille"
 
-#: app/templates/places/place_detail.html:15
+#: app/templates/places/place_detail.html:18
 msgid "Copy or move"
 msgstr "Copier ou déplacer"
 
-#: app/templates/places/place_detail.html:15
+#: app/templates/places/place_detail.html:18
 msgid "Destination collection"
 msgstr "Collection de destination"
 
-#: app/templates/places/place_detail.html:15
+#: app/templates/places/place_detail.html:18
 msgid "Copy place"
 msgstr "Copier le lieu"
 
-#: app/templates/places/place_detail.html:15
+#: app/templates/places/place_detail.html:18
 msgid "Move place"
 msgstr "Déplacer le lieu"
 
-#: app/templates/places/place_detail.html:15
+#: app/templates/places/place_detail.html:18
 msgid "Copies keep the content and photo, but no visits. Moving requires every visitor to belong to the destination collection."
 msgstr "Les copies conservent le contenu et la photo, sans les visites. Pour déplacer un lieu, toutes les personnes ayant enregistré une visite doivent faire partie de la collection de destination."
 
@@ -15158,8 +15367,8 @@ msgid "Save a link now and add the name, location and other details later."
 msgstr "Enregistrez un lien maintenant, puis ajoutez le nom, la localisation et les autres détails plus tard."
 
 #: app/templates/places/place_form.html:10
-msgid "Collection"
-msgstr "Collection"
+msgid "Place collection"
+msgstr "Collection de lieux"
 
 #: app/templates/places/place_form.html:11
 msgid "Place name (optional)"
@@ -15172,10 +15381,6 @@ msgstr "Enregistrer le lieu"
 #: app/templates/places/place_form.html:14
 msgid "Place name or address"
 msgstr "Nom de lieu ou adresse"
-
-#: app/templates/places/place_form.html:14
-msgid "Search"
-msgstr "Rechercher"
 
 #: app/templates/places/place_form.html:14
 msgid "Choose a result to set the pin and address. An empty place name is filled in too."

@@ -28,8 +28,9 @@ from models import (
 )
 from utils import current_membership, db_id, list_index, login_required
 
-from places import collections, sharing, tags
+from places import airfields, collections, sharing, tags
 from places.access import PlaceError, actor, collection_access, collections_for_user
+from places.maps import airfield_map_data
 from places.presentation import place_label
 
 places_bp = Blueprint("places", __name__, url_prefix="/places")
@@ -100,6 +101,22 @@ def index() -> ResponseReturnValue:
     return render_template(
         "places/index.html",
         **listing,
+        **airfield_map_data(
+            airfields.linked_airfields(
+                tid,
+                uid,
+                place_ids=[row[0].id for row in listing["rows"]],
+                include_archived=True,
+            )
+        ),
+        export_args={
+            "collection": collection_id,
+            "tag": listing["tag_id"],
+            **{
+                key: listing[key]
+                for key in ("visited", "state", "location", "linked", "sort")
+            },
+        },
         editable_ids=editable,
         collection_owners={c.id: c.created_by_user_id for c in choices},
         collection_names={c.id: c.name for c in choices},

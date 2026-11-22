@@ -2931,7 +2931,7 @@ passport behaviour unchanged.
   one allowlisted public projection per resource type, so places can add theirs
   later. The aircraft `ShareToken` may move onto it later; not required.
 
-### 42b — Collections and places
+### 42b — Collections and places ✅
 
 - [x] Models + migration: `PlaceCollection` (tenant, name, created_by,
   is_personal), `PlaceCollectionMember` (collection, user, can_edit, joined_at),
@@ -2943,7 +2943,7 @@ passport behaviour unchanged.
   number of further collections, each shared with its own set of users of the
   instance ("Our places", "Club fly-outs"…). Each place belongs to exactly one
   collection.
-- [ ] Members are **editors** (add/edit places, link airfields, record visits)
+- [x] Members are **editors** (add/edit places, link airfields, record visits)
   or **readers** (see places and visits, record their own visits). Default:
   editor. Only the creator (or an instance admin) adds/removes members, changes
   their rights, renames or deletes the collection; deleting a shared collection
@@ -2955,7 +2955,7 @@ passport behaviour unchanged.
   (`tokens.email_digest`), without revealing whether an account exists.
 - [x] **Default collection for new places** (per-user setting); the add-place
   form preselects it and allows another choice.
-- [ ] **Place owner** = creator. Only the owner moves a place, and only to a
+- [x] **Place owner** = creator. Only the owner moves a place, and only to a
   collection they belong to whose members include everyone who recorded a visit
   there; otherwise only a copy is possible. Any editor can copy a place (content,
   tags, airfield links; not visits; the copy is owned by its maker). A non-owner
@@ -2974,14 +2974,13 @@ passport behaviour unchanged.
   starter set offered as suggestions (*Town*, *Attraction*, *Restaurant*,
   *Nature*, *Viewpoint*, *Museum*, *Beach*, *Overnight stay*, *Family*); rename,
   merge and delete in the collection settings.
-- [ ] List + map of one or all collections: place pins, linked airfields, lines
+- [x] List + map of one or all collections: place pins, linked airfields, lines
   between them; filter by tag, visited / not yet / archived, linked / unlinked;
   sort by name, date added, last visit. Place photo through `services/images.py`.
 
 Implementation status: the collection and place screens, photo handling,
-coordinate pin, tags, bin and defaults are implemented. The remaining
-cross-step hooks are copying/displaying airfield links with 42d and the
-reader-owned visit form with 42e.
+coordinate pin, tags, bin and defaults are implemented. Airfield copies and map
+connections, and the reader-owned visit panel, are now connected through 42d/42e.
 
 ### 42c — Address search ✅
 
@@ -3005,7 +3004,7 @@ reader-owned visit form with 42e.
   documented in `docs/configuration.md`. The Search box, result list, pin
   drop and disabled-provider fallback are now connected to the Places form.
 
-### 42d — Airfield linking
+### 42d — Airfield linking ✅
 
 - [x] `PlaceAirfield`: place ↔ `PassportAirfieldIdentity` (existing tenant-scoped
   identities and offline catalogue; no second airfield table), with an optional
@@ -3013,27 +3012,27 @@ reader-owned visit form with 42e.
   computed for display.
   *Model and service:* collection-scoped composite references, public-source
   provenance, copy/move retention, and `places.airfields.linked_airfields` for
-  membership-filtered route-planning results. The linking screens follow with
-  the suggestions and unlinked filter below.
-- [ ] Suggest airfields within **15 km** (adjustable), nearest first, with type
+  membership-filtered route-planning results. Editor controls, suggestions,
+  map connections and the unlinked filter are connected below.
+- [x] Suggest airfields within **15 km** (adjustable), nearest first, with type
   and distance; one click links one. Suggested: small/medium/large airports,
   seaplane bases and airfields added manually in this instance; never heliports
   or closed fields. Any airfield can be searched and linked manually; nothing is
   linked automatically. ULM-only fields missing from the catalogue are added as
   manual airfields (an optional ULM dataset is a backlog item).
-- [ ] **Unlinked places**: "Unlinked" badge, "Unlinked only" filter, prompt to
+- [x] **Unlinked places**: "Unlinked" badge, "Unlinked only" filter, prompt to
   link an airfield.
 
 ### 42e — Visits
 
-- [ ] `PlaceVisit` (place, user, date, optional flight, optional short note). A
+- [x] `PlaceVisit` (place, user, date, optional flight, optional short note). A
   place can be visited many times by different members; "visited" means at least
   one visit; the place page shows the history ("Last visited 12 May 2026 by Anna
   and you"). One-click visit from the place page, date defaulting to today.
   *Service and partial done (2026-11-22, Claude):* `places/visits.py`
   (`record`/`update`/`delete`, own visits only; `panel(tid, uid, place)`),
   `places/visit_routes.py` (`places.add_visit`, `edit_visit`, `delete_visit`)
-  and `templates/places/_visits.html`; Codex wires the panel into the place page.
+  and `templates/places/_visits.html`; the panel is connected to the place page.
 - [ ] **After logging a flight** whose arrival or an intermediate full-stop
   landing is at an airfield linked to a place in one of the user's collections,
   the post-save page offers a dismissible "You landed at EBXX, 4 km from *Pairi
@@ -3057,7 +3056,8 @@ reader-owned visit form with 42e.
   `/passports/<id>/where-next` redirects there so existing links keep working),
   Places (places preselected), a place's page.
   *Done:* the Explore menu, the passport page and the redirect (with the page's
-  own inputs); the Places and place-page links follow 42d (Codex).
+  own inputs); Places and place-page links pass the Places source and place
+  identifier. Places preselection still awaits the Places source integration.
 - [ ] Results are airfields, deduplicated, each with its reasons ("Not yet
   stamped in *Belgian passport 2026*", "4 km from *Pairi Daiza* (taxi)"). Sorted by
   distance; at equal distance more reasons first; no opaque scoring. Unlinked
@@ -3077,8 +3077,8 @@ reader-owned visit form with 42e.
   "places" account-export section (own places with tags and photo, own visits,
   collection names) and `places.export_places` (`/places/export.gpx|kml`, the
   list's filters); backup round-trip fixture with a shared collection, a photo,
-  a tag, visits and a link-only place. The download buttons on the Places page
-  come with 42d (Codex).
+  a tag, visits and a link-only place. Download buttons on the Places page
+  preserve its current filters.
 - [ ] Demo seed with a shared "Our places" collection; offline/PWA cache
   classification; screenshots; user guide; configuration docs.
   *Done:* the demo and dev seeds' "Our places" (owner, second pilot and the

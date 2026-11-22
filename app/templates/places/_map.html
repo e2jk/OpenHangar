@@ -1,1 +1,3 @@
-<div id="places-map" data-points="{{ points | tojson | forceescape }}"><div id="places-map-canvas" class="place-map rounded border mb-4" aria-label="{{ _('Places map') }}"></div></div>
+<div id="places-map" data-points="{{ points | tojson | forceescape }}" data-airfields="{{ map_airfields | default([]) | tojson | forceescape }}" data-links="{{ map_links | default([]) | tojson | forceescape }}"><div id="places-map-canvas" class="place-map rounded border mb-4" aria-label="{{ _('Places map') }}"></div></div>
+
+{% if map_airfields | default([]) %}<p class="small">{{ _('Orange markers show linked airfields; dashed lines connect them to places.') }}</p>{% endif %}
