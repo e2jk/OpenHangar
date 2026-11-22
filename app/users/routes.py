@@ -353,7 +353,7 @@ def change_role(user_id: int) -> ResponseReturnValue:
     try:
         new_role = Role(role_raw)
     except ValueError:
-        abort(400)
+        return abort(400)
     if new_role == Role.ADMIN:
         abort(400)
     old_role = tu.role
@@ -437,7 +437,7 @@ def update_aircraft_access(user_id: int) -> ResponseReturnValue:
     try:
         new_ids = {int(x) for x in raw_ids if x}
     except ValueError:
-        abort(400)
+        return abort(400)
 
     # Verify all aircraft belong to this tenant
     valid_ids = {

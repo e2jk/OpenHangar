@@ -155,7 +155,7 @@ def series_detail(series_id: int) -> ResponseReturnValue:
         try:
             edition_id = db_id(requested)
         except ValueError:
-            abort(404)
+            return abort(404)
         selected = next((p for p in passports if p.id == edition_id), None)
         if selected is None:
             abort(404)
@@ -226,7 +226,7 @@ def _group_series(series: PassportSeries, user_id: int) -> ResponseReturnValue:
             try:
                 edition_id = db_id(requested)
             except ValueError:
-                abort(404)
+                return abort(404)
             selected = next((p for p in passports if p.id == edition_id), None)
             if selected is None:
                 abort(404)

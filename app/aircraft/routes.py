@@ -3722,7 +3722,7 @@ def reorder_photos(aircraft_id: int) -> ResponseReturnValue:
     try:
         ordered_ids = [int(i) for i in request.form.getlist("photo_order[]")]
     except (ValueError, TypeError):
-        abort(400)
+        return abort(400)
 
     photos_by_id = {
         p.id: p for p in AircraftPhoto.query.filter_by(aircraft_id=ac.id).all()

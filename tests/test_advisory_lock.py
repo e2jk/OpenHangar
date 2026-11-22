@@ -2,6 +2,7 @@
 
 from unittest.mock import MagicMock
 
+import pytest
 from services.advisory_lock import (
     advisory_lock_scope,  # pyright: ignore[reportMissingImports]
 )
@@ -47,11 +48,8 @@ class TestAdvisoryLockScope:
         mock_conn = mock_db.engine.connect.return_value
         mock_conn.execute.return_value.scalar.return_value = True
 
-        try:
-            with advisory_lock_scope(mock_db, 123):
-                raise RuntimeError("boom")
-        except RuntimeError:
-            pass
+        with pytest.raises(RuntimeError), advisory_lock_scope(mock_db, 123):
+            raise RuntimeError("boom")
 
         assert mock_conn.execute.call_count == 2  # lock + unlock
         mock_conn.close.assert_called_once()

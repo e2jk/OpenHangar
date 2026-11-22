@@ -21,6 +21,9 @@
 
 - The photo cleaning and photo suggestion tests import each module one way,
   as static analysis asked.
+- A new test catches locally three notes static analysis kept raising
+  (mixed imports, a silent `except`, an `abort()` it reads as falling
+  through); the 15 places it found are fixed.
 - Browser tests sign in as the admin through one helper that, when another
   sign-in already used the current authenticator code, waits for the next
   one instead of failing.
