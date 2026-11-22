@@ -274,9 +274,12 @@ unvisited fields remain visible but are excluded from the achievable total.
 
 Use **Where next?** (in the **Explore** menu, or from a passport's page) to find
 open unvisited fields within a distance or still-air time limit, across all your
-active passports or the ones you tick. Each airfield is listed once, with every
-passport where it is still to stamp; at equal distance, the airfields that tick
-more passports come first. You can save a home airfield on your pilot profile and a home/cruise
+active passports or the ones you tick, and the airfields linked to your places
+(**Search in** places, passports or both; visited places are left out unless you
+include them). Each airfield is listed once with all its reasons — "Not yet
+stamped in *Belgian passport 2026*", "4.0 km from *Pairi Daiza* (taxi)" — and at
+equal distance the airfields with more reasons come first. Places with no
+airfield yet are counted, so you can link one. You can save a home airfield on your pilot profile and a home/cruise
 speed on an aircraft, or use session-only inputs. Optional range estimates need
 explicit usable fuel, flow and reserve assumptions.
 

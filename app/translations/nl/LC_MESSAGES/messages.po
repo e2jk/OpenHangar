@@ -203,7 +203,7 @@ msgstr "Stel voor het reservefonds een bijdrage per uur óf per maand in, niet b
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Dit GPS-bestand bevat te veel punten om te importeren (meer dan %(n)s). Splits de opname op in meerdere bestanden."
 
-#: app/aircraft/routes.py:555 app/explore/routes.py:179
+#: app/aircraft/routes.py:555 app/explore/routes.py:256
 msgid "cruise speed"
 msgstr "kruissnelheid"
 
@@ -1116,39 +1116,39 @@ msgstr "Dit bestandstype is niet toegestaan voor bewijsstukken."
 msgid "Expense receipt %(date)s"
 msgstr "Bewijsstuk uitgave %(date)s"
 
-#: app/explore/routes.py:152
+#: app/explore/routes.py:229
 msgid "Choose a reference airfield from the search results."
 msgstr "Kies een referentievliegveld uit de zoekresultaten."
 
-#: app/explore/routes.py:155
+#: app/explore/routes.py:232
 msgid "This reference airfield has no coordinates. Choose another."
 msgstr "Dit referentievliegveld heeft geen coördinaten. Kies een ander."
 
-#: app/explore/routes.py:180
+#: app/explore/routes.py:257
 msgid "distance/time limit"
 msgstr "afstands-/tijdslimiet"
 
-#: app/explore/routes.py:181
+#: app/explore/routes.py:258
 msgid "usable fuel"
 msgstr "bruikbare brandstof"
 
-#: app/explore/routes.py:182
+#: app/explore/routes.py:259
 msgid "fuel flow"
 msgstr "brandstofverbruik"
 
-#: app/explore/routes.py:183
+#: app/explore/routes.py:260
 msgid "reserve minutes"
 msgstr "reserve in minuten"
 
-#: app/explore/routes.py:195
+#: app/explore/routes.py:272
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Voer een kruissnelheid in voor de tijdsmodus of gebruik de afstandsmodus."
 
-#: app/explore/routes.py:204
+#: app/explore/routes.py:281
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "Het theoretische bereik is onbekend. Voer bruikbare brandstof, verbruik, snelheid en een expliciete reserve in die positieve vliegtijd overlaten. Het afstands-/tijdfilter blijft van toepassing."
 
-#: app/explore/routes.py:228
+#: app/explore/routes.py:323
 msgid "Choose a reference airfield and correct the destination filters before downloading."
 msgstr "Kies een referentievliegveld en corrigeer de bestemmingsfilters voordat u downloadt."
 
@@ -3278,6 +3278,9 @@ msgid "Unnamed place"
 msgstr "Plek zonder naam"
 
 #: app/places/exports.py:162 app/templates/base.html:233
+#: app/templates/explore/where_next.html:10
+#: app/templates/explore/where_next.html:38
+#: app/templates/explore/where_next.html:39
 #: app/templates/places/collection_settings.html:20
 #: app/templates/places/index.html:3 app/templates/places/index.html:6
 msgid "Places"
@@ -4589,7 +4592,7 @@ msgid "Where next?"
 msgstr "Waarheen nu?"
 
 #: app/templates/base.html:238 app/templates/base.html:353
-#: app/templates/explore/where_next.html:35
+#: app/templates/explore/where_next.html:39
 #: app/templates/passports/confirm.html:3 app/templates/passports/detail.html:4
 #: app/templates/passports/detail.html:7
 #: app/templates/passports/draft_error.html:3
@@ -5515,7 +5518,7 @@ msgid "Enter an airfield code or a saved field reference such as field:123. Neve
 msgstr "Voer een vliegveldcode of een opgeslagen veldreferentie zoals field:123 in. Wordt nooit afgeleid uit de vlieghistorie."
 
 #: app/templates/aircraft/aircraft_form.html:68
-#: app/templates/explore/where_next.html:16
+#: app/templates/explore/where_next.html:19
 msgid "Cruise speed (knots, optional)"
 msgstr "Kruissnelheid (knopen, optioneel)"
 
@@ -6271,8 +6274,8 @@ msgid "Fuel on board"
 msgstr "Brandstof aan boord"
 
 #: app/templates/aircraft/detail.html:746
-#: app/templates/explore/where_next.html:26
-#: app/templates/explore/where_next.html:36
+#: app/templates/explore/where_next.html:29
+#: app/templates/explore/where_next.html:40
 #: app/templates/passports/builder.html:42
 #: app/templates/passports/builder.html:63
 msgid "Unknown"
@@ -10215,149 +10218,180 @@ msgid "Add first expense"
 msgstr "Eerste uitgave toevoegen"
 
 #: app/templates/explore/where_next.html:7
-msgid "Discover open airfields you have not yet visited in your passports. Distances are great-circle nautical miles; times assume constant cruise speed, still air and direct flight, excluding climb, approach and routing."
-msgstr "Ontdek open vliegvelden die je nog niet hebt bezocht in je paspoorten. Afstanden zijn grootcirkelafstanden in zeemijlen; tijden gaan uit van constante kruissnelheid, windstilte en directe vlucht, zonder klim, nadering of omwegen."
+msgid "Discover open airfields not yet stamped in your passports, and airfields near the places you want to visit. Distances are great-circle nautical miles; times assume constant cruise speed, still air and direct flight, excluding climb, approach and routing."
+msgstr "Ontdek open vliegvelden die nog niet gestempeld zijn in je paspoorten, en vliegvelden bij de plaatsen die je wilt bezoeken. Afstanden zijn grootcirkelafstanden in zeemijlen; tijden gaan uit van constante kruissnelheid, windstilte en directe vlucht, zonder klim, nadering of omwegen."
 
 #: app/templates/explore/where_next.html:10
+msgid "Search in"
+msgstr "Zoeken in"
+
+#: app/templates/explore/where_next.html:10
+msgid "Places and passports"
+msgstr "Plaatsen en paspoorten"
+
+#: app/templates/explore/where_next.html:10
+msgid "Passports"
+msgstr "Paspoorten"
+
+#: app/templates/explore/where_next.html:12
+msgid "Search in collections"
+msgstr "Zoeken in collecties"
+
+#: app/templates/explore/where_next.html:12
+msgid "Include places I have visited"
+msgstr "Plaatsen die ik heb bezocht meenemen"
+
+#: app/templates/explore/where_next.html:12
+msgid "All your collections when none is ticked."
+msgstr "Al je collecties als er geen is aangevinkt."
+
+#: app/templates/explore/where_next.html:13
 msgid "Search in passports"
 msgstr "Zoeken in paspoorten"
 
-#: app/templates/explore/where_next.html:10
+#: app/templates/explore/where_next.html:13
 msgid "All your active passports when none is ticked."
 msgstr "Al je actieve paspoorten als er geen is aangevinkt."
 
-#: app/templates/explore/where_next.html:12
+#: app/templates/explore/where_next.html:15
 msgid "Aircraft (optional)"
 msgstr "Luchtvaartuig (optioneel)"
 
-#: app/templates/explore/where_next.html:12
+#: app/templates/explore/where_next.html:15
 msgid "Unmanaged aircraft / session inputs"
 msgstr "Niet beheerd luchtvaartuig / sessie-invoer"
 
-#: app/templates/explore/where_next.html:13
+#: app/templates/explore/where_next.html:16
 msgid "Reference airfield"
 msgstr "Referentievliegveld"
 
-#: app/templates/explore/where_next.html:13
+#: app/templates/explore/where_next.html:16
 msgid "Use aircraft home, then pilot home"
 msgstr "Thuisveld luchtvaartuig, anders thuisveld piloot"
 
-#: app/templates/explore/where_next.html:14
+#: app/templates/explore/where_next.html:17
 msgid "Search reference airfield by code or name"
 msgstr "Referentievliegveld zoeken op code of naam"
 
-#: app/templates/explore/where_next.html:14
+#: app/templates/explore/where_next.html:17
 #: app/templates/passports/builder.html:44
 msgid "Search airfields"
 msgstr "Vliegvelden zoeken"
 
-#: app/templates/explore/where_next.html:14
+#: app/templates/explore/where_next.html:17
 msgid "Up to 50 matches appear in the reference-airfield list. Narrow the search if needed."
 msgstr "De lijst met referentievliegvelden toont maximaal 50 resultaten. Verfijn zo nodig de zoekopdracht."
 
-#: app/templates/explore/where_next.html:15
+#: app/templates/explore/where_next.html:18
 msgid "Use home airfield"
 msgstr "Thuisveld gebruiken"
 
-#: app/templates/explore/where_next.html:15
+#: app/templates/explore/where_next.html:18
 msgid "Use my latest logged arrival"
 msgstr "Mijn laatste vastgelegde aankomst gebruiken"
 
-#: app/templates/explore/where_next.html:17
+#: app/templates/explore/where_next.html:20
 msgid "Filter mode"
 msgstr "Filtermodus"
 
-#: app/templates/explore/where_next.html:17
-#: app/templates/explore/where_next.html:36
+#: app/templates/explore/where_next.html:20
+#: app/templates/explore/where_next.html:40
 msgid "Distance (NM)"
 msgstr "Afstand (NM)"
 
-#: app/templates/explore/where_next.html:17
-#: app/templates/explore/where_next.html:36
+#: app/templates/explore/where_next.html:20
+#: app/templates/explore/where_next.html:40
 msgid "Still-air time (minutes)"
 msgstr "Vliegtijd bij windstilte (minuten)"
 
-#: app/templates/explore/where_next.html:18
+#: app/templates/explore/where_next.html:21
 msgid "Maximum distance / minutes"
 msgstr "Maximale afstand / minuten"
 
-#: app/templates/explore/where_next.html:18
+#: app/templates/explore/where_next.html:21
 msgid "Adjust distance / minutes"
 msgstr "Afstand / minuten aanpassen"
 
-#: app/templates/explore/where_next.html:20
+#: app/templates/explore/where_next.html:23
 msgid "Optional theoretical range"
 msgstr "Optioneel theoretisch bereik"
 
-#: app/templates/explore/where_next.html:21
+#: app/templates/explore/where_next.html:24
 msgid "Destination discovery only, not fuel dispatch advice. Enter explicitly usable fuel; total tank capacity is never assumed usable. Fuel and flow must both use litres. Reserve is in minutes; return mode budgets both legs without refuelling."
 msgstr "Alleen voor het ontdekken van bestemmingen, niet als brandstofplanning. Voer expliciet bruikbare brandstof in; de totale tankinhoud geldt nooit automatisch als bruikbaar. Gebruik liters voor brandstof en verbruik. Reserve is in minuten; retour rekent met beide trajecten zonder bijtanken."
 
-#: app/templates/explore/where_next.html:22
+#: app/templates/explore/where_next.html:25
 msgid "Reserve defaults to your published personal minimum. You can change it for this session."
 msgstr "De reserve is standaard je gepubliceerde persoonlijke minimum. Je kunt dit voor deze sessie aanpassen."
 
-#: app/templates/explore/where_next.html:23
+#: app/templates/explore/where_next.html:26
 msgid "Usable fuel (L)"
 msgstr "Bruikbare brandstof (L)"
 
-#: app/templates/explore/where_next.html:23
+#: app/templates/explore/where_next.html:26
 msgid "Fuel flow (L/h)"
 msgstr "Brandstofverbruik (L/u)"
 
-#: app/templates/explore/where_next.html:23
+#: app/templates/explore/where_next.html:26
 msgid "Reserve (minutes)"
 msgstr "Reserve (minuten)"
 
-#: app/templates/explore/where_next.html:24
+#: app/templates/explore/where_next.html:27
 msgid "Trip assumption"
 msgstr "Trajectaanname"
 
-#: app/templates/explore/where_next.html:24
+#: app/templates/explore/where_next.html:27
 msgid "One way"
 msgstr "Enkele reis"
 
-#: app/templates/explore/where_next.html:24
+#: app/templates/explore/where_next.html:27
 msgid "Return without refuelling"
 msgstr "Retour zonder bijtanken"
 
-#: app/templates/explore/where_next.html:25
+#: app/templates/explore/where_next.html:28
 msgid "Also filter by theoretical range"
 msgstr "Ook op theoretisch bereik filteren"
 
-#: app/templates/explore/where_next.html:26
+#: app/templates/explore/where_next.html:29
 msgid "Theoretical radius"
 msgstr "Theoretische straal"
 
-#: app/templates/explore/where_next.html:28
+#: app/templates/explore/where_next.html:31
 msgid "Find destinations"
 msgstr "Bestemmingen zoeken"
 
-#: app/templates/explore/where_next.html:30
+#: app/templates/explore/where_next.html:33
 msgid "Choose a reference airfield to find destinations."
 msgstr "Kies een referentievliegveld om bestemmingen te vinden."
 
-#: app/templates/explore/where_next.html:30
+#: app/templates/explore/where_next.html:33
 msgid "Starting from"
 msgstr "Vertrek vanaf"
 
-#: app/templates/explore/where_next.html:31
+#: app/templates/explore/where_next.html:34
 msgid "Destination discovery map"
 msgstr "Kaart met bestemmingen"
 
-#: app/templates/explore/where_next.html:32
+#: app/templates/explore/where_next.html:35
 msgid "Targets without coordinates cannot be distance-filtered; they remain in the passport list."
 msgstr "Doelen zonder coördinaten kunnen niet op afstand worden gefilterd; ze blijven in de paspoortlijst."
 
-#: app/templates/explore/where_next.html:33
+#: app/templates/explore/where_next.html:36
 msgid "Suitability unknown: no licensed runway or restriction dataset is loaded. Check current aerodrome information before planning a flight."
 msgstr "Geschiktheid onbekend: er zijn geen gelicentieerde baan- of beperkingsgegevens geladen. Controleer actuele vliegveldinformatie voordat je een vlucht plant."
 
-#: app/templates/explore/where_next.html:35
-msgid "Create or join an airfield passport to find airfields you have not visited yet."
-msgstr "Maak of word lid van een vliegveldpaspoort om vliegvelden te vinden die je nog niet hebt bezocht."
+#: app/templates/explore/where_next.html:38
+#, python-format
+msgid "One place has no airfield yet."
+msgid_plural "%(num)d places have no airfield yet."
+msgstr[0] "Eén plaats heeft nog geen vliegveld."
+msgstr[1] "%(num)d plaatsen hebben nog geen vliegveld."
 
-#: app/templates/explore/where_next.html:36
+#: app/templates/explore/where_next.html:39
+msgid "Add places or create an airfield passport to find where to fly next."
+msgstr "Voeg plaatsen toe of maak een vliegveldpaspoort om te vinden waar je nu heen vliegt."
+
+#: app/templates/explore/where_next.html:40
 #: app/templates/passports/builder.html:62
 #: app/templates/passports/detail.html:42 app/templates/passports/print.html:24
 #: app/templates/passports/public_view.html:19
@@ -10369,16 +10403,26 @@ msgstr "Maak of word lid van een vliegveldpaspoort om vliegvelden te vinden die 
 msgid "Airfield"
 msgstr "Vliegveld"
 
-#: app/templates/explore/where_next.html:36
+#: app/templates/explore/where_next.html:40
 msgid "Why"
 msgstr "Waarom"
 
-#: app/templates/explore/where_next.html:36
+#: app/templates/explore/where_next.html:40
 #, python-format
 msgid "Not yet stamped in %(passport)s"
 msgstr "Nog niet gestempeld in %(passport)s"
 
-#: app/templates/explore/where_next.html:36
+#: app/templates/explore/where_next.html:40
+#, python-format
+msgid "%(km)s km from %(place)s"
+msgstr "%(km)s km van %(place)s"
+
+#: app/templates/explore/where_next.html:40
+#, python-format
+msgid "Linked to %(place)s"
+msgstr "Gekoppeld aan %(place)s"
+
+#: app/templates/explore/where_next.html:40
 msgid "No open, unvisited airfields match these inputs."
 msgstr "Geen open, onbezochte vliegvelden komen overeen met deze invoer."
 

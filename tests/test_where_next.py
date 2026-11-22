@@ -2,7 +2,7 @@
 passports, airfields deduplicated with their reasons, the old passport URL
 redirecting to it."""
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from urllib.parse import parse_qs, urlsplit
 
 from flask import Flask
@@ -132,7 +132,7 @@ def test_without_passports_the_page_says_how_to_start(
 ) -> None:
     signin(client, owner["other"])
     page = client.get(URL).get_data(as_text=True)
-    assert "Create or join an airfield passport" in page
+    assert "Add places or create an airfield passport" in page
 
 
 def test_the_explore_menu_and_a_signed_out_or_membershipless_user(
@@ -146,3 +146,146 @@ def test_the_explore_menu_and_a_signed_out_or_membershipless_user(
 
     with patch("explore.routes.current_membership", return_value=None):
         assert client.get(URL).status_code == 403
+
+
+def _places(app: Flask, owner: dict[str, int]) -> dict[str, int]:
+    """Places of the owner: Castle (linked to Shared, also a passport target,
+    and to Lakeside), a visited Mill (linked to Millfield), an unlocated idea
+    linked to Lakeside, a closed field and a place with no airfield."""
+    from models import PlaceVisit
+    from places.airfields import add_link
+    from places.collections import create_collection
+    from places.management import save_place
+
+    ids = _setup(app, owner)
+    with app.app_context():
+        t, u = owner["tenant"], owner["user"]
+        trips = create_collection(t, u, "Trips")
+        other = create_collection(t, u, "Other")
+        shared = PassportAirfieldIdentity.query.filter_by(
+            tenant_id=t, name="Shared"
+        ).one()
+        lakeside = create_custom(
+            t, "Lakeside", code="LAKE", latitude=50.05, longitude=4.0
+        )
+        millfield = create_custom(
+            t, "Millfield", code="MILL", latitude=50.06, longitude=4.0
+        )
+        closed = create_custom(
+            t, "Closed strip", code="SHUT", latitude=50.07, longitude=4.0
+        )
+        closed.is_closed = True
+        castle = save_place(
+            t, u, trips.id, {"title": "Castle", "latitude": "50.1", "longitude": "4.01"}
+        )
+        mill = save_place(
+            t, u, trips.id, {"title": "Mill", "latitude": "50.06", "longitude": "4.01"}
+        )
+        idea = save_place(
+            t, u, other.id, {"title": "Idea", "external_url": "https://example.org/x"}
+        )
+        save_place(
+            t, u, other.id, {"title": "Lonely", "latitude": "50", "longitude": "4"}
+        )
+        add_link(t, u, castle.id, shared.id, note="taxi")
+        add_link(t, u, castle.id, lakeside.id)
+        add_link(t, u, mill.id, millfield.id)
+        add_link(t, u, idea.id, lakeside.id)
+        add_link(t, u, mill.id, closed.id)
+        db.session.add(
+            PlaceVisit(place_id=mill.id, user_id=u, visit_date=date(2026, 1, 1))
+        )
+        db.session.commit()
+        return {
+            **ids,
+            "trips": trips.id,
+            "other": other.id,
+            "castle": castle.id,
+            "idea": idea.id,
+        }
+
+
+def test_places_and_passports_together_with_their_reasons(
+    app: Flask, client: FlaskClient, owner: dict[str, int]
+) -> None:
+    _places(app, owner)
+    signin(client, owner["user"])
+    page = _search(client, owner).get_data(as_text=True)
+    assert 'name="source"' in page  # both sources have content
+    assert page.count(">Shared</a>") == 1
+    shared_row = page.split(">Shared</a>")[1].split("</tr>")[0]
+    assert "Not yet stamped in Local fields" in shared_row
+    assert "km from Castle" in shared_row and "(taxi)" in shared_row
+    lakeside_row = page.split(">Lakeside</a>")[1].split("</tr>")[0]
+    assert "km from Castle" in lakeside_row and "Linked to Idea" in lakeside_row
+    # A visited place and a closed field contribute nothing by default.
+    assert ">Millfield</a>" not in page and "Closed strip" not in page
+    assert "One place has no airfield yet." in page
+
+
+def test_choosing_the_source_collections_and_visited_places(
+    app: Flask, client: FlaskClient, owner: dict[str, int]
+) -> None:
+    ids = _places(app, owner)
+    signin(client, owner["user"])
+    places_only = _search(client, owner, source="places").get_data(as_text=True)
+    assert ">Single</a>" not in places_only and ">Lakeside</a>" in places_only
+    assert "Not yet stamped" not in places_only
+    passports_only = _search(client, owner, source="passports").get_data(as_text=True)
+    assert ">Lakeside</a>" not in passports_only and ">Single</a>" in passports_only
+    assert "no airfield yet" not in passports_only
+    visited = _search(client, owner, source="places", visited="1").get_data(
+        as_text=True
+    )
+    assert ">Millfield</a>" in visited
+    other = _search(client, owner, source="places", collection=ids["other"]).get_data(
+        as_text=True
+    )
+    assert ">Lakeside</a>" in other and "km from Castle" not in other
+    assert "Linked to Idea" in other and "One place has no airfield yet." in other
+    assert _search(client, owner, source="nonsense").status_code == 200
+
+
+def test_one_place_preselected_from_its_page(
+    app: Flask, client: FlaskClient, owner: dict[str, int]
+) -> None:
+    ids = _places(app, owner)
+    signin(client, owner["user"])
+    page = _search(client, owner, source="places", place=ids["castle"]).get_data(
+        as_text=True
+    )
+    assert ">Shared</a>" in page and ">Lakeside</a>" in page
+    assert "Linked to Idea" not in page and "no airfield yet" not in page
+    assert f'name="place" value="{ids["castle"]}"' in page
+    links = _search(
+        client, owner, source="places", place=ids["castle"], collection=ids["trips"]
+    )
+    assert "collection=" in links.get_data(as_text=True)
+
+
+def test_places_alone_need_no_source_choice(
+    app: Flask, client: FlaskClient, owner: dict[str, int]
+) -> None:
+    from places.collections import create_collection
+
+    with app.app_context():
+        create_collection(owner["tenant"], owner["other"], "Only places")
+        db.session.commit()
+    signin(client, owner["other"])
+    page = client.get(URL).get_data(as_text=True)
+    assert 'name="source"' not in page and "Only places" in page
+    assert "Add places or create" not in page
+
+
+def test_places_are_skipped_when_the_account_cannot_use_them(
+    app: Flask, client: FlaskClient, owner: dict[str, int]
+) -> None:
+    from unittest.mock import patch
+
+    from places.access import PlaceError
+
+    _setup(app, owner)
+    signin(client, owner["user"])
+    with patch("explore.routes.collections_for_user", side_effect=PlaceError("x")):
+        page = _search(client, owner).get_data(as_text=True)
+    assert ">Shared</a>" in page and 'name="source"' not in page

@@ -203,7 +203,7 @@ msgstr "Définissez soit une contribution horaire, soit une contribution mensuel
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Ce fichier GPS contient trop de points pour être importé (plus de %(n)s). Découpez l'enregistrement en plusieurs fichiers."
 
-#: app/aircraft/routes.py:555 app/explore/routes.py:179
+#: app/aircraft/routes.py:555 app/explore/routes.py:256
 msgid "cruise speed"
 msgstr "vitesse de croisière"
 
@@ -1116,39 +1116,39 @@ msgstr "Ce type de fichier n'est pas autorisé pour les justificatifs."
 msgid "Expense receipt %(date)s"
 msgstr "Justificatif de dépense %(date)s"
 
-#: app/explore/routes.py:152
+#: app/explore/routes.py:229
 msgid "Choose a reference airfield from the search results."
 msgstr "Choisissez un aérodrome de référence parmi les résultats de recherche."
 
-#: app/explore/routes.py:155
+#: app/explore/routes.py:232
 msgid "This reference airfield has no coordinates. Choose another."
 msgstr "Cet aérodrome de référence n’a pas de coordonnées. Choisissez-en un autre."
 
-#: app/explore/routes.py:180
+#: app/explore/routes.py:257
 msgid "distance/time limit"
 msgstr "limite de distance/durée"
 
-#: app/explore/routes.py:181
+#: app/explore/routes.py:258
 msgid "usable fuel"
 msgstr "carburant utilisable"
 
-#: app/explore/routes.py:182
+#: app/explore/routes.py:259
 msgid "fuel flow"
 msgstr "consommation"
 
-#: app/explore/routes.py:183
+#: app/explore/routes.py:260
 msgid "reserve minutes"
 msgstr "réserve en minutes"
 
-#: app/explore/routes.py:195
+#: app/explore/routes.py:272
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Saisissez une vitesse de croisière pour le mode durée, ou utilisez le mode distance."
 
-#: app/explore/routes.py:204
+#: app/explore/routes.py:281
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "L’autonomie théorique est inconnue. Saisissez le carburant utilisable, la consommation, la vitesse et une réserve explicite laissant une durée de vol positive. Le filtre distance/durée reste appliqué."
 
-#: app/explore/routes.py:228
+#: app/explore/routes.py:323
 msgid "Choose a reference airfield and correct the destination filters before downloading."
 msgstr "Choisissez un aérodrome de référence et corrigez les filtres de destination avant de télécharger."
 
@@ -3278,6 +3278,9 @@ msgid "Unnamed place"
 msgstr "Lieu sans nom"
 
 #: app/places/exports.py:162 app/templates/base.html:233
+#: app/templates/explore/where_next.html:10
+#: app/templates/explore/where_next.html:38
+#: app/templates/explore/where_next.html:39
 #: app/templates/places/collection_settings.html:20
 #: app/templates/places/index.html:3 app/templates/places/index.html:6
 msgid "Places"
@@ -4589,7 +4592,7 @@ msgid "Where next?"
 msgstr "Où aller ensuite ?"
 
 #: app/templates/base.html:238 app/templates/base.html:353
-#: app/templates/explore/where_next.html:35
+#: app/templates/explore/where_next.html:39
 #: app/templates/passports/confirm.html:3 app/templates/passports/detail.html:4
 #: app/templates/passports/detail.html:7
 #: app/templates/passports/draft_error.html:3
@@ -5515,7 +5518,7 @@ msgid "Enter an airfield code or a saved field reference such as field:123. Neve
 msgstr "Saisissez un code d’aérodrome ou une référence enregistrée telle que field:123. Jamais déduit de l’historique des vols."
 
 #: app/templates/aircraft/aircraft_form.html:68
-#: app/templates/explore/where_next.html:16
+#: app/templates/explore/where_next.html:19
 msgid "Cruise speed (knots, optional)"
 msgstr "Vitesse de croisière (nœuds, facultatif)"
 
@@ -6271,8 +6274,8 @@ msgid "Fuel on board"
 msgstr "Carburant à bord"
 
 #: app/templates/aircraft/detail.html:746
-#: app/templates/explore/where_next.html:26
-#: app/templates/explore/where_next.html:36
+#: app/templates/explore/where_next.html:29
+#: app/templates/explore/where_next.html:40
 #: app/templates/passports/builder.html:42
 #: app/templates/passports/builder.html:63
 msgid "Unknown"
@@ -10215,149 +10218,180 @@ msgid "Add first expense"
 msgstr "Ajouter la première dépense"
 
 #: app/templates/explore/where_next.html:7
-msgid "Discover open airfields you have not yet visited in your passports. Distances are great-circle nautical miles; times assume constant cruise speed, still air and direct flight, excluding climb, approach and routing."
-msgstr "Découvrez les aérodromes ouverts que vous n’avez pas encore visités dans vos passeports. Distances orthodromiques en milles nautiques ; durées à vitesse de croisière constante, sans vent et en vol direct, hors montée, approche et routage."
+msgid "Discover open airfields not yet stamped in your passports, and airfields near the places you want to visit. Distances are great-circle nautical miles; times assume constant cruise speed, still air and direct flight, excluding climb, approach and routing."
+msgstr "Découvrez les aérodromes ouverts pas encore tamponnés dans vos passeports, et les aérodromes proches des lieux que vous voulez visiter. Distances orthodromiques en milles nautiques ; durées à vitesse de croisière constante, sans vent et en vol direct, hors montée, approche et routage."
 
 #: app/templates/explore/where_next.html:10
+msgid "Search in"
+msgstr "Chercher dans"
+
+#: app/templates/explore/where_next.html:10
+msgid "Places and passports"
+msgstr "Lieux et passeports"
+
+#: app/templates/explore/where_next.html:10
+msgid "Passports"
+msgstr "Passeports"
+
+#: app/templates/explore/where_next.html:12
+msgid "Search in collections"
+msgstr "Chercher dans les collections"
+
+#: app/templates/explore/where_next.html:12
+msgid "Include places I have visited"
+msgstr "Inclure les lieux que j’ai visités"
+
+#: app/templates/explore/where_next.html:12
+msgid "All your collections when none is ticked."
+msgstr "Toutes vos collections si aucune n’est cochée."
+
+#: app/templates/explore/where_next.html:13
 msgid "Search in passports"
 msgstr "Chercher dans les passeports"
 
-#: app/templates/explore/where_next.html:10
+#: app/templates/explore/where_next.html:13
 msgid "All your active passports when none is ticked."
 msgstr "Tous vos passeports actifs si aucun n’est coché."
 
-#: app/templates/explore/where_next.html:12
+#: app/templates/explore/where_next.html:15
 msgid "Aircraft (optional)"
 msgstr "Aéronef (facultatif)"
 
-#: app/templates/explore/where_next.html:12
+#: app/templates/explore/where_next.html:15
 msgid "Unmanaged aircraft / session inputs"
 msgstr "Aéronef non géré / données de la session"
 
-#: app/templates/explore/where_next.html:13
+#: app/templates/explore/where_next.html:16
 msgid "Reference airfield"
 msgstr "Aérodrome de référence"
 
-#: app/templates/explore/where_next.html:13
+#: app/templates/explore/where_next.html:16
 msgid "Use aircraft home, then pilot home"
 msgstr "Base de l’aéronef, sinon base du pilote"
 
-#: app/templates/explore/where_next.html:14
+#: app/templates/explore/where_next.html:17
 msgid "Search reference airfield by code or name"
 msgstr "Rechercher l’aérodrome de référence par code ou nom"
 
-#: app/templates/explore/where_next.html:14
+#: app/templates/explore/where_next.html:17
 #: app/templates/passports/builder.html:44
 msgid "Search airfields"
 msgstr "Rechercher des aérodromes"
 
-#: app/templates/explore/where_next.html:14
+#: app/templates/explore/where_next.html:17
 msgid "Up to 50 matches appear in the reference-airfield list. Narrow the search if needed."
 msgstr "La liste des aérodromes de référence affiche jusqu’à 50 résultats. Affinez la recherche si nécessaire."
 
-#: app/templates/explore/where_next.html:15
+#: app/templates/explore/where_next.html:18
 msgid "Use home airfield"
 msgstr "Utiliser l’aérodrome de base"
 
-#: app/templates/explore/where_next.html:15
+#: app/templates/explore/where_next.html:18
 msgid "Use my latest logged arrival"
 msgstr "Utiliser ma dernière arrivée enregistrée"
 
-#: app/templates/explore/where_next.html:17
+#: app/templates/explore/where_next.html:20
 msgid "Filter mode"
 msgstr "Mode de filtrage"
 
-#: app/templates/explore/where_next.html:17
-#: app/templates/explore/where_next.html:36
+#: app/templates/explore/where_next.html:20
+#: app/templates/explore/where_next.html:40
 msgid "Distance (NM)"
 msgstr "Distance en NM"
 
-#: app/templates/explore/where_next.html:17
-#: app/templates/explore/where_next.html:36
+#: app/templates/explore/where_next.html:20
+#: app/templates/explore/where_next.html:40
 msgid "Still-air time (minutes)"
 msgstr "Durée sans vent (minutes)"
 
-#: app/templates/explore/where_next.html:18
+#: app/templates/explore/where_next.html:21
 msgid "Maximum distance / minutes"
 msgstr "Distance / minutes maximales"
 
-#: app/templates/explore/where_next.html:18
+#: app/templates/explore/where_next.html:21
 msgid "Adjust distance / minutes"
 msgstr "Ajuster la distance / les minutes"
 
-#: app/templates/explore/where_next.html:20
+#: app/templates/explore/where_next.html:23
 msgid "Optional theoretical range"
 msgstr "Autonomie théorique facultative"
 
-#: app/templates/explore/where_next.html:21
+#: app/templates/explore/where_next.html:24
 msgid "Destination discovery only, not fuel dispatch advice. Enter explicitly usable fuel; total tank capacity is never assumed usable. Fuel and flow must both use litres. Reserve is in minutes; return mode budgets both legs without refuelling."
 msgstr "Recherche de destinations uniquement, pas un conseil d’avitaillement. Saisissez le carburant explicitement utilisable ; la capacité totale des réservoirs n’est jamais présumée utilisable. Carburant et consommation en litres. Réserve en minutes ; le mode aller-retour prévoit les deux trajets sans ravitaillement."
 
-#: app/templates/explore/where_next.html:22
+#: app/templates/explore/where_next.html:25
 msgid "Reserve defaults to your published personal minimum. You can change it for this session."
 msgstr "La réserve reprend votre minimum personnel publié. Vous pouvez la modifier pour cette session."
 
-#: app/templates/explore/where_next.html:23
+#: app/templates/explore/where_next.html:26
 msgid "Usable fuel (L)"
 msgstr "Carburant utilisable (L)"
 
-#: app/templates/explore/where_next.html:23
+#: app/templates/explore/where_next.html:26
 msgid "Fuel flow (L/h)"
 msgstr "Consommation (L/h)"
 
-#: app/templates/explore/where_next.html:23
+#: app/templates/explore/where_next.html:26
 msgid "Reserve (minutes)"
 msgstr "Réserve (minutes)"
 
-#: app/templates/explore/where_next.html:24
+#: app/templates/explore/where_next.html:27
 msgid "Trip assumption"
 msgstr "Hypothèse de trajet"
 
-#: app/templates/explore/where_next.html:24
+#: app/templates/explore/where_next.html:27
 msgid "One way"
 msgstr "Aller simple"
 
-#: app/templates/explore/where_next.html:24
+#: app/templates/explore/where_next.html:27
 msgid "Return without refuelling"
 msgstr "Aller-retour sans ravitaillement"
 
-#: app/templates/explore/where_next.html:25
+#: app/templates/explore/where_next.html:28
 msgid "Also filter by theoretical range"
 msgstr "Filtrer aussi par autonomie théorique"
 
-#: app/templates/explore/where_next.html:26
+#: app/templates/explore/where_next.html:29
 msgid "Theoretical radius"
 msgstr "Rayon théorique"
 
-#: app/templates/explore/where_next.html:28
+#: app/templates/explore/where_next.html:31
 msgid "Find destinations"
 msgstr "Trouver des destinations"
 
-#: app/templates/explore/where_next.html:30
+#: app/templates/explore/where_next.html:33
 msgid "Choose a reference airfield to find destinations."
 msgstr "Choisissez un aérodrome de référence pour trouver des destinations."
 
-#: app/templates/explore/where_next.html:30
+#: app/templates/explore/where_next.html:33
 msgid "Starting from"
 msgstr "Au départ de"
 
-#: app/templates/explore/where_next.html:31
+#: app/templates/explore/where_next.html:34
 msgid "Destination discovery map"
 msgstr "Carte de recherche de destinations"
 
-#: app/templates/explore/where_next.html:32
+#: app/templates/explore/where_next.html:35
 msgid "Targets without coordinates cannot be distance-filtered; they remain in the passport list."
 msgstr "Les objectifs sans coordonnées ne peuvent pas être filtrés par distance ; ils restent dans la liste du passeport."
 
-#: app/templates/explore/where_next.html:33
+#: app/templates/explore/where_next.html:36
 msgid "Suitability unknown: no licensed runway or restriction dataset is loaded. Check current aerodrome information before planning a flight."
 msgstr "Adéquation inconnue : aucune donnée autorisée sur les pistes ou restrictions n’est chargée. Consultez les informations d’aérodrome actuelles avant de planifier un vol."
 
-#: app/templates/explore/where_next.html:35
-msgid "Create or join an airfield passport to find airfields you have not visited yet."
-msgstr "Créez ou rejoignez un passeport d’aérodromes pour trouver les aérodromes que vous n’avez pas encore visités."
+#: app/templates/explore/where_next.html:38
+#, python-format
+msgid "One place has no airfield yet."
+msgid_plural "%(num)d places have no airfield yet."
+msgstr[0] "Un lieu n’a pas encore d’aérodrome."
+msgstr[1] "%(num)d lieux n’ont pas encore d’aérodrome."
 
-#: app/templates/explore/where_next.html:36
+#: app/templates/explore/where_next.html:39
+msgid "Add places or create an airfield passport to find where to fly next."
+msgstr "Ajoutez des lieux ou créez un passeport d’aérodromes pour trouver où voler ensuite."
+
+#: app/templates/explore/where_next.html:40
 #: app/templates/passports/builder.html:62
 #: app/templates/passports/detail.html:42 app/templates/passports/print.html:24
 #: app/templates/passports/public_view.html:19
@@ -10369,16 +10403,26 @@ msgstr "Créez ou rejoignez un passeport d’aérodromes pour trouver les aérod
 msgid "Airfield"
 msgstr "Aérodrome"
 
-#: app/templates/explore/where_next.html:36
+#: app/templates/explore/where_next.html:40
 msgid "Why"
 msgstr "Pourquoi"
 
-#: app/templates/explore/where_next.html:36
+#: app/templates/explore/where_next.html:40
 #, python-format
 msgid "Not yet stamped in %(passport)s"
 msgstr "Pas encore tamponné dans %(passport)s"
 
-#: app/templates/explore/where_next.html:36
+#: app/templates/explore/where_next.html:40
+#, python-format
+msgid "%(km)s km from %(place)s"
+msgstr "À %(km)s km de %(place)s"
+
+#: app/templates/explore/where_next.html:40
+#, python-format
+msgid "Linked to %(place)s"
+msgstr "Lié à %(place)s"
+
+#: app/templates/explore/where_next.html:40
 msgid "No open, unvisited airfields match these inputs."
 msgstr "Aucun aérodrome ouvert non visité ne correspond à ces critères."
 

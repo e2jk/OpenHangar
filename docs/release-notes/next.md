@@ -34,8 +34,9 @@ installed app on Android: OpenHangar opens a new place with the link and a
 suggested name, ready to save now and locate later — Personal accounts too.
 
 **Where next?** has its own page, in the new **Explore** menu next to Places:
-search all your active airfield passports at once, or tick the ones you want.
-Each airfield appears once, with every passport where it is still to stamp.
+search all your active airfield passports at once, or tick the ones you want,
+and the airfields near your places. Each airfield appears once, with all its
+reasons: the passports where it is still to stamp and the places it serves.
 A passport's **Where next?** link and older bookmarks open it with that passport
 selected.
 
