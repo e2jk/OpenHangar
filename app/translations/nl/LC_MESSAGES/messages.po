@@ -3197,7 +3197,7 @@ msgstr "Kies een lid van deze collectie."
 msgid "Enter valid latitude and longitude coordinates."
 msgstr "Voer een geldige breedtegraad en lengtegraad in."
 
-#: app/places/coordinates.py:97
+#: app/places/coordinates.py:98 app/places/place_routes.py:221
 msgid "Paste decimal or DMS coordinates, or a map link containing coordinates."
 msgstr "Plak decimale coördinaten of graden, minuten en seconden, of een kaartlink met coördinaten."
 
@@ -3237,7 +3237,7 @@ msgstr "Elke bezoeker moet lid zijn van de doelcollectie. Maak anders een kopie 
 msgid "Only the place owner or collection creator can permanently delete it."
 msgstr "Alleen de eigenaar van de plaats of de maker van de collectie kan deze definitief verwijderen."
 
-#: app/places/place_routes.py:128 app/places/place_routes.py:244
+#: app/places/place_routes.py:128 app/places/place_routes.py:249
 msgid "Choose a collection you can edit."
 msgstr "Kies een collectie die je mag bewerken."
 
@@ -3252,7 +3252,7 @@ msgstr "Lid zonder naam"
 msgid "Former member"
 msgstr "Voormalig lid"
 
-#: app/places/place_routes.py:259
+#: app/places/place_routes.py:264
 msgid "Confirm the permanent deletion of this place."
 msgstr "Bevestig de definitieve verwijdering van deze plaats."
 
@@ -3877,7 +3877,7 @@ msgstr "Datum gecorrigeerd volgens het GPS-spoor; het papieren logboek vermeldt 
 msgid "Enter a valid %(label)s."
 msgstr "Voer een geldige waarde in voor %(label)s."
 
-#: app/services/destination_search.py:59
+#: app/services/destination_search.py:60
 msgid "Choose an unambiguous airfield code or a saved field reference."
 msgstr "Kies een eenduidige vliegveldcode of een opgeslagen veldreferentie."
 

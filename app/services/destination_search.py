@@ -54,6 +54,7 @@ def resolve_origin(value: str, resolver: Callable[[str], T | None]) -> T | None:
             if candidate is not None:
                 return candidate
         except ValueError:
+            # Resolver rejections and missing matches share the actionable error below.
             pass
     raise DestinationError(
         _("Choose an unambiguous airfield code or a saved field reference.")

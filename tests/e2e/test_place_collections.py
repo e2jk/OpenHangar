@@ -9,7 +9,7 @@ from playwright.sync_api import Page, Route, expect
 
 from tests.e2e.test_passport_builder import passport_page
 
-__all__ = ["passport_page"]
+__all__ = ["passport_page", "pytestmark"]
 pytestmark = [pytest.mark.e2e, pytest.mark.destructive]
 
 

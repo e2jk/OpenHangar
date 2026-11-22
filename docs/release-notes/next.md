@@ -31,3 +31,7 @@ place, and leaving a group preserves its places and visit history.
   tokens, waypoint documents and destination calculations. Account ZIP exports
   add a versioned feature manifest while retaining the existing passport JSON
   and photo paths.
+
+- Static analysis now recognises the Places route-registration and pytest
+  exports, explicit denied-request returns and expected validation fallbacks.
+  The coordinate API returns a fixed translated validation message.
