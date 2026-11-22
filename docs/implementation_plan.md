@@ -3064,10 +3064,19 @@ reader-owned visit form with 42e.
 
 ### 42g — Integration
 
-- [ ] Backup/restore, the account data export (places, visits, own photos) and
-  GPX/KML export of places.
+- [x] Backup/restore, the account data export (places, visits, own photos) and
+  GPX/KML export of places. *Done (2026-11-22):* `places/exports.py` — the
+  "places" account-export section (own places with tags and photo, own visits,
+  collection names) and `places.export_places` (`/places/export.gpx|kml`, the
+  list's filters); backup round-trip fixture with a shared collection, a photo,
+  a tag, visits and a link-only place. The download buttons on the Places page
+  come with 42d (Codex).
 - [ ] Demo seed with a shared "Our places" collection; offline/PWA cache
   classification; screenshots; user guide; configuration docs.
+  *Done:* the demo and dev seeds' "Our places" (owner, second pilot and the
+  Personal-account friend as editors), `/places` and `/explore` never cached
+  offline, the user guide's Places section; screenshots once 42d/42e settle the
+  pages.
 - [ ] Validation: shared-collection members see and edit the same places,
   readers can't edit, non-members get 404 everywhere (Where next?, exports, photo
   URLs); leaving/removal keeps places and visits; Where next? with only places,

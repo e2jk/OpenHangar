@@ -26,6 +26,36 @@ class TestDevSeedEndToEnd:
                 User.query.filter_by(email="admin@openhangar.dev").first() is not None
             )
 
+    def test_our_places_collection_is_shared_with_the_friend(self, app, monkeypatch):
+        """Phase 42g: a shared "Our places" collection the friend edits too,
+        with located places, a link still to locate and a visit each."""
+        from models import Place, PlaceCollection, PlaceCollectionMember, PlaceVisit
+
+        monkeypatch.setenv("OPENHANGAR_ENV", "development")
+        with app.app_context():
+            seed()
+            tenant = Tenant.query.filter_by(slug="dev-hangar").one()
+            collection = PlaceCollection.query.filter_by(
+                tenant_id=tenant.id, name="Our places"
+            ).one()
+            friend = User.query.filter_by(email="friend@openhangar.dev").one()
+            members = PlaceCollectionMember.query.filter_by(
+                collection_id=collection.id
+            ).all()
+            assert friend.id in {m.user_id for m in members}
+            assert all(m.can_edit for m in members) and len(members) == 3
+            places = Place.query.filter_by(collection_id=collection.id).all()
+            assert len(places) == 5
+            assert [p.external_url for p in places if p.latitude is None] == [
+                "https://www.instagram.com/explore/locations/"
+            ]
+            assert (
+                PlaceVisit.query.filter(
+                    PlaceVisit.place_id.in_([p.id for p in places])
+                ).count()
+                == 2
+            )
+
     def test_shared_ownership_seeded_on_robin(self, app, monkeypatch):
         """Phase 39: the Robin (OO-GRN) gets 3 co-owners via the legacy
         escape-hatch, without a TenantProfile on the main dev tenant."""

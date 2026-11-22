@@ -19,6 +19,7 @@ from _seed_helpers import (  # pyright: ignore[reportMissingImports]
     seed_passports,
     seed_personal_minimums,
     seed_pilot_profiles,
+    seed_places,
     seed_rental_cycle,
     seed_reservations,
     seed_shared_ownership_on_existing_aircraft,
@@ -222,6 +223,12 @@ def seed() -> None:
         pilot_user.id if pilot_user else None,
         _FRIEND[0],
         _pw.hash(_FRIEND[1]),
+    )
+    seed_places(
+        tenant.id,
+        admin_user.id,
+        pilot_user.id if pilot_user else None,
+        _FRIEND[0],
     )
 
     db.session.commit()

@@ -60,20 +60,20 @@ msgstr[1] "🎉 Het is vandaag %(n)s jaar geleden dat u uw PPL behaalde!"
 msgid "🎉 Today is the anniversary of your PPL!"
 msgstr "🎉 Vandaag is het de verjaardag van uw PPL!"
 
-#: app/init.py:1180
+#: app/init.py:1181
 #, python-format
 msgid "This upload is too large (maximum %(mb)s MB in total). Please upload the files in smaller batches."
 msgstr "Deze upload is te groot (maximaal %(mb)s MB in totaal). Upload de bestanden in kleinere delen."
 
-#: app/init.py:1207
+#: app/init.py:1208
 msgid "Some text entered is too long, so nothing was saved. Please shorten it and try again."
 msgstr "Een ingevoerde tekst is te lang, dus er is niets opgeslagen. Maak hem korter en probeer het opnieuw."
 
-#: app/flights/form_parsing.py:459 app/init.py:1212
+#: app/flights/form_parsing.py:459 app/init.py:1213
 msgid "A number entered is far too large, so nothing was saved. Please check the values and try again."
 msgstr "Een ingevoerd getal is veel te groot, dus er is niets opgeslagen. Controleer de waarden en probeer het opnieuw."
 
-#: app/init.py:1265
+#: app/init.py:1266
 msgid "The sign-in form had expired. Please sign in again."
 msgstr "Het aanmeldformulier was verlopen. Meld u opnieuw aan."
 
@@ -1148,7 +1148,7 @@ msgstr "Voer een kruissnelheid in voor de tijdsmodus of gebruik de afstandsmodus
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "Het theoretische bereik is onbekend. Voer bruikbare brandstof, verbruik, snelheid en een expliciete reserve in die positieve vliegtijd overlaten. Het afstands-/tijdfilter blijft van toepassing."
 
-#: app/explore/routes.py:228 app/passports/routes.py:263
+#: app/explore/routes.py:228
 msgid "Choose a reference airfield and correct the destination filters before downloading."
 msgstr "Kies een referentievliegveld en corrigeer de bestemmingsfilters voordat u downloadt."
 
@@ -2577,47 +2577,47 @@ msgstr "Je paspoort %(title)s eindigt op %(date)s. Open de editie om je nog te b
 msgid "Open passport"
 msgstr "Paspoort openen"
 
-#: app/passports/routes.py:359
+#: app/passports/routes.py:346
 msgid "Small airfields"
 msgstr "Kleine vliegvelden"
 
-#: app/passports/routes.py:360
+#: app/passports/routes.py:347
 msgid "Medium airports"
 msgstr "Middelgrote luchthavens"
 
-#: app/passports/routes.py:361
+#: app/passports/routes.py:348
 msgid "Large airports"
 msgstr "Grote luchthavens"
 
-#: app/passports/routes.py:362
+#: app/passports/routes.py:349
 msgid "Heliports"
 msgstr "Helihavens"
 
-#: app/passports/routes.py:363
+#: app/passports/routes.py:350
 msgid "Seaplane bases"
 msgstr "Watervliegbases"
 
-#: app/passports/routes.py:364
+#: app/passports/routes.py:351
 msgid "Balloon ports"
 msgstr "Ballonhavens"
 
-#: app/passports/routes.py:365
+#: app/passports/routes.py:352
 msgid "Closed airfields"
 msgstr "Gesloten vliegvelden"
 
-#: app/passports/routes.py:475
+#: app/passports/routes.py:462
 msgid "Passport saved."
 msgstr "Paspoort opgeslagen."
 
-#: app/passports/routes.py:516
+#: app/passports/routes.py:503
 msgid "An airfield code conflicts with an existing identity. Review or remove that selection."
 msgstr "Een vliegveldcode conflicteert met een bestaande identiteit. Controleer of verwijder die selectie."
 
-#: app/passports/routes.py:578
+#: app/passports/routes.py:565
 msgid "Passport deleted."
 msgstr "Paspoort verwijderd."
 
-#: app/passports/routes.py:600
+#: app/passports/routes.py:587
 msgid "Share your visits with this group before sharing photos."
 msgstr "Deel je bezoeken met deze groep voordat je foto's deelt."
 
@@ -3210,6 +3210,16 @@ msgstr "Voer een geldige breedtegraad en lengtegraad in."
 msgid "Paste decimal or DMS coordinates, or a map link containing coordinates."
 msgstr "Plak decimale coördinaten of graden, minuten en seconden, of een kaartlink met coördinaten."
 
+#: app/places/exports.py:153 app/places/presentation.py:16
+msgid "Unnamed place"
+msgstr "Plek zonder naam"
+
+#: app/places/exports.py:164 app/templates/base.html:233
+#: app/templates/places/collection_settings.html:20
+#: app/templates/places/index.html:3 app/templates/places/index.html:6
+msgid "Places"
+msgstr "Plaatsen"
+
 #: app/places/management.py:41
 msgid "A place field is too long."
 msgstr "Een veld van de plaats is te lang."
@@ -3260,10 +3270,6 @@ msgstr "Voormalig lid"
 #: app/places/place_routes.py:276
 msgid "Confirm the permanent deletion of this place."
 msgstr "Bevestig de definitieve verwijdering van deze plaats."
-
-#: app/places/presentation.py:16
-msgid "Unnamed place"
-msgstr "Plek zonder naam"
 
 #: app/places/routes.py:236
 msgid "Invitation saved. Ask your friend to sign in and open Places."
@@ -4461,11 +4467,6 @@ msgstr "Pilootlogboek"
 #: app/templates/base.html:231
 msgid "Explore"
 msgstr "Verkennen"
-
-#: app/templates/base.html:233 app/templates/places/collection_settings.html:20
-#: app/templates/places/index.html:3 app/templates/places/index.html:6
-msgid "Places"
-msgstr "Plaatsen"
 
 #: app/templates/base.html:234 app/templates/explore/where_next.html:3
 #: app/templates/explore/where_next.html:6

@@ -3959,3 +3959,89 @@ def seed_group_passport(
         )
     )
     db.session.flush()
+
+
+# Places in Belgium worth a flight, for the shared "Our places" collection
+# (Phase 42g): (title, latitude, longitude, address, tags). Coordinates are
+# public landmarks; the last entry is a saved link still to locate.
+_OUR_PLACES = [
+    (
+        "Pairi Daiza",
+        "50.5856",
+        "3.8865",
+        "Domaine de Cambron, Brugelette",
+        ["Attraction", "Family"],
+    ),
+    (
+        "Caves of Han",
+        "50.1255",
+        "5.1868",
+        "Rue J. Lamotte 2, Han-sur-Lesse",
+        ["Nature"],
+    ),
+    (
+        "Bouillon Castle",
+        "49.7936",
+        "5.0647",
+        "Esplanade Godefroy 1, Bouillon",
+        ["Museum", "Viewpoint"],
+    ),
+    ("Bruges Markt", "51.2089", "3.2247", "Markt, Brugge", ["Town", "Restaurant"]),
+]
+
+
+def seed_places(
+    tenant_id: int, owner_id: int, pilot_id: int | None, friend_email: str
+) -> None:
+    """A shared "Our places" collection (Phase 42g): the owner, the second
+    pilot and the Personal-account friend all edit it; a few located places
+    with tags, a saved Instagram link still to locate, and a visit each by
+    the owner and the friend. Call after seed_group_passport (it needs the
+    friend's account)."""
+    from datetime import date
+
+    from models import PlaceVisit, User
+    from places.collections import (  # pyright: ignore[reportMissingImports]
+        create_collection,
+        set_member,
+    )
+    from places.management import save_place  # pyright: ignore[reportMissingImports]
+
+    friend = User.query.filter_by(email=friend_email).one()
+    collection = create_collection(tenant_id, owner_id, "Our places")
+    for member in (pilot_id, friend.id):
+        if member is not None:
+            set_member(tenant_id, owner_id, collection.id, member, can_edit=True)
+    places = [
+        save_place(
+            tenant_id,
+            owner_id,
+            collection.id,
+            {"title": title, "latitude": lat, "longitude": lon, "address": address},
+            tags=tags,
+        )
+        for title, lat, lon, address, tags in _OUR_PLACES
+    ]
+    save_place(
+        tenant_id,
+        friend.id,
+        collection.id,
+        {"external_url": "https://www.instagram.com/explore/locations/"},
+    )
+    today = date.today()
+    db.session.add_all(
+        [
+            PlaceVisit(
+                place_id=places[0].id,
+                user_id=owner_id,
+                visit_date=today.replace(day=1),
+                note="Flew in to the nearest field, then a taxi.",
+            ),
+            PlaceVisit(
+                place_id=places[3].id,
+                user_id=friend.id,
+                visit_date=today.replace(day=1),
+            ),
+        ]
+    )
+    db.session.flush()
