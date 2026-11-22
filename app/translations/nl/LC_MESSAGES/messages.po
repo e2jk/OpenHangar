@@ -2674,7 +2674,8 @@ msgstr "Voer een geheel aantal bonnen tussen 0 en 100.000 in (minstens 1 bij geb
 msgid "Voucher validity must stay within the edition dates."
 msgstr "De geldigheid van de bonnen moet binnen de editiedatums vallen."
 
-#: app/passports/vouchers.py:87
+#: app/passports/vouchers.py:87 app/places/airfields.py:62
+#: app/places/airfields.py:121 app/places/airfields.py:132
 msgid "Airfield not found."
 msgstr "Vliegveld niet gevonden."
 
@@ -3178,6 +3179,10 @@ msgstr "Collectie niet gevonden."
 msgid "Place not found."
 msgstr "Plaats niet gevonden."
 
+#: app/places/airfields.py:69
+msgid "Use a getting-there note of at most 2,000 characters."
+msgstr "Gebruik maximaal 2.000 tekens voor de routebeschrijving."
+
 #: app/places/collections.py:21
 msgid "Enter a collection name of at most 128 characters."
 msgstr "Voer een collectienaam van maximaal 128 tekens in."
@@ -3221,35 +3226,35 @@ msgstr "Plek zonder naam"
 msgid "Places"
 msgstr "Plaatsen"
 
-#: app/places/management.py:41
+#: app/places/management.py:42
 msgid "A place field is too long."
 msgstr "Een veld van de plaats is te lang."
 
-#: app/places/management.py:46
+#: app/places/management.py:47
 msgid "Enter a full http or https website address."
 msgstr "Voer een volledig websiteadres in dat begint met http of https."
 
-#: app/places/management.py:64
+#: app/places/management.py:65
 msgid "Use tag names of at most 80 characters."
 msgstr "Gebruik tagnamen van maximaal 80 tekens."
 
-#: app/places/management.py:118
+#: app/places/management.py:119
 msgid "Use Move to change a place's collection."
 msgstr "Gebruik Verplaatsen om een plaats naar een andere collectie te verplaatsen."
 
-#: app/places/management.py:166
+#: app/places/management.py:179
 msgid "The place photo could not be copied."
 msgstr "De foto van de plaats kon niet worden gekopieerd."
 
-#: app/places/management.py:181
+#: app/places/management.py:194
 msgid "Only the place owner can move it."
 msgstr "Alleen de eigenaar van de plaats kan deze verplaatsen."
 
-#: app/places/management.py:192
+#: app/places/management.py:205
 msgid "Every visitor must belong to the destination collection. Copy this place instead."
 msgstr "Elke bezoeker moet lid zijn van de doelcollectie. Maak anders een kopie van deze plaats."
 
-#: app/places/management.py:239
+#: app/places/management.py:252
 msgid "Only the place owner or collection creator can permanently delete it."
 msgstr "Alleen de eigenaar van de plaats of de maker van de collectie kan deze definitief verwijderen."
 

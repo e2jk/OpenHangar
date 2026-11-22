@@ -4944,6 +4944,45 @@ class PlaceTagAssignment(db.Model):
     collection_id = db.Column(db.Integer, nullable=False)
 
 
+class PlaceAirfield(db.Model):
+    """A collection's explicit route to a place, sharing only chosen metadata."""
+
+    __tablename__ = "place_airfields"
+    __table_args__ = (
+        db.ForeignKeyConstraint(
+            ["tenant_id", "collection_id"],
+            ["place_collections.tenant_id", "place_collections.id"],
+            ondelete="CASCADE",
+        ),
+        db.ForeignKeyConstraint(
+            ["collection_id", "place_id"],
+            ["places.collection_id", "places.id"],
+            ondelete="CASCADE",
+            onupdate="CASCADE",
+        ),
+        db.ForeignKeyConstraint(
+            ["tenant_id", "airfield_id"],
+            [
+                "passport_airfield_identities.tenant_id",
+                "passport_airfield_identities.id",
+            ],
+            ondelete="CASCADE",
+        ),
+    )
+    place_id = db.Column(db.Integer, primary_key=True)
+    airfield_id = db.Column(db.Integer, primary_key=True, index=True)
+    tenant_id = db.Column(db.Integer, nullable=False, index=True)
+    collection_id = db.Column(db.Integer, nullable=False, index=True)
+    note = db.Column(db.String(2000), nullable=True)
+    preferred = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
+    )
+    # Public-source links must not later reveal private passport corrections.
+    public_catalogue = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
+    )
+
+
 class PlaceVisit(db.Model):
     """An explicit personal visit; losing a membership does not erase history."""
 
