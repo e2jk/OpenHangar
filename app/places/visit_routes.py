@@ -6,7 +6,7 @@ from flask import abort, flash, redirect, request, session, url_for
 from flask.typing import ResponseReturnValue
 from flask_babel import gettext as _
 from models import db
-from utils import current_membership, login_required
+from utils import current_membership, db_id, login_required
 
 from places import visits
 from places.access import PlaceError
@@ -61,11 +61,12 @@ def delete_visit(place_id: int, visit_id: int) -> ResponseReturnValue:
 
 
 def _back() -> ResponseReturnValue:
-    """Back to the page that showed the suggestion (a same-site path only)."""
-    target = request.form.get("next", "")
-    if not target.startswith("/") or target.startswith("//") or "\\" in target:
-        target = url_for("pilots.logbook")
-    return redirect(target)
+    """Back to the page that showed the suggestion: the aircraft logbook named
+    by its id, else the pilot logbook. Never a URL taken from the form."""
+    aircraft_id = request.form.get("aircraft", type=db_id)
+    if aircraft_id is not None:
+        return redirect(url_for("flights.list_flights", aircraft_id=aircraft_id))
+    return redirect(url_for("pilots.logbook"))
 
 
 @places_bp.route("/<int:place_id>/visits/from-flight/<int:flight_id>", methods=["POST"])

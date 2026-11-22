@@ -3393,7 +3393,7 @@ msgstr "Famille"
 msgid "Enter a tag name of at most 80 characters."
 msgstr "Saisissez un nom d’étiquette de 80 caractères maximum."
 
-#: app/places/visit_routes.py:38 app/places/visit_routes.py:84
+#: app/places/visit_routes.py:38 app/places/visit_routes.py:85
 msgid "Visit recorded."
 msgstr "Visite enregistrée."
 
