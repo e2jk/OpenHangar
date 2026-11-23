@@ -14,3 +14,14 @@
 - Pages fetched in advance no longer ask the server each time a screen
   changes when their saved copy is still fresh: less mobile data and server
   load.
+- The pilot logbook and an aircraft's flight log open straight on the
+  flights: the filters fold away behind a **Filter** button (showing how
+  many are active), and the page-size and compact-view options — and, on a
+  phone, the page numbers — moved below the list.
+- The **Export my passport data** button, and the GPX/KML download buttons
+  on places, passports and Where next?, only appear when there is something
+  to download.
+- In the dark theme, the menu button at the top right is visible again, and
+  a few other dark-on-dark icons and buttons (airworthiness N/A filter,
+  reservation calendar weekday headers, setup-wizard icons) are easy to
+  read.
