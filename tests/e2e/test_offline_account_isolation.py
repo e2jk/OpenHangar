@@ -981,5 +981,8 @@ def test_a_blank_form_saved_on_another_day_opens_with_today(
         """() => { const d = new Date(); return d.getFullYear() + '-' +
              String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }"""
     )
-    assert page.locator("#date").input_value() == today
+    # Set on htmx:afterSettle, a moment after the swap: wait for it.
+    page.wait_for_function(
+        "today => document.getElementById('date').value === today", arg=today
+    )
     context.close()
