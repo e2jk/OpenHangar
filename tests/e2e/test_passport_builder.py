@@ -289,17 +289,10 @@ def test_passport_destination_discovery(
                 "No open, unvisited airfields match these inputs.", exact=True
             )
         ).to_be_visible()
-        with plain.expect_download() as downloaded:
-            plain.get_by_role("link", name="Download KML waypoints", exact=True).click()
-        kml_path = downloaded.value.path()
-        assert kml_path is not None and downloaded.value.suggested_filename.endswith(
-            "-unvisited.kml"
-        )
-        assert (
-            not ET.parse(kml_path)
-            .getroot()
-            .findall(".//{http://www.opengis.net/kml/2.2}Placemark")
-        )
+        # Nothing to download: no waypoint links (an empty file is not offered).
+        expect(
+            plain.get_by_role("link", name="Download KML waypoints", exact=True)
+        ).to_have_count(0)
     finally:
         context.close()
     page.goto(passport_url)
