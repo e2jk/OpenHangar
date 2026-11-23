@@ -663,3 +663,15 @@ class TestServerErrorIsNotASignOut:
         assert worker.index(guard) < worker.index(
             "var next = { owner: response.headers"
         )
+
+
+class TestStaleSignedOutPageIsShown:
+    def test_a_stale_answer_without_an_owner_is_passed_through(self):
+        # Right after a sign-out, the sign-in page could arrive while the
+        # stored identity was still changing: discarded as "retired", it
+        # became the offline page and the next account could not sign in.
+        worker = (_STATIC_DIR / "js" / "sw.js").read_text()
+        network = worker[worker.index("function _network(request)") :]
+        network = network[: network.index("\n}\n")]
+        assert network.count("if (!next.owner) return response;") == 2
+        assert network.count("throw new Error('offline-identity-retired');") == 2
