@@ -560,7 +560,17 @@ def create_app() -> Flask:
             return redirect(url_for("auth.login"))
         return None
 
-    from services.offline_identity import OWNER_HEADER, SESSION_HEADER, identity
+    from services.auth_sessions import seconds_left
+    from services.offline_identity import (
+        EXPIRES_HEADER,
+        INSTANT_HEADER,
+        OWNER_HEADER,
+        SESSION_HEADER,
+        identity,
+        instant_pages_enabled,
+    )
+
+    app.config["INSTANT_PAGES"] = instant_pages_enabled()
 
     app.jinja_env.globals["offline_identity"] = identity
 
@@ -578,6 +588,11 @@ def create_app() -> Flask:
         owner, login = identity()
         response.headers[OWNER_HEADER] = owner
         response.headers[SESSION_HEADER] = login
+        left = seconds_left() if owner else None
+        if left is not None:
+            response.headers[EXPIRES_HEADER] = str(left)
+            if app.config["INSTANT_PAGES"]:
+                response.headers[INSTANT_HEADER] = "1"
         if (
             request.headers.get("HX-Request") == "true"
             and SESSION_HEADER in request.headers

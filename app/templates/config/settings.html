@@ -584,8 +584,19 @@
         <span class="badge bg-secondary fw-normal">{{ _('Disabled in dev mode') }}</span>
         <span class="small ms-1">{{ _('Set %(var)s to test offline features locally.', var='OPENHANGAR_SW_ENABLED=true') }}</span>
         {% endif %}
-        <span id="sw-browser-status" class="badge bg-secondary fw-normal ms-2">{{ _('Checking…') }}</span>
-        <script type="application/json" id="sw-status-labels">{{ {'active': _('Active in this browser'), 'inactive': _('Not active in this browser')} | tojson }}</script>
+        <span id="sw-browser-status" class="badge bg-secondary fw-normal ms-2"
+              data-labels="{{ {'active': _('Active in this browser'), 'inactive': _('Not active in this browser')} | tojson | forceescape }}">{{ _('Checking…') }}</span>
+      </div>
+    </div>
+    <div class="row mb-2">
+      <div class="col-sm-4 fw-semibold text-muted">{{ _('Instant screens from saved pages') }}</div>
+      <div class="col-sm-8 text-muted" id="instant-pages-status">
+        {% if instant_pages %}
+        <span class="badge bg-success fw-normal">{{ _('Enabled') }}</span>
+        {% else %}
+        <span class="badge bg-secondary fw-normal">{{ _('Disabled') }}</span>
+        {% endif %}
+        <span class="small ms-1">{{ _('Set by %(var)s on the server. Turn off if users report out-of-date screens.', var='OPENHANGAR_INSTANT_PAGES') }}</span>
       </div>
     </div>
     {% if db_size %}

@@ -39,10 +39,24 @@ def login_membership(user: User, tenant_id: int | None = None) -> TenantUser | N
     return membership
 
 
-def _bind_context(user_id: int, tenant_id: int | None) -> None:
+def _bind_context(user_id: int, tenant_id: int | None, expires_at: int) -> None:
     g.authenticated_user_id = user_id
     g.authenticated_tenant_id = tenant_id
+    g.login_expires_at = expires_at
     g.pop("_oh_membership", None)
+
+
+def seconds_left() -> int | None:
+    """Seconds until this request's login ends, or None when signed out.
+
+    Lets the browser drop its saved pages once the login has expired, even
+    without a connection (see sw.js). Not a credential, like the offline
+    identity headers it is sent with.
+    """
+    expires_at = g.get("login_expires_at")
+    if expires_at is None or g.get("authenticated_user_id") is None:
+        return None
+    return max(0, int(expires_at) - int(time.time()))
 
 
 def _check_context(user: User, tenant_id: int) -> TenantUser:
@@ -52,7 +66,7 @@ def _check_context(user: User, tenant_id: int) -> TenantUser:
     return membership
 
 
-def _issue(user: User, *, tenant_id: int | None = None) -> tuple[str, int | None]:
+def _issue(user: User, *, tenant_id: int | None = None) -> tuple[str, int | None, int]:
     """Create a login record; the organisation binding is held on the server."""
     membership = (
         _check_context(user, tenant_id)
@@ -69,18 +83,18 @@ def _issue(user: User, *, tenant_id: int | None = None) -> tuple[str, int | None
     now = int(time.time())
     AuthSession.query.filter(AuthSession.expires_at <= now).delete()
     token = secrets.token_urlsafe(32)
+    expires_at = now + int(current_app.permanent_session_lifetime.total_seconds())
     db.session.add(
         AuthSession(
             token_hash=_digest(token),
             user_id=user.id,
             tenant_id=selected,
             credential_binding=credential_binding(user),
-            expires_at=now
-            + int(current_app.permanent_session_lifetime.total_seconds()),
+            expires_at=expires_at,
         )
     )
     db.session.commit()
-    return token, selected
+    return token, selected, expires_at
 
 
 def issue(user: User, *, tenant_id: int | None = None) -> str:
@@ -118,10 +132,10 @@ def start(user: User, *, tenant_id: int | None = None) -> None:
             synchronize_session=False,
         )
     session["user_id"] = user.id
-    token, selected = _issue(user, tenant_id=selected)
+    token, selected, expires_at = _issue(user, tenant_id=selected)
     session["auth_session"] = token
     session.permanent = True
-    _bind_context(user.id, selected)
+    _bind_context(user.id, selected, expires_at)
 
 
 def rehash_password(user: User, new_hash: str) -> None:
@@ -190,7 +204,7 @@ def validate() -> bool:
     elif not user.is_instance_admin:
         _clear_login()
         return False
-    _bind_context(user.id, record.tenant_id)
+    _bind_context(user.id, record.tenant_id, record.expires_at)
     return True
 
 
@@ -198,6 +212,7 @@ def _clear_login(*, keep_cookie: bool = False) -> None:
     # A demo slot is a public sandbox selector, not an authenticated identity.
     g.pop("_oh_membership", None)
     g.pop("authenticated_user_id", None)
+    g.pop("login_expires_at", None)
     g.pop("authenticated_tenant_id", None)
     slot = session.get("demo_slot_id")
     session.clear()

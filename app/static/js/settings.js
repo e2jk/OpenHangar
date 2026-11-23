@@ -16,10 +16,9 @@
     }
 
     var swBadge = document.getElementById('sw-browser-status');
-    var swLabelsEl = document.getElementById('sw-status-labels');
-    if (swBadge && swLabelsEl && !swBadge.dataset.ohInited) {
+    if (swBadge && swBadge.dataset.labels && !swBadge.dataset.ohInited) {
       swBadge.dataset.ohInited = '1';
-      var swLabels = JSON.parse(swLabelsEl.textContent);
+      var swLabels = JSON.parse(swBadge.dataset.labels);
       var setSwBadge = function (active) {
         swBadge.textContent = active ? swLabels.active : swLabels.inactive;
         swBadge.className = 'badge fw-normal ms-2 ' + (active ? 'bg-success' : 'bg-secondary');

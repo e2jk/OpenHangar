@@ -1,5 +1,10 @@
 # GPS import shows logbook differences, and moving a GPS file
 
+- Admins can turn instant screens off for the whole instance with the new
+  `OPENHANGAR_INSTANT_PAGES=false` (pages then come from the server first),
+  shown on the Settings page.
+- The Settings page's "Active in this browser" badge for offline support
+  now also shows when the page was opened from within the app.
 - The aircraft GPS import's review page now says when a flight it's about
   to link differs from its GPS track ("Logbook: EDBK · GPS: EDRK"), with a
   box to correct the logbook at the same time — only when ticked, never by
