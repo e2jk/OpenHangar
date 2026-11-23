@@ -1260,7 +1260,7 @@ msgstr "%(name)s a enregistré un vol avec vous à bord. Confirmez-le pour l’a
 #: app/templates/aircraft/owners_billing.html:154
 #: app/templates/aircraft/wb_entry.html:29
 #: app/templates/aircraft/wb_list.html:71
-#: app/templates/config/data_checks.html:56
+#: app/templates/config/data_checks.html:57
 #: app/templates/config/renter_account.html:47
 #: app/templates/config/renter_account.html:68
 #: app/templates/documents/reconcile.html:64
@@ -3506,7 +3506,7 @@ msgstr "Navigabilité"
 
 #: app/pwa/routes.py:87 app/templates/aircraft/detail.html:385
 #: app/templates/aircraft/flight_detail.html:26
-#: app/templates/config/data_checks.html:42 app/templates/dashboard.html:237
+#: app/templates/config/data_checks.html:43 app/templates/dashboard.html:237
 #: app/templates/flights/logbook_component.html:4
 #: app/templates/flights/logbook_component.html:15
 #: app/templates/pilots/entry_detail.html:5
@@ -4002,17 +4002,17 @@ msgstr "Contribution au fonds de réserve — vol du %(date)s (%(hours)s h)"
 msgid "Reserve fund contribution (%(pct)s%%) — %(month)s"
 msgstr "Contribution au fonds de réserve (%(pct)s%%) — %(month)s"
 
-#: app/services/data_checks.py:409
+#: app/services/data_checks.py:449
 #, python-format
 msgid "Departure airfield corrected from the GPS track; the paper logbook says %(value)s."
 msgstr "Aérodrome de départ corrigé d’après la trace GPS ; le carnet papier indique %(value)s."
 
-#: app/services/data_checks.py:415
+#: app/services/data_checks.py:455
 #, python-format
 msgid "Arrival airfield corrected from the GPS track; the paper logbook says %(value)s."
 msgstr "Aérodrome d’arrivée corrigé d’après la trace GPS ; le carnet papier indique %(value)s."
 
-#: app/services/data_checks.py:421
+#: app/services/data_checks.py:461
 #, python-format
 msgid "Date corrected from the GPS track; the paper logbook says %(value)s."
 msgstr "Date corrigée d’après la trace GPS ; le carnet papier indique %(value)s."
@@ -6943,17 +6943,17 @@ msgid "The logbook and this GPS track differ:"
 msgstr "Le carnet et cette trace GPS diffèrent :"
 
 #: app/templates/aircraft/gps_import_review.html:237
-#: app/templates/config/data_checks.html:54
+#: app/templates/config/data_checks.html:55
 msgid "Departure airfield"
 msgstr "Aérodrome de départ"
 
 #: app/templates/aircraft/gps_import_review.html:238
-#: app/templates/config/data_checks.html:55
+#: app/templates/config/data_checks.html:56
 msgid "Arrival airfield"
 msgstr "Aérodrome d’arrivée"
 
 #: app/templates/aircraft/gps_import_review.html:240
-#: app/templates/config/data_checks.html:59
+#: app/templates/config/data_checks.html:61
 msgid "GPS track outside the logged times"
 msgstr "Trace GPS en dehors des heures enregistrées"
 
@@ -8467,8 +8467,8 @@ msgid "Data checks"
 msgstr "Vérifications des données"
 
 #: app/templates/config/data_checks.html:10
-msgid "Differences between logged flights and their GPS tracks, and gaps in the counters"
-msgstr "Différences entre les vols enregistrés et leurs traces GPS, et écarts dans les compteurs"
+msgid "Differences between logged flights and their GPS tracks, gaps in the counters, and overlapping flights"
+msgstr "Différences entre les vols enregistrés et leurs traces GPS, écarts dans les compteurs et vols qui se chevauchent"
 
 #: app/templates/config/data_checks.html:20
 msgid "The logbook is never changed on its own: each difference below is only corrected when you choose to use the GPS value. That changes only the one field named on its line — the departure airfield, the arrival airfield or the date; times, counters and everything else stay as logged — and adds a note to the flight with what the paper logbook says, so the paper logbook can stay as written. Dismiss the ones that are right as logged — they are not listed again unless the GPS track changes. Checked daily, and whenever this page is opened."
@@ -8478,18 +8478,22 @@ msgstr "Le carnet n’est jamais modifié de lui-même : chaque différence ci
 msgid "A counter gap is a flight whose flight or engine counter doesn't start where the previous flight's ended: a typo, or flights missing from the log."
 msgstr "Un écart de compteur est un vol dont le compteur de vol ou moteur ne commence pas là où celui du vol précédent s’est arrêté : une faute de frappe, ou des vols absents du carnet."
 
-#: app/templates/config/data_checks.html:26
-msgid "No differences found between the flights and their GPS tracks, and no gaps in the counters."
-msgstr "Aucune différence trouvée entre les vols et leurs traces GPS, et aucun écart dans les compteurs."
+#: app/templates/config/data_checks.html:22
+msgid "Overlapping flights are two flights of one aircraft logged at times that overlap: one of them has the wrong date or times."
+msgstr "Des vols qui se chevauchent sont deux vols d’un même aéronef enregistrés à des heures qui se recouvrent : l’un d’eux a une date ou des heures erronées."
 
-#: app/templates/config/data_checks.html:33
+#: app/templates/config/data_checks.html:27
+msgid "No differences found between the flights and their GPS tracks, no gaps in the counters, and no overlapping flights."
+msgstr "Aucune différence trouvée entre les vols et leurs traces GPS, aucun écart dans les compteurs et aucun vol qui se chevauche."
+
+#: app/templates/config/data_checks.html:34
 #, python-format
 msgid "one difference"
 msgid_plural "%(n)d differences"
 msgstr[0] "une différence"
 msgstr[1] "%(n)d différences"
 
-#: app/templates/config/data_checks.html:40
+#: app/templates/config/data_checks.html:41
 #: app/templates/flights/removed_gps_files.html:24
 #: app/templates/partials/_crew_claims.html:48
 #: app/templates/partials/_flight_corrections.html:15
@@ -8499,84 +8503,97 @@ msgstr[1] "%(n)d différences"
 msgid "Flight"
 msgstr "Vol"
 
-#: app/templates/config/data_checks.html:41
+#: app/templates/config/data_checks.html:42
 msgid "Check"
 msgstr "Contrôle"
 
-#: app/templates/config/data_checks.html:43
+#: app/templates/config/data_checks.html:44
 msgid "GPS"
 msgstr "GPS"
 
-#: app/templates/config/data_checks.html:44
+#: app/templates/config/data_checks.html:45
 msgid "Action"
 msgstr "Action"
 
-#: app/templates/config/data_checks.html:57
+#: app/templates/config/data_checks.html:58
 #: app/templates/flights/airframe_import_review.html:52
 #: app/templates/flights/flight_form.html:546
 msgid "Flight counter start"
 msgstr "Compteur de vol initial"
 
-#: app/templates/config/data_checks.html:58
+#: app/templates/config/data_checks.html:59
 #: app/templates/flights/airframe_import_review.html:54
 #: app/templates/flights/flight_form.html:514
 msgid "Engine counter start"
 msgstr "Compteur moteur initial"
 
-#: app/templates/config/data_checks.html:64
+#: app/templates/config/data_checks.html:60
+msgid "Overlapping flight"
+msgstr "Vol qui en chevauche un autre"
+
+#: app/templates/config/data_checks.html:66
 #, python-format
 msgid "Previous flight ended at %(value)s"
 msgstr "Le vol précédent s’est terminé à %(value)s"
 
-#: app/templates/config/data_checks.html:66
+#: app/templates/config/data_checks.html:68
+#, python-format
+msgid "Another flight of this aircraft is logged %(window)s that day"
+msgstr "Un autre vol de cet aéronef est enregistré de %(window)s ce jour-là"
+
+#: app/templates/config/data_checks.html:70
 msgid "no airfield nearby"
 msgstr "aucun aérodrome à proximité"
 
-#: app/templates/config/data_checks.html:67
+#: app/templates/config/data_checks.html:71
 #, python-format
 msgid "%(km)s km from %(icao)s"
 msgstr "à %(km)s km de %(icao)s"
 
-#: app/templates/config/data_checks.html:73
+#: app/templates/config/data_checks.html:77
 #, python-format
 msgid "Change only the departure airfield from %(old)s to %(new)s? The times, date and everything else stay as logged; a note with the paper logbook value is added to the flight."
 msgstr "Changer uniquement l’aérodrome de départ de %(old)s en %(new)s ? Les heures, la date et tout le reste restent tels qu’enregistrés ; une note avec la valeur du carnet papier est ajoutée au vol."
 
-#: app/templates/config/data_checks.html:74
+#: app/templates/config/data_checks.html:78
 msgid "Changes only the departure airfield."
 msgstr "Ne change que l’aérodrome de départ."
 
-#: app/templates/config/data_checks.html:76
+#: app/templates/config/data_checks.html:80
 #, python-format
 msgid "Change only the arrival airfield from %(old)s to %(new)s? The times, date and everything else stay as logged; a note with the paper logbook value is added to the flight."
 msgstr "Changer uniquement l’aérodrome d’arrivée de %(old)s en %(new)s ? Les heures, la date et tout le reste restent tels qu’enregistrés ; une note avec la valeur du carnet papier est ajoutée au vol."
 
-#: app/templates/config/data_checks.html:77
+#: app/templates/config/data_checks.html:81
 msgid "Changes only the arrival airfield."
 msgstr "Ne change que l’aérodrome d’arrivée."
 
-#: app/templates/config/data_checks.html:79
+#: app/templates/config/data_checks.html:83
 #, python-format
 msgid "Change only the date from %(old)s to %(new)s? The times, airfields and everything else stay as logged; a note with the paper logbook value is added to the flight."
 msgstr "Changer uniquement la date de %(old)s en %(new)s ? Les heures, les aérodromes et tout le reste restent tels qu’enregistrés ; une note avec la valeur du carnet papier est ajoutée au vol."
 
-#: app/templates/config/data_checks.html:80
+#: app/templates/config/data_checks.html:84
 msgid "Changes only the date."
 msgstr "Ne change que la date."
 
-#: app/templates/config/data_checks.html:85
+#: app/templates/config/data_checks.html:89
 msgid "Use the GPS value"
 msgstr "Utiliser la valeur GPS"
 
-#: app/templates/config/data_checks.html:90
+#: app/templates/config/data_checks.html:94
 msgid "Dismiss"
 msgstr "Écarter"
 
-#: app/templates/config/data_checks.html:92
+#: app/templates/config/data_checks.html:96
+msgid "Open both flights to check their dates and times — or dismiss it if they are right."
+msgstr "Ouvrez les deux vols pour vérifier leurs dates et heures — ou ignorez-le s’ils sont corrects."
+
+#: app/templates/config/data_checks.html:96
 msgid "Open the flight to check its counters — or dismiss it if flights are missing from the log or the counter was replaced."
 msgstr "Ouvrez le vol pour vérifier ses compteurs — ou ignorez l’écart si des vols manquent au carnet ou si le compteur a été remplacé."
 
-#: app/templates/config/data_checks.html:92
+#: app/templates/config/data_checks.html:96
 msgid "Nothing to correct automatically — open the flight to check its times."
 msgstr "Rien à corriger automatiquement — ouvrez le vol pour vérifier ses heures."
 
