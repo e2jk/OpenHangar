@@ -1,35 +1,6 @@
-# Instant bottom-bar screens, tidier logbook, dark-theme fixes
+# Sturdier passport browser tests
 
-- **All five bottom-bar screens are now instant** (Dashboard, Aircraft, Log
-  a flight, Pilot, Airfield passports): they're saved on the device right
-  after you sign in, before any other page, and so are each aircraft's page
-  and the Places and Where next? pages. Blank forms to enter something new
-  (a flight, a pilot logbook entry, an expense, a refuel, a snag) open
-  instantly too, always with today's date; forms editing existing data still
-  come from the server, so what they show is current.
-- A confirmation message ("Flight saved") no longer shows up again when a
-  page later opens from its saved copy, and a server error on one page no
-  longer signs the app out of its saved pages ("Your account session
-  changed"). Signing out and another account signing in right after on the
-  same browser no longer occasionally fails: a late background answer for
-  the old login could overwrite the new login's cookie.
-- Pages fetched in advance no longer ask the server each time a screen
-  changes when their saved copy is still fresh: less mobile data and server
-  load.
-- The pilot logbook and an aircraft's flight log open straight on the
-  flights: the filters fold away behind a **Filter** button (showing how
-  many are active), and the page-size and compact-view options — and, on a
-  phone, the page numbers — moved below the list.
-- The **Export my passport data** button, and the GPX/KML download buttons
-  on places, passports and Where next?, only appear when there is something
-  to download.
-- In the dark theme, the menu button at the top right is visible again, and
-  a few other dark-on-dark icons and buttons (airworthiness N/A filter,
-  reservation calendar weekday headers, setup-wizard icons) are easy to
-  read.
-- The offline logbook's messages ("Saved …", "No copy of this logbook on
-  this device yet …") also show when you open it from a link inside the
-  app.
-- In the dark theme, the setup wizard shows which step you're on and which
-  are done; the close button on yellow and light-blue messages is easy to
-  see in both themes.
+**Maintenance**
+
+- The passport browser tests wait for an airfield's page to finish loading
+  after clicking it in a passport, instead of failing on a slow CI runner.
