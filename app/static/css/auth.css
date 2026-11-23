@@ -242,6 +242,10 @@
 /* ── Dark mode overrides ─────────────────────────────────────────────────── */
 [data-bs-theme=dark] .auth-card { background: #2a2d31; border-color: #3a4050; }
 [data-bs-theme=dark] .step-dot  { background: #2a2d31; border-color: #3a4050; color: #adb5bd; }
+/* Same specificity as the rule above, so active/done must be restated after it
+ * or every dot looks inactive in the dark theme. */
+[data-bs-theme=dark] .step-dot.active { background: #6ea8fe; border-color: #6ea8fe; color: #10141a; }
+[data-bs-theme=dark] .step-dot.done   { background: var(--oh-advisory); border-color: var(--oh-advisory); color: #fff; }
 [data-bs-theme=dark] .step-line { background: #3a4050; }
 [data-bs-theme=dark] .auth-card .form-label { color: #dee2e6; }
 [data-bs-theme=dark] .totp-qr-wrapper { background: #1e2124; border-color: #3a4050; }
