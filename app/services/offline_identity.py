@@ -4,12 +4,27 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import os
 
 from flask import current_app, has_request_context, session
 from utils import current_membership
 
 OWNER_HEADER = "X-OH-Offline-Owner"
 SESSION_HEADER = "X-OH-Offline-Session"
+# Sent with the two above on signed-in responses (see sw.js): seconds until
+# this login ends, and whether saved pages may be shown before the server
+# answers (OPENHANGAR_INSTANT_PAGES). Neither is a credential.
+EXPIRES_HEADER = "X-OH-Login-Expires-In"
+INSTANT_HEADER = "X-OH-Instant-Pages"
+
+
+def instant_pages_enabled() -> bool:
+    """OPENHANGAR_INSTANT_PAGES: on unless explicitly false/0/no."""
+    return os.environ.get("OPENHANGAR_INSTANT_PAGES", "true").strip().lower() not in (
+        "0",
+        "false",
+        "no",
+    )
 
 
 def _namespace(value: str) -> str:

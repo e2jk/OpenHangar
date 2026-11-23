@@ -135,3 +135,85 @@ def test_credential_renewal_uses_fresh_navigation_for_htmx(app, client):
     assert response.headers["X-OH-Offline-Owner"] == headers["X-OH-Offline-Owner"]
     assert response.headers["X-OH-Offline-Session"] != headers["X-OH-Offline-Session"]
     assert client.get("/profile").status_code == 200
+
+
+def _signed_in(app, client, email):
+    import pw_hash
+
+    with app.app_context():
+        tenant = Tenant(name=f"Lifetime {email}")
+        user = User(email=email, password_hash=pw_hash.hash("LifetimePassword123!"))
+        db.session.add_all([tenant, user])
+        db.session.flush()
+        db.session.add(
+            TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.ADMIN)
+        )
+        db.session.commit()
+        uid = user.id
+    login = client.post(
+        "/login", data={"email": email, "password": "LifetimePassword123!"}
+    )
+    return uid, login
+
+
+def test_signed_in_responses_tell_the_browser_how_long_the_login_lasts(app, client):
+    """The worker drops its saved pages once the login has ended, even offline."""
+    import time
+
+    from models import AuthSession
+
+    assert "X-OH-Login-Expires-In" not in client.get("/health").headers
+    uid, login = _signed_in(app, client, "lifetime@example.com")
+    lifetime = int(app.permanent_session_lifetime.total_seconds())
+    # The sign-in answer itself already carries it (the login was just made).
+    assert lifetime - 5 <= int(login.headers["X-OH-Login-Expires-In"]) <= lifetime
+    assert login.headers["X-OH-Instant-Pages"] == "1"
+    with app.app_context():
+        AuthSession.query.filter_by(user_id=uid).update(
+            {"expires_at": int(time.time()) + 600}, synchronize_session=False
+        )
+        db.session.commit()
+    response = client.get("/profile")
+    assert 590 <= int(response.headers["X-OH-Login-Expires-In"]) <= 600
+    assert response.headers["X-OH-Instant-Pages"] == "1"
+    signed_out = client.get("/logout")
+    assert "X-OH-Login-Expires-In" not in signed_out.headers
+    assert "X-OH-Instant-Pages" not in signed_out.headers
+
+
+def test_instant_pages_off_is_sent_and_shown_on_the_settings_page(app, client):
+    _signed_in(app, client, "instant-off@example.com")
+    page = client.get("/config/")
+    assert page.status_code == 200
+    assert b"OPENHANGAR_INSTANT_PAGES" in page.data
+    assert b'id="instant-pages-status"' in page.data
+    app.config["INSTANT_PAGES"] = False
+    try:
+        response = client.get("/config/")
+        assert "X-OH-Instant-Pages" not in response.headers
+        assert "X-OH-Login-Expires-In" in response.headers
+        html = response.data.decode()
+        status = html.split('id="instant-pages-status"', 1)[1].split("</div>", 1)[0]
+        assert "Disabled" in status
+    finally:
+        app.config["INSTANT_PAGES"] = True
+
+
+def test_instant_pages_variable_is_on_unless_explicitly_off(monkeypatch):
+    from services.offline_identity import instant_pages_enabled
+
+    monkeypatch.delenv("OPENHANGAR_INSTANT_PAGES", raising=False)
+    assert instant_pages_enabled()
+    for value in ("false", "0", "no", " FALSE "):
+        monkeypatch.setenv("OPENHANGAR_INSTANT_PAGES", value)
+        assert not instant_pages_enabled()
+    for value in ("true", "1", "yes", ""):
+        monkeypatch.setenv("OPENHANGAR_INSTANT_PAGES", value)
+        assert instant_pages_enabled()
+
+
+def test_seconds_left_is_none_without_a_validated_login(app):
+    from services.auth_sessions import seconds_left
+
+    with app.test_request_context():
+        assert seconds_left() is None

@@ -60,20 +60,20 @@ msgstr[1] "🎉 Het is vandaag %(n)s jaar geleden dat u uw PPL behaalde!"
 msgid "🎉 Today is the anniversary of your PPL!"
 msgstr "🎉 Vandaag is het de verjaardag van uw PPL!"
 
-#: app/init.py:1184
+#: app/init.py:1199
 #, python-format
 msgid "This upload is too large (maximum %(mb)s MB in total). Please upload the files in smaller batches."
 msgstr "Deze upload is te groot (maximaal %(mb)s MB in totaal). Upload de bestanden in kleinere delen."
 
-#: app/init.py:1211
+#: app/init.py:1226
 msgid "Some text entered is too long, so nothing was saved. Please shorten it and try again."
 msgstr "Een ingevoerde tekst is te lang, dus er is niets opgeslagen. Maak hem korter en probeer het opnieuw."
 
-#: app/flights/form_parsing.py:459 app/init.py:1216
+#: app/flights/form_parsing.py:459 app/init.py:1231
 msgid "A number entered is far too large, so nothing was saved. Please check the values and try again."
 msgstr "Een ingevoerd getal is veel te groot, dus er is niets opgeslagen. Controleer de waarden en probeer het opnieuw."
 
-#: app/init.py:1269
+#: app/init.py:1284
 msgid "The sign-in form had expired. Please sign in again."
 msgstr "Het aanmeldformulier was verlopen. Meld u opnieuw aan."
 
@@ -257,15 +257,15 @@ msgstr "%(reg)s opgeslagen."
 msgid "Ownership updated."
 msgstr "Eigendom bijgewerkt."
 
-#: app/aircraft/routes.py:989 app/config/routes.py:1692
+#: app/aircraft/routes.py:989 app/config/routes.py:1693
 msgid "Payment amount must be positive."
 msgstr "Het betalingsbedrag moet positief zijn."
 
-#: app/aircraft/routes.py:992 app/config/routes.py:1695
+#: app/aircraft/routes.py:992 app/config/routes.py:1696
 msgid "Invalid payment amount."
 msgstr "Ongeldig betalingsbedrag."
 
-#: app/aircraft/routes.py:999 app/config/routes.py:1702
+#: app/aircraft/routes.py:999 app/config/routes.py:1703
 msgid "Invalid payment date."
 msgstr "Ongeldige betalingsdatum."
 
@@ -278,7 +278,7 @@ msgstr "Betaling — %(note)s"
 msgid "Payment"
 msgstr "Betaling"
 
-#: app/aircraft/routes.py:1021 app/config/routes.py:1725
+#: app/aircraft/routes.py:1021 app/config/routes.py:1726
 msgid "Payment recorded."
 msgstr "Betaling geregistreerd."
 
@@ -749,184 +749,184 @@ msgstr "Ontwikkeling"
 msgid "Test"
 msgstr "Test"
 
-#: app/config/routes.py:608
+#: app/config/routes.py:609
 msgid "Hangar ID cannot be empty."
 msgstr "Het hangar-ID mag niet leeg zijn."
 
-#: app/config/routes.py:613
+#: app/config/routes.py:614
 msgid "Hangar ID must contain at least one letter or digit."
 msgstr "Het hangar-ID moet minimaal één letter of cijfer bevatten."
 
-#: app/config/routes.py:618
+#: app/config/routes.py:619
 msgid "That Hangar ID is already in use. Please choose another."
 msgstr "Dit hangar-ID is al in gebruik. Kies een ander."
 
-#: app/config/routes.py:661
+#: app/config/routes.py:662
 msgid "Hangar ID saved."
 msgstr "Hangar-ID opgeslagen."
 
-#: app/config/routes.py:677
+#: app/config/routes.py:678
 msgid "OpenAIP API key saved."
 msgstr "OpenAIP API-sleutel opgeslagen."
 
-#: app/config/routes.py:682
+#: app/config/routes.py:683
 msgid "OpenAIP API key removed."
 msgstr "OpenAIP API-sleutel verwijderd."
 
-#: app/config/routes.py:692
+#: app/config/routes.py:693
 #, python-format
 msgid "Backup completed: %(filename)s"
 msgstr "Back-up voltooid: %(filename)s"
 
-#: app/config/routes.py:694
+#: app/config/routes.py:695
 #, python-format
 msgid "Backup failed: %(error)s"
 msgstr "Back-up mislukt: %(error)s"
 
-#: app/config/routes.py:721
+#: app/config/routes.py:722
 msgid "Invalid operating model."
 msgstr "Ongeldig exploitatiemodel."
 
-#: app/config/routes.py:757
+#: app/config/routes.py:758
 msgid "Usage profile updated."
 msgstr "Gebruiksprofiel bijgewerkt."
 
-#: app/config/routes.py:785
+#: app/config/routes.py:786
 #, python-format
 msgid "Test email sent to %(email)s."
 msgstr "Test-e-mail verzonden naar %(email)s."
 
-#: app/config/routes.py:787
+#: app/config/routes.py:788
 #, python-format
 msgid "Email not configured: %(error)s"
 msgstr "E-mail niet geconfigureerd: %(error)s"
 
-#: app/config/routes.py:789
+#: app/config/routes.py:790
 #, python-format
 msgid "Email send failed: %(error)s"
 msgstr "Verzenden van e-mail mislukt: %(error)s"
 
-#: app/config/routes.py:822
+#: app/config/routes.py:823
 msgid "Version check refreshed."
 msgstr "Versiecontrole vernieuwd."
 
-#: app/config/routes.py:895
+#: app/config/routes.py:896
 msgid "An upgrade is already in progress."
 msgstr "Er is al een update bezig."
 
-#: app/config/routes.py:898
+#: app/config/routes.py:899
 msgid "Upgrade already triggered."
 msgstr "Update al geactiveerd."
 
-#: app/config/routes.py:910
+#: app/config/routes.py:911
 #, python-format
 msgid "Pre-upgrade backup failed, upgrade not triggered: %(error)s"
 msgstr "Backup vóór de upgrade is mislukt, upgrade niet gestart: %(error)s"
 
-#: app/config/routes.py:923
+#: app/config/routes.py:924
 #, python-format
 msgid "Backup created (%(filename)s). Upgrade triggered — the service will restart shortly."
 msgstr "Backup aangemaakt (%(filename)s). Upgrade gestart — de service wordt binnenkort opnieuw gestart."
 
-#: app/config/routes.py:1022
+#: app/config/routes.py:1023
 msgid "Tenant name is required."
 msgstr "Naam van de huurder is verplicht."
 
-#: app/config/routes.py:1025
+#: app/config/routes.py:1026
 msgid "Admin email is required."
 msgstr "E-mail van de beheerder is verplicht."
 
-#: app/config/routes.py:1056
+#: app/config/routes.py:1057
 #, python-format
 msgid "Tenant '%(name)s' created. Share this invite link with the owner: %(url)s"
 msgstr "Omgeving '%(name)s' aangemaakt. Deel deze uitnodigingslink met de eigenaar: %(url)s"
 
-#: app/config/routes.py:1082
+#: app/config/routes.py:1083
 #, python-format
 msgid "Tenant '%(name)s' reactivated."
 msgstr "Huurder '%(name)s' geheractiveerd."
 
-#: app/config/routes.py:1084
+#: app/config/routes.py:1085
 #, python-format
 msgid "Tenant '%(name)s' deactivated."
 msgstr "Huurder '%(name)s' gedeactiveerd."
 
-#: app/config/routes.py:1110
+#: app/config/routes.py:1111
 msgid "No user selected."
 msgstr "Geen gebruiker geselecteerd."
 
-#: app/config/routes.py:1189
+#: app/config/routes.py:1190
 msgid "Cannot save: no tenant associated."
 msgstr "Kan niet opslaan: geen groep gekoppeld."
 
-#: app/config/routes.py:1227
+#: app/config/routes.py:1228
 msgid "Notification preferences saved."
 msgstr "Meldingsvoorkeuren opgeslagen."
 
-#: app/config/routes.py:1310
+#: app/config/routes.py:1311
 #, python-format
 msgid "Back-fill complete: one of %(total)d entry resolved."
 msgid_plural "Back-fill complete: %(updated)d of %(total)d entries resolved."
 msgstr[0] "Aanvulling voltooid: één van %(total)d vermelding opgelost."
 msgstr[1] "Aanvulling voltooid: %(updated)d van %(total)d vermeldingen opgelost."
 
-#: app/config/routes.py:1346
+#: app/config/routes.py:1347
 #, python-format
 msgid "Back-fill complete: %(count)d entry linked to a managed aircraft."
 msgid_plural "Back-fill complete: %(count)d entries linked to a managed aircraft."
 msgstr[0] "Aanvulling voltooid: %(count)d vermelding gekoppeld aan een beheerd vliegtuig."
 msgstr[1] "Aanvulling voltooid: %(count)d vermeldingen gekoppeld aan een beheerd vliegtuig."
 
-#: app/config/routes.py:1478
+#: app/config/routes.py:1479
 msgid "Select a valid renter."
 msgstr "Selecteer een geldige huurder."
 
-#: app/config/routes.py:1485 app/config/routes.py:1490
+#: app/config/routes.py:1486 app/config/routes.py:1491
 msgid "Invalid aircraft selection."
 msgstr "Ongeldige toestelselectie."
 
-#: app/config/routes.py:1493
+#: app/config/routes.py:1494
 msgid "Granted date is required and must be a valid date."
 msgstr "De toekenningsdatum is verplicht en moet een geldige datum zijn."
 
-#: app/config/routes.py:1495
+#: app/config/routes.py:1496
 msgid "Expiry date cannot be before the granted date."
 msgstr "De vervaldatum mag niet vóór de toekenningsdatum liggen."
 
-#: app/config/routes.py:1509
+#: app/config/routes.py:1510
 msgid "This file type is not allowed for the rental agreement."
 msgstr "Dit bestandstype is niet toegestaan voor het huurcontract."
 
-#: app/config/routes.py:1553
+#: app/config/routes.py:1554
 msgid "Rental agreement"
 msgstr "Huurcontract"
 
-#: app/config/routes.py:1559
+#: app/config/routes.py:1560
 msgid "Renter authorization saved."
 msgstr "Huurautorisatie opgeslagen."
 
-#: app/config/routes.py:1605
+#: app/config/routes.py:1606
 msgid "Renter authorization revoked."
 msgstr "Huurautorisatie ingetrokken."
 
-#: app/config/routes.py:1719
+#: app/config/routes.py:1720
 msgid "Payment received"
 msgstr "Betaling ontvangen"
 
-#: app/config/routes.py:1835
+#: app/config/routes.py:1836
 msgid "Every flight with a GPS track was checked again."
 msgstr "Elke vlucht met een GPS-spoor is opnieuw gecontroleerd."
 
-#: app/config/routes.py:1864
+#: app/config/routes.py:1865
 msgid "This difference no longer applies."
 msgstr "Dit verschil is niet meer van toepassing."
 
-#: app/config/routes.py:1875
+#: app/config/routes.py:1876
 #, python-format
 msgid "Flight corrected: %(old)s → %(new)s. Nothing else was changed; the flight's notes record the paper logbook value."
 msgstr "Vlucht gecorrigeerd: %(old)s → %(new)s. Verder is niets gewijzigd; de notities van de vlucht vermelden de waarde uit het papieren logboek."
 
-#: app/config/routes.py:1911
+#: app/config/routes.py:1912
 msgid "Difference dismissed."
 msgstr "Verschil terzijde gelegd."
 
@@ -8821,6 +8821,7 @@ msgstr "Gebeurtenis"
 
 #: app/templates/config/notifications.html:99
 #: app/templates/config/settings.html:582
+#: app/templates/config/settings.html:595
 msgid "Enabled"
 msgstr "Ingeschakeld"
 
@@ -9188,7 +9189,7 @@ msgid "Backup &amp; restore documentation"
 msgstr "Documentatie back-up &amp; herstel"
 
 #: app/templates/config/settings.html:257
-#: app/templates/config/settings.html:605
+#: app/templates/config/settings.html:616
 #, python-format
 msgid "%(size)s across one file"
 msgid_plural "%(size)s across %(n)s files"
@@ -9497,10 +9498,6 @@ msgstr "Uitgeschakeld in ontwikkelmodus"
 msgid "Set %(var)s to test offline features locally."
 msgstr "Stel %(var)s in om offline-functies lokaal te testen."
 
-#: app/templates/config/settings.html:587
-msgid "Checking…"
-msgstr "Bezig met controleren…"
-
 #: app/templates/config/settings.html:588
 msgid "Active in this browser"
 msgstr "Actief in deze browser"
@@ -9509,105 +9506,122 @@ msgstr "Actief in deze browser"
 msgid "Not active in this browser"
 msgstr "Niet actief in deze browser"
 
-#: app/templates/config/settings.html:593
+#: app/templates/config/settings.html:588
+msgid "Checking…"
+msgstr "Bezig met controleren…"
+
+#: app/templates/config/settings.html:592
+msgid "Instant screens from saved pages"
+msgstr "Directe schermen uit opgeslagen pagina's"
+
+#: app/templates/config/settings.html:597
+msgid "Disabled"
+msgstr "Uitgeschakeld"
+
+#: app/templates/config/settings.html:599
+#, python-format
+msgid "Set by %(var)s on the server. Turn off if users report out-of-date screens."
+msgstr "Ingesteld met %(var)s op de server. Schakel uit als gebruikers verouderde schermen melden."
+
+#: app/templates/config/settings.html:604
 msgid "Database size"
 msgstr "Databasegrootte"
 
-#: app/templates/config/settings.html:599
+#: app/templates/config/settings.html:610
 msgid "Upload storage"
 msgstr "Bestandsopslag"
 
-#: app/templates/config/settings.html:604
+#: app/templates/config/settings.html:615
 msgid "Original GPS files"
 msgstr "Originele gps-bestanden"
 
-#: app/templates/config/settings.html:605
+#: app/templates/config/settings.html:616
 #: app/templates/flights/removed_gps_files.html:3
 #: app/templates/flights/removed_gps_files.html:9
 #: app/templates/partials/_entry_detail_map.html:55
 msgid "Removed GPS files"
 msgstr "Weggehaalde GPS-bestanden"
 
-#: app/templates/config/settings.html:610
+#: app/templates/config/settings.html:621
 msgid "Uptime"
 msgstr "Uptime"
 
-#: app/templates/config/settings.html:612
+#: app/templates/config/settings.html:623
 msgid "Uptime 24h"
 msgstr "Uptime 24u"
 
-#: app/templates/config/settings.html:613
+#: app/templates/config/settings.html:624
 msgid "Uptime 30d"
 msgstr "Uptime 30d"
 
-#: app/templates/config/settings.html:617
+#: app/templates/config/settings.html:628
 msgid "Response time"
 msgstr "Responstijd"
 
-#: app/templates/config/settings.html:619
+#: app/templates/config/settings.html:630
 msgid "Response time 24h"
 msgstr "Responstijd 24u"
 
-#: app/templates/config/settings.html:620
+#: app/templates/config/settings.html:631
 msgid "Response time 30d"
 msgstr "Responstijd 30d"
 
-#: app/templates/config/settings.html:626
+#: app/templates/config/settings.html:637
 msgid "Monitoring badges could not be loaded. Check OPENHANGAR_GATUS_ENDPOINT_URL and OPENHANGAR_GATUS_AUTH_HEADER."
 msgstr "Monitoringbadges konden niet worden geladen. Controleer OPENHANGAR_GATUS_ENDPOINT_URL en OPENHANGAR_GATUS_AUTH_HEADER."
 
-#: app/templates/config/settings.html:636
-#: app/templates/config/settings.html:651
+#: app/templates/config/settings.html:647
+#: app/templates/config/settings.html:662
 #: app/templates/config/tenant_list.html:3
 #: app/templates/config/tenant_list.html:11
 msgid "Tenants"
 msgstr "Organisaties"
 
-#: app/templates/config/settings.html:638
+#: app/templates/config/settings.html:649
 msgid "Manage tenants"
 msgstr "Organisaties beheren"
 
-#: app/templates/config/settings.html:642
+#: app/templates/config/settings.html:653
 #, python-format
 msgid "This instance hosts one tenant."
 msgid_plural "This instance hosts %(count)s tenants."
 msgstr[0] "Deze instantie heeft één organisatie."
 msgstr[1] "Deze instantie heeft %(count)s organisaties."
 
-#: app/templates/config/settings.html:644
+#: app/templates/config/settings.html:655
 #: app/templates/config/tenant_list.html:19
 msgid "Add tenant"
 msgstr "Organisatie toevoegen"
 
-#: app/templates/config/settings.html:654
+#: app/templates/config/settings.html:665
 msgid "This is a single-tenant installation. You can add a second tenant to host multiple independent users or organisations on the same instance."
 msgstr "Dit is een installatie met één organisatie. U kunt een tweede organisatie toevoegen om meerdere onafhankelijke gebruikers of organisaties op dezelfde instantie te hosten."
 
-#: app/templates/config/settings.html:656
+#: app/templates/config/settings.html:667
 msgid "Add a second tenant"
 msgstr "Een tweede organisatie toevoegen"
 
-#: app/templates/config/settings.html:662
+#: app/templates/config/settings.html:673
 #: app/templates/config/tenant_create.html:59
 msgid "Log your own flights — no aircraft management, no fleet features."
 msgstr "Log uw eigen vluchten — geen vliegtuigbeheer, geen vlootfuncties."
 
-#: app/templates/config/settings.html:663
+#: app/templates/config/settings.html:674
 #: app/templates/config/tenant_create.html:60
 msgid "Own and manage one or more aircraft. Rental to others is optional."
 msgstr "Bezit en beheer één of meerdere vliegtuigen. Verhuur aan anderen is optioneel."
 
-#: app/templates/config/settings.html:664
+#: app/templates/config/settings.html:675
 #: app/templates/config/tenant_create.html:61
 msgid "Co-own aircraft with others. Co-owners each get their own account with shared access."
 msgstr "Mede-eigenaar van vliegtuigen met anderen. Mede-eigenaars krijgen elk een eigen account met gedeelde toegang."
 
-#: app/templates/config/settings.html:665
+#: app/templates/config/settings.html:676
 #: app/templates/config/tenant_create.html:62
 msgid "Member-based flying club with a shared fleet and club name branding."
 msgstr "Ledenvereniging met een gedeelde vloot en clubnaambranding."
 
-#: app/templates/config/settings.html:666
+#: app/templates/config/settings.html:677
 #: app/templates/config/tenant_create.html:63
 msgid "Training organisation with a shared fleet and school name branding."
 msgstr "Opleidingsorganisatie met een gedeelde vloot en schoolnaambranding."

@@ -578,6 +578,7 @@ def index() -> ResponseReturnValue:
         upgrade_active=upgrade_active,
         app_debug=app_debug,
         sw_server_enabled=sw_server_enabled,
+        instant_pages=current_app.config["INSTANT_PAGES"],
         env_label=env_label,
     )
 

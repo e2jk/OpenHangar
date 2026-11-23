@@ -21,6 +21,7 @@ documented inline in [`docker/.env.example`](../docker/.env.example).
 | [`OPENHANGAR_ENV`](#openhangar_env) | No | `production` | [Core](#core) |
 | [`OPENHANGAR_E2E_SEED`](#openhangar_e2e_seed) | No | *(disabled)* | [Core](#core) |
 | [`OPENHANGAR_SW_ENABLED`](#openhangar_sw_enabled) | No | `false` (in dev) | [Core](#core) |
+| [`OPENHANGAR_INSTANT_PAGES`](#openhangar_instant_pages) | No | `true` | [Core](#core) |
 | [`OPENHANGAR_PROXY_HOPS`](#openhangar_proxy_hops) | No | `1` | [Core](#core) |
 | [`OPENHANGAR_TRUSTED_HOSTS`](#openhangar_trusted_hosts) | No | *(unrestricted)* | [Core](#core) |
 | [`OPENHANGAR_RATELIMIT_ENABLED`](#openhangar_ratelimit_enabled) | No | `true` | [Core](#core) |
@@ -183,6 +184,24 @@ Force-enable the PWA service worker even when running in debug/development mode.
 > **Tip**: while testing with the service worker active, enable
 > *Update on reload* in Chrome DevTools → Application → Service Workers to
 > force fresh HTML on every reload without having to unregister the SW manually.
+
+### `OPENHANGAR_INSTANT_PAGES`
+
+Whether browsers may show a page from the copy saved on the device at once,
+before the server answers (instant screens), for as long as the login is valid.
+
+- **Default**: `true` — saved pages show instantly and are refreshed in the
+  background; any save marks them out of date so the next visit fetches them
+  again.
+- **Set to** `false`, `0` or `no` to turn it off for the whole instance: every
+  page then comes from the server first, and saved copies are only used when
+  there is no connection. Each device follows the change at its next server
+  answer; no browser setting is involved.
+- **Shown** read-only on the admin Settings page (Configuration → Settings,
+  "Instant screens from saved pages").
+- **Use case**: turn it off if users report screens that stay out of date, as
+  a workaround until the cause is fixed. Requires a restart of the web
+  container to take effect, like every environment variable.
 
 ### `OPENHANGAR_RATELIMIT_ENABLED`
 
