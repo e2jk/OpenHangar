@@ -246,15 +246,6 @@ for later:
 - **Email digest** of new findings, for admins who rarely open the
   configuration page.
 
-## GPS import: further ground runs in the pilot GPS import
-
-The pilot GPS import now links a ground-only recording like the aircraft
-import does — to a logged ground entry, or as a taxi part of the pilot's
-flight departing/arriving within 45 minutes at that airfield. Left: the
-aircraft import's choice for one further away (up to 3 hours, same day
-and airfield: `nearby_flights(..., NEARBY_TAXI_WINDOW)` and the
-`ground_candidates` picker on its review page).
-
 ## GPS import: one import instead of the aircraft and pilot ones
 
 The aircraft GPS import (`aircraft/routes.py`, `gps_import_*`) and the pilot
@@ -270,7 +261,7 @@ differences become options:
 |---|---|---|
 | Matches against | that aircraft's flights | the user's flights, any aircraft |
 | Unmatched segment becomes | an aircraft-log flight (+ the user's entry by role) | the user's entry (other or managed aircraft) |
-| Ground runs (taxi parts, nearby flights) | yes | not yet ("ground runs in the pilot GPS import" above) |
+| Ground runs (taxi parts, nearby flights) | yes | yes |
 | Undo import | per batch | — |
 | Files archived in | the aircraft's folder | the user's folder |
 | Access | aircraft owner/pilot roles | pilot access |

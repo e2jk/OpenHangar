@@ -21,6 +21,8 @@
   like the aircraft's import: the taxi to the fuel station before a flight,
   or back to the hangar after it, joins that flight's track without changing
   its times, and an engine run joins the ground entry you logged for it.
+  One further away (up to 3 hours, same day and airfield) is offered with
+  those flights to choose from.
 - **Data checks** (Configuration) also lists counter gaps: a flight whose
   flight or engine counter doesn't start where the previous flight's ended
   — a typo, or flights missing from the log. Open the flight to correct it,

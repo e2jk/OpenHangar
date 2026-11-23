@@ -2695,14 +2695,18 @@ def _pilot_match_ground_runs(uid: int, full_segs: list[dict[str, Any]]) -> None:
     recording of, or the flight departing or arriving within the taxi window
     at that airfield — added to its track as a taxi part. Longest first: of
     several that day, the longest is a ground entry's own recording."""
-    from aircraft.routes import _matched_gps_spans
+    from aircraft.routes import _gps_candidate_dict, _matched_gps_spans
     from services.gps_link import (  # pyright: ignore[reportMissingImports]
+        NEARBY_TAXI_WINDOW,
         ground_run_target,
+        nearby_flights,
     )
     from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
 
     gps_spans = _matched_gps_spans(full_segs)
     claimed = {s["matched_flight_id"] for s in full_segs if s["matched_flight_id"]}
+    for seg in full_segs:
+        seg["ground_candidates"] = []
     for seg in sorted(
         (s for s in full_segs if s["is_ground_only"]),
         key=lambda s: (
@@ -2724,6 +2728,23 @@ def _pilot_match_ground_runs(uid: int, full_segs: list[dict[str, Any]]) -> None:
             off, on, seg.get("departure_icao"), day_flights, gps_spans, claimed
         )
         if target is None:
+            # Further than a usual taxi but that day at that airfield (up to
+            # NEARBY_TAXI_WINDOW): offered to choose, never linked on its own.
+            seg["ground_candidates"] = [
+                {
+                    **_gps_candidate_dict(f),
+                    "when": when,
+                    "gap_min": round(gap.total_seconds() / 60),
+                }
+                for gap, f, when in nearby_flights(
+                    off,
+                    on,
+                    seg.get("departure_icao"),
+                    day_flights,
+                    gps_spans,
+                    NEARBY_TAXI_WINDOW,
+                )
+            ]
             continue
         flight, role, when = target
         if role == "entry":
@@ -2924,6 +2945,17 @@ def _pilot_confirm_segment(
     )
 
     create_pilot_entry = pilot_role in ("pic", "dual")
+    if seg.get("ground_candidates"):
+        # A ground run near (not within the taxi window of) the pilot's
+        # flights that day: the one picked takes it as a taxi part; "none
+        # of these" leaves it unmatched (the choices below the picker).
+        picked = form.get("ground_flight_id", "")
+        chosen = next(
+            (c for c in seg["ground_candidates"] if str(c["id"]) == picked), None
+        )
+        seg["matched_flight_id"] = chosen["id"] if chosen else None
+        seg["matched_ground_role"] = "taxi" if chosen else ""
+        seg["matched_ground_when"] = chosen["when"] if chosen else ""
     if seg.get("matched_ambiguous"):
         # A candidate picker was rendered — respect the human's explicit
         # choice (including "none of these", submitted as "") instead of
