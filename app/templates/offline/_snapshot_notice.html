@@ -10,7 +10,9 @@
   <span data-oh-offline-saved-at></span>
 </p>
 
-<script type="application/json" id="oh-offline-logbook-i18n">{{ {
+{# A data-* attribute, not a JSON script block: htmx
+   strips every script tag from an hx-boosted response (allowScriptTags:false). #}
+<div id="oh-offline-logbook-i18n" hidden data-oh-i18n="{{ {
   'savedAt': _('Saved {when}.'),
   'noEntries': _('No copy of this logbook on this device yet — open the logbook once while online.'),
-} | tojson }}</script>
+} | tojson | forceescape }}"></div>

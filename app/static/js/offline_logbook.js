@@ -25,7 +25,7 @@
     var banner = root.querySelector('[data-oh-offline-banner]');
     var savedAt = root.querySelector('[data-oh-offline-saved-at]');
     var i18nEl = document.getElementById('oh-offline-logbook-i18n');
-    var i18n = i18nEl ? JSON.parse(i18nEl.textContent) : {};
+    var i18n = i18nEl && i18nEl.dataset.ohI18n ? JSON.parse(i18nEl.dataset.ohI18n) : {};
     var columns = tbody.closest('table').querySelectorAll('thead th').length;
 
     function updateBanner() {
