@@ -1,0 +1,66 @@
+{#
+  Pagination and display options of a logbook list (pilot logbook, an
+  aircraft's flight log). Each macro is called with a `caller` that gives
+  the URL of one choice:
+
+    {% call(p) lc.pager(pagination, top=true) %}{{ url_for(..., page=p) }}{% endcall %}
+    {% call(n) lc.display_options(per_page, valid_per_page) %}{{ url_for(..., per_page=n) }}{% endcall %}
+
+  The pager shows only when there is more than one page. Its copy above the
+  list (`top=true`) is for wide screens only: on a phone it would push the
+  flights down, so there the pager is only under the list. Under the list,
+  pager and display options go in one wrapping flex row: on a phone the
+  pager comes first, right under the flights; on a wide screen the display
+  options sit on the left and the pager on the right (`order-lg-last`).
+#}
+
+{% macro pager(pagination, top=false) %}
+{% if pagination and pagination.pages > 1 %}
+<div class="{{ 'd-none d-lg-flex justify-content-end mb-3' if top else 'd-flex justify-content-end order-lg-last ms-lg-auto' }}" data-oh-pager="{{ 'top' if top else 'bottom' }}">
+  <nav>
+    <ul class="pagination pagination-sm mb-0">
+      <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+        <a class="page-link" href="{{ caller(pagination.prev_num) if pagination.has_prev else '#' }}">&laquo;</a>
+      </li>
+      {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+        {% if p %}
+          <li class="page-item {{ 'active' if p == pagination.page }}">
+            <a class="page-link" href="{{ caller(p) }}">{{ p }}</a>
+          </li>
+        {% else %}
+          <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% endif %}
+      {% endfor %}
+      <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+        <a class="page-link" href="{{ caller(pagination.next_num) if pagination.has_next else '#' }}">&raquo;</a>
+      </li>
+    </ul>
+  </nav>
+</div>
+{% endif %}
+{% endmacro %}
+
+{% macro display_options(per_page, valid_per_page) %}
+<div class="d-flex align-items-center gap-3 flex-wrap" data-oh-logbook-display-options>
+  <div class="d-flex align-items-center gap-1 small">
+    <span class="text-muted me-1">{{ _('Show:') }}</span>
+    {% for n in valid_per_page %}
+      {% set n_str = n | string %}
+      {% if per_page == n_str %}
+        <strong class="px-2 py-1 rounded oh-bg-navy-solid text-white">{{ n }}</strong>
+      {% else %}
+        <a href="{{ caller(n_str) }}" class="px-2 py-1 text-decoration-none">{{ n }}</a>
+      {% endif %}
+    {% endfor %}
+    {% if per_page == 'all' %}
+      <strong class="px-2 py-1 rounded oh-bg-navy-solid text-white">{{ _('All') }}</strong>
+    {% else %}
+      <a href="{{ caller('all') }}" class="px-2 py-1 text-decoration-none">{{ _('All') }}</a>
+    {% endif %}
+  </div>
+  <div class="form-check form-switch mb-0">
+    <input class="form-check-input" type="checkbox" id="oh-logbook-compact-toggle" data-oh-logbook-toggle>
+    <label class="form-check-label small text-muted" for="oh-logbook-compact-toggle">{{ _('Compact view') }}</label>
+  </div>
+</div>
+{% endmacro %}
