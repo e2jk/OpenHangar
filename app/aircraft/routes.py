@@ -2611,6 +2611,13 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
             if matched_flight
             else None
         )
+        seg["data_check_hints"] = (
+            _data_check_hints(matched_flight, seg)
+            if matched_flight
+            and not seg.get("matched_ambiguous")
+            and not seg.get("is_ground_only")
+            else []
+        )
 
     if state.get("analysed"):
         for kept, seg in zip(state["segments"], full_segs, strict=True):
@@ -2642,6 +2649,40 @@ def gps_import_review(aircraft_id: int) -> ResponseReturnValue:
             full_segs, bool(state.get("other_aircraft", False))
         ),
     )
+
+
+def _data_check_hints(flight: Any, seg: dict[str, Any]) -> list[dict[str, Any]]:
+    """The Data checks (services.data_checks.check_flight) between *flight*
+    and the segment about to be linked to it, so the review page can say
+    "Logbook: EDBK · GPS: EDRK" before it is — and offer the correction
+    (opt-in, one by one; "Accept all best matches" never applies it)."""
+    from datetime import datetime as _dt
+    from types import SimpleNamespace
+
+    from services.data_checks import (  # pyright: ignore[reportMissingImports]
+        check_flight,
+    )
+
+    from aircraft.gps_import import _load_airports
+
+    geojson = seg.get("track_geojson") or _load_segment_geojson(seg)
+    if not geojson:
+        return []
+    track = SimpleNamespace(
+        geojson=geojson,
+        block_off_utc=_dt.fromisoformat(seg["block_off_utc"]),
+        block_on_utc=_dt.fromisoformat(seg["block_on_utc"]),
+    )
+    return [
+        {
+            "key": f.key,
+            "kind": f.kind,
+            "logged": f.logged,
+            "gps": f.gps,
+            "suggestion": f.suggestion,
+        }
+        for f in check_flight(flight, track, _load_airports())
+    ]
 
 
 def _gps_import_create_segment(
@@ -3044,6 +3085,20 @@ def gps_import_confirm_one(aircraft_id: int) -> ResponseReturnValue:
         nature=(request.form.get("nature") or "").strip()[:100] or None,
         remarks=(request.form.get("remarks") or "").strip() or None,
     )
+    fixes = request.form.getlist("data_check_fix")
+    if fixes and _entry is not None and seg.get("matched_flight_id") == _entry.id:
+        # The corrections ticked on the card, now that the flight has its
+        # track: each checked again against it, like on the Data checks page.
+        from services.data_checks import (  # pyright: ignore[reportMissingImports]
+            apply_suggestion,
+            find,
+        )
+
+        for key in fixes:
+            finding = find(_entry, key)
+            if finding is not None:
+                apply_suggestion(_entry, finding)
+        db.session.commit()
     confirmed = state["confirmed_segments"]
 
     all_confirmed = len(confirmed) == len(segments_data)

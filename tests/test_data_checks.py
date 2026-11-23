@@ -515,3 +515,78 @@ class TestCounterGaps:
             assert dc.find(db.session.get(Flight, later), "engine_counter:11.0")
             assert dc.find(db.session.get(Flight, later), "flight_counter:11.0") is None
             assert dc.find(db.session.get(Flight, later), "arrival:EDRK") is None
+
+
+class TestGpsReviewHints:
+    """The GPS import review page runs the same checks on a segment about to
+    be linked, and applies a correction only when ticked on its card."""
+
+    def _setup(self, client, app, monkeypatch, email):
+        import io
+
+        from aircraft import gps_import  # pyright: ignore[reportMissingImports]
+
+        from tests.test_gps_import import _gpx_bytes
+
+        # The test track runs from 51.0,4.0 to 51.3,4.3: name those fields.
+        monkeypatch.setattr(
+            gps_import,
+            "_load_airports",
+            lambda: {"EBAW": (51.0, 4.0), "EDRK": (51.3, 4.3), "EDBK": EDBK},
+        )
+        uid, _tid, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        with app.app_context():
+            f = Flight(
+                aircraft_id=ac_id,
+                date=date(2024, 6, 1),
+                departure_icao="EBAW",
+                arrival_icao="EDBK",
+                departure_time=time(10, 0),
+                arrival_time=time(10, 3),
+            )
+            db.session.add(f)
+            db.session.commit()
+            fid = f.id
+        client.post(
+            f"/aircraft/{ac_id}/gps-import",
+            data={"gps_files": (io.BytesIO(_gpx_bytes()), "f.gpx")},
+            content_type="multipart/form-data",
+        )
+        page = client.get(f"/aircraft/{ac_id}/gps-import/review").data.decode()
+        return ac_id, fid, page
+
+    def test_hint_shown_and_left_as_logged(self, client, app, monkeypatch):
+        ac_id, fid, page = self._setup(client, app, monkeypatch, "h1@example.com")
+        assert "The logbook and this GPS track differ:" in page
+        assert "Logbook: EDBK · GPS: EDRK" in page
+        assert 'name="data_check_fix"' in page and 'value="arrival:EDRK"' in page
+        client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={"seg_idx": "0", "pilot_role": "none"},
+        )
+        with app.app_context():
+            f = db.session.get(Flight, fid)
+            assert f.gps_track_id is not None and f.arrival_icao == "EDBK"
+
+    def test_ticked_correction_is_applied(self, client, app, monkeypatch):
+        ac_id, fid, _page = self._setup(client, app, monkeypatch, "h2@example.com")
+        client.post(
+            f"/aircraft/{ac_id}/gps-import/confirm-one",
+            data={
+                "seg_idx": "0",
+                "pilot_role": "none",
+                "data_check_fix": ["arrival:EDRK", "date:2099-01-01"],
+            },
+        )
+        with app.app_context():
+            f = db.session.get(Flight, fid)
+            assert f.arrival_icao == "EDRK" and "paper logbook says EDBK" in f.notes
+            assert f.date == date(2024, 6, 1)  # a key that doesn't apply: ignored
+
+    def test_no_track_to_compare(self, app):
+        from aircraft.routes import _data_check_hints  # pyright: ignore[reportMissingImports]
+
+        seg = {"block_off_utc": "2024-06-01T10:00:00+00:00"}
+        with app.app_context():
+            assert _data_check_hints(_flight(), {**seg, "track_geojson": None}) == []
