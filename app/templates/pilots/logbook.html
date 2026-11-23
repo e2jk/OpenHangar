@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "partials/_logbook_list_controls.html" as lc with context %}
 
 {% block title %}{{ _('My logbook') }} — OpenHangar{% endblock %}
 
@@ -113,74 +114,13 @@
   {% set _lf_crew_options = [('pic', _('As PIC')), ('second', _('As second crew'))] %}
   {% set _lf_hidden = {'per_page': per_page, 'order': order} %}
   {% set _lf_clear_url = url_for('pilots.logbook', per_page=per_page, order=order) %}
+  {% set _lf_total = total_entries %}
   {% include 'partials/_list_filters.html' %}
 
   {% if entries or total_entries > 0 %}
 
-  {# ── Per-page selector + entry count ─────────────────────────────────────── #}
-  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-    <span class="text-muted small">
-      {% if pagination %}
-        {{ _('Showing %(start)s–%(end)s of %(total)s entries',
-             start=((pagination.page - 1) * pagination.per_page) + 1,
-             end=[pagination.page * pagination.per_page, pagination.total] | min,
-             total=pagination.total) }}
-      {% else %}
-        {{ ngettext('one entry (all)', '%(n)s entries (all)', total_entries, n=total_entries) }}
-      {% endif %}
-    </span>
-    <div class="d-flex align-items-center gap-3 flex-wrap">
-      <div class="d-flex align-items-center gap-1 small">
-        <span class="text-muted me-1">{{ _('Show:') }}</span>
-        {% for n in valid_per_page %}
-          {% set n_str = n | string %}
-          {% if per_page == n_str %}
-            <strong class="px-2 py-1 rounded oh-bg-navy-solid text-white">{{ n }}</strong>
-          {% else %}
-            <a href="{{ url_for('pilots.logbook', per_page=n_str, order=order, **filters) }}" class="px-2 py-1 text-decoration-none">{{ n }}</a>
-          {% endif %}
-        {% endfor %}
-        {% if per_page == 'all' %}
-          <strong class="px-2 py-1 rounded oh-bg-navy-solid text-white">{{ _('All') }}</strong>
-        {% else %}
-          <a href="{{ url_for('pilots.logbook', per_page='all', order=order, **filters) }}" class="px-2 py-1 text-decoration-none">{{ _('All') }}</a>
-        {% endif %}
-      </div>
-      <div class="form-check form-switch mb-0">
-        <input class="form-check-input" type="checkbox" id="oh-logbook-compact-toggle" data-oh-logbook-toggle>
-        <label class="form-check-label small text-muted" for="oh-logbook-compact-toggle">{{ _('Compact view') }}</label>
-      </div>
-    </div>
-  </div>
-
-  {# ── Pagination controls (top) ────────────────────────────────────────────── #}
-  {% if pagination and pagination.pages > 1 %}
-  <div class="d-flex justify-content-end mb-3">
-    <nav>
-      <ul class="pagination pagination-sm mb-0">
-        <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
-          <a class="page-link" href="{{ url_for('pilots.logbook', page=pagination.prev_num, order=order, per_page=per_page, **filters) if pagination.has_prev else '#' }}">
-            &laquo;
-          </a>
-        </li>
-        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-          {% if p %}
-            <li class="page-item {{ 'active' if p == pagination.page }}">
-              <a class="page-link" href="{{ url_for('pilots.logbook', page=p, order=order, per_page=per_page, **filters) }}">{{ p }}</a>
-            </li>
-          {% else %}
-            <li class="page-item disabled"><span class="page-link">…</span></li>
-          {% endif %}
-        {% endfor %}
-        <li class="page-item {{ 'disabled' if not pagination.has_next }}">
-          <a class="page-link" href="{{ url_for('pilots.logbook', page=pagination.next_num, order=order, per_page=per_page, **filters) if pagination.has_next else '#' }}">
-            &raquo;
-          </a>
-        </li>
-      </ul>
-    </nav>
-  </div>
-  {% endif %}
+  {# ── Pagination (top) — wide screens only, see the partial ─────────────── #}
+  {% call(p) lc.pager(pagination, top=true) %}{{ url_for('pilots.logbook', page=p, order=order, per_page=per_page, **filters) }}{% endcall %}
 
   {# ── Compact logbook list — default on mobile, see components.css ────────── #}
   <div class="ac-form-card p-0 mb-3 oh-logbook-compact" data-oh-logbook-compact>
@@ -335,30 +275,11 @@
     </table>
   </div>
 
-  {# ── Pagination controls (bottom) ────────────────────────────────────────── #}
-  {% if pagination and pagination.pages > 1 %}
-  <div class="d-flex justify-content-end">
-    <nav>
-      <ul class="pagination pagination-sm mb-0">
-        <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
-          <a class="page-link" href="{{ url_for('pilots.logbook', page=pagination.prev_num, order=order, per_page=per_page, **filters) if pagination.has_prev else '#' }}">&laquo;</a>
-        </li>
-        {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-          {% if p %}
-            <li class="page-item {{ 'active' if p == pagination.page }}">
-              <a class="page-link" href="{{ url_for('pilots.logbook', page=p, order=order, per_page=per_page, **filters) }}">{{ p }}</a>
-            </li>
-          {% else %}
-            <li class="page-item disabled"><span class="page-link">…</span></li>
-          {% endif %}
-        {% endfor %}
-        <li class="page-item {{ 'disabled' if not pagination.has_next }}">
-          <a class="page-link" href="{{ url_for('pilots.logbook', page=pagination.next_num, order=order, per_page=per_page, **filters) if pagination.has_next else '#' }}">&raquo;</a>
-        </li>
-      </ul>
-    </nav>
+  {# ── Under the list: pagination + per-page selector + compact switch ────── #}
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3" data-oh-logbook-footer>
+    {% call(p) lc.pager(pagination) %}{{ url_for('pilots.logbook', page=p, order=order, per_page=per_page, **filters) }}{% endcall %}
+    {% call(n) lc.display_options(per_page, valid_per_page) %}{{ url_for('pilots.logbook', per_page=n, order=order, **filters) }}{% endcall %}
   </div>
-  {% endif %}
 
   {% else %}
   <div class="ac-form-card p-4 text-center">

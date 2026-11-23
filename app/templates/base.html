@@ -78,24 +78,35 @@
        prefetch.js reads it back out and re-applies it into document.head
        itself on every DOMContentLoaded/htmx:afterSettle. -->
   {% if session.get('user_id') %}
-  {% set ns = namespace(urls=['/']) %}
+  {# Pages saved in advance for instant screens (prefetch.js, sw.js). The
+     bottom bar's pages first (data-oh-prefetch-first: fetched before the
+     rest, they are the likeliest next taps), then the other nav pages. #}
+  {% set oh_first = namespace(urls=['/']) %}
+  {% set ns = namespace(urls=[]) %}
   {% if not logbook_only %}
-  {% set ns.urls = ns.urls + [url_for('aircraft.list_aircraft')] %}
+  {% set oh_first.urls = oh_first.urls + [url_for('aircraft.list_aircraft')] %}
+  {% endif %}
+  {% if is_pilot %}
+  {% set oh_first.urls = oh_first.urls + [url_for('flights.log_flight'), url_for('pilots.logbook')] %}
+  {% endif %}
+  {% if is_pilot or has_passports or passport_only %}
+  {% set oh_first.urls = oh_first.urls + [url_for('passports.index')] %}
   {% endif %}
   {% if is_maint and not logbook_only %}
   {% set ns.urls = ns.urls + [url_for('maintenance.fleet_overview')] %}
   {% endif %}
   {% if is_pilot %}
   {% set ns.urls = ns.urls + [
-    url_for('pilots.logbook'),
     url_for('pilots.pilot_tracks'),
     url_for('pilots.profile'),
     url_for('pilots.minimums_view'),
   ] %}
   {% endif %}
+  {% set ns.urls = ns.urls + [url_for('places.index'), url_for('explore.where_next')] %}
   {% if not is_demo and is_owner %}
   {% set ns.urls = ns.urls + [url_for('config.index')] %}
   {% endif %}
+  <div hidden class="oh-prefetch-urls" data-oh-prefetch-first data-urls='{{ oh_first.urls | tojson }}'></div>
   <div hidden class="oh-prefetch-urls" data-urls='{{ ns.urls | tojson }}'></div>
   {% endif %}
   {% block prefetch_data %}{% endblock %}
@@ -303,7 +314,8 @@
   <!-- Flash messages: floating toasts (visible regardless of scroll position) -->
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-      <div class="toast-container position-fixed top-0 end-0 p-3">
+      {# data-oh-flash: a page showing a one-time message is never saved by sw.js. #}
+      <div class="toast-container position-fixed top-0 end-0 p-3" data-oh-flash>
         {% for category, message in messages %}
           <div class="toast align-items-center text-bg-{{ category }} border-0" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="d-flex">
@@ -397,6 +409,8 @@
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/aircraft_type_autocomplete.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/name_autocomplete.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/ui.js') }}"></script>
+  {# Before the form modules: sets defaulted dates before they read them. #}
+  <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/date_default_today.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/prefetch.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/logbook_view_toggle.js') }}"></script>
   <script nonce="{{ csp_nonce() }}" src="{{ url_for('static', filename='js/progress_bar.js') }}"></script>

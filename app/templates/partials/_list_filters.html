@@ -1,12 +1,48 @@
 {#
-  Filters of a logbook list (flights/list_filters.py), as a GET form.
+  Filters of a logbook list (flights/list_filters.py), as a GET form kept
+  behind a "Filter" button so the list opens straight on the flights (on a
+  phone the form alone took half the screen). The panel starts collapsed
+  even while filters are on: the button then shows how many are active and
+  a "Clear filters" link sits next to it, so the filtered list never looks
+  like the whole logbook.
   Parent template sets:
     _lf_action        -- the list's URL (without filters)
     _lf_crew_options  -- [(value, label), ...] for the crew select
     _lf_hidden        -- dict of other parameters to keep (per_page, order)
     _lf_clear_url     -- the list's URL with those, without filters
-  and passes `filters` (the active ones).
+    _lf_total         -- number of entries the list shows, all pages together
+  and passes `filters` (the active ones) and `pagination` (None for "all").
 #}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <span class="text-muted small">
+    {% if _lf_total %}
+      {% if pagination %}
+        {{ _('Showing %(start)s–%(end)s of %(total)s entries',
+             start=((pagination.page - 1) * pagination.per_page) + 1,
+             end=[pagination.page * pagination.per_page, pagination.total] | min,
+             total=pagination.total) }}
+      {% else %}
+        {{ ngettext('one entry (all)', '%(n)s entries (all)', _lf_total, n=_lf_total) }}
+      {% endif %}
+    {% endif %}
+  </span>
+  <div class="d-flex align-items-center gap-2 ms-auto">
+    {% if filters %}
+    <a href="{{ _lf_clear_url }}" class="btn btn-ac-ghost btn-sm">{{ _('Clear filters') }}</a>
+    {% endif %}
+    <button type="button" class="btn btn-ac-ghost btn-sm" id="list-filters-toggle"
+            data-bs-toggle="collapse" data-bs-target="#list-filters-panel"
+            aria-expanded="false" aria-controls="list-filters-panel">
+      <i class="bi {{ 'bi-funnel-fill' if filters else 'bi-funnel' }} me-1"></i>{{ _('Filter') }}
+      {% if filters %}
+      {% set _lf_active = filters | length %}
+      <span class="badge rounded-pill oh-bg-navy-solid text-white ms-1" aria-hidden="true">{{ _lf_active }}</span>
+      <span class="visually-hidden">{{ ngettext('one active filter', '%(n)s active filters', _lf_active, n=_lf_active) }}</span>
+      {% endif %}
+    </button>
+  </div>
+</div>
+<div class="collapse" id="list-filters-panel">
 <form method="get" action="{{ _lf_action }}" class="ac-form-card p-2 px-3 mb-3 d-flex flex-wrap align-items-end gap-2 oh-fs-09" id="list-filters">
   {% for k, v in _lf_hidden.items() %}{% if v %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endif %}{% endfor %}
   <div>
@@ -34,8 +70,6 @@
       {% endfor %}
     </select>
   </div>
-  <button type="submit" class="btn btn-ac-secondary btn-sm"><i class="bi bi-funnel me-1"></i>{{ _('Filter') }}</button>
-  {% if filters %}
-  <a href="{{ _lf_clear_url }}" class="btn btn-ac-ghost btn-sm">{{ _('Clear filters') }}</a>
-  {% endif %}
+  <button type="submit" class="btn btn-ac-secondary btn-sm"><i class="bi bi-funnel me-1"></i>{{ _('Apply filters') }}</button>
 </form>
+</div>

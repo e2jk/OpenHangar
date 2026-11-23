@@ -7,7 +7,7 @@ import hmac
 import secrets
 import time
 
-from flask import Flask, Response, current_app, g, session
+from flask import Flask, Response, current_app, g, request, session
 from flask.sessions import SecureCookieSessionInterface, SessionMixin
 from models import (
     SAME_PASSWORD_REHASH,
@@ -107,6 +107,9 @@ def issue(user: User, *, tenant_id: int | None = None) -> str:
 # be told apart from a revoked login: see _clear_login and validate.
 RENEWED = "renewed"
 RENEWED_GRACE_SECONDS = 60
+# A login ended on this browser (sign-out, a changed login replaced next),
+# recognisable just as long, for the same reason: see revoke_current.
+LOGGED_OUT = "logged-out"
 
 
 def start(user: User, *, tenant_id: int | None = None) -> None:
@@ -159,9 +162,25 @@ def rehash_password(user: User, new_hash: str) -> None:
 
 
 def revoke_current() -> None:
+    """End this browser's login (sign-out, or a changed login replaced next).
+
+    The token stops authenticating at once, but is kept as retired for
+    RENEWED_GRACE_SECONDS: a response to a background request still in flight
+    with it (the service worker's refreshes and prefetches) then neither puts
+    the old cookie back nor clears the cookie of a login made meanwhile on
+    this browser (another account signing in) — see validate and
+    save_session. A page the user opens still clears it, so a browser left
+    with the old cookie can sign in again.
+    """
     token = session.pop("auth_session", None)
     if isinstance(token, str):
-        AuthSession.query.filter_by(token_hash=_digest(token)).delete()
+        AuthSession.query.filter_by(token_hash=_digest(token)).update(
+            {
+                "credential_binding": LOGGED_OUT,
+                "expires_at": int(time.time()) + RENEWED_GRACE_SECONDS,
+            },
+            synchronize_session=False,
+        )
         db.session.commit()
 
 
@@ -181,6 +200,15 @@ def validate() -> bool:
         and record.expires_at > int(time.time())
     ):
         _clear_login(keep_cookie=True)
+        return False
+    if (
+        record is not None
+        and record.credential_binding == LOGGED_OUT
+        and record.expires_at > int(time.time())
+    ):
+        # Signed out; only a page the user opens clears the cookie (a late
+        # background answer could otherwise clear a newer login's).
+        _clear_login(keep_cookie=_background_request())
         return False
     if (
         record is None
@@ -227,8 +255,19 @@ def _clear_login(*, keep_cookie: bool = False) -> None:
 
 
 def _renewed(token: str) -> bool:
+    """Renewed or signed out since: a response must not send this token back."""
     record = db.session.get(AuthSession, _digest(token), populate_existing=True)
-    return record is not None and record.credential_binding == RENEWED
+    return record is not None and record.credential_binding in (RENEWED, LOGGED_OUT)
+
+
+def _background_request() -> bool:
+    """Sent by a script or the service worker, not a page the user opens.
+
+    Browsers send Sec-Fetch-Mode ("navigate" for a page); without it (older
+    browsers, other clients) the request counts as a page.
+    """
+    mode = request.headers.get("Sec-Fetch-Mode")
+    return mode is not None and mode != "navigate"
 
 
 class RenewedLoginSafeSessions(SecureCookieSessionInterface):

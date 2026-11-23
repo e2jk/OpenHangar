@@ -145,7 +145,7 @@ def places_section(tenant_id: int, user_id: int) -> ExportSection:
                 ExportFile(entry["photo"], photo_path(place.photo_filename), entry)
             )
         document["places"].append(entry)
-    return ExportSection(document, files)
+    return ExportSection(document, files, context_keys=frozenset({"collections"}))
 
 
 def _account_section(context: ExportContext) -> ExportSection:
@@ -153,6 +153,21 @@ def _account_section(context: ExportContext) -> ExportSection:
 
 
 account_exports.register("places", _account_section)
+
+
+def waypoint_selection(rows: list[Any]) -> waypoints.Selection:
+    """The waypoints a GPX/KML download of these list rows holds; the list page
+    offers the downloads only when there is at least one."""
+    unnamed = _("Unnamed place")
+    return waypoints.select(
+        {
+            "name": place.title or unnamed,
+            "latitude": place.latitude,
+            "longitude": place.longitude,
+        }
+        for place, _count, _last in rows
+        if place.latitude is not None
+    )
 
 
 @places_bp.route("/export.<fmt>")
@@ -173,16 +188,7 @@ def export_places(fmt: str) -> ResponseReturnValue:
         listing = list_places(membership.tenant_id, uid, request.args, collection_id)
     except PlaceError:
         return abort(404)
-    unnamed = _("Unnamed place")
-    selection = waypoints.select(
-        {
-            "name": place.title or unnamed,
-            "latitude": place.latitude,
-            "longitude": place.longitude,
-        }
-        for place, _count, _last in listing["rows"]
-        if place.latitude is not None
-    )
+    selection = waypoint_selection(listing["rows"])
     response = Response(
         waypoints.document(selection, fmt, label=_("Places")),
         mimetype=waypoints.FORMATS[fmt],

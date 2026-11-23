@@ -178,6 +178,10 @@ def test_private_routes_discovery_filters_and_safe_download_links(
     assert not ET.fromstring(
         client.get(path, query_string={"download": "gpx", "state": "visited"}).data
     ).findall("n:wpt", GPX)
+    # Nothing to download in that selection: no download button either.
+    visited = client.get(path, query_string={"state": "visited"}).text
+    assert "Download GPX waypoints" not in visited
+    assert "Download KML waypoints" not in visited
     discovery = path + "where-next"
     assert (
         client.get(

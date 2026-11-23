@@ -157,6 +157,25 @@ def test_gpx_and_kml_hold_the_located_places_of_the_filtered_list(
         )
 
 
+def test_gpx_and_kml_buttons_only_when_the_list_has_located_places(
+    client: FlaskClient, people: dict[str, int], shared: dict[str, int]
+) -> None:
+    signin(client, people)
+    page = client.get("/places/").text
+    assert "/places/export.gpx" in page and "/places/export.kml" in page
+    # The bin is empty: a download would hold no waypoint.
+    empty = client.get("/places/", query_string={"state": "bin"}).text
+    assert "/places/export.gpx" not in empty and "/places/export.kml" not in empty
+
+
+def test_no_gpx_or_kml_button_without_places(
+    client: FlaskClient, people: dict[str, int]
+) -> None:
+    signin(client, people, "personal")
+    page = client.get("/places/").text
+    assert "/places/export.gpx" not in page and "/places/export.kml" not in page
+
+
 def test_unnamed_located_places_get_a_neutral_waypoint_name(
     app: Flask, client: FlaskClient, people: dict[str, int], shared: dict[str, int]
 ) -> None:

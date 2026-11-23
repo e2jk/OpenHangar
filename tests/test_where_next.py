@@ -105,6 +105,17 @@ def test_downloads_cover_the_chosen_passports(
     assert client.get(URL, query_string={"download": "gpx"}).status_code == 400
 
 
+def test_no_download_is_offered_when_no_airfield_matches(
+    app: Flask, client: FlaskClient, owner: dict[str, int]
+) -> None:
+    _setup(app, owner)
+    signin(client, owner["user"])
+    # Only places, and the account has none.
+    page = _search(client, owner, source="places").get_data(as_text=True)
+    assert ">Shared</a>" not in page
+    assert "download=gpx" not in page and "download=kml" not in page
+
+
 def test_the_old_passport_url_redirects_with_its_inputs(
     app: Flask, client: FlaskClient, owner: dict[str, int]
 ) -> None:
