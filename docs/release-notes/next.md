@@ -1,5 +1,15 @@
-# GPS import shows logbook differences, and moving a GPS file
+# Instant screens again, GPS import shows logbook differences
 
+- **Screens open instantly again**, on any device or browser: the copy of a
+  page saved on your device shows at once while the server is asked in the
+  background, for as long as your login is valid (30 days by default). Since
+  November every screen waited for the server, 1–2 seconds on mobile data.
+  Saving something marks the saved pages out of date: the dashboard, flights,
+  logbook, maintenance and fleet pages (and the aircraft you were working
+  on) are refreshed in the background right away, any other page comes from
+  the server once. Coming back to the app refreshes main pages saved more
+  than 15 minutes ago. Saved pages are deleted when you sign out or the
+  login ends — on a computer other people use, sign out.
 - Admins can turn instant screens off for the whole instance with the new
   `OPENHANGAR_INSTANT_PAGES=false` (pages then come from the server first),
   shown on the Settings page.

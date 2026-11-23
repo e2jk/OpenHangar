@@ -11,18 +11,19 @@
       });
   }
 
-  /* Any successful write (htmx-boosted form POST/PUT/DELETE) may have
-   * changed what a cached nav page would show next time — drop the SW's
-   * cached nav pages so the next visit is guaranteed fresh rather than
-   * showing what was on screen before this change. */
-  document.addEventListener('htmx:afterRequest', function (e) {
-    var cfg = e.detail && e.detail.requestConfig;
-    var verb = cfg && cfg.verb;
-    if (!verb || verb.toLowerCase() === 'get') return;
-    if (!e.detail.successful) return;
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage(Object.assign({ type: 'OH_INVALIDATE_NAV_CACHE' }, window.OhOfflineIdentity.current() || {}));
-    }
+  /* Saves need nothing from this page: the service worker sees every
+   * successful write itself and marks its saved pages outdated (sw.js). When
+   * the app is opened or comes back to the foreground, ask it to refresh the
+   * main pages saved too long ago, so the next screens tapped are current. */
+  function _refreshMainPages() {
+    if (!('serviceWorker' in navigator) || !navigator.serviceWorker.controller) return;
+    var who = window.OhOfflineIdentity && window.OhOfflineIdentity.current();
+    if (!who) return;
+    navigator.serviceWorker.controller.postMessage(Object.assign({ type: 'OH_REFRESH_MAIN' }, who));
+  }
+  _refreshMainPages();
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') _refreshMainPages();
   });
 
   /* auth/routes.py appends ?_swr_fresh=1 to the post-login/post-setup

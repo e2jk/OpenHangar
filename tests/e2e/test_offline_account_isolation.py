@@ -87,6 +87,16 @@ def isolated_offline_server(tmp_path, monkeypatch):
             slow_entered.set()
             slow_release.wait(timeout=15)
 
+    @app.route("/test-only/save", methods=["POST"])
+    def test_only_save():
+        """A save as any form makes one: change data, redirect to a page."""
+        from flask import redirect, request, session
+
+        flight = Flight.query.filter_by(pic_user_id=session["user_id"]).one()
+        flight.other_aircraft_registration = request.form["registration"]
+        db.session.commit()
+        return redirect("/pilot/minimums")
+
     server = make_server("127.0.0.1", 0, app, threaded=True)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -271,6 +281,9 @@ def test_upgrade_removes_offline_editing_data(
         context = browser.new_context(service_workers="allow")
         page = context.new_page()
         alpha = login(page, origin, "Alpha")
+        # Set up from a page that holds none of these databases open (the
+        # app's pages do: a deletion would be blocked and race the setup).
+        page.goto(origin + "/static/pwa/offline.html", wait_until="load")
         # What the previous release left behind: the legacy unowned database,
         # and version 3 account databases holding pending writes.
         page.evaluate(
@@ -291,7 +304,7 @@ def test_upgrade_removes_offline_editing_data(
             })))""",
             alpha["owner"],
         )
-        page.reload(wait_until="load")
+        page.goto(origin + "/pilot/logbook", wait_until="load")
         wait_until(
             page,
             """() => indexedDB.databases().then(dbs =>
@@ -450,10 +463,21 @@ def test_aircraft_grant_loss_retires_cached_page_and_snapshot(
                 user_id=users["Alpha"], aircraft_id=aircraft_id
             ).delete()
             db.session.commit()
-        # The forbidden page itself must evict its old cached success. The page's
-        # own background snapshot refresh may get its 404 first and retire this
-        # whole login (the stronger response); the worker then answers with the
-        # generic offline page. Either way the private page is never served.
+        # Instant screens: the first visit after losing access may still show
+        # the saved copy at once (agreed: one more view of a page already
+        # seen); the server's 404 then removes it in the background. The
+        # page's own snapshot refresh may get its 404 first and retire this
+        # whole login (the stronger response). Either way, from then on the
+        # private page is never served again.
+        page.evaluate("url => fetch(url).then(r => r.text())", target)
+        wait_until(
+            page,
+            """url => caches.keys().then(names => Promise.all(names
+                 .filter(n => n.includes('-private-'))
+                 .map(n => caches.open(n).then(c => c.match(location.origin + url)))))
+                 .then(found => !found.some(Boolean))""",
+            arg=target,
+        )
         result = page.evaluate(
             "url => fetch(url).then(async r => ({status: r.status, text: await r.text()}))",
             target,
@@ -532,12 +556,17 @@ def test_login_expired_while_offline_is_retired_on_reconnect(
         )
         db.session.commit()
     context.set_offline(False)
+    # The device still believes the login valid (its end date is weeks away),
+    # so the saved copy shows at once; the server's answer in the background
+    # proves the login ended: saved pages are deleted and the tab locks.
     page.goto(origin + "/pilot/logbook", wait_until="load")
-    assert "/login" in page.url
     wait_until(
         page,
         "() => caches.keys().then(names => !names.some(n => n.includes('-private-')))",
     )
+    page.wait_for_function("() => !document.body.textContent.includes('ALPHA-PRIVATE')")
+    page.goto(origin + "/pilot/logbook", wait_until="load")
+    assert "/login" in page.url
     assert page.evaluate("() => OhOffline.getPilotSnapshot()") is None
 
     wait_for_settled_worker(page)
@@ -577,10 +606,12 @@ def _wait_for_cached_text(page: Page, path: str, marker: str) -> None:
     )
 
 
-def test_slow_network_shows_this_logins_cached_page_then_refreshes_it(
+def test_saved_page_shows_instantly_while_the_server_is_busy(
     isolated_offline_server,
     traced_browser,
 ):
+    """A cold page load (address bar, app start) shows this login's saved
+    copy at once, not after a timeout, then refreshes it from the server."""
     from models import Flight, db
 
     app, origin, users, _, slow_entered, slow_release = isolated_offline_server
@@ -607,11 +638,12 @@ def test_slow_network_shows_this_logins_cached_page_then_refreshes_it(
         page.goto(origin + probe, wait_until="commit")
         page.wait_for_function(
             "() => document.body && document.body.textContent.includes('ALPHA-PRIVATE')",
-            timeout=10000,
+            timeout=2000,
         )
-        # The cached copy is visible while the actual request is still held;
-        # no wall-clock race against an arbitrary server sleep is necessary.
-        assert slow_entered.is_set()
+        # The cached copy is visible while the actual request is still held
+        # (it is sent in the background, so it may reach the server just
+        # after); no wall-clock race against an arbitrary server sleep.
+        assert slow_entered.wait(timeout=10)
         assert not slow_release.is_set()
         slow_release.set()
         _wait_for_cached_text(page, probe, "ALPHA-FRESH")
@@ -682,3 +714,234 @@ def test_back_button_cache_does_not_outlive_the_account(
         context.close()
     finally:
         browser.close()
+
+
+def _gate(app, path):
+    """Hold the live server's answers for `path` until `release` is set.
+    `_delay(app, path, 0)` removes every gate and delay."""
+    from flask import request
+
+    entered, release = threading.Event(), threading.Event()
+
+    def hold():
+        if request.path == path:
+            entered.set()
+            release.wait(timeout=15)
+
+    hold._oh_delay = True
+    app.before_request_funcs.setdefault(None, []).insert(0, hold)
+    return entered, release
+
+
+def _quiet(page, requests, seconds=1.5):
+    """Wait until the browser has sent the server nothing for `seconds`:
+    background checks and prefetches started by the last page are done."""
+    deadline = time.monotonic() + 15
+    seen = len(requests)
+    calm_since = time.monotonic()
+    while time.monotonic() - calm_since < seconds:
+        if time.monotonic() > deadline:
+            raise TimeoutError("the browser kept sending requests")
+        page.wait_for_timeout(200)
+        if len(requests) != seen:
+            seen = len(requests)
+            calm_since = time.monotonic()
+
+
+def _boosted_click(page, path):
+    """Click an htmx-boosted link to `path` without waiting for the page."""
+    page.evaluate(
+        """path => { const a = document.createElement('a'); a.href = path;
+             a.id = 'oh-test-boosted-click'; a.textContent = path;
+             document.body.appendChild(a); htmx.process(a); }""",
+        path,
+    )
+    page.locator("#oh-test-boosted-click").click()
+
+
+def _cached_text(page, path):
+    return page.evaluate(
+        """path => caches.keys().then(names => Promise.all(names
+             .filter(n => n.includes('-private-'))
+             .map(n => caches.open(n).then(c => c.match(location.origin + path))
+               .then(r => r ? r.text() : ''))))
+             .then(texts => texts.join(''))""",
+        path,
+    )
+
+
+def _still_waiting_for_server(page, entered, path_before):
+    """The server has the request, and the page has not changed meanwhile."""
+    assert entered.wait(timeout=10)
+    page.wait_for_timeout(500)
+    assert page.evaluate("() => location.pathname") == path_before
+
+
+def test_a_save_refreshes_main_pages_and_outdates_the_others(
+    isolated_offline_server, traced_browser
+):
+    """After a save, the main pages are refreshed in the background and open
+    instantly with the change; another saved page comes from the server once,
+    then is instant again."""
+    app, origin, _users, _, _, _ = isolated_offline_server
+    releases = []
+    context = traced_browser.new_context(service_workers="allow")
+    page = context.new_page()
+    try:
+        login(page, origin, "Alpha")  # ends on /pilot/logbook
+        wait_for_settled_worker(page)
+        _boosted_visit(page, "/pilot/stats")
+        _wait_for_cached_text(page, "/pilot/logbook", "ALPHA-PRIVATE")
+        wait_until(page, "() => true")  # let the worker store /pilot/stats
+        assert _cached_text(page, "/pilot/stats")
+
+        page.evaluate(
+            """() => { const f = document.createElement('form');
+                 f.method = 'post'; f.action = '/test-only/save'; f.id = 'oh-test-save';
+                 f.innerHTML = '<input name="registration" value="ALPHA-SAVED">'
+                   + '<input type="hidden" name="csrf_token"><button type="submit">Save</button>';
+                 f.elements.csrf_token.value =
+                   document.querySelector('meta[name="csrf-token"]').content;
+                 document.body.appendChild(f); htmx.process(f); }"""
+        )
+        page.locator("#oh-test-save button").click()
+        page.wait_for_url("**/pilot/minimums")
+        # A main page is refreshed without being opened...
+        _wait_for_cached_text(page, "/pilot/logbook", "ALPHA-SAVED")
+        # ...so it opens instantly, already showing the change.
+        entered, release = _gate(app, "/pilot/logbook")
+        releases.append(release)
+        _boosted_visit(page, "/pilot/logbook")
+        assert "ALPHA-SAVED" in page.content()
+        release.set()
+        _delay(app, "/pilot/logbook", 0)
+
+        # Another saved page is outdated by the save: from the server once...
+        entered, release = _gate(app, "/pilot/stats")
+        releases.append(release)
+        _boosted_click(page, "/pilot/stats")
+        _still_waiting_for_server(page, entered, "/pilot/logbook")
+        release.set()
+        page.wait_for_url("**/pilot/stats")
+        _delay(app, "/pilot/stats", 0)
+        # ...then instant again.
+        _boosted_visit(page, "/pilot/logbook")
+        _entered, release = _gate(app, "/pilot/stats")
+        releases.append(release)
+        _boosted_visit(page, "/pilot/stats")
+    finally:
+        for release in releases:
+            release.set()
+        _delay(app, "/pilot/stats", 0)
+        context.close()
+
+
+def test_instant_screens_off_asks_the_server_first(
+    isolated_offline_server, traced_browser
+):
+    """OPENHANGAR_INSTANT_PAGES=false: each device follows at the next server
+    answer, and a saved page no longer shows before the server's."""
+    app, origin, _users, _, _, _ = isolated_offline_server
+    context = traced_browser.new_context(service_workers="allow")
+    page = context.new_page()
+    release = threading.Event()
+    try:
+        login(page, origin, "Alpha")  # ends on /pilot/logbook
+        wait_for_settled_worker(page)
+        _wait_for_cached_text(page, "/pilot/logbook", "ALPHA-PRIVATE")
+        _boosted_visit(page, "/pilot/minimums")
+        app.config["INSTANT_PAGES"] = False
+        page.evaluate("() => fetch('/api/offline/identity').then(r => r.status)")
+        entered, release = _gate(app, "/pilot/logbook")
+        _boosted_click(page, "/pilot/logbook")
+        _still_waiting_for_server(page, entered, "/pilot/minimums")
+        release.set()
+        page.wait_for_url("**/pilot/logbook")
+    finally:
+        app.config["INSTANT_PAGES"] = True
+        release.set()
+        _delay(app, "/pilot/logbook", 0)
+        context.close()
+
+
+def test_login_end_date_deletes_saved_pages_without_a_connection(
+    isolated_offline_server, traced_browser
+):
+    """The device knows when its login ends: past that, saved pages are
+    deleted even with no connection to ask the server."""
+    from models import AuthSession, db
+
+    app, origin, users, requests, _, _ = isolated_offline_server
+    context = traced_browser.new_context(service_workers="allow")
+    page = context.new_page()
+    login(page, origin, "Alpha")
+    wait_for_settled_worker(page)
+    _wait_for_cached_text(page, "/pilot/logbook", "ALPHA-PRIVATE")
+    # An answer to a request started earlier would still bring the old end date.
+    _quiet(page, requests)
+    with app.app_context():
+        AuthSession.query.filter_by(user_id=users["Alpha"]).update(
+            {"expires_at": int(time.time()) + 3}, synchronize_session=False
+        )
+        db.session.commit()
+    # One answer tells the worker the new end date; then no more server.
+    page.evaluate("() => fetch('/api/offline/identity').then(r => r.status)")
+    context.set_offline(True)
+    page.wait_for_timeout(4500)
+    page.goto(origin + "/pilot/logbook", wait_until="load")
+    assert "ALPHA-PRIVATE" not in page.content()
+    wait_until(
+        page,
+        "() => caches.keys().then(names => !names.some(n => n.includes('-private-')))",
+    )
+    context.close()
+
+
+def test_coming_back_to_the_app_refreshes_main_pages_saved_long_ago(
+    isolated_offline_server, traced_browser
+):
+    _app, origin, _users, requests, _, _ = isolated_offline_server
+    context = traced_browser.new_context(service_workers="allow")
+    page = context.new_page()
+    login(page, origin, "Alpha")  # ends on /pilot/logbook
+    wait_for_settled_worker(page)
+    _wait_for_cached_text(page, "/pilot/logbook", "ALPHA-PRIVATE")
+    _boosted_visit(page, "/pilot/minimums")
+    # Checks and prefetches started by these pages would overwrite the copy.
+    _quiet(page, requests)
+    # Pretend the logbook copy was saved 20 minutes ago.
+    page.evaluate(
+        """async () => {
+          for (const name of (await caches.keys()).filter(n => n.includes('-private-'))) {
+            const cache = await caches.open(name);
+            const key = location.origin + '/pilot/logbook';
+            const old = await cache.match(key);
+            if (!old) continue;
+            const headers = new Headers(old.headers);
+            headers.set('X-OH-Saved-At', String(Date.now() - 20 * 60 * 1000));
+            await cache.put(key, new Response('STALE-COPY', { status: 200, headers }));
+          }
+        }"""
+    )
+    assert "STALE-COPY" in _cached_text(page, "/pilot/logbook")
+    # The app comes back to the foreground (no navigation, so no prefetch).
+    page.evaluate("() => document.dispatchEvent(new Event('visibilitychange'))")
+    _wait_for_cached_text(page, "/pilot/logbook", "ALPHA-PRIVATE")
+    assert "STALE-COPY" not in _cached_text(page, "/pilot/logbook")
+    context.close()
+
+
+def test_pages_the_app_prefetches_are_saved_for_instant_screens(
+    isolated_offline_server, traced_browser
+):
+    """The pilot pages the logbook page asks the browser to prefetch (never
+    opened here) land in this login's saved pages, so their first visit is
+    already instant."""
+    _app, origin, _users, requests, _, _ = isolated_offline_server
+    context = traced_browser.new_context(service_workers="allow")
+    page = context.new_page()
+    login(page, origin, "Alpha")  # ends on /pilot/logbook
+    _quiet(page, requests)
+    for path in ("/pilot/profile", "/pilot/tracks"):
+        assert "</html>" in _cached_text(page, path), path
+    context.close()

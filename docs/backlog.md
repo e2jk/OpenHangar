@@ -16,67 +16,67 @@ signing out is the user's job. Tick each step as it lands; remove this
 section once everything is done.
 
 **Server**
-- [ ] Send the login's remaining lifetime (seconds until
+- [x] Send the login's remaining lifetime (seconds until
   `AuthSession.expires_at`, not a date, so a wrong device clock doesn't
   matter) with every signed-in response, next to `X-OH-Offline-Owner` /
   `X-OH-Offline-Session`. Not a credential, like those. Absent when signed
   out.
-- [ ] New `OPENHANGAR_INSTANT_PAGES` (default `true`; `false` turns instant
+- [x] New `OPENHANGAR_INSTANT_PAGES` (default `true`; `false` turns instant
   screens off for the whole instance). Sent to the browser with the same
   headers; when off, each device goes back to server-first and drops its
-  instant copies at the next server answer. Documented in
+  instant copies at the next server answer (they stay as offline copies). Documented in
   `docs/configuration.md` (table row + subsection).
-- [ ] Show the setting read-only on the admin Settings page next to
+- [x] Show the setting read-only on the admin Settings page next to
   "Offline support (Service Worker)", with how to change it (no UI toggle).
   Same row: move its `<script type="application/json" id="sw-status-labels">`
   to a `data-*` attribute (stripped by htmx on boosted navigation, see
   AGENTS.md).
 
 **Service worker (`sw.js`)**
-- [ ] Saved page first: for the cached routes (`SWR_ROUTES` /
+- [x] Saved page first: for the cached routes (`SWR_ROUTES` /
   `SWR_PATTERNS`), show the saved copy at once — cold app start and in-app
   clicks alike — when the login hasn't expired, instant screens are allowed
   and the copy isn't outdated; otherwise fetch from the server and save.
-- [ ] Every page shown from its saved copy is still checked in the
+- [x] Every page shown from its saved copy is still checked in the
   background: the answer refreshes the copy, purges it on 403/404, and an
   ended or changed login retires the cache and locks the tab (existing
   handling).
-- [ ] Remove the 3-second race (`PRIVATE_NETWORK_TIMEOUT_MS`).
-- [ ] Keep `?_swr_fresh` after sign-in: the first dashboard always comes from
+- [x] Remove the 3-second race (`PRIVATE_NETWORK_TIMEOUT_MS`).
+- [x] Keep `?_swr_fresh` after sign-in: the first dashboard always comes from
   the server.
-- [ ] Login expiry known locally (persisted with the identity metadata, so it
+- [x] Login expiry known locally (persisted with the identity metadata, so it
   survives the worker being stopped): past it, delete all saved pages and
   go to the server, without needing a connection.
-- [ ] A successful save (any same-origin non-GET seen by the worker — htmx
+- [x] A successful save (any same-origin non-GET seen by the worker — htmx
   forms, plain forms, uploads, other tabs) marks every saved page outdated
   (record a "last change" time; each saved copy records when it was saved).
   An outdated page comes from the server once, then is instant again.
   Replaces `OH_INVALIDATE_NAV_CACHE` deleting the whole cache, so offline
   copies stay available.
-- [ ] After a save, refresh in the background right away: dashboard, fleet
+- [x] After a save, refresh in the background right away: dashboard, fleet
   flights list, pilot logbook, maintenance, fleet list, and the aircraft
   page of the aircraft in the saved form's address (`/aircraft/<ref>/…`).
   Opened before its refresh is done → wait for the server, never show a
   copy older than the user's own last save.
-- [ ] When the app opens or comes back to the foreground, refresh the same
+- [x] When the app opens or comes back to the foreground, refresh the same
   main pages (minus the aircraft) in the background if older than ~15 min.
-- [ ] Check that the existing prefetch hints (main pages after sign-in, an
+- [x] Check that the existing prefetch hints (main pages after sign-in, an
   aircraft's tabs from its page — `prefetch.js`) really land in the saved
   copies and get used.
 
 **Docs**
-- [ ] Explanatory comment at the top of `sw.js`: what is saved, when it is
+- [x] Explanatory comment at the top of `sw.js`: what is saved, when it is
   outdated, when it is deleted, and why.
-- [ ] User guide, "Offline data on a shared browser": saved pages last as
+- [x] User guide, "Offline data on a shared browser": saved pages last as
   long as the login; sign out on a computer others use; a login ended on the
   server is noticed at the next connection; admins can turn instant screens
   off with `OPENHANGAR_INSTANT_PAGES`.
-- [ ] Release notes: screens open instantly again; the new variable.
+- [x] Release notes: screens open instantly again; the new variable.
 
 **Tests**
-- [ ] Server: lifetime value sent signed in, absent signed out; the
+- [x] Server: lifetime value sent signed in, absent signed out; the
   variable's value reaches the headers and the Settings page.
-- [ ] Browser: instant screen from a cold app start; add a flight → the
+- [x] Browser: instant screen from a cold app start; add a flight → the
   dashboard is instant and shows it; another tab is outdated after a save →
   fetched once, then instant; a page opened mid-refresh waits for the
   server; resuming the app refreshes stale main pages; an expired login
@@ -85,9 +85,10 @@ section once everything is done.
   slow-network test is replaced).
 
 **Delivery**
-- [ ] Commits: (1) server lifetime header + variable + Settings row,
-  (2) saved page first / outdated after a save / local expiry,
-  (3) background refresh after a save and on resume; docs with each.
+- [x] Commits: (1) server lifetime header + variable + Settings row,
+  (2) the service worker (saved page first, outdated after a save, local
+  expiry, background refresh after a save and on resume — too intertwined
+  in `sw.js` to split); docs with each.
 - [ ] Full gate (ruff, mypy, coverage, translations, browser tests), ship,
   then check on a phone that page switches are instant again.
 
