@@ -250,3 +250,4 @@
 [data-bs-theme=dark] .wizard-choice-card:hover { background: #2a2d31; }
 [data-bs-theme=dark] .wizard-choice-card.selected { background: #1e3a5f; border-color: var(--oh-instrument); }
 [data-bs-theme=dark] .wizard-choice-card.selected::after { color: var(--oh-instrument); }
+[data-bs-theme=dark] .wizard-choice-icon { color: #c0c8d0; }

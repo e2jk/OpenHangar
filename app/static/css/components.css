@@ -202,6 +202,7 @@ tr.clickable-row { cursor: pointer; }
 [data-bs-theme=dark] .res-cal-day.other-month { background: #1e2124; color: #666; }
 [data-bs-theme=dark] .section-divider th { background: #2a2d31; color: #adb5bd; border-color: #3a4050; }
 [data-bs-theme=dark] .res-cal-day-num { color: #c0c8d0; }
+[data-bs-theme=dark] .res-cal-table th { color: #adb5bd; }
 [data-bs-theme=dark] .logbook-table thead th { background: #1e2124; }
 [data-bs-theme=dark] .logbook-table .oh-fstd-row td { background-color: rgba(90, 150, 220, .12); }
 [data-bs-theme=dark] .map-table th { background: #1e2124; }
