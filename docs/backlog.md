@@ -821,36 +821,18 @@ the full e2e suite three consecutive times locally
 
 All work is in `tests/e2e/`, `app/dev_seed.py`, and `scripts/` — no app
 behaviour changes, no migrations, no translations. Test files keep their
-feature-based names. **Any `.github/workflows/ci.yml` edit (task 3)
+feature-based names. **Any `.github/workflows/ci.yml` edit
 must be explicitly approved by the maintainer first.**
 
-### 3. Failure observability: per-test Playwright traces + screenshots
 
-CI failures currently offer only pytest text output. Add:
-
-1. The standard pytest hook in `tests/e2e/conftest.py` to expose test
-   outcome to fixtures:
-   ```python
-   @pytest.hookimpl(hookwrapper=True)
-   def pytest_runtest_makereport(item, call):
-       outcome = yield
-       rep = outcome.get_result()
-       setattr(item, f"rep_{rep.when}", rep)
-   ```
-2. In `browser_context`, start tracing once:
-   `context.tracing.start(screenshots=True, snapshots=True)`. In the
-   `page` fixture (and the `fresh_*` fixtures), wrap each test in a chunk:
-   `tracing.start_chunk(title=request.node.nodeid)` before yield; after
-   yield, if `getattr(request.node, "rep_call", None)` failed, call
-   `tracing.stop_chunk(path="test-results/e2e/<sanitized-nodeid>.zip")`
-   plus `page.screenshot(path=...)`, else `tracing.stop_chunk()` (discard).
-3. Add `test-results/` to `.gitignore`.
-4. In `.github/workflows/ci.yml`, add an `actions/upload-artifact` step
-   with `if: failure()` uploading `test-results/e2e/` to all three e2e
-   jobs: `browser-tests-seeded-crawl`, `browser-tests-seeded-rest`, and
-   `browser-tests-fresh-db` (⚠ maintainer approval required).
-
-View traces with `playwright show-trace <file>.zip`.
+### 3. Failure observability: the remaining contexts
+A failing test keeps its Playwright trace and a screenshot under
+`test-results/playwright-traces/<test>/` for the shared `page` fixture
+(per-test trace chunks) and `traced_browser`; CI uploads that folder
+for the seeded jobs. Left: the `fresh_logged_in_page` /
+`unauthenticated_page` / `setup_page` contexts aren't traced, and the
+`browser-tests-fresh-db` job doesn't upload the folder (⚠ ci.yml:
+maintainer approval).
 
 ---
 

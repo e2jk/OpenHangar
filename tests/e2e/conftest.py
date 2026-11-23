@@ -29,6 +29,7 @@ import urllib.parse
 from pathlib import Path
 
 import pytest
+from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 os.environ.setdefault("OPENHANGAR_SECRET_KEY", "e2e-test-secret-not-for-production")
@@ -438,11 +439,7 @@ def traced_browser(playwright_runtime, request, tmp_path):
     yield browser
     if browser.is_connected():
         browser.close()
-    failed = any(
-        getattr(getattr(request.node, f"rep_{phase}", None), "failed", False)
-        for phase in ("setup", "call")
-    )
-    if failed and saved:
+    if _failed(request) and saved:
         target = TRACE_DIR / request.node.name
         target.mkdir(parents=True, exist_ok=True)
         for path in saved:
@@ -468,20 +465,55 @@ def browser_context(
     )
     context.set_default_timeout(10000)
     _block_external_network(context)
+    # Traced in one chunk per test (the page fixture): kept only for a test
+    # that failed — see TRACE_DIR.
+    context.tracing.start(screenshots=True, snapshots=True, sources=False)
     yield context
+    with contextlib.suppress(Exception):
+        context.tracing.stop()
     browser.close()
 
 
+def _failed(request) -> bool:
+    return any(
+        getattr(getattr(request.node, f"rep_{phase}", None), "failed", False)
+        for phase in ("setup", "call")
+    )
+
+
 @pytest.fixture
-def page(browser_context):
-    """Fresh page per test."""
+def page(browser_context, request):
+    """Fresh page per test, in the shared context. Its trace (screenshots,
+    DOM snapshots, network) is kept under TRACE_DIR/<test>/ only if the test
+    failed — open it with `playwright show-trace <file>`."""
+    tracing = True
+    try:
+        browser_context.tracing.start_chunk(title=request.node.nodeid)
+    except PlaywrightError as exc:  # a trace is diagnostics only
+        tracing = False
+        print(f"Playwright trace not started: {exc}")
     pg = browser_context.new_page()
     yield pg
+    failed = _failed(request)
+    if failed:
+        target = TRACE_DIR / request.node.name
+        target.mkdir(parents=True, exist_ok=True)
+        with contextlib.suppress(Exception):
+            pg.screenshot(path=str(target / "failure.png"), full_page=True)
     with contextlib.suppress(Exception):
         # Cancel all in-flight requests (prefetch, XHR, fetch) before closing
         # so they don't linger in the shared browser context's connection pool
         # and starve subsequent test pages.
         pg.evaluate("() => window.stop()")
+    if tracing:
+        try:
+            if failed:
+                browser_context.tracing.stop_chunk(path=str(target / "trace.zip"))
+                print(f"Playwright trace kept in {target}")
+            else:
+                browser_context.tracing.stop_chunk()
+        except PlaywrightError as exc:  # a trace is diagnostics only
+            print(f"Playwright trace not saved: {exc}")
     pg.close()
 
 

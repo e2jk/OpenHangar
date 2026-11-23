@@ -48,6 +48,9 @@
   one instead of failing.
 - The browser tests' in-process servers are used as soon as they answer,
   instead of after a fixed pause.
+- A failing browser test now leaves its Playwright trace and a screenshot
+  for the tests on the shared page too, not only those opening their own
+  browser.
 - Browser tests now use the same disposable test data locally and in CI.
   Missing fixture IDs fail clearly, and deletion tests use dedicated synthetic
   flights.
