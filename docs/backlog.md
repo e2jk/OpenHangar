@@ -227,10 +227,6 @@ crosses each logged flight with its GPS track — departure/arrival airfield
 value" (noting the paper logbook's value on the flight) or "dismiss". Left
 for later:
 
-- **Hint on the GPS import review page:** run the same `check_flight()` on a
-  segment about to be linked and show "Logbook: EDBK · GPS: EDRK" on its
-  card, with an opt-in correction (never applied by "Accept all best
-  matches"). The daily page already catches it the next day.
 - **Landings:** compare the logged landing count with the landings the GPS
   track shows — needs the detected count stored on `GpsTrack` (or the points
   re-analysed), and touch-and-goes counted the same way as the logbook.
