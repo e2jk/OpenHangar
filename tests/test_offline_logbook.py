@@ -392,6 +392,7 @@ def test_aircraft_offline_page_is_read_only(app, client):
     assert f'data-oh-aircraft-id="{ac_id}"' in html
     assert 'id="oh-offline-row"' in html
     assert 'id="oh-offline-logbook-i18n"' in html
+    assert "data-oh-i18n=" in html and "&#34;savedAt&#34;" in html
     page = html[html.index('id="oh-offline-logbook"') :]
     assert "<input" not in page and "<select" not in page and "<textarea" not in page
 
@@ -448,6 +449,24 @@ def test_offline_templates_have_no_inline_script():
     ):
         text = (Path("app/templates/offline") / name).read_text()
         assert "<script nonce" not in text
+
+
+def test_child_templates_have_no_json_script_blocks():
+    """htmx (allowScriptTags:false) strips every <script> from an hx-boosted
+    response, JSON data blocks included, so data must ride on data-* attributes.
+    Only pages that never go through a boosted body swap may use them."""
+    import re
+    from pathlib import Path
+
+    json_script = re.compile(r"<script[^>]*application/json")
+    allowed = {Path("base.html"), Path("share/public.html")}
+    root = Path("app/templates")
+    offenders = [
+        str(p.relative_to(root))
+        for p in root.rglob("*.html")
+        if p.relative_to(root) not in allowed and json_script.search(p.read_text())
+    ]
+    assert offenders == []
 
 
 def test_logbooks_link_to_their_offline_page(app, client):
