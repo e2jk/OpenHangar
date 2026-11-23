@@ -269,3 +269,12 @@ tr.clickable-row { cursor: pointer; }
   #passport-print-document tr { break-inside: avoid; }
   .passport-print-photo { max-width: 55mm; max-height: 45mm; }
 }
+
+/* Flash toasts use a white close button, but Bootstrap's warning, info and
+ * light backgrounds are pale with black text: keep the close button dark on
+ * them, in both themes (the dark theme also whitens every close button). */
+.toast.text-bg-warning .btn-close,
+.toast.text-bg-info .btn-close,
+.toast.text-bg-light .btn-close {
+  --bs-btn-close-filter: none;
+}

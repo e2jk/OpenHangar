@@ -25,3 +25,9 @@
   a few other dark-on-dark icons and buttons (airworthiness N/A filter,
   reservation calendar weekday headers, setup-wizard icons) are easy to
   read.
+- The offline logbook's messages ("Saved …", "No copy of this logbook on
+  this device yet …") also show when you open it from a link inside the
+  app.
+- In the dark theme, the setup wizard shows which step you're on and which
+  are done; the close button on yellow and light-blue messages is easy to
+  see in both themes.
