@@ -395,3 +395,59 @@ def test_response_for_a_token_renewed_meanwhile_does_not_resend_it(app):
         response = Response()
         interface.save_session(app, old_session, response)
         assert not _sets_session_cookie(response)
+
+
+def test_background_answer_after_sign_out_leaves_the_cookie_alone(app):
+    """After a sign-out, a late background request with the old cookie (a
+    service-worker refresh or prefetch) must not clear the cookie: another
+    account may have signed in on this browser meanwhile. A page the user
+    opens still clears it (see the test above)."""
+    make_user(app, required=False)
+    client = logged_in(app)
+    old_cookie = saved_cookie(client)
+    client.get("/logout")
+    with app.app_context():
+        assert AuthSession.query.filter_by(credential_binding="logged-out").count() == 1
+    browser = replay(app, old_cookie)
+    late = browser.get("/profile", headers={"Sec-Fetch-Mode": "same-origin"})
+    assert late.status_code == 302
+    assert not _sets_session_cookie(late)
+    page = browser.get("/profile", headers={"Sec-Fetch-Mode": "navigate"})
+    assert _sets_session_cookie(page)
+
+
+def test_response_for_a_token_signed_out_meanwhile_does_not_resend_it(app):
+    """A request validated before the sign-out but answered after must not
+    put the old cookie back (it would sign the next account out)."""
+    from flask import Response
+
+    make_user(app, required=False)
+    client = logged_in(app)
+    old_cookie = saved_cookie(client)
+    client.get("/logout")
+    with app.test_request_context("/", headers={"Cookie": f"session={old_cookie}"}):
+        from flask import request
+
+        interface = app.session_interface
+        old_session = interface.open_session(app, request)
+        assert old_session.get("auth_session")  # the in-flight request's view
+        response = Response()
+        interface.save_session(app, old_session, response)
+        assert not _sets_session_cookie(response)
+
+
+def test_signed_out_token_is_cleared_normally_once_its_grace_period_ends(app):
+    make_user(app, required=False)
+    client = logged_in(app)
+    old_cookie = saved_cookie(client)
+    client.get("/logout")
+    with app.app_context():
+        AuthSession.query.filter_by(credential_binding="logged-out").update(
+            {"expires_at": 0}
+        )
+        db.session.commit()
+    late = replay(app, old_cookie).get(
+        "/profile", headers={"Sec-Fetch-Mode": "same-origin"}
+    )
+    assert late.status_code == 302
+    assert _sets_session_cookie(late)

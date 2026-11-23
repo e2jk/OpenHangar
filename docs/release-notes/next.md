@@ -10,7 +10,9 @@
 - A confirmation message ("Flight saved") no longer shows up again when a
   page later opens from its saved copy, and a server error on one page no
   longer signs the app out of its saved pages ("Your account session
-  changed").
+  changed"). Signing out and another account signing in right after on the
+  same browser no longer occasionally fails: a late background answer for
+  the old login could overwrite the new login's cookie.
 - Pages fetched in advance no longer ask the server each time a screen
   changes when their saved copy is still fresh: less mobile data and server
   load.
