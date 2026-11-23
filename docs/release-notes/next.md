@@ -1,4 +1,8 @@
-# Sturdier passport browser tests
+# Sign-in after sign-out, sturdier tests and release numbering
+
+- Signing in right after signing out (for example as another account) no
+  longer sometimes shows the "You're offline" page instead of the sign-in
+  form.
 
 **Maintenance**
 

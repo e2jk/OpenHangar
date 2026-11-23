@@ -364,7 +364,11 @@ function _network(request) {
       session: response.headers.get('X-OH-Offline-Session') || '' };
     if (began !== _revision && !_sameIdentity(next, _identity)) {
       /* An old account's in-flight response must not re-activate or render it
-       * after a newer login/logout has already changed the global epoch. */
+       * after a newer login/logout has already changed the global epoch. A
+       * signed-out page (no owner) has nothing private to hide: it is shown,
+       * without changing the login state (the sign-in page right after a
+       * sign-out used to become the offline page here). */
+      if (!next.owner) return response;
       throw new Error('offline-identity-retired');
     }
     /* The server's identity headers are authoritative. A forbidden page may
@@ -372,6 +376,7 @@ function _network(request) {
     return _persistedIdentity().then(function (persisted) {
       /* A retiring worker must not replace a newer worker's login state. */
       if (!_sameIdentity(persisted, startedIdentity) && !_sameIdentity(persisted, next)) {
+        if (!next.owner) return response;
         throw new Error('offline-identity-retired');
       }
       return _changeIdentity(next).then(function () {
