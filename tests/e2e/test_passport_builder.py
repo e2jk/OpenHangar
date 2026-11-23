@@ -163,7 +163,7 @@ def test_passport_visits_frequency_and_htmx_map(
     page.wait_for_url(re.compile(r"/passports/\d+/$"))
     passport_url = page.url
     expect(page.locator("#passport-progress-map .leaflet-map-pane")).to_have_count(1)
-    page.locator("table tbody a").first.click()
+    click_and_settle(page, page.locator("table tbody a").first)
     page.locator("#visit-date").fill("2025-01-01")
     page.locator("#visit-note").fill("Browser visit")
     page.get_by_role("button", name="Save visit", exact=True).click()
@@ -398,7 +398,7 @@ def test_linked_editions_copy_combined_map_and_no_js(
     page.get_by_role("button", name="Save passport", exact=True).click()
     page.wait_for_url(re.compile(r"/passports/\d+/$"))
     source_url = page.url
-    page.locator("table tbody a").first.click()
+    click_and_settle(page, page.locator("table tbody a").first)
     page.locator("#visit-date").fill("2025-01-01")
     page.locator("#visit-note").fill("Private edition evidence")
     page.get_by_role("button", name="Save visit", exact=True).click()
@@ -523,7 +523,7 @@ def test_individual_vouchers_stay_separate_from_stamps_and_work_without_js(
     ).to_have_count(0)
     page.get_by_role("link", name=title, exact=True).click()
     expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()
-    page.locator("table tbody a").first.click()
+    click_and_settle(page, page.locator("table tbody a").first)
     page.locator("#visit-date").fill("2025-03-01")
     page.locator("#visit-note").fill("Visit without voucher use")
     page.get_by_role("button", name="Save visit", exact=True).click()
@@ -584,7 +584,7 @@ def test_group_consent_series_map_mobile_and_without_js(
     page.get_by_role("button", name="Save passport", exact=True).click()
     page.wait_for_url(re.compile(r"/passports/\d+/$"))
     passport_url = page.url
-    page.locator("table tbody a").first.click()
+    click_and_settle(page, page.locator("table tbody a").first)
     page.locator("#visit-date").fill("2001-01-01")
     page.locator("#visit-note").fill("Private group visit note")
     page.get_by_role("button", name="Save visit", exact=True).click()
