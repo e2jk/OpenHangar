@@ -153,7 +153,7 @@ class TestServiceWorker:
         # instead of deleting them, which also dropped the offline copies.
         r = client.get("/sw.js")
         body = r.data.decode()
-        assert "_save(request, url, event)" in body
+        assert "_save(request, event)" in body
         assert "_markChanged(startedAt)" in body
         assert "OH_INVALIDATE_NAV_CACHE" not in body
 
@@ -165,7 +165,7 @@ class TestServiceWorker:
         r = client.get("/sw.js")
         body = r.data.decode()
         assert "OH_REFRESH_NAV_CACHE') return _refreshSaved(null, null, 0)" in body
-        assert "OH_REFRESH_MAIN') return _refreshSaved(MAIN_PAGES" in body
+        assert "OH_REFRESH_MAIN') return _refreshSaved(_isMainPage" in body
 
 
 class TestPwaJsRefreshOnResume:
@@ -650,4 +650,16 @@ class TestSWRRouteCoverage:
             f"(add to SWR_ROUTES/SWR_PATTERNS, NOT_CACHED_ROUTES/"
             f"NOT_CACHED_PATTERNS, or _NOT_A_PAGE if not a real page): "
             f"{unclassified}"
+        )
+
+
+class TestServerErrorIsNotASignOut:
+    def test_a_5xx_answer_never_changes_the_login(self):
+        # A failed request may lack its identity headers; reading that as a
+        # sign-out would retire the saved pages and lock every open tab.
+        worker = (_STATIC_DIR / "js" / "sw.js").read_text()
+        guard = "if (response.status >= 500 || response.type === 'opaqueredirect') return response;"
+        assert guard in worker
+        assert worker.index(guard) < worker.index(
+            "var next = { owner: response.headers"
         )

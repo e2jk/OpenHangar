@@ -51,6 +51,7 @@
         <label for="reported_at" class="form-label fw-semibold">{{ _('Date signalled') }} <span class="text-danger">*</span></label>
         <input type="date" class="form-control" id="reported_at" name="reported_at"
                value="{{ snag.reported_at.strftime('%Y-%m-%d') if snag else today }}"
+               {% if not snag %}data-oh-default-today{% endif %}
                required>
       </div>
 
