@@ -625,3 +625,96 @@ class TestDeletingTheFlight:
         with app.app_context():
             assert db.session.get(Flight, fid) is None
             assert {r.reason for r in GpsFileRemoval.query.all()} == {"removed"}
+
+
+class TestImportAgain:
+    """ "Import again": the file back in the archive, and through the review
+    of the GPS import it was uploaded with — to link it to the right flight."""
+
+    def _removed(self, app, rel, *, slug="t", pilot=False):
+        """A removal of a.csv, its kept copy a real GPX file and its original
+        place *rel* (an aircraft's or a pilot's archive)."""
+        from models import Tenant  # pyright: ignore[reportMissingImports]
+
+        from tests.test_gps_import import _gpx_bytes
+
+        uid, tid, ac_id, fid = _world(app, pilot=pilot)
+        with app.app_context():
+            db.session.get(Tenant, tid).slug = slug
+            f = db.session.get(Flight, fid)
+            removal = remove_part(f, 1, **_args(app, tid, uid))
+            (entry,) = removal.files
+            assert entry["path"] == A
+            with open(_abs(app.config["UPLOAD_FOLDER"], entry["trash"]), "wb") as fh:
+                fh.write(_gpx_bytes())
+            removal.files = [{"path": rel, "trash": entry["trash"]}]
+            db.session.commit()
+            return uid, ac_id, fid, removal.id
+
+    def test_back_through_the_aircraft_review(self, client, app):
+        kept = "t/OO-GPS/gps_logs/a.gpx"
+        uid, _ac_id, fid, removal_id = self._removed(app, kept)
+        _login(client, uid)
+        page = client.get("/flights/removed-gps-files").data.decode()
+        assert "Import again" in page
+        rv = client.post(f"/flights/removed-gps-files/{removal_id}/reimport")
+        assert rv.headers["Location"].endswith("/aircraft/OO-GPS/gps-import/review")
+        assert _exists(app, kept)
+        with app.app_context():
+            assert db.session.get(GpsFileRemoval, removal_id).restored_at is not None
+            # Not put back on the flight it was taken off.
+            assert A not in db.session.get(Flight, fid).gps_track.source_files
+        review = client.get(rv.headers["Location"]).data.decode()
+        assert "seg-card-0" in review
+
+    def test_back_through_the_pilot_review(self, client, app):
+        uid, _ac, _fid, removal_id = self._removed(
+            app, "_pilots/{uid}/gps_logs/mine.gpx", pilot=True
+        )
+        with app.app_context():
+            removal = db.session.get(GpsFileRemoval, removal_id)
+            removal.files = [
+                {**removal.files[0], "path": f"_pilots/{uid}/gps_logs/mine.gpx"}
+            ]
+            db.session.commit()
+        _login(client, uid)
+        rv = client.post(f"/flights/removed-gps-files/{removal_id}/reimport")
+        assert rv.headers["Location"].endswith("/pilot/gps-import/review")
+
+    def test_somewhere_it_cannot_go_back_through(self, client, app):
+        uid, _ac, _fid, removal_id = self._removed(app, A, slug="other")
+        _login(client, uid)
+        rv = client.post(
+            f"/flights/removed-gps-files/{removal_id}/reimport", follow_redirects=True
+        )
+        assert b"upload it on the GPS import page" in rv.data
+        again = client.post(
+            f"/flights/removed-gps-files/{removal_id}/reimport", follow_redirects=True
+        )
+        assert b"can no longer be restored" in again.data
+        assert (
+            client.post("/flights/removed-gps-files/999999/reimport").status_code == 404
+        )
+
+    @pytest.mark.parametrize(
+        "rel", ["t/OO-GPS/documents/a.gpx", "t/OO-NONE/gps_logs/a.gpx", "a.gpx"]
+    )
+    def test_not_an_archive_it_can_go_back_through(self, client, app, rel):
+        uid, _ac, _fid, removal_id = self._removed(app, rel)
+        _login(client, uid)
+        rv = client.post(
+            f"/flights/removed-gps-files/{removal_id}/reimport", follow_redirects=True
+        )
+        assert b"upload it on the GPS import page" in rv.data
+
+    def test_a_file_gone_meanwhile_is_left_out(self, client, app):
+        kept = "t/OO-GPS/gps_logs/a.gpx"
+        uid, _ac, _fid, removal_id = self._removed(app, kept)
+        with app.app_context():
+            removal = db.session.get(GpsFileRemoval, removal_id)
+            gone = {"path": "t/OO-GPS/gps_logs/gone.gpx", "trash": None}
+            removal.files = [*removal.files, gone]
+            db.session.commit()
+        _login(client, uid)
+        rv = client.post(f"/flights/removed-gps-files/{removal_id}/reimport")
+        assert rv.headers["Location"].endswith("/aircraft/OO-GPS/gps-import/review")

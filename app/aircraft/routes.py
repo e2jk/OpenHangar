@@ -2175,41 +2175,15 @@ def gps_import_upload(aircraft_id: int) -> ResponseReturnValue:
         archive_path = archive_relpath(
             archive_gps_file(data, f.filename, archive_dir), _upload_folder()
         )
-
-        try:
-            parsed = parse_gps_file(data, f.filename)
-        except ValueError as exc:
-            errors.append(_("%(fn)s: %(err)s", fn=f.filename, err=str(exc)))
+        meta = gps_file_meta(data, f.filename, archive_path, tmp_dir)
+        if isinstance(meta, str):
+            errors.append(meta)
             continue
-
-        if parsed.classification == "empty":
+        if meta is None:
             skipped_empty += 1
             continue
-
-        # Save raw bytes to tmp
-        uid = _uuid_mod.uuid4().hex
-        safe_name = f"{uid}_{secure_filename(f.filename)}"
-        tmp_path = os.path.join(tmp_dir, safe_name)
-        with open(tmp_path, "wb") as fh:
-            fh.write(data)
-
-        parsed_meta.append(
-            {
-                "tmp_path": tmp_path,
-                "original_filename": f.filename,
-                "format": parsed.format,
-                "classification": parsed.classification,
-                "trkpt_count": len(parsed.trackpoints),
-                "hint_dep": parsed.hint_departure_icao,
-                "hint_arr": parsed.hint_arrival_icao,
-                "device_id": getattr(parsed, "device_id", None),
-                # Which kept file each imported flight comes from — see
-                # services.gps_archive.sources_for_window.
-                "archive_path": archive_path,
-                **_track_span(parsed),
-            }
-        )
-        formats.append(parsed.format)
+        parsed_meta.append(meta)
+        formats.append(meta["format"])
 
     if errors:
         for e in errors:
@@ -2245,6 +2219,40 @@ def gps_import_upload(aircraft_id: int) -> ResponseReturnValue:
         }
     )
     return redirect(url_for("aircraft.gps_import_review", aircraft_id=aircraft_id))
+
+
+def gps_file_meta(
+    data: bytes, filename: str, archive_path: str | None, tmp_dir: str
+) -> dict[str, Any] | str | None:
+    """One GPS file of an import, as the import's state keeps it: a copy in
+    *tmp_dir* for the review, and what was read from it. A message when it
+    can't be read, None when it holds no movement. Shared by the aircraft
+    and pilot uploads and by "Import again" on a removed GPS file."""
+    try:
+        parsed = parse_gps_file(data, filename)
+    except ValueError as exc:
+        return str(_("%(fn)s: %(err)s", fn=filename, err=str(exc)))
+    if parsed.classification == "empty":
+        return None
+    tmp_path = os.path.join(
+        tmp_dir, f"{_uuid_mod.uuid4().hex}_{secure_filename(filename)}"
+    )
+    with open(tmp_path, "wb") as fh:
+        fh.write(data)
+    return {
+        "tmp_path": tmp_path,
+        "original_filename": filename,
+        "format": parsed.format,
+        "classification": parsed.classification,
+        "trkpt_count": len(parsed.trackpoints),
+        "hint_dep": parsed.hint_departure_icao,
+        "hint_arr": parsed.hint_arrival_icao,
+        "device_id": getattr(parsed, "device_id", None),
+        # Which kept file each imported flight comes from — see
+        # services.gps_archive.sources_for_window.
+        "archive_path": archive_path,
+        **_track_span(parsed),
+    }
 
 
 def _analyse_gps_review(

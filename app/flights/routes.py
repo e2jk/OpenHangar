@@ -1627,6 +1627,126 @@ def restore_gps_file(removal_id: int) -> ResponseReturnValue:
     return redirect(url_for("flights.removed_gps_files"))
 
 
+def _reimport_target(relpath: str) -> tuple[str, Any] | None:
+    """Which GPS import a kept file goes back through, from where it is
+    kept (services.gps_archive): ("aircraft", the aircraft) for an
+    aircraft's folder the user may import GPS files to, ("pilot", None) for
+    the user's own folder; None for anyone else's."""
+    from aircraft.routes import _PILOT_ROLES  # pyright: ignore[reportMissingImports]
+    from models import Tenant  # pyright: ignore[reportMissingImports]
+    from services.gps_archive import (  # pyright: ignore[reportMissingImports]
+        pilot_archive_parts,
+    )
+    from services.upload_layout import (  # pyright: ignore[reportMissingImports]
+        GPS_ARCHIVE_DIRNAME,
+    )
+
+    parts = relpath.split("/")
+    if (
+        len(parts) > 3
+        and tuple(parts[:3]) == pilot_archive_parts(int(session["user_id"]))
+        and session.get("pilot_access")
+    ):
+        return "pilot", None
+    if len(parts) < 4 or parts[2] != GPS_ARCHIVE_DIRNAME:
+        return None
+    tenant = db.session.get(Tenant, _tenant_id())
+    if (
+        tenant is None
+        or tenant.slug != parts[0]
+        or current_user_role() not in _PILOT_ROLES
+    ):
+        return None
+    for ac in Aircraft.query.filter_by(tenant_id=tenant.id).all():
+        safe_reg = ac.registration.replace("/", "-").replace(" ", "-").upper()
+        if safe_reg == parts[1] and user_can_access_aircraft(ac.id):
+            return "aircraft", ac
+    return None
+
+
+@flights_bp.route(
+    "/flights/removed-gps-files/<int:removal_id>/reimport", methods=["POST"]
+)
+@login_required
+@require_pilot_access
+def reimport_gps_file(removal_id: int) -> ResponseReturnValue:
+    """Put a removed GPS file back in the archive and send it through the
+    GPS import's review again — to link it to the right flight."""
+    from aircraft.routes import (  # pyright: ignore[reportMissingImports]
+        _gps_state_save,
+        _gps_tmp_dir,
+        gps_file_meta,
+    )
+    from services.gps_removal import (  # pyright: ignore[reportMissingImports]
+        _abs,
+        restorable,
+        restore_files,
+    )
+
+    removal = db.session.get(GpsFileRemoval, removal_id)
+    if (
+        removal is None
+        or removal.tenant_id != _tenant_id()
+        or (
+            current_user_role() != Role.ADMIN
+            and removal.removed_by_user_id != session.get("user_id")
+        )
+    ):
+        abort(404)
+    if not restorable(removal):
+        flash(_("This GPS file can no longer be restored."), "warning")
+        return redirect(url_for("flights.removed_gps_files"))
+    folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
+    paths = restore_files(removal, folder)
+    db.session.commit()
+    target = _reimport_target(paths[0]) if paths else None
+    metas = []
+    if target is not None:
+        tmp_dir = _gps_tmp_dir()
+        for rel in paths:
+            path = _abs(folder, rel)
+            if not os.path.isfile(path):
+                continue
+            with open(path, "rb") as fh:
+                meta = gps_file_meta(fh.read(), os.path.basename(rel), rel, tmp_dir)
+            if isinstance(meta, dict):
+                metas.append(meta)
+    if target is None or not metas:
+        flash(
+            _(
+                "GPS file restored to the archive, but it can't be imported again "
+                "from here — upload it on the GPS import page."
+            ),
+            "warning",
+        )
+        return redirect(url_for("flights.removed_gps_files"))
+    kind, ac = target
+    if kind == "aircraft":
+        _gps_state_save(
+            {
+                "user_id": session["user_id"],
+                "aircraft_id": ac.id,
+                "files": metas,
+                "skipped_empty": 0,
+                "other_aircraft": False,
+                "other_ac_make_model": "",
+                "other_ac_reg": "",
+            }
+        )
+        destination = url_for("aircraft.gps_import_review", aircraft_id=ac.id)
+    else:
+        _gps_state_save(
+            {"user_id": session["user_id"], "files": metas, "skipped_empty": 0},
+            "pilot_gps_import",
+        )
+        destination = url_for("pilots.pilot_gps_import_review")
+    flash(
+        _("GPS file back in the archive: choose below the flight to link it to."),
+        "info",
+    )
+    return redirect(destination)
+
+
 @flights_bp.route("/flights/parse-gps", methods=["POST"])
 @_limiter.limit("30 per minute", exempt_when=_rate_limiting_disabled)
 @login_required

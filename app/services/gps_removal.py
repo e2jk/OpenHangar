@@ -14,7 +14,9 @@ track part together — until then; the record stays afterwards as a log of
 who removed what. A file the track (or another flight's track) still uses
 stays where it is.
 
-"Undo import" goes through here too: it removes the parts its batch added
+"Import again" (restore_files) puts the files back without their part, for
+a GPS import to link them to the right flight — the way to move a file
+linked to the wrong one. "Undo import" goes through here too: it removes the parts its batch added
 (parts carry their batch since link_track records it), not the whole track.
 """
 
@@ -236,13 +238,21 @@ def restorable(removal: Any) -> bool:
     return removal.restored_at is None and removal.purged_at is None
 
 
+def restore_files(removal: Any, upload_folder: str) -> list[str]:
+    """Put *removal*'s files back in the archive, without its part on any
+    track ("Import again" then links them through a GPS import's review).
+    Returns their paths. Caller checks access and commits."""
+    paths = [_put_back(upload_folder, entry) for entry in removal.files or []]
+    removal.restored_at = datetime.now(UTC)
+    return paths
+
+
 def restore(removal: Any, upload_folder: str) -> Any:
     """Undo *removal*: its files back where they were, and its part back on
     the flight's track if the flight still exists. Returns the flight, or
     None when it's gone (the files are back in the archive either way).
     Caller checks access and commits."""
-    paths = [_put_back(upload_folder, entry) for entry in removal.files or []]
-    removal.restored_at = datetime.now(UTC)
+    paths = restore_files(removal, upload_folder)
     fe = db.session.get(Flight, removal.flight_id) if removal.flight_id else None
     part = removal.part or {}
     if fe is None or not part.get("coords"):

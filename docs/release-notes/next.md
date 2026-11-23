@@ -29,6 +29,10 @@
   to link differs from its GPS track ("Logbook: EDBK · GPS: EDRK"), with a
   box to correct the logbook at the same time — only when ticked, never by
   **Accept all best matches**.
+- A GPS file linked to the wrong flight can be moved: remove it from that
+  flight, then **Import again** on **Removed GPS files** sends it back
+  through the GPS import's review — no need to upload it again — where you
+  choose the right flight.
 
 **Maintenance**
 

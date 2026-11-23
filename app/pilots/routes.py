@@ -2448,8 +2448,8 @@ def pilot_gps_import_upload() -> ResponseReturnValue:
             "pilots/gps_import_upload.html", tenant_aircraft=tenant_aircraft
         )
 
-    from aircraft.gps_import import is_gps_upload_name, parse_gps_file
-    from aircraft.routes import _track_span  # pyright: ignore[reportMissingImports]
+    from aircraft.gps_import import is_gps_upload_name
+    from aircraft.routes import gps_file_meta  # pyright: ignore[reportMissingImports]
     from documents.routes import _safe_join  # pyright: ignore[reportMissingImports]
     from services.gps_archive import (  # pyright: ignore[reportMissingImports]
         archive_gps_file,
@@ -2486,33 +2486,14 @@ def pilot_gps_import_upload() -> ResponseReturnValue:
             archive_gps_file(data, f.filename, archive_dir),
             current_app.config.get("UPLOAD_FOLDER", "/data/uploads"),
         )
-        try:
-            parsed = parse_gps_file(data, f.filename)
-        except ValueError as exc:
-            errors.append(_("%(fn)s: %(err)s", fn=f.filename, err=str(exc)))
+        meta = gps_file_meta(data, f.filename, archive_path, tmp_dir)
+        if isinstance(meta, str):
+            errors.append(meta)
             continue
-        if parsed.classification == "empty":
+        if meta is None:
             skipped_empty += 1
             continue
-        uid_hex = uuid.uuid4().hex
-        safe_name = f"{uid_hex}_{secure_filename(f.filename)}"
-        tmp_path = os.path.join(tmp_dir, safe_name)
-        with open(tmp_path, "wb") as fh:
-            fh.write(data)
-        parsed_meta.append(
-            {
-                "tmp_path": tmp_path,
-                "original_filename": f.filename,
-                "format": parsed.format,
-                "classification": parsed.classification,
-                "trkpt_count": len(parsed.trackpoints),
-                "hint_dep": parsed.hint_departure_icao,
-                "hint_arr": parsed.hint_arrival_icao,
-                "device_id": getattr(parsed, "device_id", None),
-                "archive_path": archive_path,
-                **_track_span(parsed),
-            }
-        )
+        parsed_meta.append(meta)
 
     for e in errors:
         flash(e, "danger")
