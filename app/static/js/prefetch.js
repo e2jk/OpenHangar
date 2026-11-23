@@ -27,6 +27,9 @@
  * prefetch set, not a one-time init.
  */
 (function () {
+  var FIRST_WAIT_MS = 4000;
+  var _generation = 0;
+
   function dataSaverActive() {
     // navigator.connection is Chromium-only; browsers without it just skip
     // this check and prefetch normally (same as before this guard existed).
@@ -51,23 +54,46 @@
     // spends real bytes on a metered mobile connection.
     if (dataSaverActive()) return;
 
-    var urls = [];
-    document.querySelectorAll('.oh-prefetch-urls').forEach(function (el) {
-      try {
-        JSON.parse(el.dataset.urls || '[]').forEach(function (u) {
-          urls.push(u);
+    function urlsOf(selector) {
+      var urls = [];
+      document.querySelectorAll(selector).forEach(function (el) {
+        try {
+          JSON.parse(el.dataset.urls || '[]').forEach(function (u) {
+            if (urls.indexOf(u) === -1) urls.push(u);
+          });
+        } catch (e) {
+          /* malformed block — skip it rather than break prefetching for the rest */
+        }
+      });
+      return urls;
+    }
+    function insert(urls) {
+      return urls.map(function (u) {
+        var link = document.createElement('link');
+        link.rel = 'prefetch';
+        link.href = u;
+        link.dataset.ohPrefetch = '1';
+        var done = new Promise(function (resolve) {
+          link.addEventListener('load', resolve);
+          link.addEventListener('error', resolve);
         });
-      } catch (e) {
-        /* malformed block — skip it rather than break prefetching for the rest */
-      }
-    });
+        document.head.appendChild(link);
+        return done;
+      });
+    }
 
-    urls.forEach(function (u) {
-      var link = document.createElement('link');
-      link.rel = 'prefetch';
-      link.href = u;
-      link.dataset.ohPrefetch = '1';
-      document.head.appendChild(link);
+    /* The likeliest next taps (the bottom bar's pages, marked
+     * data-oh-prefetch-first in base.html) go first; the rest only once
+     * those are in (or after FIRST_WAIT_MS), so they don't compete. */
+    var first = urlsOf('.oh-prefetch-urls[data-oh-prefetch-first]');
+    var rest = urlsOf('.oh-prefetch-urls:not([data-oh-prefetch-first])').filter(function (u) {
+      return first.indexOf(u) === -1;
+    });
+    var generation = ++_generation;
+    var waited = new Promise(function (resolve) { setTimeout(resolve, FIRST_WAIT_MS); });
+    Promise.race([Promise.all(insert(first)), waited]).then(function () {
+      /* A newer page has started its own prefetching meanwhile. */
+      if (generation === _generation) insert(rest);
     });
   }
 

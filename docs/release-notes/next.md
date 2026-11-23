@@ -1,39 +1,16 @@
-# Instant screens again, GPS import shows logbook differences
+# Instant bottom-bar screens, tidier logbook, dark-theme fixes
 
-- **Screens open instantly again**, on any device or browser: the copy of a
-  page saved on your device shows at once while the server is asked in the
-  background, for as long as your login is valid (30 days by default). Since
-  November every screen waited for the server, 1–2 seconds on mobile data.
-  Saving something marks the saved pages out of date: the dashboard, flights,
-  logbook, maintenance and fleet pages (and the aircraft you were working
-  on) are refreshed in the background right away, any other page comes from
-  the server once. Coming back to the app refreshes main pages saved more
-  than 15 minutes ago. Saved pages are deleted when you sign out or the
-  login ends — on a computer other people use, sign out.
-- Admins can turn instant screens off for the whole instance with the new
-  `OPENHANGAR_INSTANT_PAGES=false` (pages then come from the server first),
-  shown on the Settings page.
-- The Settings page's "Active in this browser" badge for offline support
-  now also shows when the page was opened from within the app.
-- The aircraft GPS import's review page now says when a flight it's about
-  to link differs from its GPS track ("Logbook: EDBK · GPS: EDRK"), with a
-  box to correct the logbook at the same time — only when ticked, never by
-  **Accept all best matches**.
-- A GPS file linked to the wrong flight can be moved: remove it from that
-  flight, then **Import again** on **Removed GPS files** sends it back
-  through the GPS import's review — no need to upload it again — where you
-  choose the right flight.
-- Your own GPS import (My Flight Tracks): a ground-only recording further
-  from one of your flights than a usual taxi (up to 3 hours, same day and
-  airfield) is offered with those flights to choose from, as in the
-  aircraft's import.
-- **Data checks** also lists two flights of one aircraft logged at times
-  that overlap — one of them has the wrong date or times.
-- An aircraft's page says how many counter gaps its log has (for admins and
-  owners), with a link to them on Data checks.
-
-**Maintenance**
-
-- A failing browser test now leaves its Playwright trace and a screenshot
-  for the tests on the shared page too, not only those opening their own
-  browser.
+- **All five bottom-bar screens are now instant** (Dashboard, Aircraft, Log
+  a flight, Pilot, Airfield passports): they're saved on the device right
+  after you sign in, before any other page, and so are each aircraft's page
+  and the Places and Where next? pages. Blank forms to enter something new
+  (a flight, a pilot logbook entry, an expense, a refuel, a snag) open
+  instantly too, always with today's date; forms editing existing data still
+  come from the server, so what they show is current.
+- A confirmation message ("Flight saved") no longer shows up again when a
+  page later opens from its saved copy, and a server error on one page no
+  longer signs the app out of its saved pages ("Your account session
+  changed").
+- Pages fetched in advance no longer ask the server each time a screen
+  changes when their saved copy is still fresh: less mobile data and server
+  load.
