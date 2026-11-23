@@ -25,6 +25,8 @@
   flight or engine counter doesn't start where the previous flight's ended
   — a typo, or flights missing from the log. Open the flight to correct it,
   or dismiss the gap when it's right (a counter replaced).
+- **Data checks** also lists two flights of one aircraft logged at times
+  that overlap — one of them has the wrong date or times.
 - The aircraft GPS import's review page now says when a flight it's about
   to link differs from its GPS track ("Logbook: EDBK · GPS: EDRK"), with a
   box to correct the logbook at the same time — only when ticked, never by

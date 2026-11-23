@@ -240,9 +240,9 @@ for later:
 - **Pilots' own view:** the page is for admins/owners and covers aircraft
   flights only; standalone pilot-logbook flights with a GPS track (another
   aircraft) aren't checked, and a pilot can't see findings on their flights.
-- **More kinds of checks** on the same page (counter gaps are there now):
-  overlapping flights of one aircraft, a flight's pilot-logbook figures
-  disagreeing with the aircraft log. The aircraft detail page could also
+- **More kinds of checks** on the same page (counter gaps and overlapping
+  flights are there now): a flight's pilot-logbook figures disagreeing with
+  the aircraft log. The aircraft detail page could also
   flag its own counter gaps.
 - **Email digest** of new findings, for admins who rarely open the
   configuration page.

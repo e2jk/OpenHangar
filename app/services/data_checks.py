@@ -12,6 +12,8 @@ The same page also lists counter gaps (check_counters): a flight whose
 flight or engine counter starts somewhere else than the previous flight's
 ended — a typo, or flights missing from the log. Nothing to apply there:
 open the flight, or dismiss it (flights not logged, a counter replaced).
+And overlaps (check_overlaps): two flights of one aircraft logged at times
+that overlap — one of them has the wrong date or times.
 
 Cost: a check reads the track's points, which is the heavy part on a large
 fleet. Findings are therefore cached per aircraft with a fingerprint of its
@@ -44,6 +46,7 @@ DATE = "date"
 OUTSIDE_TIMES = "outside_times"
 FLIGHT_COUNTER = "flight_counter"
 ENGINE_COUNTER = "engine_counter"
+OVERLAP = "overlap"
 
 # A GPS end within this distance of the logged airfield agrees with it
 # (same radius services.gps_import uses to name the nearest airfield).
@@ -56,6 +59,10 @@ _UNKNOWN_ICAO = ("", "????")
 # A counter start this far from the previous flight's end is a gap (the
 # airframe import's own continuity warning uses the same tolerance).
 _COUNTER_TOLERANCE = 0.05
+# Two flights of one aircraft logged as overlapping by more than this (a
+# logbook rounds its times; one flight's arrival is often the next one's
+# departure).
+_OVERLAP_MARGIN = timedelta(minutes=5)
 
 _CACHE_PREFIX = "data_checks:aircraft:"
 _COUNT_PREFIX = "data_checks:open:"
@@ -250,6 +257,33 @@ def check_counters(flights: list[Any]) -> list[Finding]:
     return found
 
 
+def check_overlaps(flights: list[Any]) -> list[Finding]:
+    """Flights of one aircraft logged at overlapping times (by more than
+    _OVERLAP_MARGIN): listed on the later-starting one, with the window of
+    the one it overlaps. Flights without both times aren't compared."""
+    windows = sorted(
+        ((w, f) for f in flights if (w := _logged_window(f)) is not None),
+        key=lambda pair: (pair[0], pair[1].id),
+    )
+    found: list[Finding] = []
+    for i, ((start, end), flight) in enumerate(windows):
+        for (other_start, other_end), other in windows[:i]:
+            if min(end, other_end) - max(start, other_start) > _OVERLAP_MARGIN:
+                found.append(
+                    Finding(
+                        flight_id=flight.id,
+                        aircraft_id=flight.aircraft_id,
+                        flight_date=flight.date.isoformat(),
+                        kind=OVERLAP,
+                        logged=f"{start:%H:%M}–{end:%H:%M}",
+                        gps=f"{other_start:%H:%M}–{other_end:%H:%M}",
+                        suggestion="",
+                    )
+                )
+                break
+    return found
+
+
 # ── Per-aircraft cache ────────────────────────────────────────────────────────
 
 
@@ -282,9 +316,11 @@ def _check_aircraft(aircraft_id: int) -> list[Finding]:
         .all()
     )
     gps = [f for flight, track in rows for f in check_flight(flight, track, airports)]
-    counters = check_counters(Flight.query.filter_by(aircraft_id=aircraft_id).all())
+    every = Flight.query.filter_by(aircraft_id=aircraft_id).all()
     return sorted(
-        gps + counters, key=lambda f: (f.flight_date, f.flight_id), reverse=True
+        gps + check_counters(every) + check_overlaps(every),
+        key=lambda f: (f.flight_date, f.flight_id),
+        reverse=True,
     )
 
 
@@ -383,9 +419,13 @@ def find(flight: Any, key: str) -> Finding | None:
     no longer applies — already corrected, or the track changed)."""
     from aircraft.gps_import import _load_airports  # pyright: ignore[reportMissingImports]
 
-    if key.startswith((f"{FLIGHT_COUNTER}:", f"{ENGINE_COUNTER}:")):
+    if key.startswith((f"{FLIGHT_COUNTER}:", f"{ENGINE_COUNTER}:", f"{OVERLAP}:")):
         siblings = Flight.query.filter_by(aircraft_id=flight.aircraft_id).all()
-        found = [f for f in check_counters(siblings) if f.flight_id == flight.id]
+        found = [
+            f
+            for f in check_counters(siblings) + check_overlaps(siblings)
+            if f.flight_id == flight.id
+        ]
     elif flight.gps_track is not None:
         found = check_flight(flight, flight.gps_track, _load_airports())
     else:

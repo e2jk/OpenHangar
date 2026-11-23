@@ -165,16 +165,18 @@ class TestCheckFlight:
         assert len(dc.check_flight(_flight(), _track(geojson=bare), _AIRPORTS)) == 1
 
 
-def _tracked_flight(app, ac_id, arr="EDBK", **kw):
+def _tracked_flight(app, ac_id, arr="EDBK", day=18, **kw):
     with app.app_context():
         track = GpsTrack(
-            geojson=_line(EBAW, EDRK), block_off_utc=_t(9, 5), block_on_utc=_t(10, 50)
+            geojson=_line(EBAW, EDRK),
+            block_off_utc=_t(9, 5, day=day),
+            block_on_utc=_t(10, 50, day=day),
         )
         db.session.add(track)
         db.session.flush()
         f = Flight(
             aircraft_id=ac_id,
-            date=date(2025, 3, 18),
+            date=date(2025, 3, day),
             departure_icao="EBAW",
             arrival_icao=arr,
             departure_time=time(9, 0),
@@ -264,7 +266,7 @@ class TestDataChecksPage:
         uid, tid, ac_id = _make_user_and_aircraft(app)
         _login(client, uid)
         fid = _tracked_flight(app, ac_id)
-        other = _tracked_flight(app, ac_id, arr="????")
+        other = _tracked_flight(app, ac_id, arr="????", day=19)
         page = client.get("/config/data-checks").data.decode()
         assert "EDBK" in page and "Use the GPS value" in page
         assert "Changes only the arrival airfield." in page
@@ -590,3 +592,56 @@ class TestGpsReviewHints:
         seg = {"block_off_utc": "2024-06-01T10:00:00+00:00"}
         with app.app_context():
             assert _data_check_hints(_flight(), {**seg, "track_geojson": None}) == []
+
+
+class TestOverlaps:
+    def _f(self, fid, t0, t1, day=18):
+        return _flight(
+            id=fid, date=date(2025, 3, day), departure_time=t0, arrival_time=t1
+        )
+
+    def test_overlapping_flights_of_one_aircraft(self):
+        flights = [
+            self._f(1, time(9, 0), time(10, 0)),
+            self._f(2, time(10, 0), time(11, 0)),  # follows on: fine
+            self._f(3, time(10, 57), time(12, 0)),  # 3 min: logbook rounding
+            self._f(4, time(9, 30), time(10, 30)),  # overlaps 1 and 2
+            self._f(5, time(9, 30), time(10, 30), day=19),  # another day
+            self._f(6, None, None),  # no times: not compared
+        ]
+        found = {f.flight_id: f for f in dc.check_overlaps(flights)}
+        # 4 overlaps 1; 2 then overlaps 4 (each listed once, on the later).
+        assert sorted(found) == [2, 4]
+        assert (found[4].logged, found[4].gps) == ("09:30–10:30", "09:00–10:00")
+        assert found[2].gps == "09:30–10:30" and found[4].kind == dc.OVERLAP
+        assert found[4].suggestion == ""
+
+    def test_listed_on_the_page_and_dismissed(self, client, app):
+        uid, _tid, ac_id = _make_user_and_aircraft(app)
+        _login(client, uid)
+        with app.app_context():
+            for t0, t1 in ((time(9, 0), time(10, 0)), (time(9, 30), time(10, 30))):
+                db.session.add(
+                    Flight(
+                        aircraft_id=ac_id,
+                        date=date(2025, 3, 3),
+                        departure_icao="EBAW",
+                        arrival_icao="EBAW",
+                        departure_time=t0,
+                        arrival_time=t1,
+                    )
+                )
+            db.session.commit()
+            later = Flight.query.filter_by(departure_time=time(9, 30)).one().id
+        page = client.get("/config/data-checks").data.decode()
+        assert "Overlapping flight" in page
+        assert "Another flight of this aircraft is logged 09:00–10:00 that day" in page
+        assert "Open both flights" in page
+        client.post(
+            f"/config/data-checks/{later}/dismiss", data={"key": "overlap:09:00–10:00"}
+        )
+        assert (
+            "Overlapping flight<" not in client.get("/config/data-checks").data.decode()
+        )
+        with app.app_context():
+            assert dc.find(db.session.get(Flight, later), "overlap:09:00–10:00")
