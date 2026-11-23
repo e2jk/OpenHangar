@@ -274,7 +274,7 @@ class TestPilotGpsUpload:
         uid, _, _ = _make_user_and_aircraft(app)
         _login(client, uid)
         with patch(
-            "aircraft.gps_import.parse_gps_file",
+            "aircraft.routes.parse_gps_file",
             side_effect=ValueError("bad format"),
         ):
             resp = client.post(

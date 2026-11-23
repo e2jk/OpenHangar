@@ -287,11 +287,11 @@ A GPS file can be taken off a flight from the flight's page (its part of the
 track comes off, the file goes to the trash for 7 days, restorable from
 "Removed GPS files" — `services/gps_removal.py`). Left for later:
 
-- **Move a file to another flight** (it was linked to the wrong one): today,
-  remove it and import it again. Better: removing it lists the file as an
-  *unlinked recording*, and "re-import from the archive" sends it through
-  the normal review page without uploading it again — the matching picks
-  (or offers) the right flight.
+- **Move a file to another flight** on another aircraft: **Import again**
+  on Removed GPS files sends the file back through the import it was
+  uploaded with (the aircraft's, or the pilot's own), so a flight of
+  another aircraft isn't offered from an aircraft's import. Could offer
+  the choice of import.
 - **Split one file over two flights:** a single log covering two logged
   flights (e.g. two legs without an engine stop) is linked to both, so both
   show the whole track. Cut the file's track at the landing in between and

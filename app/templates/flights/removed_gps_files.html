@@ -47,6 +47,12 @@
                   <i class="bi bi-arrow-counterclockwise me-1"></i>{{ _('Restore') }}
                 </button>
               </form>
+              <form method="post" action="{{ url_for('flights.reimport_gps_file', removal_id=r.id) }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-ac-ghost btn-sm" title="{{ _('Link it to another flight: back through the GPS import review, without uploading it again') }}">
+                  <i class="bi bi-arrow-repeat me-1"></i>{{ _('Import again') }}
+                </button>
+              </form>
               <div class="text-muted small mt-1">{{ _('Deleted on %(date)s', date=purge_date(r).strftime('%Y-%m-%d')) }}</div>
               {% elif r.restored_at %}
               <span class="text-success">{{ _('Restored on %(date)s', date=r.restored_at.strftime('%Y-%m-%d')) }}</span>
