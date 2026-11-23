@@ -232,6 +232,19 @@ def test_previous_release(monkeypatch, capsys):
     assert capsys.readouterr().out == ""
 
 
+def test_latest_release(monkeypatch, capsys):
+    tags = ["v3.60.0", "v3.9.9", "draft", "v3.61.1", ""]
+    assert release_notes.latest_release(tags) == "v3.61.1"
+    assert release_notes.latest_release(["v3.9.9", "v3.10.0"]) == "v3.10.0"  # numeric
+    assert release_notes.latest_release(["draft", ""]) == ""
+    monkeypatch.setattr(sys, "stdin", io.StringIO("\n".join(tags)))
+    release_notes.main(["latest-release"])
+    assert capsys.readouterr().out == "v3.61.1\n"
+    monkeypatch.setattr(sys, "stdin", io.StringIO(""))
+    release_notes.main(["latest-release"])
+    assert capsys.readouterr().out == ""
+
+
 def test_name_from_titles():
     name = release_notes.name_from_titles
     assert name([]) == ""

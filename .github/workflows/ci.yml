@@ -611,20 +611,33 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
 
+            # Patch or minor is decided against the latest *published*
+            # release, not the highest tag: a run that failed after
+            # reserving its version leaves a tag without a release. Compared
+            # with that tag, a re-run of the same batch (its app/ changes
+            # already in the unused tag) came out a patch (v3.61.1 for a
+            # feature release, 2026-11-23), and a later dependency-only
+            # release could come out a minor. Falls back to the highest tag
+            # if the release list can't be read.
+            LAST_RELEASE=$(gh release list --limit 100 --exclude-drafts --json tagName --jq '.[].tagName' \
+              | python3 scripts/release_notes.py latest-release || true)
             for attempt in 1 2 3 4 5; do
+              # The highest tag still numbers the next version (never reuse
+              # a reserved one).
               LAST_TAG=$(git tag --list 'v[0-9]*' --sort=-version:refname | head -1)
+              BASE="${LAST_RELEASE:-$LAST_TAG}"
               # Compared by content, not commit history: a tag is its
               # release PR's own commit, which the rebase merge re-creates
-              # on main under a new SHA — so "${LAST_TAG}..HEAD" would list
+              # on main under a new SHA — so "${BASE}..HEAD" would list
               # that already-released commit again, and any app/ change it
               # carried made the next dependency-only release a minor bump.
-              if [ -n "$LAST_TAG" ] && git diff --quiet "${LAST_TAG}" HEAD -- app/; then
+              if [ -n "$BASE" ] && git diff --quiet "${BASE}" HEAD -- app/; then
                 BUMP="patch"
               else
                 BUMP="minor"
               fi
               VERSION=$(python3 .github/scripts/next_semver.py --bump "${BUMP}" --last-tag "${LAST_TAG}")
-              echo "Attempt ${attempt}/5 — last tag: ${LAST_TAG:-<none>}, bump type: ${BUMP}, candidate: v${VERSION}"
+              echo "Attempt ${attempt}/5 — last release: ${BASE:-<none>}, last tag: ${LAST_TAG:-<none>}, bump type: ${BUMP}, candidate: v${VERSION}"
 
               git tag "v${VERSION}"
               if git push origin "refs/tags/v${VERSION}"; then

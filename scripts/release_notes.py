@@ -32,6 +32,7 @@ GitHub release after it the same way (`release_notes.py heading FILE`).
     release_notes.py summary FILE            # the summary without it
     release_notes.py release-name VERSION NOTES [--heading TITLE]
     release_notes.py previous-release VERSION < tags  # the release before
+    release_notes.py latest-release < tags            # the highest release
     release_notes.py versions-json VERSION < tags     # Pages versions.json
     release_notes.py already-released FILE NOTES [--heading NAME]
         # the summary's lines already in the latest release's NOTES (or
@@ -369,6 +370,19 @@ def previous_release(version: str, tags: list[str]) -> str:
     return max(older)[1] if older else ""
 
 
+def latest_release(tags: list[str]) -> str:
+    """The highest "vX.Y.Z" tag in *tags* ("" if none) — given the tags of
+    the published releases, the latest release. ci.yml compares app/ with it
+    to choose a patch or minor version: not with the highest git tag, which
+    may be a version reserved by a run that failed and never published."""
+    found = [
+        (tuple(int(n) for n in m.groups()), tag)
+        for tag in (t.strip() for t in tags)
+        if (m := _VERSION_TAG_RE.match(tag))
+    ]
+    return max(found)[1] if found else ""
+
+
 def versions_list(version: str, tags: list[str]) -> list[str]:
     """Every released version ("vX.Y.Z" tags, plus *version* being
     released), newest first, without the "v" — GitHub Pages' versions.json,
@@ -483,6 +497,7 @@ def main(argv: list[str] | None = None) -> int:
             "already-released",
             "release-name",
             "previous-release",
+            "latest-release",
             "versions-json",
         ],
     )
@@ -499,6 +514,11 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.mode == "versions-json":  # file = version, tags on stdin
         print(json.dumps(versions_list(args.file, sys.stdin.read().splitlines())))
+        return 0
+    if args.mode == "latest-release":  # tags on stdin
+        found = latest_release(sys.stdin.read().splitlines())
+        if found:
+            print(found)
         return 0
     if args.mode == "previous-release":  # file = version, tags on stdin
         found = previous_release(args.file, sys.stdin.read().splitlines())
