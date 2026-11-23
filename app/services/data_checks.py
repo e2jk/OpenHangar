@@ -380,6 +380,14 @@ def open_findings(
     return result
 
 
+def open_counter_gaps(aircraft_id: int) -> list[Finding]:
+    """The aircraft's counter gaps (check_counters) not dismissed, for its
+    own page — counters only, so no GPS track is read and nothing cached."""
+    gaps = check_counters(Flight.query.filter_by(aircraft_id=aircraft_id).all())
+    dismissed = _dismissed(sorted({f.flight_id for f in gaps}))
+    return [f for f in gaps if (f.flight_id, f.key) not in dismissed]
+
+
 def refresh_open_count(tenant_id: int, force: bool = False) -> int:
     """Re-count the tenant's open findings (checking aircraft whose flights
     changed — or all of them when *force*) and store it for the navbar

@@ -17,6 +17,8 @@ from models import (  # pyright: ignore[reportMissingImports]
     DataCheckDismissal,
     Flight,
     GpsTrack,
+    Role,
+    TenantUser,
     db,
 )
 from services import data_checks as dc  # pyright: ignore[reportMissingImports]
@@ -508,11 +510,26 @@ class TestCounterGaps:
         assert "Previous flight ended at 11.0" in page
         assert "Open the flight to check its counters" in page
         assert "Use the GPS value" not in page
+        assert f'id="aircraft-{ac_id}"' in page
+        # The aircraft's own page points to it too.
+        detail = client.get(f"/aircraft/{ac_id}").data.decode()
+        assert "one counter gap between consecutive flights in this log." in detail
+        assert f"/config/data-checks#aircraft-{ac_id}" in detail
+        # Not for a pilot, who can't open Data checks.
+        with app.app_context():
+            tu = TenantUser.query.filter_by(user_id=uid).one()
+            tu.role = Role.PILOT
+            db.session.commit()
+        assert 'id="counter-gaps-note"' not in client.get(f"/aircraft/{ac_id}").text
+        with app.app_context():
+            TenantUser.query.filter_by(user_id=uid).one().role = Role.OWNER
+            db.session.commit()
         client.post(
             f"/config/data-checks/{later}/dismiss", data={"key": "engine_counter:11.0"}
         )
         page = client.get("/config/data-checks").data.decode()
         assert "Engine counter start" not in page
+        assert 'id="counter-gaps-note"' not in client.get(f"/aircraft/{ac_id}").text
         with app.app_context():
             assert dc.find(db.session.get(Flight, later), "engine_counter:11.0")
             assert dc.find(db.session.get(Flight, later), "flight_counter:11.0") is None

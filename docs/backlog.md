@@ -242,8 +242,7 @@ for later:
   aircraft) aren't checked, and a pilot can't see findings on their flights.
 - **More kinds of checks** on the same page (counter gaps and overlapping
   flights are there now): a flight's pilot-logbook figures disagreeing with
-  the aircraft log. The aircraft detail page could also
-  flag its own counter gaps.
+  the aircraft log.
 - **Email digest** of new findings, for admins who rarely open the
   configuration page.
 
