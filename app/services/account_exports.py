@@ -8,7 +8,7 @@ import json
 import re
 import tempfile
 import zipfile
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
@@ -34,6 +34,17 @@ class ExportSection:
     files: list[ExportFile] = field(default_factory=list)
     version: int = 1
     legacy_document: str | None = None
+    # Lists that only describe where the account's records live (e.g. the
+    # collections it belongs to): on their own they are nothing to export.
+    context_keys: frozenset[str] = frozenset()
+
+    def has_data(self) -> bool:
+        """Whether the section holds at least one of the account's records."""
+        return bool(self.files) or any(
+            isinstance(value, list) and value
+            for key, value in self.data.items()
+            if key not in self.context_keys
+        )
 
 
 _providers: dict[str, Callable[[ExportContext], ExportSection]] = {}
@@ -61,6 +72,28 @@ def _claim(name: str, used: set[str]) -> None:
     used.add(name)
 
 
+def _sections(
+    context: ExportContext, overrides: Mapping[str, ExportSection] | None
+) -> Iterator[tuple[str, ExportSection]]:
+    for name, provider in sorted(_providers.items()):
+        if overrides is not None and name in overrides:
+            yield name, overrides[name]
+        else:
+            yield name, provider(context)
+
+
+def account_has_data(
+    tenant_id: int,
+    user_id: int,
+    *,
+    overrides: Mapping[str, ExportSection] | None = None,
+) -> bool:
+    """Whether account_archive() would hold any of the account's records, so a
+    page offers the download only when there is something in it."""
+    context = ExportContext(tenant_id, user_id)
+    return any(section.has_data() for _name, section in _sections(context, overrides))
+
+
 def account_archive(
     tenant_id: int,
     user_id: int,
@@ -79,12 +112,7 @@ def account_archive(
         sections: dict[str, Any] = {}
         used = {"account-data.json"}
         with zipfile.ZipFile(output, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-            for name, provider in sorted(_providers.items()):
-                section = (
-                    overrides[name]
-                    if overrides is not None and name in overrides
-                    else provider(context)
-                )
+            for name, section in _sections(context, overrides):
                 for item in section.files:
                     _claim(item.name, used)
                     try:

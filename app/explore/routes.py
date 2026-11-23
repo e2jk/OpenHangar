@@ -451,7 +451,7 @@ def where_next() -> ResponseReturnValue:
             + urlencode([*query, ("download", fmt)])
             for fmt in waypoints.FORMATS
         }
-        if enabled
+        if enabled and selection.points
         else {}
     )
 

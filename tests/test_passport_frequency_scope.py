@@ -133,8 +133,13 @@ def test_combined_editions_total_and_per_edition_counts_per_scope(
 def test_pages_label_the_scope_and_keep_it_in_downloads(
     app: Flask, client: FlaskClient, group: dict[str, int]
 ) -> None:
+    from models import PassportAirfieldIdentity
+
     with app.app_context():
         _repeat_friend_visits(group)
+        # Located, so the page offers its GPX/KML downloads.
+        field = db.session.get(PassportAirfieldIdentity, _airfield(group))
+        field.latitude, field.longitude = 50.5, 4.5
         db.session.commit()
     signin(client, group["user"])
     path = f"/passports/{group['new']}/"

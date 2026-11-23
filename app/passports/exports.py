@@ -253,3 +253,16 @@ def account_archive(
             "passports": passport_section(tenant_id, user_id, visible_passports),
         },
     )
+
+
+def account_has_data(
+    tenant_id: int, user_id: int, visible_passports: list[Passport]
+) -> bool:
+    """Whether account_archive() with the same passport scope holds anything."""
+    if any(p.tenant_id == tenant_id for p in visible_passports):
+        return True  # The passport section lists each of them.
+    return account_exports.account_has_data(
+        tenant_id,
+        user_id,
+        overrides={"passports": passport_section(tenant_id, user_id, [])},
+    )

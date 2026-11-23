@@ -85,6 +85,7 @@ def index() -> ResponseReturnValue:
         .with_entities(PlaceCollectionInvitation, PlaceCollection.name)
         .all()
     )
+    from places.exports import waypoint_selection
     from places.queries import list_places
 
     listing = list_places(tid, uid, request.args, collection_id)
@@ -109,6 +110,7 @@ def index() -> ResponseReturnValue:
                 include_archived=True,
             )
         ),
+        can_download=bool(waypoint_selection(listing["rows"]).points),
         export_args={
             "collection": collection_id,
             "tag": listing["tag_id"],
