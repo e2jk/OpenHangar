@@ -48,6 +48,14 @@ var PRECACHE = [
  * tests/test_pwa.py::TestSWRRouteCoverage checks every route in the app
  * against these four lists, so a newly added page that isn't in any of them
  * fails CI instead of silently going uncached-and-unnoticed. */
+/* Also saved: blank forms to enter new data (the new flight, pilot logbook
+ * entry, expense, refuel and snag forms; never a form editing existing
+ * data, whose pre-filled values must be current). A date defaulting to
+ * today is set by the browser (data-oh-default-today, date_default_today.js),
+ * so a copy saved on another day still shows today. The GPS import hand-over
+ * to the flight form carries NEVER_SAVED_PARAMS: always from the server.
+ * And the Explore and passports hubs. Keep comments out of these arrays:
+ * tests/test_pwa.py reads quotes and slashes in them as entries. */
 var SWR_ROUTES = [
   '/',
   '/aircraft/',
@@ -63,7 +71,12 @@ var SWR_ROUTES = [
   '/config/users/',
   '/config/notifications/',
   '/config/renters/',
-  '/config/tenants'
+  '/config/tenants',
+  '/flights/new',
+  '/pilot/logbook/new',
+  '/passports/',
+  '/places/',
+  '/explore/where-next'
 ];
 
 /* Per-aircraft tabs (documents/expenses/costs/snags/maintenance/airworthiness/
@@ -96,7 +109,8 @@ var SWR_PATTERNS = [
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/airworthiness\/adsb\/$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/airworthiness\/equipment\/$/,
   /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/reservations\/$/,
-  /^\/pilot\/logbook\/offline$/
+  /^\/pilot\/logbook\/offline$/,
+  /^\/aircraft\/[A-Z0-9][A-Z0-9-]*\/(?:expenses\/add|refuels\/new|snags\/new)$/
 ];
 
 /* Routes deliberately NOT cached, with why — exact-path matches.
@@ -121,11 +135,11 @@ var NOT_CACHED_ROUTES = {
 /* Routes deliberately NOT cached, with why — pattern matches (dynamic
  * segments, or a shared reason covering several routes at once). */
 var NOT_CACHED_PATTERNS = [
-  [/^\/places(?:\/|$)/, 'private collection membership and invitations must stay current'],
-  [/^\/passports(?:\/|$)/, 'private passport membership and evidence must stay current'],
-  [/^\/explore(?:\/|$)/, 'searches over private passports and collections must stay current, same reasoning as passports'],
-  [/\/(new|add|create|edit|upload|service|charge|checkin|checkout|resolve|permissions|publish|settings|config|status)$/,
-    'one-shot create/edit/action form — needs fresh state on every open, not revisited'],
+  [/^\/places\/./, 'one place or collection, its members and invitations — too many distinct instances; the places hub itself is saved'],
+  [/^\/passports\/./, 'one passport, its members and evidence — too many distinct instances; the passports hub itself is saved'],
+  [/^\/explore\/(?!where-next$)./, 'per-passport and per-place explore views — same reasoning as passports'],
+  [/^(?!\/flights\/new$|\/pilot\/logbook\/new$|\/aircraft\/[A-Z0-9][A-Z0-9-]*\/(?:expenses\/add|refuels\/new|snags\/new)$).*\/(new|add|create|edit|upload|service|charge|checkin|checkout|resolve|permissions|publish|settings|config|status)$/,
+    'edit or action form — its pre-filled values must be current; other create forms not checked for saved-copy safety yet (the blank forms saved are listed in SWR_ROUTES and SWR_PATTERNS)'],
   [/\/gps-import(\/.*)?$/, 'one-shot GPS-import wizard flow'],
   [/\/logbook\/import(\/.*)?$/, 'one-shot logbook-import wizard flow'],
   [/\/maintenance\/import(\/.*)?$/, 'one-shot AMP-import wizard flow (upload and review) and its history page'],
@@ -155,7 +169,12 @@ var NOT_CACHED_PATTERNS = [
   [/^\/squawk\/\d+$/, 'easter egg']
 ];
 
+/* Query parameters marking a one-time hand-over (the GPS import's values
+ * waiting in the server session for the new-flight form): never saved. */
+var NEVER_SAVED_PARAMS = ['gps_review_return', 'gps_seg'];
+
 function _isSWRRoute(url) {
+  if (NEVER_SAVED_PARAMS.some(function (name) { return url.searchParams.has(name); })) return false;
   if (SWR_ROUTES.indexOf(url.pathname) !== -1) return true;
   return SWR_PATTERNS.some(function (re) { return re.test(url.pathname); });
 }
@@ -189,12 +208,20 @@ function _isSameOrigin(u) {
  * change" time; every copy saved before it is outdated and comes from the
  * server once on its next visit, then is instant again. Outdated copies are
  * kept, so they are still there to read offline. Right after a save, the
- * main pages (MAIN_PAGES, plus the aircraft the saved form belonged to) are
- * refreshed in the background so they are current when opened; a page
+ * main pages (MAIN_PAGES, and each aircraft's page) are refreshed in the
+ * background so they are current when opened; a page
  * opened while its refresh is still running waits for it — never a copy
  * older than the user's own last save. When the app opens or comes back to
  * the foreground (pwa.js), main pages older than MAIN_REFRESH_AGE_MS are
  * refreshed the same way.
+ *
+ * Pages the app asks the browser to prefetch (prefetch.js) only fill in
+ * missing, outdated or older-than-MAIN_REFRESH_AGE_MS copies: a fresh copy
+ * answers them without asking the server, so the ~10 prefetches of every
+ * page view don't each cost a server request.
+ *
+ * Never saved: a page showing a one-time message (a flash toast, marked
+ * data-oh-flash in base.html) — it would come back on every instant view.
  *
  * When saved pages are deleted: sign-out; the login reaching its end date
  * (X-OH-Login-Expires-In, kept with the identity so it is known without a
@@ -205,11 +232,17 @@ function _isSameOrigin(u) {
  * Why: like an online shop account, the saved pages belong to one login and
  * last as long as it does; on a computer other people use, signing out is
  * the user's job (see the user guide). */
-var MAIN_PAGES = ['/', '/flights', '/pilot/logbook', '/maintenance', '/aircraft/'];
+var MAIN_PAGES = ['/', '/flights', '/flights/new', '/pilot/logbook', '/maintenance', '/aircraft/', '/passports/'];
+/* Each aircraft's own page counts as a main page too. */
+var AIRCRAFT_PAGE = /^\/aircraft\/[A-Z0-9][A-Z0-9-]*$/;
+function _isMainPage(pathname) {
+  return MAIN_PAGES.indexOf(pathname) !== -1 || AIRCRAFT_PAGE.test(pathname);
+}
 var MAIN_REFRESH_AGE_MS = 15 * 60 * 1000;
 /* POSTs that only read (nothing to mark outdated). */
 var READ_ONLY_POSTS = [/^\/flights\/photo-hints$/];
 var SAVED_AT = 'X-OH-Saved-At';
+var FLASH_MARKER = 'data-oh-flash';
 var IDENTITY_KEY = '/__oh_offline_identity__';
 var LOGIN_KEY = '/__oh_login_state__';
 
@@ -308,6 +341,9 @@ function _markChanged(startedAt) {
 }
 function _savedAt(response) { return Number(response.headers.get(SAVED_AT) || 0); }
 function _outdated(response) { return _savedAt(response) < _login.changedAt; }
+function _stale(response, maxAge) {
+  return _outdated(response) || Date.now() - _savedAt(response) > maxAge;
+}
 function _persistedIdentity() {
   return caches.open(_metadataCache).then(function (cache) {
     return cache.match(IDENTITY_KEY);
@@ -320,6 +356,10 @@ function _network(request) {
   var began = _revision;
   var startedIdentity = _identity;
   return fetch(request).then(function (response) {
+    /* A server error says nothing about the login: its identity headers can
+     * be missing (the request failed before they could be computed), which
+     * must not read as a sign-out and lock every tab. */
+    if (response.status >= 500 || response.type === 'opaqueredirect') return response;
     var next = { owner: response.headers.get('X-OH-Offline-Owner') || '',
       session: response.headers.get('X-OH-Offline-Session') || '' };
     if (began !== _revision && !_sameIdentity(next, _identity)) {
@@ -357,7 +397,10 @@ function _cachePrivate(request, response, startedAt) {
   headers.set(SAVED_AT, String(startedAt));
   return _persistedIdentity().then(function (persisted) {
     if (version !== _revision || !_sameIdentity(identity, persisted)) return;
-    return copy.blob().then(function (body) {
+    return copy.text().then(function (body) {
+      /* A one-time message (flash toast) would come back on every instant
+       * view: such a page is not saved; its next visit asks the server. */
+      if (body.indexOf(FLASH_MARKER) !== -1) return;
       var stamped = new Response(body, { status: copy.status, statusText: copy.statusText, headers: headers });
       return caches.open(name).then(function (cache) {
         if (version !== _revision) return;
@@ -421,6 +464,12 @@ function _privateNavigation(request, event) {
   if (new URL(request.url).searchParams.has('_swr_fresh') || !_instant()) return fromNetwork();
   return _cachedForCurrentLogin(request, identity, revision).then(function (cached) {
     var pending = _inflight[_privateCacheKey(request)];
+    /* A <link rel="prefetch"> (prefetch.js: no-cors, no destination) only
+     * fills in missing, outdated or old copies — a fresh one needs no check. */
+    if (cached && request.mode === 'no-cors' && request.destination === '' &&
+        !_stale(cached, MAIN_REFRESH_AGE_MS)) {
+      return cached;
+    }
     if (cached && !_outdated(cached)) {
       /* Shown at once; the server is still asked (unless a request for it
        * is already running), and the worker kept alive until its answer has
@@ -439,19 +488,19 @@ function _privateNavigation(request, event) {
     });
   });
 }
-/* Refresh this login's saved copies of `paths` (all saved pages if null)
- * from the server, except `exceptHref`, and with `maxAge` only those saved
- * longer ago than that (or outdated). */
-function _refreshSaved(paths, exceptHref, maxAge) {
+/* Refresh this login's saved copies of the pages `wanted(pathname)` accepts
+ * (all saved pages if null) from the server, except `exceptHref`, and with
+ * `maxAge` only those saved longer ago than that (or outdated). */
+function _refreshSaved(wanted, exceptHref, maxAge) {
   if (!_identity.owner) return Promise.resolve();
   var identity = _identity;
   return caches.open(_privateName(identity)).then(function (cache) {
     return cache.keys().then(function (keys) {
       return Promise.all(keys.filter(function (key) {
-        return key.url !== exceptHref && (!paths || paths.indexOf(new URL(key.url).pathname) !== -1);
+        return key.url !== exceptHref && (!wanted || wanted(new URL(key.url).pathname));
       }).map(function (key) {
         var stale = maxAge ? cache.match(key).then(function (cached) {
-          return !cached || _outdated(cached) || Date.now() - _savedAt(cached) > maxAge;
+          return !cached || _stale(cached, maxAge);
         }) : Promise.resolve(true);
         return stale.then(function (needed) {
           if (!needed || !_sameIdentity(identity, _identity)) return;
@@ -464,26 +513,23 @@ function _refreshSaved(paths, exceptHref, maxAge) {
   });
 }
 /* A successful save: everything saved before it is outdated; the page the
- * save landed on (already fresh) is kept; the main pages and the saved
- * form's aircraft are refreshed in the background. */
-function _afterSave(url, response, startedAt) {
+ * save landed on (already fresh) is kept; the main pages are refreshed in
+ * the background. */
+function _afterSave(response, startedAt) {
   var landing = response.redirected && response.url ? new URL(response.url) : null;
   var copy = landing && landing.origin === self.location.origin && _isSWRRoute(landing)
     ? response.clone() : null;
-  var paths = MAIN_PAGES.slice();
-  var aircraft = /^\/aircraft\/([A-Z0-9][A-Z0-9-]*)(?:\/|$)/.exec(url.pathname);
-  if (aircraft) paths.push('/aircraft/' + aircraft[1]);
   return _markChanged(startedAt).then(function () {
     return Promise.all([
       copy ? _cachePrivate(new Request(landing.href), copy, startedAt) : null,
-      _refreshSaved(paths, copy ? _privateCacheKey(new Request(landing.href)) : null, 0)
+      _refreshSaved(_isMainPage, copy ? _privateCacheKey(new Request(landing.href)) : null, 0)
     ]);
   }).catch(_noop);
 }
-function _save(request, url, event) {
+function _save(request, event) {
   var startedAt = Date.now();
   return _network(request).then(function (response) {
-    if (response.ok && _identity.owner) event.waitUntil(_afterSave(url, response, startedAt));
+    if (response.ok && _identity.owner) event.waitUntil(_afterSave(response, startedAt));
     return response;
   });
 }
@@ -548,7 +594,7 @@ self.addEventListener('fetch', function (event) {
     if (request.method === 'GET' && _isSWRRoute(url)) return _privateNavigation(request, event);
     var reply = request.method !== 'GET' && request.method !== 'HEAD' &&
       !READ_ONLY_POSTS.some(function (re) { return re.test(url.pathname); })
-      ? _save(request, url, event) : _network(request);
+      ? _save(request, event) : _network(request);
     return reply.catch(function (error) {
       if (request.mode === 'navigate') return _fallback();
       throw error;
@@ -575,7 +621,7 @@ self.addEventListener('message', function (event) {
       }));
     }
     /* The app was opened or came back to the foreground (pwa.js). */
-    if (data.type === 'OH_REFRESH_MAIN') return _refreshSaved(MAIN_PAGES, null, MAIN_REFRESH_AGE_MS);
+    if (data.type === 'OH_REFRESH_MAIN') return _refreshSaved(_isMainPage, null, MAIN_REFRESH_AGE_MS);
     if (data.type === 'OH_REFRESH_NAV_CACHE') return _refreshSaved(null, null, 0);
   }));
 });

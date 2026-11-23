@@ -106,6 +106,7 @@ def index() -> ResponseReturnValue:
     return render_template(
         "passports/index.html",
         can_create=can_create,
+        can_export=exports.account_has_data(*_actor(), passports),
         passports=passports,
         group_series=accessible_group_series().order_by("title", "id").all(),
         summaries=progress_many(passports, session["user_id"]),
@@ -268,12 +269,16 @@ def _waypoint_view(
     # Never pass arbitrary query keys to url_for: its reserved options can
     # change the URL's host or scheme. These are the view's own input names.
     query = {key: request.args[key][:100] for key in keys if key in request.args}
-    links = {
-        fmt: url_for(endpoint, passport_id=passport_id)
-        + "?"
-        + urlencode({**query, "download": fmt})
-        for fmt in waypoints.FORMATS
-    }
+    links = (
+        {
+            fmt: url_for(endpoint, passport_id=passport_id)
+            + "?"
+            + urlencode({**query, "download": fmt})
+            for fmt in waypoints.FORMATS
+        }
+        if selection.points
+        else {}
+    )
     return None, {"waypoint_links": links, "omitted_waypoints": selection.omitted}
 
 

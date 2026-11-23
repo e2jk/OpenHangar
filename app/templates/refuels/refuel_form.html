@@ -22,6 +22,7 @@
         <label for="date" class="form-label fw-semibold">{{ _('Date') }} <span class="text-danger">*</span></label>
         <input type="date" class="form-control" id="date" name="date"
                value="{{ refuel.date.strftime('%Y-%m-%d') if refuel else today }}"
+               {% if not refuel %}data-oh-default-today{% endif %}
                required>
       </div>
 

@@ -4,7 +4,7 @@
 {% block content %}
 <div class="container py-4">
 <div class="page-header mb-4"><h1 class="page-title">{{ _('Airfield passports') }}</h1>{% if can_create %}<a class="btn btn-ac-primary" href="{{ url_for('passports.new_passport') }}">{{ _('Create passport') }}</a>{% endif %}</div>
-<p><a class="btn btn-ac-ghost" href="{{ url_for('passports.export_account') }}" hx-boost="false">{{ _('Export my passport data') }}</a></p>
+{% if can_export %}<p><a class="btn btn-ac-ghost" href="{{ url_for('passports.export_account') }}" hx-boost="false">{{ _('Export my passport data') }}</a></p>{% endif %}
 {% if passport_only and not personal_logbook %}<p>{{ _('Fly yourself? Keep your own pilot logbook on this account and your logged arrivals fill your passports automatically.') }} <a href="{{ url_for('passports.start_logbook') }}">{{ _('Start my pilot logbook') }}</a></p>{% endif %}
 {% if passports %}
 <ul>{% for passport in passports %}<li><a href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ passport.title }}</a>{% if passport.series_id and passport.owner_user_id == session.get('user_id') %} · <a href="{{ url_for('passports.series_detail', series_id=passport.series_id) }}">{{ _('Linked editions') }}</a>{% endif %} — {{ summaries[passport.id].visited }} / {{ summaries[passport.id].total }}</li>{% endfor %}</ul>

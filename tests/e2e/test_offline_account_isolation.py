@@ -90,11 +90,12 @@ def isolated_offline_server(tmp_path, monkeypatch):
     @app.route("/test-only/save", methods=["POST"])
     def test_only_save():
         """A save as any form makes one: change data, redirect to a page."""
-        from flask import redirect, request, session
+        from flask import flash, redirect, request, session
 
         flight = Flight.query.filter_by(pic_user_id=session["user_id"]).one()
         flight.other_aircraft_registration = request.form["registration"]
         db.session.commit()
+        flash("TEST-SAVED-ONCE", "success")
         return redirect("/pilot/minimums")
 
     server = make_server("127.0.0.1", 0, app, threaded=True)
@@ -806,8 +807,11 @@ def test_a_save_refreshes_main_pages_and_outdates_the_others(
         )
         page.locator("#oh-test-save button").click()
         page.wait_for_url("**/pilot/minimums")
+        # The landing page shows the one-time message: never saved with it.
+        assert "TEST-SAVED-ONCE" in page.content()
         # A main page is refreshed without being opened...
         _wait_for_cached_text(page, "/pilot/logbook", "ALPHA-SAVED")
+        assert "TEST-SAVED-ONCE" not in _cached_text(page, "/pilot/minimums")
         # ...so it opens instantly, already showing the change.
         entered, release = _gate(app, "/pilot/logbook")
         releases.append(release)
@@ -942,6 +946,43 @@ def test_pages_the_app_prefetches_are_saved_for_instant_screens(
     page = context.new_page()
     login(page, origin, "Alpha")  # ends on /pilot/logbook
     _quiet(page, requests)
-    for path in ("/pilot/profile", "/pilot/tracks"):
+    # The bottom bar's pages, and the other nav pages after them.
+    for path in ("/flights/new", "/passports/", "/pilot/profile", "/pilot/tracks"):
         assert "</html>" in _cached_text(page, path), path
+    context.close()
+
+
+def test_a_blank_form_saved_on_another_day_opens_with_today(
+    isolated_offline_server, traced_browser
+):
+    _app, origin, _users, requests, _, _ = isolated_offline_server
+    context = traced_browser.new_context(service_workers="allow")
+    page = context.new_page()
+    login(page, origin, "Alpha")
+    _wait_for_cached_text(page, "/flights/new", 'id="date"')
+    _quiet(page, requests)
+    # Pretend the saved form was rendered on another day.
+    page.evaluate(
+        r"""async () => {
+          for (const name of (await caches.keys()).filter(n => n.includes('-private-'))) {
+            const cache = await caches.open(name);
+            const key = location.origin + '/flights/new';
+            const old = await cache.match(key);
+            if (!old) continue;
+            const html = (await old.text()).replace(
+              /(id="date" name="date"\s+value=")[0-9-]+/, '$12001-02-03');
+            await cache.put(key, new Response(html, { status: 200, headers: old.headers }));
+          }
+        }"""
+    )
+    assert 'value="2001-02-03"' in _cached_text(page, "/flights/new")
+    _boosted_visit(page, "/flights/new")
+    today = page.evaluate(
+        """() => { const d = new Date(); return d.getFullYear() + '-' +
+             String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }"""
+    )
+    # Set on htmx:afterSettle, a moment after the swap: wait for it.
+    page.wait_for_function(
+        "today => document.getElementById('date').value === today", arg=today
+    )
     context.close()

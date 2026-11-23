@@ -15,6 +15,10 @@
    single-aircraft panel) and again as the hero banner on aircraft.detail —
    prefetch the image bytes now so that hero doesn't show a loading flash
    on the very next click. #}
+{# Each aircraft's own page (the likeliest tap from here), a handful at most. #}
+{% for ac in aircraft[:5] %}
+{% set ns.urls = ns.urls + [url_for('aircraft.detail', aircraft_id=ac.id)] %}
+{% endfor %}
 {% for ac in aircraft %}
 {% set cp = cover_photos.get(ac.id) %}
 {% if cp %}

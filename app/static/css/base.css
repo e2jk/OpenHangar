@@ -56,8 +56,12 @@ main.page-content {
 .navbar-toggler {
   border-color: rgba(255,255,255,.3);
 }
-.navbar-toggler-icon {
-  filter: invert(1);
+/* The navbar is dark in both themes, so its menu icon is always drawn
+   light. Not a filter: invert(1) on Bootstrap's own icon — that icon is
+   already light in the dark theme, so inverting it drew dark lines on the
+   dark navbar there. */
+.navbar .navbar-toggler-icon {
+  --bs-navbar-toggler-icon-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.85%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 /* Nav menu below lg is a real Bootstrap offcanvas panel (base.html), not
    content collapsing open in place — proper backdrop + focus trap instead
@@ -607,6 +611,18 @@ nav.navbar.mayday #oh-mayday-banner {
 [data-bs-theme=dark] .icon-red    { background: #3a0a0a; color: #f88; }
 [data-bs-theme=dark] .page-title  { color: #e9ecef; }
 [data-bs-theme=dark] .section-title { color: #adb5bd; }
+/* Bootstrap's .btn-outline-dark stays near-black in the dark theme, which
+   leaves it barely visible on a dark card; draw it light there instead. */
+[data-bs-theme=dark] .btn-outline-dark {
+  --bs-btn-color: #dee2e6;
+  --bs-btn-border-color: #adb5bd;
+  --bs-btn-hover-color: #212529;
+  --bs-btn-hover-bg: #dee2e6;
+  --bs-btn-hover-border-color: #dee2e6;
+  --bs-btn-active-color: #212529;
+  --bs-btn-active-bg: #dee2e6;
+  --bs-btn-active-border-color: #dee2e6;
+}
 
 /* HTMX loading indicator — kept in external CSS so CSP style-src-elem 'self' stays strict */
 .htmx-indicator { opacity: 0; }

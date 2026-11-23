@@ -202,6 +202,7 @@ tr.clickable-row { cursor: pointer; }
 [data-bs-theme=dark] .res-cal-day.other-month { background: #1e2124; color: #666; }
 [data-bs-theme=dark] .section-divider th { background: #2a2d31; color: #adb5bd; border-color: #3a4050; }
 [data-bs-theme=dark] .res-cal-day-num { color: #c0c8d0; }
+[data-bs-theme=dark] .res-cal-table th { color: #adb5bd; }
 [data-bs-theme=dark] .logbook-table thead th { background: #1e2124; }
 [data-bs-theme=dark] .logbook-table .oh-fstd-row td { background-color: rgba(90, 150, 220, .12); }
 [data-bs-theme=dark] .map-table th { background: #1e2124; }
@@ -267,4 +268,13 @@ tr.clickable-row { cursor: pointer; }
   #passport-print-document thead { display: table-header-group; }
   #passport-print-document tr { break-inside: avoid; }
   .passport-print-photo { max-width: 55mm; max-height: 45mm; }
+}
+
+/* Flash toasts use a white close button, but Bootstrap's warning, info and
+ * light backgrounds are pale with black text: keep the close button dark on
+ * them, in both themes (the dark theme also whitens every close button). */
+.toast.text-bg-warning .btn-close,
+.toast.text-bg-info .btn-close,
+.toast.text-bg-light .btn-close {
+  --bs-btn-close-filter: none;
 }

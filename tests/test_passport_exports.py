@@ -197,6 +197,59 @@ def test_scoped_export_retains_own_withdrawn_records_without_current_group_data(
     assert client.get(f"/passports/{s['passport']}/").status_code == 404
 
 
+def test_export_button_only_when_the_account_has_data(
+    app: Flask, client: FlaskClient, owner: dict[str, int]
+) -> None:
+    from models import Place, PlaceCollection, PlaceCollectionMember
+    from passports.exports import account_has_data
+
+    s = owner
+    signin(client, s["other"])
+    page = client.get("/passports/")
+    assert b"No passports yet." in page.data
+    assert b"/passports/export" not in page.data
+    with app.app_context():
+        # Belonging to a collection is not data of its own: the archive would
+        # only name it.
+        collection = PlaceCollection(
+            tenant_id=s["tenant"],
+            name="My places",
+            created_by_user_id=s["other"],
+            is_personal=True,
+        )
+        db.session.add(collection)
+        db.session.flush()
+        db.session.add(
+            PlaceCollectionMember(
+                collection_id=collection.id,
+                tenant_id=s["tenant"],
+                user_id=s["other"],
+                can_edit=True,
+            )
+        )
+        db.session.commit()
+        assert not account_has_data(s["tenant"], s["other"], [])
+        collection_id = collection.id
+    assert b"/passports/export" not in client.get("/passports/").data
+    with app.app_context():
+        db.session.add(
+            Place(
+                collection_id=collection_id,
+                owner_user_id=s["other"],
+                created_by_user_id=s["other"],
+                title="Lake",
+            )
+        )
+        db.session.commit()
+        assert account_has_data(s["tenant"], s["other"], [])
+    page = client.get("/passports/")
+    assert b'href="/passports/export" hx-boost="false"' in page.data
+    # The passport owner has a passport to export.
+    signin(client, s["user"])
+    page = client.get("/passports/")
+    assert b'href="/passports/export" hx-boost="false"' in page.data
+
+
 def test_empty_export_and_temporary_file_cleanup(
     app: Flask, client: FlaskClient, owner: dict[str, int]
 ) -> None:
