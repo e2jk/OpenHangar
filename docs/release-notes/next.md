@@ -27,6 +27,8 @@
   or dismiss the gap when it's right (a counter replaced).
 - **Data checks** also lists two flights of one aircraft logged at times
   that overlap — one of them has the wrong date or times.
+- An aircraft's page says how many counter gaps its log has (for admins and
+  owners), with a link to them on Data checks.
 - The aircraft GPS import's review page now says when a flight it's about
   to link differs from its GPS track ("Logbook: EDBK · GPS: EDRK"), with a
   box to correct the logbook at the same time — only when ticked, never by

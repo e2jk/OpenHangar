@@ -462,6 +462,13 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
     is_current_user_co_owner = any(
         o.user_id == session["user_id"] for o in list(ac.owners)
     )
+    counter_gaps: list[Any] = []
+    if current_user_role() in (Role.ADMIN, Role.OWNER):
+        from services.data_checks import (  # pyright: ignore[reportMissingImports]
+            open_counter_gaps,
+        )
+
+        counter_gaps = open_counter_gaps(ac.id)
 
     return render_template(
         "aircraft/detail.html",
@@ -499,6 +506,7 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
         shared_ownership_enabled=shared_ownership_enabled,
         owners=ac.owners if shared_ownership_enabled else [],
         is_current_user_co_owner=is_current_user_co_owner,
+        counter_gaps=counter_gaps,
     )
 
 

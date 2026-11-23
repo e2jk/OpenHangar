@@ -29,7 +29,7 @@
   {% endif %}
 
   {% for aircraft, findings in groups %}
-  <h2 class="h5 mt-4 mb-2">
+  <h2 class="h5 mt-4 mb-2" id="aircraft-{{ aircraft.id }}">
     <span class="oh-reg-plate">{{ aircraft.registration }}</span>
     <span class="text-muted oh-fs-09 ms-2">{{ ngettext('one difference', '%(n)d differences', findings|length, n=findings|length) }}</span>
   </h2>

@@ -520,6 +520,13 @@
       </table>
     </div>
   </div>
+  {% if counter_gaps %}
+  <p class="oh-fs-09 mt-2 mb-0" id="counter-gaps-note">
+    <i class="bi bi-exclamation-triangle text-warning me-1"></i>
+    {{ ngettext('one counter gap between consecutive flights in this log.', '%(n)d counter gaps between consecutive flights in this log.', counter_gaps|length, n=counter_gaps|length) }}
+    <a href="{{ url_for('config.data_checks', _anchor='aircraft-%d' % aircraft.id) }}">{{ _('See Data checks') }}</a>
+  </p>
+  {% endif %}
   {% else %}
   <div class="ac-empty">
     <i class="bi bi-wind ac-empty-icon"></i>
