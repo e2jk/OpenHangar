@@ -917,6 +917,58 @@ class TestPilotGroundRuns:
         with app.app_context():
             assert db.session.get(Flight, entry).gps_track_id is not None
 
+    def test_further_flights_that_day_are_offered(self, client, app):
+        """45 min to 3 h from one of the pilot's flights at its airfield:
+        offered as its taxi part, never linked on its own."""
+        uid, _tid, _ac = _make_user_and_aircraft(app)
+        _login(client, uid)
+        landed = self._logged(app, uid, "EBAW", "EBNM", time(7, 0), time(8, 0))
+        later = self._logged(app, uid, "EBNM", "EBAW", time(12, 0), time(13, 0))
+        (seg,), page = self._upload(client)
+        assert seg["matched_flight_id"] is None
+        assert [
+            (c["id"], c["when"], c["gap_min"], c["aircraft_reg"])
+            for c in seg["ground_candidates"]
+        ] == [(later, "before", 116, "OO-OTH"), (landed, "after", 120, "OO-OTH")]
+        assert "Add it to a flight as a taxi part" in page
+        assert "120 minutes after it landed" in page
+        assert "Accept all best matches" not in page  # a choice, not a match
+        client.post(
+            "/pilot/gps-import/confirm-one",
+            data={
+                "seg_idx": "0",
+                "pilot_role": "pic",
+                "ground_flight_id": str(landed),
+            },
+        )
+        with app.app_context():
+            f = db.session.get(Flight, landed)
+            assert f.gps_track.geojson["properties"]["parts"][0]["taxi"] is True
+            assert (f.departure_time, f.arrival_time) == (time(7, 0), time(8, 0))
+            assert db.session.get(Flight, later).gps_track_id is None
+            assert Flight.query.filter_by(pic_user_id=uid).count() == 2
+
+    def test_none_of_these_leaves_it_unmatched(self, client, app):
+        uid, _tid, _ac = _make_user_and_aircraft(app)
+        _login(client, uid)
+        landed = self._logged(app, uid, "EBAW", "EBNM", time(7, 0), time(8, 0))
+        (seg,), page = self._upload(client)
+        assert len(seg["ground_candidates"]) == 1
+        assert "None of these — treat as unmatched" in page
+        client.post(
+            "/pilot/gps-import/confirm-one",
+            data={
+                "seg_idx": "0",
+                "pilot_role": "pic",
+                "ground_flight_id": "",
+                "resolution": "other_aircraft",
+                "other_reg": "OO-OTH",
+            },
+        )
+        with app.app_context():
+            assert db.session.get(Flight, landed).gps_track_id is None
+            assert Flight.query.filter_by(pic_user_id=uid).count() == 2
+
 
 def _gpx_at(start, minutes, speed_ms=4.0):
     """A GPX recording of *minutes* one-minute points from *start* (a
