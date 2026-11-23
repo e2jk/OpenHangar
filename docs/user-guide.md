@@ -158,7 +158,7 @@ Nothing is saved until you save the form, and the form's **Shared file** box can
 
 ### Working offline
 
-OpenHangar needs a connection to save anything, but you can still **read** while offline. Pages you opened recently while online stay available (and on a slow connection they appear after a few seconds from the saved copy, then refresh), and each logbook you open online is also saved on your device as a read-only copy — there is no "go offline" button to remember. If you then lose connectivity (no signal on an airfield, a hangar with poor reception), open **Offline logbook** from an aircraft's logbook page or from your Pilot logbook page to read the whole logbook: every flight, not only the pages you had opened. The page says when its copy was saved; it is refreshed each time you open that logbook online.
+OpenHangar needs a connection to save anything, but you can still **read** while offline. Pages you opened while online stay available (online too, they open instantly from the copy saved on your device and refresh in the background), and each logbook you open online is also saved on your device as a read-only copy — there is no "go offline" button to remember. If you then lose connectivity (no signal on an airfield, a hangar with poor reception), open **Offline logbook** from an aircraft's logbook page or from your Pilot logbook page to read the whole logbook: every flight, not only the pages you had opened. The page says when its copy was saved; it is refreshed each time you open that logbook online.
 
 Your offline pilot logbook shows all your flights: in fleet aircraft, in other aircraft, and FSTD/simulator sessions. On a flight shared with another pilot, it shows only your own function hours and remarks, as the online logbook does.
 
@@ -587,12 +587,22 @@ Git access required, just a free Weblate account.
 
 ### Offline data on a shared browser
 
-Cached pages and offline logbook copies belong to one account and login. Signing out,
-switching accounts or an expired/revoked login retires them; another account signing
-in on the same browser cannot see them. Online, a private page is asked from the server
-first; only if the answer takes more than a few seconds is that login's own saved copy
-shown meanwhile, and the server's answer then refreshes it (or removes it, if access was
-withdrawn). An offline or slow device cannot discover a server-side permission change
-until the server answers. Offline storage remains local device data, not
-an encrypted vault against somebody with access to the browser profile or developer
-tools.
+Saved pages and offline logbook copies belong to one account and login, on any
+device or browser. While that login is valid (30 days after signing in by default), a
+page you opened before shows at once from its saved copy, and the server is asked in
+the background: its answer refreshes the copy for next time, or removes it if your
+access was withdrawn. Saving something marks the saved pages out of date, so you never
+see a page older than your own last change: the main pages are refreshed in the
+background straight away, any other page comes from the server once.
+
+Signing out, switching accounts or the login ending deletes them; another account
+signing in on the same browser cannot see them. As with any online account, sign out
+on a computer other people use: until then, whoever opens OpenHangar there sees your
+pages. A login ended on the server (a password change elsewhere, access removed by an
+admin) is noticed at the next server answer: the page already shown stays until then,
+and the tab then locks. Administrators can turn instant screens off for the whole
+instance with `OPENHANGAR_INSTANT_PAGES=false` (see the configuration reference) if
+screens seem to stay out of date: pages then come from the server first, and saved
+copies are only used without a connection. Offline storage remains local device data,
+not an encrypted vault against somebody with access to the browser profile or
+developer tools.

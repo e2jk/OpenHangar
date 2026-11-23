@@ -147,12 +147,15 @@ class TestServiceWorker:
         assert "_isSWRRoute(url)) return _privateNavigation(request, event)" in body
         assert "req.mode === 'navigate' && _isSWRRoute(url)" not in body
 
-    def test_sw_js_handles_nav_cache_invalidation_message(self, client):
-        # Regression guard: a write must be able to drop the cached nav
-        # pages so the next visit doesn't show pre-edit content.
+    def test_sw_js_marks_saved_pages_outdated_after_a_save(self, client):
+        # Regression guard: the worker itself notices every successful write
+        # and marks the saved pages outdated (next visit from the server)
+        # instead of deleting them, which also dropped the offline copies.
         r = client.get("/sw.js")
         body = r.data.decode()
-        assert "OH_INVALIDATE_NAV_CACHE" in body
+        assert "_save(request, url, event)" in body
+        assert "_markChanged(startedAt)" in body
+        assert "OH_INVALIDATE_NAV_CACHE" not in body
 
     def test_sw_js_handles_nav_cache_refresh_message(self, client):
         # Regression guard: the periodic freshness sweep (pwa.js) must
@@ -161,16 +164,17 @@ class TestServiceWorker:
         # cached route pay a network wait instead of staying instant.
         r = client.get("/sw.js")
         body = r.data.decode()
-        assert "OH_REFRESH_NAV_CACHE" in body
-        assert "_cachePrivate(key, response)" in body
+        assert "OH_REFRESH_NAV_CACHE') return _refreshSaved(null, null, 0)" in body
+        assert "OH_REFRESH_MAIN') return _refreshSaved(MAIN_PAGES" in body
 
 
-class TestPwaJsWriteInvalidation:
-    def test_pwa_js_posts_invalidation_on_successful_write(self):
+class TestPwaJsRefreshOnResume:
+    def test_pwa_js_asks_for_main_pages_refresh_when_opened_or_resumed(self):
         content = (_STATIC_DIR / "js" / "pwa.js").read_text()
-        assert "htmx:afterRequest" in content
-        assert "OH_INVALIDATE_NAV_CACHE" in content
-        assert "e.detail.successful" in content
+        assert "OH_REFRESH_MAIN" in content
+        assert "_refreshMainPages();" in content
+        assert "visibilitychange" in content
+        assert "OH_INVALIDATE_NAV_CACHE" not in content
 
 
 class TestBannerPoll:

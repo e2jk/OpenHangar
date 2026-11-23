@@ -1,4 +1,5 @@
-/* OpenHangar service worker — cache-first for static assets, stale-while-revalidate for nav pages */
+/* OpenHangar service worker — cache-first for static assets; saved copies of the
+ * main pages shown instantly for the life of the login (see "Instant screens" below) */
 var CACHE = '__SW_CACHE_VERSION__';
 
 /* Static assets to pre-cache on SW install */
@@ -29,12 +30,12 @@ var PRECACHE = [
   '/static/pwa/offline.html',
 ];
 
-/* Main nav routes cached with stale-while-revalidate — instant navigation,
- * refreshed in the background on every visit. A successful htmx write
- * (see pwa.js OH_INVALIDATE_NAV_CACHE) drops all of these immediately, so
- * a page never shows content that's stale because of your own edit.
- * / needs extra handling for its auth-state edges (see the fetch listener
- * below) before falling through to this same generic caching path.
+/* Main nav routes saved per login and shown instantly, refreshed in the
+ * background on every visit (see "Instant screens" below). A successful save
+ * marks them outdated, so a page never shows content that's stale because
+ * of your own edit.
+ * / needs extra handling for its auth-state edges (?_swr_fresh right after
+ * signing in, see below) before falling through to this same caching path.
  * The /config/* hubs' live-looking values (version-check badge, disk/backup
  * sizes, upgrade-in-progress marker) are all informational or already
  * re-validated server-side on submit, so they're cached the same as every
@@ -169,25 +170,83 @@ function _isSameOrigin(u) {
   }
 }
 
+/* ── Instant screens for the life of the login ──
+ *
+ * What is saved: the pages listed above, per account AND per login (a
+ * separate cache namespace each), never another account's or a signed-out
+ * visitor's. Each saved copy records when its request started.
+ *
+ * When a saved copy is shown at once (cold app start and in-app clicks
+ * alike): while this login is valid, the server allows it
+ * (OPENHANGAR_INSTANT_PAGES, sent as X-OH-Instant-Pages) and the copy is
+ * not outdated. The server is still asked in the background every time: its
+ * answer refreshes the copy, removes it on 403/404, and an ended or changed
+ * login retires the whole namespace (the tab then locks, see
+ * offline_identity.js). So other people's changes show on the next visit.
+ *
+ * When a copy is outdated: any successful save (a same-origin non-GET seen
+ * here — htmx forms, plain forms, uploads, other tabs) records a "last
+ * change" time; every copy saved before it is outdated and comes from the
+ * server once on its next visit, then is instant again. Outdated copies are
+ * kept, so they are still there to read offline. Right after a save, the
+ * main pages (MAIN_PAGES, plus the aircraft the saved form belonged to) are
+ * refreshed in the background so they are current when opened; a page
+ * opened while its refresh is still running waits for it — never a copy
+ * older than the user's own last save. When the app opens or comes back to
+ * the foreground (pwa.js), main pages older than MAIN_REFRESH_AGE_MS are
+ * refreshed the same way.
+ *
+ * When saved pages are deleted: sign-out; the login reaching its end date
+ * (X-OH-Login-Expires-In, kept with the identity so it is known without a
+ * connection); the server reporting another or no login; another account
+ * signing in. With instant screens off, pages come from the server first
+ * and saved copies are only used without a connection.
+ *
+ * Why: like an online shop account, the saved pages belong to one login and
+ * last as long as it does; on a computer other people use, signing out is
+ * the user's job (see the user guide). */
+var MAIN_PAGES = ['/', '/flights', '/pilot/logbook', '/maintenance', '/aircraft/'];
+var MAIN_REFRESH_AGE_MS = 15 * 60 * 1000;
+/* POSTs that only read (nothing to mark outdated). */
+var READ_ONLY_POSTS = [/^\/flights\/photo-hints$/];
+var SAVED_AT = 'X-OH-Saved-At';
+var IDENTITY_KEY = '/__oh_offline_identity__';
+var LOGIN_KEY = '/__oh_login_state__';
+
 /* Identity metadata survives worker suspension, but never contains a bearer
  * credential. Private pages are separate from the public static-asset cache. */
 var _identity = { owner: '', session: '' };
+var _login = { expiresAt: 0, instant: false, changedAt: 0 };
 var _revision = 0;
 var _metadataCache = CACHE + '-identity';
+function _noop() {}
+function _readMeta(cache, key) {
+  return cache.match(key).then(function (response) { return response ? response.json() : null; });
+}
 var _identityReady = caches.open(_metadataCache).then(function (cache) {
-  return cache.match('/__oh_offline_identity__');
-}).then(function (response) {
-  return response ? response.json() : null;
-}).then(function (identity) {
-  if (identity) _identity = identity;
+  return Promise.all([_readMeta(cache, IDENTITY_KEY), _readMeta(cache, LOGIN_KEY)]);
+}).then(function (values) {
+  if (values[0]) _identity = values[0];
+  var login = values[1];
+  if (login && _identity.owner && login.owner === _identity.owner && login.session === _identity.session) {
+    _login = { expiresAt: login.expiresAt || 0, instant: !!login.instant, changedAt: login.changedAt || 0 };
+  }
 }).catch(function () { _identity = { owner: '', session: '' }; });
 var _identityCommit = Promise.resolve();
 function _sameIdentity(a, b) { return a.owner === b.owner && a.session === b.session; }
 function _privateName(identity) { return CACHE + '-private-' + identity.owner + '-' + identity.session; }
 function _fallback() { return caches.match('/static/pwa/offline.html'); }
+function _saveLogin() {
+  var state = Object.assign({ owner: _identity.owner, session: _identity.session }, _login);
+  return caches.open(_metadataCache).then(function (cache) {
+    return cache.put(LOGIN_KEY, new Response(JSON.stringify(state)));
+  });
+}
 function _changeIdentity(next) {
   if (_sameIdentity(next, _identity)) return _identityCommit;
   _identity = next;
+  /* A new login starts with nothing known about its lifetime or changes. */
+  _login = { expiresAt: 0, instant: false, changedAt: 0 };
   _revision += 1;
   var version = _revision;
   /* Serialize metadata writes so a slow retired A write cannot overwrite B's
@@ -196,7 +255,10 @@ function _changeIdentity(next) {
     if (version !== _revision) return;
     return Promise.all([
       caches.open(_metadataCache).then(function (cache) {
-        return cache.put('/__oh_offline_identity__', new Response(JSON.stringify(next)));
+        return Promise.all([
+          cache.put(IDENTITY_KEY, new Response(JSON.stringify(next))),
+          cache.delete(LOGIN_KEY)
+        ]);
       }),
       caches.keys().then(function (names) {
         var currentName = _identity.owner ? _privateName(_identity) : '';
@@ -214,9 +276,41 @@ function _changeIdentity(next) {
   });
   return _identityCommit;
 }
+/* Learn this login's remaining lifetime and whether instant screens are
+ * allowed from a server answer. Persisted only when it actually changes. */
+function _rememberLogin(response) {
+  var left = Number(response.headers.get('X-OH-Login-Expires-In'));
+  if (!_identity.owner || response.headers.get('X-OH-Login-Expires-In') === null || !isFinite(left)) {
+    return Promise.resolve();
+  }
+  if (response.headers.get('X-OH-Offline-Owner') !== _identity.owner ||
+      response.headers.get('X-OH-Offline-Session') !== _identity.session) return Promise.resolve();
+  var expiresAt = Date.now() + left * 1000;
+  var instant = response.headers.get('X-OH-Instant-Pages') === '1';
+  if (instant === _login.instant && Math.abs(expiresAt - _login.expiresAt) < 60000) return Promise.resolve();
+  _login.expiresAt = expiresAt;
+  _login.instant = instant;
+  return _saveLogin();
+}
+function _expired() {
+  return !!_identity.owner && !!_login.expiresAt && Date.now() >= _login.expiresAt;
+}
+function _instant() {
+  return !!_identity.owner && _login.instant && _login.expiresAt > Date.now();
+}
+function _retireExpired() {
+  return _expired() ? _changeIdentity({ owner: '', session: '' }) : Promise.resolve();
+}
+function _markChanged(startedAt) {
+  if (!_identity.owner || startedAt <= _login.changedAt) return Promise.resolve();
+  _login.changedAt = startedAt;
+  return _saveLogin();
+}
+function _savedAt(response) { return Number(response.headers.get(SAVED_AT) || 0); }
+function _outdated(response) { return _savedAt(response) < _login.changedAt; }
 function _persistedIdentity() {
   return caches.open(_metadataCache).then(function (cache) {
-    return cache.match('/__oh_offline_identity__');
+    return cache.match(IDENTITY_KEY);
   }).then(function (response) {
     return response ? response.json() : { owner: '', session: '' };
   });
@@ -240,36 +334,41 @@ function _network(request) {
       if (!_sameIdentity(persisted, startedIdentity) && !_sameIdentity(persisted, next)) {
         throw new Error('offline-identity-retired');
       }
-      return _changeIdentity(next).then(function () { return response; });
+      return _changeIdentity(next).then(function () {
+        return _rememberLogin(response).catch(_noop);
+      }).then(function () { return response; });
     });
   });
 }
-function _cachePrivate(request, response) {
+/* Save a copy of a private page for this login, stamped with when its
+ * request started (a refresh started before a save stays outdated). The
+ * copy is taken at once, so the caller may hand `response` on meanwhile. */
+function _cachePrivate(request, response, startedAt) {
   var identity = { owner: response.headers.get('X-OH-Offline-Owner') || '',
     session: response.headers.get('X-OH-Offline-Session') || '' };
   if (!response.ok || !identity.owner || !identity.session || !_sameIdentity(identity, _identity)) {
     return Promise.resolve(response);
   }
+  var copy = response.clone();
   var version = _revision;
   var name = _privateName(identity);
-  var url = new URL(request.url);
-  url.searchParams.delete('_swr_fresh');
-  var key = new Request(url.href);
+  var key = new Request(_privateCacheKey(request));
+  var headers = new Headers(copy.headers);
+  headers.set(SAVED_AT, String(startedAt));
   return _persistedIdentity().then(function (persisted) {
     if (version !== _revision || !_sameIdentity(identity, persisted)) return;
-    return caches.open(name).then(function (cache) {
-      if (version !== _revision) return;
-      return cache.put(key, response.clone());
+    return copy.blob().then(function (body) {
+      var stamped = new Response(body, { status: copy.status, statusText: copy.statusText, headers: headers });
+      return caches.open(name).then(function (cache) {
+        if (version !== _revision) return;
+        return cache.put(key, stamped);
+      });
     });
   }).then(function () { return _persistedIdentity(); }).then(function (persisted) {
     /* Check both this worker's epoch and the state shared with replacement workers. */
     if (version !== _revision || !_sameIdentity(identity, persisted)) return caches.delete(name);
   }).then(function () { return response; });
 }
-/* How long a private page may wait for the network before this login's own
- * cached copy is shown instead (a slow but working connection, e.g. patchy
- * airfield mobile data). The request carries on in the background. */
-var PRIVATE_NETWORK_TIMEOUT_MS = 3000;
 function _privateCacheKey(request) {
   var url = new URL(request.url);
   url.searchParams.delete('_swr_fresh');
@@ -285,42 +384,108 @@ function _cachedForCurrentLogin(request, identity, revision) {
     return cache.match(_privateCacheKey(request));
   });
 }
-function _privateNavigation(request, event) {
-  /* Network-first proves the current cookie still owns this namespace before
-   * showing sensitive data online. If the network is slow, this login's own
-   * cached copy is shown after a short wait while the request completes in
-   * the background (it then refreshes or purges that copy). Offline fallback
-   * remains automatic. */
-  var identity = _identity;
-  var revision = _revision;
+/* Requests to the server for a saved page still running, by cache key, so a
+ * page opened mid-refresh waits for that answer instead of an older copy. */
+var _inflight = {};
+function _fetchAndSave(request) {
+  var key = _privateCacheKey(request);
+  var startedAt = Date.now();
   var network = _network(request).then(function (response) {
     if (response.status === 403 || response.status === 404) {
       return caches.open(_privateName(_identity)).then(function (cache) {
-        return cache.delete(_privateCacheKey(request));
+        return cache.delete(key);
       }).then(function () { return response; });
     }
-    return _cachePrivate(request, response);
+    return _cachePrivate(request, response, startedAt);
   });
-  var offline = network.catch(function () {
-    if (!_identity.owner) return _fallback();
-    return _cachedForCurrentLogin(request, _identity, _revision).then(function (cached) {
-      return cached || _fallback();
+  var settled = network.then(_noop, _noop);
+  _inflight[key] = settled;
+  settled.then(function () { if (_inflight[key] === settled) delete _inflight[key]; });
+  return network;
+}
+function _privateNavigation(request, event) {
+  var identity = _identity;
+  var revision = _revision;
+  function fromNetwork() {
+    /* Without a connection, this login's saved copy (even an outdated one)
+     * beats the generic offline page. */
+    return _fetchAndSave(request).catch(function () {
+      if (!_identity.owner) return _fallback();
+      return _cachedForCurrentLogin(request, _identity, _revision).then(function (cached) {
+        return cached || _fallback();
+      });
+    });
+  }
+  /* Right after signing in (?_swr_fresh), or with instant screens off or
+   * unknown yet: the server first. */
+  if (new URL(request.url).searchParams.has('_swr_fresh') || !_instant()) return fromNetwork();
+  return _cachedForCurrentLogin(request, identity, revision).then(function (cached) {
+    var pending = _inflight[_privateCacheKey(request)];
+    if (cached && !_outdated(cached)) {
+      /* Shown at once; the server is still asked (unless a request for it
+       * is already running), and the worker kept alive until its answer has
+       * refreshed or removed the copy. */
+      var check = pending || _fetchAndSave(request).then(_noop, _noop);
+      if (event) event.waitUntil(check);
+      return cached;
+    }
+    /* Missing or outdated while a refresh is running (e.g. right after a
+     * save): wait for that answer rather than show an older copy. */
+    if (!pending) return fromNetwork();
+    return pending.then(function () {
+      return _cachedForCurrentLogin(request, identity, revision);
+    }).then(function (fresh) {
+      return fresh && !_outdated(fresh) ? fresh : fromNetwork();
     });
   });
-  /* A login has just been completed (?_swr_fresh): always wait for it. */
-  if (new URL(request.url).searchParams.has('_swr_fresh')) return offline;
-  /* Keep the worker alive until the background request has refreshed or
-   * purged the cached copy. */
-  if (event) event.waitUntil(offline.catch(function () {}));
-  var slow = new Promise(function (resolve) {
-    setTimeout(resolve, PRIVATE_NETWORK_TIMEOUT_MS);
-  }).then(function () {
-    return _cachedForCurrentLogin(request, identity, revision);
-  }).then(function (cached) {
-    /* Nothing cached for this login: keep waiting for the network. */
-    return cached || offline;
+}
+/* Refresh this login's saved copies of `paths` (all saved pages if null)
+ * from the server, except `exceptHref`, and with `maxAge` only those saved
+ * longer ago than that (or outdated). */
+function _refreshSaved(paths, exceptHref, maxAge) {
+  if (!_identity.owner) return Promise.resolve();
+  var identity = _identity;
+  return caches.open(_privateName(identity)).then(function (cache) {
+    return cache.keys().then(function (keys) {
+      return Promise.all(keys.filter(function (key) {
+        return key.url !== exceptHref && (!paths || paths.indexOf(new URL(key.url).pathname) !== -1);
+      }).map(function (key) {
+        var stale = maxAge ? cache.match(key).then(function (cached) {
+          return !cached || _outdated(cached) || Date.now() - _savedAt(cached) > maxAge;
+        }) : Promise.resolve(true);
+        return stale.then(function (needed) {
+          if (!needed || !_sameIdentity(identity, _identity)) return;
+          return _fetchAndSave(new Request(key.url, {
+            headers: _assertionHeaders(identity), credentials: 'same-origin'
+          })).catch(_noop);
+        });
+      }));
+    });
   });
-  return Promise.race([offline, slow]);
+}
+/* A successful save: everything saved before it is outdated; the page the
+ * save landed on (already fresh) is kept; the main pages and the saved
+ * form's aircraft are refreshed in the background. */
+function _afterSave(url, response, startedAt) {
+  var landing = response.redirected && response.url ? new URL(response.url) : null;
+  var copy = landing && landing.origin === self.location.origin && _isSWRRoute(landing)
+    ? response.clone() : null;
+  var paths = MAIN_PAGES.slice();
+  var aircraft = /^\/aircraft\/([A-Z0-9][A-Z0-9-]*)(?:\/|$)/.exec(url.pathname);
+  if (aircraft) paths.push('/aircraft/' + aircraft[1]);
+  return _markChanged(startedAt).then(function () {
+    return Promise.all([
+      copy ? _cachePrivate(new Request(landing.href), copy, startedAt) : null,
+      _refreshSaved(paths, copy ? _privateCacheKey(new Request(landing.href)) : null, 0)
+    ]);
+  }).catch(_noop);
+}
+function _save(request, url, event) {
+  var startedAt = Date.now();
+  return _network(request).then(function (response) {
+    if (response.ok && _identity.owner) event.waitUntil(_afterSave(url, response, startedAt));
+    return response;
+  });
 }
 function _senderMatches(data) {
   return data.owner === _identity.owner && data.session === _identity.session;
@@ -374,14 +539,17 @@ self.addEventListener('fetch', function (event) {
     event.respondWith(fetch(request));
     return;
   }
-  event.respondWith(_identityReady.then(function () {
+  event.respondWith(_identityReady.then(_retireExpired).then(function () {
     if (url.pathname === '/logout') {
       return _changeIdentity({ owner: '', session: '' }).then(function () {
         return _network(request).catch(_fallback);
       });
     }
     if (request.method === 'GET' && _isSWRRoute(url)) return _privateNavigation(request, event);
-    return _network(request).catch(function (error) {
+    var reply = request.method !== 'GET' && request.method !== 'HEAD' &&
+      !READ_ONLY_POSTS.some(function (re) { return re.test(url.pathname); })
+      ? _save(request, url, event) : _network(request);
+    return reply.catch(function (error) {
       if (request.mode === 'navigate') return _fallback();
       throw error;
     });
@@ -402,21 +570,12 @@ self.addEventListener('message', function (event) {
     if (data.type === 'OH_CLEAR_PRIVATE') return _changeIdentity({ owner: '', session: '' });
     if (data.type === 'OH_PRECACHE' && Array.isArray(data.urls)) {
       return Promise.all(data.urls.filter(_isSameOrigin).map(function (url) {
-        return _network(new Request(url, { headers: _assertionHeaders(data), credentials: 'same-origin' })).then(function (response) {
-          return _cachePrivate(new Request(url), response);
-        }).catch(function () {});
+        return _fetchAndSave(new Request(url, { headers: _assertionHeaders(data), credentials: 'same-origin' }))
+          .catch(function () {});
       }));
     }
-    if (data.type === 'OH_INVALIDATE_NAV_CACHE') return caches.delete(_privateName(_identity));
-    if (data.type === 'OH_REFRESH_NAV_CACHE' && _identity.owner) {
-      return caches.open(_privateName(_identity)).then(function (cache) {
-        return cache.keys().then(function (keys) {
-          return Promise.all(keys.map(function (key) {
-            return _network(new Request(key, { headers: _assertionHeaders(data), credentials: 'same-origin' }))
-              .then(function (response) { return _cachePrivate(key, response); }).catch(function () {});
-          }));
-        });
-      });
-    }
+    /* The app was opened or came back to the foreground (pwa.js). */
+    if (data.type === 'OH_REFRESH_MAIN') return _refreshSaved(MAIN_PAGES, null, MAIN_REFRESH_AGE_MS);
+    if (data.type === 'OH_REFRESH_NAV_CACHE') return _refreshSaved(null, null, 0);
   }));
 });
