@@ -116,9 +116,9 @@ bcrypt==5.0.0 \
 blinker==1.9.0 \
     --hash=sha256:b4ce2265a7abece45e7cc896e98dbebe6cead56bcf805a3d23136d145f5445bf \
     --hash=sha256:ba0efaa9080b619ff2f3459d1d500c57bddea4a6b424b60a91141db6fd2f08bc
-cachelib==0.17.0 \
-    --hash=sha256:f3c7dc8d3c1132ab699681ffdf8a52d341d9425ac1401c538cf0b1d87b1677c8 \
-    --hash=sha256:f83909b6f78741c3a5d76d292d13bf24964ffb13e00ea1d18f92e20599766ce0
+cachelib==0.17.1 \
+    --hash=sha256:79557eb0dde2fdcdb85ac4e4b08c893182fab87e5e95ae0c9fe479e62c97298a \
+    --hash=sha256:fe0a6a6a26588a53bcc2a05409ac6a9934f70413cec6ea0cd0071d68b4c8a4c6
 cffi==2.1.1 \
     --hash=sha256:046bfc24911b37851ee1b51aab8bffe713d89c68c6a057b09484ce9fd5f69b4e \
     --hash=sha256:06c72bb76605a4b0cd0aad6930b69d4baf7dd5d806cfc409b824191099700e66 \
