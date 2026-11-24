@@ -360,6 +360,10 @@ function _network(request) {
      * be missing (the request failed before they could be computed), which
      * must not read as a sign-out and lock every tab. */
     if (response.status >= 500 || response.type === 'opaqueredirect') return response;
+    /* Sent with a login this browser has just replaced (password change) or
+     * ended: the newer login's answers decide, not this late one (it used to
+     * end the new login and refuse its first page). */
+    if (response.headers.get('X-OH-Login-Replaced')) return response;
     var next = { owner: response.headers.get('X-OH-Offline-Owner') || '',
       session: response.headers.get('X-OH-Offline-Session') || '' };
     if (began !== _revision && !_sameIdentity(next, _identity)) {

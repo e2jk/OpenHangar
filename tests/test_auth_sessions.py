@@ -331,6 +331,38 @@ def test_request_with_revoked_cookie_cannot_overwrite_the_renewed_one(app):
     assert client.get("/profile").status_code == 200
 
 
+def test_late_answer_for_a_replaced_login_says_so(app):
+    """The browser must not take a signed-out answer for a just-replaced login
+    as a sign-out of the newer one: it is marked; ordinary answers are not."""
+    make_user(app, required=False)
+    client = logged_in(app)
+    old_cookie = saved_cookie(client)
+    client.post(
+        "/profile",
+        data={
+            "action": "change_password",
+            "current_password": PASSWORD,
+            "new_password": "NewPassword123!",
+            "confirm_password": "NewPassword123!",
+        },
+    )
+    stale = replay(app, old_cookie).get(
+        "/api/offline/pilot/logbook", headers={"Sec-Fetch-Mode": "cors"}
+    )
+    assert stale.status_code == 401
+    assert stale.headers["X-OH-Login-Replaced"] == "1"
+    current = client.get("/profile")
+    assert "X-OH-Login-Replaced" not in current.headers
+    with app.app_context():
+        AuthSession.query.filter_by(credential_binding="renewed").update(
+            {"expires_at": 0}
+        )
+        db.session.commit()
+    expired = replay(app, old_cookie).get("/api/offline/pilot/logbook")
+    assert expired.status_code == 401
+    assert "X-OH-Login-Replaced" not in expired.headers
+
+
 def test_revoked_cookie_is_still_cleared_so_the_browser_can_sign_in(app):
     """Only a just-renewed login keeps its cookie untouched; a revoked one (here
     logged out) is cleared as before, so the browser is not stuck with it."""
