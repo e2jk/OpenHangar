@@ -533,6 +533,82 @@ def test_own_password_change_renews_context_without_a_login_dead_end(
         browser.close()
 
 
+def test_background_answer_to_the_renewed_login_does_not_sign_out(
+    isolated_offline_server,
+    traced_browser,
+):
+    """A background request sent just before a password change is answered
+    after it, as signed out (its cookie was renewed meanwhile). If that answer
+    reaches the worker before the new login's page, it must not end the
+    login: the page that follows would be refused as a retired account's."""
+    from flask import request
+
+    app, origin, _users, _, _, _ = isolated_offline_server
+    changed = threading.Event()
+    answered = threading.Event()
+
+    def gate():
+        if request.path == "/api/offline/pilot/logbook" and request.headers.get(
+            "X-Test-Late"
+        ):
+            changed.wait(10)
+        elif (
+            request.path == "/profile" and request.method == "GET" and changed.is_set()
+        ):
+            # Let the late answer reach the worker first.
+            answered.wait(10)
+            time.sleep(0.5)
+
+    def mark(response):
+        if request.path == "/profile" and request.method == "POST":
+            changed.set()
+        elif request.headers.get("X-Test-Late"):
+            answered.set()
+        return response
+
+    gate._oh_delay = True
+    app.before_request_funcs.setdefault(None, []).insert(0, gate)
+    app.after_request_funcs.setdefault(None, []).append(mark)
+    try:
+        context = traced_browser.new_context(service_workers="allow")
+        page = context.new_page()
+        before = login(page, origin, "Alpha")
+        page.goto(origin + "/profile", wait_until="load")
+        # Record every login change the worker announces (sessionStorage
+        # survives the page being reloaded).
+        page.evaluate(
+            """() => {
+              const log = x => sessionStorage.setItem('oh-test-log',
+                (sessionStorage.getItem('oh-test-log') || '') + x + '\\n');
+              navigator.serviceWorker.addEventListener('message', e => {
+                if (e.data.type === 'OH_IDENTITY_CHANGED') log('owner=' + e.data.owner);
+              });
+              fetch('/api/offline/pilot/logbook', {headers: {'X-Test-Late': '1'}})
+                .then(r => log('late ' + r.status), () => log('late failed'));
+            }"""
+        )
+        form = page.locator('form:has(input[value="change_password"])')
+        form.locator('[name="current_password"]').fill(PASSWORD)
+        form.locator('[name="new_password"]').fill("RenewedBrowserPassword123!")
+        form.locator('[name="confirm_password"]').fill("RenewedBrowserPassword123!")
+        form.locator('button[type="submit"]').click()
+        page.wait_for_function(
+            "previous => !!window.OhOfflineIdentity?.current() && OhOfflineIdentity.current().session !== previous",
+            arg=before["session"],
+        )
+        assert answered.is_set()
+        page.wait_for_function(
+            "() => (sessionStorage.getItem('oh-test-log') || '').includes('late 401')"
+        )
+        log = page.evaluate("() => sessionStorage.getItem('oh-test-log')")
+        assert "owner=\n" not in log  # the login was never ended
+        assert form.locator('[name="current_password"]').is_visible()
+        context.close()
+    finally:
+        _delay(app, "/profile", 0)
+        app.after_request_funcs[None].remove(mark)
+
+
 def test_login_expired_while_offline_is_retired_on_reconnect(
     isolated_offline_server,
     traced_browser,
