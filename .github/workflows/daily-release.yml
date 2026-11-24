@@ -60,6 +60,6 @@ jobs:
             exit 0
           fi
           git diff --stat "${LAST_RELEASE}" HEAD | tail -1
-          gh workflow run ci.yml --ref main \
+          gh workflow run ci.yml --ref main -f daily=true \
             -f reason="Daily release of the changes on main since ${LAST_RELEASE}"
           echo "::notice::main changed since ${LAST_RELEASE} — release build dispatched."
