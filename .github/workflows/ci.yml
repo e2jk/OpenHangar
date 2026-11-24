@@ -18,6 +18,11 @@ on:
         description: 'Why this manual rebuild is needed (e.g. a link to the CVE/scan alert being addressed) — shown in the run name/log, no code change required'
         required: true
         type: string
+      daily:
+        description: 'Set by daily-release.yml: skip publishing when this commit is already part of a published release'
+        required: false
+        type: boolean
+        default: false
 
 permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: workflow default is read-only, every job opts into exactly the write scopes it needs
 
@@ -48,9 +53,17 @@ permissions: read-all  # zizmor: ignore[excessive-permissions] intentional: work
 # outcome. Every other run (external PRs, WIP branch pushes, tag pushes)
 # keeps today's behaviour untouched: its own per-ref group, cancelled by
 # a newer run for that same ref.
+#
+# A workflow_dispatch on main (the daily release, or a rebuild) publishes
+# too, so it shares the lane. It used to run in its own group: on
+# 2026-11-24 a daily release GitHub had delayed by 7.5 hours ran alongside
+# a ship build, and published main from before that ship's fix as v3.63.0,
+# nine minutes after the fix's v3.62.0 — taking :latest with older code.
+# Queued behind the ship build, it then finds its commit already released
+# and doesn't publish (see the version job).
 concurrency:
-  group: ${{ (github.event_name == 'pull_request' && (github.head_ref == 'ship' || startsWith(github.head_ref, 'renovate/'))) && 'bot-pipeline' || format('{0}-{1}', github.event_name, github.ref) }}
-  cancel-in-progress: ${{ !(github.event_name == 'pull_request' && (github.head_ref == 'ship' || startsWith(github.head_ref, 'renovate/'))) }}
+  group: ${{ ((github.event_name == 'pull_request' && (github.head_ref == 'ship' || startsWith(github.head_ref, 'renovate/'))) || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')) && 'bot-pipeline' || format('{0}-{1}', github.event_name, github.ref) }}
+  cancel-in-progress: ${{ !((github.event_name == 'pull_request' && (github.head_ref == 'ship' || startsWith(github.head_ref, 'renovate/'))) || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')) }}
 
 jobs:
   lint-and-test:
@@ -519,10 +532,24 @@ jobs:
         id: compute
         env:
           HEAD_REF: ${{ github.head_ref }}
+          DAILY: ${{ inputs.daily }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: |
+          # The published release whose commit already contains this one, if
+          # any (a release tag is the commit it was built from: a ship PR's
+          # merge commit on top of main, or main itself for a daily release).
+          released_in() {
+            local tag
+            git fetch --quiet --tags --force origin
+            for tag in $(gh release list --limit 20 --exclude-drafts --json tagName --jq '.[].tagName'); do
+              if git merge-base --is-ancestor "${GITHUB_SHA}" "${tag}" 2>/dev/null; then
+                echo "${tag}"
+                return
+              fi
+            done
+          }
           PUBLISH_NOW=false
           case "${GITHUB_EVENT_NAME}" in
             push)
@@ -534,10 +561,17 @@ jobs:
               # Only publish when dispatched against main itself — a manual
               # run against some other branch is just "run CI for this
               # branch by hand", not a request to release it.
-              if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
-                PUBLISH_NOW=true
-              else
+              if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
                 echo "Manual run not targeting main (${GITHUB_REF}) — not publishing."
+              elif [ "${DAILY}" = "true" ] && RELEASED_IN=$(released_in) && [ -n "${RELEASED_IN}" ]; then
+                # A daily release queued behind a ship build (see concurrency
+                # above): its commit, fixed when it was dispatched, can be
+                # what that ship was built on — already released, with more.
+                # (A rebuild of unchanged source, the other dispatch, is
+                # meant to republish a released commit.)
+                echo "::notice::${GITHUB_SHA} is already part of ${RELEASED_IN} — not publishing it again."
+              else
+                PUBLISH_NOW=true
               fi
               ;;
             pull_request)
@@ -1666,6 +1700,15 @@ jobs:
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           PR_URL: ${{ github.event.pull_request.html_url }}
         run: |
+          # Already there: this is a re-run of a job that published the
+          # release, then failed later (e.g. the Pages deploy, on a GitHub
+          # outage — 2026-11-24, which left every instance's update check
+          # without the new version). Keep it as it is (its title or notes
+          # may have been edited since) and go on to the steps that failed.
+          if gh release view "v${VERSION}" --repo "${REPO}" --json tagName >/dev/null 2>&1; then
+            echo "::notice::Release v${VERSION} already exists — kept as it is."
+            exit 0
+          fi
           # Compute the previous tag ourselves rather than letting
           # generate-notes auto-detect it: its undocumented heuristic picked
           # a release from ~30 versions back on a run here, producing a
