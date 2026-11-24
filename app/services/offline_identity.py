@@ -16,6 +16,10 @@ SESSION_HEADER = "X-OH-Offline-Session"
 # answers (OPENHANGAR_INSTANT_PAGES). Neither is a credential.
 EXPIRES_HEADER = "X-OH-Login-Expires-In"
 INSTANT_HEADER = "X-OH-Instant-Pages"
+# Sent instead when the request came with a login this browser has just
+# replaced (password change, sign-in) or ended: its "signed out" answer says
+# nothing about the newer login, so the browser must not end that one.
+RENEWED_HEADER = "X-OH-Login-Replaced"
 
 
 def instant_pages_enabled() -> bool:

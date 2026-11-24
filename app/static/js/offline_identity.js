@@ -93,6 +93,9 @@
     options.headers = requestHeaders;
     return window.fetch(input, options).then(function (response) {
       assertScope(expected);
+      // Sent with a login this browser has just replaced or ended: the newer
+      // login is not this answer's to end.
+      if (response.headers.get('X-OH-Login-Replaced')) throw new Error('offline-account-changed');
       var value = current();
       var deniedSnapshot = response.status === 404 &&
         /^\/api\/offline\/(aircraft\/[^/]+\/logbook|pilot\/logbook)$/.test(String(input));

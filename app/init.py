@@ -565,6 +565,7 @@ def create_app() -> Flask:
         EXPIRES_HEADER,
         INSTANT_HEADER,
         OWNER_HEADER,
+        RENEWED_HEADER,
         SESSION_HEADER,
         identity,
         instant_pages_enabled,
@@ -593,6 +594,8 @@ def create_app() -> Flask:
             response.headers[EXPIRES_HEADER] = str(left)
             if app.config["INSTANT_PAGES"]:
                 response.headers[INSTANT_HEADER] = "1"
+        if not owner and g.get("renewed_login_cookie"):
+            response.headers[RENEWED_HEADER] = "1"
         if (
             request.headers.get("HX-Request") == "true"
             and SESSION_HEADER in request.headers

@@ -1,8 +1,11 @@
-# Sign-in after sign-out, sturdier tests and release numbering
+# Sign-in after sign-out and password changes keep the app signed in
 
 - Signing in right after signing out (for example as another account) no
   longer sometimes shows the "You're offline" page instead of the sign-in
   form.
+- Changing your password no longer sometimes signs the app out or fails to
+  show the next page: a background request still on its way with the old
+  login is no longer taken as a sign-out.
 
 **Maintenance**
 

@@ -665,6 +665,22 @@ class TestServerErrorIsNotASignOut:
         )
 
 
+class TestReplacedLoginAnswerIsNotASignOut:
+    def test_worker_and_page_leave_the_newer_login_alone(self):
+        # A signed-out answer to a request sent with a just-replaced login
+        # (password change) used to end the new login: its first page was
+        # then refused as a retired account's (a flaky browser test).
+        worker = (_STATIC_DIR / "js" / "sw.js").read_text()
+        guard = "if (response.headers.get('X-OH-Login-Replaced')) return response;"
+        assert guard in worker
+        assert worker.index(guard) < worker.index(
+            "var next = { owner: response.headers"
+        )
+        page = (_STATIC_DIR / "js" / "offline_identity.js").read_text()
+        check = "if (response.headers.get('X-OH-Login-Replaced')) throw"
+        assert page.index(check) < page.index("quarantine();\n        throw")
+
+
 class TestStaleSignedOutPageIsShown:
     def test_a_stale_answer_without_an_owner_is_passed_through(self):
         # Right after a sign-out, the sign-in page could arrive while the
