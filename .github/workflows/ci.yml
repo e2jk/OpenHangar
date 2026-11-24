@@ -1879,11 +1879,18 @@ jobs:
             | python3 scripts/release_notes.py versions-json "${VERSION}" > _site/versions.json
           echo "versions.json: $(python3 -c 'import json; v = json.load(open("_site/versions.json")); print(len(v), "versions, newest", v[0])')"
 
+      # One upload name per attempt: a re-run of this job (see Create GitHub
+      # Release) keeps the failed attempt's upload in the run, and
+      # deploy-pages refuses two of the same name ("Multiple artifacts named
+      # github-pages", the v3.64.1 re-run, 2026-11-24).
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
           path: _site
+          name: github-pages-${{ github.run_attempt }}
 
       - name: Deploy to GitHub Pages
         id: deploy
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
