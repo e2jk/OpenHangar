@@ -617,3 +617,36 @@ def test_bulk_move_is_atomic_and_keeps_existing_move_permissions(
     with app.app_context():
         assert db.session.get(Place, d["alpha"]).collection_id == d["destination"]
         assert db.session.get(Place, d["bravo"]).collection_id == d["destination"]
+
+
+def test_place_tags_accept_commas_and_suggest_used_visible_tags(
+    app: Flask,
+    client: FlaskClient,
+    people: dict[str, int],
+    destinations: dict[str, int],
+) -> None:
+    signin(client, people)
+    assert 'value="Museum"' in client.get("/places/new").text
+    result = client.post(
+        "/places/new",
+        data=form(title="Gallery") | {"tags": 'Indoor, "Art, modern"'},
+    )
+    assert result.status_code == 302
+    with app.app_context():
+        tags = {
+            tag.name
+            for tag in PlaceTag.query.filter_by(
+                collection_id=destinations["destination"]
+            )
+        }
+        assert {"Indoor", "Art, modern"} <= tags
+    assert '"Art, modern",Indoor' in unescape(
+        client.get(result.location + "/edit").text
+    )
+    assert 'value="Indoor"' in client.get("/places/new").text
+    assert (
+        client.post(
+            "/places/new", data=form(title="Too long") | {"tags": "X" * 140_000}
+        ).status_code
+        == 400
+    )

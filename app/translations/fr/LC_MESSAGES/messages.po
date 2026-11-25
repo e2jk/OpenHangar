@@ -3292,7 +3292,7 @@ msgstr "Choisissez un membre de cette collection."
 msgid "Enter valid latitude and longitude coordinates."
 msgstr "Saisissez une latitude et une longitude valides."
 
-#: app/places/coordinates.py:104 app/places/place_routes.py:240
+#: app/places/coordinates.py:104 app/places/place_routes.py:268
 msgid "Paste decimal or DMS coordinates, or a map link containing coordinates."
 msgstr "Collez des coordonnées décimales ou en degrés, minutes et secondes, ou un lien de carte contenant des coordonnées."
 
@@ -3341,22 +3341,22 @@ msgstr "Chaque personne ayant enregistré une visite doit faire partie de la col
 msgid "Only the place owner or collection creator can permanently delete it."
 msgstr "Seuls le propriétaire du lieu ou la personne qui a créé la collection peuvent le supprimer définitivement."
 
-#: app/places/place_routes.py:141 app/places/place_routes.py:268
+#: app/places/place_routes.py:169 app/places/place_routes.py:296
 msgid "Choose a collection you can edit."
 msgstr "Choisissez une collection que vous pouvez modifier."
 
-#: app/places/place_routes.py:179
+#: app/places/place_routes.py:207
 #: app/templates/places/collection_settings.html:9
 #: app/templates/places/collection_settings.html:15
 #: app/templates/places/collection_settings.html:19
 msgid "Unnamed member"
 msgstr "Membre sans nom"
 
-#: app/places/place_routes.py:205 app/places/place_routes.py:206
+#: app/places/place_routes.py:233 app/places/place_routes.py:234
 msgid "Former member"
 msgstr "Ancien membre"
 
-#: app/places/place_routes.py:283
+#: app/places/place_routes.py:311
 msgid "Confirm the permanent deletion of this place."
 msgstr "Confirmez la suppression définitive de ce lieu."
 
@@ -15729,8 +15729,8 @@ msgid "Address (optional)"
 msgstr "Adresse (facultative)"
 
 #: app/templates/places/place_form.html:15
-msgid "One tag per line. You can also choose suggestions below."
-msgstr "Une étiquette par ligne. Vous pouvez aussi choisir parmi les suggestions ci-dessous."
+msgid "Separate tags with commas, or choose suggestions below."
+msgstr "Séparez les étiquettes par des virgules ou choisissez parmi les suggestions ci-dessous."
 
 #: app/templates/places/place_form.html:16
 msgid "Link (optional)"
