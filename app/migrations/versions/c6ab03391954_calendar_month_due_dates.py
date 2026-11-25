@@ -35,12 +35,9 @@ def _add_months(start: date, months: int) -> date:
 
 
 def _next_due(start: date, days: int) -> date:
-    by_days = start + timedelta(days=days)
-    if days % 365 == 0:
-        return min(by_days, _add_months(start, days // 365 * 12))
-    if days % 30 == 0:
-        return min(by_days, _add_months(start, days // 30))
-    return by_days
+    """Only called for multiples of 30 or 365 days (see upgrade)."""
+    months = days // 365 * 12 if days % 365 == 0 else days // 30
+    return min(start + timedelta(days=days), _add_months(start, months))
 
 
 def _as_date(value: object) -> date | None:
@@ -63,7 +60,7 @@ def upgrade() -> None:
     ).fetchall()
     for trigger_id, due_raw, days, notes, last_raw in rows:
         due, last_done = _as_date(due_raw), _as_date(last_raw)
-        if last_done is None or days % 30 != 0:
+        if last_done is None or (days % 30 != 0 and days % 365 != 0):
             continue
         if due != last_done + timedelta(days=days):
             continue  # set by hand, not derived from the last service

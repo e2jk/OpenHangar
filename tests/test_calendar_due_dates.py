@@ -77,14 +77,21 @@ def test_migration_moves_derived_due_dates_earlier_with_a_note(app):
             interval_days=45,
             due_date=date(2026, 3, 17),
         )
-        db.session.add_all([derived, by_hand, no_service, days_only])
+        yearly = MaintenanceTrigger(
+            aircraft_id=ac.id,
+            name="Annual",
+            trigger_type="calendar",
+            interval_days=365,
+            due_date=date(2027, 1, 31),
+        )
+        db.session.add_all([derived, by_hand, no_service, days_only, yearly])
         db.session.flush()
-        for t in (derived, by_hand, days_only):
+        for t in (derived, by_hand, days_only, yearly):
             db.session.add(
                 MaintenanceRecord(trigger_id=t.id, performed_at=date(2026, 1, 31))
             )
         db.session.commit()
-        ids = [t.id for t in (derived, by_hand, no_service, days_only)]
+        ids = [t.id for t in (derived, by_hand, no_service, days_only, yearly)]
 
         with (
             db.engine.begin() as conn,
@@ -92,7 +99,7 @@ def test_migration_moves_derived_due_dates_earlier_with_a_note(app):
         ):
             _migration().upgrade()
         db.session.expire_all()
-        moved, kept, untouched, plain = (
+        moved, kept, untouched, plain, annual = (
             db.session.get(MaintenanceTrigger, i) for i in ids
         )
         assert moved.due_date == date(2026, 2, 28)
@@ -100,4 +107,6 @@ def test_migration_moves_derived_due_dates_earlier_with_a_note(app):
         assert kept.due_date == date(2026, 3, 10) and kept.notes == "Keep"
         assert untouched.due_date == date(2026, 3, 2) and untouched.notes is None
         assert plain.due_date == date(2026, 3, 17) and plain.notes is None
+        # A year from 31 January is that same day: nothing earlier to move to.
+        assert annual.due_date == date(2027, 1, 31) and annual.notes is None
         _migration().downgrade()
