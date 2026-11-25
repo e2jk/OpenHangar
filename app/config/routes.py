@@ -521,6 +521,7 @@ def index() -> ResponseReturnValue:
         upgrade_active = os.path.exists(
             os.path.join(upgrade_dir, "trigger")
         ) or os.path.exists(os.path.join(upgrade_dir, "trigger.running"))
+    upgrade_launcher_missing = bool(upgrade_dir) and not _launcher_seen(upgrade_dir)
     last_upgrade_setting = db.session.get(AppSetting, "last_upgrade_at")
     last_upgrade_at = last_upgrade_setting.value if last_upgrade_setting else None
     app_debug = current_app.debug
@@ -575,6 +576,7 @@ def index() -> ResponseReturnValue:
         ).value,
         gatus_configured=_parse_gatus_env() is not None,
         upgrade_dir_enabled=upgrade_dir_enabled,
+        upgrade_launcher_missing=upgrade_launcher_missing,
         upgrade_active=upgrade_active,
         app_debug=app_debug,
         sw_server_enabled=sw_server_enabled,
@@ -824,6 +826,24 @@ def check_version() -> ResponseReturnValue:
 
 
 # ── One-click upgrade ─────────────────────────────────────────────────────────
+
+
+# The host's openhangar-launcher.sh stamps this file on every cron run.
+_LAUNCHER_STALE_SECONDS = 15 * 60
+
+
+def _launcher_seen(upgrade_dir: str) -> bool:
+    """Whether a current host launcher (openhangar-launcher.sh) watches the
+    upgrade folder: its marker was renewed within the last 15 minutes. An
+    install still on the old cron line (which ran a script copied from this
+    folder) never writes it."""
+    import time
+
+    try:
+        age = time.time() - os.path.getmtime(os.path.join(upgrade_dir, "launcher.seen"))
+    except OSError:
+        return False
+    return age < _LAUNCHER_STALE_SECONDS
 
 
 def _upgrade_trigger_state(upgrade_dir: str) -> str:

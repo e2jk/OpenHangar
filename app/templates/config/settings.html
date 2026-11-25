@@ -566,6 +566,12 @@
         {% endif %}
       </div>
     </div>
+    {% if upgrade_launcher_missing and current_user and current_user.is_instance_admin %}
+    <div class="alert alert-warning py-2 oh-fs-09" role="alert">
+      <i class="bi bi-exclamation-triangle me-1"></i>{{ _('One-click upgrades need a one-time update on the server: the cron job must now run openhangar-launcher.sh, which only runs scripts taken from the signed image.') }}
+      <a href="{{ repo_url }}/blob/main/docs/self-hosting.md#one-click-upgrades-optional" target="_blank" rel="noopener">{{ _('How to update it') }}</a>
+    </div>
+    {% endif %}
     {% if last_upgrade_at %}
     <div class="row mb-2">
       <div class="col-sm-4 fw-semibold text-muted">{{ _('Last upgrade') }}</div>

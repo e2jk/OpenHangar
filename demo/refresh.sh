@@ -1,17 +1,9 @@
 #!/usr/bin/env bash
 # demo/refresh.sh — wipe and refresh the OpenHangar demo instance.
 #
-# Recommended cron setup — run every 3 hours:
-#   7 */3 * * * [ -f /opt/openhangar/refresh/refresh.sh ] && cp /opt/openhangar/refresh/refresh.sh /opt/openhangar/refresh.sh; /opt/openhangar/refresh.sh >> /var/log/openhangar-demo.log 2>&1
-#
-# The one-liner keeps /opt/openhangar/refresh.sh as a stable fallback: if the
-# container is running the bind-mount copy is refreshed before each run; if the
-# container is stopped the last-known copy is used instead.
-#
-# The script is bundled inside the Docker image and exported to the host via a
-# bind-mount (see docker-compose.yml: /opt/openhangar/refresh).  After each
-# image update the host copy is replaced on the next container start, so the
-# cron job automatically picks up the latest version one run later.
+# Recommended cron setup — run every 3 hours, through the launcher (which
+# verifies the image's signature and runs this script out of it):
+#   7 */3 * * * /opt/openhangar/openhangar-launcher.sh refresh >> /var/log/openhangar-demo.log 2>&1
 #
 # NOTE: All logic is wrapped in main() so that bash parses the entire function
 # body before execution begins.  This prevents the "read past file offset" bug
@@ -22,7 +14,9 @@ set -euo pipefail
 
 main() {
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Run by openhangar-launcher.sh from a temporary copy: it passes the folder
+# holding .env.
+SCRIPT_DIR="${OPENHANGAR_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 # Walk up from the script's directory to find the .env file
 COMPOSE_DIR="${SCRIPT_DIR}"
 while [ "${COMPOSE_DIR}" != "/" ] && [ ! -f "${COMPOSE_DIR}/.env" ]; do

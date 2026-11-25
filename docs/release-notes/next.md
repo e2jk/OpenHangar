@@ -17,3 +17,12 @@
   account is gone).
 - Deleting your own "My places" collection now sticks: it used to come
   back, empty, as soon as the Places page opened again.
+- **Action needed for one-click upgrades:** the server's cron job must now
+  run the new `openhangar-launcher.sh`, installed once next to
+  `docker-compose.yml` (see "One-click upgrades" in the self-hosting
+  guide). The launcher only runs the upgrade, restore and demo refresh
+  scripts out of the signed image it has just verified, never a copy from a
+  folder the container can write to, which could have let a compromised
+  container take over the server. The container no longer publishes those
+  scripts, and the Settings page reminds you until the new cron line runs.
+  Restoring a backup is now `openhangar-launcher.sh restore <archive>`.

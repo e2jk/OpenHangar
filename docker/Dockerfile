@@ -179,8 +179,10 @@ COPY --chown=appuser:appuser demo/ /app/demo-scripts/
 # Bundle the restore script outside /app so it survives the app bind-mount
 COPY --chown=appuser:appuser docker/restore.sh /usr/local/bin/restore.sh
 
-# Bundle the upgrade script so the entrypoint can publish it to the host volume
+# Bundle the upgrade script; the host's launcher copies it (and restore.sh,
+# and the demo's refresh.sh) out of this signed image to run it
 COPY --chown=appuser:appuser docker/upgrade.sh /usr/local/bin/upgrade.sh
+COPY --chown=appuser:appuser docker/openhangar-launcher.sh /usr/local/bin/openhangar-launcher.sh
 
 # Copy entrypoint (executable) and helper script (invoked as `python
 # wait-for-postgres.py`, so it needs no execute bit of its own)

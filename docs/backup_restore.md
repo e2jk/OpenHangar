@@ -213,18 +213,20 @@ uploads/
 
 ### Automated restore (recommended)
 
-The restore script is published to your backups folder on every container
-startup. Run it from the Docker host:
+Run the restore script from the Docker host through the launcher (install it
+once as described in [one-click upgrades](self-hosting.md#one-click-upgrades-optional),
+step 4): it verifies the image's signature and runs `restore.sh` straight out
+of it — never a copy from a folder the container can write to.
 
 ```bash
 # Default: restore then upgrade container to latest image
-/path/to/openhangar/data/backups/restore.sh openhangar_backup_TIMESTAMP.zip.enc
+/opt/openhangar/openhangar-launcher.sh restore openhangar_backup_TIMESTAMP.zip.enc
 
 # Upgrade to a specific version after restore
-/path/to/openhangar/data/backups/restore.sh openhangar_backup_TIMESTAMP.zip.enc --upgrade-to=v0.300.0
+/opt/openhangar/openhangar-launcher.sh restore openhangar_backup_TIMESTAMP.zip.enc --upgrade-to=v0.300.0
 
 # Restore only — do not upgrade the image afterwards
-/path/to/openhangar/data/backups/restore.sh openhangar_backup_TIMESTAMP.zip.enc --upgrade-to=none
+/opt/openhangar/openhangar-launcher.sh restore openhangar_backup_TIMESTAMP.zip.enc --upgrade-to=none
 ```
 
 #### Decryption key

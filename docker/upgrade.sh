@@ -1,30 +1,23 @@
 #!/usr/bin/env bash
 # docker/upgrade.sh — pull the latest OpenHangar image and recreate the container.
 #
-# Recommended cron setup — run every minute to catch the trigger file promptly:
-#   * * * * * [ -f /opt/openhangar/upgrade/upgrade.sh ] && \
-#             cp /opt/openhangar/upgrade/upgrade.sh /opt/openhangar/upgrade.sh; \
-#             [ -f /opt/openhangar/upgrade.sh ] && \
-#             /opt/openhangar/upgrade.sh >> /opt/openhangar/upgrade/upgrade.log 2>&1
+# Run by docker/openhangar-launcher.sh, never directly from a folder the
+# container can write to. Recommended cron setup — every minute, to catch the
+# trigger file promptly:
+#   * * * * * /opt/openhangar/openhangar-launcher.sh upgrade >> /opt/openhangar/openhangar-upgrade.log 2>&1
 #
-# Point the outer redirect at upgrade.log inside the bind-mount dir itself
-# (not a separate file): the script already writes its own detailed log there,
-# so the outer redirect only ever adds lines for failures that happen before
-# that point (missing .env, bad argument) — keeping everything in one place
-# instead of leaving a second, usually-empty log file to be confused with.
-#
-# Adapt the paths to match your OPENHANGAR_UPGRADE_DIR bind-mount source.
-# The copy step keeps a stable fallback at the outer path: if the container is
-# running the bind-mount copy is refreshed before each run; if the container is
-# stopped the last-known copy is used instead.
+# The launcher verifies the image's signature, copies this script out of it
+# and runs it with OPENHANGAR_SCRIPT_DIR (the folder holding .env) and
+# OPENHANGAR_UPGRADE_HOST_DIR (the upgrade bind-mount folder) set.
 # The script auto-detects which compose service owns the upgrade directory
 # (safe when multiple OpenHangar instances share the same host) and reads the
 # current image from the container itself — no hardcoded names or env-var keys.
 #
-# The script is bundled inside the Docker image and exported to the host via a
-# bind-mount (see docker-compose.yml).  After each image update the host copy is
-# replaced on the next container start, so the cron job picks up the latest
-# version one run later.
+# The upgrade folder is writable from the container: nothing here reads a
+# file from it or writes through a path in it. Status files and the published
+# copy of the log are written as new files renamed into place (a link the
+# container left at that name is replaced, never followed); the full log
+# stays next to .env, on the host side.
 #
 # NOTE: All logic is wrapped in main() so that bash parses the entire function
 # body before execution begins.  This prevents the "read past file offset" bug
@@ -50,12 +43,15 @@ exec 3>&2
 dbg() { [ "${DEBUG}" -eq 1 ] && echo "[DBG] $*" >&3 || true; }
 
 # ── Locate script and upgrade directory ───────────────────────────────────────
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="${OPENHANGAR_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 dbg "SCRIPT_DIR : ${SCRIPT_DIR}"
 
+if [ -n "${OPENHANGAR_UPGRADE_HOST_DIR:-}" ]; then
+  UPGRADE_DIR="${OPENHANGAR_UPGRADE_HOST_DIR}"
+  dbg "UPGRADE_DIR: ${UPGRADE_DIR} (from the launcher)"
 # When run from the cron copy outside the bind-mount dir (e.g. prod/upgrade.sh
 # instead of prod/upgrade/upgrade.sh), the trigger files live one level down.
-if [ -d "${SCRIPT_DIR}/upgrade" ]; then
+elif [ -d "${SCRIPT_DIR}/upgrade" ]; then
   UPGRADE_DIR="${SCRIPT_DIR}/upgrade"
   dbg "UPGRADE_DIR: ${UPGRADE_DIR} (upgrade/ subdirectory of SCRIPT_DIR)"
 else
@@ -67,7 +63,18 @@ TRIGGER="${UPGRADE_DIR}/trigger"
 RUNNING="${UPGRADE_DIR}/trigger.running"
 DONE="${UPGRADE_DIR}/trigger.done"
 FAILED="${UPGRADE_DIR}/trigger.failed"
-LOG="${UPGRADE_DIR}/upgrade.log"
+# The full log lives on the host side (next to .env); a copy is published to
+# the upgrade folder after each run.
+LOG="${SCRIPT_DIR}/openhangar-upgrade.log"
+PUBLISHED_LOG="${UPGRADE_DIR}/upgrade.log"
+
+# Write $2 to $1 in the upgrade folder: a new file renamed into place.
+_publish() {
+  local tmp
+  tmp="$(mktemp "${UPGRADE_DIR}/.publish.XXXXXX")"
+  printf '%s\n' "$2" > "${tmp}"
+  mv -fT "${tmp}" "$1" || rm -f "${tmp}"
+}
 
 dbg "TRIGGER    : ${TRIGGER} ($([ -f "${TRIGGER}" ] && echo "FOUND" || echo "not found"))"
 
@@ -75,7 +82,7 @@ dbg "TRIGGER    : ${TRIGGER} ($([ -f "${TRIGGER}" ] && echo "FOUND" || echo "not
 [ -f "${TRIGGER}" ] || { dbg "No trigger file — nothing to do."; exit 0; }
 
 # Atomic rename prevents a second cron tick from double-triggering
-mv "${TRIGGER}" "${RUNNING}"
+mv -fT "${TRIGGER}" "${RUNNING}"
 dbg "Trigger renamed to trigger.running."
 
 # ── Locate .env / docker-compose.yml ─────────────────────────────────────────
@@ -227,7 +234,7 @@ _verify_image_signature() {
 
 # ── Pull latest image ──────────────────────────────────────────────────────────
 RECREATE_AT=""
-{
+if {
   log "Upgrade triggered."
   log "Pulling ${IMAGE}..."
   OLD_ID=$(docker image inspect "${IMAGE}" --format '{{.Id}}' 2>/dev/null || echo "none")
@@ -257,11 +264,14 @@ RECREATE_AT=""
     log "Upgrade aborted."
     false
   fi
-} >> "${LOG}" 2>&1 \
-  && echo "ok $(date -u +%FT%TZ)" > "${DONE}" \
-  || echo "fail $(date -u +%FT%TZ)" > "${FAILED}"
+} >> "${LOG}" 2>&1; then
+  _publish "${DONE}" "ok $(date -u +%FT%TZ)"
+else
+  _publish "${FAILED}" "fail $(date -u +%FT%TZ)"
+fi
 
 rm -f "${RUNNING}"
+_publish "${PUBLISHED_LOG}" "$(tail -n 200 "${LOG}")"
 
 # ── Remove dangling images to free disk space ──────────────────────────────────
 docker image prune -f >> "${LOG}" 2>&1 || true

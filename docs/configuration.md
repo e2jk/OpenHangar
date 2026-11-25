@@ -340,7 +340,11 @@ Container path of the shared directory used by the one-click upgrade feature.
 - **Example**: `OPENHANGAR_UPGRADE_DIR=/data/upgrade`
 - Requires a matching volume mount and a host-side cron job — see
   [One-click upgrades](self-hosting.md#one-click-upgrades-optional) for the
-  full setup.
+  full setup. The cron job runs `openhangar-launcher.sh upgrade`, which looks
+  for this folder's host side at `./upgrade` or `./openhangar/data/upgrade`
+  next to `.env`;
+  if yours is elsewhere, set `OPENHANGAR_UPGRADE_HOST_DIR` to its host path in
+  `.env` (read by the launcher on the host, not by the container).
 
 ### `OPENHANGAR_SKIP_BACKGROUND_THREADS`
 
