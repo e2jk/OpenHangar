@@ -123,7 +123,13 @@ def seed() -> None:
         db.session.flush()
 
         def _make_user(
-            email: str, name: str, role: Role, *, _tenant: Tenant = tenant
+            email: str,
+            name: str,
+            role: Role,
+            *,
+            _tenant: Tenant = tenant,
+            is_pilot: bool = False,
+            is_maintenance: bool = False,
         ) -> User:
             u = User(
                 email=email,
@@ -134,7 +140,15 @@ def seed() -> None:
             )
             db.session.add(u)
             db.session.flush()
-            db.session.add(TenantUser(user_id=u.id, tenant_id=_tenant.id, role=role))
+            db.session.add(
+                TenantUser(
+                    user_id=u.id,
+                    tenant_id=_tenant.id,
+                    role=role,
+                    is_pilot=is_pilot,
+                    is_maintenance=is_maintenance,
+                )
+            )
             return u
 
         owner_user = _make_user(
@@ -142,14 +156,15 @@ def seed() -> None:
         )
 
         pilot_user = _make_user(
-            f"demo-pilot-{i}@openhangar.demo", "Demo Pilot", Role.PILOT
+            f"demo-pilot-{i}@openhangar.demo", "Demo Pilot", Role.PILOT, is_pilot=True
         )
-        pilot_user.is_pilot = True
 
         maint_user = _make_user(
-            f"demo-maintenance-{i}@openhangar.demo", "Demo Mechanic", Role.MAINTENANCE
+            f"demo-maintenance-{i}@openhangar.demo",
+            "Demo Mechanic",
+            Role.MAINTENANCE,
+            is_maintenance=True,
         )
-        maint_user.is_maintenance = True
 
         viewer_user = _make_user(
             f"demo-viewer-{i}@openhangar.demo", "Demo Viewer", Role.VIEWER
@@ -191,11 +206,15 @@ def seed() -> None:
             is_active=True,
             name="Demo Solo Pilot",
         )
-        sp_user.is_pilot = True
         db.session.add(sp_user)
         db.session.flush()
         db.session.add(
-            TenantUser(user_id=sp_user.id, tenant_id=sp_tenant.id, role=Role.OWNER)
+            TenantUser(
+                user_id=sp_user.id,
+                tenant_id=sp_tenant.id,
+                role=Role.OWNER,
+                is_pilot=True,
+            )
         )
         seed_sole_pilot_tenant(sp_tenant.id, sp_user.id, fleet_tenant_id=tenant.id)
 
@@ -212,11 +231,15 @@ def seed() -> None:
             is_active=True,
             name="Demo Solo Operator",
         )
-        so_user.is_pilot = True
         db.session.add(so_user)
         db.session.flush()
         db.session.add(
-            TenantUser(user_id=so_user.id, tenant_id=so_tenant.id, role=Role.OWNER)
+            TenantUser(
+                user_id=so_user.id,
+                tenant_id=so_tenant.id,
+                role=Role.OWNER,
+                is_pilot=True,
+            )
         )
         seed_sole_operator_tenant(so_tenant.id, so_user.id)
 
@@ -239,7 +262,6 @@ def seed() -> None:
                 is_active=True,
                 name=co_owner_name,
             )
-            sho_user.is_pilot = True
             db.session.add(sho_user)
             db.session.flush()
             # All three get OWNER role: a small co-ownership group typically
@@ -248,7 +270,10 @@ def seed() -> None:
             # their AircraftOwner row (OWNER/ADMIN bypass that check).
             db.session.add(
                 TenantUser(
-                    user_id=sho_user.id, tenant_id=sho_tenant.id, role=Role.OWNER
+                    user_id=sho_user.id,
+                    tenant_id=sho_tenant.id,
+                    role=Role.OWNER,
+                    is_pilot=True,
                 )
             )
             sho_user_ids.append(sho_user.id)

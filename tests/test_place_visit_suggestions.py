@@ -14,6 +14,7 @@ from places.airfields import add_link
 from places.collections import create_collection, set_member
 from places.management import save_place
 
+from tests.auth_helpers import set_membership_flags
 from tests.test_place_collections import people
 from tests.test_place_sharing import signin
 
@@ -161,10 +162,9 @@ def test_never_for_someone_elses_flight_or_place(
 def test_a_view_only_account_is_refused_with_a_message(
     app: Flask, client: FlaskClient, people: dict[str, int], landed: dict[str, int]
 ) -> None:
-    from models import User
 
     with app.app_context():
-        db.session.get(User, people["reader"]).view_only = True
+        set_membership_flags(people["reader"], view_only=True)
         db.session.commit()
     signin(client, people, "reader")
     for suffix in ("", "/dismiss"):

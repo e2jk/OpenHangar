@@ -41,13 +41,19 @@ def _make_user(
             email=email,
             password_hash=_pw_hash.hash("pw"),
             is_active=True,
-            is_pilot=is_pilot,
-            is_maintenance=is_maintenance,
             is_instance_admin=is_instance_admin,
         )
         db.session.add(u)
         db.session.flush()
-        db.session.add(TenantUser(user_id=u.id, tenant_id=t.id, role=role))
+        db.session.add(
+            TenantUser(
+                user_id=u.id,
+                tenant_id=t.id,
+                role=role,
+                is_pilot=is_pilot,
+                is_maintenance=is_maintenance,
+            )
+        )
         db.session.commit()
         return u.id, t.id
 

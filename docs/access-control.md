@@ -1,7 +1,7 @@
 # OpenHangar — Access Control & Permissions
 
 This page describes the access-control model as implemented: roles,
-per-user capability flags, per-aircraft permission masks, and how a user's
+per-hangar capability flags, per-aircraft permission masks, and how a user's
 effective permissions are resolved.
 
 ---
@@ -25,7 +25,10 @@ Each user is assigned exactly one role per tenant:
 ## Capability flags
 
 Independent of the role, each user carries three flags, editable from the
-user management page:
+user management page. They are set per hangar, on the user's membership: a
+person who belongs to several hangars (a passport group's hangar, for
+example) has each hangar's own flags there, and one hangar's admins can never
+change them in another:
 
 - **`is_pilot`** — enables pilot-specific flows: personal logbook entries,
   reservations, pilot-level flight logging. An owner or maintenance user who
@@ -78,6 +81,10 @@ A user's effective permission mask for a given aircraft is resolved as:
    to that aircraft. (Tenant-level checks that are not about a specific
    aircraft fall back to the role's default mask.)
 
+The `is_pilot` and `is_maintenance` flags add the pilot's and the
+maintenance profile's default bits to the role default (an explicit mask on
+the grant still wins).
+
 Finally, if the user has `view_only`, all write bits (`edit_aircraft`,
 `write_maintenance`, `edit_components`, `write_logbook`, `reserve_aircraft`)
 are stripped from the resolved mask.
@@ -91,7 +98,7 @@ Used whenever a grant exists without an explicit mask:
 | admin | ✓ | ✓ | ✓ | — | ✓ | ✓ | ✓ | ✓ |
 | owner | ✓ | ✓ | ✓ | — | ✓ | ✓ | ✓ | ✓ |
 | pilot | ✓ | — | — | ✓ | — | — | ✓ | ✓ |
-| student | ✓ | — | — | ✓ | — | — | — | — |
+| student | ✓ | — | — | ✓ | — | — | ✓ | — |
 | instructor | ✓ | — | ✓ | — | — | — | ✓ | ✓ |
 | maintenance | ✓ | ✓ | ✓ | — | ✓ | ✓ | — | — |
 | viewer | ✓ | — | ✓ | — | — | — | — | — |

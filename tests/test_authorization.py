@@ -32,13 +32,19 @@ def _make_env(app, role, *, is_pilot=False, is_maintenance=False, view_only=Fals
             email=f"user-{role.value}@test.dev",
             password_hash=_pw_hash.hash("password-12-chars"),
             is_active=True,
-            is_pilot=is_pilot,
-            is_maintenance=is_maintenance,
-            view_only=view_only,
         )
         db.session.add(user)
         db.session.flush()
-        db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=role))
+        db.session.add(
+            TenantUser(
+                user_id=user.id,
+                tenant_id=tenant.id,
+                role=role,
+                is_pilot=is_pilot,
+                is_maintenance=is_maintenance,
+                view_only=view_only,
+            )
+        )
         ac = Aircraft(
             tenant_id=tenant.id, registration="OO-TST", make="Test", model="T"
         )
@@ -364,7 +370,7 @@ class TestUserFlagsRoute:
         )
         assert resp.status_code == 200
         with app.app_context():
-            u = db.session.get(User, pilot_id)
+            u = TenantUser.query.filter_by(user_id=pilot_id).one()
             assert u.is_pilot is True
             assert u.is_maintenance is False
             assert u.view_only is False
@@ -379,7 +385,7 @@ class TestUserFlagsRoute:
         )
         assert resp.status_code == 200
         with app.app_context():
-            u = db.session.get(User, pilot_id)
+            u = TenantUser.query.filter_by(user_id=pilot_id).one()
             assert u.view_only is True
             assert u.is_pilot is False
 
@@ -393,7 +399,7 @@ class TestUserFlagsRoute:
         )
         assert resp.status_code == 200
         with app.app_context():
-            u = db.session.get(User, owner_id)
+            u = TenantUser.query.filter_by(user_id=owner_id).one()
             assert u.is_pilot is False  # unchanged
 
 
@@ -673,3 +679,115 @@ class TestAccessHelpers:
         resp = client.get("/aircraft/")
         assert resp.status_code == 200
         assert b"OO-TST" not in resp.data
+
+
+# ── Enforcement on writes (S3) ───────────────────────────────────────────────
+
+
+def _grant_with_mask(app, user_id, aircraft_id, mask):
+    with app.app_context():
+        db.session.add(
+            UserAircraftAccess(
+                user_id=user_id, aircraft_id=aircraft_id, permissions_mask=mask
+            )
+        )
+        db.session.commit()
+
+
+class TestWritePermissionsEnforced:
+    """view_only and the per-aircraft bits now decide aircraft writes, not
+    just the role."""
+
+    def test_view_only_pilot_cannot_write(self, app, client):
+        _tid, uid, acid = _make_env(app, Role.PILOT, view_only=True)
+        _grant_specific(app, uid, acid)
+        _login(client, uid)
+        assert client.post(f"/aircraft/{acid}/snags/new", data={}).status_code == 403
+        resp = client.post(
+            f"/aircraft/{acid}/reservations/new",
+            data={"start_dt": "2026-06-20T09:00", "end_dt": "2026-06-20T11:00"},
+        )
+        assert resp.status_code == 403
+        assert client.post("/flights/new", data={}).status_code == 403
+        # Reading stays possible.
+        assert client.get(f"/aircraft/{acid}").status_code == 200
+
+    def test_bit_removed_from_the_grant_refuses_that_write(self, app, client):
+        _tid, uid, acid = _make_env(app, Role.PILOT)
+        no_booking = PermissionBit.ROLE_DEFAULTS["pilot"] & ~(
+            PermissionBit.RESERVE_AIRCRAFT
+        )
+        _grant_with_mask(app, uid, acid, no_booking)
+        _login(client, uid)
+        resp = client.post(
+            f"/aircraft/{acid}/reservations/new",
+            data={"start_dt": "2026-06-20T09:00", "end_dt": "2026-06-20T11:00"},
+        )
+        assert resp.status_code == 403
+
+    def test_write_logbook_removed_refuses_logging_on_that_aircraft(self, app, client):
+        _tid, uid, acid = _make_env(app, Role.PILOT)
+        no_logbook = PermissionBit.ROLE_DEFAULTS["pilot"] & ~(
+            PermissionBit.WRITE_LOGBOOK
+        )
+        _grant_with_mask(app, uid, acid, no_logbook)
+        _login(client, uid)
+        resp = client.post(
+            "/flights/new",
+            data={
+                "aircraft_id": str(acid),
+                "date": "2026-06-20",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "1.0",
+                "flight_time_counter_end": "2.0",
+            },
+        )
+        assert resp.status_code == 403
+        assert client.post(f"/aircraft/{acid}/refuels/new", data={}).status_code == 403
+
+    def test_student_still_logs_flights_by_default(self, app, client):
+        _tid, uid, acid = _make_env(app, Role.STUDENT)
+        _grant_specific(app, uid, acid)
+        with app.app_context():
+            assert AuthorizationService.can(uid, "log_flight", acid)
+            assert not AuthorizationService.can(uid, "reserve_aircraft", acid)
+
+    def test_pilot_flag_adds_its_bits_to_a_viewer(self, app, client):
+        _tid, uid, acid = _make_env(app, Role.VIEWER, is_pilot=True)
+        _grant_specific(app, uid, acid)
+        with app.app_context():
+            assert AuthorizationService.can(uid, "log_flight", acid)
+            assert not AuthorizationService.can(uid, "edit_maintenance", acid)
+
+    def test_maintenance_flag_adds_its_bits_to_a_viewer(self, app, client):
+        _tid, uid, acid = _make_env(app, Role.VIEWER, is_maintenance=True)
+        _grant_specific(app, uid, acid)
+        with app.app_context():
+            assert AuthorizationService.can(uid, "edit_maintenance", acid)
+            assert not AuthorizationService.can(uid, "log_flight", acid)
+
+    def test_admin_with_view_only_keeps_writing(self, app, client):
+        _tid, uid, acid = _make_env(app, Role.ADMIN, view_only=True)
+        _login(client, uid)
+        resp = client.post(
+            f"/aircraft/{acid}/reservations/new",
+            data={"start_dt": "2026-06-20T09:00", "end_dt": "2026-06-20T11:00"},
+        )
+        assert resp.status_code == 302
+
+    def test_another_hangars_aircraft_is_left_to_the_route(self, app, client):
+        _tid, uid, _acid = _make_env(app, Role.PILOT)
+        with app.app_context():
+            other = Tenant(name="Other")
+            db.session.add(other)
+            db.session.flush()
+            foreign = Aircraft(
+                tenant_id=other.id, registration="OO-FOR", make="X", model="Y"
+            )
+            db.session.add(foreign)
+            db.session.commit()
+            foreign_id = foreign.id
+        _login(client, uid)
+        resp = client.post(f"/aircraft/{foreign_id}/reservations/new", data={})
+        assert resp.status_code == 404

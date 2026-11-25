@@ -2048,12 +2048,18 @@ class TestStandaloneOtherAircraftRoute:
                     email=email,
                     password_hash=_pw_hash.hash("x"),
                     is_active=active,
-                    is_pilot=is_pilot,
                     name=name,
                 )
                 db.session.add(u)
                 db.session.flush()
-                db.session.add(TenantUser(user_id=u.id, tenant_id=tenant_id, role=role))
+                db.session.add(
+                    TenantUser(
+                        user_id=u.id,
+                        tenant_id=tenant_id,
+                        role=role,
+                        is_pilot=is_pilot,
+                    )
+                )
             db.session.commit()
         _login(app, client)
         resp = client.get("/flights/new")

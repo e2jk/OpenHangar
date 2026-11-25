@@ -30,6 +30,7 @@ from passports.eligibility import passport_progress
 from passports.management import BuilderError, fingerprint, protected_targets
 from sqlalchemy.exc import IntegrityError
 
+from tests.auth_helpers import set_membership_flags
 from tests.test_passport_builder import posted, signin
 from tests.test_passport_eligibility import flight
 from tests.test_passport_management import owner
@@ -444,8 +445,7 @@ def test_voucher_http_privacy_mutation_and_archived_forms(
         == 409
     )
     with app.app_context():
-        user = db.session.get(User, b["user"])
-        user.view_only = True
+        set_membership_flags(b["user"], view_only=True)
         db.session.commit()
     assert "Manage allocations" not in client.get(url).text
     signin(client, b["other"])
