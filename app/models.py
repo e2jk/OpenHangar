@@ -2027,6 +2027,17 @@ class MaintenanceTrigger(db.Model):
                 if self.hours_basis == HoursBasis.FLIGHT
                 else current_engine_hours
             )
+            if current_hobbs is None:
+                # No reading on this basis (an aircraft without a flight
+                # counter, say): use the other counter rather than never
+                # evaluating the limit. Engine time runs at least as fast as
+                # flight time, so a flight-hours item comes due early, never
+                # late.
+                current_hobbs = (
+                    current_engine_hours
+                    if self.hours_basis == HoursBasis.FLIGHT
+                    else current_flight_hours
+                )
             if current_hobbs is not None:
                 remaining = float(self.due_engine_hours) - float(current_hobbs)
                 if remaining <= 0:
