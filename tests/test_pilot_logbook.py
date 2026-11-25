@@ -466,6 +466,37 @@ class TestLogbookRoutes:
         assert b"Totals" in resp.data
         assert b"3.5" in resp.data
 
+    def test_totals_count_every_function_of_an_unshared_row(self, app):
+        """A row with no other pilot linked (a standalone entry, an imported
+        instructor row, the opening balance) counts all its function hours,
+        whichever slot holds the pilot; a shared row keeps them per slot."""
+        from pilots.routes import _compute_totals_sql
+
+        uid, _ = _create_user_and_tenant(app)
+        other, _ = _create_user_and_tenant(app, email="other@x.com")
+        _add_logbook_entry(
+            app,
+            uid,
+            function_pic=None,
+            function_dual=1.0,
+            function_instructor=300.0,
+            function_copilot=20.0,
+        )
+        _add_logbook_entry(app, uid, function_pic=None, function_dual=4.0)
+        with app.app_context():
+            shared = db.session.get(
+                Flight, _add_logbook_entry(app, other, function_dual=2.0)
+            )
+            shared.second_crew_user_id = uid
+            db.session.commit()
+            totals = _compute_totals_sql(uid)
+        # 1.0 + 4.0 on own rows, + 2.0 dual in the second slot of the shared one.
+        assert totals["function_dual"] == 7.0
+        assert totals["function_instructor"] == 300.0
+        assert totals["function_copilot"] == 20.0
+        # The other pilot's own PIC time on the shared row is never credited.
+        assert totals["function_pic"] == 0.0
+
     def test_logbook_only_shows_own_entries(self, app, client):
         uid1, _ = _create_user_and_tenant(app, email="a@x.com")
         _uid2, _ = _create_user_and_tenant(app, email="b@x.com")
