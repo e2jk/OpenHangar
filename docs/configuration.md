@@ -316,8 +316,10 @@ Where HTTP access logs are written.
   `/data/logs/openhangar-access.log` inside the container.
 - **Set to** `1` to send access logs to stdout (`docker logs`) instead;
   no file is written in that mode.
-- Secret URL tokens (share links, password resets, invitations) are redacted
-  in either mode.
+- Secret URL tokens (share and showcase links, password resets, invitations,
+  reminder snooze links, passport links) are redacted in either mode. A
+  reverse proxy's own access log doesn't redact them: the reference
+  `docker/docker-compose.yml` therefore leaves Traefik's access log off.
 - See [HTTP access logging](self-hosting.md#http-access-logging) for
   volume-mount and log-rotation guidance.
 
