@@ -4616,7 +4616,7 @@ msgstr "Explorer"
 
 #: app/templates/base.html:244 app/templates/explore/where_next.html:3
 #: app/templates/explore/where_next.html:6
-#: app/templates/passports/detail.html:12 app/templates/places/index.html:8
+#: app/templates/passports/detail.html:12 app/templates/places/index.html:9
 #: app/templates/places/place_detail.html:18
 msgid "Where next?"
 msgstr "Où aller ensuite ?"
@@ -4747,7 +4747,7 @@ msgstr "Statut"
 #: app/templates/pilots/minimums_edit.html:15
 #: app/templates/places/join_collection.html:5
 #: app/templates/places/new_collection.html:6
-#: app/templates/places/place_form.html:21
+#: app/templates/places/place_form.html:20
 #: app/templates/pwa/share_target.html:15
 #: app/templates/refuels/refuel_form.html:62
 #: app/templates/reservations/charge.html:108
@@ -5737,7 +5737,7 @@ msgstr "Définissez une ligne par réservoir (une seule pour un réservoir combi
 #: app/templates/maintenance/trigger_form.html:29
 #: app/templates/passports/builder.html:16
 #: app/templates/passports/next_edition.html:8
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Name"
 msgstr "Nom"
 
@@ -7137,7 +7137,7 @@ msgstr[1] "%(n)s composants"
 #: app/templates/aircraft/list.html:73 app/templates/passports/detail.html:20
 #: app/templates/passports/print.html:19 app/templates/passports/series.html:10
 #: app/templates/passports/series.html:28
-#: app/templates/passports/vouchers.html:10 app/templates/places/index.html:11
+#: app/templates/passports/vouchers.html:10 app/templates/places/index.html:12
 #: app/templates/places/index.html:14 app/templates/places/place_detail.html:9
 msgid "Archived"
 msgstr "Archivé"
@@ -7241,7 +7241,7 @@ msgstr "Télécharger le relevé (CSV)"
 #: app/templates/expenses/expense_form.html:129
 #: app/templates/expenses/list.html:88 app/templates/passports/builder.html:18
 #: app/templates/passports/next_edition.html:12
-#: app/templates/places/place_form.html:19
+#: app/templates/places/place_form.html:18
 #: app/templates/snags/snag_form.html:37
 msgid "Description"
 msgstr "Description"
@@ -7868,7 +7868,7 @@ msgstr[1] "%(n)s documents au total"
 #: app/templates/partials/_logbook_list_controls.html:58
 #: app/templates/passports/detail.html:34
 #: app/templates/passports/discussion.html:14
-#: app/templates/places/index.html:11 app/templates/users/list.html:86
+#: app/templates/places/index.html:12 app/templates/users/list.html:86
 msgid "All"
 msgstr "Tout"
 
@@ -8869,7 +8869,7 @@ msgstr "Seuil"
 #: app/templates/config/notifications.html:170
 #: app/templates/config/tenant_list.html:47
 #: app/templates/passports/group_members.html:16
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Active"
 msgstr "Actif"
 
@@ -12549,7 +12549,7 @@ msgid "Anyone"
 msgstr "Tout le monde"
 
 #: app/templates/partials/_list_filters.html:73
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Apply filters"
 msgstr "Appliquer les filtres"
 
@@ -12857,12 +12857,12 @@ msgid "Optional airfield code"
 msgstr "Code d’aérodrome facultatif"
 
 #: app/templates/passports/builder.html:58
-#: app/templates/places/place_form.html:14
+#: app/templates/places/place_form.html:13
 msgid "Latitude"
 msgstr "Latitude"
 
 #: app/templates/passports/builder.html:58
-#: app/templates/places/place_form.html:14
+#: app/templates/places/place_form.html:13
 msgid "Longitude"
 msgstr "Longitude"
 
@@ -13092,7 +13092,7 @@ msgstr "Visité par vous"
 #: app/templates/passports/record_visit.html:14
 #: app/templates/passports/series.html:17
 #: app/templates/passports/series.html:19 app/templates/passports/target.html:9
-#: app/templates/places/index.html:11 app/templates/places/index.html:14
+#: app/templates/places/index.html:12 app/templates/places/index.html:14
 msgid "Visited"
 msgstr "Visité"
 
@@ -15351,7 +15351,7 @@ msgid "Can view and record own visits"
 msgstr "Peut consulter et enregistrer ses propres visites"
 
 #: app/templates/places/collection_settings.html:5
-#: app/templates/places/index.html:10
+#: app/templates/places/index.html:11
 msgid "Collection settings"
 msgstr "Paramètres de la collection"
 
@@ -15380,7 +15380,7 @@ msgid "Leave collection"
 msgstr "Quitter la collection"
 
 #: app/templates/places/collection_settings.html:11
-#: app/templates/places/place_form.html:16
+#: app/templates/places/place_form.html:15
 msgid "Tags"
 msgstr "Étiquettes"
 
@@ -15480,88 +15480,80 @@ msgstr "Nouvelle collection"
 msgid "Save places worth visiting and share a collection with friends."
 msgstr "Enregistrez les lieux à visiter et partagez une collection avec vos amis."
 
-#: app/templates/places/index.html:8
-msgid "Download GPX"
-msgstr "Télécharger le fichier GPX"
-
-#: app/templates/places/index.html:8
-msgid "Download KML"
-msgstr "Télécharger le fichier KML"
-
-#: app/templates/places/index.html:9
+#: app/templates/places/index.html:10
 msgid "Collection invitations"
 msgstr "Invitations à des collections"
 
-#: app/templates/places/index.html:10 app/templates/places/place_detail.html:6
+#: app/templates/places/index.html:11 app/templates/places/place_detail.html:6
 msgid "Place collections"
 msgstr "Collections de lieux"
 
-#: app/templates/places/index.html:10
+#: app/templates/places/index.html:11
 msgid "All collections"
 msgstr "Toutes les collections"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Show places"
 msgstr "Afficher les lieux"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Active and archived"
 msgstr "Actifs et archivés"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Bin"
 msgstr "Corbeille"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "My visits"
 msgstr "Mes visites"
 
-#: app/templates/places/index.html:11 app/templates/places/index.html:14
+#: app/templates/places/index.html:12 app/templates/places/index.html:14
 msgid "Not yet visited"
 msgstr "Pas encore visité"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Tag"
 msgstr "Étiquette"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "All tags"
 msgstr "Toutes les étiquettes"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Sort by"
 msgstr "Trier par"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Date added"
 msgstr "Date d’ajout"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Last visit"
 msgstr "Dernière visite"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Location"
 msgstr "Localisation"
 
-#: app/templates/places/index.html:11 app/templates/places/index.html:14
+#: app/templates/places/index.html:12 app/templates/places/index.html:14
 #: app/templates/places/place_detail.html:19
 msgid "Location still to add"
 msgstr "Localisation à ajouter"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Located"
 msgstr "Localisé"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Airfield links"
 msgstr "Association à un aérodrome"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "With linked airfields"
 msgstr "Avec aérodromes associés"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Without linked airfields"
 msgstr "Sans aérodrome associé"
 
@@ -15588,6 +15580,14 @@ msgstr "Supprimer définitivement le lieu"
 #: app/templates/places/index.html:14
 msgid "No places in this view yet."
 msgstr "Aucun lieu dans cette vue pour le moment."
+
+#: app/templates/places/index.html:15
+msgid "Download GPX"
+msgstr "Télécharger le fichier GPX"
+
+#: app/templates/places/index.html:15
+msgid "Download KML"
+msgstr "Télécharger le fichier KML"
 
 #: app/templates/places/join_collection.html:3
 #: app/templates/places/join_collection.html:5
@@ -15675,17 +15675,17 @@ msgstr "La recherche d’adresse a échoué. Utilisez la carte ou les coordonné
 msgid "No matching places found. Try another search or set the pin yourself."
 msgstr "Aucun lieu correspondant trouvé. Essayez une autre recherche ou placez vous-même le repère."
 
-#: app/templates/places/place_form.html:5
-msgid "Coordinates could not be read. Enter latitude and longitude directly."
-msgstr "Impossible de lire les coordonnées. Saisissez directement la latitude et la longitude."
-
 #: app/templates/places/place_form.html:8
 msgid "Place collection"
 msgstr "Collection de lieux"
 
 #: app/templates/places/place_form.html:9
-msgid "Place name or address"
-msgstr "Nom de lieu ou adresse"
+msgid "Place name, address or coordinates"
+msgstr "Nom du lieu, adresse ou coordonnées"
+
+#: app/templates/places/place_form.html:9
+msgid "Coordinates or map link"
+msgstr "Coordonnées ou lien de carte"
 
 #: app/templates/places/place_form.html:9
 msgid "Choose a result to set the pin and address. An empty place name is filled in too."
@@ -15700,42 +15700,34 @@ msgid "Click the map to drop a pin, then drag it to the right spot. You can also
 msgstr "Cliquez sur la carte pour placer un repère, puis déplacez-le au bon endroit. Vous pouvez aussi coller des coordonnées ou un lien de carte."
 
 #: app/templates/places/place_form.html:12
-msgid "Coordinates or map link"
-msgstr "Coordonnées ou lien de carte"
-
-#: app/templates/places/place_form.html:12
-msgid "Use coordinates"
-msgstr "Utiliser ces coordonnées"
-
-#: app/templates/places/place_form.html:13
 msgid "Place location"
 msgstr "Position du lieu"
 
-#: app/templates/places/place_form.html:15
+#: app/templates/places/place_form.html:14
 msgid "Address (optional)"
 msgstr "Adresse (facultative)"
 
-#: app/templates/places/place_form.html:16
+#: app/templates/places/place_form.html:15
 msgid "One tag per line. You can also choose suggestions below."
 msgstr "Une étiquette par ligne. Vous pouvez aussi choisir parmi les suggestions ci-dessous."
 
-#: app/templates/places/place_form.html:17
+#: app/templates/places/place_form.html:16
 msgid "Link (optional)"
 msgstr "Lien (facultatif)"
 
-#: app/templates/places/place_form.html:18
+#: app/templates/places/place_form.html:17
 msgid "Save a link now and add the name, location and other details later."
 msgstr "Enregistrez un lien maintenant, puis ajoutez le nom, la localisation et les autres détails plus tard."
 
-#: app/templates/places/place_form.html:20
+#: app/templates/places/place_form.html:19
 msgid "Place photo (optional)"
 msgstr "Photo du lieu (facultative)"
 
-#: app/templates/places/place_form.html:20
+#: app/templates/places/place_form.html:19
 msgid "Remove current photo"
 msgstr "Retirer la photo actuelle"
 
-#: app/templates/places/place_form.html:21
+#: app/templates/places/place_form.html:20
 msgid "Save place"
 msgstr "Enregistrer le lieu"
 

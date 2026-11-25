@@ -307,9 +307,17 @@ def place_action(place_id: int) -> ResponseReturnValue:
 def geocode() -> ResponseReturnValue:
     tid, uid = context()
     actor(tid, uid)
+    query = request.form.get("query", "")
+    try:
+        latitude, longitude = parse_coordinates(query)
+    except PlaceError:
+        # Addresses go to the configured geocoder after local coordinate parsing.
+        pass
+    else:
+        return jsonify(position={"latitude": latitude, "longitude": longitude})
     try:
         results = geocoding.search(
-            request.form.get("query", ""),
+            query,
             language=str(get_locale() or "en"),
             limit=5,
         )

@@ -95,14 +95,22 @@ def test_disabled_search_keeps_pin_and_coordinate_controls(
     monkeypatch.setitem(app.config, "GEOCODER_URL", "")
     signin(client, people)
     response = client.get("/places/new")
-    assert (
-        response.status_code == 200 and 'id="place-address-query"' not in response.text
-    )
+    assert response.status_code == 200 and 'id="place-address-query"' in response.text
     assert "Address search is turned off" in response.text
     assert (
         'id="place-editor-map"' in response.text
-        and 'id="place-coordinates"' in response.text
+        and 'id="place-latitude"' in response.text
     )
     assert (
         client.post("/places/geocode", data={"query": "Charleroi"}).status_code == 503
     )
+
+
+def test_search_parses_coordinates_locally(
+    client: FlaskClient, people: dict[str, int]
+) -> None:
+    signin(client, people)
+    with patch("services.geocoding.search") as search:
+        response = client.post("/places/geocode", data={"query": "50.5, 4.2"})
+        search.assert_not_called()
+    assert response.json == {"position": {"latitude": 50.5, "longitude": 4.2}}

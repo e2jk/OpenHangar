@@ -1146,9 +1146,6 @@ passports.
 
 **Add-place form** (the usual flow: type the name into the address search,
 pick the first result, check the map — often zooming out — add a tag)
-- Make it clear the search takes an address or coordinates, and let the
-  coordinate fields below the map be typed into directly, moving the map —
-  instead of a separate coordinates search that confuses.
 - Tags: one comma-separated line instead of a box with one tag per line, and
   suggest every tag already used in the user's collections next to the
   starting list.
