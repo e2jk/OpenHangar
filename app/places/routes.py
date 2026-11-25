@@ -21,11 +21,13 @@ from models import (
     PlaceCollectionInvitation,
     PlaceCollectionMember,
     PlaceTag,
+    PlaceTagAssignment,
     PlaceVisit,
     TenantUser,
     User,
     db,
 )
+from sqlalchemy import func
 from utils import (
     current_membership,
     db_id,
@@ -239,7 +241,12 @@ def settings_context(tid: int, uid: int, cid: int) -> dict[str, Any]:
     )
     own_member = db.session.get(PlaceCollectionMember, (cid, uid))
     return {
-        "collection_tags": PlaceTag.query.filter_by(collection_id=cid)
+        "collection_tags": db.session.query(
+            PlaceTag, func.count(PlaceTagAssignment.place_id)
+        )
+        .outerjoin(PlaceTagAssignment, PlaceTagAssignment.tag_id == PlaceTag.id)
+        .filter(PlaceTag.collection_id == cid)
+        .group_by(PlaceTag.id)
         .order_by(PlaceTag.name)
         .all(),
         "can_edit": own_member is not None
@@ -305,7 +312,9 @@ def settings_action(tid: int, uid: int, cid: int) -> bool:
         if action == "tag-rename":
             tags.rename_tag(tid, uid, cid, tag_id, request.form.get("name", ""))
         else:
-            tags.delete_tag(tid, uid, cid, tag_id)
+            tags.delete_tag(
+                tid, uid, cid, tag_id, confirmed=request.form.get("confirm") == "yes"
+            )
     elif action == "delete":
         collection_access(tid, uid, cid, managing=True)
         # Lock the parent before counting: a PostgreSQL insert referencing it

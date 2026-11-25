@@ -1126,14 +1126,3 @@ date. Left:
   auto-fill from counter photos").
 
 ---
-
-## Places and Where next?: UX round (user feedback, 2026-11-25)
-
-Feedback from using Places on a real instance. Already done separately: the
-top bar's Explore menu now lists Where next?, Places, then Airfield
-passports.
-
-**Collection settings**
-- Show how many places use each tag in the tag list, so unused ones are easy
-  to find; deleting a tag still in use asks for confirmation (check what
-  deleting it does today).

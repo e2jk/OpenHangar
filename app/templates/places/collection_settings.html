@@ -8,7 +8,27 @@
 {% if can_edit %}<form method="post" class="mb-3">{{ csrf() }}<button type="submit" class="btn btn-ac-ghost" name="action" value="default">{{ _('Use as my default collection') }}</button></form>{% endif %}
 <h2>{{ _('Collection members') }}</h2><ul>{% for member, person in members %}<li>{{ person.name or _('Unnamed member') }} — {{ _('Can edit') if member.can_edit else _('Can view and record own visits') }}{% if can_manage and member.user_id != collection.created_by_user_id %}<form method="post" class="d-inline-flex flex-wrap gap-2 mb-2 mw-100">{{ csrf() }}<input type="hidden" name="member" value="{{ member.user_id }}">{{ rights() }}<button type="submit" name="action" value="member" class="btn btn-ac-ghost">{{ _('Change rights') }}</button><button type="submit" name="action" value="remove" class="btn btn-ac-ghost">{{ _('Remove member') }}</button></form>{% endif %}</li>{% endfor %}</ul>
 {% if can_leave %}<form method="post" class="mb-4">{{ csrf() }}<p>{{ _('Your places and visits stay in the collection when you leave. Copy any places you want to keep first.') }}</p><button class="btn btn-ac-ghost" name="action" value="leave">{{ _('Leave collection') }}</button></form>{% endif %}
-{% if can_edit %}<h2>{{ _('Tags') }}</h2><p>{{ _('Renaming to an existing tag merges them.') }}</p>{% for tag in collection_tags %}<form method="post" class="mb-3">{{ csrf() }}<input type="hidden" name="tag" value="{{ tag.id }}"><label class="form-label" for="collection-tag-{{ tag.id }}">{{ _('Tag name') }}</label><input class="form-control mb-2" id="collection-tag-{{ tag.id }}" name="name" value="{{ tag.name }}" maxlength="80" required><button class="btn btn-ac-ghost" name="action" value="tag-rename">{{ _('Rename tag') }}</button> <button class="btn btn-ac-ghost" name="action" value="tag-delete">{{ _('Delete tag') }}</button></form>{% endfor %}{% endif %}
+{% if can_edit %}
+<h2>{{ _('Tags') }}</h2>
+<p>{{ _('Renaming to an existing tag merges them.') }}</p>
+{% for tag, count in collection_tags %}
+<div class="mb-3">
+  <form method="post">{{ csrf() }}
+    <input type="hidden" name="tag" value="{{ tag.id }}">
+    <label class="form-label" for="collection-tag-{{ tag.id }}">{{ _('Tag name') }} · {{ ngettext('Used by one place', 'Used by %(num)d places', count) if count else _('Unused') }}</label>
+    <input class="form-control mb-2" id="collection-tag-{{ tag.id }}" name="name" value="{{ tag.name }}" maxlength="80" required>
+    <button class="btn btn-ac-ghost" name="action" value="tag-rename">{{ _('Rename tag') }}</button>
+  </form>
+  <form method="post" class="mt-2">{{ csrf() }}
+    <input type="hidden" name="tag" value="{{ tag.id }}">
+    {% if count %}
+    <label class="form-check-label me-2"><input type="checkbox" class="form-check-input" name="confirm" value="yes" required> {{ _('Remove this tag from every place using it') }}</label>
+    {% endif %}
+    <button class="btn btn-ac-ghost" name="action" value="tag-delete">{{ _('Delete tag') }}</button>
+  </form>
+</div>
+{% endfor %}
+{% endif %}
 {% if can_manage %}
 <h2>{{ _('Collection name') }}</h2><form method="post" class="mb-4">{{ csrf() }}<input class="form-control mb-2" name="name" aria-label="{{ _('Collection name') }}" maxlength="128" required value="{{ collection.name }}"><button class="btn btn-ac-ghost" name="action" value="rename">{{ _('Rename collection') }}</button></form>
 <h2>{{ _('Add a friend') }}</h2>

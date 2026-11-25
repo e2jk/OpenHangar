@@ -55,12 +55,26 @@ def rename_tag(
         db.session.delete(tag)
 
 
-def delete_tag(tenant_id: int, user_id: int, collection_id: int, tag_id: int) -> None:
+def delete_tag(
+    tenant_id: int,
+    user_id: int,
+    collection_id: int,
+    tag_id: int,
+    *,
+    confirmed: bool = False,
+) -> None:
     collection_access(tenant_id, user_id, collection_id, editing=True)
-    tag = PlaceTag.query.filter_by(id=tag_id, collection_id=collection_id).first()
+    tag = (
+        PlaceTag.query.filter_by(id=tag_id, collection_id=collection_id)
+        .with_for_update()
+        .first()
+    )
     if tag is None:
         raise PlaceError(_("Tag not found."))
-    for assignment in PlaceTagAssignment.query.filter_by(tag_id=tag.id):
+    assignments = PlaceTagAssignment.query.filter_by(tag_id=tag.id).all()
+    if assignments and not confirmed:
+        raise PlaceError(_("Confirm removal of this tag from every place using it."))
+    for assignment in assignments:
         place = db.session.get(Place, assignment.place_id)
         assert place is not None
         place.updated_by_user_id = user_id

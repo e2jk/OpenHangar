@@ -316,7 +316,7 @@ def test_collection_tag_rename_merge_delete_and_editor_boundary(
         db.session.flush()
         with pytest.raises(PlaceError):
             delete_tag(t, v, c.id, town.id)
-        delete_tag(t, u, c.id, town.id)
+        delete_tag(t, u, c.id, town.id, confirmed=True)
         db.session.flush()
         assert tag_names(place.id) == []
         for operation in (delete_tag,):
