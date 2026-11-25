@@ -110,6 +110,12 @@ as "not yet scheduled" rather than looking permanently fine. This is meant
 for exactly the situation where part of your task list is still waiting on
 shop input when you're ready to import the rest.
 
+Every imported item starts the same way, interval or not: the sheet says how
+often a task is done, not when it was last done, so no due date or hours are
+set and the item reads **Needs review**. Record its last service (or edit it
+and enter its due date/hours) and it is scheduled from there — the flag then
+clears.
+
 On export, a combined interval is rendered back into the same
 `"100FH / 12MO"`-style text for Appendix B — the inverse of the parsing
 above.

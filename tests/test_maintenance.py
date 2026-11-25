@@ -955,6 +955,61 @@ class TestAddTrigger:
 # ── Edit trigger ──────────────────────────────────────────────────────────────
 
 
+class TestImportedItemScheduling:
+    """An AMP-imported item has an interval but no due value until its last
+    service is entered: it reads "Needs review", and servicing or editing it
+    schedules it and clears the flag."""
+
+    def _imported(self, app, acid):
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=acid,
+                name="50 h check",
+                trigger_type="hours",
+                interval_hours=50,
+                interval_days=365,
+                needs_review=True,
+            )
+            db.session.add(t)
+            db.session.commit()
+            return t.id
+
+    def test_servicing_schedules_it(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        trid = self._imported(app, acid)
+        _login(app, client)
+        page = client.get(f"/aircraft/{acid}/maintenance/{trid}/service").text
+        assert 'name="hobbs_at_service"' in page
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/service",
+            data={"performed_at": "2026-06-01", "hobbs_at_service": "1200.0"},
+        )
+        assert r.status_code == 302
+        with app.app_context():
+            t = db.session.get(MaintenanceTrigger, trid)
+            assert t.needs_review is False
+            assert float(t.due_engine_hours) == 1250.0
+            assert t.due_date == date(2027, 6, 1)
+
+    def test_editing_with_a_due_value_schedules_it(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        trid = self._imported(app, acid)
+        _login(app, client)
+        client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/edit",
+            data={
+                "name": "50 h check",
+                "trigger_type": "hours",
+                "due_engine_hours": "1250",
+                "interval_hours": "50",
+            },
+        )
+        with app.app_context():
+            assert db.session.get(MaintenanceTrigger, trid).needs_review is False
+
+
 class TestEditTrigger:
     def test_get_prefills_form(self, app, client):
         _uid, tid = _create_user_and_tenant(app)

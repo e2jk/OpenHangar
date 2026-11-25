@@ -69,7 +69,6 @@ from weasyprint import HTML  # pyright: ignore[reportMissingImports]
 from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
 
 from maintenance.amp_import import (  # pyright: ignore[reportMissingImports]
-    compute_due_fields,
     format_interval,
     hours_basis_for_component,
     parse_amp_rows,
@@ -491,6 +490,13 @@ def _save_trigger(ac: Aircraft, t: MaintenanceTrigger | None) -> ResponseReturnV
     t.interval_landings = values["interval_landings"]
     t.warn_landings = values["warn_landings"]
     t.notes = values["notes"]
+    if (
+        t.due_date is not None
+        or t.due_engine_hours is not None
+        or t.due_landings is not None
+    ):
+        # Scheduled now: an imported item no longer waits for review.
+        t.needs_review = False
     db.session.commit()
 
     flash(_("Maintenance item '%(name)s' saved.", name=t.name), "success")
@@ -532,7 +538,9 @@ def service_trigger(aircraft_id: int, trigger_id: int) -> ResponseReturnValue:
     # Phase 40: which readings are required depends on which due-field
     # groups are actually populated on this trigger, not on trigger_type — a
     # combined-interval trigger can have more than one group populated.
-    requires_hobbs = t.due_engine_hours is not None
+    requires_hobbs = t.due_engine_hours is not None or bool(
+        t.needs_review and t.interval_hours
+    )
     requires_landings = t.due_landings is not None
 
     if request.method == "POST":
@@ -569,10 +577,13 @@ def service_trigger(aircraft_id: int, trigger_id: int) -> ResponseReturnValue:
         # Advance every populated due-field group independently — a
         # combined-interval trigger (both calendar and hours set) advances
         # both together from the same service record.
-        if t.due_date is not None and t.interval_days and performed_at:
+        # An imported item still waiting for its last service (needs_review,
+        # no due value yet) is scheduled from this one.
+        unscheduled = t.needs_review
+        if (t.due_date is not None or unscheduled) and t.interval_days and performed_at:
             t.due_date = performed_at + timedelta(days=t.interval_days)
         if (
-            t.due_engine_hours is not None
+            (t.due_engine_hours is not None or unscheduled)
             and t.interval_hours
             and hobbs_at_service is not None
         ):
@@ -583,6 +594,8 @@ def service_trigger(aircraft_id: int, trigger_id: int) -> ResponseReturnValue:
             and landings_at_service is not None
         ):
             t.due_landings = landings_at_service + t.interval_landings
+        if unscheduled and (t.due_date is not None or t.due_engine_hours is not None):
+            t.needs_review = False
 
         shared = pending.submitted("maintenance", ac.id)
         if shared is not None:
@@ -877,8 +890,6 @@ def _cleanup_amp_import_tmp(uid: int) -> None:
 def _amp_preview_rows(
     ac: Aircraft, rows: list[Any], components: list[Component]
 ) -> list[dict[str, Any]]:
-    current_hobbs = ac.total_engine_hours
-    current_flight_hours = ac.total_flight_hours
     components_by_id = {c.id: c for c in components}
 
     preview = []
@@ -888,20 +899,10 @@ def _amp_preview_rows(
             if (r.suggested_component_id is not None)
             else None
         )
-        basis = hours_basis_for_component(suggested)
-        due_h, due_d = compute_due_fields(
-            r.interval_hours,
-            r.interval_days,
-            basis,
-            current_hobbs,
-            current_flight_hours,
-        )
         preview.append(
             {
                 "parsed": r,
                 "suggested_component": suggested,
-                "due_engine_hours": due_h,
-                "due_date": due_d,
             }
         )
     return preview
@@ -1006,14 +1007,12 @@ def import_amp_commit(aircraft_id: int) -> ResponseReturnValue:
     components_by_id = {c.id: c for c in components}
     rows = parse_amp_rows(wb, components)
 
-    current_hobbs = ac.total_engine_hours
-    current_flight_hours = ac.total_flight_hours
-
     batch = MaintenanceImportBatch(
         aircraft_id=ac.id,
         source_filename=original_filename,
         row_count=len(rows),
-        needs_review_count=sum(1 for r in rows if r.needs_review),
+        # Every imported item waits for its last service to be scheduled.
+        needs_review_count=len(rows),
     )
     db.session.add(batch)
     db.session.flush()
@@ -1030,13 +1029,6 @@ def import_amp_commit(aircraft_id: int) -> ResponseReturnValue:
             component = components_by_id.get(r.suggested_component_id)
 
         basis = hours_basis_for_component(component)
-        due_h, due_d = compute_due_fields(
-            r.interval_hours,
-            r.interval_days,
-            basis,
-            current_hobbs,
-            current_flight_hours,
-        )
 
         db.session.add(
             MaintenanceTrigger(
@@ -1044,11 +1036,14 @@ def import_amp_commit(aircraft_id: int) -> ResponseReturnValue:
                 component_id=component.id if component else None,
                 name=r.name,
                 trigger_type=(
-                    TriggerType.CALENDAR if due_d is not None else TriggerType.HOURS
+                    TriggerType.CALENDAR
+                    if r.interval_days is not None
+                    else TriggerType.HOURS
                 ),
-                due_date=due_d,
+                # No due value yet: the sheet says how often, not when the
+                # task was last done. The item reads "Needs review" until
+                # its last service is entered (service form, or edit).
                 interval_days=r.interval_days,
-                due_engine_hours=due_h,
                 interval_hours=r.interval_hours,
                 hours_basis=basis,
                 category=r.category,
@@ -1057,7 +1052,7 @@ def import_amp_commit(aircraft_id: int) -> ResponseReturnValue:
                 part_number=r.part_number,
                 serial_number=r.serial_number,
                 notes=r.notes,
-                needs_review=r.needs_review,
+                needs_review=True,
                 import_batch_id=batch.id,
             )
         )
@@ -1178,7 +1173,11 @@ def _amp_export_context(ac: Aircraft) -> dict[str, Any] | None:
     # Listed here regardless of category so nothing pending goes unmentioned in
     # the exported document, with its notes (the actual open question, if the
     # import captured one) alongside it.
-    pending_review_rows = [t for t in triggers if t.needs_review]
+    # Pending shop input: no interval yet. An imported item that only waits
+    # for its last service has an interval and is listed normally.
+    pending_review_rows = [
+        t for t in triggers if t.needs_review and not interval_text[t.id]
+    ]
 
     return {
         "aircraft": ac,

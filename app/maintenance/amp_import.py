@@ -10,8 +10,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import date as _date
-from datetime import timedelta
 from typing import TYPE_CHECKING, Any
 
 from models import (  # pyright: ignore[reportMissingImports]
@@ -273,31 +271,3 @@ def format_interval(interval_hours: float | None, interval_days: int | None) -> 
         else:
             parts.append(f"{d}DY")
     return " / ".join(parts)
-
-
-def compute_due_fields(
-    interval_hours: float | None,
-    interval_days: int | None,
-    hours_basis: str,
-    current_engine_hours: float | None,
-    current_flight_hours: float | None,
-    today: _date | None = None,
-) -> tuple[float | None, _date | None]:
-    """Initial due_engine_hours/due_date for a freshly-imported trigger:
-    the current reading plus the interval (hours side needs a current
-    reading to anchor to; with none available yet, that side is simply
-    left unset — the same as a manually-entered trigger with no due value
-    yet, correctable once flight history exists)."""
-    due_engine_hours = None
-    if interval_hours is not None:
-        current = (
-            current_flight_hours
-            if hours_basis == HoursBasis.FLIGHT
-            else current_engine_hours
-        )
-        if current is not None:
-            due_engine_hours = current + interval_hours
-    due_date = None
-    if interval_days is not None:
-        due_date = (today or _date.today()) + timedelta(days=interval_days)
-    return due_engine_hours, due_date
