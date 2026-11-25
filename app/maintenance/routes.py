@@ -55,6 +55,7 @@ from services.spreadsheet_limits import (  # pyright: ignore[reportMissingImport
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
     AMP_IMPORT_TMP_DIRNAME,
 )
+from sqlalchemy.orm import selectinload  # pyright: ignore[reportMissingImports]
 from utils import (
     accessible_aircraft,
     activity,
@@ -124,9 +125,11 @@ def fleet_overview() -> ResponseReturnValue:
 
     triggers = (
         (
-            MaintenanceTrigger.query.filter(
-                MaintenanceTrigger.aircraft_id.in_(aircraft_ids)
-            ).all()
+            # Each row shows its last service: load every trigger's records in
+            # one query, not one per trigger.
+            MaintenanceTrigger.query.options(selectinload(MaintenanceTrigger.records))  # type: ignore[arg-type]
+            .filter(MaintenanceTrigger.aircraft_id.in_(aircraft_ids))
+            .all()
         )
         if aircraft_ids
         else []
@@ -368,7 +371,8 @@ def list_triggers(aircraft_id: int) -> ResponseReturnValue:
     current_landings = ac.total_landings
     current_flight_hours = ac.total_flight_hours
     all_triggers = (
-        MaintenanceTrigger.query.filter_by(aircraft_id=ac.id)
+        MaintenanceTrigger.query.options(selectinload(MaintenanceTrigger.records))  # type: ignore[arg-type]
+        .filter_by(aircraft_id=ac.id)
         .order_by(MaintenanceTrigger.name)
         .all()
     )

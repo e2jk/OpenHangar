@@ -87,6 +87,7 @@ from services.upload_layout import (  # pyright: ignore[reportMissingImports]
     GPS_ARCHIVE_DIRNAME,
     GPS_IMPORT_TMP_DIRNAME,
 )
+from sqlalchemy.orm import selectinload  # pyright: ignore[reportMissingImports]
 from utils import (
     accessible_aircraft,
     activity,
@@ -429,6 +430,7 @@ def detail(aircraft_id: int) -> ResponseReturnValue:
     _gps_entries = (
         Flight.query.filter_by(aircraft_id=ac.id)
         .filter(Flight.gps_track_id.isnot(None))
+        .options(selectinload(Flight.gps_track))  # type: ignore[arg-type]
         .order_by(Flight.date.asc())
         .all()
     )
@@ -3413,6 +3415,7 @@ def flight_tracks(aircraft_id: int) -> ResponseReturnValue:
     entries_with_tracks = (
         Flight.query.filter_by(aircraft_id=aircraft_id)
         .filter(Flight.gps_track_id.isnot(None))
+        .options(selectinload(Flight.gps_track))  # type: ignore[arg-type]
         .order_by(Flight.date.asc())
         .all()
     )
@@ -3459,6 +3462,7 @@ def flight_tracks_gif(aircraft_id: int) -> ResponseReturnValue:
     entries = (
         Flight.query.filter_by(aircraft_id=aircraft_id)
         .filter(Flight.gps_track_id.isnot(None))
+        .options(selectinload(Flight.gps_track))  # type: ignore[arg-type]
         .all()
     )
     track_rows = sort_tracks_oldest_first(

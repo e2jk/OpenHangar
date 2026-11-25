@@ -83,6 +83,7 @@ from services.upload_layout import (  # pyright: ignore[reportMissingImports]
     IMPORT_TMP_DIRNAME,
 )
 from sqlalchemy import case, func, or_  # pyright: ignore[reportMissingImports]
+from sqlalchemy.orm import selectinload  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
     current_user_role,
     db_id,
@@ -836,6 +837,7 @@ def pilot_tracks() -> ResponseReturnValue:
     entries = (
         _my_entries_query(uid)
         .filter(Flight.gps_track_id.isnot(None))
+        .options(selectinload(Flight.gps_track))  # type: ignore[arg-type]
         .order_by(Flight.date.asc())
         .all()
     )
@@ -880,7 +882,12 @@ def pilot_tracks_gif() -> ResponseReturnValue:
     )
 
     uid = _current_user_id()
-    entries = _my_entries_query(uid).filter(Flight.gps_track_id.isnot(None)).all()
+    entries = (
+        _my_entries_query(uid)
+        .filter(Flight.gps_track_id.isnot(None))
+        .options(selectinload(Flight.gps_track))  # type: ignore[arg-type]
+        .all()
+    )
     track_rows = sort_tracks_oldest_first(
         [
             {
