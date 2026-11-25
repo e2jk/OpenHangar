@@ -1,5 +1,6 @@
 # Safer one-click upgrades, and Passports in the Explore menu
 
+- The place editor shows more of the surrounding area when it centers on a pin.
 - The new-place form asks the browser to leave the place name empty.
 - Adding a place starts with search and name, with optional details below the map.
 - Where next? shows suggestions on opening from a home airfield or the latest logged arrival.
