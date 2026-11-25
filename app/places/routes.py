@@ -68,7 +68,9 @@ def context() -> tuple[int, int]:
 def index() -> ResponseReturnValue:
     tid, uid = context()
     actor(tid, uid)
-    if not is_view_only(uid, tid):
+    # "My places" is created for someone who has no collection yet — not
+    # again after its owner deleted it while keeping (shared) others.
+    if not is_view_only(uid, tid) and collections_for_user(tid, uid).first() is None:
         collections.personal_collection(tid, uid)
         db.session.commit()
     collection_id = request.args.get("collection", type=db_id)
@@ -169,9 +171,9 @@ def collection_counts(collection_id: int) -> tuple[int, int]:
 
 
 def settings_context(tid: int, uid: int, cid: int) -> dict[str, Any]:
-    user = actor(tid, uid)
     try:
-        collection = collection_access(tid, uid, cid, managing=user.is_instance_admin)
+        # Members only (the owner is one): nobody else learns it exists.
+        collection = collection_access(tid, uid, cid)
     except PlaceError:
         return abort(404)
     members = (
@@ -182,9 +184,7 @@ def settings_context(tid: int, uid: int, cid: int) -> dict[str, Any]:
         .all()
     )
     membership = current_membership()
-    can_manage = not is_view_only(uid, tid) and (
-        collection.created_by_user_id == uid or user.is_instance_admin
-    )
+    can_manage = not is_view_only(uid, tid) and collection.created_by_user_id == uid
     organisation_access = membership is not None and membership.access_scope == "full"
     available = []
     if can_manage and organisation_access:

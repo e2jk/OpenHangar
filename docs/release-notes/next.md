@@ -11,3 +11,9 @@
   grant (logging flights, booking, maintenance, components, editing the
   aircraft) now really stops that action. The pilot and maintenance flags
   give their usual permissions; students still log flights by default.
+- Administrators can no longer open the settings of someone else's Places
+  collection that wasn't shared with them: only its members see a
+  collection, and only its owner manages it (its editors, once the owner's
+  account is gone).
+- Deleting your own "My places" collection now sticks: it used to come
+  back, empty, as soon as the Places page opened again.
