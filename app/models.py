@@ -55,6 +55,36 @@ def holds_non_demo_data(db: SQLAlchemy) -> bool:
         return conn.execute(text("SELECT 1 FROM demo_slots LIMIT 1")).first() is None
 
 
+def _add_months(start: date, months: int) -> date:
+    """`start` plus calendar months, the day clamped to the month's end
+    (31 January + 1 month = 28/29 February)."""
+    import calendar
+
+    month_index = start.month - 1 + months
+    year, month = start.year + month_index // 12, month_index % 12 + 1
+    return date(year, month, min(start.day, calendar.monthrange(year, month)[1]))
+
+
+def next_due_date(start: date, interval_days: int) -> date:
+    """Next due date `interval_days` after `start`, never later than the
+    calendar deadline the interval stands for.
+
+    Intervals are stored in days, months as 30 and years as 365 (the AMP
+    import's "1MO" / "1YR"). A multiple of 365 is also read as that many
+    calendar years, and a multiple of 30 as that many calendar months, and the
+    earlier date wins: "1MO" from 31 January is due 28 February, not 2 March.
+    A real 30-day interval comes due at most two days early, never late.
+    """
+    from datetime import timedelta
+
+    by_days = start + timedelta(days=interval_days)
+    if interval_days % 365 == 0:
+        return min(by_days, _add_months(start, interval_days // 365 * 12))
+    if interval_days % 30 == 0:
+        return min(by_days, _add_months(start, interval_days // 30))
+    return by_days
+
+
 def reset_schema(db: SQLAlchemy) -> None:
     """Drop and recreate the demo database's public schema, then rebuild tables.
 

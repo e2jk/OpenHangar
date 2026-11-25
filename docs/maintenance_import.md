@@ -96,8 +96,10 @@ in one string, since many AMP items are due at "whichever comes first":
 
 - `<n>FH` — a flight-hour interval, e.g. `100FH`
 - `<n>DY` / `<n>MO` / `<n>YR` — a calendar interval in days, months, or
-  years, e.g. `30DY`, `12MO`, `3YR` (months and years are converted to days
-  at 30 and 365 days respectively)
+  years, e.g. `30DY`, `12MO`, `3YR` (stored as days, 30 per month and 365
+  per year; the next due date is the earlier of that day count and the same
+  number of calendar months or years, so `1MO` from 31 January is due on 28
+  February — never after the calendar deadline)
 - Combine both with a `/`, e.g. `100FH / 12MO` — the item is then due at
   whichever of the two is reached first, exactly like the official form's
   own combined intervals

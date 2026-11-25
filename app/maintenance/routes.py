@@ -4,7 +4,6 @@ import json
 import os
 import uuid
 from datetime import date as _date
-from datetime import timedelta
 from typing import Any
 
 import openpyxl  # pyright: ignore[reportMissingImports]
@@ -44,6 +43,7 @@ from models import (
     Tenant,
     TriggerType,
     db,
+    next_due_date,
 )  # pyright: ignore[reportMissingImports]
 from pwa import pending  # pyright: ignore[reportMissingImports]
 from services.authorization import (
@@ -581,7 +581,7 @@ def service_trigger(aircraft_id: int, trigger_id: int) -> ResponseReturnValue:
         # no due value yet) is scheduled from this one.
         unscheduled = t.needs_review
         if (t.due_date is not None or unscheduled) and t.interval_days and performed_at:
-            t.due_date = performed_at + timedelta(days=t.interval_days)
+            t.due_date = next_due_date(performed_at, t.interval_days)
         if (
             (t.due_engine_hours is not None or unscheduled)
             and t.interval_hours
