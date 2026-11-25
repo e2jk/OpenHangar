@@ -36,3 +36,7 @@
 - GPS files attached on the flight form are now limited to 20 MB, like the
   GPS imports, and every point of a GPX file counts toward the per-file
   point limit, so a crafted track can no longer exhaust the server's memory.
+- The animated tracks GIF (aircraft and pilot pages) now shows at most 150
+  steps: with a longer history it advances several flights per step, every
+  track still drawn. Rendering it takes far less memory, and only one is
+  rendered at a time.
