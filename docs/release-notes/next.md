@@ -12,6 +12,7 @@
 - The place editor shows more of the surrounding area when it centers on a pin.
 - The new-place form asks the browser to leave the place name empty.
 - Adding a place starts with search and name, with optional details below the map.
+  A place opened from a shared link can be saved immediately from the top of the form.
 - Where next? shows suggestions on opening from a home airfield or the latest logged arrival.
 - Where next? defaults to flight time using the selected aircraft’s cruise speed or 100 kt.
 - Airfield passports now show interactive maps and visit percentages in cards.

@@ -1,10 +1,15 @@
 {% extends "base.html" %}
 {% set no_history_cache = true %}
 {% block title %}{{ _('Edit place') if place else _('Add place') }} — OpenHangar{% endblock %}
+{% macro place_form_actions() %}
+<button class="btn btn-ac-primary" type="submit">{{ _('Save place') }}</button> <a href="{{ url_for('places.place_detail', place_id=place.id) if place else url_for('places.index') }}">{{ _('Cancel') }}</a>
+{% endmacro %}
 {% block content %}
 <div class="container py-4" id="place-editor" data-photo-position-url="{{ url_for('places.photo_position') }}" data-photo-position-text="{{ _('This photo was taken at {latitude}, {longitude}.') }}" data-photo-position-use="{{ _('Use as the place\'s location') }}" data-geocoder-url="{{ url_for('places.geocode') }}" data-geocoder-error="{{ _('Address search failed. Use the map or coordinates, or try again.') }}" data-no-results="{{ _('No matching places found. Try another search or set the pin yourself.') }}">
 <h1>{{ _('Edit place') if place else _('Add place') }}</h1>
 <form method="post" action="{{ url_for('places.edit_place', place_id=place.id) if place else url_for('places.new_place') }}" enctype="multipart/form-data" hx-encoding="multipart/form-data"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+{% set quick_capture = not place and request.method == 'GET' and values.get('external_url') %}
+{% if quick_capture %}<div class="mb-3">{{ place_form_actions() }}</div>{% endif %}
 <div class="mb-3"><label for="place-collection" class="form-label">{{ _('Place collection') }}</label><select class="form-select" id="place-collection" name="collection" {{ 'disabled' if place else '' }} required>{% for collection in collections %}<option value="{{ collection.id }}" {{ 'selected' if collection.id == selected else '' }}>{{ collection.name }}</option>{% endfor %}</select></div>
 <div class="mb-3" role="search"><label class="form-label" for="place-address-query">{{ _('Place name, address or coordinates') if geocoder_enabled else _('Coordinates or map link') }}</label><div class="input-group"><input class="form-control" id="place-address-query" maxlength="2048" autocomplete="off"><button class="btn btn-ac-ghost" type="button" id="place-address-search">{{ _('Search') }}</button></div>{% if geocoder_enabled %}<p class="form-text">{{ _('Choose a result to set the pin and address. An empty place name is filled in too.') }}</p><p><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" hx-boost="false">{{ geocoder_attribution }}</a></p>{% else %}<p class="form-text">{{ geocoder_disabled }}</p>{% endif %}<p id="place-address-error" class="text-danger" role="alert" hidden></p><div class="list-group" id="place-address-results"></div></div>
 <div class="mb-3"><label for="place-title" class="form-label">{{ _('Place name (optional)') }}</label><input class="form-control" id="place-title" name="title"{% if not place %} autocomplete="off"{% endif %} value="{{ values.get('title', '') }}" maxlength="200"></div>
@@ -33,6 +38,6 @@
 <p class="form-text">{{ _('Save a link now and add the name, location and other details later.') }}</p>
 <div class="mb-3"><label for="place-description" class="form-label">{{ _('Description') }}</label><textarea class="form-control" id="place-description" name="description" rows="4" maxlength="8000">{{ values.get('description', '') }}</textarea></div>
 <div class="mb-3"><label for="place-photo" class="form-label">{{ _('Place photo (optional)') }}</label><input class="form-control" type="file" id="place-photo" name="photo" accept="image/jpeg,image/png,image/webp"><div class="form-text" id="place-photo-hint" aria-live="polite"></div>{% if place and place.photo_filename %}<label class="form-check-label mt-2"><input class="form-check-input" type="checkbox" name="remove_photo" value="yes"> {{ _('Remove current photo') }}</label>{% endif %}</div>
-<button class="btn btn-ac-primary" type="submit">{{ _('Save place') }}</button> <a href="{{ url_for('places.place_detail', place_id=place.id) if place else url_for('places.index') }}">{{ _('Cancel') }}</a>
+{% if not quick_capture %}{{ place_form_actions() }}{% endif %}
 </form></div>
 {% endblock %}
