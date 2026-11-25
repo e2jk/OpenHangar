@@ -87,8 +87,8 @@ class AuthorizationService:
                 # No all_planes row and no aircraft_id: use role default for list-level checks
                 mask = default_mask
 
-        # view_only suppresses all write bits
-        if user.view_only:
+        # view_only (set on this membership) suppresses all write bits
+        if tu.view_only:
             write_bits = (
                 PermissionBit.EDIT_AIRCRAFT
                 | PermissionBit.WRITE_MAINTENANCE

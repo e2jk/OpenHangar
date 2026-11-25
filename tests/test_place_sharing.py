@@ -11,7 +11,6 @@ from models import (
     PlaceCollectionInvitation,
     PlaceCollectionMember,
     PlaceVisit,
-    User,
     db,
 )
 from places.access import PlaceError, collection_access
@@ -24,6 +23,7 @@ from places.collections import (
 from places.sharing import accept, invite_email, pending_for_user, revoke
 from werkzeug.exceptions import Forbidden
 
+from tests.auth_helpers import set_membership_flags
 from tests.test_place_collections import destination, people
 
 __all__ = ["people"]
@@ -195,7 +195,7 @@ def test_collection_pages_are_private_tenant_scoped_and_available_without_pilot_
     assert client.get(settings).status_code == 200  # management only, not destinations
     assert client.get(f"/places/?collection={cid}").status_code == 404
     with app.app_context():
-        db.session.get(User, p["admin"]).view_only = True
+        set_membership_flags(p["admin"], view_only=True)
         db.session.commit()
     assert client.get("/places/").status_code == 200
     assert client.get("/places/collections/new").status_code == 403

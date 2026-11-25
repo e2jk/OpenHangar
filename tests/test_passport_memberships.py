@@ -24,6 +24,7 @@ from models import (
 from passports import editions, groups, invitations, memberships, vouchers
 from passports.management import BuilderError
 
+from tests.auth_helpers import set_membership_flags
 from tests.test_passport_builder import signin
 from tests.test_passport_editions import extra
 from tests.test_passport_groups import consent_values, group
@@ -335,8 +336,8 @@ def test_readonly_owner_cannot_remove_but_member_can_withdraw(
     app: Flask, client: FlaskClient, members: dict[str, int]
 ) -> None:
     with app.app_context():
-        db.session.get(User, members["user"]).view_only = True
-        db.session.get(User, members["other"]).view_only = True
+        set_membership_flags(members["user"], view_only=True)
+        set_membership_flags(members["other"], view_only=True)
         db.session.commit()
     path = f"/passports/series/{members['series']}/members"
     signin(client, members["user"])
@@ -453,7 +454,7 @@ def test_join_offers_never_bypass_invitation_or_member_restrictions(
                 p.tenant_id, members["user"], series.id, user.id, passport_id=p.id
             )
         elif reason == "readonly":
-            user.view_only = True
+            set_membership_flags(user.id, view_only=True)
         else:
             from passports import tokens
 

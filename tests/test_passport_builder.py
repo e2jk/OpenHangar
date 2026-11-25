@@ -18,7 +18,6 @@ from models import (
     PassportParticipant,
     PassportStampPhoto,
     PassportVisit,
-    User,
     db,
 )
 from passports import builder
@@ -26,6 +25,7 @@ from passports.drafts import new_draft
 from passports.management import BuilderError
 from werkzeug.datastructures import MultiDict
 
+from tests.auth_helpers import set_membership_flags
 from tests.test_passport_foundation import catalogue
 from tests.test_passport_management import owner
 
@@ -447,8 +447,7 @@ def test_view_only_and_missing_membership(
     with app.test_request_context("/passports/new"), pytest.raises(Forbidden):
         _actor()
     with app.app_context():
-        user = db.session.get(User, owner["user"])
-        user.view_only = True
+        set_membership_flags(owner["user"], view_only=True)
         db.session.commit()
     signin(client, owner["user"])
     assert client.get("/passports/new").status_code == 403

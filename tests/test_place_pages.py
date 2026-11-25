@@ -10,12 +10,13 @@ from unittest.mock import patch
 import pytest
 from flask import Flask
 from flask.testing import FlaskClient
-from models import Place, PlaceCollectionInvitation, PlaceTag, PlaceVisit, User, db
+from models import Place, PlaceCollectionInvitation, PlaceTag, PlaceVisit, db
 from places.cleanup import purge_retired
 from places.collections import create_collection, set_default, set_member
 from places.management import photo_path, save_place
 from places.sharing import invite_email
 
+from tests.auth_helpers import set_membership_flags
 from tests.test_place_collections import people
 from tests.test_place_management import form, upload
 from tests.test_place_sharing import signin
@@ -222,7 +223,7 @@ def test_place_photo_and_forms_respect_readers_nonmembers_and_view_only(
     signin(client, p)
     assert points(client.get(url))[0]["visited"] is True
     with app.app_context():
-        db.session.get(User, p["creator"]).view_only = True
+        set_membership_flags(p["creator"], view_only=True)
         db.session.commit()
     assert client.get("/places/new").status_code == 403
     assert client.get(url).status_code == 200

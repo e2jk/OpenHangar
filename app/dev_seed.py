@@ -105,18 +105,23 @@ def seed() -> None:
         )
         db.session.add(u)
         db.session.flush()
-        db.session.add(TenantUser(user_id=u.id, tenant_id=tenant.id, role=role))
+        db.session.add(
+            TenantUser(
+                user_id=u.id,
+                tenant_id=tenant.id,
+                role=role,
+                is_pilot=role == Role.PILOT,
+                is_maintenance=role == Role.MAINTENANCE,
+            )
+        )
         if is_admin:
             admin_user = u
         if role == Role.PILOT and pilot_user is None:
             pilot_user = u
-            u.is_pilot = True
         elif role == Role.PILOT:
             renter_user = u
-            u.is_pilot = True
         if role == Role.MAINTENANCE:
             maintenance_user = u
-            u.is_maintenance = True
         if role == Role.VIEWER:
             viewer_user = u
 
@@ -196,11 +201,15 @@ def seed() -> None:
             is_active=True,
             name=name,
         )
-        sho_user.is_pilot = True
         db.session.add(sho_user)
         db.session.flush()
         db.session.add(
-            TenantUser(user_id=sho_user.id, tenant_id=sho_tenant.id, role=Role.OWNER)
+            TenantUser(
+                user_id=sho_user.id,
+                tenant_id=sho_tenant.id,
+                role=Role.OWNER,
+                is_pilot=True,
+            )
         )
         sho_user_ids.append(sho_user.id)
     seed_shared_ownership_tenant(sho_tenant.id, sho_user_ids)

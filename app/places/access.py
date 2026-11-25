@@ -12,6 +12,7 @@ from models import (
     User,
     db,
 )
+from utils import is_view_only  # pyright: ignore[reportMissingImports]
 
 
 class PlaceError(ValueError):
@@ -30,7 +31,7 @@ def actor(tenant_id: int, user_id: int, *, writing: bool = False) -> User:
         )
         .first()
     )
-    if user is None or (writing and user.view_only):
+    if user is None or (writing and is_view_only(user_id, tenant_id)):
         raise PlaceError(_("You cannot make this change."))
     return user
 

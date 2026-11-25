@@ -21,6 +21,7 @@ from models import (
 from passports import comments
 from passports.management import BuilderError
 
+from tests.auth_helpers import set_membership_flags
 from tests.test_passport_builder import signin
 from tests.test_passport_groups import group
 from tests.test_passport_management import owner
@@ -221,7 +222,7 @@ def test_validation_readonly_and_membership_revocation_do_not_render_stale_conte
             == 409
         )
     with app.app_context():
-        db.session.get(User, s["other"]).view_only = True
+        set_membership_flags(s["other"], view_only=True)
         db.session.commit()
     assert 'id="passport-comment-form"' not in client.get(path(s)).text
     assert (
@@ -229,7 +230,7 @@ def test_validation_readonly_and_membership_revocation_do_not_render_stale_conte
         == 403
     )
     with app.app_context():
-        db.session.get(User, s["other"]).view_only = False
+        set_membership_flags(s["other"], view_only=False)
         db.session.commit()
 
     def revoke(*_args, **_kwargs):

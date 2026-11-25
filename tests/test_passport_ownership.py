@@ -19,6 +19,7 @@ from models import (
 from passports import editions, groups, memberships, ownership, vouchers
 from passports.management import BuilderError
 
+from tests.auth_helpers import set_membership_flags
 from tests.test_passport_builder import signin
 from tests.test_passport_editions import extra
 from tests.test_passport_groups import consent_values, group
@@ -95,7 +96,9 @@ def test_acceptance_transfers_only_group_editions_and_no_personal_vouchers(
             db.session.get(TenantUser, (members["basic"], members["tenant"])).role
             is None
         )
-        assert not db.session.get(User, members["basic"]).is_pilot
+        assert not db.session.get(
+            TenantUser, (members["basic"], members["tenant"])
+        ).is_pilot
         assert (
             ledger_values(
                 db.session.get(Passport, members["passport"]), members["other"]
@@ -228,7 +231,7 @@ def test_ownership_revalidates_actor_participation_and_offer(
         elif reason == "removed":
             memberships.remove(tenant, original, series_id, target)
         elif reason == "readonly":
-            db.session.get(User, target).view_only = True
+            set_membership_flags(target, view_only=True)
         elif reason == "inactive":
             db.session.get(User, target).is_active = False
         elif reason == "expired":

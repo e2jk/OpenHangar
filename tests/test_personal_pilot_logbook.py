@@ -19,6 +19,7 @@ from models import (
 from passports.eligibility import passport_progress
 from services.account_scope import personal_logbook
 
+from tests.auth_helpers import set_membership_flags
 from tests.test_passport_builder import signin
 from tests.test_passport_management import owner
 
@@ -40,9 +41,8 @@ ENTRY = {
 def personal(app: Flask, owner: dict[str, int]) -> dict[str, int]:
     """The passport owner becomes a passport-only friend; `other` administers."""
     with app.app_context():
-        user = db.session.get(User, owner["user"])
-        user.is_pilot = True  # a global flag a restricted account never inherits
         tu = TenantUser.query.filter_by(user_id=owner["user"]).one()
+        tu.is_pilot = True  # a flag a restricted account never gets access from
         tu.role, tu.access_scope = None, "personal"
         TenantUser.query.filter_by(user_id=owner["other"]).one().role = Role.OWNER
         db.session.add_all(
@@ -237,7 +237,7 @@ def test_full_accounts_and_view_only_accounts(
     assert response.status_code == 302
     assert response.headers["Location"].endswith("/pilot/logbook")
     with app.app_context():
-        db.session.get(User, personal["user"]).view_only = True
+        set_membership_flags(personal["user"], view_only=True)
         db.session.commit()
     signin(client, personal["user"])
     assert 'name="confirm"' not in client.get("/passports/start-logbook").text

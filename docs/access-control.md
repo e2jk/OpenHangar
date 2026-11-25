@@ -1,7 +1,7 @@
 # OpenHangar — Access Control & Permissions
 
 This page describes the access-control model as implemented: roles,
-per-user capability flags, per-aircraft permission masks, and how a user's
+per-hangar capability flags, per-aircraft permission masks, and how a user's
 effective permissions are resolved.
 
 ---
@@ -25,7 +25,10 @@ Each user is assigned exactly one role per tenant:
 ## Capability flags
 
 Independent of the role, each user carries three flags, editable from the
-user management page:
+user management page. They are set per hangar, on the user's membership: a
+person who belongs to several hangars (a passport group's hangar, for
+example) has each hangar's own flags there, and one hangar's admins can never
+change them in another:
 
 - **`is_pilot`** — enables pilot-specific flows: personal logbook entries,
   reservations, pilot-level flight logging. An owner or maintenance user who

@@ -1040,11 +1040,13 @@ def create_app() -> Flask:
         _restricted_account = bool(_in_request and restricted(current_membership()))
         _personal_logbook = bool(_in_request and personal_logbook(current_membership()))
         role = current_user_role() if _in_request else None
-        # Phase 23: is_pilot/is_maint also enabled by per-user capability flags
         uid = session.get("user_id") if _in_request else None
         _user_flags = db.session.get(User, uid) if uid else None
-        _flag_pilot = bool(_user_flags and _user_flags.is_pilot)
-        _flag_maint = bool(_user_flags and _user_flags.is_maintenance)
+        # Phase 23: is_pilot/is_maint also enabled by this membership's
+        # capability flags
+        _flags = current_membership() if _in_request else None
+        _flag_pilot = bool(_flags and _flags.is_pilot)
+        _flag_maint = bool(_flags and _flags.is_maintenance)
         if _restricted_account:
             role = None
             _flag_pilot = _flag_maint = False

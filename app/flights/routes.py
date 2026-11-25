@@ -1487,8 +1487,8 @@ def gps_editable(fe: Flight) -> bool:
     uid = session.get("user_id")
     role = current_user_role()
     if role not in _PILOT_ACCESS_ROLES:
-        user = db.session.get(User, uid) if uid else None
-        if not (user and user.is_pilot):
+        membership = current_membership()
+        if not (membership and membership.is_pilot):
             return False
     return can_edit_shared(fe, uid, role)
 
