@@ -1010,6 +1010,27 @@ class TestImportedItemScheduling:
             assert db.session.get(MaintenanceTrigger, trid).needs_review is False
 
 
+class TestHoursBasisFallback:
+    """A limit whose basis has no reading is evaluated on the other counter,
+    never left at "ok" for good."""
+
+    def test_flight_basis_without_flight_counter_uses_engine_hours(self):
+        t = MaintenanceTrigger(
+            trigger_type="hours", due_engine_hours=1100, hours_basis=HoursBasis.FLIGHT
+        )
+        assert t.status(current_engine_hours=1150.0) == "overdue"
+        assert (
+            t.status(current_engine_hours=1150.0, current_flight_hours=1000.0) == "ok"
+        )
+
+    def test_engine_basis_without_engine_counter_uses_flight_hours(self):
+        t = MaintenanceTrigger(
+            trigger_type="hours", due_engine_hours=1100, hours_basis=HoursBasis.ENGINE
+        )
+        assert t.status(current_flight_hours=1105.0) == "overdue"
+        assert t.status() == "ok"
+
+
 class TestEditTrigger:
     def test_get_prefills_form(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
