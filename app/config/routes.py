@@ -1230,20 +1230,16 @@ def notification_preferences() -> ResponseReturnValue:
         return redirect(url_for("config.notification_preferences"))
 
     # Build current effective preferences for display
+    # Without a hangar membership no type is visible (role and flags both
+    # come from the membership), so every visible type has a tenant here.
     prefs: dict[str, dict[str, object]] = {}
-    for notif_type in visible_types:
-        if tenant_id:
-            from services.notification_service import (
-                get_effective_preference,  # pyright: ignore[reportMissingImports]
-            )
+    if tenant_id is not None:
+        from services.notification_service import (
+            get_effective_preference,  # pyright: ignore[reportMissingImports]
+        )
 
+        for notif_type in visible_types:
             prefs[notif_type] = get_effective_preference(user.id, tenant_id, notif_type)
-        else:
-            prefs[notif_type] = dict(
-                NotificationType.SYSTEM_DEFAULTS.get(
-                    notif_type, {"enabled": False, "threshold_days": None}
-                )
-            )
 
     # Tenant defaults visible only to admins/owners
     tenant_defaults: dict[str, dict[str, object]] | None = None
