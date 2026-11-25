@@ -264,6 +264,53 @@ class TestRoutes:
         assert rv.status_code == 422
         assert b"too large to import" in rv.data
 
+    def test_amp_import_ignores_a_merged_range_over_the_whole_sheet(self, app, client):
+        """A few bytes declaring A1:XFD1048576 merged: openpyxl's full mode
+        would build an object per merged cell, read-only mode streams the
+        rows and the programme imports as usual."""
+        from tests.test_amp_import_routes import _VALID_ROWS, _make_xlsx
+
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _amp_login(app, client)
+        source = zipfile.ZipFile(io.BytesIO(_make_xlsx(_VALID_ROWS)))
+        out = io.BytesIO()
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as target:
+            for entry in source.infolist():
+                content = source.read(entry.filename)
+                if entry.filename == "xl/worksheets/sheet1.xml":
+                    content = content.replace(
+                        b"</sheetData>",
+                        b'</sheetData><mergeCells count="1">'
+                        b'<mergeCell ref="A1:XFD1048576"/></mergeCells>',
+                    )
+                target.writestr(entry, content)
+        rv = client.post(
+            f"/aircraft/{acid}/maintenance/import",
+            data={"amp_file": (io.BytesIO(out.getvalue()), "amp.xlsx")},
+            content_type="multipart/form-data",
+        )
+        assert rv.status_code == 200
+        assert b"Engine 100 hr inspection" in rv.data
+
+    def test_amp_import_refuses_more_rows_than_the_budget(
+        self, app, client, monkeypatch
+    ):
+        from tests.test_amp_import_routes import _VALID_ROWS, _make_xlsx
+
+        monkeypatch.setattr("maintenance.amp_import.MAX_ROWS", 3)
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _amp_login(app, client)
+        rows = [*_VALID_ROWS, *([["", "Extra task", "", "", "50FH", ""]] * 5)]
+        rv = client.post(
+            f"/aircraft/{acid}/maintenance/import",
+            data={"amp_file": (io.BytesIO(_make_xlsx(rows)), "amp.xlsx")},
+            content_type="multipart/form-data",
+        )
+        assert rv.status_code == 422
+        assert b"too large to import" in rv.data
+
 
 def test_merged_ranges_starting_outside_the_cells_read_are_ignored():
     from pilots.logbook_import import _merge_label_map

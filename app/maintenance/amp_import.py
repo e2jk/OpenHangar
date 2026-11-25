@@ -19,6 +19,11 @@ from models import (  # pyright: ignore[reportMissingImports]
     ComponentType,
     HoursBasis,
 )
+from services.spreadsheet_limits import (  # pyright: ignore[reportMissingImports]
+    MAX_COLUMNS,
+    MAX_ROWS,
+    too_large_message,
+)
 
 if TYPE_CHECKING:
     import openpyxl
@@ -57,7 +62,12 @@ def find_header(wb: openpyxl.Workbook) -> HeaderLocation:
     in workbook order."""
     for ws in wb.worksheets:
         for row_idx, row in enumerate(
-            ws.iter_rows(min_row=1, max_row=_MAX_HEADER_SCAN_ROWS, values_only=True)
+            ws.iter_rows(
+                min_row=1,
+                max_row=_MAX_HEADER_SCAN_ROWS,
+                max_col=MAX_COLUMNS,
+                values_only=True,
+            )
         ):
             col_index: dict[str, int] = {}
             for col_idx, cell in enumerate(row):
@@ -203,9 +213,15 @@ def parse_amp_rows(wb: openpyxl.Workbook, components: list[Any]) -> list[ParsedA
     ws = wb[header.sheet_name]
     rows: list[ParsedAmpRow] = []
     for row_idx, row in enumerate(
-        ws.iter_rows(min_row=header.header_row_index + 2, values_only=True),
+        ws.iter_rows(
+            min_row=header.header_row_index + 2,
+            max_col=MAX_COLUMNS,
+            values_only=True,
+        ),
         start=header.header_row_index + 2,
     ):
+        if row_idx > MAX_ROWS:
+            raise ValueError(too_large_message())
         name = _text_or_none(_cell(row, header.col_index, "task_description"))
         if not name:
             continue
