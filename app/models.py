@@ -4026,6 +4026,9 @@ class LedgerEntry(db.Model):
     # Link back to the domain object that produced the entry, for drill-down:
     source_type = db.Column(db.String(32), nullable=True)  # e.g. "rental_charge"
     source_id = db.Column(db.Integer, nullable=True)
+    # Hourly charges (co-owner flight usage, hourly reserve contribution):
+    # the rate they were billed at, kept when the aircraft's rate changes.
+    unit_rate = db.Column(db.Numeric(10, 2), nullable=True)
     # SET NULL, not RESTRICT: entries are never deleted in the app (append-only,
     # no delete route) so this only matters for admin-level DB surgery / test
     # cleanup — a self-referential RESTRICT here blocks a bulk DELETE FROM

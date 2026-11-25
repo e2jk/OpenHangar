@@ -83,33 +83,31 @@ def _sync_entry(
     entry_type: str,
     entry_date: date,
     description: str,
+    *,
+    hours: Decimal | None = None,
+    rate: Decimal | None = None,
 ) -> None:
     """Post or refresh the one entry for this (account, source) so it
-    matches expected_amount. Called only while the source is currently in
+    matches expected_amount.
+
+    An hourly charge (`hours` and `rate` given) keeps the rate it was first
+    billed at: a later rate change applies to flights billed after it, never
+    to ones already billed (only a change in the flight's hours re-prices
+    it, at its own rate). Called only while the source is currently in
     scope and billable — reversing a source that's *left* scope is
     `_reverse_orphaned`'s job (the shared mechanism across all three
     sub-steps), not this function's."""
     from services.billing import BillingService
 
     live = _live_entry(account.id, source_type, source_id)
-
-    if live is None:
-        BillingService.post(
-            account,
-            entry_type,
-            expected_amount,
-            description,
-            entry_date,
-            source_type=source_type,
-            source_id=source_id,
-        )
-        return
-
-    if _quantize(live.amount) == _quantize(expected_amount):
-        return
-
-    BillingService.reverse(live, None, str(_("Source record changed")))
-    BillingService.post(
+    if live is not None and hours is not None and live.unit_rate is not None:
+        rate = Decimal(live.unit_rate)  # billed at its own rate, kept
+        expected_amount = _quantize(hours * rate)
+    if live is not None:
+        if _quantize(live.amount) == _quantize(expected_amount):
+            return
+        BillingService.reverse(live, None, str(_("Source record changed")))
+    entry = BillingService.post(
         account,
         entry_type,
         expected_amount,
@@ -118,6 +116,7 @@ def _sync_entry(
         source_type=source_type,
         source_id=source_id,
     )
+    entry.unit_rate = rate
 
 
 def _reverse_orphaned(
@@ -125,6 +124,8 @@ def _reverse_orphaned(
     owners: list[AircraftOwner],
     source_type: str,
     expected_keys: set[tuple[int, int]],
+    *,
+    all_accounts: bool = False,
 ) -> None:
     """Reverse any live entry of this source_type, on a current owner's
     account, whose (account_id, source_id) is no longer in expected_keys —
@@ -136,8 +137,14 @@ def _reverse_orphaned(
 
     from services.billing import BillingService
 
-    for owner in owners:
-        account = _account_for(aircraft, owner.user_id)
+    # Split costs are kept on departed owners' accounts too (all_accounts):
+    # one that leaves scope is reversed there as well.
+    accounts = (
+        _aircraft_accounts(aircraft)
+        if all_accounts
+        else [_account_for(aircraft, owner.user_id) for owner in owners]
+    )
+    for account in accounts:
         live_entries = (
             LedgerEntry.query.filter_by(account_id=account.id, source_type=source_type)
             .filter(LedgerEntry.reverses_id.is_(None))
@@ -150,6 +157,109 @@ def _reverse_orphaned(
                 BillingService.reverse(
                     entry, None, str(_("Source record removed or no longer billable"))
                 )
+
+
+def _aircraft_accounts(aircraft: Aircraft) -> list[BillingAccount]:
+    """Every co-owner account of this aircraft — departed owners' included."""
+    from models import BillingAccount, BillingAccountKind
+
+    return cast(
+        "list[BillingAccount]",
+        BillingAccount.query.filter_by(
+            tenant_id=aircraft.tenant_id,
+            kind=BillingAccountKind.CO_OWNER,
+            aircraft_id=aircraft.id,
+        ).all(),
+    )
+
+
+def _split_by_share(
+    total: Decimal, weights: list[tuple[Any, Decimal]]
+) -> list[tuple[Any, Decimal]]:
+    """`total` split in proportion to the weights; the rounding residue goes
+    to the last (largest-weight) item, so the parts always add up."""
+    ordered = sorted(weights, key=lambda w: w[1])
+    weight_sum = sum((w for _k, w in ordered), Decimal(0))
+    parts: list[tuple[Any, Decimal]] = []
+    running = Decimal(0)
+    for i, (key, weight) in enumerate(ordered):
+        if i < len(ordered) - 1:
+            part = _quantize(total * weight / weight_sum)
+            running += part
+        else:
+            part = _quantize(total - running)
+        parts.append((key, part))
+    return parts
+
+
+def _sync_split(
+    aircraft: Aircraft,
+    owners: list[AircraftOwner],
+    source_type: str,
+    source_id: int,
+    total: Decimal,
+    entry_date: date,
+    describe: Any,
+    expected_keys: set[tuple[int, int]],
+) -> None:
+    """Split a shared cost (fixed expense, monthly reserve) once, then keep
+    that split.
+
+    The first pass splits `total` among the owners of the day by share. Later
+    passes never re-split it when owners or shares change (a share sold in
+    June does not re-bill February); if the total itself changes, or the
+    split no longer adds up to it (re-splits by earlier versions billed
+    more than 100% after an ownership change), the posted parts are
+    rescaled in their own proportions on the same accounts — departed
+    owners' included — with visible reversal and correction entries."""
+    from models import LedgerEntryType
+
+    from services.billing import BillingService
+
+    total = _quantize(total)
+    live = [
+        entry
+        for account in _aircraft_accounts(aircraft)
+        if (entry := _live_entry(account.id, source_type, source_id)) is not None
+    ]
+    if not live:
+        by_owner = {o.id: o for o in owners}
+        for owner_id, amount in _split_by_share(
+            total, [(o.id, Decimal(o.share_pct)) for o in owners]
+        ):
+            owner = by_owner[owner_id]
+            account = _account_for(aircraft, owner.user_id)
+            expected_keys.add((account.id, source_id))
+            if amount > 0:
+                BillingService.post(
+                    account,
+                    LedgerEntryType.CHARGE,
+                    amount,
+                    describe(owner.share_pct),
+                    entry_date,
+                    source_type=source_type,
+                    source_id=source_id,
+                )
+        return
+    expected_keys.update((entry.account_id, source_id) for entry in live)
+    if sum((Decimal(e.amount) for e in live), Decimal(0)) == total:
+        return
+    by_id = {entry.id: entry for entry in live}
+    for entry_id, amount in _split_by_share(
+        total, [(e.id, Decimal(e.amount)) for e in live]
+    ):
+        entry = by_id[entry_id]
+        BillingService.reverse(entry, None, str(_("Source record changed")))
+        if amount > 0:
+            BillingService.post(
+                cast("BillingAccount", entry.account),
+                LedgerEntryType.CHARGE,
+                amount,
+                entry.description,
+                entry_date,
+                source_type=source_type,
+                source_id=source_id,
+            )
 
 
 def _expense_desc(expense: Any) -> str:
@@ -189,58 +299,41 @@ def _post_buy_ins(aircraft: Aircraft, owners: list[AircraftOwner]) -> None:
 
 
 def _post_fixed_expense_shares(aircraft: Aircraft, owners: list[AircraftOwner]) -> None:
-    from models import Expense, ExpenseCategory, LedgerEntryType
+    from models import Expense, ExpenseCategory
 
     expected_keys: set[tuple[int, int]] = set()
-
     if owners:
+        # The recurring template row is the series' first occurrence (its
+        # generated rows start one interval later): billed like any other.
         expenses = Expense.query.filter(
             Expense.aircraft_id == aircraft.id,
             Expense.expense_category == ExpenseCategory.FIXED,
-            Expense.recurrence.is_(None),
             Expense.date >= aircraft.co_owner_billing_start,
         ).all()
-
-        # Largest-share-residue rule: sort ascending by share_pct (ties
-        # broken by user_id descending), every owner but the last gets
-        # their exact proportional share quantized; the last (largest
-        # share) absorbs the rounding residue so the split always sums
-        # to the expense total exactly.
-        ordered = sorted(owners, key=lambda o: (o.share_pct, -o.user_id))
-        accounts = {o.id: _account_for(aircraft, o.user_id) for o in ordered}
-
         for expense in expenses:
-            running_total = Decimal(0)
-            for i, owner in enumerate(ordered):
-                account = accounts[owner.id]
-                if i < len(ordered) - 1:
-                    share_amount = _quantize(
-                        Decimal(expense.amount)
-                        * Decimal(owner.share_pct)
-                        / Decimal(100)
-                    )
-                    running_total += share_amount
-                else:
-                    share_amount = _quantize(Decimal(expense.amount) - running_total)
-                expected_keys.add((account.id, expense.id))
-                description = str(
+
+            def describe(pct: Any, expense: Any = expense) -> str:
+                return str(
                     _(
                         "Fixed cost share (%(pct)s%%) — %(desc)s",
-                        pct=owner.share_pct,
+                        pct=pct,
                         desc=_expense_desc(expense),
                     )
                 )
-                _sync_entry(
-                    account,
-                    "expense_share",
-                    expense.id,
-                    share_amount,
-                    LedgerEntryType.CHARGE,
-                    expense.date,
-                    description,
-                )
 
-    _reverse_orphaned(aircraft, owners, "expense_share", expected_keys)
+            _sync_split(
+                aircraft,
+                owners,
+                "expense_share",
+                expense.id,
+                Decimal(expense.amount),
+                expense.date,
+                describe,
+                expected_keys,
+            )
+    _reverse_orphaned(
+        aircraft, owners, "expense_share", expected_keys, all_accounts=True
+    )
 
 
 def _post_flight_usage(aircraft: Aircraft, owners: list[AircraftOwner]) -> None:
@@ -283,6 +376,8 @@ def _post_flight_usage(aircraft: Aircraft, owners: list[AircraftOwner]) -> None:
                 LedgerEntryType.CHARGE,
                 flight.date,
                 description,
+                hours=Decimal(flight.flight_time),
+                rate=Decimal(aircraft.co_owner_hourly_rate),
             )
 
     _reverse_orphaned(aircraft, owners, "flight_usage", expected_keys)
@@ -336,51 +431,38 @@ def _post_reserve_contributions(
                 LedgerEntryType.CHARGE,
                 flight.date,
                 description,
+                hours=Decimal(flight.flight_time),
+                rate=Decimal(aircraft.reserve_contribution_hourly),
             )
 
     elif aircraft.reserve_contribution_monthly is not None and owners:
-        ordered = sorted(owners, key=lambda o: (o.share_pct, -o.user_id))
-        accounts = {o.id: _account_for(aircraft, o.user_id) for o in ordered}
-
         today = date.today()
         year, month = (
             aircraft.co_owner_billing_start.year,
             aircraft.co_owner_billing_start.month,
         )
         while (year, month) <= (today.year, today.month):
-            source_id = year * 100 + month
-            entry_date = date(year, month, 1)
-            running_total = Decimal(0)
-            for i, owner in enumerate(ordered):
-                account = accounts[owner.id]
-                if i < len(ordered) - 1:
-                    share_amount = _quantize(
-                        Decimal(aircraft.reserve_contribution_monthly)
-                        * Decimal(owner.share_pct)
-                        / Decimal(100)
-                    )
-                    running_total += share_amount
-                else:
-                    share_amount = _quantize(
-                        Decimal(aircraft.reserve_contribution_monthly) - running_total
-                    )
-                expected_keys.add((account.id, source_id))
-                description = str(
+            label = f"{year:04d}-{month:02d}"
+
+            def describe(pct: Any, label: str = label) -> str:
+                return str(
                     _(
                         "Reserve fund contribution (%(pct)s%%) — %(month)s",
-                        pct=owner.share_pct,
-                        month=f"{year:04d}-{month:02d}",
+                        pct=pct,
+                        month=label,
                     )
                 )
-                _sync_entry(
-                    account,
-                    "reserve_contribution",
-                    source_id,
-                    share_amount,
-                    LedgerEntryType.CHARGE,
-                    entry_date,
-                    description,
-                )
+
+            _sync_split(
+                aircraft,
+                owners,
+                "reserve_contribution",
+                year * 100 + month,
+                Decimal(aircraft.reserve_contribution_monthly),
+                date(year, month, 1),
+                describe,
+                expected_keys,
+            )
             month += 1
             if month > 12:
                 month = 1
