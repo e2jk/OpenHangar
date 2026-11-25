@@ -203,7 +203,7 @@ msgstr "Stel voor het reservefonds een bijdrage per uur óf per maand in, niet b
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Dit GPS-bestand bevat te veel punten om te importeren (meer dan %(n)s). Splits de opname op in meerdere bestanden."
 
-#: app/aircraft/routes.py:567 app/explore/routes.py:350
+#: app/aircraft/routes.py:567 app/explore/routes.py:366
 msgid "cruise speed"
 msgstr "kruissnelheid"
 
@@ -1126,39 +1126,39 @@ msgstr "Dit bestandstype is niet toegestaan voor bewijsstukken."
 msgid "Expense receipt %(date)s"
 msgstr "Bewijsstuk uitgave %(date)s"
 
-#: app/explore/routes.py:323
+#: app/explore/routes.py:337
 msgid "Choose a reference airfield from the search results."
 msgstr "Kies een referentievliegveld uit de zoekresultaten."
 
-#: app/explore/routes.py:326
+#: app/explore/routes.py:340
 msgid "This reference airfield has no coordinates. Choose another."
 msgstr "Dit referentievliegveld heeft geen coördinaten. Kies een ander."
 
-#: app/explore/routes.py:351
+#: app/explore/routes.py:367
 msgid "distance/time limit"
 msgstr "afstands-/tijdslimiet"
 
-#: app/explore/routes.py:352
+#: app/explore/routes.py:368
 msgid "usable fuel"
 msgstr "bruikbare brandstof"
 
-#: app/explore/routes.py:353
+#: app/explore/routes.py:369
 msgid "fuel flow"
 msgstr "brandstofverbruik"
 
-#: app/explore/routes.py:354
+#: app/explore/routes.py:370
 msgid "reserve minutes"
 msgstr "reserve in minuten"
 
-#: app/explore/routes.py:366
+#: app/explore/routes.py:382
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Voer een kruissnelheid in voor de tijdsmodus of gebruik de afstandsmodus."
 
-#: app/explore/routes.py:375
+#: app/explore/routes.py:391
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "Het theoretische bereik is onbekend. Voer bruikbare brandstof, verbruik, snelheid en een expliciete reserve in die positieve vliegtijd overlaten. Het afstands-/tijdfilter blijft van toepassing."
 
-#: app/explore/routes.py:435
+#: app/explore/routes.py:451
 msgid "Choose a reference airfield and correct the destination filters before downloading."
 msgstr "Kies een referentievliegveld en corrigeer de bestemmingsfilters voordat u downloadt."
 
@@ -4617,7 +4617,7 @@ msgstr "Verkennen"
 #: app/templates/base.html:244 app/templates/explore/where_next.html:3
 #: app/templates/explore/where_next.html:6
 #: app/templates/passports/detail.html:12 app/templates/places/index.html:8
-#: app/templates/places/place_detail.html:13
+#: app/templates/places/place_detail.html:18
 msgid "Where next?"
 msgstr "Waarheen nu?"
 
@@ -4747,7 +4747,7 @@ msgstr "Status"
 #: app/templates/pilots/minimums_edit.html:15
 #: app/templates/places/join_collection.html:5
 #: app/templates/places/new_collection.html:6
-#: app/templates/places/place_form.html:12
+#: app/templates/places/place_form.html:21
 #: app/templates/pwa/share_target.html:15
 #: app/templates/refuels/refuel_form.html:62
 #: app/templates/reservations/charge.html:108
@@ -7138,7 +7138,7 @@ msgstr[1] "%(n)s onderdelen"
 #: app/templates/passports/print.html:19 app/templates/passports/series.html:10
 #: app/templates/passports/series.html:28
 #: app/templates/passports/vouchers.html:10 app/templates/places/index.html:11
-#: app/templates/places/index.html:14 app/templates/places/place_detail.html:6
+#: app/templates/places/index.html:14 app/templates/places/place_detail.html:9
 msgid "Archived"
 msgstr "Gearchiveerd"
 
@@ -7241,7 +7241,7 @@ msgstr "Rekeninguittreksel downloaden (CSV)"
 #: app/templates/expenses/expense_form.html:129
 #: app/templates/expenses/list.html:88 app/templates/passports/builder.html:18
 #: app/templates/passports/next_edition.html:12
-#: app/templates/places/place_form.html:13
+#: app/templates/places/place_form.html:19
 #: app/templates/snags/snag_form.html:37
 msgid "Description"
 msgstr "Omschrijving"
@@ -12857,12 +12857,12 @@ msgid "Optional airfield code"
 msgstr "Optionele vliegveldcode"
 
 #: app/templates/passports/builder.html:58
-#: app/templates/places/place_form.html:18
+#: app/templates/places/place_form.html:14
 msgid "Latitude"
 msgstr "Breedtegraad"
 
 #: app/templates/passports/builder.html:58
-#: app/templates/places/place_form.html:18
+#: app/templates/places/place_form.html:14
 msgid "Longitude"
 msgstr "Lengtegraad"
 
@@ -15282,7 +15282,7 @@ msgid "Nearby radius (km)"
 msgstr "Zoekstraal (km)"
 
 #: app/templates/places/airfield_links.html:12
-#: app/templates/places/place_form.html:14
+#: app/templates/places/place_form.html:9
 msgid "Search"
 msgstr "Zoeken"
 
@@ -15380,7 +15380,7 @@ msgid "Leave collection"
 msgstr "Collectie verlaten"
 
 #: app/templates/places/collection_settings.html:11
-#: app/templates/places/place_form.html:20
+#: app/templates/places/place_form.html:16
 msgid "Tags"
 msgstr "Tags"
 
@@ -15492,7 +15492,7 @@ msgstr "KML downloaden"
 msgid "Collection invitations"
 msgstr "Uitnodigingen voor collecties"
 
-#: app/templates/places/index.html:10
+#: app/templates/places/index.html:10 app/templates/places/place_detail.html:6
 msgid "Place collections"
 msgstr "Collecties met plekken"
 
@@ -15545,7 +15545,7 @@ msgid "Location"
 msgstr "Locatie"
 
 #: app/templates/places/index.html:11 app/templates/places/index.html:14
-#: app/templates/places/place_detail.html:14
+#: app/templates/places/place_detail.html:19
 msgid "Location still to add"
 msgstr "Locatie nog toe te voegen"
 
@@ -15569,7 +15569,7 @@ msgstr "Zonder gekoppelde vliegvelden"
 msgid "Places in the bin are permanently deleted after 30 days. Any editor can restore them before then."
 msgstr "Plaatsen in de prullenbak worden na 30 dagen definitief verwijderd. Elk lid met bewerkingsrechten kan ze voor die tijd herstellen."
 
-#: app/templates/places/index.html:14 app/templates/places/place_detail.html:11
+#: app/templates/places/index.html:14 app/templates/places/place_detail.html:16
 msgid "Place photo"
 msgstr "Foto van de plaats"
 
@@ -15577,11 +15577,11 @@ msgstr "Foto van de plaats"
 msgid "Restore place"
 msgstr "Plaats herstellen"
 
-#: app/templates/places/index.html:14 app/templates/places/place_detail.html:19
+#: app/templates/places/index.html:14 app/templates/places/place_detail.html:24
 msgid "I confirm the permanent deletion of this place and its visits."
 msgstr "Ik bevestig de definitieve verwijdering van deze plaats en de bijbehorende bezoeken."
 
-#: app/templates/places/index.html:14 app/templates/places/place_detail.html:19
+#: app/templates/places/index.html:14 app/templates/places/place_detail.html:24
 msgid "Permanently delete place"
 msgstr "Plaats definitief verwijderen"
 
@@ -15608,49 +15608,53 @@ msgstr "Collectie aanmaken"
 msgid "Edit place"
 msgstr "Plaats bewerken"
 
-#: app/templates/places/place_detail.html:7
+#: app/templates/places/place_detail.html:8
+msgid "Collections"
+msgstr "Collecties"
+
+#: app/templates/places/place_detail.html:12
 #, python-format
 msgid "Place owner: %(name)s"
 msgstr "Eigenaar van de plaats: %(name)s"
 
-#: app/templates/places/place_detail.html:7
+#: app/templates/places/place_detail.html:12
 #, python-format
 msgid "Last changed by %(name)s on %(date)s"
 msgstr "Laatst gewijzigd door %(name)s op %(date)s"
 
-#: app/templates/places/place_detail.html:9
+#: app/templates/places/place_detail.html:14
 msgid "Visit website"
 msgstr "Website bezoeken"
 
-#: app/templates/places/place_detail.html:17
+#: app/templates/places/place_detail.html:22
 msgid "Unarchive place"
 msgstr "Plaats uit archief halen"
 
-#: app/templates/places/place_detail.html:17
+#: app/templates/places/place_detail.html:22
 msgid "Archive place"
 msgstr "Plaats archiveren"
 
-#: app/templates/places/place_detail.html:17
+#: app/templates/places/place_detail.html:22
 msgid "Move to bin"
 msgstr "Naar prullenbak"
 
-#: app/templates/places/place_detail.html:18
+#: app/templates/places/place_detail.html:23
 msgid "Copy or move"
 msgstr "Kopiëren of verplaatsen"
 
-#: app/templates/places/place_detail.html:18
+#: app/templates/places/place_detail.html:23
 msgid "Destination collection"
 msgstr "Doelcollectie"
 
-#: app/templates/places/place_detail.html:18
+#: app/templates/places/place_detail.html:23
 msgid "Copy place"
 msgstr "Plaats kopiëren"
 
-#: app/templates/places/place_detail.html:18
+#: app/templates/places/place_detail.html:23
 msgid "Move place"
 msgstr "Plaats verplaatsen"
 
-#: app/templates/places/place_detail.html:18
+#: app/templates/places/place_detail.html:23
 msgid "Copies keep the content and photo, but no visits. Moving requires every visitor to belong to the destination collection."
 msgstr "Kopieën behouden de inhoud en foto, zonder bezoeken. Verplaatsen kan alleen als elke bezoeker lid is van de doelcollectie."
 
@@ -15676,64 +15680,64 @@ msgid "Coordinates could not be read. Enter latitude and longitude directly."
 msgstr "De coördinaten konden niet worden gelezen. Voer de breedtegraad en lengtegraad rechtstreeks in."
 
 #: app/templates/places/place_form.html:8
-msgid "Link (optional)"
-msgstr "Link (optioneel)"
-
-#: app/templates/places/place_form.html:9
-msgid "Save a link now and add the name, location and other details later."
-msgstr "Sla nu een link op en voeg de naam, locatie en andere details later toe."
-
-#: app/templates/places/place_form.html:10
 msgid "Place collection"
 msgstr "Collectie met plekken"
 
-#: app/templates/places/place_form.html:11
-msgid "Place name (optional)"
-msgstr "Naam van de plek (optioneel)"
-
-#: app/templates/places/place_form.html:12
-msgid "Save place"
-msgstr "Plaats opslaan"
-
-#: app/templates/places/place_form.html:14
+#: app/templates/places/place_form.html:9
 msgid "Place name or address"
 msgstr "Plaatsnaam of adres"
 
-#: app/templates/places/place_form.html:14
+#: app/templates/places/place_form.html:9
 msgid "Choose a result to set the pin and address. An empty place name is filled in too."
 msgstr "Kies een resultaat om de speld te plaatsen en het adres in te vullen. Een lege plaatsnaam wordt ook ingevuld."
 
-#: app/templates/places/place_form.html:15
+#: app/templates/places/place_form.html:10
+msgid "Place name (optional)"
+msgstr "Naam van de plek (optioneel)"
+
+#: app/templates/places/place_form.html:11
 msgid "Click the map to drop a pin, then drag it to the right spot. You can also paste coordinates or a map link."
 msgstr "Klik op de kaart om een speld te plaatsen en sleep deze naar de juiste plek. Je kunt ook coördinaten of een kaartlink plakken."
 
-#: app/templates/places/place_form.html:16
+#: app/templates/places/place_form.html:12
 msgid "Coordinates or map link"
 msgstr "Coördinaten of kaartlink"
 
-#: app/templates/places/place_form.html:16
+#: app/templates/places/place_form.html:12
 msgid "Use coordinates"
 msgstr "Coördinaten gebruiken"
 
-#: app/templates/places/place_form.html:17
+#: app/templates/places/place_form.html:13
 msgid "Place location"
 msgstr "Locatie van de plaats"
 
-#: app/templates/places/place_form.html:19
+#: app/templates/places/place_form.html:15
 msgid "Address (optional)"
 msgstr "Adres (optioneel)"
 
-#: app/templates/places/place_form.html:20
+#: app/templates/places/place_form.html:16
 msgid "One tag per line. You can also choose suggestions below."
 msgstr "Eén tag per regel. Je kunt ook uit de onderstaande suggesties kiezen."
 
-#: app/templates/places/place_form.html:21
+#: app/templates/places/place_form.html:17
+msgid "Link (optional)"
+msgstr "Link (optioneel)"
+
+#: app/templates/places/place_form.html:18
+msgid "Save a link now and add the name, location and other details later."
+msgstr "Sla nu een link op en voeg de naam, locatie en andere details later toe."
+
+#: app/templates/places/place_form.html:20
 msgid "Place photo (optional)"
 msgstr "Foto van de plaats (optioneel)"
 
-#: app/templates/places/place_form.html:21
+#: app/templates/places/place_form.html:20
 msgid "Remove current photo"
 msgstr "Huidige foto verwijderen"
+
+#: app/templates/places/place_form.html:21
+msgid "Save place"
+msgstr "Plaats opslaan"
 
 #: app/templates/pwa/share_target.html:3 app/templates/pwa/share_target.html:10
 msgid "Shared files"

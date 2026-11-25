@@ -1144,10 +1144,6 @@ passports.
   collection" button reveals checkboxes, a collection list and a Move button
   (decide whether copying to another collection is needed too).
 
-**Place page**
-- Breadcrumb under the title: "Collections > France", Collections linking to
-  /places/.
-
 **Add-place form** (the usual flow: type the name into the address search,
 pick the first result, check the map — often zooming out — add a tag)
 - Make it clear the search takes an address or coordinates, and let the
