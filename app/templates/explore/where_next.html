@@ -3,7 +3,7 @@
 {% block title %}{{ _('Where next?') }}{% endblock %}
 {% block content %}
 <div class="container py-4">
-<h1>{{ _('Where next?') }}</h1>
+<h1 class="page-title">{{ _('Where next?') }}</h1>
 <p>{{ _('Discover open airfields not yet stamped in your passports, and airfields near the places you want to visit. Distances are great-circle nautical miles; times assume constant cruise speed, still air and direct flight, excluding climb, approach and routing.') }}</p>
 {% for error in errors %}<div class="alert alert-warning" role="alert">{{ error }}</div>{% endfor %}
 <form method="get" class="ac-form-card p-3 mb-4" id="passport-discovery-form">
