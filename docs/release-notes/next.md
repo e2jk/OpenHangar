@@ -44,3 +44,7 @@
   refused for 30 minutes, at sign-in and when changing or removing the
   authenticator. Entering the password again no longer resets the count,
   and the lock raises a security alert.
+- An instance started with `OPENHANGAR_ENV=demo` by mistake no longer
+  erases its database: demo mode, which wipes and reseeds the database on
+  every start, now refuses a database that holds real accounts. The
+  configuration guide now says what each `OPENHANGAR_ENV` value does.

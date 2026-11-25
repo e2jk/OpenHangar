@@ -13,10 +13,11 @@ intentionally skipped because demo always starts from a clean slate.
 """
 
 import os
+import sys
 
 from flask_migrate import stamp, upgrade
 from init import _env_or_file, create_app
-from models import User, db, reset_schema
+from models import User, db, holds_non_demo_data, reset_schema
 from sqlalchemy import inspect
 
 
@@ -86,6 +87,18 @@ def init_database() -> None:
 
     with app.app_context():
         if flask_env == "demo":
+            if holds_non_demo_data(db):
+                # Demo mode wipes the database on every start. A database
+                # with accounts but no demo slot is a real instance: refuse
+                # rather than erase it (OPENHANGAR_ENV set to demo by mistake).
+                print(
+                    "ERROR: OPENHANGAR_ENV=demo wipes the database on every start, "
+                    "and this database holds a real instance's data (accounts but "
+                    "no demo slots). Nothing was changed. Set OPENHANGAR_ENV="
+                    "production, or point demo mode at its own empty database.",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
             print("Demo environment — rebuilding schema and reseeding...")
             reset_schema(db)
             print("Database structure ready.")
