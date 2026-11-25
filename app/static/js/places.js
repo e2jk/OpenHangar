@@ -79,7 +79,7 @@
       } else {
         marker.setLatLng(point);
       }
-      if (focus) map.setView(point, 13);
+      if (focus) map.setView(point, 11);
     }
     function fromInputs(clearPaste) {
       if (!lat.value.trim() || !lon.value.trim()) return;
