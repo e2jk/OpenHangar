@@ -88,7 +88,7 @@
           </div>
 
           <!-- Calendar fields -->
-          <div id="calendar-fields">
+          <div id="calendar-fields"{% if trigger and trigger.due_date %} data-has-values="1"{% endif %}>
             <div class="row">
               <div class="col-6 mb-3">
                 <label for="due_date" class="form-label">
@@ -117,7 +117,7 @@
           </div>
 
           <!-- Hours fields -->
-          <div id="hours-fields">
+          <div id="hours-fields"{% if trigger and trigger.due_engine_hours is not none %} data-has-values="1"{% endif %}>
             <div class="mb-3">
               <label class="form-label">{{ _('Measured against') }}</label>
               <div class="d-flex gap-3">
@@ -172,7 +172,7 @@
           </div>
 
           <!-- Landings fields -->
-          <div id="landings-fields">
+          <div id="landings-fields"{% if trigger and trigger.due_landings is not none %} data-has-values="1"{% endif %}>
             <div class="row">
               <div class="col-6 mb-3">
                 <label for="due_landings" class="form-label">
