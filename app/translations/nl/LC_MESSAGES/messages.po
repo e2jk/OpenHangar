@@ -4958,6 +4958,14 @@ msgstr "Brevet & recency"
 msgid "Passenger currency"
 msgstr "Passagiersrecency"
 
+#: app/templates/dashboard.html:250 app/templates/dashboard.html:270
+msgid "Landings in any aircraft. FCL.060 counts them per class or type: see the per-class recency below."
+msgstr "Landingen in elk luchtvaartuig. FCL.060 telt ze per klasse of type: zie de recente ervaring per klasse hieronder."
+
+#: app/templates/dashboard.html:250 app/templates/dashboard.html:270
+msgid "(any aircraft)"
+msgstr "(elk luchtvaartuig)"
+
 #: app/templates/config/renters_list.html:46 app/templates/dashboard.html:252
 #: app/templates/dashboard.html:272 app/templates/dashboard.html:292
 #: app/templates/dashboard.html:310
