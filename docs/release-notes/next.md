@@ -1,5 +1,6 @@
 # Safer one-click upgrades, and Passports in the Explore menu
 
+- Places shows its map above the filters, explains the collection settings gear on hover, and puts downloads at the bottom.
 - Place address results stay visible and highlight the selected match.
 - Place pages link back to the collection and to all collections in a breadcrumb.
 - The place editor shows more of the surrounding area when it centers on a pin.
