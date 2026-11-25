@@ -1583,7 +1583,7 @@ def has_pilot_access() -> bool:
     return bool(membership.is_pilot)
 
 
-def is_view_only(user_id: int, tenant_id: int | None) -> bool:
+def is_view_only(user_id: int, tenant_id: int) -> bool:
     """Whether this hangar's admins made the user read-only in it.
 
     The flag belongs to the membership: another hangar the account belongs to
@@ -1591,8 +1591,6 @@ def is_view_only(user_id: int, tenant_id: int | None) -> bool:
     """
     from models import TenantUser, db
 
-    if tenant_id is None:
-        return False
     membership = db.session.get(TenantUser, (user_id, tenant_id))
     return bool(membership is not None and membership.view_only)
 
