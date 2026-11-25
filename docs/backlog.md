@@ -1124,3 +1124,42 @@ date. Left:
 
 - capture time as context for counter-photo OCR (backlog "Logbook: OCR
   auto-fill from counter photos").
+
+---
+
+## Performance follow-ups (2026-11-25 audit)
+
+Done already: foreign-key indexes, preloaded maintenance records and GPS
+tracks, deferred track images, the download-all ZIP spooled to disk, and
+"Show all" capped at 2,000 rows. Left, each needing some design work:
+
+- **Public passport page** recomputes every participant's progress from
+  their whole logbook on every anonymous view: use the batched progress
+  (`progress_many`) or a query limited to the passport's airfields and dates,
+  cache the result a few minutes, lower the public rate limit.
+- **Data checks "Run"** loads every GPS track of the hangar in one request:
+  run it as a background job (the scheduler threads and advisory locks
+  exist), read only the columns it needs, and compute counter gaps and
+  overlaps in SQL (`LAG()` over flights per aircraft). A run that times out
+  never saves its count, so the next visit redoes it all.
+- **Manual backup** runs inside the request and holds the archive in memory
+  twice (more when encrypted), under the 120 s worker timeout and a 120 s
+  `pg_dump` timeout that larger databases exceed: stream `pg_dump` to a file,
+  encrypt in chunks (a versioned, streamable format), run it in the
+  background and poll for its status.
+- **Every page** runs about 15–20 queries in the context processor
+  (`init.py`): count them per page type, cache what is per-user and rarely
+  changes (flags, counts) for the request or a short time.
+- **Fleet status** (dashboard, aircraft list, maintenance overview) still
+  lazy-loads components, snags and per-component hour sums per aircraft:
+  preload them or aggregate in SQL.
+- **Reports and utilisation** load the same flights four or five times per
+  period and sum in Python; **pilot stats** aggregate the whole logbook in
+  Python; **Where next?** evaluates each passport's progress separately.
+- **E-mail fan-out** opens one SMTP connection per recipient inside the
+  request, and the **manual EASA sync** sleeps 2 s per node in the request:
+  move both to the background.
+- **Caches without bounds**: the map tile cache is never purged.
+- **Front end**: about 40 page scripts and Leaflet load on every page, and
+  Leaflet and htmx block parsing in `<head>`: defer them, load page scripts
+  only where used.
