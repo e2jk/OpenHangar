@@ -1157,8 +1157,6 @@ pick the first result, check the map — often zooming out — add a tag)
 - Tags: one comma-separated line instead of a box with one tag per line, and
   suggest every tag already used in the user's collections next to the
   starting list.
-- Bug: after adding a place, the next new-place form comes back with the
-  previous place's name in "Place name (optional)".
 
 **Collection settings**
 - Show how many places use each tag in the tag list, so unused ones are easy
