@@ -605,7 +605,10 @@ def apply_pilot_identity(
         if not fe.pic_name:
             fe.pic_name = display_name
         fe.function_pic = ft_decimal
-        fe.function_dual = None
+        # The other slot's hours are the other pilot's own: never cleared
+        # when someone else holds that slot (a GPS import joining a flight).
+        if fe.second_crew_user_id in (None, uid):
+            fe.function_dual = None
     else:  # "dual"
         fe.second_crew_user_id = uid
         if not fe.second_crew_name:
@@ -613,7 +616,8 @@ def apply_pilot_identity(
         if not fe.second_crew_role:
             fe.second_crew_role = CrewRole.STUDENT
         fe.function_dual = ft_decimal
-        fe.function_pic = None
+        if fe.pic_user_id in (None, uid):
+            fe.function_pic = None
 
 
 # ── Serve uploads ─────────────────────────────────────────────────────────────

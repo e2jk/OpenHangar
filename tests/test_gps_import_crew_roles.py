@@ -139,3 +139,37 @@ class TestDefaultRole:
         assert _default_pilot_role([], other_aircraft=True) == "pic"
         ground = {"matched_flight_id": None, "is_ground_only": True}
         assert _default_pilot_role([ground], other_aircraft=False) == "none"
+
+
+def test_joining_a_flight_keeps_the_other_pilots_hours(app):
+    """A pilot joining the free slot of someone else's flight (a GPS import
+    match) takes their own function time; the other pilot's stays."""
+    from datetime import date
+    from decimal import Decimal
+
+    from flights.routes import apply_pilot_identity  # pyright: ignore[reportMissingImports]
+    from models import Flight, User, db  # pyright: ignore[reportMissingImports]
+
+    with app.app_context():
+        x = User(email="x@example.com", password_hash="x", is_active=True)
+        b = User(email="b@example.com", password_hash="x", is_active=True)
+        db.session.add_all([x, b])
+        db.session.flush()
+        fe = Flight(
+            date=date(2026, 6, 1),
+            pic_user_id=x.id,
+            function_pic=Decimal("1.5"),
+            flight_time=Decimal("1.5"),
+        )
+        apply_pilot_identity(fe, None, b.id, "dual")
+        assert fe.second_crew_user_id == b.id
+        assert fe.function_pic == Decimal("1.5")  # X's PIC time kept
+
+        solo = Flight(
+            date=date(2026, 6, 2),
+            second_crew_user_id=b.id,
+            function_dual=Decimal("1.0"),
+            flight_time=Decimal("1.0"),
+        )
+        apply_pilot_identity(solo, None, x.id, "pic")
+        assert solo.function_dual == Decimal("1.0")  # B's dual time kept
