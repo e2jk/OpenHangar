@@ -753,6 +753,13 @@ class TestWritePermissionsEnforced:
             assert AuthorizationService.can(uid, "log_flight", acid)
             assert not AuthorizationService.can(uid, "reserve_aircraft", acid)
 
+    def test_pilot_flag_adds_its_bits_to_a_viewer(self, app, client):
+        _tid, uid, acid = _make_env(app, Role.VIEWER, is_pilot=True)
+        _grant_specific(app, uid, acid)
+        with app.app_context():
+            assert AuthorizationService.can(uid, "log_flight", acid)
+            assert not AuthorizationService.can(uid, "edit_maintenance", acid)
+
     def test_maintenance_flag_adds_its_bits_to_a_viewer(self, app, client):
         _tid, uid, acid = _make_env(app, Role.VIEWER, is_maintenance=True)
         _grant_specific(app, uid, acid)
