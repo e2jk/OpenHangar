@@ -1134,7 +1134,6 @@ top bar's Explore menu now lists Where next?, Places, then Airfield
 passports.
 
 **Where next?**
-- The page's h1 is bigger than on the other pages: use the common title style.
 - Default to flight time, not distance, using the aircraft's normal cruise
   speed when one is known (check whether it is collected at all), else 100 kt.
 - Show suggestions as soon as the page opens: pick a sensible starting

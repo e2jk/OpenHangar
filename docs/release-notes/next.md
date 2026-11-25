@@ -1,5 +1,6 @@
 # Safer one-click upgrades, and Passports in the Explore menu
 
+- Where next? now uses the same title style as other pages.
 - **Action needed for one-click upgrades:** the server's cron job must now
   run the new `openhangar-launcher.sh`, installed once next to
   `docker-compose.yml` (see "One-click upgrades" in the self-hosting
