@@ -583,10 +583,17 @@ SMTP login password.
 
 ### `OPENHANGAR_SMTP_USE_TLS`
 
-Whether to use STARTTLS.
+Whether to use TLS: implicit TLS on port `465`, STARTTLS on any other port.
 
 - **Default**: `true`
 - Set to `false` for plain SMTP (not recommended in production).
+- With TLS on, the mail server's certificate and host name are verified
+  against the container's trusted certificate authorities. A relay whose
+  certificate comes from your own authority (or is self-signed) is refused
+  until you trust it: mount the CA certificate into the container and set
+  Python's standard `SSL_CERT_FILE` variable to its path.
+- Security alert e-mails ([`OPENHANGAR_ALERT_EMAIL_TO`](#openhangar_alert_email_to))
+  use the same connection settings.
 
 ### `OPENHANGAR_SMTP_FROM_ADDRESS`
 

@@ -26,6 +26,7 @@ import html as _html
 import logging
 import os
 import smtplib
+import ssl
 from datetime import UTC, datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -173,6 +174,28 @@ def _subject_prefix() -> str | None:
     return raw
 
 
+def open_smtp_connection(host: str, port: int, *, use_tls: bool) -> smtplib.SMTP:
+    """An SMTP connection to the configured server, TLS checked.
+
+    Port 465 is implicit TLS (SMTPS); any other port with TLS on upgrades the
+    connection with STARTTLS. Either way the server's certificate and host
+    name are verified against the system's trusted authorities, so nobody on
+    the network path can pose as the mail server and read the SMTP password
+    or the mail. A relay with its own certificate authority is trusted by
+    pointing Python's standard ``SSL_CERT_FILE`` variable at that CA bundle.
+    """
+    if use_tls and port == 465:
+        return smtplib.SMTP_SSL(
+            host, port, timeout=10, context=ssl.create_default_context()
+        )
+    conn = smtplib.SMTP(host, port, timeout=10)
+    if use_tls:
+        conn.ehlo()
+        conn.starttls(context=ssl.create_default_context())
+        conn.ehlo()
+    return conn
+
+
 def send_email(
     to: str,
     subject: str,
@@ -230,17 +253,7 @@ def send_email(
         msg.attach(MIMEText(html_body, "html", "utf-8"))
 
     try:
-        conn: smtplib.SMTP
-        if s["use_tls"] and s["port"] == 465:
-            # Port 465 = implicit SSL (SMTPS) — must use SMTP_SSL, not STARTTLS
-            conn = smtplib.SMTP_SSL(s["host"], s["port"], timeout=10)
-        elif s["use_tls"]:
-            conn = smtplib.SMTP(s["host"], s["port"], timeout=10)
-            conn.ehlo()
-            conn.starttls()
-            conn.ehlo()
-        else:
-            conn = smtplib.SMTP(s["host"], s["port"], timeout=10)
+        conn = open_smtp_connection(s["host"], s["port"], use_tls=s["use_tls"])
 
         if s["user"]:
             conn.login(s["user"], s["password"])
