@@ -45,27 +45,14 @@ echo "Starting Flask application..."
 end_time_app_start=$(date +%s)
 log_time $start_time_db_wait $end_time_app_start "Starting the entire web application"
 
-# In demo mode: publish the bundled demo scripts to the host bind-mount so
-# the cron job always runs the version shipped with the current image.
-if [ "$OPENHANGAR_ENV" = "demo" ] && [ -d "/app/demo-scripts" ] && [ -d "/refresh" ]; then
-    echo "Publishing demo scripts to host bind-mount (/refresh)..."
-    cp -r /app/demo-scripts/. /refresh/
-    chmod +x /refresh/refresh.sh 2>/dev/null || true
-fi
-
-# Publish the restore script to the backups bind-mount so the operator can run
-# it from the Docker host: /path/to/backups/restore.sh <archive> [--upgrade-to=...]
-if [ -f "/usr/local/bin/restore.sh" ] && [ -d "/data/backups" ]; then
-    cp /usr/local/bin/restore.sh /data/backups/restore.sh
-    chmod +x /data/backups/restore.sh
-fi
-
-# Publish the upgrade script to the upgrade bind-mount so the host cron job
-# always runs the version shipped with the current image.
-if [ -f "/usr/local/bin/upgrade.sh" ] && [ -n "${OPENHANGAR_UPGRADE_DIR:-}" ] && [ -d "${OPENHANGAR_UPGRADE_DIR}" ]; then
-    echo "Publishing upgrade script to ${OPENHANGAR_UPGRADE_DIR}/upgrade.sh..."
-    cp /usr/local/bin/upgrade.sh "${OPENHANGAR_UPGRADE_DIR}/upgrade.sh"
-    chmod +x "${OPENHANGAR_UPGRADE_DIR}/upgrade.sh"
+# The host scripts (upgrade, restore, demo refresh) are no longer published to
+# folders this container can write to: the host runs them through
+# openhangar-launcher.sh, straight out of the signed image (see
+# docs/self-hosting.md#one-click-upgrades). Copies earlier versions published
+# are removed, so an outdated cron line has nothing to copy from here.
+rm -f /refresh/refresh.sh /data/backups/restore.sh 2>/dev/null || true
+if [ -n "${OPENHANGAR_UPGRADE_DIR:-}" ]; then
+    rm -f "${OPENHANGAR_UPGRADE_DIR}/upgrade.sh" 2>/dev/null || true
 fi
 
 if [ "$OPENHANGAR_ENV" = "development" ]; then

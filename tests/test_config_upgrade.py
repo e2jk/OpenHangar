@@ -97,6 +97,38 @@ class TestUpgradeActiveFlag:
 # ── index() auto_upgrade_enabled flag ─────────────────────────────────────────
 
 
+class TestLauncherNotice:
+    """The config page asks for the one-time cron update until the host's
+    openhangar-launcher.sh renews its marker in the upgrade folder."""
+
+    def _page(self, app, client, tmpdir):
+        uid = _setup_admin(app)
+        _login(client, uid)
+        with patch.dict("os.environ", {"OPENHANGAR_UPGRADE_DIR": tmpdir}):
+            return client.get("/config/").data.decode()
+
+    def test_notice_without_a_launcher(self, app, client):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            assert "openhangar-launcher.sh" in self._page(app, client, tmpdir)
+
+    def test_no_notice_with_a_recent_launcher(self, app, client):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with open(os.path.join(tmpdir, "launcher.seen"), "w") as fh:
+                fh.write("2026-11-25T12:00:00Z\n")
+            assert "openhangar-launcher.sh" not in self._page(app, client, tmpdir)
+
+    def test_notice_when_the_launcher_stopped_running(self, app, client):
+        import time
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            marker = os.path.join(tmpdir, "launcher.seen")
+            with open(marker, "w") as fh:
+                fh.write("old\n")
+            old = time.time() - 3600
+            os.utime(marker, (old, old))
+            assert "openhangar-launcher.sh" in self._page(app, client, tmpdir)
+
+
 class TestAutoUpgradeIndicator:
     def test_disabled_by_default(self, app, client, captured_templates):
         uid = _setup_admin(app)

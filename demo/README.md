@@ -8,10 +8,10 @@ This folder contains everything needed to run the public demo instance of OpenHa
 - Traefik already running with a `traefik-network` external network and a Let's Encrypt cert resolver
 - A DNS A record pointing your demo hostname (e.g. `demo.openhangar.aero`) to the VPS IP
 
-> **Note:** You no longer need to manually download `refresh.sh` from the repo.
-> The script is bundled inside the Docker image and published to the host automatically
-> on each container start (see [Self-updating refresh script](#self-updating-refresh-script) below).
-> Only the initial bootstrap requires a manual step.
+> **Note:** `refresh.sh` is bundled inside the Docker image. The host runs it
+> through `openhangar-launcher.sh`, which verifies the image's signature and
+> takes the script straight out of it, so each release's version is used and
+> the host never runs a file the container wrote.
 
 ## First-time setup
 
@@ -34,18 +34,7 @@ Edit `.env` and fill in all values:
 
 Leave `DEMO_NEXT_WIPE_UTC` empty for now — `refresh.sh` writes it automatically.
 
-### 2. Create the refresh mount point
-
-The refresh script is exported from the container on each start.
-Create the host directory it will be written to:
-
-```bash
-mkdir -p /opt/openhangar/refresh
-```
-
-Make sure this path matches the `REFRESH_MOUNT` volume entry in your `docker-compose.yml`.
-
-### 3. Start the stack
+### 2. Start the stack
 
 ```bash
 docker compose up -d
@@ -57,24 +46,24 @@ The first startup seeds the database automatically. Check logs with:
 docker compose logs -f openhangar-demo-web
 ```
 
-### 4. Set up the refresh cron job
+### 3. Set up the refresh cron job
 
-After the first `docker compose up -d`, the refresh script will appear in `/opt/openhangar/refresh/`.
-Use the one-liner below so the cron job still works even if the container is temporarily stopped:
+Install the launcher once, next to `docker-compose.yml` (see
+[one-click upgrades](../docs/self-hosting.md#one-click-upgrades-optional),
+step 4, for verifying the image first; `cosign` must be installed):
 
 ```bash
+docker run --rm --entrypoint cat ghcr.io/e2jk/openhangar:latest \
+  /usr/local/bin/openhangar-launcher.sh > /opt/openhangar/openhangar-launcher.sh
+chmod 755 /opt/openhangar/openhangar-launcher.sh
 crontab -e
 ```
 
 Add the following line (runs every 3 hours, offset by 7 minutes to avoid the `:00` spike):
 
 ```cron
-7 */3 * * * [ -f /opt/openhangar/refresh/refresh.sh ] && cp /opt/openhangar/refresh/refresh.sh /opt/openhangar/refresh.sh; /opt/openhangar/refresh.sh >> /var/log/openhangar-demo.log 2>&1
+7 */3 * * * /opt/openhangar/openhangar-launcher.sh refresh >> /var/log/openhangar-demo.log 2>&1
 ```
-
-How it works:
-- **Container running:** the bind-mount at `/opt/openhangar/refresh/refresh.sh` exists → it is copied to the stable path `/opt/openhangar/refresh.sh` → that stable copy is executed (and will restart the container if the image changed).
-- **Container stopped:** the bind-mount directory is empty → the copy is skipped → the last-known stable copy at `/opt/openhangar/refresh.sh` is executed instead, which will pull and restart the container normally.
 
 To verify cron is working, check the log after the first scheduled run:
 
@@ -82,7 +71,7 @@ To verify cron is working, check the log after the first scheduled run:
 tail -f /var/log/openhangar-demo.log
 ```
 
-### 5. Set up log rotation
+### 4. Set up log rotation
 
 Create a logrotate config to cap the log at 1 MB and keep 16 compressed old copies (2 days):
 
@@ -116,20 +105,17 @@ Each time `refresh.sh` runs:
 The script is idempotent — safe to run manually at any time:
 
 ```bash
-/opt/openhangar/refresh.sh
+/opt/openhangar/openhangar-launcher.sh refresh
 ```
 
 ---
 
-## Self-updating refresh script
+## Always the current refresh script
 
 `refresh.sh` is bundled inside the Docker image (under `/app/demo-scripts/`).
-On each container start, the entrypoint copies it to the `/refresh` bind-mount, which maps to `/opt/openhangar/refresh/` on the host.
-
-This means:
-- You never need to manually download a new version of the script.
-- After a new image is pulled and the container restarted, the updated scripts are available to the cron job on its next run (at most 3 hours later).
-- One update is always "one wipe behind" the image — acceptable for a demo.
+The launcher takes it from the image it has just pulled and verified, so each
+run uses the version of the current release — nothing to download, and
+nothing the container could have changed.
 
 ---
 
@@ -138,7 +124,7 @@ This means:
 New releases are published automatically to GHCR on every merge to `main`. The next scheduled cron run (within 3 hours) will pick up the new image automatically. To update immediately without waiting:
 
 ```bash
-/opt/openhangar/refresh.sh
+/opt/openhangar/openhangar-launcher.sh refresh
 ```
 
 ---

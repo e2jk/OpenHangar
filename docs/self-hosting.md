@@ -238,13 +238,13 @@ signature from anywhere else (a
 fork, a different workflow, a compromised registry credential) will not
 verify.
 
-**One-click upgrades verify automatically.** `upgrade.sh` resolves the
-digest of the freshly pulled image and runs `cosign verify` against it
-before recreating the container. If verification fails, the upgrade is
-aborted — the currently running container is left untouched and the
-Settings page reports the failure. If `cosign` is not installed on the
-host, the script logs a warning and proceeds without verifying — install
-it so this protection is actually in effect (see below).
+**One-click upgrades verify automatically.** The host's
+`openhangar-launcher.sh` resolves the digest of the freshly pulled image
+and runs `cosign verify` against it before it runs anything from it, and
+`upgrade.sh` checks it again before recreating the container. If
+verification fails, nothing is run and the currently running container is
+left untouched. Without `cosign` on the host the launcher refuses to run
+at all — install it (see below).
 
 **Manual `docker compose pull` upgrades** (and the initial install — see
 "Quick start" above) are not verified automatically; run this yourself
@@ -285,8 +285,10 @@ amount of one-time host-side setup.
 
 1. The admin clicks **Upgrade now** on the config page.
 2. OpenHangar writes a trigger file to a shared volume directory.
-3. A host-side cron job runs `upgrade.sh` every minute, detects the file, and
-   executes `docker compose pull && docker compose up -d --force-recreate`.
+3. A host-side cron job runs `openhangar-launcher.sh upgrade` every minute.
+   When it finds the file, it pulls the image, verifies its signature, takes
+   `upgrade.sh` out of that verified image and runs it, which executes
+   `docker compose pull && docker compose up -d --force-recreate`.
 4. The config page shows an "Upgrade in progress" banner and polls the
    `/config/upgrade-status` endpoint every 5 seconds.  Once the container
    comes back online the page reloads automatically.
@@ -310,20 +312,30 @@ environment:
   - OPENHANGAR_UPGRADE_DIR=/data/upgrade
 ```
 
-**Step 3 — Recreate the container** to apply the changes and publish the
-upgrade script to the host:
+**Step 3 — Recreate the container** to apply the changes:
 
 ```bash
 docker compose up -d openhangar-web
 ```
 
-The entrypoint copies `upgrade.sh` to `./openhangar/data/upgrade/upgrade.sh`
-on every container start so the host always runs the version bundled with the
-current image.
+**Step 4 — Install the launcher** once, next to `docker-compose.yml` (never
+inside `./openhangar/data/`, which the container can write to), after
+verifying the image it comes from ([`cosign`](#image-signature-verification)
+must be installed on the host):
 
-**Step 4 — Set up the cron job** on the Docker host.  Keep a stable copy of
-the script at a path outside the data directory so it survives container
-restarts:
+```bash
+cd /opt/openhangar
+docker pull ghcr.io/e2jk/openhangar:latest
+cosign verify \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp '^https://github\.com/e2jk/OpenHangar/\.github/workflows/ci\.yml@refs/(pull/[0-9]+/merge|tags/v.*|heads/main)$' \
+  "$(docker image inspect ghcr.io/e2jk/openhangar:latest --format '{{index .RepoDigests 0}}')"
+docker run --rm --entrypoint cat ghcr.io/e2jk/openhangar:latest \
+  /usr/local/bin/openhangar-launcher.sh > openhangar-launcher.sh
+chmod 755 openhangar-launcher.sh
+```
+
+**Step 5 — Set up the cron job** on the Docker host:
 
 ```bash
 # Run as the user that owns the Docker socket (typically your deploy user)
@@ -333,14 +345,32 @@ crontab -e
 Add this line (adjust paths to match your deployment):
 
 ```
-* * * * * [ -f /opt/openhangar/openhangar/data/upgrade/upgrade.sh ] && cp /opt/openhangar/openhangar/data/upgrade/upgrade.sh /opt/openhangar/upgrade.sh; [ -f /opt/openhangar/upgrade.sh ] && /opt/openhangar/upgrade.sh >> /var/log/openhangar-upgrade.log 2>&1
+* * * * * /opt/openhangar/openhangar-launcher.sh upgrade >> /opt/openhangar/openhangar-upgrade-cron.log 2>&1
 ```
 
-The script is idempotent: it exits immediately if no trigger file is present,
-so running it every minute has negligible overhead.
+The launcher exits at once when no upgrade was asked for, so running it every
+minute has negligible overhead. It looks for the upgrade folder next to
+`.env`, at `./upgrade` or else `./openhangar/data/upgrade`; set
+`OPENHANGAR_UPGRADE_HOST_DIR` in `.env` to its host path if yours is
+elsewhere.
 
-**Upgrade log** is written to `./openhangar/data/upgrade/upgrade.log` (inside
-the host upgrade directory).
+**Why a launcher.** The host runs the upgrade with Docker rights, so it must
+never run a file the container can write: code running in a compromised
+container could otherwise replace it and take over the host. The launcher
+never does: it takes `upgrade.sh` from the image it has just verified, so
+fixes to the upgrade script still reach you with every release, while the
+launcher itself rarely changes. The container's only say is the trigger
+file — at most it can ask for an upgrade to a genuine, signed image.
+
+**Upgrading from the previous setup:** earlier versions published
+`upgrade.sh` into the upgrade folder and the cron line copied and ran it.
+Replace that cron line with the one above after installing the launcher
+(steps 4 and 5). Until you do, the Settings page shows a reminder, and the
+container no longer publishes the script (the old line keeps running the
+last copy it made).
+
+**Upgrade log** is written next to `.env` (`openhangar-upgrade.log`), with
+a copy of its last lines in `./openhangar/data/upgrade/upgrade.log`.
 
 **Automatic upgrades:** once one-click upgrades are set up as above
 (`OPENHANGAR_UPGRADE_DIR` configured, volume mounted, cron job installed), set
