@@ -603,133 +603,138 @@ msgstr "Élément de liste de souhaits ajouté."
 msgid "Wish-list item removed."
 msgstr "Élément de liste de souhaits supprimé."
 
-#: app/auth/routes.py:161
+#: app/auth/routes.py:130
+#, python-format
+msgid "Too many wrong authenticator codes. Try again in %(minutes)s minutes."
+msgstr "Trop de codes d’authentification erronés. Réessayez dans %(minutes)s minutes."
+
+#: app/auth/routes.py:210
 #, python-format
 msgid "Too many failed sign-in attempts. Try again in one second."
 msgid_plural "Too many failed sign-in attempts. Try again in %(n)s seconds."
 msgstr[0] "Trop de tentatives de connexion échouées. Réessayez dans une seconde."
 msgstr[1] "Trop de tentatives de connexion échouées. Réessayez dans %(n)s secondes."
 
-#: app/auth/routes.py:177
+#: app/auth/routes.py:226
 #, python-format
 msgid "Account temporarily locked due to too many failed attempts. Try again in %(minutes)s minutes."
 msgstr "Compte temporairement bloqué en raison de trop nombreuses tentatives échouées. Réessayez dans %(minutes)s minutes."
 
-#: app/auth/routes.py:223
+#: app/auth/routes.py:272
 msgid "Invalid email or password."
 msgstr "Adresse e-mail ou mot de passe invalide."
 
-#: app/auth/routes.py:247
+#: app/auth/routes.py:296
 msgid "Your account has been deactivated. Contact the administrator."
 msgstr "Votre compte a été désactivé. Contactez l'administrateur."
 
-#: app/auth/routes.py:313
+#: app/auth/routes.py:362
 msgid "Your account changed. Please sign in again."
 msgstr "Votre compte a été modifié. Connectez-vous à nouveau."
 
-#: app/auth/routes.py:386 app/auth/routes.py:994
+#: app/auth/routes.py:447 app/auth/routes.py:1062
 msgid "Invalid authenticator code."
 msgstr "Code d'authentification invalide."
 
-#: app/auth/routes.py:411
+#: app/auth/routes.py:473
 msgid "Invalid code — please try again."
 msgstr "Code invalide — veuillez réessayer."
 
-#: app/auth/routes.py:431
+#: app/auth/routes.py:493
 msgid "Two-factor authentication is now active on your account."
 msgstr "L'authentification à deux facteurs est maintenant active sur votre compte."
 
-#: app/auth/routes.py:506
+#: app/auth/routes.py:568
 msgid "Account creation is disabled in demo mode."
 msgstr "La création de compte est désactivée en mode démo."
 
-#: app/auth/routes.py:617 app/users/routes.py:298
+#: app/auth/routes.py:679 app/users/routes.py:298
 msgid "A valid email address is required."
 msgstr "Une adresse e-mail valide est obligatoire."
 
-#: app/auth/routes.py:619 app/auth/routes.py:958 app/auth/routes.py:1109
+#: app/auth/routes.py:681 app/auth/routes.py:1020 app/auth/routes.py:1179
 #: app/users/routes.py:300
 msgid "Password must be at least 12 characters."
 msgstr "Le mot de passe doit comporter au moins 12 caractères."
 
-#: app/auth/routes.py:652 app/auth/routes.py:780
+#: app/auth/routes.py:714 app/auth/routes.py:842
 msgid "Session expired. Please start over."
 msgstr "Session expirée. Veuillez recommencer."
 
-#: app/auth/routes.py:663 app/auth/routes.py:1034
+#: app/auth/routes.py:725 app/auth/routes.py:1104
 msgid "Invalid code. Please try again."
 msgstr "Code invalide. Veuillez réessayer."
 
-#: app/auth/routes.py:690
+#: app/auth/routes.py:752
 msgid "Please select an option."
 msgstr "Veuillez sélectionner une option."
 
-#: app/auth/routes.py:711
+#: app/auth/routes.py:773
 msgid "Please enter a valid number of aircraft (0 or more)."
 msgstr "Veuillez entrer un nombre d'appareils valide (0 ou plus)."
 
-#: app/auth/routes.py:737
+#: app/auth/routes.py:799
 msgid "Please enter a name."
 msgstr "Veuillez entrer un nom."
 
-#: app/auth/routes.py:870
+#: app/auth/routes.py:932
 msgid "Setup complete. Welcome to OpenHangar!"
 msgstr "Configuration terminée. Bienvenue dans OpenHangar !"
 
-#: app/auth/routes.py:871 app/templates/dashboard.html:520
+#: app/auth/routes.py:933 app/templates/dashboard.html:520
 msgid "Add your first aircraft"
 msgstr "Ajouter votre premier avion"
 
-#: app/auth/routes.py:872
+#: app/auth/routes.py:934
 msgid "Register your first flight"
 msgstr "Enregistrer votre premier vol"
 
-#: app/auth/routes.py:945
+#: app/auth/routes.py:1007
 msgid "Display name updated."
 msgstr "Nom d'affichage mis à jour."
 
-#: app/auth/routes.py:955 app/auth/routes.py:990
+#: app/auth/routes.py:1017 app/auth/routes.py:1055
 msgid "Current password is incorrect."
 msgstr "Le mot de passe actuel est incorrect."
 
-#: app/auth/routes.py:961 app/auth/routes.py:1112
+#: app/auth/routes.py:1023 app/auth/routes.py:1182
 #: app/passports/registration.py:114 app/users/routes.py:302
 msgid "Passwords do not match."
 msgstr "Les mots de passe ne correspondent pas."
 
-#: app/auth/routes.py:972
+#: app/auth/routes.py:1034
 msgid "Password updated successfully."
 msgstr "Mot de passe mis à jour avec succès."
 
-#: app/auth/routes.py:1027
+#: app/auth/routes.py:1097
 msgid "Session expired. Please try again."
 msgstr "Session expirée. Veuillez réessayer."
 
-#: app/auth/routes.py:1053
+#: app/auth/routes.py:1123
 msgid "Two-factor authentication enabled."
 msgstr "Double authentification activée."
 
-#: app/auth/routes.py:1064
+#: app/auth/routes.py:1134
 msgid "Your administrator requires two-factor authentication. It cannot be disabled on this account."
 msgstr "Votre administrateur exige l’authentification à deux facteurs. Elle ne peut pas être désactivée sur ce compte."
 
-#: app/auth/routes.py:1081
+#: app/auth/routes.py:1151
 msgid "Two-factor authentication disabled."
 msgstr "Double authentification désactivée."
 
-#: app/auth/routes.py:1094
+#: app/auth/routes.py:1164
 msgid "This reset link has already been used."
 msgstr "Ce lien de réinitialisation a déjà été utilisé."
 
-#: app/auth/routes.py:1099
+#: app/auth/routes.py:1169
 msgid "This reset link has expired. Ask the administrator for a new one."
 msgstr "Ce lien de réinitialisation a expiré. Demandez-en un nouveau à l'administrateur."
 
-#: app/auth/routes.py:1117
+#: app/auth/routes.py:1187
 msgid "User not found."
 msgstr "Utilisateur introuvable."
 
-#: app/auth/routes.py:1126
+#: app/auth/routes.py:1196
 msgid "Password reset successfully. You can now log in."
 msgstr "Mot de passe réinitialisé avec succès. Vous pouvez maintenant vous connecter."
 

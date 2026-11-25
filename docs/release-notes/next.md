@@ -40,3 +40,7 @@
   years of today. A booking saved with a far-off end date (such as
   9999-12-31) no longer slows down or breaks the aircraft calendar and the
   home page calendar.
+- After five wrong authenticator codes, an account's two-factor codes are
+  refused for 30 minutes, at sign-in and when changing or removing the
+  authenticator. Entering the password again no longer resets the count,
+  and the lock raises a security alert.
