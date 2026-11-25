@@ -15,7 +15,7 @@ from collections import OrderedDict
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
-from decimal import Decimal
+from decimal import ROUND_CEILING, ROUND_DOWN, Decimal
 from typing import Any
 
 import openpyxl  # pyright: ignore[reportMissingImports]
@@ -1383,26 +1383,60 @@ def execute_import(
             from datetime import timedelta as _td
 
             balance_date = earliest - _td(days=1)
-            balance_entry = Flight(
-                pic_user_id=pilot_user_id,
-                import_batch_id=batch_id,
-                source="import",
-                date=balance_date,
-                notes="Opening balance (imported)",
-                night_time=opening_balance.get("night_time"),
-                instrument_time=opening_balance.get("instrument_time"),
-                single_pilot_se=opening_balance.get("single_pilot_se"),
-                single_pilot_me=opening_balance.get("single_pilot_me"),
-                multi_pilot=opening_balance.get("multi_pilot"),
-                function_pic=opening_balance.get("function_pic"),
-                function_copilot=opening_balance.get("function_copilot"),
-                function_dual=opening_balance.get("function_dual"),
-                function_instructor=opening_balance.get("function_instructor"),
-            )
-            db.session.add(balance_entry)
+            for values in _opening_balance_rows(opening_balance):
+                db.session.add(
+                    Flight(
+                        pic_user_id=pilot_user_id,
+                        import_batch_id=batch_id,
+                        source="import",
+                        date=balance_date,
+                        notes="Opening balance (imported)",
+                        **values,
+                    )
+                )
             result.has_opening_balance = True
 
     return result
+
+
+_OPENING_BALANCE_FIELDS = (
+    "night_time",
+    "instrument_time",
+    "single_pilot_se",
+    "single_pilot_me",
+    "multi_pilot",
+    "function_pic",
+    "function_copilot",
+    "function_dual",
+    "function_instructor",
+)
+# A flight row's hour columns hold at most 999.9 (NUMERIC(4,1)); splitting
+# by 990 leaves room for the last row's rounding remainder.
+_ROW_HOURS_SPLIT = Decimal(990)
+
+
+def _opening_balance_rows(balance: dict[str, Any]) -> list[dict[str, Any]]:
+    """The opening balance as flight-row values: one row, or as many rows as
+    its largest total needs when a total reaches 1000 h — each total spread
+    over them so the rows add up exactly (to 0.1 h)."""
+    totals = {
+        name: Decimal(str(balance[name]))
+        for name in _OPENING_BALANCE_FIELDS
+        if balance.get(name)
+    }
+    largest = max(totals.values(), default=Decimal(0))
+    count = max(
+        1, int((largest / _ROW_HOURS_SPLIT).to_integral_value(rounding=ROUND_CEILING))
+    )
+    rows: list[dict[str, Any]] = [
+        dict.fromkeys(_OPENING_BALANCE_FIELDS) for _n in range(count)
+    ]
+    for name, total in totals.items():
+        part = (total / count).quantize(Decimal("0.1"), rounding=ROUND_DOWN)
+        for row in rows:
+            row[name] = part
+        rows[-1][name] = total - part * (count - 1)
+    return rows
 
 
 # ── Near-match conflict detection (possible corrections) ───────────────────────
