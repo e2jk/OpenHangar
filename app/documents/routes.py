@@ -1172,13 +1172,22 @@ def rename_reconcile_folder() -> ResponseReturnValue:
         flash(_("Invalid category."), "danger")
         return redirect(url_for("documents.list_reconcile"))
 
-    if not tenant.slug or not bad_folder.startswith(tenant.slug + "/"):
+    # The reconcile page only ever offers "<slug>/<registration>/<folder>":
+    # anything else (another tenant's slug, "..", extra or empty segments)
+    # is refused, and both paths must resolve inside this tenant's own folder.
+    parts = bad_folder.split("/")
+    if (
+        not tenant.slug
+        or len(parts) != 3
+        or parts[0] != tenant.slug
+        or any(p in ("", ".", "..") for p in parts)
+    ):
         abort(403)
-
-    old_dir = _safe_join(folder, bad_folder)
-    parent_rel = "/".join(bad_folder.split("/")[:2])  # slug/reg
-    new_rel = parent_rel + "/" + new_category
-    new_dir = _safe_join(folder, new_rel)
+    tenant_dir = resolve_inside(folder, tenant.slug)
+    if tenant_dir is None:
+        abort(403)
+    old_dir = _safe_join(tenant_dir, parts[1], parts[2])
+    new_dir = _safe_join(tenant_dir, parts[1], new_category)
 
     if os.path.isdir(old_dir):
         if os.path.isdir(new_dir):
@@ -1199,7 +1208,7 @@ def rename_reconcile_folder() -> ResponseReturnValue:
     tid = tenant.id
     for pr in PendingReconcile.query.filter(
         PendingReconcile.tenant_id == tid,
-        PendingReconcile.filepath.like(bad_folder + "/%"),
+        PendingReconcile.filepath.startswith(bad_folder + "/", autoescape=True),
     ).all():
         db.session.delete(pr)
     db.session.flush()

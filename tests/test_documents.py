@@ -6,6 +6,7 @@ import os
 from io import BytesIO
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
+import pytest
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AircraftPhoto,
@@ -2622,6 +2623,89 @@ class TestRenameFolderEndpoint:
             },
         )
         assert rv.status_code == 403
+
+    @pytest.mark.parametrize(
+        "bad_folder",
+        [
+            "rft-hangar/OO-RT/../../victim-hangar",
+            "rft-hangar/..",
+            "rft-hangar/../victim-hangar/OO-VI",
+            "rft-hangar/OO-RT/./maintenence",
+            "rft-hangar//maintenence",
+            "rft-hangar/OO-RT",
+            "rft-hangar/OO-RT/maintenence/deeper",
+        ],
+    )
+    def test_rename_refuses_paths_outside_the_tenant_folder(
+        self, app, client, tmp_path, bad_folder
+    ):
+        """Only "<slug>/<registration>/<folder>" is accepted: traversal, extra
+        or empty segments are refused and no file outside the tenant moves."""
+        self._setup(app, client, tmp_path, "rft@x.com", "rft-hangar", "OO-RT")
+        victim = tmp_path / "victim-hangar" / "OO-VI" / "maintenance"
+        victim.mkdir(parents=True)
+        (victim / "2024-01-01 - Secret.pdf").write_bytes(b"%PDF secret")
+        (tmp_path / "rft-hangar" / "OO-RT" / "maintenence").mkdir(parents=True)
+        (tmp_path / "rft-hangar" / "OO-RT" / "maintenance").mkdir(parents=True)
+
+        rv = client.post(
+            "/documents/reconcile/rename-folder",
+            data={"bad_folder": bad_folder, "new_category": "maintenance"},
+        )
+        assert rv.status_code == 403
+        assert (victim / "2024-01-01 - Secret.pdf").read_bytes() == b"%PDF secret"
+        assert (tmp_path / "rft-hangar" / "OO-RT" / "maintenence").is_dir()
+        with app.app_context():
+            assert (
+                Document.query.filter(Document.filename.like("%Secret%")).count() == 0
+            )
+
+    def test_rename_refuses_a_tenant_folder_linked_outside(self, app, client, tmp_path):
+        """A tenant folder that is a link pointing outside the uploads root is
+        not followed."""
+        self._setup(app, client, tmp_path, "rfl@x.com", "rfl-hangar", "OO-RL")
+        outside = tmp_path.parent / (tmp_path.name + "-linked-tenant")
+        (outside / "OO-RL" / "maintenence").mkdir(parents=True)
+        (tmp_path / "rfl-hangar").symlink_to(outside)
+
+        rv = client.post(
+            "/documents/reconcile/rename-folder",
+            data={
+                "bad_folder": "rfl-hangar/OO-RL/maintenence",
+                "new_category": "maintenance",
+            },
+        )
+        assert rv.status_code == 403
+        assert (outside / "OO-RL" / "maintenence").is_dir()
+
+    def test_rename_prunes_only_entries_of_that_exact_folder(
+        self, app, client, tmp_path
+    ):
+        """'_' and '%' in the folder name are literal when pruning pending
+        entries: a sibling folder that only matches as a LIKE pattern stays."""
+        tid, _ac_id = self._setup(
+            app, client, tmp_path, "rfp@x.com", "rfp-hangar", "OO-RP"
+        )
+        (tmp_path / "rfp-hangar" / "OO-RP" / "main_").mkdir(parents=True)
+        with app.app_context():
+            sibling = PendingReconcile(
+                tenant_id=tid,
+                filepath="rfp-hangar/OO-RP/mainX/2024-01-01 - Keep.pdf",
+            )
+            db.session.add(sibling)
+            db.session.commit()
+            sibling_id = sibling.id
+
+        rv = client.post(
+            "/documents/reconcile/rename-folder",
+            data={
+                "bad_folder": "rfp-hangar/OO-RP/main_",
+                "new_category": "maintenance",
+            },
+        )
+        assert rv.status_code == 302
+        with app.app_context():
+            assert db.session.get(PendingReconcile, sibling_id) is not None
 
     def test_rename_skips_dotfiles_and_already_tracked(self, app, client, tmp_path):
         """Dotfiles and already-tracked documents are skipped during inline scan
