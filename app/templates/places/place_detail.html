@@ -2,7 +2,7 @@
 {% set no_history_cache = true %}
 {% block title %}{{ place_label(place) }} — OpenHangar{% endblock %}
 {% block content %}
-<div class="container py-4"><div class="page-header mb-4"><h1 class="page-title text-break">{{ place_label(place) }}</h1>{% if can_edit %}<a class="btn btn-ac-primary" href="{{ url_for('places.edit_place', place_id=place.id) }}">{{ _('Edit place') }}</a>{% endif %}</div>
+<div class="container py-4"><div class="page-header mb-4"><h1 class="page-title text-break">{{ place_label(place) }}</h1>{% if can_edit %}<div class="d-flex flex-wrap gap-2"><a class="btn btn-ac-ghost" href="{{ url_for('places.new_place', collection=collection.id) }}">{{ _('Add place') }}</a><a class="btn btn-ac-primary" href="{{ url_for('places.edit_place', place_id=place.id) }}">{{ _('Edit place') }}</a></div>{% endif %}</div>
 <p><a href="{{ url_for('places.index', collection=collection.id) }}">{{ collection.name }}</a>{% if place.archived %} <span class="badge bg-secondary">{{ _('Archived') }}</span>{% endif %}</p>
 <p>{{ _('Place owner: %(name)s', name=owner_name) }}</p><p>{{ _('Last changed by %(name)s on %(date)s', name=last_changed, date=format_datetime(place.updated_at)) }}</p>
 {% if place.description %}<p class="place-description">{{ place.description }}</p>{% endif %}
