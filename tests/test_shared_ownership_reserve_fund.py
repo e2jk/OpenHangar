@@ -308,7 +308,9 @@ class TestHourlyMode:
         entries = _live_reserve_entries(app, tid, uid, acid)
         assert len(entries) == 1
 
-    def test_drift_on_rate_change(self, app):
+    def test_rate_change_applies_to_later_flights_only(self, app):
+        """A flight already billed keeps its rate; one billed after the
+        change uses the new rate."""
         tid = _make_tenant(app)
         uid = _make_user(app, tid, "alice@example.com", "Alice")
         acid = _make_aircraft(app, tid, billing_start=date(2026, 1, 1))
@@ -324,11 +326,14 @@ class TestHourlyMode:
             ac = db.session.get(Aircraft, acid)
             ac.reserve_contribution_hourly = Decimal("20.00")
             db.session.commit()
+        _add_flight(app, acid, uid, date(2026, 3, 1), Decimal("2.0"))
         _run_pass(app, acid)
 
         entries = _live_reserve_entries(app, tid, uid, acid)
-        assert len(entries) == 1
-        assert entries[0].amount == Decimal("40.00")
+        assert sorted(e.amount for e in entries) == [
+            Decimal("20.00"),
+            Decimal("40.00"),
+        ]
 
     def test_rate_cleared_reverses_all_contributions(self, app):
         tid = _make_tenant(app)

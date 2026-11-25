@@ -493,6 +493,7 @@ When the **Shared ownership** operating model is in use, two or more people can 
 2. **The two cost tiers.** OpenHangar keeps two kinds of cost apportionment separate, following the standard co-ownership model:
    - **Fixed costs** — insurance, hangar fees, the annual inspection — are split among all co-owners in proportion to their share, regardless of who flew.
    - **Operating costs** — fuel, wear, and the aircraft's usage in general — are billed as flight hours × the co-owner hourly rate, charged only to whoever was PIC on that flight. A co-owner who didn't fly that month owes nothing for it.
+   - Changes apply from then on: a fixed cost is split once, among the owners of the day, so a share sold later doesn't re-bill earlier costs; and each flight keeps the hourly rate it was billed at when the rate changes.
 
 3. **Follow the capital account.** Each co-owner's capital account is simply: buy-in + payments made − their share of fixed costs − their own flying. The **billing dashboard** (reachable from the aircraft page) shows every co-owner's hours flown, fixed and operating liability for the selected period, payments received, and current capital balance in one place, and flags any balance that's been negative for longer than your configured threshold (**Configuration → Usage profile**, shared-ownership tenants only).
 

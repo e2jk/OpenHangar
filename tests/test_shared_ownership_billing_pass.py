@@ -322,19 +322,22 @@ class TestFixedExpenseShares:
         entry = _live_entries(app, tid, uid, acid, "expense_share")[0]
         assert "Annual premium renewal" in entry.description
 
-    def test_recurring_template_row_not_billed_children_are(self, app):
+    def test_recurring_template_row_is_billed_as_the_first_occurrence(self, app):
+        """The template is the series' first period (its generated rows start
+        one interval later), as the cost dashboard counts it."""
         tid = _make_tenant(app)
         uid = _make_user(app, tid, "alice@example.com", "Alice")
         acid = _make_aircraft(app, tid, billing_start=date(2026, 1, 1))
         _add_owner(app, acid, uid, 100)
-        _add_expense(app, acid, "1200", date(2026, 1, 1), recurrence="monthly")
+        template_id = _add_expense(
+            app, acid, "100", date(2026, 1, 1), recurrence="monthly"
+        )
         child_id = _add_expense(app, acid, "100", date(2026, 2, 1))
 
         _run_pass(app, acid)
 
         entries = _live_entries(app, tid, uid, acid, "expense_share")
-        assert len(entries) == 1
-        assert entries[0].source_id == child_id
+        assert {e.source_id for e in entries} == {template_id, child_id}
 
     def test_expense_deleted_reverses_only(self, app):
         tid = _make_tenant(app)
@@ -390,7 +393,9 @@ class TestFixedExpenseShares:
 
         assert _balance(app, tid, uid, acid) == Decimal("100.00")
 
-    def test_owner_share_change_drift_corrects_split(self, app):
+    def test_share_change_keeps_past_splits(self, app):
+        """A share change applies to costs split after it: an expense already
+        split keeps its split (a June share sale doesn't re-bill February)."""
         tid = _make_tenant(app)
         alice = _make_user(app, tid, "alice@example.com", "Alice")
         bob = _make_user(app, tid, "bob@example.com", "Bob")
@@ -407,10 +412,70 @@ class TestFixedExpenseShares:
             db.session.get(AircraftOwner, alice_owner_id).share_pct = Decimal(70)
             db.session.get(AircraftOwner, bob_owner_id).share_pct = Decimal(30)
             db.session.commit()
+        _add_expense(app, acid, "100", date(2026, 7, 1))
         _run_pass(app, acid)
 
-        assert _balance(app, tid, alice, acid) == Decimal("70.00")
-        assert _balance(app, tid, bob, acid) == Decimal("30.00")
+        assert _balance(app, tid, alice, acid) == Decimal("120.00")  # 50 + 70
+        assert _balance(app, tid, bob, acid) == Decimal("80.00")  # 50 + 30
+
+    def test_departed_owner_keeps_their_share_and_nobody_is_billed_twice(self, app):
+        """Bob sells his 50% to Carol: Carol is not billed for costs from
+        before she owned anything, and the total stays 100%."""
+        tid = _make_tenant(app)
+        alice = _make_user(app, tid, "alice@example.com", "Alice")
+        bob = _make_user(app, tid, "bob@example.com", "Bob")
+        carol = _make_user(app, tid, "carol@example.com", "Carol")
+        acid = _make_aircraft(app, tid, billing_start=date(2026, 1, 1))
+        _add_owner(app, acid, alice, 50)
+        bob_owner_id = _add_owner(app, acid, bob, 50)
+        _add_expense(app, acid, "1000", date(2026, 2, 1))
+        _run_pass(app, acid)
+        with app.app_context():
+            db.session.delete(db.session.get(AircraftOwner, bob_owner_id))
+            db.session.commit()
+        _add_owner(app, acid, carol, 50)
+        _run_pass(app, acid)
+
+        assert _balance(app, tid, alice, acid) == Decimal("500.00")
+        assert _balance(app, tid, bob, acid) == Decimal("500.00")
+        assert _balance(app, tid, carol, acid) == Decimal("0.00")
+
+    def test_a_split_above_the_total_is_corrected(self, app):
+        """Earlier versions re-split after Bob sold to Carol and billed Carol
+        too (150%): the parts are rescaled to the total, in their own
+        proportions, on the same accounts."""
+        from models import Aircraft
+        from services import co_owner_billing
+        from services.billing import BillingService
+
+        tid = _make_tenant(app)
+        alice = _make_user(app, tid, "alice@example.com", "Alice")
+        bob = _make_user(app, tid, "bob@example.com", "Bob")
+        carol = _make_user(app, tid, "carol@example.com", "Carol")
+        acid = _make_aircraft(app, tid, billing_start=date(2026, 1, 1))
+        _add_owner(app, acid, alice, 50)
+        bob_owner_id = _add_owner(app, acid, bob, 50)
+        eid = _add_expense(app, acid, "1000", date(2026, 2, 1))
+        _run_pass(app, acid)
+        with app.app_context():
+            db.session.delete(db.session.get(AircraftOwner, bob_owner_id))
+            db.session.commit()
+        _add_owner(app, acid, carol, 50)
+        with app.app_context():
+            ac = db.session.get(Aircraft, acid)
+            BillingService.post(
+                co_owner_billing._account_for(ac, carol),
+                "charge",
+                500,
+                "Fixed cost share (old re-split)",
+                date(2026, 2, 1),
+                source_type="expense_share",
+                source_id=eid,
+            )
+            db.session.commit()
+        _run_pass(app, acid)
+        total = sum(_balance(app, tid, uid, acid) for uid in (alice, bob, carol))
+        assert total == Decimal("1000.00")
 
 
 # ── Flight usage ──────────────────────────────────────────────────────────────
