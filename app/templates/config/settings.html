@@ -233,6 +233,8 @@
     </form>
   </div>
 
+  {% if current_user and current_user.is_instance_admin %}
+  {# Backups, email server and map tiles are instance-wide: instance admin only. #}
   <!-- Backup section -->
   <hr class="my-4" id="backup-section">
   <div class="d-flex align-items-center justify-content-between mb-3">
@@ -433,6 +435,8 @@
     {% endif %}
   </div>
 
+  {% endif %}
+
   <div class="d-flex align-items-center gap-3 mb-4 oh-fs-09">
     <a href="{{ url_for('config.notification_preferences') }}" class="btn btn-ac-secondary btn-sm">
       <i class="bi bi-bell me-1"></i>{{ _('Email Notifications') }}
@@ -440,6 +444,7 @@
     <span class="text-muted">{{ _('Configure which events send emails to you or your team.') }}</span>
   </div>
 
+  {% if current_user and current_user.is_instance_admin %}
   <!-- Map tiles section -->
   <hr class="my-4">
   <h2 class="section-title mb-3"><i class="bi bi-map me-2"></i>{{ _('Map tiles') }}</h2>
@@ -470,6 +475,7 @@
       </button>
     </form>
   </div>
+  {% endif %}
 
   {% if current_user and current_user.is_instance_admin %}
   <!-- Data tools section (instance admin only) -->
@@ -550,12 +556,14 @@
         {% elif latest_version and not update_available %}
         <span class="badge bg-success ms-2 fw-normal">{{ _('Up to date') }}</span>
         {% endif %}
+        {% if current_user and current_user.is_instance_admin %}
         <form method="post" action="{{ url_for('config.check_version') }}" class="d-inline ms-2"
               hx-swap="innerHTML show:none" data-scroll-anchor="version-check-card">
           <button type="submit" class="btn btn-link btn-sm p-0 text-muted" title="{{ _('Refresh version check') }}">
             <i class="bi bi-arrow-clockwise"></i>
           </button>
         </form>
+        {% endif %}
       </div>
     </div>
     {% if last_upgrade_at %}
@@ -599,13 +607,13 @@
         <span class="small ms-1">{{ _('Set by %(var)s on the server. Turn off if users report out-of-date screens.', var='OPENHANGAR_INSTANT_PAGES') }}</span>
       </div>
     </div>
-    {% if db_size %}
+    {% if db_size and current_user and current_user.is_instance_admin %}
     <div class="row mb-2">
       <div class="col-sm-4 fw-semibold text-muted">{{ _('Database size') }}</div>
       <div class="col-sm-8 text-muted">{{ db_size }}</div>
     </div>
     {% endif %}
-    {% if upload_size_bytes is not none %}
+    {% if upload_size_bytes is not none and current_user and current_user.is_instance_admin %}
     <div class="row mb-2">
       <div class="col-sm-4 fw-semibold text-muted">{{ _('Upload storage') }}</div>
       <div class="col-sm-8 text-muted">{{ oh_filesize(upload_size_bytes) }}</div>

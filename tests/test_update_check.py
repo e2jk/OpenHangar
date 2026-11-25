@@ -32,6 +32,8 @@ def _setup_admin(app):
             email="admin@test.com",
             password_hash=_pw_hash.hash("pw"),
             is_active=True,
+            # Backups, email and version checks are instance-wide.
+            is_instance_admin=True,
         )
         db.session.add(user)
         db.session.flush()
@@ -717,7 +719,8 @@ class TestConfigVersionDisplay:
 
     def test_check_version_requires_login(self, app, client):
         resp = client.post("/config/check-version")
-        assert resp.status_code == 403
+        assert resp.status_code == 302
+        assert "/login" in resp.headers["Location"]
 
     def test_thread_not_started_with_sqlite(self):
         # SQLite URI (dev/test) must never start the background thread.

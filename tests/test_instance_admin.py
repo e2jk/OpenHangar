@@ -3,6 +3,7 @@
 from datetime import UTC, datetime, timedelta
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
+import pytest
 from models import (  # pyright: ignore[reportMissingImports]
     PasswordResetToken,
     Role,
@@ -80,6 +81,62 @@ class TestRequireInstanceAdmin:
         _login(client, uid)
         rv = client.get("/config/")
         assert rv.status_code == 200
+
+
+class TestInstanceWideSettingsAreInstanceAdminOnly:
+    """Backups, the email server, the OpenAIP key and the version check cover
+    the whole instance: a hangar's own admin or owner neither sees nor uses
+    them."""
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/config/run",
+            "/config/map-tiles",
+            "/config/email/test",
+            "/config/check-version",
+        ],
+    )
+    @pytest.mark.parametrize("role", [Role.ADMIN, Role.OWNER])
+    def test_hangar_admin_is_refused(self, app, client, path, role):
+        from models import AppSetting  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            db.session.add(AppSetting(key="openaip_api_key", value="instance-key"))
+            db.session.commit()
+        uid, _ = _make_user(app, email="hangar@example.com", role=role)
+        _login(client, uid)
+        rv = client.post(path, data={"openaip_api_key": ""})
+        assert rv.status_code == 403
+        with app.app_context():
+            assert db.session.get(AppSetting, "openaip_api_key").value == "instance-key"
+
+    def test_hangar_admin_settings_page_hides_instance_sections(self, app, client):
+        from models import AppSetting  # pyright: ignore[reportMissingImports]
+
+        with app.app_context():
+            db.session.add(AppSetting(key="openaip_api_key", value="instance-key"))
+            db.session.commit()
+        uid, _ = _make_user(app, email="hangar@example.com", role=Role.ADMIN)
+        _login(client, uid)
+        html = client.get("/config/").data.decode()
+        assert "instance-key" not in html
+        for endpoint in ("/config/run", "/config/map-tiles", "/config/email/test"):
+            assert endpoint not in html
+        assert "/config/check-version" not in html
+        assert 'id="backup-section"' not in html
+
+    def test_instance_admin_settings_page_shows_them(self, app, client):
+        uid, _ = _make_user(app, email="ia@example.com", is_instance_admin=True)
+        _login(client, uid)
+        html = client.get("/config/").data.decode()
+        for endpoint in (
+            "/config/run",
+            "/config/map-tiles",
+            "/config/check-version",
+        ):
+            assert endpoint in html
+        assert 'id="backup-section"' in html
 
 
 # ── Setup wizard stamps first user as instance admin ─────────────────────────

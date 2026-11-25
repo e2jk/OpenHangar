@@ -698,6 +698,159 @@ class TestUserManagement:
         assert b"own" in resp.data.lower()
 
 
+def _add_member(app, tid, email, role, *, instance_admin=False, scope="full"):
+    """Add a user to tenant `tid` and return the user's id."""
+    with app.app_context():
+        user = User(
+            email=email,
+            password_hash=_pw_hash.hash("pass-12-chars"),
+            is_active=True,
+            is_instance_admin=instance_admin,
+        )
+        db.session.add(user)
+        db.session.flush()
+        db.session.add(
+            TenantUser(user_id=user.id, tenant_id=tid, role=role, access_scope=scope)
+        )
+        db.session.commit()
+        return user.id
+
+
+class TestProtectedMembers:
+    """An owner cannot demote, strip or revoke an admin; only the instance
+    admin manages the instance admin; revoking never disables an account that
+    still belongs to another hangar."""
+
+    @pytest.mark.parametrize(
+        ("path", "data"),
+        [
+            ("role", {"role": "viewer"}),
+            ("revoke", {}),
+            ("flags", {}),
+        ],
+    )
+    def test_owner_cannot_manage_an_admin(self, app, client, path, data):
+        tid, owner_uid = _make_tenant_user(app, "owner@test.com", Role.OWNER)
+        admin_uid = _add_member(app, tid, "admin@test.com", Role.ADMIN)
+        with app.app_context():
+            db.session.get(User, admin_uid).is_pilot = True
+            db.session.commit()
+        _login(client, owner_uid)
+        resp = client.post(
+            f"/config/users/{admin_uid}/{path}", data=data, follow_redirects=True
+        )
+        assert b"Only an admin can change another admin" in resp.data
+        with app.app_context():
+            tu = TenantUser.query.filter_by(user_id=admin_uid, tenant_id=tid).one()
+            assert tu.role == Role.ADMIN
+            admin = db.session.get(User, admin_uid)
+            assert admin.is_active is True
+            assert admin.is_pilot is True
+
+    def test_owner_list_hides_controls_on_admin_rows(self, app, client):
+        tid, owner_uid = _make_tenant_user(app, "owner@test.com", Role.OWNER)
+        admin_uid = _add_member(app, tid, "admin@test.com", Role.ADMIN)
+        pilot_uid = _add_member(app, tid, "pilot@test.com", Role.PILOT)
+        _login(client, owner_uid)
+        html = client.get("/config/users/").data.decode()
+        assert f"/config/users/{admin_uid}/revoke" not in html
+        assert f"/config/users/{admin_uid}/role" not in html
+        assert f"/config/users/{admin_uid}/flags" not in html
+        assert f"/config/users/{pilot_uid}/revoke" in html
+
+    def test_admin_can_still_manage_another_admin(self, app, client):
+        tid, admin_uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
+        other_uid = _add_member(app, tid, "admin2@test.com", Role.ADMIN)
+        _login(client, admin_uid)
+        client.post(f"/config/users/{other_uid}/role", data={"role": "owner"})
+        with app.app_context():
+            tu = TenantUser.query.filter_by(user_id=other_uid, tenant_id=tid).one()
+            assert tu.role == Role.OWNER
+
+    @pytest.mark.parametrize(
+        ("path", "data"),
+        [
+            ("role", {"role": "viewer"}),
+            ("revoke", {}),
+            ("flags", {}),
+        ],
+    )
+    def test_tenant_admin_cannot_manage_the_instance_admin(
+        self, app, client, path, data
+    ):
+        tid, admin_uid = _make_tenant_user(app, "admin@test.com", Role.ADMIN)
+        ia_uid = _add_member(app, tid, "ia@test.com", Role.OWNER, instance_admin=True)
+        _login(client, admin_uid)
+        resp = client.post(
+            f"/config/users/{ia_uid}/{path}", data=data, follow_redirects=True
+        )
+        assert b"Only the instance administrator can change" in resp.data
+        with app.app_context():
+            tu = TenantUser.query.filter_by(user_id=ia_uid, tenant_id=tid).one()
+            assert tu.role == Role.OWNER
+            assert db.session.get(User, ia_uid).is_active is True
+
+    def test_owner_cannot_toggle_personal_logbook_of_instance_admin(self, app, client):
+        tid, owner_uid = _make_tenant_user(app, "owner@test.com", Role.OWNER)
+        ia_uid = _add_member(
+            app, tid, "ia@test.com", None, instance_admin=True, scope="personal"
+        )
+        _login(client, owner_uid)
+        client.post(f"/config/users/{ia_uid}/personal-logbook", data={"enable": "yes"})
+        with app.app_context():
+            tu = TenantUser.query.filter_by(user_id=ia_uid, tenant_id=tid).one()
+            assert tu.access_scope == "personal"
+
+    def test_instance_admin_can_manage_another_instance_admin(self, app, client):
+        tid, actor_uid = _make_tenant_user(app, "ia1@test.com", Role.ADMIN)
+        with app.app_context():
+            db.session.get(User, actor_uid).is_instance_admin = True
+            db.session.commit()
+        ia_uid = _add_member(app, tid, "ia2@test.com", Role.OWNER, instance_admin=True)
+        _login(client, actor_uid)
+        client.post(f"/config/users/{ia_uid}/revoke")
+        with app.app_context():
+            assert (
+                TenantUser.query.filter_by(user_id=ia_uid, tenant_id=tid).first()
+                is None
+            )
+            # The instance admin's account itself is never switched off.
+            assert db.session.get(User, ia_uid).is_active is True
+
+    def test_revoke_keeps_an_account_that_belongs_to_another_hangar(self, app, client):
+        tid, owner_uid = _make_tenant_user(app, "owner@test.com", Role.OWNER)
+        other_tid, member_uid = _make_tenant_user(app, "member@test.com", Role.PILOT)
+        with app.app_context():
+            db.session.add(
+                TenantUser(
+                    user_id=member_uid,
+                    tenant_id=tid,
+                    role=None,
+                    access_scope="personal",
+                )
+            )
+            db.session.commit()
+        _login(client, owner_uid)
+        client.post(f"/config/users/{member_uid}/revoke")
+        with app.app_context():
+            assert (
+                TenantUser.query.filter_by(user_id=member_uid, tenant_id=tid).first()
+                is None
+            )
+            assert TenantUser.query.filter_by(
+                user_id=member_uid, tenant_id=other_tid
+            ).one()
+            assert db.session.get(User, member_uid).is_active is True
+
+    def test_revoke_disables_an_account_left_without_any_hangar(self, app, client):
+        tid, owner_uid = _make_tenant_user(app, "owner@test.com", Role.OWNER)
+        pilot_uid = _add_member(app, tid, "pilot@test.com", Role.PILOT)
+        _login(client, owner_uid)
+        client.post(f"/config/users/{pilot_uid}/revoke")
+        with app.app_context():
+            assert db.session.get(User, pilot_uid).is_active is False
+
+
 # ── Profile: change password ──────────────────────────────────────────────────
 
 

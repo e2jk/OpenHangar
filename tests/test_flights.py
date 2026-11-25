@@ -1428,6 +1428,74 @@ class TestEditFlight:
         resp = client.get(f"/flights/{fe_id}/edit")
         assert resp.status_code == 404
 
+    def _pilot_granted_one_of_two(self, app):
+        """A PILOT in the tenant with a grant on OO-AAA only; returns
+        (pilot_uid, granted_acid, other_acid)."""
+        from models import UserAircraftAccess  # pyright: ignore[reportMissingImports]
+
+        _, tid = _create_user_and_tenant(app)
+        granted = _add_aircraft(app, tid, registration="OO-AAA")
+        other = _add_aircraft(app, tid, registration="OO-BBB")
+        with app.app_context():
+            pilot = User(
+                email="grant@example.com",
+                password_hash=_pw_hash.hash("testpassword123"),
+                is_active=True,
+            )
+            db.session.add(pilot)
+            db.session.flush()
+            db.session.add(TenantUser(user_id=pilot.id, tenant_id=tid, role=Role.PILOT))
+            db.session.add(UserAircraftAccess(user_id=pilot.id, aircraft_id=granted))
+            db.session.commit()
+            return pilot.id, granted, other
+
+    def test_edit_404_for_flight_on_aircraft_without_a_grant(self, app, client):
+        """A pilot granted one aircraft can neither open nor re-save a flight
+        of another aircraft of the same tenant (re-saving used to move it
+        off that aircraft's log)."""
+        _uid, _granted, other = self._pilot_granted_one_of_two(app)
+        fid = _add_flight(app, other)
+        _login(app, client, "grant@example.com")
+        assert client.get(f"/flights/{fid}/edit").status_code == 404
+        resp = client.post(
+            f"/flights/{fid}/edit",
+            data={"date": "2024-01-15", "departure_icao": "EBOS"},
+        )
+        assert resp.status_code == 404
+        with app.app_context():
+            assert db.session.get(Flight, fid).aircraft_id == other
+
+    def test_crew_member_without_grant_keeps_the_flight_on_its_aircraft(
+        self, app, client
+    ):
+        """A pilot on board who has lost the aircraft's grant still reaches
+        their flight, and re-saving it keeps it on that aircraft."""
+        uid, _granted, other = self._pilot_granted_one_of_two(app)
+        fid = _add_flight(app, other)
+        with app.app_context():
+            fe = db.session.get(Flight, fid)
+            fe.pic_user_id = uid
+            fe.pic_name = "Grant Pilot"
+            db.session.commit()
+        _login(app, client, "grant@example.com")
+        assert client.get(f"/flights/{fid}/edit").status_code == 200
+        resp = client.post(
+            f"/flights/{fid}/edit",
+            data={
+                "aircraft_id": str(other),
+                "date": "2024-01-15",
+                "departure_icao": "EBOS",
+                "arrival_icao": "EBBR",
+                "flight_time_counter_start": "100.0",
+                "flight_time_counter_end": "101.5",
+                "crew_name_0": "Grant Pilot",
+                "crew_role_0": "PIC",
+            },
+        )
+        assert resp.status_code == 302
+        with app.app_context():
+            assert db.session.get(Flight, fid).aircraft_id == other
+
     # test_edit_shows_linked_entry_banner_with_specific_urls removed: it
     # exercised the old two-table "linked pilot logbook entry" banner
     # (FlightEntry + a separately-linked PilotLogbookEntry). In the unified
