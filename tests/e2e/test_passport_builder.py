@@ -91,6 +91,14 @@ def test_passport_builder_map_survives_htmx_navigation(
     page.get_by_role("button", name="Save passport", exact=True).click()
     page.wait_for_url(re.compile(r"/passports/\d+/$"))
     expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()
+    page.goto("/passports/")
+    card = page.locator("article").filter(
+        has=page.get_by_role("heading", name=title, exact=True)
+    )
+    expect(card.locator(".leaflet-overlay-pane path")).to_have_count(2)
+    expect(card.get_by_text(re.compile(r"of 2 airfields visited .*%"))).to_be_visible()
+    card.get_by_role("link", name=title, exact=True).click()
+    expect(page.locator("#passport-progress-map .leaflet-map-pane")).to_have_count(1)
     page.get_by_role("link", name="Edit passport", exact=True).click()
     expect(page.locator("#passport-selection-map .leaflet-map-pane")).to_have_count(1)
     expect(
