@@ -334,7 +334,9 @@ aircraft: every account has them, Personal accounts and viewers included.
 - **Collections:** your own **My places**, plus any number of collections you
   share with chosen users of the instance ("Our places", "Club fly-outs"…).
   Members are editors or readers; what you can do with a place depends only on
-  the collection, never on your role.
+  the collection, never on your role — administrators included, they see only
+  the collections shared with them. You can delete My places like any other
+  collection you own; it comes back only if you have no collection left.
 - **Adding a place:** drop a pin on the map, paste coordinates or a map link,
   search an address, or just save a link (from a phone share, see below) and add
   its location later. Tags, a photo, an address and a website are optional; a
