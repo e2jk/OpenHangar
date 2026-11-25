@@ -203,7 +203,7 @@ msgstr "Définissez soit une contribution horaire, soit une contribution mensuel
 msgid "This GPS file has too many points to import (more than %(n)s). Split the recording into several files."
 msgstr "Ce fichier GPS contient trop de points pour être importé (plus de %(n)s). Découpez l'enregistrement en plusieurs fichiers."
 
-#: app/aircraft/routes.py:567 app/explore/routes.py:350
+#: app/aircraft/routes.py:567 app/explore/routes.py:366
 msgid "cruise speed"
 msgstr "vitesse de croisière"
 
@@ -1126,39 +1126,39 @@ msgstr "Ce type de fichier n'est pas autorisé pour les justificatifs."
 msgid "Expense receipt %(date)s"
 msgstr "Justificatif de dépense %(date)s"
 
-#: app/explore/routes.py:323
+#: app/explore/routes.py:337
 msgid "Choose a reference airfield from the search results."
 msgstr "Choisissez un aérodrome de référence parmi les résultats de recherche."
 
-#: app/explore/routes.py:326
+#: app/explore/routes.py:340
 msgid "This reference airfield has no coordinates. Choose another."
 msgstr "Cet aérodrome de référence n’a pas de coordonnées. Choisissez-en un autre."
 
-#: app/explore/routes.py:351
+#: app/explore/routes.py:367
 msgid "distance/time limit"
 msgstr "limite de distance/durée"
 
-#: app/explore/routes.py:352
+#: app/explore/routes.py:368
 msgid "usable fuel"
 msgstr "carburant utilisable"
 
-#: app/explore/routes.py:353
+#: app/explore/routes.py:369
 msgid "fuel flow"
 msgstr "consommation"
 
-#: app/explore/routes.py:354
+#: app/explore/routes.py:370
 msgid "reserve minutes"
 msgstr "réserve en minutes"
 
-#: app/explore/routes.py:366
+#: app/explore/routes.py:382
 msgid "Enter a cruise speed for time mode, or use distance mode."
 msgstr "Saisissez une vitesse de croisière pour le mode durée, ou utilisez le mode distance."
 
-#: app/explore/routes.py:375
+#: app/explore/routes.py:391
 msgid "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
 msgstr "L’autonomie théorique est inconnue. Saisissez le carburant utilisable, la consommation, la vitesse et une réserve explicite laissant une durée de vol positive. Le filtre distance/durée reste appliqué."
 
-#: app/explore/routes.py:435
+#: app/explore/routes.py:451
 msgid "Choose a reference airfield and correct the destination filters before downloading."
 msgstr "Choisissez un aérodrome de référence et corrigez les filtres de destination avant de télécharger."
 
@@ -4617,7 +4617,7 @@ msgstr "Explorer"
 #: app/templates/base.html:244 app/templates/explore/where_next.html:3
 #: app/templates/explore/where_next.html:6
 #: app/templates/passports/detail.html:12 app/templates/places/index.html:8
-#: app/templates/places/place_detail.html:13
+#: app/templates/places/place_detail.html:18
 msgid "Where next?"
 msgstr "Où aller ensuite ?"
 
@@ -4747,7 +4747,7 @@ msgstr "Statut"
 #: app/templates/pilots/minimums_edit.html:15
 #: app/templates/places/join_collection.html:5
 #: app/templates/places/new_collection.html:6
-#: app/templates/places/place_form.html:12
+#: app/templates/places/place_form.html:21
 #: app/templates/pwa/share_target.html:15
 #: app/templates/refuels/refuel_form.html:62
 #: app/templates/reservations/charge.html:108
@@ -7138,7 +7138,7 @@ msgstr[1] "%(n)s composants"
 #: app/templates/passports/print.html:19 app/templates/passports/series.html:10
 #: app/templates/passports/series.html:28
 #: app/templates/passports/vouchers.html:10 app/templates/places/index.html:11
-#: app/templates/places/index.html:14 app/templates/places/place_detail.html:6
+#: app/templates/places/index.html:14 app/templates/places/place_detail.html:9
 msgid "Archived"
 msgstr "Archivé"
 
@@ -7241,7 +7241,7 @@ msgstr "Télécharger le relevé (CSV)"
 #: app/templates/expenses/expense_form.html:129
 #: app/templates/expenses/list.html:88 app/templates/passports/builder.html:18
 #: app/templates/passports/next_edition.html:12
-#: app/templates/places/place_form.html:13
+#: app/templates/places/place_form.html:19
 #: app/templates/snags/snag_form.html:37
 msgid "Description"
 msgstr "Description"
@@ -12857,12 +12857,12 @@ msgid "Optional airfield code"
 msgstr "Code d’aérodrome facultatif"
 
 #: app/templates/passports/builder.html:58
-#: app/templates/places/place_form.html:18
+#: app/templates/places/place_form.html:14
 msgid "Latitude"
 msgstr "Latitude"
 
 #: app/templates/passports/builder.html:58
-#: app/templates/places/place_form.html:18
+#: app/templates/places/place_form.html:14
 msgid "Longitude"
 msgstr "Longitude"
 
@@ -15282,7 +15282,7 @@ msgid "Nearby radius (km)"
 msgstr "Rayon de recherche (km)"
 
 #: app/templates/places/airfield_links.html:12
-#: app/templates/places/place_form.html:14
+#: app/templates/places/place_form.html:9
 msgid "Search"
 msgstr "Rechercher"
 
@@ -15380,7 +15380,7 @@ msgid "Leave collection"
 msgstr "Quitter la collection"
 
 #: app/templates/places/collection_settings.html:11
-#: app/templates/places/place_form.html:20
+#: app/templates/places/place_form.html:16
 msgid "Tags"
 msgstr "Étiquettes"
 
@@ -15492,7 +15492,7 @@ msgstr "Télécharger le fichier KML"
 msgid "Collection invitations"
 msgstr "Invitations à des collections"
 
-#: app/templates/places/index.html:10
+#: app/templates/places/index.html:10 app/templates/places/place_detail.html:6
 msgid "Place collections"
 msgstr "Collections de lieux"
 
@@ -15545,7 +15545,7 @@ msgid "Location"
 msgstr "Localisation"
 
 #: app/templates/places/index.html:11 app/templates/places/index.html:14
-#: app/templates/places/place_detail.html:14
+#: app/templates/places/place_detail.html:19
 msgid "Location still to add"
 msgstr "Localisation à ajouter"
 
@@ -15569,7 +15569,7 @@ msgstr "Sans aérodrome associé"
 msgid "Places in the bin are permanently deleted after 30 days. Any editor can restore them before then."
 msgstr "Les lieux dans la corbeille sont supprimés définitivement après 30 jours. Tout membre disposant des droits de modification peut les restaurer avant ce délai."
 
-#: app/templates/places/index.html:14 app/templates/places/place_detail.html:11
+#: app/templates/places/index.html:14 app/templates/places/place_detail.html:16
 msgid "Place photo"
 msgstr "Photo du lieu"
 
@@ -15577,11 +15577,11 @@ msgstr "Photo du lieu"
 msgid "Restore place"
 msgstr "Restaurer le lieu"
 
-#: app/templates/places/index.html:14 app/templates/places/place_detail.html:19
+#: app/templates/places/index.html:14 app/templates/places/place_detail.html:24
 msgid "I confirm the permanent deletion of this place and its visits."
 msgstr "Je confirme la suppression définitive de ce lieu et de ses visites."
 
-#: app/templates/places/index.html:14 app/templates/places/place_detail.html:19
+#: app/templates/places/index.html:14 app/templates/places/place_detail.html:24
 msgid "Permanently delete place"
 msgstr "Supprimer définitivement le lieu"
 
@@ -15608,49 +15608,53 @@ msgstr "Créer la collection"
 msgid "Edit place"
 msgstr "Modifier le lieu"
 
-#: app/templates/places/place_detail.html:7
+#: app/templates/places/place_detail.html:8
+msgid "Collections"
+msgstr "Collections"
+
+#: app/templates/places/place_detail.html:12
 #, python-format
 msgid "Place owner: %(name)s"
 msgstr "Propriétaire du lieu : %(name)s"
 
-#: app/templates/places/place_detail.html:7
+#: app/templates/places/place_detail.html:12
 #, python-format
 msgid "Last changed by %(name)s on %(date)s"
 msgstr "Dernière modification par %(name)s le %(date)s"
 
-#: app/templates/places/place_detail.html:9
+#: app/templates/places/place_detail.html:14
 msgid "Visit website"
 msgstr "Consulter le site web"
 
-#: app/templates/places/place_detail.html:17
+#: app/templates/places/place_detail.html:22
 msgid "Unarchive place"
 msgstr "Désarchiver le lieu"
 
-#: app/templates/places/place_detail.html:17
+#: app/templates/places/place_detail.html:22
 msgid "Archive place"
 msgstr "Archiver le lieu"
 
-#: app/templates/places/place_detail.html:17
+#: app/templates/places/place_detail.html:22
 msgid "Move to bin"
 msgstr "Mettre à la corbeille"
 
-#: app/templates/places/place_detail.html:18
+#: app/templates/places/place_detail.html:23
 msgid "Copy or move"
 msgstr "Copier ou déplacer"
 
-#: app/templates/places/place_detail.html:18
+#: app/templates/places/place_detail.html:23
 msgid "Destination collection"
 msgstr "Collection de destination"
 
-#: app/templates/places/place_detail.html:18
+#: app/templates/places/place_detail.html:23
 msgid "Copy place"
 msgstr "Copier le lieu"
 
-#: app/templates/places/place_detail.html:18
+#: app/templates/places/place_detail.html:23
 msgid "Move place"
 msgstr "Déplacer le lieu"
 
-#: app/templates/places/place_detail.html:18
+#: app/templates/places/place_detail.html:23
 msgid "Copies keep the content and photo, but no visits. Moving requires every visitor to belong to the destination collection."
 msgstr "Les copies conservent le contenu et la photo, sans les visites. Pour déplacer un lieu, toutes les personnes ayant enregistré une visite doivent faire partie de la collection de destination."
 
@@ -15676,64 +15680,64 @@ msgid "Coordinates could not be read. Enter latitude and longitude directly."
 msgstr "Impossible de lire les coordonnées. Saisissez directement la latitude et la longitude."
 
 #: app/templates/places/place_form.html:8
-msgid "Link (optional)"
-msgstr "Lien (facultatif)"
-
-#: app/templates/places/place_form.html:9
-msgid "Save a link now and add the name, location and other details later."
-msgstr "Enregistrez un lien maintenant, puis ajoutez le nom, la localisation et les autres détails plus tard."
-
-#: app/templates/places/place_form.html:10
 msgid "Place collection"
 msgstr "Collection de lieux"
 
-#: app/templates/places/place_form.html:11
-msgid "Place name (optional)"
-msgstr "Nom du lieu (facultatif)"
-
-#: app/templates/places/place_form.html:12
-msgid "Save place"
-msgstr "Enregistrer le lieu"
-
-#: app/templates/places/place_form.html:14
+#: app/templates/places/place_form.html:9
 msgid "Place name or address"
 msgstr "Nom de lieu ou adresse"
 
-#: app/templates/places/place_form.html:14
+#: app/templates/places/place_form.html:9
 msgid "Choose a result to set the pin and address. An empty place name is filled in too."
 msgstr "Choisissez un résultat pour placer le repère et renseigner l’adresse. Le nom du lieu est aussi renseigné s’il est vide."
 
-#: app/templates/places/place_form.html:15
+#: app/templates/places/place_form.html:10
+msgid "Place name (optional)"
+msgstr "Nom du lieu (facultatif)"
+
+#: app/templates/places/place_form.html:11
 msgid "Click the map to drop a pin, then drag it to the right spot. You can also paste coordinates or a map link."
 msgstr "Cliquez sur la carte pour placer un repère, puis déplacez-le au bon endroit. Vous pouvez aussi coller des coordonnées ou un lien de carte."
 
-#: app/templates/places/place_form.html:16
+#: app/templates/places/place_form.html:12
 msgid "Coordinates or map link"
 msgstr "Coordonnées ou lien de carte"
 
-#: app/templates/places/place_form.html:16
+#: app/templates/places/place_form.html:12
 msgid "Use coordinates"
 msgstr "Utiliser ces coordonnées"
 
-#: app/templates/places/place_form.html:17
+#: app/templates/places/place_form.html:13
 msgid "Place location"
 msgstr "Position du lieu"
 
-#: app/templates/places/place_form.html:19
+#: app/templates/places/place_form.html:15
 msgid "Address (optional)"
 msgstr "Adresse (facultative)"
 
-#: app/templates/places/place_form.html:20
+#: app/templates/places/place_form.html:16
 msgid "One tag per line. You can also choose suggestions below."
 msgstr "Une étiquette par ligne. Vous pouvez aussi choisir parmi les suggestions ci-dessous."
 
-#: app/templates/places/place_form.html:21
+#: app/templates/places/place_form.html:17
+msgid "Link (optional)"
+msgstr "Lien (facultatif)"
+
+#: app/templates/places/place_form.html:18
+msgid "Save a link now and add the name, location and other details later."
+msgstr "Enregistrez un lien maintenant, puis ajoutez le nom, la localisation et les autres détails plus tard."
+
+#: app/templates/places/place_form.html:20
 msgid "Place photo (optional)"
 msgstr "Photo du lieu (facultative)"
 
-#: app/templates/places/place_form.html:21
+#: app/templates/places/place_form.html:20
 msgid "Remove current photo"
 msgstr "Retirer la photo actuelle"
+
+#: app/templates/places/place_form.html:21
+msgid "Save place"
+msgstr "Enregistrer le lieu"
 
 #: app/templates/pwa/share_target.html:3 app/templates/pwa/share_target.html:10
 msgid "Shared files"
