@@ -21,9 +21,9 @@
 #   In both cases the "restore version" image is pulled from the public registry
 #     (ghcr.io/e2jk/openhangar:<backup-version>).
 #
-# The script must be run from the Docker host. It is bundled in the image and
-# published to the backups folder (./openhangar/data/backups/restore.sh) at
-# container startup so it is always up-to-date with the running version.
+# The script must be run from the Docker host, through the launcher (which
+# verifies the image's signature and runs this script out of it):
+#   /opt/openhangar/openhangar-launcher.sh restore <archive> [options]
 #
 # Prerequisites: the target container must be running and its database must be
 # empty (freshly started, no prior data). Restore into a non-empty database is
@@ -66,7 +66,9 @@ done
 log "OpenHangar restore starting — archive: ${ARCHIVE_ARG}, upgrade-to: ${UPGRADE_TO}"
 
 # ── Locate .env: walk up from script dir, then from CWD ──────────────────────
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Run by openhangar-launcher.sh from a temporary copy: it passes the folder
+# holding .env.
+SCRIPT_DIR="${OPENHANGAR_SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}"
 _find_env() {
   local dir="$1"
   while [ "${dir}" != "/" ]; do

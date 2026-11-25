@@ -558,3 +558,22 @@ def test_link_only_prefill_capture_and_later_location(
         == 302
     )
     assert "Location still to add" in client.get(detail_url).text
+
+
+def test_explore_menu_lists_where_next_places_then_passports(
+    app: Flask, client: FlaskClient, people: dict[str, int]
+) -> None:
+    """The top bar's Explore submenu holds all three, in this order; the
+    passports link is no longer a top-level entry."""
+    with app.app_context():
+        set_membership_flags(people["admin"], is_pilot=True)
+        db.session.commit()
+    signin(client, people, "admin")
+    page = client.get("/places/").text
+    menu = page[page.index('<i class="bi bi-compass me-1"></i>') :]
+    menu = menu[: menu.index("</ul>")]
+    where_next = menu.index("/explore/where-next")
+    places = menu.index('href="/places/"')
+    passports = menu.index('href="/passports/"')
+    assert where_next < places < passports
+    assert '<li class="nav-item"><a class="nav-link" href="/passports/"' not in page
