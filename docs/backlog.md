@@ -1150,8 +1150,6 @@ passports.
   (decide whether copying to another collection is needed too).
 
 **Place page**
-- An "Add a place" button next to Edit, top right, to add places one after
-  another without going back through the menu.
 - Breadcrumb under the title: "Collections > France", Collections linking to
   /places/.
 

@@ -1,5 +1,6 @@
 # Safer one-click upgrades, and Passports in the Explore menu
 
+- Add another place in the same collection directly from a place page.
 - Places now shows two cards per row on large screens.
 - The Places collection buttons now have consistent spacing.
 - The Where next? count of places without airfields now links to the filtered Places list.
