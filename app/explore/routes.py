@@ -300,6 +300,8 @@ def where_next() -> ResponseReturnValue:
         )
         if selected is None:
             abort(404)
+    elif not {"aircraft", "speed"} & request.args.keys() and len(aircraft) == 1:
+        selected = aircraft[0]
     profile = PilotProfile.query.filter_by(user_id=uid).first()
     home = discovery.home_descriptor(selected, tenant_id) or discovery.home_descriptor(
         profile, tenant_id
@@ -310,7 +312,19 @@ def where_next() -> ResponseReturnValue:
         tenant_id, uid, participant.id if participant else None
     )
     searches = discovery.origin_choices(tenant_id, request.args.get("q", "")[:100])
-    origin_key = request.args.get("origin") or (home["key"] if home else "")
+    automatic_origin = next(
+        (
+            field
+            for field in (home, latest)
+            if field is not None
+            and field.get("latitude") is not None
+            and field.get("longitude") is not None
+        ),
+        None,
+    )
+    origin_key = request.args.get("origin") or (
+        automatic_origin["key"] if automatic_origin else ""
+    )
     if request.args.get("start") == "latest" and latest:
         origin_key = latest["key"]
     if request.args.get("start") == "home" and home:
