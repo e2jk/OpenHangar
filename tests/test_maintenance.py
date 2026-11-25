@@ -988,6 +988,76 @@ class TestEditTrigger:
             assert t.name == "Annual (updated)"
             assert t.due_date == date(2028, 6, 1)
 
+    def test_editing_a_combined_item_keeps_both_limits(self, app, client):
+        """An item due at a date *or* an hour count (an AMP "100FH / 12MO")
+        keeps both limits when edited — even for a name change only."""
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        trid = _add_calendar_trigger(
+            app, acid, name="100 h / annual", due_date=date(2027, 11, 20)
+        )
+        with app.app_context():
+            t = db.session.get(MaintenanceTrigger, trid)
+            t.due_engine_hours, t.interval_hours = 1100, 100
+            db.session.commit()
+        _login(app, client)
+        page = client.get(f"/aircraft/{acid}/maintenance/{trid}/edit").text
+        assert 'id="hours-fields" data-has-values="1"' in page
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/edit",
+            data={
+                "name": "100 h / annual inspection",
+                "trigger_type": "calendar",
+                "due_date": "2027-11-20",
+                "interval_days": "365",
+                "due_engine_hours": "1100.0",
+                "interval_hours": "100",
+            },
+        )
+        assert r.status_code == 302
+        with app.app_context():
+            t = db.session.get(MaintenanceTrigger, trid)
+            assert t.due_date == date(2027, 11, 20)
+            assert float(t.due_engine_hours) == 1100.0
+            assert float(t.interval_hours) == 100.0
+
+    def test_a_limit_cleared_on_the_form_is_removed(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        trid = _add_calendar_trigger(app, acid, due_date=date(2027, 11, 20))
+        with app.app_context():
+            db.session.get(MaintenanceTrigger, trid).due_engine_hours = 1100
+            db.session.commit()
+        _login(app, client)
+        client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/edit",
+            data={
+                "name": "Annual",
+                "trigger_type": "calendar",
+                "due_date": "2027-11-20",
+            },
+        )
+        with app.app_context():
+            assert db.session.get(MaintenanceTrigger, trid).due_engine_hours is None
+
+    def test_a_bad_extra_limit_is_reported(self, app, client):
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        trid = _add_calendar_trigger(app, acid, due_date=date(2027, 11, 20))
+        _login(app, client)
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/edit",
+            data={
+                "name": "Annual",
+                "trigger_type": "calendar",
+                "due_date": "2027-11-20",
+                "due_engine_hours": "lots",
+                "due_landings": "-3",
+            },
+        )
+        assert r.status_code == 200
+        assert b"Due engine hours must be a positive number" in r.data
+
     def test_edit_404_for_wrong_aircraft(self, app, client):
         _uid, tid = _create_user_and_tenant(app)
         acid1 = _add_aircraft(app, tid, registration="OO-AA1")

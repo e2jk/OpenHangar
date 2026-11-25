@@ -375,9 +375,15 @@ window.toggleType = function () {
   var cal = document.getElementById('calendar-fields');
   var hrs = document.getElementById('hours-fields');
   var lnd = document.getElementById('landings-fields');
-  if (cal) cal.style.display = type === 'calendar' ? '' : 'none';
-  if (hrs) hrs.style.display = type === 'hours' ? '' : 'none';
-  if (lnd) lnd.style.display = type === 'landings' ? '' : 'none';
+  // A group holding a saved limit stays shown whatever the type: an item
+  // can be due at a date *and* an hour count, whichever comes first, and
+  // each limit must stay visible to be kept, changed or cleared.
+  function show(el, selected) {
+    if (el) el.style.display = selected || el.dataset.hasValues === '1' ? '' : 'none';
+  }
+  show(cal, type === 'calendar');
+  show(hrs, type === 'hours');
+  show(lnd, type === 'landings');
 };
 
 /* Maintenance trigger form: picking an engine/propeller component

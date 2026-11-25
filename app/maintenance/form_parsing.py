@@ -107,7 +107,10 @@ def parse_trigger_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str
         hours_basis_raw if hours_basis_raw in HoursBasis.ALL else HoursBasis.ENGINE
     )
 
-    if trigger_type == TriggerType.CALENDAR:
+    # The selected type's group is required; another group that is filled
+    # in is a further limit of the same item ("100FH / 12MO", whichever
+    # comes first, as the AMP import creates) and is kept, never dropped.
+    if trigger_type == TriggerType.CALENDAR or due_date_raw:
         if not due_date_raw:
             errors.append(_("Due date is required for calendar triggers."))
         else:
@@ -123,7 +126,7 @@ def parse_trigger_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str
             if warn_days is None:
                 errors.append(_("Warning lead time (days) must be a positive number."))
 
-    elif trigger_type == TriggerType.HOURS:
+    if trigger_type == TriggerType.HOURS or due_engine_hours_raw:
         if not due_engine_hours_raw:
             errors.append(_("Due engine hours is required for hours triggers."))
         else:
@@ -139,7 +142,7 @@ def parse_trigger_fields(f: Mapping[str, str]) -> tuple[dict[str, Any], list[str
             if warn_hours is None:
                 errors.append(_("Warning lead time (hours) must be a positive number."))
 
-    elif trigger_type == TriggerType.LANDINGS:
+    if trigger_type == TriggerType.LANDINGS or due_landings_raw:
         if not due_landings_raw:
             errors.append(_("Due landings is required for landings triggers."))
         else:
