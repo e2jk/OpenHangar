@@ -1136,10 +1136,6 @@ passports.
 **Where next?**
 
 **Places list**
-- In a card: add space between the place's name and the "no airfield" pill;
-  show each linked airfield's ICAO code in the same kind of pill, with its
-  full name on hover; make tag pills links that filter the current page to
-  that tag (keeping the chosen collection and other filters).
 - Move many places to another collection at once: a "Move to another
   collection" button reveals checkboxes, a collection list and a Move button
   (decide whether copying to another collection is needed too).

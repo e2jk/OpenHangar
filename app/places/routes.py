@@ -107,17 +107,20 @@ def index() -> ResponseReturnValue:
         if not is_view_only(uid, tid)
         else set()
     )
+    links = airfields.linked_airfields(
+        tid,
+        uid,
+        place_ids=[row[0].id for row in listing["rows"]],
+        include_archived=True,
+    )
+    airfields_by_place: dict[int, list[dict[str, Any]]] = {}
+    for link in links:
+        airfields_by_place.setdefault(link["place_id"], []).append(link)
     return render_template(
         "places/index.html",
         **listing,
-        **airfield_map_data(
-            airfields.linked_airfields(
-                tid,
-                uid,
-                place_ids=[row[0].id for row in listing["rows"]],
-                include_archived=True,
-            )
-        ),
+        **airfield_map_data(links),
+        airfields_by_place=airfields_by_place,
         can_download=bool(waypoint_selection(listing["rows"]).points),
         export_args={
             "collection": collection_id,
