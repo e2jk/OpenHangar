@@ -131,7 +131,7 @@ def index() -> ResponseReturnValue:
         can_create = False
     summaries = progress_many(passports, session["user_id"])
     by_series: dict[int, list[Passport]] = {}
-    cards = []
+    cards: list[tuple[Passport, list[Passport]]] = []
     for passport in passports:
         if passport.series_id is None:
             cards.append((passport, []))
