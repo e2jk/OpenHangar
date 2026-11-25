@@ -23,6 +23,7 @@ from datetime import datetime
 from typing import IO
 
 from flask import Response  # pyright: ignore[reportMissingImports]
+from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 from werkzeug.utils import secure_filename  # pyright: ignore[reportMissingImports]
 
 from services.safe_paths import (  # pyright: ignore[reportMissingImports]
@@ -63,6 +64,24 @@ def _find_identical(dest_dir: str, data: bytes, digest: str) -> str | None:
     return None
 
 
+# Storage one archive folder (a pilot's or an aircraft's) may hold. Every
+# upload is kept, readable or not, and backed up: without a cap a script
+# could fill the disk and break the backups.
+ARCHIVE_QUOTA_BYTES = 1024 * 1024 * 1024
+
+
+class GpsArchiveFull(ValueError):
+    """The archive folder has no room for this file."""
+
+
+def _folder_bytes(dest_dir: str) -> int:
+    return sum(
+        entry.stat().st_size
+        for entry in os.scandir(dest_dir)
+        if entry.is_file(follow_symlinks=False)
+    )
+
+
 def archive_gps_file(data: bytes, original_filename: str, dest_dir: str) -> str:
     """Store *data* in *dest_dir* under its (sanitised) original name and
     return the stored file's full path.
@@ -79,6 +98,14 @@ def archive_gps_file(data: bytes, original_filename: str, dest_dir: str) -> str:
     existing = _find_identical(dest_dir, data, digest)
     if existing:
         return existing
+    if _folder_bytes(dest_dir) + len(data) > ARCHIVE_QUOTA_BYTES:
+        raise GpsArchiveFull(
+            _(
+                "%(fn)s: the GPS file archive is full (1 GB). Remove GPS files "
+                "no longer needed, or ask an administrator.",
+                fn=original_filename,
+            )
+        )
     name = secure_filename(original_filename) or "gps_log"
     path = os.path.join(dest_dir, name)
     if os.path.exists(path):

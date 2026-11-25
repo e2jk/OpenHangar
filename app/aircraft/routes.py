@@ -60,6 +60,7 @@ from models import (
     db,
 )  # pyright: ignore[reportMissingImports]
 from services.gps_archive import (  # pyright: ignore[reportMissingImports]
+    GpsArchiveFull,
     archive_gps_file,
     archive_relpath,
     pilot_archive_parts,
@@ -2182,9 +2183,13 @@ def gps_import_upload(aircraft_id: int) -> ResponseReturnValue:
             continue
 
         # Kept whatever the parser makes of it — see services.gps_archive.
-        archive_path = archive_relpath(
-            archive_gps_file(data, f.filename, archive_dir), _upload_folder()
-        )
+        try:
+            archive_path = archive_relpath(
+                archive_gps_file(data, f.filename, archive_dir), _upload_folder()
+            )
+        except GpsArchiveFull as exc:
+            errors.append(str(exc))
+            continue
         meta = gps_file_meta(data, f.filename, archive_path, tmp_dir)
         if isinstance(meta, str):
             errors.append(meta)

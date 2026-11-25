@@ -746,3 +746,51 @@ class TestTemporaryFiles:
         )
         notification_service.run_daily_checks(app)
         assert calls == [str(uploads)]
+
+
+class TestArchiveQuota:
+    """Every upload is kept, readable or not: each archive folder is capped
+    so a script cannot fill the disk (and the backups)."""
+
+    def test_a_full_folder_refuses_new_files_but_not_known_ones(self, tmp_path, app):
+        from services import gps_archive
+
+        with app.test_request_context():
+            gps_archive.ARCHIVE_QUOTA_BYTES, saved = 10, gps_archive.ARCHIVE_QUOTA_BYTES
+            try:
+                kept = gps_archive.archive_gps_file(b"123456", "a.gpx", str(tmp_path))
+                # The same content again is already there: no room needed.
+                assert (
+                    gps_archive.archive_gps_file(b"123456", "b.gpx", str(tmp_path))
+                    == kept
+                )
+                with pytest.raises(gps_archive.GpsArchiveFull, match="archive is full"):
+                    gps_archive.archive_gps_file(b"7890123", "c.gpx", str(tmp_path))
+            finally:
+                gps_archive.ARCHIVE_QUOTA_BYTES = saved
+
+    @pytest.mark.parametrize("path", ["aircraft", "pilot", "flight"])
+    def test_each_upload_says_so(self, app, client, uploads, monkeypatch, path):
+        monkeypatch.setattr("services.gps_archive.ARCHIVE_QUOTA_BYTES", 10)
+        uid, _slug, ac_id = _world(app, f"quota-{path}@example.com")
+        _login(client, uid)
+        if path == "flight":
+            resp = client.post(
+                "/flights/parse-gps",
+                data={"gps_file": (io.BytesIO(_gpx_bytes()), "big.gpx")},
+                content_type="multipart/form-data",
+            )
+            assert resp.get_json()["success"] is False
+            return
+        url = (
+            f"/aircraft/{ac_id}/gps-import"
+            if path == "aircraft"
+            else "/pilot/gps-import"
+        )
+        resp = client.post(
+            url,
+            data={"gps_files": [(io.BytesIO(_gpx_bytes()), "big.gpx")]},
+            content_type="multipart/form-data",
+            follow_redirects=True,
+        )
+        assert b"archive is full" in resp.data
