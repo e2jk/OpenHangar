@@ -323,6 +323,7 @@ def test_passport_index_groups_editions_with_maps_and_progress(
     assert f'href="/passports/{standalone_id}/">Standalone passport' in page
     assert f'href="/passports/{old_id}/">Previous booklet' in page
     assert "Other editions" in page
+    assert ">Voucher booklets</h2>" in page
     assert "1 of 1 airfields visited (100%)" in page
     assert "0 of 1 airfields visited (0%)" in page
     assert page.index("Export my passport data") > page.index("Standalone passport")

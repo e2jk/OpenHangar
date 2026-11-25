@@ -15,7 +15,7 @@
 - Where next? shows suggestions on opening from a home airfield or the latest logged arrival.
 - Where next? defaults to flight time using the selected aircraft’s cruise speed or 100 kt.
 - Airfield passports now show interactive maps and visit percentages in cards.
-  Linked editions share one card with direct links to the other editions.
+  Each series has a named card with direct links to its other editions.
   The account export is at the bottom of the page.
 - Add another place in the same collection directly from a place page.
 - Places now shows two cards per row on large screens.
