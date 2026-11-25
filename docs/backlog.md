@@ -1139,8 +1139,6 @@ passports.
 - Show suggestions as soon as the page opens: pick a sensible starting
   airfield (a single aircraft's home base, say) and search places and
   passports both.
-- The "places without an airfield" count at the bottom links to all places:
-  link to the places list filtered to those without an airfield.
 
 **Places list**
 - Add the same spacing between "All collections" and the first collection
