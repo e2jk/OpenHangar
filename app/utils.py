@@ -6,6 +6,7 @@ import io
 import logging
 import math
 import os
+import threading
 from collections import defaultdict
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -92,6 +93,11 @@ _GIF_W, _GIF_H = 800, 480
 _GIF_PAD = 30  # pixel padding around the track area
 _GIF_STEP_MS = 600  # ms per frame in the animated GIF
 _GIF_HOLD_MS = 3000  # ms for the final "all tracks" frame
+# Memory bounds for the tracks GIF: at most this many animated frames (a
+# longer history keeps every n-th one; every track is still drawn), and one
+# render at a time per worker — a high-resolution frame is ~4.6 MB in RGB.
+_GIF_MAX_FRAMES = 150
+_GIF_RENDER_LOCK = threading.Lock()
 _TRACK_COLOUR = (180, 30, 200)  # current/newest track: vivid purple
 _HISTORY_COLOUR = (
     130,
@@ -535,6 +541,28 @@ def generate_tracks_gif(
     canvas_h: int = _GIF_H,
     high_res: bool = False,
 ) -> bytes:
+    """Render an animated GIF of the flight tracks, oldest-first (see
+    _render_tracks_gif). One render runs at a time in this worker: the
+    others wait their turn rather than all holding their frames at once."""
+    with _GIF_RENDER_LOCK:
+        return _render_tracks_gif(
+            track_rows,
+            _font_path=_font_path,
+            _openaip_key=_openaip_key,
+            canvas_w=canvas_w,
+            canvas_h=canvas_h,
+            high_res=high_res,
+        )
+
+
+def _render_tracks_gif(
+    track_rows: list[dict[str, Any]],
+    _font_path: str = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    _openaip_key: str | None = None,
+    canvas_w: int = _GIF_W,
+    canvas_h: int = _GIF_H,
+    high_res: bool = False,
+) -> bytes:
     """Render an animated GIF of the flight tracks, oldest-first.
 
     track_rows must already be sorted oldest-first; use sort_tracks_oldest_first().
@@ -547,6 +575,11 @@ def generate_tracks_gif(
     high_res=True doubles line widths, font sizes and padding, uses a 256-colour
     palette, and raises the tile-fetch cap to 64 — producing a sharper map with
     readable labels at the cost of a larger file.
+
+    Memory stays bounded however long the history: at most _GIF_MAX_FRAMES
+    animated frames are kept (with more tracks, every n-th one — the map of
+    earlier tracks still holds them all), and each frame is reduced to the
+    shared palette as soon as it is drawn.
     """
     from PIL import Image, ImageDraw, ImageFont  # pyright: ignore[reportMissingImports]
 
@@ -635,7 +668,28 @@ def generate_tracks_gif(
             else Image.new("RGB", (canvas_w, canvas_h), _BG_COLOUR)
         )
 
-    frames: list[Any] = []
+    # Final frame first: all tracks at equal weight using the full bounding
+    # box. Its palette (widest view, most visually representative) is shared
+    # by every frame — a single global palette means identical background
+    # areas compress very well with GIF's LZW codec — so each frame can be
+    # reduced to it as soon as it is drawn.
+    proj_result_final = _build_gif_projection(
+        all_coords, canvas_w=canvas_w, canvas_h=canvas_h, pad=_pad
+    )
+    # proj_result_final is guaranteed non-None: all_coords has ≥ 2 points (checked above)
+    project_final, (f_min_lon, f_min_lat, f_max_lon, f_max_lat) = proj_result_final  # type: ignore[misc]
+    final_img = _frame_bg(project_final, f_min_lon, f_max_lon, f_min_lat, f_max_lat)
+    final_draw = ImageDraw.Draw(final_img)
+    for tc in per_track_coords:
+        draw_track(final_draw, tc, _TRACK_COLOUR, _line_hist, project_final)
+    draw_shadow_text(final_draw, f"All {len(track_rows)} tracks", font)
+    palette_src = final_img.quantize(colors=_q_colors, dither=Image.Dither.NONE)
+
+    # With more tracks than frames, keep every `stride`-th frame (and the last).
+    stride = max(1, math.ceil(len(track_rows) / _GIF_MAX_FRAMES))
+    last_idx = len(track_rows) - 1
+
+    quantized: list[Any] = []
     durations: list[int] = []
     accumulated_coords: list[tuple[float, float]] = []
 
@@ -670,11 +724,17 @@ def generate_tracks_gif(
                     project_fn,
                 )
             history_view = view
-        img = history_img.copy()
-        draw = ImageDraw.Draw(img)
-        draw_track(
-            draw, per_track_coords[frame_idx], _TRACK_COLOUR, _line_curr, project_fn
-        )
+        keep = (frame_idx + 1) % stride == 0 or frame_idx == last_idx
+        if keep:
+            img = history_img.copy()
+            draw = ImageDraw.Draw(img)
+            draw_track(
+                draw,
+                per_track_coords[frame_idx],
+                _TRACK_COLOUR,
+                _line_curr,
+                project_fn,
+            )
         draw_track(
             ImageDraw.Draw(history_img),
             per_track_coords[frame_idx],
@@ -682,6 +742,8 @@ def generate_tracks_gif(
             _line_hist,
             project_fn,
         )
+        if not keep:
+            continue
 
         row = track_rows[frame_idx]
         label = f"{row.get('date', '')}  {row.get('dep', '')} → {row.get('arr', '')}"
@@ -693,31 +755,12 @@ def generate_tracks_gif(
             font=font_sm,
         )
 
-        frames.append(img)
+        quantized.append(img.quantize(palette=palette_src, dither=Image.Dither.NONE))
         durations.append(_GIF_STEP_MS)
 
-    # Final frame: all tracks at equal weight using the full bounding box, longer hold
-    if frames:
-        proj_result_final = _build_gif_projection(
-            all_coords, canvas_w=canvas_w, canvas_h=canvas_h, pad=_pad
-        )
-        # proj_result_final is guaranteed non-None: all_coords has ≥ 2 points (checked above)
-        project_final, (f_min_lon, f_min_lat, f_max_lon, f_max_lat) = proj_result_final  # type: ignore[misc]
-        img = _frame_bg(project_final, f_min_lon, f_max_lon, f_min_lat, f_max_lat)
-        draw = ImageDraw.Draw(img)
-        for tc in per_track_coords:
-            draw_track(draw, tc, _TRACK_COLOUR, _line_hist, project_final)
-        draw_shadow_text(draw, f"All {len(track_rows)} tracks", font)
-        frames.append(img)
-        durations.append(_GIF_HOLD_MS)
-
-    # Quantise all frames to a shared 128-colour palette built from the last frame
-    # (widest view, most visually representative).  A single global palette means
-    # identical background areas compress very well with GIF's LZW codec.
-    palette_src = frames[-1].quantize(colors=_q_colors, dither=Image.Dither.NONE)
-    quantized: list[Any] = [
-        f.quantize(palette=palette_src, dither=Image.Dither.NONE) for f in frames
-    ]
+    # The final frame, held longer.
+    quantized.append(final_img.quantize(palette=palette_src, dither=Image.Dither.NONE))
+    durations.append(_GIF_HOLD_MS)
 
     buf = io.BytesIO()
     quantized[0].save(
