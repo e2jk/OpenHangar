@@ -299,3 +299,30 @@ def test_copy_refuses_changed_source(
     assert response.status_code == 409 and "source edition changed" in response.text
     with app.app_context():
         assert Passport.query.count() == 1
+
+
+def test_passport_index_groups_editions_with_maps_and_progress(
+    app: Flask, client: FlaskClient, owner: dict[str, int]
+) -> None:
+    with app.app_context():
+        old = db.session.get(Passport, owner["passport"])
+        old.title = "Previous booklet"
+        old.end_date = date.today() - timedelta(days=1)
+        current = extra(owner, "Current booklet", date.today())
+        standalone = extra(owner, "Standalone passport")
+        series = editions.link(old, owner["user"], title="Voucher booklets")
+        editions.link(current, owner["user"], series_id=series.id)
+        flight(owner["user"], date=date.today())
+        db.session.commit()
+        old_id, current_id, standalone_id = old.id, current.id, standalone.id
+
+    signin(client, owner["user"])
+    page = client.get("/passports/").get_data(as_text=True)
+    assert page.count("data-passport-progress") == 2
+    assert f'href="/passports/{current_id}/">Current booklet' in page
+    assert f'href="/passports/{standalone_id}/">Standalone passport' in page
+    assert f'href="/passports/{old_id}/">Previous booklet' in page
+    assert "Other editions" in page
+    assert "1 of 1 airfields visited (100%)" in page
+    assert "0 of 1 airfields visited (0%)" in page
+    assert page.index("Export my passport data") > page.index("Standalone passport")

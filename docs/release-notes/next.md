@@ -1,5 +1,8 @@
 # Safer one-click upgrades, and Passports in the Explore menu
 
+- Airfield passports now show interactive maps and visit percentages in cards.
+  Linked editions share one card with direct links to the other editions.
+  The account export is at the bottom of the page.
 - Add another place in the same collection directly from a place page.
 - Places now shows two cards per row on large screens.
 - The Places collection buttons now have consistent spacing.

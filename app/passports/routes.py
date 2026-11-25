@@ -42,6 +42,7 @@ from passports import (
     builder,
     comments,
     discussion_routes,  # Register private group airfield discussions.
+    editions,
     evidence,
     exports,  # Register the passport contributor to the common account export.
     groups,
@@ -94,6 +95,31 @@ __all__ = [
 ]
 
 
+def _progress_map_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            key: float(row[key])
+            if key in {"latitude", "longitude"} and row.get(key) is not None
+            else row.get(key)
+            for key in (
+                "target_id",
+                "name",
+                "ident",
+                "latitude",
+                "longitude",
+                "visited",
+                "count",
+                "is_closed",
+                "state",
+                "colour",
+                "editions",
+                "friends",
+            )
+        }
+        for row in rows
+    ]
+
+
 @passports_bp.route("/")
 @login_required
 def index() -> ResponseReturnValue:
@@ -103,13 +129,32 @@ def index() -> ResponseReturnValue:
         can_create = True
     except BuilderError:
         can_create = False
+    summaries = progress_many(passports, session["user_id"])
+    by_series: dict[int, list[Passport]] = {}
+    cards = []
+    for passport in passports:
+        if passport.series_id is None:
+            cards.append((passport, []))
+        else:
+            by_series.setdefault(passport.series_id, []).append(passport)
+    for series_passports in by_series.values():
+        featured = editions.current_edition(
+            series_passports
+        ) or editions.latest_edition(series_passports)
+        assert featured is not None
+        history = [
+            p for p in reversed(editions.ordered(series_passports)) if p != featured
+        ]
+        cards.append((featured, history))
+    cards.sort(key=lambda card: (card[0].title, card[0].id))
     return render_template(
         "passports/index.html",
         can_create=can_create,
         can_export=exports.account_has_data(*_actor(), passports),
-        passports=passports,
+        cards=cards,
         group_series=accessible_group_series().order_by("title", "id").all(),
-        summaries=progress_many(passports, session["user_id"]),
+        summaries=summaries,
+        card_maps={p.id: _progress_map_rows(summaries[p.id]["rows"]) for p, _ in cards},
     )
 
 
@@ -173,28 +218,7 @@ def detail(passport_id: int) -> ResponseReturnValue:
     )
     if download is not None:
         return download
-    map_rows = [
-        {
-            key: float(row[key])
-            if key in {"latitude", "longitude"} and row.get(key) is not None
-            else row.get(key)
-            for key in (
-                "target_id",
-                "name",
-                "ident",
-                "latitude",
-                "longitude",
-                "visited",
-                "count",
-                "is_closed",
-                "state",
-                "colour",
-                "editions",
-                "friends",
-            )
-        }
-        for row in rows
-    ]
+    map_rows = _progress_map_rows(rows)
     can_manage = passport.owner_user_id == session.get("user_id")
     try:
         require_actor(passport.tenant_id, session["user_id"])
