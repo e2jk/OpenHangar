@@ -1304,7 +1304,7 @@ msgstr "Route"
 
 #: app/flights/crew_invites.py:496 app/reports/routes.py:113
 #: app/reservations/routes.py:849 app/reservations/routes.py:963
-#: app/reservations/routes.py:1268 app/services/notification_service.py:568
+#: app/reservations/routes.py:1284 app/services/notification_service.py:568
 #: app/services/notification_service.py:598
 #: app/services/notification_service.py:674
 #: app/services/notification_service.py:741
@@ -3731,7 +3731,7 @@ msgid "Your reservation for %(reg)s from %(start)s to %(end)s UTC has been cance
 msgstr "Votre réservation pour %(reg)s du %(start)s au %(end)s UTC a été annulée."
 
 #: app/reservations/routes.py:850 app/reservations/routes.py:964
-#: app/reservations/routes.py:1269 app/templates/dashboard.html:758
+#: app/reservations/routes.py:1285 app/templates/dashboard.html:758
 #: app/templates/reservations/calendar.html:137
 #: app/templates/reservations/calendar.html:194
 #: app/templates/reservations/detail.html:32
@@ -3742,7 +3742,7 @@ msgid "Start"
 msgstr "Début"
 
 #: app/reservations/routes.py:851 app/reservations/routes.py:965
-#: app/reservations/routes.py:1270 app/templates/dashboard.html:759
+#: app/reservations/routes.py:1286 app/templates/dashboard.html:759
 #: app/templates/reservations/calendar.html:138
 #: app/templates/reservations/calendar.html:195
 #: app/templates/reservations/detail.html:35
@@ -3811,7 +3811,7 @@ msgstr "La durée minimale de réservation doit être positive."
 msgid "Maximum booking duration must be positive."
 msgstr "La durée maximale de réservation doit être positive."
 
-#: app/reservations/routes.py:1049 app/reservations/routes.py:1781
+#: app/reservations/routes.py:1049 app/reservations/routes.py:1797
 msgid "Invalid hourly rate."
 msgstr "Tarif horaire invalide."
 
@@ -3861,135 +3861,139 @@ msgstr "La durée minimale de réservation est de %(h)s h."
 msgid "Maximum booking duration is %(h)s h."
 msgstr "La durée maximale de réservation est de %(h)s h."
 
-#: app/reservations/routes.py:1274 app/templates/config/renter_account.html:51
+#: app/reservations/routes.py:1230
+msgid "These times overlap an existing confirmed reservation or maintenance downtime."
+msgstr "Ces horaires chevauchent une réservation confirmée ou une immobilisation pour maintenance."
+
+#: app/reservations/routes.py:1290 app/templates/config/renter_account.html:51
 #: app/templates/refuels/refuel_form.html:51
 msgid "Note"
 msgstr "Note"
 
-#: app/reservations/routes.py:1274
+#: app/reservations/routes.py:1290
 msgid "No valid rental authorization on file"
 msgstr "Aucune autorisation de location valide enregistrée"
 
-#: app/reservations/routes.py:1280
+#: app/reservations/routes.py:1296
 #, python-format
 msgid "New booking request — %(reg)s"
 msgstr "Nouvelle demande de réservation — %(reg)s"
 
-#: app/reservations/routes.py:1282
+#: app/reservations/routes.py:1298
 #, python-format
 msgid "New booking request: %(reg)s"
 msgstr "Nouvelle demande de réservation : %(reg)s"
 
-#: app/reservations/routes.py:1285
+#: app/reservations/routes.py:1301
 #, python-format
 msgid "A new booking request was submitted for %(reg)s from %(start)s to %(end)s UTC."
 msgstr "Une nouvelle demande de réservation a été soumise pour %(reg)s du %(start)s au %(end)s UTC."
 
-#: app/reservations/routes.py:1307
+#: app/reservations/routes.py:1323
 msgid "Reservation saved."
 msgstr "Réservation enregistrée."
 
-#: app/reservations/routes.py:1339
+#: app/reservations/routes.py:1355
 #, python-format
 msgid "flight time: dispatch shows %(d)s h, logged flights show %(f)s h"
 msgstr "temps de vol : le départ indique %(d)s h, les vols enregistrés indiquent %(f)s h"
 
-#: app/reservations/routes.py:1357
+#: app/reservations/routes.py:1373
 #, python-format
 msgid "engine time: dispatch shows %(d)s h, logged flights show %(f)s h"
 msgstr "temps moteur : le départ indique %(d)s h, les vols enregistrés indiquent %(f)s h"
 
-#: app/reservations/routes.py:1367
+#: app/reservations/routes.py:1383
 #, python-format
 msgid "Dispatch/logbook discrepancy — %(details)s."
 msgstr "Écart entre le départ et le carnet de vol — %(details)s."
 
-#: app/reservations/routes.py:1425
+#: app/reservations/routes.py:1441
 msgid "Only confirmed reservations can be checked out."
 msgstr "Seules les réservations confirmées peuvent faire l'objet d'un départ."
 
-#: app/reservations/routes.py:1434
+#: app/reservations/routes.py:1450
 msgid "This reservation has already been checked out."
 msgstr "Cette réservation a déjà fait l'objet d'un départ."
 
-#: app/reservations/routes.py:1453
+#: app/reservations/routes.py:1469
 msgid "Walk-around confirmation is required."
 msgstr "La confirmation de la visite prévol est obligatoire."
 
-#: app/reservations/routes.py:1455
+#: app/reservations/routes.py:1471
 msgid "You must acknowledge the open snag list."
 msgstr "Vous devez prendre connaissance de la liste des anomalies ouvertes."
 
-#: app/reservations/routes.py:1461
+#: app/reservations/routes.py:1477
 msgid "This aircraft is grounded — dispatch is blocked. An owner may override with an explicit confirmation."
 msgstr "Cet appareil est immobilisé au sol — le départ est bloqué. Un propriétaire peut passer outre avec une confirmation explicite."
 
-#: app/reservations/routes.py:1472 app/reservations/routes.py:1646
+#: app/reservations/routes.py:1488 app/reservations/routes.py:1662
 msgid "Invalid engine counter value."
 msgstr "Valeur du compteur moteur invalide."
 
-#: app/reservations/routes.py:1479 app/reservations/routes.py:1652
+#: app/reservations/routes.py:1495 app/reservations/routes.py:1668
 msgid "Invalid flight counter value."
 msgstr "Valeur du compteur de vol invalide."
 
-#: app/reservations/routes.py:1505
+#: app/reservations/routes.py:1521
 msgid "Checked out."
 msgstr "Départ enregistré."
 
-#: app/reservations/routes.py:1622
+#: app/reservations/routes.py:1638
 msgid "Check out before checking in."
 msgstr "Enregistrez le départ avant le retour."
 
-#: app/reservations/routes.py:1627
+#: app/reservations/routes.py:1643
 msgid "This reservation has already been checked in."
 msgstr "Cette réservation a déjà fait l'objet d'un retour."
 
-#: app/reservations/routes.py:1661
+#: app/reservations/routes.py:1677
 msgid "Engine counter on return cannot be less than the check-out value."
 msgstr "Le compteur moteur au retour ne peut pas être inférieur à la valeur au départ."
 
-#: app/reservations/routes.py:1670
+#: app/reservations/routes.py:1686
 msgid "Flight counter on return cannot be less than the check-out value."
 msgstr "Le compteur de vol au retour ne peut pas être inférieur à la valeur au départ."
 
-#: app/reservations/routes.py:1695 app/reservations/routes.py:1792
+#: app/reservations/routes.py:1711 app/reservations/routes.py:1808
 msgid "The rental charge is out of range. Check the values entered."
 msgstr "Le montant de la location est hors limites. Vérifiez les valeurs saisies."
 
-#: app/reservations/routes.py:1706
+#: app/reservations/routes.py:1722
 msgid "Checked in."
 msgstr "Retour enregistré."
 
-#: app/reservations/routes.py:1747 app/reservations/routes.py:1836
+#: app/reservations/routes.py:1763 app/reservations/routes.py:1852
 msgid "This charge has already been finalized."
 msgstr "Cette facture a déjà été finalisée."
 
-#: app/reservations/routes.py:1779
+#: app/reservations/routes.py:1795
 msgid "Invalid billable hours."
 msgstr "Heures facturables invalides."
 
-#: app/reservations/routes.py:1783
+#: app/reservations/routes.py:1799
 msgid "Invalid fuel credit."
 msgstr "Crédit carburant invalide."
 
-#: app/reservations/routes.py:1785
+#: app/reservations/routes.py:1801
 msgid "Invalid adjustment."
 msgstr "Ajustement invalide."
 
-#: app/reservations/routes.py:1787
+#: app/reservations/routes.py:1803
 msgid "An adjustment requires a note explaining it."
 msgstr "Un ajustement nécessite une note explicative."
 
-#: app/reservations/routes.py:1852
+#: app/reservations/routes.py:1868
 #, python-format
 msgid "Rental charge — reservation #%(id)s"
 msgstr "Facture de location — réservation nº %(id)s"
 
-#: app/reservations/routes.py:1859
+#: app/reservations/routes.py:1875
 msgid "Rental charge finalized."
 msgstr "Facture de location finalisée."
 
-#: app/reservations/routes.py:1862
+#: app/reservations/routes.py:1878
 msgid "Draft saved."
 msgstr "Brouillon enregistré."
 

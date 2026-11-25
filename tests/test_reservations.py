@@ -189,6 +189,40 @@ class TestFarOffDates:
         assert r.status_code == 200
 
 
+class TestEditConfirmedConflict:
+    def test_owner_cannot_move_a_confirmed_booking_onto_another(self, app, client):
+        uid, tid = _make_user(app, "owner@ex.com")
+        ac_id = _make_aircraft(app, tid)
+        a = _make_reservation(
+            app,
+            ac_id,
+            uid,
+            start="2026-06-01T10:00",
+            end="2026-06-01T12:00",
+            status=ReservationStatus.CONFIRMED,
+        )
+        _make_reservation(
+            app,
+            ac_id,
+            uid,
+            start="2026-06-01T13:00",
+            end="2026-06-01T15:00",
+            status=ReservationStatus.CONFIRMED,
+        )
+        _login(app, client, uid)
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/{a}/edit",
+            data={"start_dt": "2026-06-01T11:00", "end_dt": "2026-06-01T14:00"},
+        )
+        assert r.status_code == 200
+        assert b"overlap an existing confirmed reservation" in r.data
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/{a}/edit",
+            data={"start_dt": "2026-06-01T09:00", "end_dt": "2026-06-01T12:30"},
+        )
+        assert r.status_code == 302
+
+
 class TestCalendarView:
     def test_calendar_renders(self, app, client):
         uid, tid = _make_user(app, "owner@ex.com")

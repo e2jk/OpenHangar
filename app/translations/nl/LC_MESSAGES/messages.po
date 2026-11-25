@@ -1304,7 +1304,7 @@ msgstr "Route"
 
 #: app/flights/crew_invites.py:496 app/reports/routes.py:113
 #: app/reservations/routes.py:849 app/reservations/routes.py:963
-#: app/reservations/routes.py:1268 app/services/notification_service.py:568
+#: app/reservations/routes.py:1284 app/services/notification_service.py:568
 #: app/services/notification_service.py:598
 #: app/services/notification_service.py:674
 #: app/services/notification_service.py:741
@@ -3731,7 +3731,7 @@ msgid "Your reservation for %(reg)s from %(start)s to %(end)s UTC has been cance
 msgstr "Uw reservering voor %(reg)s van %(start)s tot %(end)s UTC is geannuleerd."
 
 #: app/reservations/routes.py:850 app/reservations/routes.py:964
-#: app/reservations/routes.py:1269 app/templates/dashboard.html:758
+#: app/reservations/routes.py:1285 app/templates/dashboard.html:758
 #: app/templates/reservations/calendar.html:137
 #: app/templates/reservations/calendar.html:194
 #: app/templates/reservations/detail.html:32
@@ -3742,7 +3742,7 @@ msgid "Start"
 msgstr "Begin"
 
 #: app/reservations/routes.py:851 app/reservations/routes.py:965
-#: app/reservations/routes.py:1270 app/templates/dashboard.html:759
+#: app/reservations/routes.py:1286 app/templates/dashboard.html:759
 #: app/templates/reservations/calendar.html:138
 #: app/templates/reservations/calendar.html:195
 #: app/templates/reservations/detail.html:35
@@ -3811,7 +3811,7 @@ msgstr "De minimale reserveringsduur moet positief zijn."
 msgid "Maximum booking duration must be positive."
 msgstr "De maximale reserveringsduur moet positief zijn."
 
-#: app/reservations/routes.py:1049 app/reservations/routes.py:1781
+#: app/reservations/routes.py:1049 app/reservations/routes.py:1797
 msgid "Invalid hourly rate."
 msgstr "Ongeldig uurtarief."
 
@@ -3861,135 +3861,139 @@ msgstr "De minimale reserveringsduur is %(h)s u."
 msgid "Maximum booking duration is %(h)s h."
 msgstr "De maximale reserveringsduur is %(h)s u."
 
-#: app/reservations/routes.py:1274 app/templates/config/renter_account.html:51
+#: app/reservations/routes.py:1230
+msgid "These times overlap an existing confirmed reservation or maintenance downtime."
+msgstr "Deze tijden overlappen met een bevestigde reservering of een onderhoudsstilstand."
+
+#: app/reservations/routes.py:1290 app/templates/config/renter_account.html:51
 #: app/templates/refuels/refuel_form.html:51
 msgid "Note"
 msgstr "Notitie"
 
-#: app/reservations/routes.py:1274
+#: app/reservations/routes.py:1290
 msgid "No valid rental authorization on file"
 msgstr "Geen geldige huurmachtiging geregistreerd"
 
-#: app/reservations/routes.py:1280
+#: app/reservations/routes.py:1296
 #, python-format
 msgid "New booking request — %(reg)s"
 msgstr "Nieuwe reserveringsaanvraag — %(reg)s"
 
-#: app/reservations/routes.py:1282
+#: app/reservations/routes.py:1298
 #, python-format
 msgid "New booking request: %(reg)s"
 msgstr "Nieuwe reserveringsaanvraag: %(reg)s"
 
-#: app/reservations/routes.py:1285
+#: app/reservations/routes.py:1301
 #, python-format
 msgid "A new booking request was submitted for %(reg)s from %(start)s to %(end)s UTC."
 msgstr "Er is een nieuwe reserveringsaanvraag ingediend voor %(reg)s van %(start)s tot %(end)s UTC."
 
-#: app/reservations/routes.py:1307
+#: app/reservations/routes.py:1323
 msgid "Reservation saved."
 msgstr "Reservering opgeslagen."
 
-#: app/reservations/routes.py:1339
+#: app/reservations/routes.py:1355
 #, python-format
 msgid "flight time: dispatch shows %(d)s h, logged flights show %(f)s h"
 msgstr "vluchttijd: bij uitchecken %(d)s u, geregistreerde vluchten %(f)s u"
 
-#: app/reservations/routes.py:1357
+#: app/reservations/routes.py:1373
 #, python-format
 msgid "engine time: dispatch shows %(d)s h, logged flights show %(f)s h"
 msgstr "motortijd: bij uitchecken %(d)s u, geregistreerde vluchten %(f)s u"
 
-#: app/reservations/routes.py:1367
+#: app/reservations/routes.py:1383
 #, python-format
 msgid "Dispatch/logbook discrepancy — %(details)s."
 msgstr "Afwijking tussen uitchecken en logboek — %(details)s."
 
-#: app/reservations/routes.py:1425
+#: app/reservations/routes.py:1441
 msgid "Only confirmed reservations can be checked out."
 msgstr "Alleen bevestigde reserveringen kunnen worden uitgecheckt."
 
-#: app/reservations/routes.py:1434
+#: app/reservations/routes.py:1450
 msgid "This reservation has already been checked out."
 msgstr "Deze reservering is al uitgecheckt."
 
-#: app/reservations/routes.py:1453
+#: app/reservations/routes.py:1469
 msgid "Walk-around confirmation is required."
 msgstr "Bevestiging van de rondgang is verplicht."
 
-#: app/reservations/routes.py:1455
+#: app/reservations/routes.py:1471
 msgid "You must acknowledge the open snag list."
 msgstr "U moet de lijst met openstaande defecten bevestigen."
 
-#: app/reservations/routes.py:1461
+#: app/reservations/routes.py:1477
 msgid "This aircraft is grounded — dispatch is blocked. An owner may override with an explicit confirmation."
 msgstr "Dit toestel staat aan de grond — uitchecken is geblokkeerd. Een eigenaar kan dit overschrijven met een expliciete bevestiging."
 
-#: app/reservations/routes.py:1472 app/reservations/routes.py:1646
+#: app/reservations/routes.py:1488 app/reservations/routes.py:1662
 msgid "Invalid engine counter value."
 msgstr "Ongeldige waarde voor de motorteller."
 
-#: app/reservations/routes.py:1479 app/reservations/routes.py:1652
+#: app/reservations/routes.py:1495 app/reservations/routes.py:1668
 msgid "Invalid flight counter value."
 msgstr "Ongeldige waarde voor de vluchtteller."
 
-#: app/reservations/routes.py:1505
+#: app/reservations/routes.py:1521
 msgid "Checked out."
 msgstr "Uitgecheckt."
 
-#: app/reservations/routes.py:1622
+#: app/reservations/routes.py:1638
 msgid "Check out before checking in."
 msgstr "Check eerst uit voordat u kunt inchecken."
 
-#: app/reservations/routes.py:1627
+#: app/reservations/routes.py:1643
 msgid "This reservation has already been checked in."
 msgstr "Deze reservering is al ingecheckt."
 
-#: app/reservations/routes.py:1661
+#: app/reservations/routes.py:1677
 msgid "Engine counter on return cannot be less than the check-out value."
 msgstr "De motorteller bij terugkeer mag niet lager zijn dan de waarde bij uitchecken."
 
-#: app/reservations/routes.py:1670
+#: app/reservations/routes.py:1686
 msgid "Flight counter on return cannot be less than the check-out value."
 msgstr "De vluchtteller bij terugkeer mag niet lager zijn dan de waarde bij uitchecken."
 
-#: app/reservations/routes.py:1695 app/reservations/routes.py:1792
+#: app/reservations/routes.py:1711 app/reservations/routes.py:1808
 msgid "The rental charge is out of range. Check the values entered."
 msgstr "Het huurbedrag valt buiten het toegestane bereik. Controleer de ingevoerde waarden."
 
-#: app/reservations/routes.py:1706
+#: app/reservations/routes.py:1722
 msgid "Checked in."
 msgstr "Ingecheckt."
 
-#: app/reservations/routes.py:1747 app/reservations/routes.py:1836
+#: app/reservations/routes.py:1763 app/reservations/routes.py:1852
 msgid "This charge has already been finalized."
 msgstr "Deze factuur is al gefinaliseerd."
 
-#: app/reservations/routes.py:1779
+#: app/reservations/routes.py:1795
 msgid "Invalid billable hours."
 msgstr "Ongeldige factureerbare uren."
 
-#: app/reservations/routes.py:1783
+#: app/reservations/routes.py:1799
 msgid "Invalid fuel credit."
 msgstr "Ongeldig brandstofkrediet."
 
-#: app/reservations/routes.py:1785
+#: app/reservations/routes.py:1801
 msgid "Invalid adjustment."
 msgstr "Ongeldige aanpassing."
 
-#: app/reservations/routes.py:1787
+#: app/reservations/routes.py:1803
 msgid "An adjustment requires a note explaining it."
 msgstr "Een aanpassing vereist een toelichtende notitie."
 
-#: app/reservations/routes.py:1852
+#: app/reservations/routes.py:1868
 #, python-format
 msgid "Rental charge — reservation #%(id)s"
 msgstr "Huurfactuur — reservering nr. %(id)s"
 
-#: app/reservations/routes.py:1859
+#: app/reservations/routes.py:1875
 msgid "Rental charge finalized."
 msgstr "Huurfactuur gefinaliseerd."
 
-#: app/reservations/routes.py:1862
+#: app/reservations/routes.py:1878
 msgid "Draft saved."
 msgstr "Concept opgeslagen."
 
