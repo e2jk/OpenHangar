@@ -247,7 +247,7 @@
         {# Passenger currency #}
         {% set pc = pilot_currency.passenger %}
         <div class="col-6 col-md-3">
-          <div class="text-muted small mb-1">{{ _('Passenger currency') }}</div>
+          <div class="text-muted small mb-1">{{ _('Passenger currency') }} <span class="text-muted" title="{{ _('Landings in any aircraft. FCL.060 counts them per class or type: see the per-class recency below.') }}">{{ _('(any aircraft)') }}</span></div>
           {% if pc.status == 'ok' %}
             <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>{{ _('Valid') }}</span>
             <div class="small mt-1">{{ ngettext('one landing / 90 days', '%(n)s landings / 90 days', pc.count, n=pc.count) }}</div>
@@ -267,7 +267,7 @@
         {# Night currency #}
         {% set nc = pilot_currency.night %}
         <div class="col-6 col-md-3">
-          <div class="text-muted small mb-1">{{ _('Night currency') }}</div>
+          <div class="text-muted small mb-1">{{ _('Night currency') }} <span class="text-muted" title="{{ _('Landings in any aircraft. FCL.060 counts them per class or type: see the per-class recency below.') }}">{{ _('(any aircraft)') }}</span></div>
           {% if nc.status == 'ok' %}
             <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>{{ _('Valid') }}</span>
             <div class="small mt-1">{{ ngettext('one landing / 90 days', '%(n)s landings / 90 days', nc.count, n=nc.count) }}</div>
