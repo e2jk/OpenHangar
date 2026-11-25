@@ -85,6 +85,8 @@ from services.upload_layout import (  # pyright: ignore[reportMissingImports]
 from sqlalchemy import case, func, or_  # pyright: ignore[reportMissingImports]
 from sqlalchemy.orm import selectinload  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
+    SHOW_ALL_LIMIT,
+    capped_rows,
     current_user_role,
     db_id,
     login_required,
@@ -1028,7 +1030,8 @@ def logbook() -> ResponseReturnValue:
     )
 
     filters = parse_filters(request.args, PILOT_CREW_CHOICES)
-    _remember_logbook_view(page, order, "all" if show_all else str(per_page), filters)
+    # "All" is never remembered: the next visit opens on the usual page size.
+    _remember_logbook_view(page, order, str(per_page or _DEFAULT_PER_PAGE), filters)
 
     q = apply_filters(_my_entries_query(uid), filters, uid)
     if order == "asc":
@@ -1044,8 +1047,9 @@ def logbook() -> ResponseReturnValue:
             Flight.id.desc(),
         )
 
+    show_all_truncated = False
     if show_all:
-        entries = q.all()
+        entries, show_all_truncated = capped_rows(q)
         pagination = None
     else:
         pagination = q.paginate(page=page, per_page=per_page, error_out=False)
@@ -1065,6 +1069,8 @@ def logbook() -> ResponseReturnValue:
         pagination=pagination,
         totals=totals,
         order=order,
+        show_all_truncated=show_all_truncated,
+        show_all_limit=SHOW_ALL_LIMIT,
         per_page="all" if show_all else str(per_page),  # validated, never raw
         valid_per_page=_VALID_PER_PAGE,
         logbook_milestone=logbook_milestone,

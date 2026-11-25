@@ -57,6 +57,9 @@
     {% else %}
       <a href="{{ caller('all') }}" class="px-2 py-1 text-decoration-none">{{ _('All') }}</a>
     {% endif %}
+    {% if per_page == 'all' and show_all_truncated %}
+      <span class="text-muted ms-2" data-oh-show-all-capped>{{ _('Only the first %(n)s rows: download the export for all of them.', n=show_all_limit) }}</span>
+    {% endif %}
   </div>
   <div class="form-check form-switch mb-0">
     <input class="form-check-input" type="checkbox" id="oh-logbook-compact-toggle" data-oh-logbook-toggle>

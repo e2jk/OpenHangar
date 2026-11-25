@@ -71,8 +71,10 @@ from services.upload_layout import (  # pyright: ignore[reportMissingImports]
 )
 from sqlalchemy import case, func, or_  # pyright: ignore[reportMissingImports]
 from utils import (
+    SHOW_ALL_LIMIT,
     accessible_aircraft,
     activity,
+    capped_rows,
     current_membership,
     current_user_role,
     db_id,
@@ -770,7 +772,10 @@ def list_flights(aircraft_id: int) -> ResponseReturnValue:
     )
 
     filters = parse_filters(request.args, AIRCRAFT_CREW_CHOICES)
-    _remember_flights_view(ac.id, page, "all" if show_all else str(per_page), filters)
+    # "All" is never remembered: the next visit opens on the usual page size.
+    _remember_flights_view(
+        ac.id, page, str(per_page or _FLIGHTS_DEFAULT_PER_PAGE), filters
+    )
     query = apply_filters(
         Flight.query.filter_by(aircraft_id=ac.id), filters, int(session["user_id"])
     ).order_by(
@@ -778,10 +783,11 @@ def list_flights(aircraft_id: int) -> ResponseReturnValue:
         Flight.departure_time.desc().nullslast(),
         Flight.id.desc(),
     )
+    show_all_truncated = False
     if show_all:
-        flights = query.all()
+        flights, show_all_truncated = capped_rows(query)
         pagination = None
-        total_count = len(flights)
+        total_count = query.count() if show_all_truncated else len(flights)
     else:
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         flights = pagination.items
@@ -794,6 +800,8 @@ def list_flights(aircraft_id: int) -> ResponseReturnValue:
         flights=flights,
         pagination=pagination,
         per_page="all" if show_all else str(per_page),  # validated, never raw
+        show_all_truncated=show_all_truncated,
+        show_all_limit=SHOW_ALL_LIMIT,
         valid_per_page=_FLIGHTS_VALID_PER_PAGE,
         total_count=total_count,
         total_hours=_flights_total_hours(ac.id),

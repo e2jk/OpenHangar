@@ -4574,7 +4574,7 @@ class TestAircraftLogbookViewRemembered:
 
     def test_save_and_delete_return_to_list_view(self, app, client):
         acid, fid = self._setup(app, client)
-        client.get(f"/aircraft/{acid}/flights?page=3&per_page=all")
+        client.get(f"/aircraft/{acid}/flights?page=3&per_page=50")
         rv = client.post(
             f"/flights/{fid}/edit",
             data={
@@ -4588,11 +4588,11 @@ class TestAircraftLogbookViewRemembered:
             },
         )
         assert rv.headers["Location"].endswith(
-            "/aircraft/OO-PNH/flights?page=3&per_page=all"
+            "/aircraft/OO-PNH/flights?page=3&per_page=50"
         )
         rv = client.post(f"/aircraft/{acid}/flights/{fid}/delete")
         assert rv.headers["Location"].endswith(
-            "/aircraft/OO-PNH/flights?page=3&per_page=all"
+            "/aircraft/OO-PNH/flights?page=3&per_page=50"
         )
 
     def test_defaults_and_other_aircraft_get_the_plain_list(self, app, client):
