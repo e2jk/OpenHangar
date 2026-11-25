@@ -29,6 +29,7 @@
   erases its database: demo mode, which wipes and reseeds the database on
   every start, now refuses a database that holds real accounts. The
   configuration guide now says what each `OPENHANGAR_ENV` value does.
-- A maintenance programme spreadsheet that declares huge merged cell
-  ranges, or more rows than an import takes, is now refused or read without
-  exhausting the server's memory.
+- Spreadsheets that declare huge or numerous merged cell ranges, or more
+  rows than an import takes, are now refused or read without exhausting the
+  server's memory (maintenance programme, pilot logbook and airframe log
+  imports).
