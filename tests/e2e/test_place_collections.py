@@ -78,6 +78,10 @@ def test_place_pin_photo_map_and_edit_survive_boosted_navigation(
     expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()
     expect(page.locator("#places-map")).to_have_attribute("data-oh-inited", "1")
     expect(page.locator("img.place-detail-photo")).to_be_visible()
+    page.get_by_role("link", name="Add place", exact=True).click()
+    expect(page.get_by_label("Place name (optional)", exact=True)).to_have_value("")
+    page.get_by_role("link", name="Cancel", exact=True).click()
+    page.get_by_role("link", name=title, exact=True).click()
     page.get_by_role("link", name="Edit place", exact=True).click()
     expect(page.locator("#place-editor")).to_have_attribute("data-oh-inited", "1")
     page.get_by_label("Place name (optional)", exact=True).fill(title + " edited")
@@ -281,3 +285,27 @@ def test_link_only_idea_can_gain_an_airfield_location_and_own_visit(
     page.get_by_role("button", name="Permanently delete place", exact=True).click()
     page.wait_for_url(re.compile(r"/places/\?collection=\d+&state=bin$"))
     assert errors == []
+
+
+def test_add_place_can_link_an_airfield_from_the_collapsed_picker(
+    passport_page: Page,
+) -> None:
+    page = passport_page
+    page.goto("/places/new")
+    picker = page.locator("#place-new-airfield")
+    query = picker.get_by_label("Airfield name or code", exact=True)
+    expect(query).to_be_hidden()
+    picker.locator("summary").click()
+    query.fill("EBNM")
+    query.press("Enter")
+    choice = picker.get_by_label("Airfield", exact=True)
+    expect(choice.get_by_role("option", name=re.compile("EBNM"))).to_have_count(1)
+    key = choice.get_by_role("option", name=re.compile("EBNM")).get_attribute("value")
+    assert key is not None
+    choice.select_option(key)
+    page.get_by_label("Place name (optional)", exact=True).fill(
+        "Airfield place " + uuid4().hex[:8]
+    )
+    page.get_by_role("button", name="Save place", exact=True).click()
+    page.wait_for_url(re.compile(r"/places/\d+$"))
+    expect(page.get_by_text(re.compile("EBNM"))).to_be_visible()

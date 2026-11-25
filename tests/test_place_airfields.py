@@ -5,7 +5,8 @@ from typing import Any
 
 import pytest
 from flask import Flask
-from models import PassportAirfieldIdentity, Place, PlaceAirfield, PlaceVisit, db
+from flask.testing import FlaskClient
+from models import PassportAirfieldIdentity, Place, PlaceAirfield, PlaceVisit, User, db
 from places.access import PlaceError
 from places.airfields import add_link, linked_airfields, remove_link, update_link
 from places.collections import create_collection, set_member
@@ -14,6 +15,7 @@ from sqlalchemy.exc import IntegrityError
 
 from tests.test_place_collections import people
 from tests.test_place_management import form
+from tests.test_place_sharing import signin
 
 __all__ = ["people"]
 
@@ -284,3 +286,36 @@ def test_composite_constraints_reject_foreign_airfields_and_wrong_collections(
                     )
                 )
                 db.session.flush()
+
+
+def test_new_place_can_search_and_link_an_airfield_atomically(
+    app: Flask, client: FlaskClient, people: dict[str, int], links: dict[str, int]
+) -> None:
+    signin(client, people)
+    lookup = "/places/new/airfields"
+    response = client.post(lookup, data={"query": "TEST"})
+    key = f"field:{links['field']}"
+    assert response.status_code == 200
+    assert any(row["key"] == key for row in response.json["results"])
+    assert all(
+        row["key"] != f"field:{links['elsewhere']}" for row in response.json["results"]
+    )
+    assert client.post(lookup, data={"query": ""}).json == {"results": []}
+    assert client.post(lookup, data={"query": "x" * 201}).status_code == 400
+    base = form(title="New destination") | {"collection": links["collection"]}
+    assert (
+        client.post(
+            "/places/new", data=base | {"airfield_key": f"field:{links['elsewhere']}"}
+        ).status_code
+        == 400
+    )
+    with app.app_context():
+        assert Place.query.filter_by(title="New destination").count() == 0
+    response = client.post("/places/new", data=base | {"airfield_key": key})
+    assert response.status_code == 302
+    with app.app_context():
+        place = Place.query.filter_by(title="New destination").one()
+        assert db.session.get(PlaceAirfield, (place.id, links["field"])) is not None
+        db.session.get(User, people["creator"]).view_only = True
+        db.session.commit()
+    assert client.post(lookup, data={"query": "TEST"}).status_code == 403
