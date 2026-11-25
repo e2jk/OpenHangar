@@ -1163,3 +1163,21 @@ tracks, deferred track images, the download-all ZIP spooled to disk, and
 - **Front end**: about 40 page scripts and Leaflet load on every page, and
   Leaflet and htmx block parsing in `<head>`: defer them, load page scripts
   only where used.
+
+---
+
+## Hours and durations: follow-ups (2026-11-25 audit)
+
+- **Current engine and flight hours** are the highest counter reading
+  (`MAX(..._counter_end)`): flights logged with clock times only, or
+  GPS-imported without counters, never advance them (TBO tracking, which sums
+  `engine_time`, disagrees), and one mistyped high reading or a replaced
+  meter (reset to 0) leaves a wrong value for good. Compute them as the last
+  counter reading plus the time of later counterless flights, and add a
+  per-aircraft "meter replaced / offset" record. (An item whose basis has no
+  reading at all already falls back to the other counter.)
+- **Durations are stored to 0.1 h** (NUMERIC(4,1)): the aircraft setting
+  "logbook time precision: minute" has no effect (1.2833 h is stored as 1.3),
+  and imported H:MM values round half-to-even (1:15 → 1.2 but 1:45 → 1.8), so
+  H:MM logbooks drift. Store minutes (or a wider decimal) with a migration,
+  or drop the "minute" option and round half-up consistently.
