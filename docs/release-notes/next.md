@@ -1,5 +1,6 @@
 # Safer one-click upgrades, and Passports in the Explore menu
 
+- Move several of your places to another collection in one action.
 - Place cards show linked airfield codes and let you filter by clicking a tag.
 - One search box accepts addresses, coordinates and map links. Editing latitude or longitude updates the pin.
 - Places shows its map above the filters, explains the collection settings gear on hover, and puts downloads at the bottom.

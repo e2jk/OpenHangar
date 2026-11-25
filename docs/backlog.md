@@ -1135,11 +1135,6 @@ passports.
 
 **Where next?**
 
-**Places list**
-- Move many places to another collection at once: a "Move to another
-  collection" button reveals checkboxes, a collection list and a Move button
-  (decide whether copying to another collection is needed too).
-
 **Add-place form** (the usual flow: type the name into the address search,
 pick the first result, check the map — often zooming out — add a tag)
 - Tags: one comma-separated line instead of a box with one tag per line, and

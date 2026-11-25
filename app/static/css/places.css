@@ -2,3 +2,5 @@
 .place-description { white-space: pre-wrap; overflow-wrap: anywhere; }
 .place-thumbnail { width: 80px; height: 64px; object-fit: cover; }
 .place-detail-photo { max-height: 360px; object-fit: contain; }
+
+#places-bulk-move:not([open]) ~ #places-list .place-bulk-choice { display: none; }

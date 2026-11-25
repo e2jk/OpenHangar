@@ -131,6 +131,9 @@ def index() -> ResponseReturnValue:
             },
         },
         editable_ids=editable,
+        bulk_destinations=[
+            c for c in choices if c.id in editable and c.id != collection_id
+        ],
         collection_owners={c.id: c.created_by_user_id for c in choices},
         collection_names={c.id: c.name for c in choices},
         collections=choices,
@@ -138,6 +141,32 @@ def index() -> ResponseReturnValue:
         invitations=invitations,
         can_create=not is_view_only(uid, tid),
     )
+
+
+@places_bp.post("/move")
+@login_required
+def bulk_move() -> ResponseReturnValue:
+    from places.management import move_place
+
+    tid, uid = context()
+    target = request.form.get("target", type=db_id)
+    place_ids = request.form.getlist("place", type=db_id)
+    if (
+        target is None
+        or not place_ids
+        or len(place_ids) != len(request.form.getlist("place"))
+    ):
+        flash(_("Select places and a destination collection."), "danger")
+        return redirect(url_for("places.index"))
+    try:
+        for place_id in sorted(set(place_ids)):
+            move_place(tid, uid, place_id, target)
+        db.session.commit()
+    except PlaceError as exc:
+        db.session.rollback()
+        flash(str(exc), "danger")
+        return redirect(url_for("places.index"))
+    return redirect(url_for("places.index", collection=target))
 
 
 @places_bp.route("/collections/new", methods=["GET", "POST"])
