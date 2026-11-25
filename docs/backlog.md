@@ -1134,8 +1134,6 @@ top bar's Explore menu now lists Where next?, Places, then Airfield
 passports.
 
 **Where next?**
-- Default to flight time, not distance, using the aircraft's normal cruise
-  speed when one is known (check whether it is collected at all), else 100 kt.
 - Show suggestions as soon as the page opens: pick a sensible starting
   airfield (a single aircraft's home base, say) and search places and
   passports both.

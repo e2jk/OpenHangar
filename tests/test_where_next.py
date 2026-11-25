@@ -62,6 +62,10 @@ def test_one_row_per_airfield_with_every_passport_as_a_reason(
     ids = _setup(app, owner)
     signin(client, owner["user"])
     page = _search(client, owner).get_data(as_text=True)
+    assert 'value="time" selected' in page
+    assert (
+        'id="discovery-speed" step="0.01" min="0.01" max="9999.99" value="100"' in page
+    )
     assert page.count(">Shared</a>") == 1
     assert "Not yet stamped in Local fields" in page
     # Passport titles are escaped, never markup.

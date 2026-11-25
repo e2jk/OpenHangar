@@ -325,13 +325,13 @@ def where_next() -> ResponseReturnValue:
             errors.append(
                 _("This reference airfield has no coordinates. Choose another.")
             )
-    mode = request.args.get("mode", "distance")
+    mode = request.args.get("mode", "time")
     if mode not in {"distance", "time"}:
-        mode = "distance"
+        mode = "time"
     defaults = {
         "speed": str(selected.cruise_speed_knots)
         if selected and selected.cruise_speed_knots is not None
-        else "",
+        else "100",
         "limit": "100",
         "usable_fuel": "",
         "flow": str(selected.fuel_flow)
@@ -345,6 +345,8 @@ def where_next() -> ResponseReturnValue:
     values = {
         key: (request.args.get(key) or value)[:100] for key, value in defaults.items()
     }
+    if selected is None and request.args.get("speed") == "":
+        values["speed"] = ""
     parsed = {}
     for key, label, maximum in [
         ("speed", _("cruise speed"), 9999.99),
