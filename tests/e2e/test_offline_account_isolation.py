@@ -544,26 +544,23 @@ def test_background_answer_to_the_renewed_login_does_not_sign_out(
     from flask import request
 
     app, origin, _users, _, _, _ = isolated_offline_server
+    started = threading.Event()
     changed = threading.Event()
-    answered = threading.Event()
+    delivered = threading.Event()
 
     def gate():
         if request.path == "/api/offline/pilot/logbook" and request.headers.get(
             "X-Test-Late"
         ):
-            changed.wait(10)
-        elif (
-            request.path == "/profile" and request.method == "GET" and changed.is_set()
-        ):
-            # Let the late answer reach the worker first.
-            answered.wait(10)
-            time.sleep(0.5)
+            started.set()
+            assert changed.wait(10), "The password change did not renew the login"
 
     def mark(response):
         if request.path == "/profile" and request.method == "POST":
             changed.set()
-        elif request.headers.get("X-Test-Late"):
-            answered.set()
+            # Keep the old document alive until its fetch receives the worker's
+            # reply. Sending the POST response starts the renewed navigation.
+            assert delivered.wait(10), "The worker did not deliver the late response"
         return response
 
     gate._oh_delay = True
@@ -573,7 +570,9 @@ def test_background_answer_to_the_renewed_login_does_not_sign_out(
         context = traced_browser.new_context(service_workers="allow")
         page = context.new_page()
         before = login(page, origin, "Alpha")
+        wait_for_settled_worker(page)
         page.goto(origin + "/profile", wait_until="load")
+        page.expose_function("lateAnswerDelivered", delivered.set)
         # Record every login change the worker announces (sessionStorage
         # survives the page being reloaded).
         page.evaluate(
@@ -584,9 +583,11 @@ def test_background_answer_to_the_renewed_login_does_not_sign_out(
                 if (e.data.type === 'OH_IDENTITY_CHANGED') log('owner=' + e.data.owner);
               });
               fetch('/api/offline/pilot/logbook', {headers: {'X-Test-Late': '1'}})
-                .then(r => log('late ' + r.status), () => log('late failed'));
+                .then(r => log('late ' + r.status), () => log('late failed'))
+                .then(() => window.lateAnswerDelivered());
             }"""
         )
+        assert started.wait(10), "The old login's request did not reach the server"
         form = page.locator('form:has(input[value="change_password"])')
         form.locator('[name="current_password"]').fill(PASSWORD)
         form.locator('[name="new_password"]').fill("RenewedBrowserPassword123!")
@@ -596,11 +597,13 @@ def test_background_answer_to_the_renewed_login_does_not_sign_out(
             "previous => !!window.OhOfflineIdentity?.current() && OhOfflineIdentity.current().session !== previous",
             arg=before["session"],
         )
-        assert answered.is_set()
         page.wait_for_function(
             "() => (sessionStorage.getItem('oh-test-log') || '').includes('late 401')"
         )
         log = page.evaluate("() => sessionStorage.getItem('oh-test-log')")
+        assert (
+            page.evaluate("() => OhOfflineIdentity.current().owner") == before["owner"]
+        )
         assert "owner=\n" not in log  # the login was never ended
         assert form.locator('[name="current_password"]').is_visible()
         context.close()

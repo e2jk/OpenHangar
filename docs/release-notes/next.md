@@ -23,3 +23,8 @@
 - The Places collection buttons now have consistent spacing.
 - The Where next? count of places without airfields now links to the filtered Places list.
 - Where next? now uses the same title style as other pages.
+
+**Maintenance**
+
+- The browser test for a late response during password renewal now waits
+  for the worker to deliver it before the page reloads.
