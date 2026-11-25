@@ -1614,10 +1614,10 @@ class TestGenerateTracksGif:
         last track's frame always, then the final "all tracks" frame."""
         import io as _io
 
-        import utils  # pyright: ignore[reportMissingImports]
         from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
 
-        monkeypatch.setattr(utils, "_GIF_MAX_FRAMES", 2)
+        monkeypatch.setattr("utils._GIF_MAX_FRAMES", 2)
         rows = [
             {
                 "date": f"2024-0{i + 1}-01",
@@ -1635,9 +1635,10 @@ class TestGenerateTracksGif:
             for i in range(5)
         ]
         with app.app_context():
-            result = utils.generate_tracks_gif(rows)
+            result = generate_tracks_gif(rows)
+        frames = _Img.open(_io.BytesIO(result)).n_frames
         # stride ceil(5 / 2) = 3: frames of tracks 3 and 5, then the final one
-        assert _Img.open(_io.BytesIO(result)).n_frames == 3
+        assert frames == 3
 
     def test_openaip_overlay_attempted_when_key_provided(self, app):
         """Lines 173-178: OpenAIP overlay branch is entered when key is set."""
