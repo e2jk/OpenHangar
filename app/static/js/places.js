@@ -64,15 +64,11 @@
     window.ohAddBaseLayers(map, null);
     var lat = root.querySelector('#place-latitude');
     var lon = root.querySelector('#place-longitude');
-    var pasted = root.querySelector('#place-coordinates');
-    var error = root.querySelector('#place-coordinate-error');
     var marker = null;
     function setPoint(point, focus) {
       point = point.wrap();
       lat.value = point.lat.toFixed(7);
       lon.value = point.lng.toFixed(7);
-      pasted.value = '';
-      error.hidden = true;
       if (!marker) {
         marker = L.marker(point, { draggable: true }).addTo(map);
         marker.on('dragend', function () { setPoint(marker.getLatLng(), false); });
@@ -81,16 +77,13 @@
       }
       if (focus) map.setView(point, 11);
     }
-    function fromInputs(clearPaste) {
+    function fromInputs() {
       if (!lat.value.trim() || !lon.value.trim()) return;
       var latitude = Number(lat.value), longitude = Number(lon.value);
       if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return;
-      // Preserve an unparsed input on initial render after a validation error.
-      var original = pasted.value;
       setPoint(L.latLng(latitude, longitude), true);
-      if (!clearPaste) pasted.value = original;
     }
-    fromInputs(false);
+    fromInputs();
     // Where the chosen photo was taken, offered as the pin (never applied by itself).
     var photo = document.getElementById('place-photo');
     var photoHint = document.getElementById('place-photo-hint');
@@ -122,34 +115,9 @@
         }).catch(function () { /* No suggestion: the form works as before. */ });
       });
     }
-    lat.addEventListener('change', function () { fromInputs(true); });
-    lon.addEventListener('change', function () { fromInputs(true); });
+    lat.addEventListener('change', fromInputs);
+    lon.addEventListener('change', fromInputs);
     map.on('click', function (event) { setPoint(event.latlng, false); });
-    var use = root.querySelector('#place-use-coordinates');
-    use.addEventListener('click', function () {
-      var requested = pasted.value;
-      var body = new URLSearchParams({ coordinates: requested });
-      use.disabled = true;
-      fetch(root.dataset.coordinatesUrl, { method: 'POST', credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8', 'X-CSRFToken': root.querySelector('input[name="csrf_token"]').value }, body: body.toString()
-      }).then(function (response) {
-        return response.json().then(function (data) {
-          if (!response.ok) {
-            if (root.isConnected && pasted.value === requested) {
-              error.textContent = data.error || root.dataset.coordinateError;
-              error.hidden = false;
-            }
-            return;
-          }
-          if (root.isConnected && pasted.value === requested) setPoint(L.latLng(data.latitude, data.longitude), true);
-        });
-      }).catch(function () {
-        if (root.isConnected && pasted.value === requested) {
-          error.textContent = root.dataset.coordinateError;
-          error.hidden = false;
-        }
-      }).finally(function () { use.disabled = false; });
-    });
     var search = root.querySelector('#place-address-search');
     if (search) {
       var query = root.querySelector('#place-address-query');
@@ -170,6 +138,10 @@
             if (!response.ok) {
               searchError.textContent = data.error || root.dataset.geocoderError;
               searchError.hidden = false;
+              return;
+            }
+            if (data.position) {
+              setPoint(L.latLng(data.position.latitude, data.position.longitude), true);
               return;
             }
             if (!data.results.length) {

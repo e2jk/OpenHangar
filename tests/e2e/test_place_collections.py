@@ -66,8 +66,8 @@ def test_place_pin_photo_map_and_edit_survive_boosted_navigation(
     expect(page.locator("#place-editor")).to_have_attribute("data-oh-inited", "1")
     expect(page.locator("#place-editor-map .leaflet-map-pane")).to_have_count(1)
     page.get_by_label("Place name (optional)", exact=True).fill(title)
-    page.get_by_label("Coordinates or map link", exact=True).fill("50°30'N 4°12'E")
-    page.get_by_role("button", name="Use coordinates", exact=True).click()
+    page.locator("#place-address-query").fill("50°30'N 4°12'E")
+    page.get_by_role("button", name="Search", exact=True).click()
     expect(page.get_by_label("Latitude", exact=True)).to_have_value("50.5000000")
     expect(page.get_by_label("Longitude", exact=True)).to_have_value("4.2000000")
     expect(page.locator("#place-editor-map .leaflet-marker-icon")).to_have_count(1)
@@ -131,7 +131,7 @@ def test_address_search_is_submit_only_and_selection_preserves_a_title(
 
     page.route("**/places/geocode", search_response)
     page.goto("/places/new")
-    page.get_by_label("Place name or address", exact=True).fill("Museum")
+    page.get_by_label("Place name, address or coordinates", exact=True).fill("Museum")
     assert requests == []
     page.get_by_role("button", name="Search", exact=True).click()
     page.get_by_role(
@@ -156,7 +156,7 @@ def test_address_search_is_submit_only_and_selection_preserves_a_title(
     expect(page.get_by_label("Latitude", exact=True)).to_have_value("50.6000000")
     assert len(requests) == 1
     page.get_by_label("Place name (optional)", exact=True).fill("My own title")
-    page.get_by_label("Place name or address", exact=True).press("Enter")
+    page.get_by_label("Place name, address or coordinates", exact=True).press("Enter")
     page.get_by_role(
         "button", name="Museum <example> — Museum street", exact=True
     ).click()
@@ -240,8 +240,8 @@ def test_link_only_idea_can_gain_an_airfield_location_and_own_visit(
     assert json.loads(page.locator("#places-map").get_attribute("data-links")) == []
     page.get_by_role("link", name="Edit place", exact=True).click()
     page.get_by_label("Place name (optional)", exact=True).fill(title)
-    page.get_by_label("Coordinates or map link", exact=True).fill("50.49, 4.77")
-    page.get_by_role("button", name="Use coordinates", exact=True).click()
+    page.locator("#place-address-query").fill("50.49, 4.77")
+    page.get_by_role("button", name="Search", exact=True).click()
     expect(page.get_by_label("Latitude", exact=True)).to_have_value("50.4900000")
     page.get_by_role("button", name="Save place", exact=True).click()
     expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()

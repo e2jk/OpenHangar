@@ -4616,7 +4616,7 @@ msgstr "Verkennen"
 
 #: app/templates/base.html:244 app/templates/explore/where_next.html:3
 #: app/templates/explore/where_next.html:6
-#: app/templates/passports/detail.html:12 app/templates/places/index.html:8
+#: app/templates/passports/detail.html:12 app/templates/places/index.html:9
 #: app/templates/places/place_detail.html:18
 msgid "Where next?"
 msgstr "Waarheen nu?"
@@ -4747,7 +4747,7 @@ msgstr "Status"
 #: app/templates/pilots/minimums_edit.html:15
 #: app/templates/places/join_collection.html:5
 #: app/templates/places/new_collection.html:6
-#: app/templates/places/place_form.html:21
+#: app/templates/places/place_form.html:20
 #: app/templates/pwa/share_target.html:15
 #: app/templates/refuels/refuel_form.html:62
 #: app/templates/reservations/charge.html:108
@@ -5737,7 +5737,7 @@ msgstr "Definieer één regel per tank (slechts één voor een enkele gecombinee
 #: app/templates/maintenance/trigger_form.html:29
 #: app/templates/passports/builder.html:16
 #: app/templates/passports/next_edition.html:8
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Name"
 msgstr "Naam"
 
@@ -7137,7 +7137,7 @@ msgstr[1] "%(n)s onderdelen"
 #: app/templates/aircraft/list.html:73 app/templates/passports/detail.html:20
 #: app/templates/passports/print.html:19 app/templates/passports/series.html:10
 #: app/templates/passports/series.html:28
-#: app/templates/passports/vouchers.html:10 app/templates/places/index.html:11
+#: app/templates/passports/vouchers.html:10 app/templates/places/index.html:12
 #: app/templates/places/index.html:14 app/templates/places/place_detail.html:9
 msgid "Archived"
 msgstr "Gearchiveerd"
@@ -7241,7 +7241,7 @@ msgstr "Rekeninguittreksel downloaden (CSV)"
 #: app/templates/expenses/expense_form.html:129
 #: app/templates/expenses/list.html:88 app/templates/passports/builder.html:18
 #: app/templates/passports/next_edition.html:12
-#: app/templates/places/place_form.html:19
+#: app/templates/places/place_form.html:18
 #: app/templates/snags/snag_form.html:37
 msgid "Description"
 msgstr "Omschrijving"
@@ -7868,7 +7868,7 @@ msgstr[1] "%(n)s documenten totaal"
 #: app/templates/partials/_logbook_list_controls.html:58
 #: app/templates/passports/detail.html:34
 #: app/templates/passports/discussion.html:14
-#: app/templates/places/index.html:11 app/templates/users/list.html:86
+#: app/templates/places/index.html:12 app/templates/users/list.html:86
 msgid "All"
 msgstr "Alle"
 
@@ -8869,7 +8869,7 @@ msgstr "Drempelwaarde"
 #: app/templates/config/notifications.html:170
 #: app/templates/config/tenant_list.html:47
 #: app/templates/passports/group_members.html:16
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Active"
 msgstr "Actief"
 
@@ -12549,7 +12549,7 @@ msgid "Anyone"
 msgstr "Iedereen"
 
 #: app/templates/partials/_list_filters.html:73
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Apply filters"
 msgstr "Filters toepassen"
 
@@ -12857,12 +12857,12 @@ msgid "Optional airfield code"
 msgstr "Optionele vliegveldcode"
 
 #: app/templates/passports/builder.html:58
-#: app/templates/places/place_form.html:14
+#: app/templates/places/place_form.html:13
 msgid "Latitude"
 msgstr "Breedtegraad"
 
 #: app/templates/passports/builder.html:58
-#: app/templates/places/place_form.html:14
+#: app/templates/places/place_form.html:13
 msgid "Longitude"
 msgstr "Lengtegraad"
 
@@ -13092,7 +13092,7 @@ msgstr "Door jou bezocht"
 #: app/templates/passports/record_visit.html:14
 #: app/templates/passports/series.html:17
 #: app/templates/passports/series.html:19 app/templates/passports/target.html:9
-#: app/templates/places/index.html:11 app/templates/places/index.html:14
+#: app/templates/places/index.html:12 app/templates/places/index.html:14
 msgid "Visited"
 msgstr "Bezocht"
 
@@ -15351,7 +15351,7 @@ msgid "Can view and record own visits"
 msgstr "Mag bekijken en eigen bezoeken vastleggen"
 
 #: app/templates/places/collection_settings.html:5
-#: app/templates/places/index.html:10
+#: app/templates/places/index.html:11
 msgid "Collection settings"
 msgstr "Collectie-instellingen"
 
@@ -15380,7 +15380,7 @@ msgid "Leave collection"
 msgstr "Collectie verlaten"
 
 #: app/templates/places/collection_settings.html:11
-#: app/templates/places/place_form.html:16
+#: app/templates/places/place_form.html:15
 msgid "Tags"
 msgstr "Tags"
 
@@ -15480,88 +15480,80 @@ msgstr "Nieuwe collectie"
 msgid "Save places worth visiting and share a collection with friends."
 msgstr "Bewaar plaatsen die een bezoek waard zijn en deel een collectie met vrienden."
 
-#: app/templates/places/index.html:8
-msgid "Download GPX"
-msgstr "GPX downloaden"
-
-#: app/templates/places/index.html:8
-msgid "Download KML"
-msgstr "KML downloaden"
-
-#: app/templates/places/index.html:9
+#: app/templates/places/index.html:10
 msgid "Collection invitations"
 msgstr "Uitnodigingen voor collecties"
 
-#: app/templates/places/index.html:10 app/templates/places/place_detail.html:6
+#: app/templates/places/index.html:11 app/templates/places/place_detail.html:6
 msgid "Place collections"
 msgstr "Collecties met plekken"
 
-#: app/templates/places/index.html:10
+#: app/templates/places/index.html:11
 msgid "All collections"
 msgstr "Alle collecties"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Show places"
 msgstr "Plaatsen tonen"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Active and archived"
 msgstr "Actief en gearchiveerd"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Bin"
 msgstr "Prullenbak"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "My visits"
 msgstr "Mijn bezoeken"
 
-#: app/templates/places/index.html:11 app/templates/places/index.html:14
+#: app/templates/places/index.html:12 app/templates/places/index.html:14
 msgid "Not yet visited"
 msgstr "Nog niet bezocht"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Tag"
 msgstr "Tag"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "All tags"
 msgstr "Alle tags"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Sort by"
 msgstr "Sorteren op"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Date added"
 msgstr "Datum toegevoegd"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Last visit"
 msgstr "Laatste bezoek"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Location"
 msgstr "Locatie"
 
-#: app/templates/places/index.html:11 app/templates/places/index.html:14
+#: app/templates/places/index.html:12 app/templates/places/index.html:14
 #: app/templates/places/place_detail.html:19
 msgid "Location still to add"
 msgstr "Locatie nog toe te voegen"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Located"
 msgstr "Locatie bekend"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Airfield links"
 msgstr "Vliegveldkoppelingen"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "With linked airfields"
 msgstr "Met gekoppelde vliegvelden"
 
-#: app/templates/places/index.html:11
+#: app/templates/places/index.html:12
 msgid "Without linked airfields"
 msgstr "Zonder gekoppelde vliegvelden"
 
@@ -15588,6 +15580,14 @@ msgstr "Plaats definitief verwijderen"
 #: app/templates/places/index.html:14
 msgid "No places in this view yet."
 msgstr "Er zijn nog geen plaatsen in deze weergave."
+
+#: app/templates/places/index.html:15
+msgid "Download GPX"
+msgstr "GPX downloaden"
+
+#: app/templates/places/index.html:15
+msgid "Download KML"
+msgstr "KML downloaden"
 
 #: app/templates/places/join_collection.html:3
 #: app/templates/places/join_collection.html:5
@@ -15675,17 +15675,17 @@ msgstr "Het zoeken naar een adres is mislukt. Gebruik de kaart of coördinaten, 
 msgid "No matching places found. Try another search or set the pin yourself."
 msgstr "Geen overeenkomende plaatsen gevonden. Probeer een andere zoekopdracht of plaats de speld zelf."
 
-#: app/templates/places/place_form.html:5
-msgid "Coordinates could not be read. Enter latitude and longitude directly."
-msgstr "De coördinaten konden niet worden gelezen. Voer de breedtegraad en lengtegraad rechtstreeks in."
-
 #: app/templates/places/place_form.html:8
 msgid "Place collection"
 msgstr "Collectie met plekken"
 
 #: app/templates/places/place_form.html:9
-msgid "Place name or address"
-msgstr "Plaatsnaam of adres"
+msgid "Place name, address or coordinates"
+msgstr "Plaatsnaam, adres of coördinaten"
+
+#: app/templates/places/place_form.html:9
+msgid "Coordinates or map link"
+msgstr "Coördinaten of kaartlink"
 
 #: app/templates/places/place_form.html:9
 msgid "Choose a result to set the pin and address. An empty place name is filled in too."
@@ -15700,42 +15700,34 @@ msgid "Click the map to drop a pin, then drag it to the right spot. You can also
 msgstr "Klik op de kaart om een speld te plaatsen en sleep deze naar de juiste plek. Je kunt ook coördinaten of een kaartlink plakken."
 
 #: app/templates/places/place_form.html:12
-msgid "Coordinates or map link"
-msgstr "Coördinaten of kaartlink"
-
-#: app/templates/places/place_form.html:12
-msgid "Use coordinates"
-msgstr "Coördinaten gebruiken"
-
-#: app/templates/places/place_form.html:13
 msgid "Place location"
 msgstr "Locatie van de plaats"
 
-#: app/templates/places/place_form.html:15
+#: app/templates/places/place_form.html:14
 msgid "Address (optional)"
 msgstr "Adres (optioneel)"
 
-#: app/templates/places/place_form.html:16
+#: app/templates/places/place_form.html:15
 msgid "One tag per line. You can also choose suggestions below."
 msgstr "Eén tag per regel. Je kunt ook uit de onderstaande suggesties kiezen."
 
-#: app/templates/places/place_form.html:17
+#: app/templates/places/place_form.html:16
 msgid "Link (optional)"
 msgstr "Link (optioneel)"
 
-#: app/templates/places/place_form.html:18
+#: app/templates/places/place_form.html:17
 msgid "Save a link now and add the name, location and other details later."
 msgstr "Sla nu een link op en voeg de naam, locatie en andere details later toe."
 
-#: app/templates/places/place_form.html:20
+#: app/templates/places/place_form.html:19
 msgid "Place photo (optional)"
 msgstr "Foto van de plaats (optioneel)"
 
-#: app/templates/places/place_form.html:20
+#: app/templates/places/place_form.html:19
 msgid "Remove current photo"
 msgstr "Huidige foto verwijderen"
 
-#: app/templates/places/place_form.html:21
+#: app/templates/places/place_form.html:20
 msgid "Save place"
 msgstr "Plaats opslaan"
 
