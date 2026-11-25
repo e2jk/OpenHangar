@@ -1663,6 +1663,15 @@ def merge_into_existing(
     free-text other_aircraft_* fields (its aircraft comes from the Aircraft
     join, see link_entries_to_aircraft).
     """
+    # A flight another pilot is linked to: the shared-flight rules apply, so
+    # the import only fills what is still empty and never moves or removes
+    # that pilot (an "overwrite" used to push them off their own flight).
+    others = {existing.pic_user_id, existing.second_crew_user_id} - {
+        None,
+        pilot_user_id,
+    }
+    if others:
+        fill_only = True
     for field_name, value in kwargs.items():
         if value is None or field_name in _MERGE_SKIP_FIELDS:
             continue
@@ -1680,9 +1689,20 @@ def merge_into_existing(
 
     ident: dict[str, Any] = dict(kwargs)
     _assign_pilot_identity(ident, pilot_user_id)
-    existing.pic_user_id = ident.get("pic_user_id")
-    existing.second_crew_user_id = ident.get("second_crew_user_id")
-    existing.second_crew_role = ident.get("second_crew_role")
+    if not others:
+        existing.pic_user_id = ident.get("pic_user_id")
+        existing.second_crew_user_id = ident.get("second_crew_user_id")
+        existing.second_crew_role = ident.get("second_crew_role")
+    elif pilot_user_id not in (existing.pic_user_id, existing.second_crew_user_id):
+        # Seat the importing pilot only in the slot the row asks for, if free.
+        if ident.get("pic_user_id") == pilot_user_id and existing.pic_user_id is None:
+            existing.pic_user_id = pilot_user_id
+        elif (
+            ident.get("second_crew_user_id") == pilot_user_id
+            and existing.second_crew_user_id is None
+        ):
+            existing.second_crew_user_id = pilot_user_id
+            existing.second_crew_role = ident.get("second_crew_role")
     _fill_engine_time(existing)
 
 
