@@ -23,3 +23,8 @@
   snooze links no longer reach the access log with their secret token. The
   reference Docker Compose file now leaves Traefik's own access log off, as
   it can't hide these tokens: OpenHangar's access log already covers it.
+- Outgoing e-mail now checks the mail server's certificate, so nobody on
+  the network can pose as it and read the SMTP password or the mail. A mail
+  relay with a self-signed or private certificate needs that certificate
+  trusted (see `OPENHANGAR_SMTP_USE_TLS` in the configuration guide).
+  Security alert e-mails now also work on port 465.

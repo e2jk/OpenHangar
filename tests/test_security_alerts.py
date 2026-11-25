@@ -299,6 +299,36 @@ class TestEmailChannel:
             h._dispatch("auth.login.account_locked", "detail")
 
         mock_conn.starttls.assert_called_once()
+        context = mock_conn.starttls.call_args.kwargs["context"]
+        import ssl
+
+        assert context.verify_mode == ssl.CERT_REQUIRED and context.check_hostname
+
+    def test_email_on_port_465_uses_implicit_tls(self, monkeypatch):
+        """Port 465 is SMTPS: the alert connects with TLS from the start, as
+        normal mail does, instead of trying STARTTLS on it."""
+        monkeypatch.setenv("OPENHANGAR_ALERT_EMAIL_TO", "admin@example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_HOST", "smtp.example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_PORT", "465")
+        monkeypatch.setenv("OPENHANGAR_SMTP_FROM_ADDRESS", "no-reply@example.com")
+        monkeypatch.setenv("OPENHANGAR_SMTP_USE_TLS", "true")
+        monkeypatch.delenv("OPENHANGAR_SMTP_USER", raising=False)
+        monkeypatch.delenv("OPENHANGAR_ALERT_NTFY_TOPIC_URL", raising=False)
+        monkeypatch.delenv("OPENHANGAR_ALERT_WEBHOOK_URL", raising=False)
+
+        h = _fresh_handler()
+        mock_conn = MagicMock()
+        import smtplib
+
+        with (
+            patch.object(smtplib, "SMTP_SSL", return_value=mock_conn) as ssl_cls,
+            patch.object(smtplib, "SMTP") as plain_cls,
+        ):
+            h._dispatch("auth.login.account_locked", "detail")
+
+        ssl_cls.assert_called_once()
+        plain_cls.assert_not_called()
+        mock_conn.sendmail.assert_called_once()
 
     def test_email_with_user_calls_login(self, monkeypatch):
         monkeypatch.setenv("OPENHANGAR_ALERT_EMAIL_TO", "admin@example.com")
