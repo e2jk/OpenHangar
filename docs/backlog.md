@@ -1124,3 +1124,60 @@ date. Left:
 
 - capture time as context for counter-photo OCR (backlog "Logbook: OCR
   auto-fill from counter photos").
+
+---
+
+## Places and Where next?: UX round (user feedback, 2026-11-25)
+
+Feedback from using Places on a real instance. Already done separately: the
+top bar's Explore menu now lists Where next?, Places, then Airfield
+passports.
+
+**Where next?**
+- The page's h1 is bigger than on the other pages: use the common title style.
+- Default to flight time, not distance, using the aircraft's normal cruise
+  speed when one is known (check whether it is collected at all), else 100 kt.
+- Show suggestions as soon as the page opens: pick a sensible starting
+  airfield (a single aircraft's home base, say) and search places and
+  passports both.
+- The "places without an airfield" count at the bottom links to all places:
+  link to the places list filtered to those without an airfield.
+
+**Places list**
+- Add the same spacing between "All collections" and the first collection
+  button as between the buttons on the line above.
+- On large screens, show two place cards per row instead of one column
+  filling only the left half.
+- In a card: add space between the place's name and the "no airfield" pill;
+  show each linked airfield's ICAO code in the same kind of pill, with its
+  full name on hover; make tag pills links that filter the current page to
+  that tag (keeping the chosen collection and other filters).
+- Move many places to another collection at once: a "Move to another
+  collection" button reveals checkboxes, a collection list and a Move button
+  (decide whether copying to another collection is needed too).
+
+**Place page**
+- An "Add a place" button next to Edit, top right, to add places one after
+  another without going back through the menu.
+- Breadcrumb under the title: "Collections > France", Collections linking to
+  /places/.
+
+**Add-place form** (the usual flow: type the name into the address search,
+pick the first result, check the map — often zooming out — add a tag)
+- Reorder to follow that flow: nudge to search first, keep the name near the
+  top (it is filled from the chosen result and rarely changed); link,
+  description and photo further down.
+- Open the map less zoomed in.
+- Make it clear the search takes an address or coordinates, and let the
+  coordinate fields below the map be typed into directly, moving the map —
+  instead of a separate coordinates search that confuses.
+- Tags: one comma-separated line instead of a box with one tag per line, and
+  suggest every tag already used in the user's collections next to the
+  starting list.
+- Bug: after adding a place, the next new-place form comes back with the
+  previous place's name in "Place name (optional)".
+
+**Collection settings**
+- Show how many places use each tag in the tag list, so unused ones are easy
+  to find; deleting a tag still in use asks for confirmation (check what
+  deleting it does today).
