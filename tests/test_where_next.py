@@ -253,6 +253,7 @@ def test_places_and_passports_together_with_their_reasons(
     # A visited place and a closed field contribute nothing by default.
     assert ">Millfield</a>" not in page and "Closed strip" not in page
     assert "One place has no airfield yet." in page
+    assert 'href="/places/?linked=unlinked"' in page
 
 
 def test_choosing_the_source_collections_and_visited_places(
@@ -275,6 +276,7 @@ def test_choosing_the_source_collections_and_visited_places(
     )
     assert ">Lakeside</a>" in other and "km from Castle" not in other
     assert "Linked to Idea" in other and "One place has no airfield yet." in other
+    assert f'href="/places/?linked=unlinked&amp;collection={ids["other"]}"' in other
     assert _search(client, owner, source="nonsense").status_code == 200
 
 
