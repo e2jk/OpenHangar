@@ -318,3 +318,17 @@ def test_merged_ranges_starting_outside_the_cells_read_are_ignored():
     rows = [["GROUP", None], ["a", "b"]]
     ranges = [(1, 1, 2, 1), (1, 5, 3, 9), (4, 2, 6, 2)]  # (min_col, min_row, ...)
     assert _merge_label_map(ranges, rows) == {(0, 0): "GROUP", (0, 1): "GROUP"}
+
+
+def test_merged_ranges_only_fill_the_header_band_within_each_row():
+    """A range over thousands of rows, wider than the rows themselves, only
+    fills the rows searched for the header, as wide as each row really is;
+    and only the first ranges are read."""
+    from pilots.logbook_import import _MAX_MERGED_RANGES, _merge_label_map
+
+    rows = [["GROUP"]] + [["x"] for _ in range(49_999)]
+    labels = _merge_label_map([(1, 1, 120, 50_000)], rows)
+    assert labels == {(r, 0): "GROUP" for r in range(20)}
+
+    many = [(1, 1, 1, 1)] * (_MAX_MERGED_RANGES + 5) + [(1, 2, 1, 2)]
+    assert _merge_label_map(many, rows) == {(0, 0): "GROUP"}
