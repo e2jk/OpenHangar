@@ -1531,11 +1531,15 @@ def create_app() -> Flask:
             )
             # The tracks in one query, not one lazy load per flight (159 on a
             # production logbook — most of the dashboard's time).
+            from sqlalchemy.orm import (  # pyright: ignore[reportMissingImports]
+                load_only,
+            )
+
             _dash_tracks = {
                 t.id: t
-                for t in GpsTrack.query.filter(
-                    GpsTrack.id.in_({e.gps_track_id for e in track_entries})
-                )
+                for t in GpsTrack.query.options(
+                    load_only(GpsTrack.id, GpsTrack.overview)
+                ).filter(GpsTrack.id.in_({e.gps_track_id for e in track_entries}))
             }
             dash_track_rows = [
                 {

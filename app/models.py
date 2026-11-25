@@ -1018,8 +1018,10 @@ class GpsTrack(db.Model):
     )
     # Render cache for the default (landscape, low-res) single-flight PNG/GIF,
     # cleared whenever the track changes (services.gps_link._store).
-    cached_png = db.Column(db.LargeBinary, nullable=True)
-    cached_gif = db.Column(db.LargeBinary, nullable=True)
+    # Rendered images, read only by their own endpoints: deferred so that
+    # loading a track (maps, lists, the dashboard) never pulls them.
+    cached_png = db.deferred(db.Column(db.LargeBinary, nullable=True))
+    cached_gif = db.deferred(db.Column(db.LargeBinary, nullable=True))
     # The track's simplified line for maps of many flights
     # (services.track_overview), kept up to date by the listener below.
     overview = db.Column(db.JSON, nullable=True)
@@ -1265,12 +1267,14 @@ class Flight(db.Model):
         db.Integer,
         db.ForeignKey("aircraft_gps_import_batches.id", ondelete="SET NULL"),
         nullable=True,
+        index=True,
     )
     # Bulk airframe logbook import (CSV/Excel)
     airframe_import_batch_id = db.Column(
         db.Integer,
         db.ForeignKey("airframe_import_batches.id", ondelete="SET NULL"),
         nullable=True,
+        index=True,
     )
     airframe_import_batch = db.relationship(
         "AirframeImportBatch", foreign_keys=[airframe_import_batch_id]
@@ -1281,6 +1285,7 @@ class Flight(db.Model):
         db.Integer,
         db.ForeignKey("logbook_import_batches.id", ondelete="SET NULL"),
         nullable=True,
+        index=True,
     )
     block_off_utc = db.Column(db.DateTime(timezone=True), nullable=True)
     block_on_utc = db.Column(db.DateTime(timezone=True), nullable=True)
@@ -1288,6 +1293,7 @@ class Flight(db.Model):
         db.Integer,
         db.ForeignKey("gps_tracks.id", ondelete="SET NULL"),
         nullable=True,
+        index=True,
     )
     # Phase 37d: auto-linked when this flight falls inside a confirmed
     # reservation's dispatch window for the same pilot.
@@ -1295,6 +1301,7 @@ class Flight(db.Model):
         db.Integer,
         db.ForeignKey("reservations.id", ondelete="SET NULL"),
         nullable=True,
+        index=True,
     )
 
     aircraft = db.relationship("Aircraft", back_populates="flights")
@@ -2196,6 +2203,7 @@ class MaintenanceRecord(db.Model):
         db.Integer,
         db.ForeignKey("maintenance_triggers.id", ondelete="CASCADE"),
         nullable=False,
+        index=True,
     )
     performed_at = db.Column(db.Date, nullable=False)
     hobbs_at_service = db.Column(db.Numeric(8, 1), nullable=True)
@@ -2908,7 +2916,10 @@ class Reservation(db.Model):
         db.Integer, db.ForeignKey("aircraft.id", ondelete="CASCADE"), nullable=False
     )
     pilot_user_id = db.Column(
-        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
     start_dt = db.Column(db.DateTime(timezone=True), nullable=False)
     end_dt = db.Column(db.DateTime(timezone=True), nullable=False)
@@ -5088,7 +5099,10 @@ class PlaceVisit(db.Model):
     )
     visit_date = db.Column(db.Date, nullable=False)
     flight_id = db.Column(
-        db.Integer, db.ForeignKey("flights.id", ondelete="SET NULL"), nullable=True
+        db.Integer,
+        db.ForeignKey("flights.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
     note = db.Column(db.Text, nullable=True)
     created_at = db.Column(
