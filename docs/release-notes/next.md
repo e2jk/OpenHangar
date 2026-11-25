@@ -1,5 +1,6 @@
 # Safer one-click upgrades, and Passports in the Explore menu
 
+- Adding a place starts with search and name, with optional details below the map.
 - Where next? shows suggestions on opening from a home airfield or the latest logged arrival.
 - Where next? defaults to flight time using the selected aircraft’s cruise speed or 100 kt.
 - Airfield passports now show interactive maps and visit percentages in cards.
