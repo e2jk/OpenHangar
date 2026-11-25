@@ -424,14 +424,19 @@ example with `logrotate` on the host once the directory is volume-mounted).
 
 #### Secret-token redaction
 
-A few links carry a single secret in the URL path (password-reset, invitation
-and public share links).  OpenHangar's access logger masks that segment, so the
-log records the endpoint that was hit without the token itself:
+A few links carry a secret in the URL path (password-reset, invitation, share
+and showcase, reminder snooze and passport links).  OpenHangar's access logger
+masks it, so the log records the endpoint that was hit without the token
+itself:
 
 ```
 "GET /share/[REDACTED] HTTP/1.1" 200
 "GET /reset-password/[REDACTED] HTTP/1.1" 200
 ```
+
+A reverse proxy in front of OpenHangar logs the URL as it is, token included.
+The reference `docker/docker-compose.yml` turns Traefik's access log off for
+that reason; if you turn a proxy access log on, treat that log as secret.
 
 ### Forwarding access logs to `docker logs`
 

@@ -366,6 +366,9 @@ def _gps_source_file(archive_name: str | None) -> str | None:
     )
 
 
+_GPS_UPLOAD_MAX_BYTES = 20 * 1024 * 1024
+
+
 def _parse_gps_upload(file: Any) -> dict[str, Any] | None:
     """Parse a single GPS file. Returns autofill dict or None."""
     try:
@@ -380,7 +383,12 @@ def _parse_gps_upload(file: Any) -> dict[str, Any] | None:
     filename = secure_filename(file.filename or "")
     if not is_gps_upload_name(filename):
         return None
-    data = file.read()
+    # The same per-file cap as the aircraft and pilot GPS imports: the GPX
+    # and KML readers build the whole document in memory, roughly 15 times
+    # the file's size, so a larger file is neither parsed nor archived.
+    data = file.read(_GPS_UPLOAD_MAX_BYTES + 1)
+    if len(data) > _GPS_UPLOAD_MAX_BYTES:
+        return None
     # Kept whatever the parser makes of it (services.gps_archive), in the
     # uploader's own archive — no aircraft is known yet at this point; the
     # flight links to it on save (see _gps_source_file).

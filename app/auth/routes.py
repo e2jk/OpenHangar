@@ -69,6 +69,13 @@ _ACCT_FAIL_TTL = 1800  # reset the account counter after 30 min
 _ACCT_LOCK_MINUTES = 30
 _ACCT_LOCK_TTL = _ACCT_LOCK_MINUTES * 60
 _ACCT_LOCK_THRESHOLD = 10
+# Wrong authenticator codes, counted per user (not per address or per
+# challenge: entering the password again starts a new challenge, and the
+# guesses can come from many addresses). A code is 1 in 10^6, so 5 tries per
+# 30 minutes keeps guessing hopeless while a user who mistypes is not stuck.
+_TOTP_FAIL_TTL = 1800
+_TOTP_LOCK_THRESHOLD = 5
+_TOTP_LOCK_MINUTES = 30
 
 # How long (seconds) an address must wait after its Nth consecutive failure.
 _IP_BACKOFF: dict[int, int] = {3: 2, 4: 10, 5: 30}
@@ -83,6 +90,48 @@ def _ip_backoff_delay(count: int) -> int:
 
 def _ip_key(ip: str) -> str:
     return f"ip:{ip}"
+
+
+def _totp_key(user_id: int) -> str:
+    return f"totp:{user_id}"
+
+
+def _totp_locked(user_id: int) -> bool:
+    """True while this user's authenticator codes are refused."""
+    if throttle.blocked_for(_totp_key(user_id)):
+        _log.warning(
+            "[SECURITY] auth.totp.locked_refused user_id=%s ip=%s",
+            _sl(str(user_id)),
+            _sl(request.remote_addr),
+        )
+        return True
+    return False
+
+
+def _totp_failed(user_id: int) -> bool:
+    """Count one wrong code for this user; True when that locks the codes."""
+    if throttle.record_failure(_totp_key(user_id), _TOTP_FAIL_TTL) < (
+        _TOTP_LOCK_THRESHOLD
+    ):
+        return False
+    until = throttle.block(_totp_key(user_id), _TOTP_LOCK_MINUTES * 60, reset=True)
+    _log.warning(
+        "[SECURITY] auth.totp.locked user_id=%s ip=%s locked_until=%s",
+        _sl(str(user_id)),
+        _sl(request.remote_addr),
+        _sl(datetime.fromtimestamp(until, UTC).isoformat()),
+    )
+    return True
+
+
+def _flash_totp_locked() -> None:
+    flash(
+        _(
+            "Too many wrong authenticator codes. Try again in %(minutes)s minutes.",
+            minutes=_TOTP_LOCK_MINUTES,
+        ),
+        "danger",
+    )
 
 
 def _account_key(email: str) -> str:
@@ -375,6 +424,13 @@ def _login_totp() -> ResponseReturnValue:
     user = User.query.filter_by(id=pending_id).one()
     totp_code = request.form.get("totp_code", "").strip()
 
+    if _totp_locked(user.id):
+        # The sign-in starts over (password first) once the lock has ended.
+        challenges.consume(challenge)
+        db.session.commit()
+        _flash_totp_locked()
+        return render_template("auth/login.html", step="credentials"), 429
+
     outcome = totp_codes.use_code(user, totp_code)
     if outcome != totp_codes.ACCEPTED:
         _log.warning(
@@ -383,8 +439,14 @@ def _login_totp() -> ResponseReturnValue:
             _sl(pending_id),
             _sl(request.remote_addr),
         )
+        if _totp_failed(user.id):
+            challenges.consume(challenge)
+            db.session.commit()
+            _flash_totp_locked()
+            return render_template("auth/login.html", step="credentials"), 429
         flash(_("Invalid authenticator code."), "danger")
         return render_template("auth/login.html", step="totp")
+    throttle.clear(_totp_key(user.id))
 
     if not challenges.consume(challenge):
         return redirect(url_for("auth.login"))
@@ -986,13 +1048,21 @@ def _profile_step_up(user: User, purpose: str) -> bool:
     also a code from it. Losing that authenticator goes through the
     administrator's password reset link, which clears it.
     """
+    if user.totp_secret and _totp_locked(user.id):
+        _flash_totp_locked()
+        return False
     if not _pw.verify(request.form.get("current_password", ""), user.password_hash):
         flash(_("Current password is incorrect."), "danger")
     elif user.totp_secret and not _use_current_totp(
         user, request.form.get("current_totp_code", "").strip()
     ):
-        flash(_("Invalid authenticator code."), "danger")
+        if _totp_failed(user.id):
+            _flash_totp_locked()
+        else:
+            flash(_("Invalid authenticator code."), "danger")
     else:
+        if user.totp_secret:
+            throttle.clear(_totp_key(user.id))
         return True
     _log.warning(
         "[SECURITY] auth.totp.step_up_failed user_id=%s purpose=%s ip=%s",

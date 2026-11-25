@@ -262,7 +262,15 @@ def _header_alias_score(row: list[Any]) -> int:
     return sum(1 for c in row if c is not None and _norm(str(c)) in _ALIASES)
 
 
-def _find_header_row(rows: list[list[Any]], max_scan: int = 20) -> int | None:
+# Rows searched for the column header (and so the only ones whose merged
+# group labels matter), and merged ranges read at most.
+_HEADER_SCAN_ROWS = 20
+_MAX_MERGED_RANGES = 1000
+
+
+def _find_header_row(
+    rows: list[list[Any]], max_scan: int = _HEADER_SCAN_ROWS
+) -> int | None:
     """Return 0-based index of the best header row within the first max_scan rows.
 
     Many logbook templates have a group-label row (e.g. "DEPARTURE & ARRIVAL",
@@ -321,19 +329,23 @@ def _merge_label_map(
     The label is the value of the top-left cell of each merged range, read
     from the already-loaded `rows`. Every cell in the range gets the same
     label so downstream code can do a simple lookup without forward-fill.
-    Ranges are clipped to the rows and columns actually read, so a range
-    declared over a whole sheet costs nothing.
+    Only the group-label row above the header is ever looked up, and the
+    header is searched for in the first _HEADER_SCAN_ROWS rows: ranges are
+    clipped to those rows and to each row's own width, and at most
+    _MAX_MERGED_RANGES are read, so ranges declared over a whole sheet (or
+    thousands of them) cost a bounded amount of work.
     """
     result: dict[tuple[int, int], str] = {}
-    for min_col, min_row, max_col, max_row in ranges:
-        if min_row > len(rows) or min_col > len(rows[min_row - 1]):
+    band = rows[:_HEADER_SCAN_ROWS]
+    for min_col, min_row, max_col, max_row in ranges[:_MAX_MERGED_RANGES]:
+        if min_row > len(band) or min_col > len(band[min_row - 1]):
             continue
-        val = rows[min_row - 1][min_col - 1]
+        val = band[min_row - 1][min_col - 1]
         if val is None or not str(val).strip():
             continue
         label = str(val).strip()
-        for r in range(min_row - 1, min(max_row, len(rows))):
-            for c in range(min_col - 1, min(max_col, MAX_COLUMNS)):
+        for r in range(min_row - 1, min(max_row, len(band))):
+            for c in range(min_col - 1, min(max_col, len(band[r]), MAX_COLUMNS)):
                 result[(r, c)] = label
     return result
 

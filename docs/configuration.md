@@ -152,8 +152,16 @@ Application environment. Controls debug output, seed data loading, and email
 suppression.
 
 - **Allowed values**: `production`, `development`, `test`, `demo`
-- **Default**: `production`
-- Never set to `development` on an internet-facing host.
+- **Default**: `production` — the only value for a real instance.
+- `development`: runs Flask's own server with the interactive debugger, and
+  loads the development seed (accounts with published passwords) into an
+  empty database. Never on an internet-facing host.
+- `test`: shows full error tracebacks on error pages. For the test suite only.
+- `demo`: **erases the whole database and loads the demo seed on every
+  container start.** For the public demo only, on its own database. To
+  protect a real instance set to `demo` by mistake, the container refuses to
+  start (and changes nothing) when the database holds accounts but no demo
+  slots; set `production` again, or give demo mode its own empty database.
 
 ### `OPENHANGAR_E2E_SEED`
 
@@ -316,8 +324,10 @@ Where HTTP access logs are written.
   `/data/logs/openhangar-access.log` inside the container.
 - **Set to** `1` to send access logs to stdout (`docker logs`) instead;
   no file is written in that mode.
-- Secret URL tokens (share links, password resets, invitations) are redacted
-  in either mode.
+- Secret URL tokens (share and showcase links, password resets, invitations,
+  reminder snooze links, passport links) are redacted in either mode. A
+  reverse proxy's own access log doesn't redact them: the reference
+  `docker/docker-compose.yml` therefore leaves Traefik's access log off.
 - See [HTTP access logging](self-hosting.md#http-access-logging) for
   volume-mount and log-rotation guidance.
 
@@ -400,7 +410,9 @@ Host path inside the container where encrypted backup archives are written.
 Passphrase used to AES-256-GCM encrypt backup ZIP archives.
 
 - **Default**: unset — backups are stored unencrypted
-- Whitespace-only values are rejected at startup.
+- Whitespace-only values are rejected at startup, and so is any value
+  containing "change" — the example values in `docker/.env.example` and the
+  Raspberry Pi compose file are published, so they would protect nothing.
 - **Store the key separately from the backup files** (e.g. in a password manager).
   Without it a backup cannot be decrypted.
 - **Generate with**: `openssl rand -hex 32`
@@ -581,10 +593,17 @@ SMTP login password.
 
 ### `OPENHANGAR_SMTP_USE_TLS`
 
-Whether to use STARTTLS.
+Whether to use TLS: implicit TLS on port `465`, STARTTLS on any other port.
 
 - **Default**: `true`
 - Set to `false` for plain SMTP (not recommended in production).
+- With TLS on, the mail server's certificate and host name are verified
+  against the container's trusted certificate authorities. A relay whose
+  certificate comes from your own authority (or is self-signed) is refused
+  until you trust it: mount the CA certificate into the container and set
+  Python's standard `SSL_CERT_FILE` variable to its path.
+- Security alert e-mails ([`OPENHANGAR_ALERT_EMAIL_TO`](#openhangar_alert_email_to))
+  use the same connection settings.
 
 ### `OPENHANGAR_SMTP_FROM_ADDRESS`
 
@@ -654,7 +673,12 @@ disable that channel. A 60-second debounce per event type prevents alert storms.
 **Escalated events that trigger an alert:**
 - `auth.login.account_locked` / `auth.login.account_blocked` — active brute force
 - `auth.totp.replay` — targeted session attack
+- `auth.totp.locked` — five wrong authenticator codes for one user: someone
+  may hold the password and be guessing the second factor (the codes are
+  then refused for 30 minutes)
+- `auth.totp.disabled` — two-factor authentication turned off on an account
 - `users.role.changed` / `users.access.revoked` — post-authentication privilege change
+- `backup.verification_failed` — a backup that could not be verified
 
 ### `OPENHANGAR_ALERT_NTFY_TOPIC_URL`
 
