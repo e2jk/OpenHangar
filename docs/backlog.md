@@ -1133,14 +1133,6 @@ Feedback from using Places on a real instance. Already done separately: the
 top bar's Explore menu now lists Where next?, Places, then Airfield
 passports.
 
-**Where next?**
-
-**Add-place form** (the usual flow: type the name into the address search,
-pick the first result, check the map — often zooming out — add a tag)
-- Tags: one comma-separated line instead of a box with one tag per line, and
-  suggest every tag already used in the user's collections next to the
-  starting list.
-
 **Collection settings**
 - Show how many places use each tag in the tag list, so unused ones are easy
   to find; deleting a tag still in use asks for confirmation (check what

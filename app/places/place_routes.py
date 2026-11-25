@@ -1,5 +1,8 @@
 """Private destination forms, photos and collection-governed actions."""
 
+import csv
+import io
+
 from flask import (
     abort,
     flash,
@@ -13,7 +16,15 @@ from flask import (
 from flask.typing import ResponseReturnValue
 from flask_babel import get_locale
 from flask_babel import gettext as _
-from models import Place, PlaceCollection, PlaceCollectionMember, User, db
+from models import (
+    Place,
+    PlaceCollection,
+    PlaceCollectionMember,
+    PlaceTag,
+    PlaceTagAssignment,
+    User,
+    db,
+)
 from services import geocoding
 from utils import db_id, is_view_only, login_required
 
@@ -71,12 +82,23 @@ def show_form(
             latitude=str(place.latitude) if place.latitude is not None else "",
             longitude=str(place.longitude) if place.longitude is not None else "",
         )
-    tags = (
-        request.form.get("tags", "")
-        if request.method == "POST"
-        else "\n".join(management.tag_names(place.id))
-        if place is not None
-        else ""
+    tags = request.form.get("tags", "")
+    if request.method != "POST" and place is not None:
+        buffer = io.StringIO()
+        csv.writer(buffer).writerow(management.tag_names(place.id))
+        tags = buffer.getvalue().rstrip("\r\n")
+    visible_collections = (
+        collections_for_user(tid, uid).with_entities(PlaceCollection.id).statement
+    )
+    used_tags = db.session.scalars(
+        db.select(PlaceTag.name)
+        .join(PlaceTagAssignment, PlaceTagAssignment.tag_id == PlaceTag.id)
+        .where(PlaceTag.collection_id.in_(visible_collections))
+        .distinct()
+        .order_by(PlaceTag.name)
+    )
+    suggested_tags = list(
+        dict.fromkeys([*(_(name) for name in STARTER_TAGS), *used_tags])
     )
     return render_template(
         "places/place_form.html",
@@ -85,7 +107,7 @@ def show_form(
         selected=selected,
         values=values,
         tags=tags,
-        starter_tags=[_(name) for name in STARTER_TAGS],
+        suggested_tags=suggested_tags,
         geocoder_enabled=geocoding.enabled(),
         geocoder_attribution=geocoding.attribution(),
         geocoder_disabled=geocoding.GeocoderError("disabled").message,
@@ -98,14 +120,24 @@ def save_form(
     old_name = place.photo_filename if place is not None else None
     new_name = None
     try:
+        try:
+            tag_names = [
+                tag
+                for row in csv.reader(
+                    io.StringIO(request.form.get("tags", ""), newline=""),
+                    skipinitialspace=True,
+                )
+                for tag in row
+            ]
+        except csv.Error:
+            raise PlaceError(_("Use tag names of at most 80 characters.")) from None
         saved = management.save_place(
             tid,
             uid,
             collection_id,
             request.form,
             place_id=place.id if place is not None else None,
-            tags=request.form.get("tags", "").splitlines()
-            + request.form.getlist("starter_tags"),
+            tags=tag_names + request.form.getlist("starter_tags"),
             photo=request.files.get("photo"),
             remove_photo=request.form.get("remove_photo") == "yes",
         )
