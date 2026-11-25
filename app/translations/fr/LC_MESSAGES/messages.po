@@ -957,7 +957,7 @@ msgstr "Aucun type défini"
 
 #: app/documents/routes.py:586 app/documents/routes.py:819
 #: app/documents/routes.py:924 app/flights/routes.py:2556
-#: app/maintenance/routes.py:924 app/pilots/routes.py:1437
+#: app/maintenance/routes.py:925 app/pilots/routes.py:1437
 msgid "Please select a file to upload."
 msgstr "Veuillez sélectionner un fichier à télécharger."
 
@@ -1627,14 +1627,14 @@ msgstr "Vol %(label)s supprimé."
 msgid "Unsupported format. Please upload a .csv or .xlsx file."
 msgstr "Format non pris en charge. Veuillez envoyer un fichier .csv ou .xlsx."
 
-#: app/flights/routes.py:2570 app/maintenance/routes.py:934
+#: app/flights/routes.py:2570 app/maintenance/routes.py:935
 #: app/pilots/routes.py:1450
 msgid "File too large (maximum 10 MB)."
 msgstr "Fichier trop volumineux (maximum 10 Mo)."
 
 #: app/flights/routes.py:2631 app/flights/routes.py:3008
 #: app/flights/routes.py:3086 app/flights/routes.py:3222
-#: app/maintenance/routes.py:992 app/pilots/routes.py:1505
+#: app/maintenance/routes.py:993 app/pilots/routes.py:1505
 #: app/pilots/routes.py:1911 app/pilots/routes.py:1973
 #: app/pilots/routes.py:2092
 msgid "Import session expired. Please upload the file again."
@@ -1642,7 +1642,7 @@ msgstr "Session d'import expirée. Veuillez renvoyer le fichier."
 
 #: app/flights/routes.py:2640 app/flights/routes.py:3013
 #: app/flights/routes.py:3104 app/flights/routes.py:3232
-#: app/maintenance/routes.py:998 app/pilots/routes.py:1514
+#: app/maintenance/routes.py:999 app/pilots/routes.py:1514
 #: app/pilots/routes.py:1916 app/pilots/routes.py:1991
 #: app/pilots/routes.py:2102
 msgid "Temporary file not found. Please upload the file again."
@@ -1959,148 +1959,148 @@ msgstr "La correction que vous avez suggérée pour le vol %(route)s du %(date)s
 msgid "Trigger type must be 'calendar', 'hours', or 'landings'."
 msgstr "Le type de déclencheur doit être « calendrier », « heures » ou « atterrissages »."
 
-#: app/maintenance/form_parsing.py:102 app/maintenance/routes.py:462
+#: app/maintenance/form_parsing.py:102 app/maintenance/routes.py:461
 msgid "Component selection is invalid."
 msgstr "La sélection du composant n'est pas valide."
 
-#: app/maintenance/form_parsing.py:112
+#: app/maintenance/form_parsing.py:115
 msgid "Due date is required for calendar triggers."
 msgstr "La date d'échéance est obligatoire pour les déclencheurs calendaires."
 
-#: app/maintenance/form_parsing.py:116
+#: app/maintenance/form_parsing.py:119
 msgid "Due date must be a valid date (YYYY-MM-DD)."
 msgstr "La date d'échéance doit être une date valide (AAAA-MM-JJ)."
 
-#: app/maintenance/form_parsing.py:120
+#: app/maintenance/form_parsing.py:123
 msgid "Interval (days) must be a positive integer."
 msgstr "L'intervalle (jours) doit être un entier positif."
 
-#: app/maintenance/form_parsing.py:124
+#: app/maintenance/form_parsing.py:127
 msgid "Warning lead time (days) must be a positive number."
 msgstr "Le délai d'avertissement (jours) doit être un nombre positif."
 
-#: app/maintenance/form_parsing.py:128
+#: app/maintenance/form_parsing.py:131
 msgid "Due engine hours is required for hours triggers."
 msgstr "Les heures moteur d'échéance sont obligatoires pour les déclencheurs horaires."
 
-#: app/maintenance/form_parsing.py:132
+#: app/maintenance/form_parsing.py:135
 msgid "Due engine hours must be a positive number."
 msgstr "Les heures moteur d'échéance doivent être un nombre positif."
 
-#: app/maintenance/form_parsing.py:136
+#: app/maintenance/form_parsing.py:139
 msgid "Interval (hours) must be a positive number."
 msgstr "L'intervalle (heures) doit être un nombre positif."
 
-#: app/maintenance/form_parsing.py:140
+#: app/maintenance/form_parsing.py:143
 msgid "Warning lead time (hours) must be a positive number."
 msgstr "Le délai d'avertissement (heures) doit être un nombre positif."
 
-#: app/maintenance/form_parsing.py:144
+#: app/maintenance/form_parsing.py:147
 msgid "Due landings is required for landings triggers."
 msgstr "Le nombre d'atterrissages d'échéance est obligatoire pour les déclencheurs par atterrissages."
 
-#: app/maintenance/form_parsing.py:148
+#: app/maintenance/form_parsing.py:151
 msgid "Due landings must be a positive number."
 msgstr "Le nombre d'atterrissages d'échéance doit être un nombre positif."
 
-#: app/maintenance/form_parsing.py:152
+#: app/maintenance/form_parsing.py:155
 msgid "Interval (landings) must be a positive number."
 msgstr "L'intervalle (atterrissages) doit être un nombre positif."
 
-#: app/maintenance/form_parsing.py:157
+#: app/maintenance/form_parsing.py:160
 msgid "Warning lead time (landings) must be a positive number."
 msgstr "Le délai d'avertissement (atterrissages) doit être un nombre positif."
 
-#: app/maintenance/form_parsing.py:201
+#: app/maintenance/form_parsing.py:204
 msgid "Service date is required."
 msgstr "La date de maintenance est obligatoire."
 
-#: app/maintenance/form_parsing.py:205
+#: app/maintenance/form_parsing.py:208
 msgid "Service date must be a valid date (YYYY-MM-DD)."
 msgstr "La date de maintenance doit être une date valide (AAAA-MM-JJ)."
 
-#: app/maintenance/form_parsing.py:210
+#: app/maintenance/form_parsing.py:213
 msgid "Hobbs at service is required for hours-based triggers."
 msgstr "Le hobbs à l'entretien est obligatoire pour les déclencheurs horaires."
 
-#: app/maintenance/form_parsing.py:214
+#: app/maintenance/form_parsing.py:217
 msgid "Hobbs at service must be a positive number."
 msgstr "Le Hobbs à la maintenance doit être un nombre positif."
 
-#: app/maintenance/form_parsing.py:222
+#: app/maintenance/form_parsing.py:225
 msgid "Landings at service is required for landings-based triggers."
 msgstr "Le nombre d'atterrissages à l'entretien est obligatoire pour les déclencheurs par atterrissages."
 
-#: app/maintenance/form_parsing.py:227
+#: app/maintenance/form_parsing.py:230
 msgid "Landings at service must be a positive number."
 msgstr "Le nombre d'atterrissages à la maintenance doit être un nombre positif."
 
-#: app/maintenance/routes.py:496
+#: app/maintenance/routes.py:502
 #, python-format
 msgid "Maintenance item '%(name)s' saved."
 msgstr "Tâche de maintenance « %(name)s » enregistrée."
 
-#: app/maintenance/routes.py:515
+#: app/maintenance/routes.py:521
 #, python-format
 msgid "'%(name)s' deleted."
 msgstr "« %(name)s » supprimé."
 
-#: app/maintenance/routes.py:595
+#: app/maintenance/routes.py:608
 msgid "The shared file was saved with the aircraft's maintenance documents."
 msgstr "Le fichier partagé a été enregistré avec les documents de maintenance de l'avion."
 
-#: app/maintenance/routes.py:606
+#: app/maintenance/routes.py:619
 #, python-format
 msgid "'%(name)s' marked as serviced."
 msgstr "« %(name)s » marqué comme effectué."
 
-#: app/maintenance/routes.py:638
+#: app/maintenance/routes.py:651
 #, python-format
 msgid "%(item)s, serviced %(date)s"
 msgstr "%(item)s, effectué le %(date)s"
 
-#: app/maintenance/routes.py:702
+#: app/maintenance/routes.py:715
 msgid "Invalid programme basis selected."
 msgstr "Base du programme sélectionnée invalide."
 
-#: app/maintenance/routes.py:704
+#: app/maintenance/routes.py:717
 msgid "Invalid declaration type selected."
 msgstr "Type de déclaration sélectionné invalide."
 
-#: app/maintenance/routes.py:706
+#: app/maintenance/routes.py:719
 msgid "Invalid certifying party selected."
 msgstr "Partie certificatrice sélectionnée invalide."
 
-#: app/maintenance/routes.py:745
+#: app/maintenance/routes.py:758
 msgid "AMP declaration saved."
 msgstr "Déclaration AMP enregistrée."
 
-#: app/maintenance/routes.py:766
+#: app/maintenance/routes.py:779
 msgid "Revision number is required."
 msgstr "Le numéro de révision est obligatoire."
 
-#: app/maintenance/routes.py:772
+#: app/maintenance/routes.py:785
 msgid "Revision date must be a valid date (YYYY-MM-DD)."
 msgstr "La date de révision doit être une date valide (AAAA-MM-JJ)."
 
-#: app/maintenance/routes.py:812
+#: app/maintenance/routes.py:825
 msgid "Revision added."
 msgstr "Révision ajoutée."
 
-#: app/maintenance/routes.py:838
+#: app/maintenance/routes.py:851
 #, python-format
 msgid "Revision '%(number)s' deleted."
 msgstr "Révision « %(number)s » supprimée."
 
-#: app/maintenance/routes.py:929
+#: app/maintenance/routes.py:930
 msgid "Unsupported format. Please upload a .xlsx file."
 msgstr "Format non pris en charge. Veuillez importer un fichier .xlsx."
 
-#: app/maintenance/routes.py:950
+#: app/maintenance/routes.py:951
 msgid "No task rows found in the uploaded file."
 msgstr "Aucune ligne de tâche trouvée dans le fichier importé."
 
-#: app/maintenance/routes.py:1075
+#: app/maintenance/routes.py:1070
 #: app/templates/maintenance/amp_import_review.html:18
 #, python-format
 msgid "one flagged for review"
@@ -2108,30 +2108,30 @@ msgid_plural "%(n)s flagged for review"
 msgstr[0] "un signalé pour vérification"
 msgstr[1] "%(n)s signalés pour vérification"
 
-#: app/maintenance/routes.py:1082
+#: app/maintenance/routes.py:1077
 #, python-format
 msgid "Imported %(count)d maintenance item — %(review_phrase)s."
 msgid_plural "Imported %(count)d maintenance items — %(review_phrase)s."
 msgstr[0] "%(count)d élément de maintenance importé — %(review_phrase)s."
 msgstr[1] "%(count)d éléments de maintenance importés — %(review_phrase)s."
 
-#: app/maintenance/routes.py:1127
+#: app/maintenance/routes.py:1122
 #, python-format
 msgid "Import rolled back: %(count)d item removed."
 msgid_plural "Import rolled back: %(count)d items removed."
 msgstr[0] "Import annulé : %(count)d élément supprimé."
 msgstr[1] "Import annulé : %(count)d éléments supprimés."
 
-#: app/maintenance/routes.py:1323 app/maintenance/routes.py:1340
+#: app/maintenance/routes.py:1322 app/maintenance/routes.py:1339
 msgid "Fill in the AMP declaration profile before exporting the AMP document."
 msgstr "Complétez le profil de déclaration AMP avant d'exporter le document AMP."
 
-#: app/maintenance/routes.py:1401
+#: app/maintenance/routes.py:1400
 #, python-format
 msgid "No saved PDF for revision '%(number)s' — it was never downloaded while current."
 msgstr "Aucun PDF enregistré pour la révision « %(number)s » — elle n'a jamais été téléchargée pendant qu'elle était à jour."
 
-#: app/maintenance/routes.py:1414
+#: app/maintenance/routes.py:1413
 #, python-format
 msgid "The saved PDF for revision '%(number)s' is missing on disk."
 msgstr "Le PDF enregistré pour la révision « %(number)s » est introuvable sur le disque."
@@ -4740,7 +4740,7 @@ msgstr "Statut"
 #: app/templates/flights/flight_form.html:915
 #: app/templates/flights/flight_form.html:917
 #: app/templates/maintenance/amp_declaration_form.html:179
-#: app/templates/maintenance/amp_import_review.html:106
+#: app/templates/maintenance/amp_import_review.html:104
 #: app/templates/maintenance/service_form.html:20
 #: app/templates/maintenance/service_form.html:127
 #: app/templates/maintenance/trigger_form.html:19
@@ -5073,7 +5073,7 @@ msgstr "Bientôt dû"
 #: app/templates/aircraft/wb_list.html:88
 #: app/templates/config/settings.html:316 app/templates/dashboard.html:400
 #: app/templates/dashboard.html:485 app/templates/landing.html:186
-#: app/templates/maintenance/amp_import_review.html:91
+#: app/templates/maintenance/amp_import_review.html:89
 #: app/templates/maintenance/fleet.html:246
 #: app/templates/maintenance/list.html:185
 msgid "OK"
@@ -11840,7 +11840,7 @@ msgid "Past AMP imports — you can roll back any import to remove all its maint
 msgstr "Importations AMP précédentes — vous pouvez annuler n'importe quelle importation pour en supprimer tous les éléments de maintenance."
 
 #: app/templates/maintenance/amp_import_history.html:35
-#: app/templates/maintenance/amp_import_review.html:89
+#: app/templates/maintenance/amp_import_review.html:87
 #: app/templates/maintenance/fleet.html:240
 #: app/templates/maintenance/fleet.html:391
 #: app/templates/maintenance/list.html:179
@@ -11887,12 +11887,16 @@ msgstr "Échéance calculée"
 msgid "Not one of the 9 recognised AMP categories — imported without a category"
 msgstr "Ne correspond à aucune des 9 catégories AMP reconnues — importé sans catégorie"
 
-#: app/templates/maintenance/amp_import_review.html:77
+#: app/templates/maintenance/amp_import_review.html:71
+msgid "From its last service, entered after the import"
+msgstr "D’après son dernier entretien, saisi après l’import"
+
+#: app/templates/maintenance/amp_import_review.html:75
 #: app/templates/maintenance/trigger_form.html:75
 msgid "— Airframe / general —"
 msgstr "— Cellule / général —"
 
-#: app/templates/maintenance/amp_import_review.html:103
+#: app/templates/maintenance/amp_import_review.html:101
 msgid "Confirm import"
 msgstr "Confirmer l'importation"
 

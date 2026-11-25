@@ -957,7 +957,7 @@ msgstr "Geen type ingesteld"
 
 #: app/documents/routes.py:586 app/documents/routes.py:819
 #: app/documents/routes.py:924 app/flights/routes.py:2556
-#: app/maintenance/routes.py:924 app/pilots/routes.py:1437
+#: app/maintenance/routes.py:925 app/pilots/routes.py:1437
 msgid "Please select a file to upload."
 msgstr "Selecteer een bestand om te uploaden."
 
@@ -1627,14 +1627,14 @@ msgstr "Vlucht %(label)s verwijderd."
 msgid "Unsupported format. Please upload a .csv or .xlsx file."
 msgstr "Ongeldig formaat. Upload een .csv- of .xlsx-bestand."
 
-#: app/flights/routes.py:2570 app/maintenance/routes.py:934
+#: app/flights/routes.py:2570 app/maintenance/routes.py:935
 #: app/pilots/routes.py:1450
 msgid "File too large (maximum 10 MB)."
 msgstr "Bestand te groot (maximaal 10 MB)."
 
 #: app/flights/routes.py:2631 app/flights/routes.py:3008
 #: app/flights/routes.py:3086 app/flights/routes.py:3222
-#: app/maintenance/routes.py:992 app/pilots/routes.py:1505
+#: app/maintenance/routes.py:993 app/pilots/routes.py:1505
 #: app/pilots/routes.py:1911 app/pilots/routes.py:1973
 #: app/pilots/routes.py:2092
 msgid "Import session expired. Please upload the file again."
@@ -1642,7 +1642,7 @@ msgstr "Importsessie verlopen. Upload het bestand opnieuw."
 
 #: app/flights/routes.py:2640 app/flights/routes.py:3013
 #: app/flights/routes.py:3104 app/flights/routes.py:3232
-#: app/maintenance/routes.py:998 app/pilots/routes.py:1514
+#: app/maintenance/routes.py:999 app/pilots/routes.py:1514
 #: app/pilots/routes.py:1916 app/pilots/routes.py:1991
 #: app/pilots/routes.py:2102
 msgid "Temporary file not found. Please upload the file again."
@@ -1959,148 +1959,148 @@ msgstr "De correctie die u voorstelde voor de vlucht %(route)s van %(date)s is n
 msgid "Trigger type must be 'calendar', 'hours', or 'landings'."
 msgstr "Onderhoudsitemtype moet 'calendar', 'hours' of 'landings' zijn."
 
-#: app/maintenance/form_parsing.py:102 app/maintenance/routes.py:462
+#: app/maintenance/form_parsing.py:102 app/maintenance/routes.py:461
 msgid "Component selection is invalid."
 msgstr "De componentselectie is ongeldig."
 
-#: app/maintenance/form_parsing.py:112
+#: app/maintenance/form_parsing.py:115
 msgid "Due date is required for calendar triggers."
 msgstr "Vervaldatum is verplicht voor kalender-onderhoudsitems."
 
-#: app/maintenance/form_parsing.py:116
+#: app/maintenance/form_parsing.py:119
 msgid "Due date must be a valid date (YYYY-MM-DD)."
 msgstr "Vervaldatum moet een geldige datum zijn (JJJJ-MM-DD)."
 
-#: app/maintenance/form_parsing.py:120
+#: app/maintenance/form_parsing.py:123
 msgid "Interval (days) must be a positive integer."
 msgstr "Interval (dagen) moet een positief geheel getal zijn."
 
-#: app/maintenance/form_parsing.py:124
+#: app/maintenance/form_parsing.py:127
 msgid "Warning lead time (days) must be a positive number."
 msgstr "Waarschuwingstermijn (dagen) moet een positief getal zijn."
 
-#: app/maintenance/form_parsing.py:128
+#: app/maintenance/form_parsing.py:131
 msgid "Due engine hours is required for hours triggers."
 msgstr "Verschuldigde motoruren zijn verplicht voor uren-onderhoudsitems."
 
-#: app/maintenance/form_parsing.py:132
+#: app/maintenance/form_parsing.py:135
 msgid "Due engine hours must be a positive number."
 msgstr "Verschuldigde motoruren moeten een positief getal zijn."
 
-#: app/maintenance/form_parsing.py:136
+#: app/maintenance/form_parsing.py:139
 msgid "Interval (hours) must be a positive number."
 msgstr "Interval (uren) moet een positief getal zijn."
 
-#: app/maintenance/form_parsing.py:140
+#: app/maintenance/form_parsing.py:143
 msgid "Warning lead time (hours) must be a positive number."
 msgstr "Waarschuwingstermijn (uren) moet een positief getal zijn."
 
-#: app/maintenance/form_parsing.py:144
+#: app/maintenance/form_parsing.py:147
 msgid "Due landings is required for landings triggers."
 msgstr "Verschuldigde landingen zijn verplicht voor landingen-onderhoudsitems."
 
-#: app/maintenance/form_parsing.py:148
+#: app/maintenance/form_parsing.py:151
 msgid "Due landings must be a positive number."
 msgstr "Verschuldigde landingen moeten een positief getal zijn."
 
-#: app/maintenance/form_parsing.py:152
+#: app/maintenance/form_parsing.py:155
 msgid "Interval (landings) must be a positive number."
 msgstr "Interval (landingen) moet een positief getal zijn."
 
-#: app/maintenance/form_parsing.py:157
+#: app/maintenance/form_parsing.py:160
 msgid "Warning lead time (landings) must be a positive number."
 msgstr "Waarschuwingstermijn (landingen) moet een positief getal zijn."
 
-#: app/maintenance/form_parsing.py:201
+#: app/maintenance/form_parsing.py:204
 msgid "Service date is required."
 msgstr "Onderhoudsdatum is verplicht."
 
-#: app/maintenance/form_parsing.py:205
+#: app/maintenance/form_parsing.py:208
 msgid "Service date must be a valid date (YYYY-MM-DD)."
 msgstr "Onderhoudsdatum moet een geldige datum zijn (JJJJ-MM-DD)."
 
-#: app/maintenance/form_parsing.py:210
+#: app/maintenance/form_parsing.py:213
 msgid "Hobbs at service is required for hours-based triggers."
 msgstr "Hobbs bij onderhoud is verplicht voor uren-onderhoudsitems."
 
-#: app/maintenance/form_parsing.py:214
+#: app/maintenance/form_parsing.py:217
 msgid "Hobbs at service must be a positive number."
 msgstr "Hobbs bij onderhoud moet een positief getal zijn."
 
-#: app/maintenance/form_parsing.py:222
+#: app/maintenance/form_parsing.py:225
 msgid "Landings at service is required for landings-based triggers."
 msgstr "Landingen bij onderhoud zijn verplicht voor landingen-onderhoudsitems."
 
-#: app/maintenance/form_parsing.py:227
+#: app/maintenance/form_parsing.py:230
 msgid "Landings at service must be a positive number."
 msgstr "Landingen bij onderhoud moeten een positief getal zijn."
 
-#: app/maintenance/routes.py:496
+#: app/maintenance/routes.py:502
 #, python-format
 msgid "Maintenance item '%(name)s' saved."
 msgstr "Onderhoudsitem '%(name)s' opgeslagen."
 
-#: app/maintenance/routes.py:515
+#: app/maintenance/routes.py:521
 #, python-format
 msgid "'%(name)s' deleted."
 msgstr "'%(name)s' verwijderd."
 
-#: app/maintenance/routes.py:595
+#: app/maintenance/routes.py:608
 msgid "The shared file was saved with the aircraft's maintenance documents."
 msgstr "Het gedeelde bestand is bewaard bij de onderhoudsdocumenten van het vliegtuig."
 
-#: app/maintenance/routes.py:606
+#: app/maintenance/routes.py:619
 #, python-format
 msgid "'%(name)s' marked as serviced."
 msgstr "'%(name)s' gemarkeerd als onderhouden."
 
-#: app/maintenance/routes.py:638
+#: app/maintenance/routes.py:651
 #, python-format
 msgid "%(item)s, serviced %(date)s"
 msgstr "%(item)s, onderhouden op %(date)s"
 
-#: app/maintenance/routes.py:702
+#: app/maintenance/routes.py:715
 msgid "Invalid programme basis selected."
 msgstr "Ongeldige programmabasis geselecteerd."
 
-#: app/maintenance/routes.py:704
+#: app/maintenance/routes.py:717
 msgid "Invalid declaration type selected."
 msgstr "Ongeldig verklaringstype geselecteerd."
 
-#: app/maintenance/routes.py:706
+#: app/maintenance/routes.py:719
 msgid "Invalid certifying party selected."
 msgstr "Ongeldige certificerende partij geselecteerd."
 
-#: app/maintenance/routes.py:745
+#: app/maintenance/routes.py:758
 msgid "AMP declaration saved."
 msgstr "AMP-verklaring opgeslagen."
 
-#: app/maintenance/routes.py:766
+#: app/maintenance/routes.py:779
 msgid "Revision number is required."
 msgstr "Revisienummer is verplicht."
 
-#: app/maintenance/routes.py:772
+#: app/maintenance/routes.py:785
 msgid "Revision date must be a valid date (YYYY-MM-DD)."
 msgstr "Revisiedatum moet een geldige datum zijn (JJJJ-MM-DD)."
 
-#: app/maintenance/routes.py:812
+#: app/maintenance/routes.py:825
 msgid "Revision added."
 msgstr "Revisie toegevoegd."
 
-#: app/maintenance/routes.py:838
+#: app/maintenance/routes.py:851
 #, python-format
 msgid "Revision '%(number)s' deleted."
 msgstr "Revisie '%(number)s' verwijderd."
 
-#: app/maintenance/routes.py:929
+#: app/maintenance/routes.py:930
 msgid "Unsupported format. Please upload a .xlsx file."
 msgstr "Ongeldig formaat. Upload een .xlsx-bestand."
 
-#: app/maintenance/routes.py:950
+#: app/maintenance/routes.py:951
 msgid "No task rows found in the uploaded file."
 msgstr "Geen taakregels gevonden in het geüploade bestand."
 
-#: app/maintenance/routes.py:1075
+#: app/maintenance/routes.py:1070
 #: app/templates/maintenance/amp_import_review.html:18
 #, python-format
 msgid "one flagged for review"
@@ -2108,30 +2108,30 @@ msgid_plural "%(n)s flagged for review"
 msgstr[0] "één gemarkeerd voor controle"
 msgstr[1] "%(n)s gemarkeerd voor controle"
 
-#: app/maintenance/routes.py:1082
+#: app/maintenance/routes.py:1077
 #, python-format
 msgid "Imported %(count)d maintenance item — %(review_phrase)s."
 msgid_plural "Imported %(count)d maintenance items — %(review_phrase)s."
 msgstr[0] "%(count)d onderhoudsitem geïmporteerd — %(review_phrase)s."
 msgstr[1] "%(count)d onderhoudsitems geïmporteerd — %(review_phrase)s."
 
-#: app/maintenance/routes.py:1127
+#: app/maintenance/routes.py:1122
 #, python-format
 msgid "Import rolled back: %(count)d item removed."
 msgid_plural "Import rolled back: %(count)d items removed."
 msgstr[0] "Import teruggedraaid: %(count)d item verwijderd."
 msgstr[1] "Import teruggedraaid: %(count)d items verwijderd."
 
-#: app/maintenance/routes.py:1323 app/maintenance/routes.py:1340
+#: app/maintenance/routes.py:1322 app/maintenance/routes.py:1339
 msgid "Fill in the AMP declaration profile before exporting the AMP document."
 msgstr "Vul het AMP-verklaringsprofiel in voordat u het AMP-document exporteert."
 
-#: app/maintenance/routes.py:1401
+#: app/maintenance/routes.py:1400
 #, python-format
 msgid "No saved PDF for revision '%(number)s' — it was never downloaded while current."
 msgstr "Geen opgeslagen PDF voor revisie '%(number)s' — deze is nooit gedownload terwijl ze actueel was."
 
-#: app/maintenance/routes.py:1414
+#: app/maintenance/routes.py:1413
 #, python-format
 msgid "The saved PDF for revision '%(number)s' is missing on disk."
 msgstr "De opgeslagen PDF voor revisie '%(number)s' ontbreekt op de schijf."
@@ -4741,7 +4741,7 @@ msgstr "Status"
 #: app/templates/flights/flight_form.html:915
 #: app/templates/flights/flight_form.html:917
 #: app/templates/maintenance/amp_declaration_form.html:179
-#: app/templates/maintenance/amp_import_review.html:106
+#: app/templates/maintenance/amp_import_review.html:104
 #: app/templates/maintenance/service_form.html:20
 #: app/templates/maintenance/service_form.html:127
 #: app/templates/maintenance/trigger_form.html:19
@@ -5074,7 +5074,7 @@ msgstr "Bijna achterstallig"
 #: app/templates/aircraft/wb_list.html:88
 #: app/templates/config/settings.html:316 app/templates/dashboard.html:400
 #: app/templates/dashboard.html:485 app/templates/landing.html:186
-#: app/templates/maintenance/amp_import_review.html:91
+#: app/templates/maintenance/amp_import_review.html:89
 #: app/templates/maintenance/fleet.html:246
 #: app/templates/maintenance/list.html:185
 msgid "OK"
@@ -11841,7 +11841,7 @@ msgid "Past AMP imports — you can roll back any import to remove all its maint
 msgstr "Eerdere AMP-imports — u kunt elke import ongedaan maken om alle bijbehorende onderhoudsitems te verwijderen."
 
 #: app/templates/maintenance/amp_import_history.html:35
-#: app/templates/maintenance/amp_import_review.html:89
+#: app/templates/maintenance/amp_import_review.html:87
 #: app/templates/maintenance/fleet.html:240
 #: app/templates/maintenance/fleet.html:391
 #: app/templates/maintenance/list.html:179
@@ -11888,12 +11888,16 @@ msgstr "Berekende vervaldatum"
 msgid "Not one of the 9 recognised AMP categories — imported without a category"
 msgstr "Komt niet overeen met een van de 9 herkende AMP-categorieën — geïmporteerd zonder categorie"
 
-#: app/templates/maintenance/amp_import_review.html:77
+#: app/templates/maintenance/amp_import_review.html:71
+msgid "From its last service, entered after the import"
+msgstr "Vanaf het laatste onderhoud, in te voeren na de import"
+
+#: app/templates/maintenance/amp_import_review.html:75
 #: app/templates/maintenance/trigger_form.html:75
 msgid "— Airframe / general —"
 msgstr "— Airframe / algemeen —"
 
-#: app/templates/maintenance/amp_import_review.html:103
+#: app/templates/maintenance/amp_import_review.html:101
 msgid "Confirm import"
 msgstr "Import bevestigen"
 

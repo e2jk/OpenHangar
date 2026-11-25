@@ -259,7 +259,7 @@
       <td>{{ t.name }}</td>
       <td>{{ t.reference or '—' }}</td>
       <td>
-        {% if t.needs_review %}
+        {% if t.needs_review and not interval_text.get(t.id) %}
         <span class="amp-export-pending-marker">⚠ {{ _('Pending shop input') }}</span>
         {% else %}
         {{ interval_text.get(t.id) or '—' }}

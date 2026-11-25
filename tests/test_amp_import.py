@@ -1,11 +1,10 @@
 """Tests for Phase 40: AMP task-list spreadsheet parsing (maintenance/amp_import.py)."""
 
-from datetime import date, timedelta
+from datetime import date
 
 import openpyxl
 import pytest
 from maintenance.amp_import import (  # pyright: ignore[reportMissingImports]
-    compute_due_fields,
     find_header,
     format_interval,
     hours_basis_for_component,
@@ -337,79 +336,6 @@ class TestParseAmpRows:
         )
         rows = parse_amp_rows(wb, comps)
         assert rows[0].suggested_component_id == 7
-
-
-# ── compute_due_fields ───────────────────────────────────────────────────────
-
-
-class TestComputeDueFields:
-    def test_hours_only(self):
-        due_h, due_d = compute_due_fields(
-            100.0,
-            None,
-            HoursBasis.ENGINE,
-            current_engine_hours=50.0,
-            current_flight_hours=None,
-        )
-        assert due_h == 150.0
-        assert due_d is None
-
-    def test_calendar_only(self):
-        today = date(2026, 1, 1)
-        due_h, due_d = compute_due_fields(
-            None,
-            30,
-            HoursBasis.FLIGHT,
-            current_engine_hours=None,
-            current_flight_hours=None,
-            today=today,
-        )
-        assert due_h is None
-        assert due_d == today + timedelta(days=30)
-
-    def test_combined(self):
-        today = date(2026, 1, 1)
-        due_h, due_d = compute_due_fields(
-            100.0,
-            360,
-            HoursBasis.ENGINE,
-            current_engine_hours=50.0,
-            current_flight_hours=None,
-            today=today,
-        )
-        assert due_h == 150.0
-        assert due_d == today + timedelta(days=360)
-
-    def test_flight_basis_uses_flight_hours(self):
-        due_h, _due_d = compute_due_fields(
-            100.0,
-            None,
-            HoursBasis.FLIGHT,
-            current_engine_hours=999.0,
-            current_flight_hours=50.0,
-        )
-        assert due_h == 150.0
-
-    def test_hours_interval_but_no_current_reading_leaves_unset(self):
-        due_h, _due_d = compute_due_fields(
-            100.0,
-            None,
-            HoursBasis.ENGINE,
-            current_engine_hours=None,
-            current_flight_hours=None,
-        )
-        assert due_h is None
-
-    def test_no_interval_at_all(self):
-        due_h, due_d = compute_due_fields(
-            None,
-            None,
-            HoursBasis.ENGINE,
-            current_engine_hours=50.0,
-            current_flight_hours=None,
-        )
-        assert due_h is None
-        assert due_d is None
 
 
 # ── format_interval (Appendix B export — inverse of parse_interval) ─────────

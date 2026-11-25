@@ -59,7 +59,7 @@
           </div>
 
           {% set _current_reading = current_flight_hours if trigger.hours_basis == 'flight' else current_hobbs %}
-          {% if trigger.due_engine_hours is not none %}
+          {% if trigger.due_engine_hours is not none or (trigger.needs_review and trigger.interval_hours) %}
           <div class="mb-3">
             <label for="hobbs_at_service" class="form-label">
               {{ _('Flight hours at service') if trigger.hours_basis == 'flight' else _('Engine hours at service') }}

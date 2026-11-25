@@ -265,7 +265,7 @@ class TestCommit:
             batch = MaintenanceImportBatch.query.filter_by(aircraft_id=acid).first()
             assert batch is not None
             assert batch.row_count == 3
-            assert batch.needs_review_count == 1
+            assert batch.needs_review_count == 3
             assert batch.source_filename == "sched.xlsx"
             triggers = MaintenanceTrigger.query.filter_by(
                 import_batch_id=batch.id
@@ -278,7 +278,10 @@ class TestCommit:
             assert ad_row.action == "INSPECTION"
             assert float(ad_row.interval_hours) == 100.0
             assert ad_row.interval_days == 360
-            assert ad_row.needs_review is False
+            # No due value until its last service is entered: the sheet
+            # says how often, not when it was last done.
+            assert ad_row.needs_review is True
+            assert ad_row.due_date is None and ad_row.due_engine_hours is None
             pending_row = by_name["Undecided item"]
             assert pending_row.needs_review is True
             assert pending_row.due_date is None

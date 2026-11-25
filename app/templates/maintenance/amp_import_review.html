@@ -68,9 +68,7 @@
             </td>
             <td class="text-muted">{{ r.interval_raw or '—' }}</td>
             <td class="text-muted">
-              {% if entry.due_date %}<div>{{ entry.due_date.strftime('%Y-%m-%d') }}</div>{% endif %}
-              {% if entry.due_engine_hours is not none %}<div>{{ "%.1f"|format(entry.due_engine_hours) }} h</div>{% endif %}
-              {% if entry.due_date is none and entry.due_engine_hours is none %}—{% endif %}
+              {{ _('From its last service, entered after the import') }}
             </td>
             <td>
               <select class="form-select form-select-sm" name="component_id_{{ loop.index0 }}">
