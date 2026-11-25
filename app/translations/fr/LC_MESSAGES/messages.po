@@ -2601,47 +2601,47 @@ msgstr "Votre passeport %(title)s se termine le %(date)s. Ouvrez cette édition 
 msgid "Open passport"
 msgstr "Ouvrir le passeport"
 
-#: app/passports/routes.py:351
+#: app/passports/routes.py:375
 msgid "Small airfields"
 msgstr "Petits aérodromes"
 
-#: app/passports/routes.py:352
+#: app/passports/routes.py:376
 msgid "Medium airports"
 msgstr "Aéroports moyens"
 
-#: app/passports/routes.py:353
+#: app/passports/routes.py:377
 msgid "Large airports"
 msgstr "Grands aéroports"
 
-#: app/passports/routes.py:354
+#: app/passports/routes.py:378
 msgid "Heliports"
 msgstr "Héliports"
 
-#: app/passports/routes.py:355
+#: app/passports/routes.py:379
 msgid "Seaplane bases"
 msgstr "Hydrobases"
 
-#: app/passports/routes.py:356
+#: app/passports/routes.py:380
 msgid "Balloon ports"
 msgstr "Bases de ballons"
 
-#: app/passports/routes.py:357
+#: app/passports/routes.py:381
 msgid "Closed airfields"
 msgstr "Aérodromes fermés"
 
-#: app/passports/routes.py:467
+#: app/passports/routes.py:491
 msgid "Passport saved."
 msgstr "Passeport enregistré."
 
-#: app/passports/routes.py:508
+#: app/passports/routes.py:532
 msgid "An airfield code conflicts with an existing identity. Review or remove that selection."
 msgstr "Un code d’aérodrome entre en conflit avec une identité existante. Vérifiez ou retirez cette sélection."
 
-#: app/passports/routes.py:570
+#: app/passports/routes.py:594
 msgid "Passport deleted."
 msgstr "Passeport supprimé."
 
-#: app/passports/routes.py:592
+#: app/passports/routes.py:616
 msgid "Share your visits with this group before sharing photos."
 msgstr "Partagez vos visites avec ce groupe avant de partager des photos."
 
@@ -7672,7 +7672,8 @@ msgstr "Vérifier la référence pièce"
 #: app/templates/passports/builder.html:49
 #: app/templates/passports/detail.html:34
 #: app/templates/passports/detail.html:39
-#: app/templates/passports/detail.html:42 app/templates/passports/print.html:27
+#: app/templates/passports/detail.html:42 app/templates/passports/index.html:24
+#: app/templates/passports/print.html:27
 #: app/templates/passports/public_view.html:20
 #: app/templates/passports/record_visit.html:14
 #: app/templates/passports/series.html:17
@@ -12946,7 +12947,7 @@ msgstr "Bons"
 msgid "Edit passport"
 msgstr "Modifier le passeport"
 
-#: app/templates/passports/detail.html:14 app/templates/passports/index.html:10
+#: app/templates/passports/detail.html:14 app/templates/passports/index.html:38
 msgid "Linked editions"
 msgstr "Éditions liées"
 
@@ -12979,7 +12980,7 @@ msgstr "Inviter des amis"
 #: app/templates/passports/detail.html:18
 #: app/templates/passports/group_members.html:3
 #: app/templates/passports/group_members.html:4
-#: app/templates/passports/index.html:12
+#: app/templates/passports/index.html:46
 #: app/templates/passports/invitation_settings.html:20
 #: app/templates/passports/series.html:7
 msgid "Group members"
@@ -13085,7 +13086,8 @@ msgstr "Visité par vous"
 
 #: app/templates/passports/detail.html:34
 #: app/templates/passports/detail.html:39
-#: app/templates/passports/detail.html:42 app/templates/passports/print.html:27
+#: app/templates/passports/detail.html:42 app/templates/passports/index.html:23
+#: app/templates/passports/print.html:27
 #: app/templates/passports/public_view.html:20
 #: app/templates/passports/record_visit.html:14
 #: app/templates/passports/series.html:17
@@ -13100,8 +13102,8 @@ msgstr "Pas encore visité par vous"
 
 #: app/templates/passports/detail.html:34
 #: app/templates/passports/detail.html:39
-#: app/templates/passports/detail.html:42 app/templates/passports/print.html:27
-#: app/templates/passports/series.html:17
+#: app/templates/passports/detail.html:42 app/templates/passports/index.html:23
+#: app/templates/passports/print.html:27 app/templates/passports/series.html:17
 #: app/templates/passports/series.html:19 app/templates/passports/target.html:9
 msgid "Not visited"
 msgstr "Non visité"
@@ -13135,13 +13137,13 @@ msgid "Visited by friends"
 msgstr "Visité par des amis"
 
 #: app/templates/passports/detail.html:39
-#: app/templates/passports/detail.html:42
+#: app/templates/passports/detail.html:42 app/templates/passports/index.html:24
 #: app/templates/passports/series.html:17
 #: app/templates/passports/series.html:19 app/templates/passports/target.html:9
 msgid "Recorded visits"
 msgstr "Visites enregistrées"
 
-#: app/templates/passports/detail.html:39
+#: app/templates/passports/detail.html:39 app/templates/passports/index.html:25
 #: app/templates/passports/series.html:17
 msgid "Passport visit map"
 msgstr "Carte des visites du passeport"
@@ -13469,16 +13471,11 @@ msgid "Create passport"
 msgstr "Créer un passeport"
 
 #: app/templates/passports/index.html:7
-#: app/templates/passports/record_visit.html:36
-msgid "Export my passport data"
-msgstr "Exporter mes données de passeports"
-
-#: app/templates/passports/index.html:8
 #: app/templates/passports/record_visit.html:38
 msgid "Fly yourself? Keep your own pilot logbook on this account and your logged arrivals fill your passports automatically."
 msgstr "Vous pilotez vous-même ? Tenez votre propre carnet de vol sur ce compte et vos arrivées enregistrées rempliront automatiquement vos passeports."
 
-#: app/templates/passports/index.html:8
+#: app/templates/passports/index.html:7
 #: app/templates/passports/record_visit.html:38
 #: app/templates/passports/start_logbook.html:2
 #: app/templates/passports/start_logbook.html:6
@@ -13488,12 +13485,26 @@ msgid "Start my pilot logbook"
 msgstr "Commencer mon carnet de vol"
 
 #: app/templates/passports/index.html:11
+#, python-format
+msgid "%(visited)d of %(total)d airfields visited (%(percent)d%%)"
+msgstr "%(visited)d aérodromes visités sur %(total)d (%(percent)d %%)"
+
+#: app/templates/passports/index.html:29
+msgid "Other editions"
+msgstr "Autres éditions"
+
+#: app/templates/passports/index.html:45
 msgid "No passports yet."
 msgstr "Aucun passeport pour le moment."
 
-#: app/templates/passports/index.html:12
+#: app/templates/passports/index.html:46
 msgid "Groups and edition history"
 msgstr "Groupes et historique des éditions"
+
+#: app/templates/passports/index.html:47
+#: app/templates/passports/record_visit.html:36
+msgid "Export my passport data"
+msgstr "Exporter mes données de passeports"
 
 #: app/templates/passports/invitation_settings.html:7
 msgid "Send this edition’s invitation to your friends. Each person signs in with their own account and gets their own map and vouchers. Forwarding an active link lets its recipient join; it never signs them in as you."
@@ -15454,7 +15465,8 @@ msgstr "La suppression de cette collection supprime aussi définitivement ses li
 msgid "I confirm the permanent deletion of this collection."
 msgstr "Je confirme la suppression définitive de cette collection."
 
-#: app/templates/places/index.html:6 app/templates/places/place_form.html:3
+#: app/templates/places/index.html:6 app/templates/places/place_detail.html:5
+#: app/templates/places/place_form.html:3
 #: app/templates/places/place_form.html:6
 msgid "Add place"
 msgstr "Ajouter un lieu"

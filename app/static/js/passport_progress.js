@@ -9,10 +9,14 @@
   window.ohPassportMarkerRadius = markerRadius;
 
   function init() {
-    var root = document.getElementById('passport-progress');
-    if (!root || root.dataset.ohInited || typeof L === 'undefined') return;
+    if (typeof L === 'undefined') return;
+    document.querySelectorAll('#passport-progress, [data-passport-progress]').forEach(initMap);
+  }
+
+  function initMap(root) {
+    if (root.dataset.ohInited) return;
     root.dataset.ohInited = '1';
-    var map = L.map('passport-progress-map', { zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false }).setView([50.5, 5], 5);
+    var map = L.map(root.querySelector('.passport-selection-map'), { zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false }).setView([50.5, 5], 5);
     window.ohAddBaseLayers(map, null);
     var positions = [];
     JSON.parse(root.dataset.fields).forEach(function (field) {

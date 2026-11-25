@@ -4,11 +4,46 @@
 {% block content %}
 <div class="container py-4">
 <div class="page-header mb-4"><h1 class="page-title">{{ _('Airfield passports') }}</h1>{% if can_create %}<a class="btn btn-ac-primary" href="{{ url_for('passports.new_passport') }}">{{ _('Create passport') }}</a>{% endif %}</div>
-{% if can_export %}<p><a class="btn btn-ac-ghost" href="{{ url_for('passports.export_account') }}" hx-boost="false">{{ _('Export my passport data') }}</a></p>{% endif %}
 {% if passport_only and not personal_logbook %}<p>{{ _('Fly yourself? Keep your own pilot logbook on this account and your logged arrivals fill your passports automatically.') }} <a href="{{ url_for('passports.start_logbook') }}">{{ _('Start my pilot logbook') }}</a></p>{% endif %}
-{% if passports %}
-<ul>{% for passport in passports %}<li><a href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ passport.title }}</a>{% if passport.series_id and passport.owner_user_id == session.get('user_id') %} · <a href="{{ url_for('passports.series_detail', series_id=passport.series_id) }}">{{ _('Linked editions') }}</a>{% endif %} — {{ summaries[passport.id].visited }} / {{ summaries[passport.id].total }}</li>{% endfor %}</ul>
+{% macro progress_for(passport) %}
+  {% set progress = summaries[passport.id] %}
+  {% set percent = progress.percent or 0 %}
+  {{ _('%(visited)d of %(total)d airfields visited (%(percent)d%%)', visited=progress.visited, total=progress.total, percent=percent) }}
+{% endmacro %}
+{% if cards %}
+<div class="row g-3 mb-4">
+  {% for passport, history in cards %}
+  <div class="col-12 col-lg-6">
+    <article class="card h-100">
+      <div class="card-body">
+        <h2 class="h5"><a href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ passport.title }}</a></h2>
+        <p>{{ progress_for(passport) }}</p>
+        <div data-passport-progress data-fields="{{ card_maps[passport.id] | tojson | forceescape }}"
+             data-target-url="{{ url_for('passports.target_detail', passport_id=passport.id, target_id=0) }}"
+             data-visited="{{ _('Visited') }}" data-unvisited="{{ _('Not visited') }}"
+             data-closed="{{ _('Closed') }}" data-visits="{{ _('Recorded visits') }}">
+          <div class="passport-selection-map border rounded" role="region" aria-label="{{ _('Passport visit map') }}"></div>
+        </div>
+        {% if history %}
+        <details class="mt-3">
+          <summary>{{ _('Other editions') }}</summary>
+          <ul class="mb-0">
+            {% for edition in history %}
+            <li><a href="{{ url_for('passports.detail', passport_id=edition.id) }}">{{ edition.title }}</a> · {{ progress_for(edition) }}</li>
+            {% endfor %}
+          </ul>
+        </details>
+        {% endif %}
+        {% if passport.series_id and (passport.is_group or passport.owner_user_id == session.get('user_id')) %}
+        <a class="d-inline-block mt-3" href="{{ url_for('passports.series_detail', series_id=passport.series_id) }}">{{ _('Linked editions') }}</a>
+        {% endif %}
+      </div>
+    </article>
+  </div>
+  {% endfor %}
+</div>
 {% else %}<p>{{ _('No passports yet.') }}</p>{% endif %}
 {% if group_series %}<h2>{{ _('Groups and edition history') }}</h2><ul>{% for group in group_series %}<li><a href="{{ url_for('passports.series_detail', series_id=group.id) }}">{{ group.title }}</a> · <a href="{{ url_for('passports.group_members', series_id=group.id) }}">{{ _('Group members') }}</a></li>{% endfor %}</ul>{% endif %}
+{% if can_export %}<p><a class="btn btn-ac-ghost" href="{{ url_for('passports.export_account') }}" hx-boost="false">{{ _('Export my passport data') }}</a></p>{% endif %}
 </div>
 {% endblock %}
