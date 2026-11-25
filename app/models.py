@@ -114,7 +114,10 @@ class PermissionBit:
         "admin": ALL,
         "owner": ALL,
         "pilot": VIEW_AIRCRAFT | READ_MAINT_LIMITED | WRITE_LOGBOOK | RESERVE_AIRCRAFT,
-        "student": VIEW_AIRCRAFT | READ_MAINT_LIMITED,
+        # Students log flights like pilots (booking stays a pilot's role) until
+        # the Flying School phase brings supervised flows; an admin can remove
+        # it per aircraft.
+        "student": VIEW_AIRCRAFT | READ_MAINT_LIMITED | WRITE_LOGBOOK,
         "instructor": VIEW_AIRCRAFT
         | READ_MAINT_FULL
         | WRITE_LOGBOOK
