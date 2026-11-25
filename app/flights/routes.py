@@ -397,7 +397,14 @@ def _parse_gps_upload(file: Any) -> dict[str, Any] | None:
     # Kept whatever the parser makes of it (services.gps_archive), in the
     # uploader's own archive — no aircraft is known yet at this point; the
     # flight links to it on save (see _gps_source_file).
-    archive_name = _archive_flight_form_upload(data, filename)
+    from services.gps_archive import (  # pyright: ignore[reportMissingImports]
+        GpsArchiveFull,
+    )
+
+    try:
+        archive_name = _archive_flight_form_upload(data, filename)
+    except GpsArchiveFull:
+        return None
     try:
         parsed = parse_gps_file(data, filename)
         all_points = merge_and_sort([parsed])
