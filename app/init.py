@@ -647,6 +647,10 @@ def create_app() -> Flask:
 
     app.before_request(enforce_account_scope)
 
+    from services.authorization import enforce_write_permissions
+
+    app.before_request(enforce_write_permissions)
+
     @app.after_request
     def _security_headers(response: Any) -> Any:
         nonce = getattr(g, "csp_nonce", "")
