@@ -113,7 +113,7 @@ def list_places(
         .all()
     )
     assignments = (
-        db.session.query(PlaceTagAssignment.place_id, PlaceTag.name)
+        db.session.query(PlaceTagAssignment.place_id, PlaceTag)
         .join(PlaceTag, PlaceTag.id == PlaceTagAssignment.tag_id)
         .filter(
             PlaceTagAssignment.place_id.in_([place.id for place, _count, _last in rows])
@@ -121,9 +121,9 @@ def list_places(
         .order_by(PlaceTag.name)
         .all()
     )
-    by_place: dict[int, list[str]] = {}
-    for place_id, name in assignments:
-        by_place.setdefault(place_id, []).append(name)
+    by_place: dict[int, list[PlaceTag]] = {}
+    for place_id, tag in assignments:
+        by_place.setdefault(place_id, []).append(tag)
     return {
         "rows": rows,
         "linked": linked,
