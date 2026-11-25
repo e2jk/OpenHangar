@@ -155,6 +155,7 @@
       var query = root.querySelector('#place-address-query');
       var results = root.querySelector('#place-address-results');
       var searchError = root.querySelector('#place-address-error');
+      var automaticTitle = null;
       function searchAddress() {
         var requested = query.value;
         search.disabled = true;
@@ -179,13 +180,23 @@
               var choice = document.createElement('button');
               choice.type = 'button';
               choice.className = 'list-group-item list-group-item-action text-break';
+              choice.setAttribute('aria-pressed', 'false');
               choice.textContent = result.name + ' — ' + result.address;
               choice.addEventListener('click', function () {
                 setPoint(L.latLng(result.latitude, result.longitude), true);
                 var title = root.querySelector('#place-title');
-                if (!title.value.trim()) title.value = (result.name || result.address).slice(0, 200);
+                if (!title.value.trim() || title.value === automaticTitle) {
+                  automaticTitle = (result.name || result.address).slice(0, 200);
+                  title.value = automaticTitle;
+                }
                 root.querySelector('#place-address').value = result.address.slice(0, 500);
-                results.replaceChildren();
+                var previous = results.querySelector('[aria-pressed="true"]');
+                if (previous) {
+                  previous.classList.remove('active');
+                  previous.setAttribute('aria-pressed', 'false');
+                }
+                choice.classList.add('active');
+                choice.setAttribute('aria-pressed', 'true');
               });
               results.appendChild(choice);
             });

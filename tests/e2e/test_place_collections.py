@@ -118,7 +118,13 @@ def test_address_search_is_submit_only_and_selection_preserves_a_title(
                         "address": "Museum street",
                         "latitude": 50.5,
                         "longitude": 4.2,
-                    }
+                    },
+                    {
+                        "name": "Second museum",
+                        "address": "Other street",
+                        "latitude": 50.6,
+                        "longitude": 4.3,
+                    },
                 ]
             }
         )
@@ -138,6 +144,16 @@ def test_address_search_is_submit_only_and_selection_preserves_a_title(
         "Museum street"
     )
     expect(page.get_by_label("Latitude", exact=True)).to_have_value("50.5000000")
+    second = page.get_by_role("button", name="Second museum — Other street")
+    second.click()
+    expect(second).to_have_attribute("aria-pressed", "true")
+    expect(
+        page.get_by_role("button", name="Museum <example> — Museum street")
+    ).to_have_attribute("aria-pressed", "false")
+    expect(page.get_by_label("Place name (optional)", exact=True)).to_have_value(
+        "Second museum"
+    )
+    expect(page.get_by_label("Latitude", exact=True)).to_have_value("50.6000000")
     assert len(requests) == 1
     page.get_by_label("Place name (optional)", exact=True).fill("My own title")
     page.get_by_label("Place name or address", exact=True).press("Enter")
