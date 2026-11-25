@@ -75,7 +75,9 @@ def personal_collection(tenant_id: int, user_id: int) -> PlaceCollection:
 
 
 def default_collection(tenant_id: int, user_id: int) -> PlaceCollection:
-    """An obsolete choice (left/deleted collection) falls back to My places."""
+    """The user's chosen default; an obsolete choice (left/deleted
+    collection) falls back to My places, or — when the user deleted My
+    places — to a collection they can edit, before recreating My places."""
     actor(tenant_id, user_id)
     preference = db.session.get(PlacePreference, (user_id, tenant_id))
     if preference is not None and preference.default_collection_id is not None:
@@ -90,6 +92,18 @@ def default_collection(tenant_id: int, user_id: int) -> PlaceCollection:
             member = db.session.get(PlaceCollectionMember, (collection.id, user_id))
             if member is not None and member.can_edit:
                 return collection
+    personal = PlaceCollection.query.filter_by(
+        tenant_id=tenant_id, created_by_user_id=user_id, is_personal=True
+    ).first()
+    if personal is None:
+        editable: PlaceCollection | None = (
+            collections_for_user(tenant_id, user_id)
+            .filter(PlaceCollectionMember.can_edit.is_(True))
+            .order_by(PlaceCollection.id)
+            .first()
+        )
+        if editable is not None:
+            return editable
     return personal_collection(tenant_id, user_id)
 
 

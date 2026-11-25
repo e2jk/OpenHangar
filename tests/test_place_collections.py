@@ -161,7 +161,9 @@ def test_collection_permissions_never_follow_role_or_admin_visibility(
             assert collections_for_user(t, uid).count() == 0
             with pytest.raises(PlaceError):
                 collection_access(t, uid, c.id)
-        assert collection_access(t, p["admin"], c.id, managing=True).id == c.id
+        # Administrators manage only their own collections, like anyone.
+        with pytest.raises(PlaceError):
+            collection_access(t, p["admin"], c.id, managing=True)
         with pytest.raises(PlaceError):
             collection_access(p["elsewhere"], u, c.id, managing=True)
         with pytest.raises(PlaceError):
@@ -265,7 +267,15 @@ def test_creator_account_removal_retains_content_without_stale_ownership(
         assert db.session.get(PlaceCollection, cid).created_by_user_id is None
         assert db.session.get(Place, pid).owner_user_id is None
         assert collection_access(p["tenant"], p["reader"], cid).id == cid
-        assert collection_access(p["tenant"], p["admin"], cid, managing=True).id == cid
+        # Without an owner, its editing members manage it; nobody else does.
+        with pytest.raises(PlaceError):
+            collection_access(p["tenant"], p["admin"], cid, managing=True)
+        member = db.session.get(PlaceCollectionMember, (cid, p["reader"]))
+        member.can_edit = False
+        with pytest.raises(PlaceError):
+            collection_access(p["tenant"], p["reader"], cid, managing=True)
+        member.can_edit = True
+        assert collection_access(p["tenant"], p["reader"], cid, managing=True).id == cid
 
 
 def test_collection_delete_cascades_and_photo_cleanup_obeys_transaction(
