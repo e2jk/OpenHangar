@@ -241,13 +241,13 @@
           <li class="nav-item dropdown">
             <button type="button" class="nav-link dropdown-toggle btn btn-link" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-compass me-1"></i>{{ _('Explore') }}</button>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{{ url_for('places.index') }}"><i class="bi bi-geo-alt me-1"></i>{{ _('Places') }}</a></li>
               <li><a class="dropdown-item" href="{{ url_for('explore.where_next') }}"><i class="bi bi-signpost-split me-1"></i>{{ _('Where next?') }}</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('places.index') }}"><i class="bi bi-geo-alt me-1"></i>{{ _('Places') }}</a></li>
+              {% if is_pilot or has_passports or passport_only %}
+              <li><a class="dropdown-item" href="{{ url_for('passports.index') }}"><i class="bi bi-passport me-1"></i>{{ _('Airfield passports') }}</a></li>
+              {% endif %}
             </ul>
           </li>
-          {% if is_pilot or has_passports or passport_only %}
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('passports.index') }}"><i class="bi bi-passport me-1"></i>{{ _('Airfield passports') }}</a></li>
-          {% endif %}
           {% if has_renter_account %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('reservations.my_account') }}"><i class="bi bi-wallet2 me-1"></i>{{ _('My account') }}</a>
