@@ -1,9 +1,9 @@
 import contextlib
-import io
 import logging
 import mimetypes
 import os
 import re as _re
+import tempfile
 import uuid
 import zipfile
 from datetime import UTC, datetime
@@ -12,7 +12,6 @@ from typing import Any
 
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
-    Response,
     abort,
     current_app,
     flash,
@@ -20,6 +19,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
     redirect,
     render_template,
     request,
+    send_file,
     session,
     url_for,
 )
@@ -774,13 +774,16 @@ def download_all_documents(aircraft_id: int) -> ResponseReturnValue:
     )
 
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
-    buf = io.BytesIO()
+    # Spooled to disk past a few MB: an aircraft's documents can be hundreds
+    # of MB, which must not sit in the worker's memory (twice, before).
+    output = tempfile.SpooledTemporaryFile(max_size=4 * 1024 * 1024, mode="w+b")  # noqa: SIM115
     manifest_lines = ["filename\ttitle\tcategory\ttype\tuploaded\n"]
+    used: set[str] = {"manifest.txt"}
 
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+    with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as zf:
         for doc in docs:
             path = resolve_inside(folder, doc.filename)
-            arcname = doc.original_filename
+            arcname = _unique_arcname(doc.original_filename or "document", used)
             if path is not None and os.path.isfile(path):
                 zf.write(path, arcname=arcname)
             doc_type_label = doc.doc_type or ""
@@ -793,17 +796,30 @@ def download_all_documents(aircraft_id: int) -> ResponseReturnValue:
             )
         zf.writestr("manifest.txt", "".join(manifest_lines))
 
-    buf.seek(0)
+    output.seek(0)
     reg = ac.registration.replace("/", "-")
-    zip_name = f"aircraft-{reg}-documents.zip"
-    return Response(
-        buf.read(),
+    return send_file(
+        output,
         mimetype="application/zip",
-        headers={"Content-Disposition": f'attachment; filename="{zip_name}"'},
+        as_attachment=True,
+        download_name=f"aircraft-{reg}-documents.zip",
     )
 
 
-# ── Insurance / ARC certificate quick upload ──────────────────────────────────
+def _unique_arcname(name: str, used: set[str]) -> str:
+    """A ZIP entry name for `name`: its last path part only (a phone share
+    can keep backslashes), and "name (2).ext" when two documents share a
+    name — a duplicate entry used to hide one of them on extraction."""
+    base = name.replace("\\", "/").rsplit("/", 1)[-1] or "document"
+    stem, dot, ext = base.rpartition(".")
+    if not dot:
+        stem, ext = base, ""
+    candidate, n = base, 2
+    while candidate.lower() in used:
+        candidate = f"{stem} ({n}){dot}{ext}"
+        n += 1
+    used.add(candidate.lower())
+    return candidate
 
 
 def _upload_expiry_cert(
