@@ -1,5 +1,6 @@
 # Safer one-click upgrades, and Passports in the Explore menu
 
+- Collection settings show how many places use each tag and ask for confirmation before removing a tag in use.
 - Enter place tags on one line or choose from starter tags and tags already used in your collections.
 - Move several of your places to another collection in one action.
 - Place cards show linked airfield codes and let you filter by clicking a tag.

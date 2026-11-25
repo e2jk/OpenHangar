@@ -445,9 +445,30 @@ def test_tag_settings_rename_merge_delete_and_bad_ids(
             .one()
             .id
         )
+    with app.app_context():
+        unused = PlaceTag(collection_id=d["collection"], name="Unused tag")
+        db.session.add(unused)
+        db.session.commit()
+        unused_id = unused.id
+    page = client.get(url).text
+    assert "Used by 2 places" in page
+    assert "Unused tag" in page
     assert (
-        client.post(url, data={"action": "tag-delete", "tag": tag}).status_code == 302
+        client.post(url, data={"action": "tag-delete", "tag": tag}).status_code == 400
     )
+    assert (
+        client.post(url, data={"action": "tag-delete", "tag": unused_id}).status_code
+        == 302
+    )
+    assert (
+        client.post(
+            url, data={"action": "tag-delete", "tag": tag, "confirm": "yes"}
+        ).status_code
+        == 302
+    )
+    with app.app_context():
+        assert db.session.get(Place, d["alpha"]) is not None
+        assert db.session.get(PlaceTag, tag) is None
 
 
 def test_daily_purge_retains_recent_entries_and_rolls_back_on_failure(

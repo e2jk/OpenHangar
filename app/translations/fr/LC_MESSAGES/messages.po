@@ -3283,8 +3283,8 @@ msgstr "La personne qui a créé la collection doit conserver les droits de modi
 msgid "The creator must transfer or delete the collection before leaving."
 msgstr "La personne qui a créé la collection doit la transférer ou la supprimer avant de la quitter."
 
-#: app/places/collections.py:201 app/places/routes.py:269
-#: app/places/routes.py:275 app/places/routes.py:282
+#: app/places/collections.py:201 app/places/routes.py:276
+#: app/places/routes.py:282 app/places/routes.py:289
 msgid "Choose a member of this collection."
 msgstr "Choisissez un membre de cette collection."
 
@@ -3292,7 +3292,7 @@ msgstr "Choisissez un membre de cette collection."
 msgid "Enter valid latitude and longitude coordinates."
 msgstr "Saisissez une latitude et une longitude valides."
 
-#: app/places/coordinates.py:104 app/places/place_routes.py:268
+#: app/places/coordinates.py:104 app/places/place_routes.py:272
 msgid "Paste decimal or DMS coordinates, or a map link containing coordinates."
 msgstr "Collez des coordonnées décimales ou en degrés, minutes et secondes, ou un lien de carte contenant des coordonnées."
 
@@ -3304,7 +3304,7 @@ msgstr "Lieu sans nom"
 #: app/templates/explore/where_next.html:10
 #: app/templates/explore/where_next.html:39
 #: app/templates/explore/where_next.html:40
-#: app/templates/places/collection_settings.html:20
+#: app/templates/places/collection_settings.html:40
 #: app/templates/places/index.html:3 app/templates/places/index.html:6
 msgid "Places"
 msgstr "Lieux"
@@ -3317,7 +3317,7 @@ msgstr "Un champ du lieu est trop long."
 msgid "Enter a full http or https website address."
 msgstr "Saisissez une adresse de site complète commençant par http ou https."
 
-#: app/places/management.py:65
+#: app/places/management.py:65 app/places/place_routes.py:133
 msgid "Use tag names of at most 80 characters."
 msgstr "Utilisez des noms d’étiquette de 80 caractères maximum."
 
@@ -3341,42 +3341,42 @@ msgstr "Chaque personne ayant enregistré une visite doit faire partie de la col
 msgid "Only the place owner or collection creator can permanently delete it."
 msgstr "Seuls le propriétaire du lieu ou la personne qui a créé la collection peuvent le supprimer définitivement."
 
-#: app/places/place_routes.py:169 app/places/place_routes.py:296
+#: app/places/place_routes.py:173 app/places/place_routes.py:300
 msgid "Choose a collection you can edit."
 msgstr "Choisissez une collection que vous pouvez modifier."
 
-#: app/places/place_routes.py:207
+#: app/places/place_routes.py:211
 #: app/templates/places/collection_settings.html:9
-#: app/templates/places/collection_settings.html:15
-#: app/templates/places/collection_settings.html:19
+#: app/templates/places/collection_settings.html:35
+#: app/templates/places/collection_settings.html:39
 msgid "Unnamed member"
 msgstr "Membre sans nom"
 
-#: app/places/place_routes.py:233 app/places/place_routes.py:234
+#: app/places/place_routes.py:237 app/places/place_routes.py:238
 msgid "Former member"
 msgstr "Ancien membre"
 
-#: app/places/place_routes.py:311
+#: app/places/place_routes.py:315
 msgid "Confirm the permanent deletion of this place."
 msgstr "Confirmez la suppression définitive de ce lieu."
 
-#: app/places/routes.py:159
+#: app/places/routes.py:161
 msgid "Select places and a destination collection."
 msgstr "Sélectionnez des lieux et une collection de destination."
 
-#: app/places/routes.py:293
+#: app/places/routes.py:300
 msgid "Invitation saved. Ask your friend to sign in and open Places."
 msgstr "Invitation enregistrée. Demandez à votre ami de se connecter et d’ouvrir la rubrique Lieux."
 
-#: app/places/routes.py:299 app/places/sharing.py:74 app/places/sharing.py:98
+#: app/places/routes.py:306 app/places/sharing.py:74 app/places/sharing.py:98
 msgid "Invitation not found or expired."
 msgstr "Invitation introuvable ou expirée."
 
-#: app/places/routes.py:304 app/places/tags.py:29 app/places/tags.py:62
+#: app/places/routes.py:311 app/places/tags.py:29 app/places/tags.py:73
 msgid "Tag not found."
 msgstr "Étiquette introuvable."
 
-#: app/places/routes.py:320
+#: app/places/routes.py:329
 msgid "Review the collection totals and confirm its deletion."
 msgstr "Vérifiez le nombre de lieux et de visites de la collection, puis confirmez sa suppression."
 
@@ -3419,6 +3419,11 @@ msgstr "Famille"
 #: app/places/tags.py:32
 msgid "Enter a tag name of at most 80 characters."
 msgstr "Saisissez un nom d’étiquette de 80 caractères maximum."
+
+#: app/places/tags.py:76
+msgid "Confirm removal of this tag from every place using it."
+msgstr ""
+"Confirmez le retrait de cette étiquette de tous les lieux qui l’utilisent."
 
 #: app/places/visit_routes.py:38 app/places/visit_routes.py:85
 msgid "Visit recorded."
@@ -15223,7 +15228,7 @@ msgid "No, thanks"
 msgstr "Non merci"
 
 #: app/templates/places/_visits.html:4
-#: app/templates/places/collection_settings.html:20
+#: app/templates/places/collection_settings.html:40
 msgid "Visits"
 msgstr "Visites"
 
@@ -15383,89 +15388,104 @@ msgstr "Vos lieux et vos visites restent dans la collection lorsque vous la quit
 msgid "Leave collection"
 msgstr "Quitter la collection"
 
-#: app/templates/places/collection_settings.html:11
+#: app/templates/places/collection_settings.html:12
 #: app/templates/places/place_form.html:15
 msgid "Tags"
 msgstr "Étiquettes"
 
-#: app/templates/places/collection_settings.html:11
+#: app/templates/places/collection_settings.html:13
 msgid "Renaming to an existing tag merges them."
 msgstr "Renommer une étiquette avec un nom existant fusionne les deux étiquettes."
 
-#: app/templates/places/collection_settings.html:11
+#: app/templates/places/collection_settings.html:18
 msgid "Tag name"
 msgstr "Nom de l’étiquette"
 
-#: app/templates/places/collection_settings.html:11
+#: app/templates/places/collection_settings.html:18
+#, python-format
+msgid "Used by one place"
+msgid_plural "Used by %(num)d places"
+msgstr[0] "Utilisée par un lieu"
+msgstr[1] "Utilisée par %(num)d lieux"
+
+#: app/templates/places/collection_settings.html:18
+msgid "Unused"
+msgstr "Inutilisée"
+
+#: app/templates/places/collection_settings.html:20
 msgid "Rename tag"
 msgstr "Renommer l’étiquette"
 
-#: app/templates/places/collection_settings.html:11
+#: app/templates/places/collection_settings.html:25
+msgid "Remove this tag from every place using it"
+msgstr "Retirer cette étiquette de tous les lieux qui l’utilisent"
+
+#: app/templates/places/collection_settings.html:27
 msgid "Delete tag"
 msgstr "Supprimer l’étiquette"
 
-#: app/templates/places/collection_settings.html:13
+#: app/templates/places/collection_settings.html:33
 #: app/templates/places/new_collection.html:6
 msgid "Collection name"
 msgstr "Nom de la collection"
 
-#: app/templates/places/collection_settings.html:13
+#: app/templates/places/collection_settings.html:33
 msgid "Rename collection"
 msgstr "Renommer la collection"
 
-#: app/templates/places/collection_settings.html:14
+#: app/templates/places/collection_settings.html:34
 msgid "Add a friend"
 msgstr "Ajouter un ami"
 
-#: app/templates/places/collection_settings.html:15
+#: app/templates/places/collection_settings.html:35
 msgid "Choose a user"
 msgstr "Choisir un utilisateur"
 
-#: app/templates/places/collection_settings.html:15
+#: app/templates/places/collection_settings.html:35
 msgid "Add member"
 msgstr "Ajouter un membre"
 
-#: app/templates/places/collection_settings.html:16
+#: app/templates/places/collection_settings.html:36
 msgid "Exact email address"
 msgstr "Adresse e-mail exacte"
 
-#: app/templates/places/collection_settings.html:16
+#: app/templates/places/collection_settings.html:36
 msgid "The invitation appears when your friend signs in with this email and opens Places. It expires after 30 days. No email is sent."
 msgstr "L’invitation apparaît lorsque votre ami se connecte avec cette adresse e-mail et ouvre la rubrique Lieux. Elle expire après 30 jours. Aucun e-mail n’est envoyé."
 
-#: app/templates/places/collection_settings.html:16
+#: app/templates/places/collection_settings.html:36
 msgid "Save invitation"
 msgstr "Enregistrer l’invitation"
 
-#: app/templates/places/collection_settings.html:17
+#: app/templates/places/collection_settings.html:37
 msgid "Collection invitation link"
 msgstr "Lien d’invitation à la collection"
 
-#: app/templates/places/collection_settings.html:18
+#: app/templates/places/collection_settings.html:38
 msgid "Pending collection invitations"
 msgstr "Invitations en attente pour cette collection"
 
-#: app/templates/places/collection_settings.html:18
+#: app/templates/places/collection_settings.html:38
 msgid "Revoke invitation"
 msgstr "Révoquer l’invitation"
 
-#: app/templates/places/collection_settings.html:19
+#: app/templates/places/collection_settings.html:39
 msgid "Transfer collection"
 msgstr "Transférer la collection"
 
-#: app/templates/places/collection_settings.html:19
+#: app/templates/places/collection_settings.html:39
 msgid "New collection owner"
 msgstr "Nouveau propriétaire de la collection"
 
-#: app/templates/places/collection_settings.html:20
+#: app/templates/places/collection_settings.html:40
 msgid "Delete collection"
 msgstr "Supprimer la collection"
 
-#: app/templates/places/collection_settings.html:20
+#: app/templates/places/collection_settings.html:40
 msgid "Deleting this collection also permanently deletes its places and visits."
 msgstr "La suppression de cette collection supprime aussi définitivement ses lieux et ses visites."
 
-#: app/templates/places/collection_settings.html:20
+#: app/templates/places/collection_settings.html:40
 msgid "I confirm the permanent deletion of this collection."
 msgstr "Je confirme la suppression définitive de cette collection."
 
