@@ -442,7 +442,7 @@ jobs:
       actions: read           # required by codeql-action to upload SARIF
       contents: read          # checkout
       security-events: write  # upload SARIF results to the Security tab
-    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@32d3cd482bdadfb38b186c0ad1b031902d55d932 # v2.7.1
 
   dependency-review:
     name: Dependency review (new/changed dependencies)
@@ -738,7 +738,7 @@ jobs:
       actions: read           # required by codeql-action to upload SARIF
       contents: read          # checkout
       security-events: write  # upload SARIF results to the Security tab
-    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@32d3cd482bdadfb38b186c0ad1b031902d55d932 # v2.7.1
 
   docker-build-amd64:
     name: Build linux/amd64 image
