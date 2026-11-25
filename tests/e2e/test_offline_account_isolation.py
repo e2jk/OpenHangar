@@ -884,7 +884,9 @@ def test_a_save_refreshes_main_pages_and_outdates_the_others(
         page.locator("#oh-test-save button").click()
         page.wait_for_url("**/pilot/minimums")
         # The landing page shows the one-time message: never saved with it.
-        assert "TEST-SAVED-ONCE" in page.content()
+        # Waited for, not read at once: htmx can change the address before
+        # the new page is swapped in (a slow CI runner saw the old body).
+        page.get_by_text("TEST-SAVED-ONCE").wait_for()
         # A main page is refreshed without being opened...
         _wait_for_cached_text(page, "/pilot/logbook", "ALPHA-SAVED")
         assert "TEST-SAVED-ONCE" not in _cached_text(page, "/pilot/minimums")
