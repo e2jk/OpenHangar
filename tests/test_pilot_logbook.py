@@ -3204,11 +3204,21 @@ class TestLogbookViewRemembered:
         page = client.get(f"/pilot/logbook/{eid}/view").data.decode()
         assert 'href="/pilot/logbook"' in page
 
-    def test_show_all_remembered(self, app, client):
+    def test_show_all_is_not_remembered(self, app, client):
+        """ "All" lasts one visit: going back opens the usual page size."""
         _uid, eid = self._setup(app, client, "view4@example.com")
         client.get("/pilot/logbook?per_page=all")
         page = client.get(f"/pilot/logbook/{eid}/view").data.decode()
-        assert 'href="/pilot/logbook?per_page=all"' in page
+        assert "per_page=all" not in page
+
+    def test_show_all_is_capped(self, app, client, monkeypatch):
+        """Past the limit, "All" shows the first rows and points to the
+        export."""
+        monkeypatch.setattr("utils.SHOW_ALL_LIMIT", 1)
+        uid, _eid = self._setup(app, client, "view6@example.com")
+        _add_logbook_entry(app, uid, departure_icao="EBAW")
+        page = client.get("/pilot/logbook?per_page=all").data.decode()
+        assert "data-oh-show-all-capped" in page
 
     def test_delete_returns_to_list_view(self, app, client):
         _uid, eid = self._setup(app, client, "view5@example.com")

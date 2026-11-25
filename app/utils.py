@@ -1535,6 +1535,18 @@ def check_legacy_logbook_data() -> bool:
         return False
 
 
+# "Show all" on the logbook lists: at most this many rows in one page (a
+# lifetime of flights rendered at once froze browsers and the worker); the
+# export has them all.
+SHOW_ALL_LIMIT = 2000
+
+
+def capped_rows(query: Any) -> tuple[list[Any], bool]:
+    """The query's rows up to SHOW_ALL_LIMIT, and whether there were more."""
+    rows = query.limit(SHOW_ALL_LIMIT + 1).all()
+    return rows[:SHOW_ALL_LIMIT], len(rows) > SHOW_ALL_LIMIT
+
+
 def require_role(*roles: str) -> Callable[..., Any]:
     """Decorator: abort 403 if the current user's role is not in *roles*."""
 
