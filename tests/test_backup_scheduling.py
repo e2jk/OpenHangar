@@ -45,7 +45,11 @@ def _login_admin(app, client, email="admin@backup.test"):
         db.session.add(tenant)
         db.session.flush()
         user = User(
-            email=email, password_hash=_pw_hash.hash("testpassword123"), is_active=True
+            email=email,
+            password_hash=_pw_hash.hash("testpassword123"),
+            is_active=True,
+            # Backups, email and version checks are instance-wide.
+            is_instance_admin=True,
         )
         db.session.add(user)
         db.session.flush()

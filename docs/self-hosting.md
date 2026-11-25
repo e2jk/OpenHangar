@@ -685,6 +685,15 @@ The tenant table shows each organisation's name, creation date, number of users,
 - **Deactivate / reactivate** a tenant — deactivated tenants cannot log in; their data is preserved and can be restored at any time.
 - **Reset the admin password** of any OWNER or ADMIN user within a tenant — generates a short-lived one-time token that is displayed on screen.  No email is required; relay the token to the tenant admin out-of-band (e.g. by phone or messaging).  The token forces a password change on first use and expires after 24 hours.
 
+Settings that cover the whole instance are also the instance admin's alone, on
+the **Configuration** page: **Backup** (the backup list and "Backup now" — a
+backup holds every tenant's data), **Email** (the SMTP settings and the test
+email), **Map tiles** (the OpenAIP API key every tenant's maps use), the
+database and upload storage sizes, and the version check refresh. A tenant's
+own admins and owners don't see these sections.  In the user list, only the
+instance admin can change the instance admin's own access, and only an admin
+can change another admin's.
+
 ### Provisioning a new tenant
 
 Click **Add tenant** (or **Add a second tenant** from the Settings page if this is your first expansion) to open the create-tenant form:

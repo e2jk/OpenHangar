@@ -15,3 +15,7 @@
   edited (nor its track images, GPS parts or photos), unless you flew it.
   Re-saving your own flight after losing access to its aircraft now keeps
   it on that aircraft instead of moving it off the aircraft's log.
+- Backups, the email server settings, the OpenAIP map key, the storage
+  sizes and the version check refresh are now reserved to the instance
+  administrator: they cover every hangar of the instance, so a hangar's own
+  admins and owners no longer see or change them.

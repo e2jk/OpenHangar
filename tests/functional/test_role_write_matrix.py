@@ -267,7 +267,6 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
     # config_bp -- before_request forces ADMIN/OWNER tenant-wide except
     # notification_preferences, which is explicitly exempted in the code.
     "config.update_tenant_slug": _OWNER_ROLES,
-    "config.update_map_tiles": _OWNER_ROLES,
     "config.update_profile": _OWNER_ROLES,
     "config.data_checks_run": _OWNER_ROLES,
     "config.data_check_fix": _OWNER_ROLES,
@@ -296,6 +295,7 @@ _EXCLUDED_ENDPOINTS = {
     # (require_instance_admin), explicitly out of scope for this
     # per-tenant-role matrix.
     "config.trigger_upgrade": "require_instance_admin, not a tenant role",
+    "config.update_map_tiles": "require_instance_admin, not a tenant role",
     "config.tenant_create": "require_instance_admin, not a tenant role",
     "config.tenant_toggle_active": "require_instance_admin, not a tenant role",
     "config.tenant_reset_owner_password": "require_instance_admin, not a tenant role",
