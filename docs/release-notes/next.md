@@ -36,3 +36,7 @@
 - "Where next?" links now name the chosen passports `stamp_book=` in the
   address instead of `passport=`, which security scanners mistook for a
   password in the URL. Existing bookmarks keep working.
+- Bookings and maintenance downtimes must now start and end within ten
+  years of today. A booking saved with a far-off end date (such as
+  9999-12-31) no longer slows down or breaks the aircraft calendar and the
+  home page calendar.

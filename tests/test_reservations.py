@@ -9,6 +9,7 @@ from datetime import UTC, datetime, timedelta
 from datetime import date as _date
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
+import pytest
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AircraftBookingSettings,
@@ -122,6 +123,70 @@ def _make_reservation(
 
 
 # ── Calendar view ─────────────────────────────────────────────────────────────
+
+
+class TestFarOffDates:
+    """Bookings and downtimes are kept within ten years of today, and a long
+    one already stored costs the calendars one step per shown day."""
+
+    @pytest.mark.parametrize(
+        ("start", "end"),
+        [
+            ("2026-06-20T09:00", "9999-12-31T23:59"),
+            ("0001-01-01T00:00", "2026-06-20T11:00"),
+        ],
+    )
+    def test_booking_beyond_reach_is_refused(self, app, client, start, end):
+        uid, tid = _make_user(app, "pilot@ex.com", role=Role.PILOT)
+        ac_id = _make_aircraft(app, tid)
+        _grant_access(app, uid, ac_id)
+        _login(app, client, uid)
+        r = client.post(
+            f"/aircraft/{ac_id}/reservations/new",
+            data={"start_dt": start, "end_dt": end},
+        )
+        assert r.status_code == 200
+        assert b"Dates must be within 10 years of today." in r.data
+        with app.app_context():
+            assert Reservation.query.filter_by(aircraft_id=ac_id).count() == 0
+
+    def test_downtime_beyond_reach_is_refused(self, app, client):
+        from models import MaintenanceDowntime  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _make_user(app, "owner@ex.com")
+        ac_id = _make_aircraft(app, tid)
+        _login(app, client, uid)
+        client.post(
+            f"/aircraft/{ac_id}/downtimes/new",
+            data={"start_dt": "2026-06-20T09:00", "end_dt": "9999-12-31T23:59"},
+        )
+        with app.app_context():
+            assert MaintenanceDowntime.query.filter_by(aircraft_id=ac_id).count() == 0
+
+    def test_stored_endless_booking_and_downtime_still_render(self, app, client):
+        """Rows saved before the limit existed: the aircraft calendar and the
+        dashboard widget show the month, without walking to year 9999."""
+        from models import MaintenanceDowntime  # pyright: ignore[reportMissingImports]
+
+        uid, tid = _make_user(app, "owner@ex.com")
+        ac_id = _make_aircraft(app, tid)
+        _make_reservation(
+            app, ac_id, uid, start="2026-06-20T09:00", end="9999-12-31T23:59"
+        )
+        with app.app_context():
+            db.session.add(
+                MaintenanceDowntime(
+                    aircraft_id=ac_id,
+                    start_dt=datetime(2026, 6, 25, tzinfo=UTC),
+                    end_dt=datetime(9999, 12, 31, 23, 59, tzinfo=UTC),
+                )
+            )
+            db.session.commit()
+        _login(app, client, uid)
+        r = client.get(f"/aircraft/{ac_id}/reservations/?year=2026&month=7")
+        assert r.status_code == 200
+        r = client.get("/?cal_year=2026&cal_month=7")
+        assert r.status_code == 200
 
 
 class TestCalendarView:

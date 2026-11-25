@@ -1642,12 +1642,13 @@ def create_app() -> Flask:
             cal_day_events: dict[Any, Any] = defaultdict(
                 lambda: {"reservations": [], "flights": []}
             )
+            # Only the shown month's days of each booking: a long one costs
+            # one step per shown day, never one per day it lasts.
             for r in cal_reservations:
-                cur = r.start_dt.date()
-                end = r.end_dt.date()
+                cur = max(r.start_dt.date(), cal_month_start.date())
+                end = min(r.end_dt.date(), cal_month_end.date())
                 while cur <= end:
-                    if cur.month == cal_month and cur.year == cal_year:
-                        cal_day_events[cur]["reservations"].append(r)
+                    cal_day_events[cur]["reservations"].append(r)
                     cur += timedelta(days=1)
             for f in cal_flights:
                 cal_day_events[f.date]["flights"].append(f)
