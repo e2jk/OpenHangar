@@ -56,10 +56,62 @@
     cleanMap(root, map);
   }
 
+  function initAirfieldPicker(root) {
+    var picker = root.querySelector('#place-new-airfield');
+    if (!picker) return;
+    var query = picker.querySelector('#place-new-airfield-query');
+    var button = picker.querySelector('#place-new-airfield-search');
+    var select = picker.querySelector('#place-new-airfield-choice');
+    var status = picker.querySelector('#place-new-airfield-status');
+
+    function search() {
+      var requested = query.value.trim();
+      if (!requested || button.disabled) return;
+      button.disabled = true;
+      status.hidden = true;
+      fetch(picker.dataset.searchUrl, { method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8', 'X-CSRFToken': root.querySelector('input[name="csrf_token"]').value },
+        body: new URLSearchParams({ query: requested }).toString()
+      }).then(function (response) {
+        return response.json().then(function (data) {
+          if (!root.isConnected || query.value.trim() !== requested) return;
+          if (!response.ok) {
+            status.textContent = data.error || picker.dataset.searchError;
+            status.hidden = false;
+            return;
+          }
+          var selected = select.selectedOptions[0];
+          select.length = 1;
+          data.results.forEach(function (row) {
+            select.add(new Option((row.code ? row.code + ' — ' : '') + row.name, row.key));
+          });
+          if (selected.value) {
+            if (!Array.from(select.options).some(function (option) { return option.value === selected.value; })) select.add(selected);
+            select.value = selected.value;
+          }
+          if (!data.results.length) {
+            status.textContent = picker.dataset.noResults;
+            status.hidden = false;
+          }
+        });
+      }).catch(function () {
+        if (root.isConnected && query.value.trim() === requested) {
+          status.textContent = picker.dataset.searchError;
+          status.hidden = false;
+        }
+      }).finally(function () { button.disabled = false; });
+    }
+    button.addEventListener('click', search);
+    query.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter') { event.preventDefault(); search(); }
+    });
+  }
+
   function initEditor() {
     var root = document.getElementById('place-editor');
     if (!root || root.dataset.ohInited || typeof L === 'undefined') return;
     root.dataset.ohInited = '1';
+    initAirfieldPicker(root);
     var map = L.map('place-editor-map', { zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false }).setView([50.5, 5], 5);
     window.ohAddBaseLayers(map, null);
     var lat = root.querySelector('#place-latitude');

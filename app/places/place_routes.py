@@ -28,7 +28,7 @@ from models import (
 from services import geocoding
 from utils import db_id, is_view_only, login_required
 
-from places import airfields, management, visits
+from places import airfields, candidates, management, visits
 from places.access import (
     PlaceError,
     actor,
@@ -143,6 +143,9 @@ def save_form(
         )
         if saved.photo_filename != old_name:
             new_name = saved.photo_filename
+        airfield_key = request.form.get("airfield_key", "")
+        if place is None and airfield_key:
+            candidates.select_airfield(tid, uid, saved.id, airfield_key)
         db.session.commit()
         return redirect(url_for("places.place_detail", place_id=saved.id))
     except Exception as exc:
@@ -153,6 +156,32 @@ def save_form(
             raise
         flash(str(exc), "danger")
         return show_form(tid, uid, place, collection_id, status=400)
+
+
+@places_bp.post("/new/airfields")
+@login_required
+def new_place_airfields() -> ResponseReturnValue:
+    tid, uid = context()
+    try:
+        actor(tid, uid, writing=True)
+    except PlaceError:
+        return abort(403)
+    try:
+        rows = candidates.suggestions(
+            tid, uid, None, query=request.form.get("query", "")
+        )
+    except PlaceError:
+        return jsonify(error=_("Airfield search failed. Try again.")), 400
+    return jsonify(
+        results=[
+            {
+                "key": row["key"],
+                "code": row["icao_code"] or row["ident"],
+                "name": row["name"],
+            }
+            for row in rows[:20]
+        ]
+    )
 
 
 @places_bp.route("/new", methods=["GET", "POST"])

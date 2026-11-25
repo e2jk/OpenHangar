@@ -3292,7 +3292,7 @@ msgstr "Kies een lid van deze collectie."
 msgid "Enter valid latitude and longitude coordinates."
 msgstr "Voer een geldige breedtegraad en lengtegraad in."
 
-#: app/places/coordinates.py:104 app/places/place_routes.py:272
+#: app/places/coordinates.py:104 app/places/place_routes.py:301
 msgid "Paste decimal or DMS coordinates, or a map link containing coordinates."
 msgstr "Plak decimale coördinaten of graden, minuten en seconden, of een kaartlink met coördinaten."
 
@@ -3341,22 +3341,22 @@ msgstr "Elke bezoeker moet lid zijn van de doelcollectie. Maak anders een kopie 
 msgid "Only the place owner or collection creator can permanently delete it."
 msgstr "Alleen de eigenaar van de plaats of de maker van de collectie kan deze definitief verwijderen."
 
-#: app/places/place_routes.py:173 app/places/place_routes.py:300
+#: app/places/place_routes.py:202 app/places/place_routes.py:329
 msgid "Choose a collection you can edit."
 msgstr "Kies een collectie die je mag bewerken."
 
-#: app/places/place_routes.py:211
+#: app/places/place_routes.py:240
 #: app/templates/places/collection_settings.html:9
 #: app/templates/places/collection_settings.html:35
 #: app/templates/places/collection_settings.html:39
 msgid "Unnamed member"
 msgstr "Lid zonder naam"
 
-#: app/places/place_routes.py:237 app/places/place_routes.py:238
+#: app/places/place_routes.py:266 app/places/place_routes.py:267
 msgid "Former member"
 msgstr "Voormalig lid"
 
-#: app/places/place_routes.py:315
+#: app/places/place_routes.py:344
 msgid "Confirm the permanent deletion of this place."
 msgstr "Bevestig de definitieve verwijdering van deze plaats."
 
@@ -4757,7 +4757,7 @@ msgstr "Status"
 #: app/templates/pilots/minimums_edit.html:15
 #: app/templates/places/join_collection.html:5
 #: app/templates/places/new_collection.html:6
-#: app/templates/places/place_form.html:20
+#: app/templates/places/place_form.html:36
 #: app/templates/pwa/share_target.html:15
 #: app/templates/refuels/refuel_form.html:62
 #: app/templates/reservations/charge.html:108
@@ -7251,7 +7251,7 @@ msgstr "Rekeninguittreksel downloaden (CSV)"
 #: app/templates/expenses/expense_form.html:129
 #: app/templates/expenses/list.html:88 app/templates/passports/builder.html:18
 #: app/templates/passports/next_edition.html:12
-#: app/templates/places/place_form.html:18
+#: app/templates/places/place_form.html:34
 #: app/templates/snags/snag_form.html:37
 msgid "Description"
 msgstr "Omschrijving"
@@ -10576,6 +10576,7 @@ msgstr "Voeg plaatsen toe of maak een vliegveldpaspoort om te vinden waar je nu 
 #: app/templates/passports/vouchers.html:12
 #: app/templates/passports/vouchers.html:33
 #: app/templates/passports/vouchers.html:40
+#: app/templates/places/place_form.html:24
 msgid "Airfield"
 msgstr "Vliegveld"
 
@@ -15199,6 +15200,7 @@ msgid "%(distance)s km from this place"
 msgstr "%(distance)s km van deze plek"
 
 #: app/templates/places/_airfields.html:3 app/templates/places/index.html:32
+#: app/templates/places/place_form.html:26
 msgid "No linked airfield"
 msgstr "Geen gekoppeld vliegveld"
 
@@ -15284,6 +15286,7 @@ msgid "Add this place’s location to see nearby suggestions, or search for an a
 msgstr "Voeg de locatie van deze plek toe voor suggesties in de buurt, of zoek een vliegveld op naam of code."
 
 #: app/templates/places/airfield_links.html:12
+#: app/templates/places/place_form.html:22
 msgid "Airfield name or code"
 msgstr "Naam of code van het vliegveld"
 
@@ -15293,6 +15296,7 @@ msgstr "Zoekstraal (km)"
 
 #: app/templates/places/airfield_links.html:12
 #: app/templates/places/place_form.html:9
+#: app/templates/places/place_form.html:23
 msgid "Search"
 msgstr "Zoeken"
 
@@ -15317,6 +15321,7 @@ msgid "Showing the first 200 results. Refine the search to find another airfield
 msgstr "De eerste 200 resultaten worden getoond. Verfijn de zoekopdracht om een ander vliegveld te vinden."
 
 #: app/templates/places/airfield_links.html:13
+#: app/templates/places/place_form.html:19
 msgid "No matching airfields in this search."
 msgstr "Geen vliegvelden gevonden voor deze zoekopdracht."
 
@@ -15753,23 +15758,35 @@ msgstr "Adres (optioneel)"
 msgid "Separate tags with commas, or choose suggestions below."
 msgstr "Scheid tags met komma’s of kies uit de suggesties hieronder."
 
-#: app/templates/places/place_form.html:16
+#: app/templates/places/place_form.html:19
+msgid "Airfield search failed. Try again."
+msgstr "Het zoeken naar een vliegveld is mislukt. Probeer het opnieuw."
+
+#: app/templates/places/place_form.html:21
+msgid "Link an airfield (optional)"
+msgstr "Een vliegveld koppelen (optioneel)"
+
+#: app/templates/places/place_form.html:27
+msgid "Previously selected airfield"
+msgstr "Eerder geselecteerd vliegveld"
+
+#: app/templates/places/place_form.html:32
 msgid "Link (optional)"
 msgstr "Link (optioneel)"
 
-#: app/templates/places/place_form.html:17
+#: app/templates/places/place_form.html:33
 msgid "Save a link now and add the name, location and other details later."
 msgstr "Sla nu een link op en voeg de naam, locatie en andere details later toe."
 
-#: app/templates/places/place_form.html:19
+#: app/templates/places/place_form.html:35
 msgid "Place photo (optional)"
 msgstr "Foto van de plaats (optioneel)"
 
-#: app/templates/places/place_form.html:19
+#: app/templates/places/place_form.html:35
 msgid "Remove current photo"
 msgstr "Huidige foto verwijderen"
 
-#: app/templates/places/place_form.html:20
+#: app/templates/places/place_form.html:36
 msgid "Save place"
 msgstr "Plaats opslaan"
 

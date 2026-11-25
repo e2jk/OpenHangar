@@ -3292,7 +3292,7 @@ msgstr "Choisissez un membre de cette collection."
 msgid "Enter valid latitude and longitude coordinates."
 msgstr "Saisissez une latitude et une longitude valides."
 
-#: app/places/coordinates.py:104 app/places/place_routes.py:272
+#: app/places/coordinates.py:104 app/places/place_routes.py:301
 msgid "Paste decimal or DMS coordinates, or a map link containing coordinates."
 msgstr "Collez des coordonnées décimales ou en degrés, minutes et secondes, ou un lien de carte contenant des coordonnées."
 
@@ -3341,22 +3341,22 @@ msgstr "Chaque personne ayant enregistré une visite doit faire partie de la col
 msgid "Only the place owner or collection creator can permanently delete it."
 msgstr "Seuls le propriétaire du lieu ou la personne qui a créé la collection peuvent le supprimer définitivement."
 
-#: app/places/place_routes.py:173 app/places/place_routes.py:300
+#: app/places/place_routes.py:202 app/places/place_routes.py:329
 msgid "Choose a collection you can edit."
 msgstr "Choisissez une collection que vous pouvez modifier."
 
-#: app/places/place_routes.py:211
+#: app/places/place_routes.py:240
 #: app/templates/places/collection_settings.html:9
 #: app/templates/places/collection_settings.html:35
 #: app/templates/places/collection_settings.html:39
 msgid "Unnamed member"
 msgstr "Membre sans nom"
 
-#: app/places/place_routes.py:237 app/places/place_routes.py:238
+#: app/places/place_routes.py:266 app/places/place_routes.py:267
 msgid "Former member"
 msgstr "Ancien membre"
 
-#: app/places/place_routes.py:315
+#: app/places/place_routes.py:344
 msgid "Confirm the permanent deletion of this place."
 msgstr "Confirmez la suppression définitive de ce lieu."
 
@@ -4756,7 +4756,7 @@ msgstr "Statut"
 #: app/templates/pilots/minimums_edit.html:15
 #: app/templates/places/join_collection.html:5
 #: app/templates/places/new_collection.html:6
-#: app/templates/places/place_form.html:20
+#: app/templates/places/place_form.html:36
 #: app/templates/pwa/share_target.html:15
 #: app/templates/refuels/refuel_form.html:62
 #: app/templates/reservations/charge.html:108
@@ -7250,7 +7250,7 @@ msgstr "Télécharger le relevé (CSV)"
 #: app/templates/expenses/expense_form.html:129
 #: app/templates/expenses/list.html:88 app/templates/passports/builder.html:18
 #: app/templates/passports/next_edition.html:12
-#: app/templates/places/place_form.html:18
+#: app/templates/places/place_form.html:34
 #: app/templates/snags/snag_form.html:37
 msgid "Description"
 msgstr "Description"
@@ -10575,6 +10575,7 @@ msgstr "Ajoutez des lieux ou créez un passeport d’aérodromes pour trouver o�
 #: app/templates/passports/vouchers.html:12
 #: app/templates/passports/vouchers.html:33
 #: app/templates/passports/vouchers.html:40
+#: app/templates/places/place_form.html:24
 msgid "Airfield"
 msgstr "Aérodrome"
 
@@ -15198,6 +15199,7 @@ msgid "%(distance)s km from this place"
 msgstr "À %(distance)s km de ce lieu"
 
 #: app/templates/places/_airfields.html:3 app/templates/places/index.html:32
+#: app/templates/places/place_form.html:26
 msgid "No linked airfield"
 msgstr "Aucun aérodrome associé"
 
@@ -15283,6 +15285,7 @@ msgid "Add this place’s location to see nearby suggestions, or search for an a
 msgstr "Ajoutez la localisation de ce lieu pour voir les suggestions à proximité, ou recherchez un aérodrome par nom ou par code."
 
 #: app/templates/places/airfield_links.html:12
+#: app/templates/places/place_form.html:22
 msgid "Airfield name or code"
 msgstr "Nom ou code de l’aérodrome"
 
@@ -15292,6 +15295,7 @@ msgstr "Rayon de recherche (km)"
 
 #: app/templates/places/airfield_links.html:12
 #: app/templates/places/place_form.html:9
+#: app/templates/places/place_form.html:23
 msgid "Search"
 msgstr "Rechercher"
 
@@ -15316,6 +15320,7 @@ msgid "Showing the first 200 results. Refine the search to find another airfield
 msgstr "Les 200 premiers résultats sont affichés. Affinez la recherche pour trouver un autre aérodrome."
 
 #: app/templates/places/airfield_links.html:13
+#: app/templates/places/place_form.html:19
 msgid "No matching airfields in this search."
 msgstr "Aucun aérodrome ne correspond à cette recherche."
 
@@ -15752,23 +15757,35 @@ msgstr "Adresse (facultative)"
 msgid "Separate tags with commas, or choose suggestions below."
 msgstr "Séparez les étiquettes par des virgules ou choisissez parmi les suggestions ci-dessous."
 
-#: app/templates/places/place_form.html:16
+#: app/templates/places/place_form.html:19
+msgid "Airfield search failed. Try again."
+msgstr "La recherche d’aérodrome a échoué. Réessayez."
+
+#: app/templates/places/place_form.html:21
+msgid "Link an airfield (optional)"
+msgstr "Associer un aérodrome (facultatif)"
+
+#: app/templates/places/place_form.html:27
+msgid "Previously selected airfield"
+msgstr "Aérodrome sélectionné précédemment"
+
+#: app/templates/places/place_form.html:32
 msgid "Link (optional)"
 msgstr "Lien (facultatif)"
 
-#: app/templates/places/place_form.html:17
+#: app/templates/places/place_form.html:33
 msgid "Save a link now and add the name, location and other details later."
 msgstr "Enregistrez un lien maintenant, puis ajoutez le nom, la localisation et les autres détails plus tard."
 
-#: app/templates/places/place_form.html:19
+#: app/templates/places/place_form.html:35
 msgid "Place photo (optional)"
 msgstr "Photo du lieu (facultative)"
 
-#: app/templates/places/place_form.html:19
+#: app/templates/places/place_form.html:35
 msgid "Remove current photo"
 msgstr "Retirer la photo actuelle"
 
-#: app/templates/places/place_form.html:20
+#: app/templates/places/place_form.html:36
 msgid "Save place"
 msgstr "Enregistrer le lieu"
 

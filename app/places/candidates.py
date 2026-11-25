@@ -88,12 +88,12 @@ def distance_to(place: Place, field: dict[str, Any]) -> float | None:
 def suggestions(
     tenant_id: int,
     user_id: int,
-    place_id: int,
+    place_id: int | None,
     *,
     query: str = "",
     radius_km: float = 15,
 ) -> list[dict[str, Any]]:
-    place = place_access(tenant_id, user_id, place_id)
+    place = place_access(tenant_id, user_id, place_id) if place_id is not None else None
     if not math.isfinite(radius_km) or not 0 < radius_km <= 200:
         raise PlaceError(
             _("Choose a search radius greater than zero and at most 200 km.")
@@ -101,7 +101,7 @@ def suggestions(
     if len(query) > 200:
         raise PlaceError(_("Use a search of at most 200 characters."))
     words = query.casefold().split()
-    if not words and place.latitude is None:
+    if not words and (place is None or place.latitude is None):
         return []
     rows = []
     for row in available_airfields(tenant_id, user_id).values():
@@ -118,7 +118,7 @@ def suggestions(
             )
         ):
             continue
-        distance = distance_to(place, row)
+        distance = distance_to(place, row) if place is not None else None
         if not words and (distance is None or distance > radius_km):
             continue
         rows.append({**row, "distance_km": distance})

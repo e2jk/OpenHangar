@@ -13,6 +13,22 @@
 <div class="row mb-3"><div class="col-sm-6"><label class="form-label" for="place-latitude">{{ _('Latitude') }}</label><input class="form-control" type="number" step="any" min="-90" max="90" name="latitude" id="place-latitude" value="{{ values.get('latitude', '') }}"></div><div class="col-sm-6"><label class="form-label" for="place-longitude">{{ _('Longitude') }}</label><input class="form-control" type="number" step="any" min="-180" max="180" name="longitude" id="place-longitude" value="{{ values.get('longitude', '') }}"></div></div>
 <div class="mb-3"><label for="place-address" class="form-label">{{ _('Address (optional)') }}</label><input class="form-control" id="place-address" name="address" maxlength="500" value="{{ values.get('address', '') }}"></div>
 <div class="mb-3"><label for="place-tags" class="form-label">{{ _('Tags') }}</label><input class="form-control" id="place-tags" name="tags" value="{{ tags }}"><p class="form-text">{{ _('Separate tags with commas, or choose suggestions below.') }}</p>{% for tag in suggested_tags %}<label class="form-check-label me-3 mb-2"><input class="form-check-input" type="checkbox" name="starter_tags" value="{{ tag }}" {{ 'checked' if tag in request.form.getlist('starter_tags') else '' }}> {{ tag }}</label>{% endfor %}</div>
+{% if not place %}
+{% set selected_airfield = request.form.get('airfield_key', '') %}
+<details class="card card-body mb-3" id="place-new-airfield" data-search-url="{{ url_for('places.new_place_airfields') }}"
+         data-no-results="{{ _('No matching airfields in this search.') }}" data-search-error="{{ _('Airfield search failed. Try again.') }}"
+         {% if selected_airfield %}open{% endif %}>
+  <summary>{{ _('Link an airfield (optional)') }}</summary>
+  <label class="form-label mt-2" for="place-new-airfield-query">{{ _('Airfield name or code') }}</label>
+  <div class="input-group mb-2"><input class="form-control" id="place-new-airfield-query" maxlength="200" autocomplete="off"><button class="btn btn-ac-ghost" type="button" id="place-new-airfield-search">{{ _('Search') }}</button></div>
+  <label class="form-label" for="place-new-airfield-choice">{{ _('Airfield') }}</label>
+  <select class="form-select" id="place-new-airfield-choice" name="airfield_key">
+    <option value="">{{ _('No linked airfield') }}</option>
+    {% if selected_airfield %}<option value="{{ selected_airfield }}" selected>{{ _('Previously selected airfield') }}</option>{% endif %}
+  </select>
+  <p class="form-text mb-0" id="place-new-airfield-status" role="status" hidden></p>
+</details>
+{% endif %}
 <div class="mb-3"><label for="place-website" class="form-label">{{ _('Link (optional)') }}</label><input class="form-control" type="url" id="place-website" name="external_url" maxlength="2048" value="{{ values.get('external_url', '') }}"></div>
 <p class="form-text">{{ _('Save a link now and add the name, location and other details later.') }}</p>
 <div class="mb-3"><label for="place-description" class="form-label">{{ _('Description') }}</label><textarea class="form-control" id="place-description" name="description" rows="4" maxlength="8000">{{ values.get('description', '') }}</textarea></div>
