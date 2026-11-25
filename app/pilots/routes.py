@@ -2960,8 +2960,17 @@ def _pilot_confirm_segment(
         # A candidate picker was rendered — respect the human's explicit
         # choice (including "none of these", submitted as "") instead of
         # always falling back to the top-scored candidate.
-        picked = form.get("matched_flight_id", "")
-        matched_flight_id = int(picked) if picked.strip().isdigit() else None
+        # Only a flight the picker offered (computed server-side for this
+        # pilot) can be chosen: any other id is treated as "none of these".
+        picked = form.get("matched_flight_id", "").strip()
+        matched_flight_id = next(
+            (
+                c["id"]
+                for c in seg.get("matched_candidates") or []
+                if str(c["id"]) == picked
+            ),
+            None,
+        )
     else:
         matched_flight_id = seg.get("matched_flight_id")
     entry: Flight | None = None

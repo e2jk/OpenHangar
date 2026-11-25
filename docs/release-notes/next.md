@@ -9,3 +9,5 @@
   access. Revoking someone's access to a hangar now removes that membership
   only: an account that still belongs to another hangar (for example
   someone who joined a passport group) keeps working there.
+- The pilot GPS import only links a track to one of the flights it offered
+  in the "select the matching flight" list.
