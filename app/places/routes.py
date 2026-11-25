@@ -26,7 +26,13 @@ from models import (
     User,
     db,
 )
-from utils import current_membership, db_id, list_index, login_required
+from utils import (
+    current_membership,
+    db_id,
+    is_view_only,
+    list_index,
+    login_required,
+)
 
 from places import airfields, collections, sharing, tags
 from places.access import PlaceError, actor, collection_access, collections_for_user
@@ -61,8 +67,8 @@ def context() -> tuple[int, int]:
 @login_required
 def index() -> ResponseReturnValue:
     tid, uid = context()
-    user = actor(tid, uid)
-    if not user.view_only:
+    actor(tid, uid)
+    if not is_view_only(uid, tid):
         collections.personal_collection(tid, uid)
         db.session.commit()
     collection_id = request.args.get("collection", type=db_id)
@@ -96,7 +102,7 @@ def index() -> ResponseReturnValue:
                 tenant_id=tid, user_id=uid, can_edit=True
             )
         }
-        if not user.view_only
+        if not is_view_only(uid, tid)
         else set()
     )
     return render_template(
@@ -125,7 +131,7 @@ def index() -> ResponseReturnValue:
         collections=choices,
         selected=collection_id,
         invitations=invitations,
-        can_create=not user.view_only,
+        can_create=not is_view_only(uid, tid),
     )
 
 
@@ -176,7 +182,7 @@ def settings_context(tid: int, uid: int, cid: int) -> dict[str, Any]:
         .all()
     )
     membership = current_membership()
-    can_manage = not user.view_only and (
+    can_manage = not is_view_only(uid, tid) and (
         collection.created_by_user_id == uid or user.is_instance_admin
     )
     organisation_access = membership is not None and membership.access_scope == "full"
@@ -206,7 +212,7 @@ def settings_context(tid: int, uid: int, cid: int) -> dict[str, Any]:
         .all(),
         "can_edit": own_member is not None
         and own_member.can_edit
-        and not user.view_only,
+        and not is_view_only(uid, tid),
         "can_leave": own_member is not None and collection.created_by_user_id != uid,
         "collection": collection,
         "members": members,

@@ -36,6 +36,7 @@ from services.gps_removal import (  # pyright: ignore[reportMissingImports]
     restore,
 )
 
+from tests.auth_helpers import set_membership_flags
 from tests.test_gps_import import (  # pyright: ignore[reportMissingImports]
     _login,
     _make_user_and_aircraft,
@@ -559,8 +560,7 @@ class TestFlightPageAndRoutes:
             session["user_id"] = viewer_id
             with app.app_context():
                 assert gps_editable(db.session.get(Flight, fid)) is False
-                viewer = db.session.get(User, viewer_id)
-                viewer.is_pilot = True
+                set_membership_flags(viewer_id, is_pilot=True)
                 db.session.commit()
                 assert gps_editable(db.session.get(Flight, fid)) is True
 

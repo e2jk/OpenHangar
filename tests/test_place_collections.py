@@ -41,6 +41,8 @@ from places.collections import (
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Query
 
+from tests.auth_helpers import set_membership_flags
+
 
 @pytest.fixture
 def people(app: Flask) -> dict[str, int]:
@@ -190,11 +192,11 @@ def test_collection_permissions_never_follow_role_or_admin_visibility(
             with pytest.raises(PlaceError):
                 rename(t, u, c.id, value)
         user = db.session.get(User, u)
-        user.view_only = True
+        set_membership_flags(u, view_only=True)
         assert actor(t, u).id == u
         with pytest.raises(PlaceError):
             actor(t, u, writing=True)
-        user.view_only = False
+        set_membership_flags(u, view_only=False)
         user.is_active = False
         with pytest.raises(PlaceError):
             actor(t, u)

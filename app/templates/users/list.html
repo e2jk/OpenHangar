@@ -114,17 +114,17 @@
                   hx-swap="innerHTML show:none" data-scroll-anchor="user-row-{{ tu.user_id }}">
               <div class="form-check mb-0">
                 <input class="form-check-input" type="checkbox" name="is_pilot" id="fp_{{ tu.user_id }}"
-                       {% if tu.user.is_pilot %}checked{% endif %} data-auto-submit>
+                       {% if tu.is_pilot %}checked{% endif %} data-auto-submit>
                 <label class="form-check-label oh-fs-082" for="fp_{{ tu.user_id }}">{{ _('Pilot') }}</label>
               </div>
               <div class="form-check mb-0">
                 <input class="form-check-input" type="checkbox" name="is_maintenance" id="fm_{{ tu.user_id }}"
-                       {% if tu.user.is_maintenance %}checked{% endif %} data-auto-submit>
+                       {% if tu.is_maintenance %}checked{% endif %} data-auto-submit>
                 <label class="form-check-label oh-fs-082" for="fm_{{ tu.user_id }}">{{ _('Maintenance') }}</label>
               </div>
               <div class="form-check mb-0">
                 <input class="form-check-input" type="checkbox" name="view_only" id="fv_{{ tu.user_id }}"
-                       {% if tu.user.view_only %}checked{% endif %} data-auto-submit>
+                       {% if tu.view_only %}checked{% endif %} data-auto-submit>
                 <label class="form-check-label oh-fs-082" for="fv_{{ tu.user_id }}">{{ _('View only') }}</label>
               </div>
             </form>

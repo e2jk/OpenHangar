@@ -39,7 +39,7 @@ def start_logbook() -> ResponseReturnValue:
     allowed = (
         self_start_allowed(membership.tenant_id)
         and user is not None
-        and not user.view_only
+        and not membership.view_only
     )
     error = None
     if request.method == "POST":

@@ -21,6 +21,7 @@ from passports.eligibility import passport_progress
 from passports.management import BuilderError
 from sqlalchemy.exc import IntegrityError
 
+from tests.auth_helpers import set_membership_flags
 from tests.test_passport_groups import group
 from tests.test_passport_management import owner
 
@@ -189,7 +190,7 @@ def test_no_foreign_group_private_linked_field_or_tenant_access(
             with pytest.raises(BuilderError) as missing:
                 comments.context(tid, s["user"], sid, fid)
             assert missing.value.status == 404
-        db.session.get(User, s["other"]).view_only = True
+        set_membership_flags(s["other"], view_only=True)
         db.session.commit()
         with pytest.raises(BuilderError) as readonly:
             post(s, s["other"])

@@ -25,7 +25,7 @@ from models import (
 from services import auth_challenges
 from services import capability_tokens as tokens
 from sqlalchemy.exc import OperationalError
-from utils import as_utc
+from utils import as_utc, is_view_only
 
 from passports import groups, vouchers
 from passports.management import BuilderError, owned_passport, require_actor
@@ -225,7 +225,7 @@ def join(
     passport = groups.lock_passport(passport)
     lookup_hash(token_hash, passport_id=passport.id)
     user = db.session.get(User, user_id, populate_existing=True)
-    if user is None or not user.is_active or user.view_only:
+    if user is None or not user.is_active or is_view_only(user_id, passport.tenant_id):
         raise BuilderError(_("You cannot manage passports with this account."), 403)
     if (
         auth_challenges.requires_totp(user, tenant_id=passport.tenant_id)

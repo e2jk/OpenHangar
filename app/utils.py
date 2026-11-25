@@ -1568,22 +1568,33 @@ def require_pilot_access(f: Callable[..., Any]) -> Callable[..., Any]:
 
 def has_pilot_access() -> bool:
     """Whether the signed-in user has pilot access (see require_pilot_access)."""
-    from models import Role, User, db
+    from models import Role
 
     role = current_user_role()
     if role in (Role.ADMIN, Role.OWNER, Role.PILOT, Role.STUDENT, Role.INSTRUCTOR):
         return True
     membership = current_membership()
-    if membership is not None and membership.access_scope != "full":
-        # Restricted accounts never inherit the global is_pilot flag; a
+    if membership is None:
+        return False
+    if membership.access_scope != "full":
+        # Restricted accounts never get the is_pilot flag's access; a
         # personal logbook grants only its allowlisted own-entry pages.
         return bool(membership.access_scope == "logbook")
-    uid = session.get("user_id")
-    if uid:
-        user = db.session.get(User, uid)
-        if user and user.is_pilot:
-            return True
-    return False
+    return bool(membership.is_pilot)
+
+
+def is_view_only(user_id: int, tenant_id: int | None) -> bool:
+    """Whether this hangar's admins made the user read-only in it.
+
+    The flag belongs to the membership: another hangar the account belongs to
+    neither sets it nor inherits it. No membership there: not read-only.
+    """
+    from models import TenantUser, db
+
+    if tenant_id is None:
+        return False
+    membership = db.session.get(TenantUser, (user_id, tenant_id))
+    return bool(membership is not None and membership.view_only)
 
 
 def require_maint_access(f: Callable[..., Any]) -> Callable[..., Any]:
@@ -1595,16 +1606,18 @@ def require_maint_access(f: Callable[..., Any]) -> Callable[..., Any]:
 
     @functools.wraps(f)
     def decorated(*args: Any, **kwargs: Any) -> Any:
-        from models import Role, User, db
+        from models import Role
 
         role = current_user_role()
         if role in (Role.ADMIN, Role.OWNER, Role.MAINTENANCE, Role.INSTRUCTOR):
             return f(*args, **kwargs)
-        uid = session.get("user_id")
-        if uid:
-            user = db.session.get(User, uid)
-            if user and user.is_maintenance:
-                return f(*args, **kwargs)
+        membership = current_membership()
+        if (
+            membership is not None
+            and membership.access_scope == "full"
+            and membership.is_maintenance
+        ):
+            return f(*args, **kwargs)
         return abort(403)
 
     return decorated
@@ -1628,7 +1641,7 @@ def tenant_pilots(tenant_id: int) -> list[tuple[int, str]]:
         .join(TenantUser, TenantUser.user_id == User.id)
         .filter(TenantUser.tenant_id == tenant_id, TenantUser.access_scope == "full")
         .filter(User.is_active.is_(True))
-        .filter(or_(TenantUser.role.in_(pilot_roles), User.is_pilot.is_(True)))
+        .filter(or_(TenantUser.role.in_(pilot_roles), TenantUser.is_pilot.is_(True)))
         .all()
     )
     name_counts: dict[str, int] = defaultdict(int)
