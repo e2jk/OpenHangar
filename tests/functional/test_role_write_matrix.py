@@ -90,6 +90,8 @@ _ANY_ROLE = set(ALL_ROLES)  # login_required only, no role gate
 ENDPOINT_TABLE: dict[str, set[str]] = {
     # Collection rights are checked after login, independently of aviation roles.
     "places.new_place": _ANY_ROLE,
+    "places.new_place_airfields": _ANY_ROLE,
+    "places.bulk_move": _ANY_ROLE,
     "places.edit_place": _ANY_ROLE,
     "places.place_action": _ANY_ROLE,
     "places.coordinates": _ANY_ROLE,
