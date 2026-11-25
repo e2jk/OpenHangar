@@ -3283,8 +3283,8 @@ msgstr "La personne qui a créé la collection doit conserver les droits de modi
 msgid "The creator must transfer or delete the collection before leaving."
 msgstr "La personne qui a créé la collection doit la transférer ou la supprimer avant de la quitter."
 
-#: app/places/collections.py:201 app/places/routes.py:237
-#: app/places/routes.py:243 app/places/routes.py:250
+#: app/places/collections.py:201 app/places/routes.py:269
+#: app/places/routes.py:275 app/places/routes.py:282
 msgid "Choose a member of this collection."
 msgstr "Choisissez un membre de cette collection."
 
@@ -3360,19 +3360,23 @@ msgstr "Ancien membre"
 msgid "Confirm the permanent deletion of this place."
 msgstr "Confirmez la suppression définitive de ce lieu."
 
-#: app/places/routes.py:261
+#: app/places/routes.py:159
+msgid "Select places and a destination collection."
+msgstr "Sélectionnez des lieux et une collection de destination."
+
+#: app/places/routes.py:293
 msgid "Invitation saved. Ask your friend to sign in and open Places."
 msgstr "Invitation enregistrée. Demandez à votre ami de se connecter et d’ouvrir la rubrique Lieux."
 
-#: app/places/routes.py:267 app/places/sharing.py:74 app/places/sharing.py:98
+#: app/places/routes.py:299 app/places/sharing.py:74 app/places/sharing.py:98
 msgid "Invitation not found or expired."
 msgstr "Invitation introuvable ou expirée."
 
-#: app/places/routes.py:272 app/places/tags.py:29 app/places/tags.py:62
+#: app/places/routes.py:304 app/places/tags.py:29 app/places/tags.py:62
 msgid "Tag not found."
 msgstr "Étiquette introuvable."
 
-#: app/places/routes.py:288
+#: app/places/routes.py:320
 msgid "Review the collection totals and confirm its deletion."
 msgstr "Vérifiez le nombre de lieux et de visites de la collection, puis confirmez sa suppression."
 
@@ -7138,7 +7142,7 @@ msgstr[1] "%(n)s composants"
 #: app/templates/passports/print.html:19 app/templates/passports/series.html:10
 #: app/templates/passports/series.html:28
 #: app/templates/passports/vouchers.html:10 app/templates/places/index.html:12
-#: app/templates/places/index.html:14 app/templates/places/place_detail.html:9
+#: app/templates/places/index.html:32 app/templates/places/place_detail.html:9
 msgid "Archived"
 msgstr "Archivé"
 
@@ -13092,7 +13096,7 @@ msgstr "Visité par vous"
 #: app/templates/passports/record_visit.html:14
 #: app/templates/passports/series.html:17
 #: app/templates/passports/series.html:19 app/templates/passports/target.html:9
-#: app/templates/places/index.html:12 app/templates/places/index.html:14
+#: app/templates/places/index.html:12 app/templates/places/index.html:32
 msgid "Visited"
 msgstr "Visité"
 
@@ -15188,7 +15192,7 @@ msgstr "Préféré"
 msgid "%(distance)s km from this place"
 msgstr "À %(distance)s km de ce lieu"
 
-#: app/templates/places/_airfields.html:3 app/templates/places/index.html:14
+#: app/templates/places/_airfields.html:3 app/templates/places/index.html:32
 msgid "No linked airfield"
 msgstr "Aucun aérodrome associé"
 
@@ -15508,7 +15512,7 @@ msgstr "Corbeille"
 msgid "My visits"
 msgstr "Mes visites"
 
-#: app/templates/places/index.html:12 app/templates/places/index.html:14
+#: app/templates/places/index.html:12 app/templates/places/index.html:32
 msgid "Not yet visited"
 msgstr "Pas encore visité"
 
@@ -15536,7 +15540,7 @@ msgstr "Dernière visite"
 msgid "Location"
 msgstr "Localisation"
 
-#: app/templates/places/index.html:12 app/templates/places/index.html:14
+#: app/templates/places/index.html:12 app/templates/places/index.html:32
 #: app/templates/places/place_detail.html:19
 msgid "Location still to add"
 msgstr "Localisation à ajouter"
@@ -15561,31 +15565,52 @@ msgstr "Sans aérodrome associé"
 msgid "Places in the bin are permanently deleted after 30 days. Any editor can restore them before then."
 msgstr "Les lieux dans la corbeille sont supprimés définitivement après 30 jours. Tout membre disposant des droits de modification peut les restaurer avant ce délai."
 
-#: app/templates/places/index.html:14 app/templates/places/place_detail.html:16
+#: app/templates/places/index.html:22
+msgid "Move to another collection"
+msgstr "Déplacer vers une autre collection"
+
+#: app/templates/places/index.html:25 app/templates/places/place_detail.html:23
+msgid "Destination collection"
+msgstr "Collection de destination"
+
+#: app/templates/places/index.html:27
+msgid "Choose a collection"
+msgstr "Choisir une collection"
+
+#: app/templates/places/index.html:29
+msgid "Move"
+msgstr "Déplacer"
+
+#: app/templates/places/index.html:32
+#, python-format
+msgid "Select %(place)s"
+msgstr "Sélectionner %(place)s"
+
+#: app/templates/places/index.html:32 app/templates/places/place_detail.html:16
 msgid "Place photo"
 msgstr "Photo du lieu"
 
-#: app/templates/places/index.html:14
+#: app/templates/places/index.html:32
 msgid "Restore place"
 msgstr "Restaurer le lieu"
 
-#: app/templates/places/index.html:14 app/templates/places/place_detail.html:24
+#: app/templates/places/index.html:32 app/templates/places/place_detail.html:24
 msgid "I confirm the permanent deletion of this place and its visits."
 msgstr "Je confirme la suppression définitive de ce lieu et de ses visites."
 
-#: app/templates/places/index.html:14 app/templates/places/place_detail.html:24
+#: app/templates/places/index.html:32 app/templates/places/place_detail.html:24
 msgid "Permanently delete place"
 msgstr "Supprimer définitivement le lieu"
 
-#: app/templates/places/index.html:14
+#: app/templates/places/index.html:32
 msgid "No places in this view yet."
 msgstr "Aucun lieu dans cette vue pour le moment."
 
-#: app/templates/places/index.html:15
+#: app/templates/places/index.html:33
 msgid "Download GPX"
 msgstr "Télécharger le fichier GPX"
 
-#: app/templates/places/index.html:15
+#: app/templates/places/index.html:33
 msgid "Download KML"
 msgstr "Télécharger le fichier KML"
 
@@ -15641,10 +15666,6 @@ msgstr "Mettre à la corbeille"
 #: app/templates/places/place_detail.html:23
 msgid "Copy or move"
 msgstr "Copier ou déplacer"
-
-#: app/templates/places/place_detail.html:23
-msgid "Destination collection"
-msgstr "Collection de destination"
 
 #: app/templates/places/place_detail.html:23
 msgid "Copy place"

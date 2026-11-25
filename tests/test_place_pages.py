@@ -577,3 +577,43 @@ def test_explore_menu_lists_where_next_places_then_passports(
     passports = menu.index('href="/passports/"')
     assert where_next < places < passports
     assert '<li class="nav-item"><a class="nav-link" href="/passports/"' not in page
+
+
+def test_bulk_move_is_atomic_and_keeps_existing_move_permissions(
+    app: Flask,
+    client: FlaskClient,
+    people: dict[str, int],
+    destinations: dict[str, int],
+) -> None:
+    d = destinations
+    signin(client, people)
+    assert "Move to another collection" in client.get("/places/").text
+    assert (
+        client.post("/places/move", data={"target": d["destination"]}).status_code
+        == 302
+    )
+    for ids in (
+        [d["alpha"], "invalid"],
+        [d["alpha"], d["bravo"]],
+        [d["alpha"], d["private"]],
+    ):
+        assert (
+            client.post(
+                "/places/move", data={"target": d["destination"], "place": ids}
+            ).location
+            == "/places/"
+        )
+        with app.app_context():
+            assert db.session.get(Place, d["alpha"]).collection_id == d["collection"]
+
+    with app.app_context():
+        PlaceVisit.query.filter_by(place_id=d["bravo"]).delete()
+        db.session.commit()
+    response = client.post(
+        "/places/move",
+        data={"target": d["destination"], "place": [d["alpha"], d["bravo"]]},
+    )
+    assert response.location == f"/places/?collection={d['destination']}"
+    with app.app_context():
+        assert db.session.get(Place, d["alpha"]).collection_id == d["destination"]
+        assert db.session.get(Place, d["bravo"]).collection_id == d["destination"]
