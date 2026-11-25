@@ -429,7 +429,10 @@ def _parse_gpx(data: bytes, filename: str) -> ParsedGpsFile:
         hint_dep, hint_arr = _extract_icao_hints(name_el.text)
 
     points: list[tuple[float, float, float, float | None, datetime]] = []
-    for trkpt in root.findall(f".//{q('trkpt')}"):
+    for seen, trkpt in enumerate(root.findall(f".//{q('trkpt')}"), start=1):
+        # Every point element counts, kept or not: points without a usable
+        # time are still read and checked one by one.
+        _check_point_budget(seen)
         try:
             lat = float(trkpt.get("lat", ""))
             lon = float(trkpt.get("lon", ""))
@@ -455,7 +458,6 @@ def _parse_gpx(data: bytes, filename: str) -> ParsedGpsFile:
             continue
 
         points.append((lat, lon, alt_m, speed_kt, utc_dt))
-        _check_point_budget(len(points))
 
     points = _drop_bad_fixes(points)
     # GPX 1.1 has no speed element: many writers (e.g. ExifTool exporting

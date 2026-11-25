@@ -33,3 +33,6 @@
   rows than an import takes, are now refused or read without exhausting the
   server's memory (maintenance programme, pilot logbook and airframe log
   imports).
+- GPS files attached on the flight form are now limited to 20 MB, like the
+  GPS imports, and every point of a GPX file counts toward the per-file
+  point limit, so a crafted track can no longer exhaust the server's memory.

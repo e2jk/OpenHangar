@@ -234,6 +234,23 @@ class TestGpsPointBudget:
         ):
             gps_import.parse_gps_file(data, name)
 
+    def test_gpx_points_without_a_time_count_too(self, app, monkeypatch):
+        """Points without a usable time are skipped, but still read: they
+        count against the budget like the others."""
+        from aircraft import gps_import
+
+        monkeypatch.setattr(gps_import, "_MAX_POINTS_PER_FILE", 5)
+        points = '<trkpt lat="50.1" lon="4.1"/>' * 10
+        data = (
+            '<gpx xmlns="http://www.topografix.com/GPX/1/1"><trk><trkseg>'
+            f"{points}</trkseg></trk></gpx>"
+        ).encode()
+        with (
+            app.test_request_context(),
+            pytest.raises(ValueError, match="too many points"),
+        ):
+            gps_import.parse_gps_file(data, "track.gpx")
+
 
 class TestRoutes:
     def test_pilot_import_refuses_a_bomb_with_a_message(self, app, client, no_openpyxl):
