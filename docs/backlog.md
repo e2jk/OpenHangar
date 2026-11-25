@@ -1141,8 +1141,6 @@ passports.
   passports both.
 
 **Places list**
-- Add the same spacing between "All collections" and the first collection
-  button as between the buttons on the line above.
 - On large screens, show two place cards per row instead of one column
   filling only the left half.
 - In a card: add space between the place's name and the "no airfield" pill;
