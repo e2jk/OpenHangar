@@ -1364,6 +1364,12 @@ def activity(event: str, **fields: object) -> None:
     _alog.info(" ".join(parts))
 
 
+def _converter_tenant_id() -> int | None:
+    """The signed-in user's hangar while URLs are matched (None otherwise)."""
+    membership = current_membership() if session.get("user_id") else None
+    return int(membership.tenant_id) if membership is not None else None
+
+
 class AircraftRefConverter(BaseConverter):
     """URL converter for the ``aircraft_id`` slot: accepts either the numeric
     primary key (unchanged, always works) or the aircraft's registration
@@ -1401,7 +1407,12 @@ class AircraftRefConverter(BaseConverter):
                 )
                 == needle
             )
-            .order_by(Aircraft.id)
+            # The same registration can exist in several hangars (each demo
+            # slot has OO-PNH): the signed-in user's own hangar comes first.
+            .order_by(
+                db.case((Aircraft.tenant_id == _converter_tenant_id(), 0), else_=1),
+                Aircraft.id,
+            )
             .first()
         )
         if ac is None:

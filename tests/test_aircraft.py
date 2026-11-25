@@ -1085,3 +1085,41 @@ class TestQuickAddComponents:
             from models import Component
 
             assert Component.query.filter_by(aircraft_id=ac_id).count() == 2
+
+
+def test_a_registration_url_opens_the_aircraft_of_your_own_hangar(app, client):
+    """The same registration in two hangars (demo slots): a registration
+    link resolves to the signed-in user's own aircraft."""
+    import pw_hash  # pyright: ignore[reportMissingImports]
+    from models import Aircraft, Role, Tenant, TenantUser, User, db  # pyright: ignore[reportMissingImports]
+
+    with app.app_context():
+        ids = []
+        for n in (1, 2):
+            tenant = Tenant(name=f"Hangar {n}")
+            db.session.add(tenant)
+            db.session.flush()
+            ac = Aircraft(
+                tenant_id=tenant.id,
+                registration="OO-DUP",
+                make="X",
+                model=f"Uniquemodel{n}x",
+            )
+            user = User(
+                email=f"own{n}@example.com",
+                password_hash=pw_hash.hash("x"),
+                is_active=True,
+            )
+            db.session.add_all([ac, user])
+            db.session.flush()
+            db.session.add(
+                TenantUser(user_id=user.id, tenant_id=tenant.id, role=Role.OWNER)
+            )
+            ids.append(user.id)
+        db.session.commit()
+    with client.session_transaction() as sess:
+        sess["user_id"] = ids[1]
+    resp = client.get("/aircraft/OO-DUP")
+    assert resp.status_code == 200
+    page = resp.data.decode()
+    assert "Uniquemodel2x" in page and "Uniquemodel1x" not in page
