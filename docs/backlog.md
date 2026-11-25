@@ -1150,9 +1150,6 @@ passports.
 
 **Add-place form** (the usual flow: type the name into the address search,
 pick the first result, check the map — often zooming out — add a tag)
-- Reorder to follow that flow: nudge to search first, keep the name near the
-  top (it is filled from the chosen result and rarely changed); link,
-  description and photo further down.
 - Open the map less zoomed in.
 - Make it clear the search takes an address or coordinates, and let the
   coordinate fields below the map be typed into directly, moving the map —
