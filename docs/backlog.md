@@ -1124,5 +1124,3 @@ date. Left:
 
 - capture time as context for counter-photo OCR (backlog "Logbook: OCR
   auto-fill from counter photos").
-
----

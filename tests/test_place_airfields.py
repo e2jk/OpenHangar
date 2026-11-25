@@ -6,13 +6,14 @@ from typing import Any
 import pytest
 from flask import Flask
 from flask.testing import FlaskClient
-from models import PassportAirfieldIdentity, Place, PlaceAirfield, PlaceVisit, User, db
+from models import PassportAirfieldIdentity, Place, PlaceAirfield, PlaceVisit, db
 from places.access import PlaceError
 from places.airfields import add_link, linked_airfields, remove_link, update_link
 from places.collections import create_collection, set_member
 from places.management import copy_place, move_place, save_place
 from sqlalchemy.exc import IntegrityError
 
+from tests.auth_helpers import set_membership_flags
 from tests.test_place_collections import people
 from tests.test_place_management import form
 from tests.test_place_sharing import signin
@@ -316,6 +317,6 @@ def test_new_place_can_search_and_link_an_airfield_atomically(
     with app.app_context():
         place = Place.query.filter_by(title="New destination").one()
         assert db.session.get(PlaceAirfield, (place.id, links["field"])) is not None
-        db.session.get(User, people["creator"]).view_only = True
+        set_membership_flags(people["creator"], view_only=True)
         db.session.commit()
     assert client.post(lookup, data={"query": "TEST"}).status_code == 403
