@@ -4392,3 +4392,21 @@ class TestImportReviewResolveAll:
             sess["logbook_import_review"] = state
         rv = client.post(self.URL, data={"decision": "keep"})
         assert rv.headers["Location"].endswith("/pilot/logbook/import")
+
+
+def test_a_large_opening_balance_is_spread_over_rows():
+    """Totals of 1000 h or more don't fit one row (999.9 h per column): they
+    are spread over several rows that add up exactly."""
+    from decimal import Decimal
+
+    from pilots.logbook_import import _opening_balance_rows
+
+    rows = _opening_balance_rows(
+        {"single_pilot_se": 1500.0, "function_pic": 1200.3, "night_time": None}
+    )
+    assert len(rows) == 2
+    assert sum(r["single_pilot_se"] for r in rows) == Decimal("1500.0")
+    assert sum(r["function_pic"] for r in rows) == Decimal("1200.3")
+    assert all(r["single_pilot_se"] <= Decimal("999.9") for r in rows)
+    assert all(r["night_time"] is None for r in rows)
+    assert len(_opening_balance_rows({"function_pic": 12.5})) == 1
