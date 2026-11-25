@@ -1134,9 +1134,6 @@ top bar's Explore menu now lists Where next?, Places, then Airfield
 passports.
 
 **Where next?**
-- Show suggestions as soon as the page opens: pick a sensible starting
-  airfield (a single aircraft's home base, say) and search places and
-  passports both.
 
 **Places list**
 - In a card: add space between the place's name and the "no airfield" pill;

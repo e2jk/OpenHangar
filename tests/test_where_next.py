@@ -7,7 +7,14 @@ from urllib.parse import parse_qs, urlsplit
 
 from flask import Flask
 from flask.testing import FlaskClient
-from models import PassportAirfield, PassportAirfieldIdentity, db
+from models import (
+    Aircraft,
+    PassportAirfield,
+    PassportAirfieldIdentity,
+    Role,
+    TenantUser,
+    db,
+)
 from passports.catalogue import create_custom
 from passports.management import create_personal, metadata_values
 
@@ -378,3 +385,29 @@ def test_a_passport_or_place_link_preselects_its_source(
         as_text=True
     )
     assert 'value="places" id="discovery-source-places" checked' in from_place
+
+
+def test_first_load_uses_a_single_aircraft_home_and_searches_both_sources(
+    app: Flask, client: FlaskClient, owner: dict[str, int]
+) -> None:
+    _places(app, owner)
+    with app.app_context():
+        db.session.get(TenantUser, (owner["user"], owner["tenant"])).role = Role.ADMIN
+        db.session.add(
+            Aircraft(
+                tenant_id=owner["tenant"],
+                registration="OO-UX",
+                make="Cessna",
+                model="172",
+                home_airfield_id=owner["field"],
+                cruise_speed_knots=125,
+            )
+        )
+        db.session.commit()
+    signin(client, owner["user"])
+    page = client.get(URL).get_data(as_text=True)
+    assert "Starting from" in page
+    assert 'value="both" id="discovery-source-both" checked' in page
+    assert 'value="125.00"' in page
+    assert "Not yet stamped in Local fields" in page
+    assert "km from Castle" in page
