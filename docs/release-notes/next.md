@@ -1,8 +1,6 @@
-# Re-runnable documentation site deploy
+# Security fixes: file folders and access checks
 
-**Maintenance**
-
-- Re-running a release's failed publishing job no longer fails at the
-  documentation site deploy: each attempt uploads the site under its own
-  name, where the re-run used to find the failed attempt's upload too and
-  stop ("Multiple artifacts named github-pages", v3.64.1).
+- Renaming a misnamed document folder on the "Files to review" page now only
+  accepts that hangar's own `<registration>/<folder>` paths. Before, a
+  crafted request from an owner or admin could move folders that belonged to
+  another hangar or to other users.
