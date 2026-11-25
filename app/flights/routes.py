@@ -233,20 +233,25 @@ def _get_aircraft_or_404(aircraft_id: int) -> Aircraft:
 
 
 def _get_flight_or_404(flight_id: int) -> Flight:
-    """Fetch a Flight row, authorizing by tenant (managed-aircraft rows) or
-    by crew identity (standalone rows, aircraft_id NULL — no tenant to check,
-    so only the pic/second-crew occupant may access it)."""
+    """Fetch a Flight row the signed-in user may open.
+
+    A flight on a managed aircraft needs that aircraft in this tenant and
+    either a grant on it or a seat on the flight (a pilot who lost the grant
+    still reaches their own flight). A standalone row (aircraft_id NULL, no
+    tenant to check) is open to its pic/second-crew occupant only."""
     fe = db.session.get(Flight, flight_id)
     if not fe:
         abort(404)
+    uid = session.get("user_id")
+    on_board = uid is not None and uid in (fe.pic_user_id, fe.second_crew_user_id)
     if fe.aircraft_id is not None:
         ac = db.session.get(Aircraft, fe.aircraft_id)
         if not ac or ac.tenant_id != _tenant_id():
             abort(404)
-    else:
-        uid = session.get("user_id")
-        if fe.pic_user_id != uid and fe.second_crew_user_id != uid:
+        if not on_board and not user_can_access_aircraft(ac.id):
             abort(404)
+    elif not on_board:
+        abort(404)
     return fe
 
 
@@ -1916,6 +1921,12 @@ def _handle_log_flight_post(
     ac: Aircraft | None = None
     if not other_aircraft and aircraft_id_raw:
         ac = next((a for a in managed_aircraft if a.id == aircraft_id_raw), None)
+        if ac is None and fe is not None and aircraft_id_raw == fe.aircraft_id:
+            # The flight's own aircraft, no longer in this pilot's grants (a
+            # crew member whose access was removed): keep it there rather
+            # than silently moving the flight off that aircraft's log.
+            # _get_flight_or_404 already checked it belongs to this tenant.
+            ac = db.session.get(Aircraft, fe.aircraft_id)
 
     other_ac_make_model = f.get("other_ac_make_model", "").strip()
     other_ac_reg = f.get("other_ac_reg", "").strip().upper()

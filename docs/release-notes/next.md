@@ -11,3 +11,7 @@
   someone who joined a passport group) keeps working there.
 - The pilot GPS import only links a track to one of the flights it offered
   in the "select the matching flight" list.
+- A flight on an aircraft you have no access to can no longer be opened or
+  edited (nor its track images, GPS parts or photos), unless you flew it.
+  Re-saving your own flight after losing access to its aircraft now keeps
+  it on that aircraft instead of moving it off the aircraft's log.
