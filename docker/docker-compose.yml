@@ -86,7 +86,11 @@ services:
     container_name: traefik
     command:
       - "--log.level=${TRAEFIK_LOG_LEVEL:-WARN}"
-      - "--accesslog=true"
+      # No Traefik access log: it records every URL as-is, including the
+      # secret tokens of share, password-reset, invitation and snooze links.
+      # OpenHangar writes its own access log with those tokens redacted
+      # (OPENHANGAR_ACCESS_LOG, docs/configuration.md).
+      - "--accesslog=false"
       # Off by default — needless attack surface exposed to the internet
       # even behind basicauth. See "re-enable the dashboard" below.
       - "--api.dashboard=false"

@@ -36,6 +36,27 @@ class TestRedactSensitivePath:
             "/reset-password/[REDACTED]"
         )
 
+    def test_share_link_with_registration_is_masked(self):
+        # The form the QR code and the aircraft page hand out.
+        assert (
+            redact_sensitive_path("/share/OO-ABC/Ix9k2lQ0aB7v?lang=fr")
+            == "/share/[REDACTED]?lang=fr"
+        )
+
+    def test_showcase_links_are_masked(self):
+        for path in (
+            "/showcase/Ix9k2lQ0aB7v",
+            "/showcase/OO-ABC/Ix9k2lQ0aB7v",
+            "/showcase/Ix9k2lQ0aB7v/photos/3/img",
+        ):
+            assert redact_sensitive_path(path) == "/showcase/[REDACTED]"
+
+    def test_snooze_token_is_masked(self):
+        assert (
+            redact_sensitive_path("/notifications/snooze/Zk3p-Qm7tWeR")
+            == "/notifications/snooze/[REDACTED]"
+        )
+
     def test_share_create_sibling_is_not_redacted(self):
         # /aircraft/<id>/share/create is a different, non-secret route.
         assert (

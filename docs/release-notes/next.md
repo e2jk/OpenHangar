@@ -19,3 +19,7 @@
   sizes and the version check refresh are now reserved to the instance
   administrator: they cover every hangar of the instance, so a hangar's own
   admins and owners no longer see or change them.
+- Share links with the registration in them, showcase links and reminder
+  snooze links no longer reach the access log with their secret token. The
+  reference Docker Compose file now leaves Traefik's own access log off, as
+  it can't hide these tokens: OpenHangar's access log already covers it.
