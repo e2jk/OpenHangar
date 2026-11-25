@@ -81,6 +81,10 @@ A user's effective permission mask for a given aircraft is resolved as:
    to that aircraft. (Tenant-level checks that are not about a specific
    aircraft fall back to the role's default mask.)
 
+The `is_pilot` and `is_maintenance` flags add the pilot's and the
+maintenance profile's default bits to the role default (an explicit mask on
+the grant still wins).
+
 Finally, if the user has `view_only`, all write bits (`edit_aircraft`,
 `write_maintenance`, `edit_components`, `write_logbook`, `reserve_aircraft`)
 are stripped from the resolved mask.
@@ -94,7 +98,7 @@ Used whenever a grant exists without an explicit mask:
 | admin | ✓ | ✓ | ✓ | — | ✓ | ✓ | ✓ | ✓ |
 | owner | ✓ | ✓ | ✓ | — | ✓ | ✓ | ✓ | ✓ |
 | pilot | ✓ | — | — | ✓ | — | — | ✓ | ✓ |
-| student | ✓ | — | — | ✓ | — | — | — | — |
+| student | ✓ | — | — | ✓ | — | — | ✓ | — |
 | instructor | ✓ | — | ✓ | — | — | — | ✓ | ✓ |
 | maintenance | ✓ | ✓ | ✓ | — | ✓ | ✓ | — | — |
 | viewer | ✓ | — | ✓ | — | — | — | — | — |

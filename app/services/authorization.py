@@ -56,8 +56,13 @@ class AuthorizationService:
         if role == Role.OWNER:
             mask = PermissionBit.ALL
         else:
-            # Role default is the starting point
+            # Role default is the starting point; the pilot / maintenance
+            # flags add their profile's bits (an explicit mask still wins).
             default_mask = PermissionBit.ROLE_DEFAULTS.get(role.value, 0)
+            if tu.is_pilot:
+                default_mask |= PermissionBit.ROLE_DEFAULTS["pilot"]
+            if tu.is_maintenance:
+                default_mask |= PermissionBit.ROLE_DEFAULTS["maintenance"]
 
             # 2. all_planes row overrides the default
             all_row = UserAllAircraftAccess.query.filter_by(
@@ -160,3 +165,154 @@ class AuthorizationService:
         if mask & PermissionBit.READ_MAINT_LIMITED:
             return "limited"
         return "none"
+
+
+# Writes on an aircraft (its id in the URL) and the permission bit each needs
+# (see docs/access-control.md). Owners and admins hold every bit; the other
+# roles get their role's defaults, plus the pilot / maintenance flags', unless
+# an admin set an explicit mask on their grant.
+_EDIT_AIRCRAFT = (
+    "aircraft.archive_aircraft",
+    "aircraft.delete_aircraft",
+    "aircraft.delete_photo",
+    "aircraft.edit_aircraft",
+    "aircraft.manage_owners",
+    "aircraft.owner_record_payment",
+    "aircraft.owner_reverse_entry",
+    "aircraft.record_valuation_snapshot",
+    "aircraft.reorder_photos",
+    "aircraft.unarchive_aircraft",
+    "aircraft.upload_photo",
+    "aircraft.wb_config",
+    "documents.delete_document",
+    "documents.edit_document",
+    "documents.upload_arc_cert",
+    "documents.upload_document",
+    "documents.upload_insurance_cert",
+    "share.create_token",
+    "share.revoke_token",
+)
+_EDIT_COMPONENTS = (
+    "aircraft.delete_component",
+    "aircraft.edit_component",
+    "aircraft.new_component",
+    "aircraft.quick_add_components",
+)
+_LOG_FLIGHT = (
+    "aircraft.gps_import_confirm_all",
+    "aircraft.gps_import_confirm_one",
+    "aircraft.gps_import_rollback",
+    "aircraft.gps_import_upload",
+    "aircraft.wb_entry",
+    "aircraft.wb_entry_delete",
+    "flights.airframe_import_execute",
+    "flights.airframe_import_review_resolve",
+    "flights.airframe_import_review_resolve_all",
+    "flights.airframe_import_rollback",
+    "flights.airframe_import_toggle_historical",
+    "flights.airframe_import_upload",
+    "flights.delete_flight",
+    "refuels.delete_refuel",
+    "refuels.edit_refuel",
+    "refuels.new_refuel",
+)
+_EDIT_MAINTENANCE = (
+    "airworthiness.add_ad_sb_item",
+    "airworthiness.add_avionics_unit",
+    "airworthiness.add_document",
+    "airworthiness.add_node",
+    "airworthiness.add_stc",
+    "airworthiness.add_wishlist_item",
+    "airworthiness.delete_ad_sb_item",
+    "airworthiness.delete_avionics_unit",
+    "airworthiness.delete_document",
+    "airworthiness.delete_node",
+    "airworthiness.delete_stc",
+    "airworthiness.delete_wishlist_item",
+    "airworthiness.edit_ad_sb_item",
+    "airworthiness.edit_avionics_unit",
+    "airworthiness.trigger_sync",
+    "airworthiness.update_status",
+    "maintenance.add_amp_revision",
+    "maintenance.delete_amp_revision",
+    "maintenance.delete_trigger",
+    "maintenance.edit_amp_declaration",
+    "maintenance.edit_trigger",
+    "maintenance.import_amp_commit",
+    "maintenance.import_amp_rollback",
+    "maintenance.import_amp_upload",
+    "maintenance.new_trigger",
+    "maintenance.service_trigger",
+    "reservations.downtime_delete",
+    "reservations.downtime_edit",
+    "reservations.downtime_new",
+)
+_RESERVE = (
+    "reservations.booking_settings",
+    "reservations.cancel_reservation",
+    "reservations.checkin",
+    "reservations.checkout",
+    "reservations.confirm_reservation",
+    "reservations.decline_reservation",
+    "reservations.edit_reservation",
+    "reservations.new_reservation",
+    "reservations.rental_charge",
+)
+AIRCRAFT_WRITE_ACTIONS: dict[str, str] = {
+    **dict.fromkeys(_EDIT_AIRCRAFT, "edit_aircraft"),
+    **dict.fromkeys(_EDIT_COMPONENTS, "edit_components"),
+    **dict.fromkeys(_LOG_FLIGHT, "log_flight"),
+    **dict.fromkeys(_EDIT_MAINTENANCE, "edit_maintenance"),
+    **dict.fromkeys(_RESERVE, "reserve_aircraft"),
+}
+
+# Blueprints holding the hangar's operational data: a view-only membership
+# changes nothing there (its own account, Places and Passports aside).
+_VIEW_ONLY_BLOCKED = frozenset(
+    {
+        "aircraft",
+        "airworthiness",
+        "documents",
+        "expenses",
+        "flights",
+        "maintenance",
+        "pilots",
+        "refuels",
+        "reservations",
+        "share",
+        "snags",
+    }
+)
+_SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
+
+
+def enforce_write_permissions() -> None:
+    """before_request: refuse (403) a write the signed-in membership may not
+    make — any write in the operational blueprints for a view-only member,
+    and an aircraft write without its permission bit (AIRCRAFT_WRITE_ACTIONS).
+
+    Admins bypass both, as in effective_mask. Requests without a membership,
+    or naming an aircraft of another hangar, are left to the route (sign-in
+    redirect, 404)."""
+    from flask import abort, request
+    from models import Aircraft, Role, db
+    from utils import current_membership
+
+    if request.method in _SAFE_METHODS or request.endpoint is None:
+        return
+    membership = current_membership()
+    if membership is None or membership.role == Role.ADMIN:
+        return
+    if membership.view_only and request.blueprint in _VIEW_ONLY_BLOCKED:
+        abort(403)
+    action = AIRCRAFT_WRITE_ACTIONS.get(request.endpoint)
+    aircraft_id = (request.view_args or {}).get("aircraft_id")
+    if action is None or not isinstance(aircraft_id, int):
+        return
+    aircraft = db.session.get(Aircraft, aircraft_id)
+    if aircraft is None or aircraft.tenant_id != membership.tenant_id:
+        return
+    if not AuthorizationService.can(
+        membership.user_id, action, aircraft_id, membership.tenant_id
+    ):
+        abort(403)
