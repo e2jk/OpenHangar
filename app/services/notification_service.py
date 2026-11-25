@@ -69,7 +69,8 @@ def get_effective_preference(
 
 
 def _user_caps(role: Any, user: Any) -> set[str]:
-    """Compute capability set for a user from their role + capability flags."""
+    """Compute capability set for a user from their role + capability flags
+    (`user` is the hangar membership carrying is_pilot / is_maintenance)."""
     from models import Role  # pyright: ignore[reportMissingImports]
 
     caps: set[str] = set()
@@ -112,7 +113,8 @@ def _find_recipients(
             and notification_type != NotificationType.PASSPORT_EXPIRING
         ):
             continue
-        caps = _user_caps(tu.role, user)
+        # The pilot / maintenance flags belong to this hangar's membership.
+        caps = _user_caps(tu.role, tu)
         if notification_type == NotificationType.PASSPORT_EXPIRING:
             from passports.reminders import has_participation
 

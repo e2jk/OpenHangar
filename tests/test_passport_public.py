@@ -7,6 +7,7 @@ from flask.testing import FlaskClient
 from models import Passport, PassportParticipant, PassportVisit, PublicShare, Tenant, db
 from passports import public_access
 
+from tests.auth_helpers import set_membership_flags
 from tests.test_passport_builder import signin
 from tests.test_passport_groups import group
 from tests.test_passport_management import owner
@@ -288,11 +289,9 @@ def test_withdrawal_is_possible_for_view_only_participant(
     app: Flask, client: FlaskClient, owner: dict[str, int]
 ) -> None:
 
-    from models import User
-
     token = enable(app, client, owner)
     with app.app_context():
-        db.session.get(User, owner["user"]).view_only = True
+        set_membership_flags(owner["user"], view_only=True)
         db.session.commit()
     assert client.post(settings(owner), data={"action": "choices"}).status_code == 302
     assert (

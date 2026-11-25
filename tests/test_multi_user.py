@@ -28,7 +28,7 @@ from models import (
     db,
 )  # pyright: ignore[reportMissingImports]
 
-from tests.auth_helpers import challenge_payload
+from tests.auth_helpers import challenge_payload, set_membership_flags
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -733,7 +733,7 @@ class TestProtectedMembers:
         tid, owner_uid = _make_tenant_user(app, "owner@test.com", Role.OWNER)
         admin_uid = _add_member(app, tid, "admin@test.com", Role.ADMIN)
         with app.app_context():
-            db.session.get(User, admin_uid).is_pilot = True
+            set_membership_flags(admin_uid, is_pilot=True)
             db.session.commit()
         _login(client, owner_uid)
         resp = client.post(
@@ -745,7 +745,7 @@ class TestProtectedMembers:
             assert tu.role == Role.ADMIN
             admin = db.session.get(User, admin_uid)
             assert admin.is_active is True
-            assert admin.is_pilot is True
+            assert tu.is_pilot is True
 
     def test_owner_list_hides_controls_on_admin_rows(self, app, client):
         tid, owner_uid = _make_tenant_user(app, "owner@test.com", Role.OWNER)
@@ -841,6 +841,32 @@ class TestProtectedMembers:
                 user_id=member_uid, tenant_id=other_tid
             ).one()
             assert db.session.get(User, member_uid).is_active is True
+
+    def test_flags_set_in_one_hangar_never_reach_another(self, app, client):
+        """The capability flags belong to the membership: an owner of a
+        hangar the user also belongs to (say, through a passport group) can
+        neither lift the read-only flag nor grant maintenance in the user's
+        own hangar."""
+        own_tid, member_uid = _make_tenant_user(app, "member@test.com", Role.VIEWER)
+        other_tid, owner_uid = _make_tenant_user(app, "owner@test.com", Role.OWNER)
+        with app.app_context():
+            db.session.get(TenantUser, (member_uid, own_tid)).view_only = True
+            db.session.add(
+                TenantUser(
+                    user_id=member_uid,
+                    tenant_id=other_tid,
+                    role=None,
+                    access_scope="personal",
+                )
+            )
+            db.session.commit()
+        _login(client, owner_uid)
+        client.post(f"/config/users/{member_uid}/flags", data={"is_maintenance": "on"})
+        with app.app_context():
+            own = db.session.get(TenantUser, (member_uid, own_tid))
+            assert own.view_only is True and own.is_maintenance is False
+            other = db.session.get(TenantUser, (member_uid, other_tid))
+            assert other.is_maintenance is True and other.view_only is False
 
     def test_revoke_disables_an_account_left_without_any_hangar(self, app, client):
         tid, owner_uid = _make_tenant_user(app, "owner@test.com", Role.OWNER)
@@ -1547,38 +1573,6 @@ class TestUpdateAircraftAccess:
 
 
 # ── update_user_flags with orphaned TenantUser ───────────────────────────────
-
-
-class TestUpdateUserFlagsOrphaned:
-    def test_flags_404_when_user_row_deleted(self, app, client):
-        """users/routes.py:377 — abort(404) when TenantUser exists but User row deleted."""
-        from sqlalchemy import text
-
-        tid, admin_uid = _make_tenant_user(app, "admin@flgdel.dev", Role.ADMIN)
-        with app.app_context():
-            pilot = User(
-                email="pilot@flgdel.dev",
-                password_hash=_pw_hash.hash("pass-12-chars"),
-                is_active=True,
-            )
-            db.session.add(pilot)
-            db.session.flush()
-            db.session.add(TenantUser(user_id=pilot.id, tenant_id=tid, role=Role.PILOT))
-            db.session.commit()
-            pilot_id = pilot.id
-        with app.app_context():
-            db.session.execute(text("PRAGMA foreign_keys=OFF"))
-            db.session.execute(
-                text("DELETE FROM users WHERE id = :id"), {"id": pilot_id}
-            )
-            db.session.commit()
-            db.session.execute(text("PRAGMA foreign_keys=ON"))
-        _login(client, admin_uid)
-        resp = client.post(
-            f"/config/users/{pilot_id}/flags",
-            data={"is_pilot": "on"},
-        )
-        assert resp.status_code == 404
 
 
 # ── edit_permissions route ────────────────────────────────────────────────────

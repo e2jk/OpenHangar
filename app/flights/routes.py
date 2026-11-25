@@ -63,6 +63,9 @@ from pilots.personal_minimums import (  # pyright: ignore[reportMissingImports]
     recency_breaches,
 )
 from pwa import pending  # pyright: ignore[reportMissingImports]
+from services.authorization import (  # pyright: ignore[reportMissingImports]
+    AuthorizationService,
+)
 from services.upload_layout import (  # pyright: ignore[reportMissingImports]
     IMPORT_TMP_DIRNAME,
 )
@@ -1487,8 +1490,8 @@ def gps_editable(fe: Flight) -> bool:
     uid = session.get("user_id")
     role = current_user_role()
     if role not in _PILOT_ACCESS_ROLES:
-        user = db.session.get(User, uid) if uid else None
-        if not (user and user.is_pilot):
+        membership = current_membership()
+        if not (membership and membership.is_pilot):
             return False
     return can_edit_shared(fe, uid, role)
 
@@ -1935,6 +1938,21 @@ def _handle_log_flight_post(
             # than silently moving the flight off that aircraft's log.
             # _get_flight_or_404 already checked it belongs to this tenant.
             ac = db.session.get(Aircraft, fe.aircraft_id)
+        on_board_own_aircraft = (
+            fe is not None
+            and ac is not None
+            and ac.id == fe.aircraft_id
+            and uid in (fe.pic_user_id, fe.second_crew_user_id)
+        )
+        if (
+            ac is not None
+            and not on_board_own_aircraft
+            and not AuthorizationService.can(uid, "log_flight", ac.id)
+        ):
+            # Logging, editing or moving a flight on an aircraft needs its
+            # write_logbook permission — except re-saving a flight you are
+            # on, on its own aircraft (shared-flight rules govern that).
+            abort(403)
 
     other_ac_make_model = f.get("other_ac_make_model", "").strip()
     other_ac_reg = f.get("other_ac_reg", "").strip().upper()

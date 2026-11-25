@@ -36,6 +36,8 @@ from passports.management import (
     set_archived,
 )
 
+from tests.auth_helpers import set_membership_flags
+
 
 @pytest.fixture
 def owner(app: Flask) -> Iterator[dict[str, int]]:
@@ -80,13 +82,13 @@ def test_actor_and_owner_permissions(app: Flask, owner: dict[str, int]) -> None:
         with pytest.raises(BuilderError):
             require_actor(t, owner["other"], creating=True)
         other = db.session.get(User, owner["other"])
-        other.is_pilot = True
+        set_membership_flags(other.id, is_pilot=True)
         assert require_actor(t, other.id, creating=True) == other
         user = db.session.get(User, u)
-        user.view_only = True
+        set_membership_flags(u, view_only=True)
         with pytest.raises(BuilderError):
             owned_passport(t, u, owner["passport"])
-        user.view_only = False
+        set_membership_flags(u, view_only=False)
         user.is_active = False
         with pytest.raises(BuilderError):
             require_actor(t, u)

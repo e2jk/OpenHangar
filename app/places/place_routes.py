@@ -15,7 +15,7 @@ from flask_babel import get_locale
 from flask_babel import gettext as _
 from models import Place, PlaceCollection, PlaceCollectionMember, User, db
 from services import geocoding
-from utils import db_id, login_required
+from utils import db_id, is_view_only, login_required
 
 from places import airfields, management, visits
 from places.access import (
@@ -174,7 +174,7 @@ def place_detail(place_id: int) -> ResponseReturnValue:
     except PlaceError:
         return abort(404)
     member = db.session.get(PlaceCollectionMember, (place.collection_id, uid))
-    user = actor(tid, uid)
+    actor(tid, uid)
     names = {
         person.id: person.name or _("Unnamed member")
         for person in User.query.join(
@@ -199,7 +199,7 @@ def place_detail(place_id: int) -> ResponseReturnValue:
         place=place,
         collection=collection,
         tags=management.tag_names(place.id),
-        can_edit=member is not None and member.can_edit and not user.view_only,
+        can_edit=member is not None and member.can_edit and not is_view_only(uid, tid),
         can_move=place.owner_user_id == uid,
         can_purge=uid in {place.owner_user_id, collection.created_by_user_id},
         last_changed=names.get(place.updated_by_user_id, _("Former member")),

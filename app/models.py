@@ -19,6 +19,7 @@ from sqlalchemy import (
     text,
     update,
 )
+from sqlalchemy import false as sa_false
 from sqlalchemy.orm import Session
 
 db = SQLAlchemy()
@@ -113,7 +114,10 @@ class PermissionBit:
         "admin": ALL,
         "owner": ALL,
         "pilot": VIEW_AIRCRAFT | READ_MAINT_LIMITED | WRITE_LOGBOOK | RESERVE_AIRCRAFT,
-        "student": VIEW_AIRCRAFT | READ_MAINT_LIMITED,
+        # Students log flights like pilots (booking stays a pilot's role) until
+        # the Flying School phase brings supervised flows; an admin can remove
+        # it per aircraft.
+        "student": VIEW_AIRCRAFT | READ_MAINT_LIMITED | WRITE_LOGBOOK,
         "instructor": VIEW_AIRCRAFT
         | READ_MAINT_FULL
         | WRITE_LOGBOOK
@@ -166,7 +170,8 @@ class User(db.Model):
     name = db.Column(db.String(128), nullable=True)
     language = db.Column(db.String(8), nullable=True, default="en")
     theme = db.Column(db.String(8), nullable=True, default=None)
-    # Phase 23: capability flags — orthogonal to role; allow cross-role flows
+    # Legacy account-wide capability flags, no longer read: the flags now
+    # live on each TenantUser membership (migration ce32ed9d9ea6 copied them).
     is_pilot = db.Column(db.Boolean, nullable=False, default=False)
     is_maintenance = db.Column(db.Boolean, nullable=False, default=False)
     view_only = db.Column(db.Boolean, nullable=False, default=False)
@@ -259,6 +264,18 @@ class TenantUser(db.Model):
     )
     # Explicit None must stay NULL, never silently receive the OWNER default.
     role = db.Column(db.Enum(Role).evaluates_none(), nullable=True, default=Role.OWNER)
+    # Capability flags, orthogonal to role, set by this hangar's admins and
+    # applying in this hangar only (not on the account: another hangar the
+    # account belongs to must neither change nor inherit them).
+    is_pilot = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=sa_false()
+    )
+    is_maintenance = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=sa_false()
+    )
+    view_only = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=sa_false()
+    )
 
     user = db.relationship("User", back_populates="tenants")
     tenant = db.relationship("Tenant", back_populates="users")

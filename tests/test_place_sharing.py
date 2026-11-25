@@ -11,7 +11,6 @@ from models import (
     PlaceCollectionInvitation,
     PlaceCollectionMember,
     PlaceVisit,
-    User,
     db,
 )
 from places.access import PlaceError, collection_access
@@ -24,6 +23,7 @@ from places.collections import (
 from places.sharing import accept, invite_email, pending_for_user, revoke
 from werkzeug.exceptions import Forbidden
 
+from tests.auth_helpers import set_membership_flags
 from tests.test_place_collections import destination, people
 
 __all__ = ["people"]
@@ -192,10 +192,12 @@ def test_collection_pages_are_private_tenant_scoped_and_available_without_pilot_
     signin(client, p, "outsider")
     assert client.get(f"/places/?collection={cid}").status_code == 404
     signin(client, p, "admin")
-    assert client.get(settings).status_code == 200  # management only, not destinations
+    # An administrator neither manages nor sees a collection not shared
+    # with them.
+    assert client.get(settings).status_code == 404
     assert client.get(f"/places/?collection={cid}").status_code == 404
     with app.app_context():
-        db.session.get(User, p["admin"]).view_only = True
+        set_membership_flags(p["admin"], view_only=True)
         db.session.commit()
     assert client.get("/places/").status_code == 200
     assert client.get("/places/collections/new").status_code == 403
@@ -318,6 +320,57 @@ def test_collection_delete_requires_current_counts_and_confirmation(
     )
     with app.app_context():
         assert db.session.get(PlaceCollection, cid) is None
+
+
+def test_deleted_my_places_stays_deleted_while_shared_collections_remain(
+    app: Flask, client: FlaskClient, people: dict[str, int]
+) -> None:
+    """Deleting your own "My places" while others share collections with
+    you: opening Places does not create it again, and a new place goes to a
+    collection you can edit."""
+    from places.collections import personal_collection, set_member
+
+    p = people
+    with app.app_context():
+        mine = personal_collection(p["tenant"], p["reader"])
+        shared = create_collection(p["tenant"], p["creator"], "Shared with me")
+        set_member(p["tenant"], p["creator"], shared.id, p["reader"])
+        db.session.commit()
+        mine_id, shared_id = mine.id, shared.id
+    signin(client, p, "reader")
+    settings = f"/places/collections/{mine_id}/settings"
+    response = client.post(
+        settings,
+        data={"action": "delete", "confirm": "yes", "places": "0", "visits": "0"},
+    )
+    assert response.status_code == 302
+    assert client.get("/places/").status_code == 200
+    with app.app_context():
+        assert db.session.get(PlaceCollection, mine_id) is None
+        assert (
+            PlaceCollection.query.filter_by(
+                created_by_user_id=p["reader"], is_personal=True
+            ).count()
+            == 0
+        )
+        from places.collections import default_collection
+
+        assert default_collection(p["tenant"], p["reader"]).id == shared_id
+    assert client.get(settings).status_code == 404
+
+
+def test_my_places_is_created_for_someone_without_any_collection(
+    app: Flask, client: FlaskClient, people: dict[str, int]
+) -> None:
+    signin(client, p := people, "outsider")
+    assert client.get("/places/").status_code == 200
+    with app.app_context():
+        assert (
+            PlaceCollection.query.filter_by(
+                created_by_user_id=p["outsider"], is_personal=True
+            ).count()
+            == 1
+        )
 
 
 def test_missing_membership_context_fails_closed(app: Flask) -> None:

@@ -334,7 +334,9 @@ aircraft: every account has them, Personal accounts and viewers included.
 - **Collections:** your own **My places**, plus any number of collections you
   share with chosen users of the instance ("Our places", "Club fly-outs"…).
   Members are editors or readers; what you can do with a place depends only on
-  the collection, never on your role.
+  the collection, never on your role — administrators included, they see only
+  the collections shared with them. You can delete My places like any other
+  collection you own; it comes back only if you have no collection left.
 - **Adding a place:** drop a pin on the map, paste coordinates or a map link,
   search an address, or just save a link (from a phone share, see below) and add
   its location later. Tags, a photo, an address and a website are optional; a
@@ -549,7 +551,7 @@ A Personal account can also keep its own pilot logbook (**Start my pilot logbook
 
 When inviting a user, the owner selects their role and checks which aircraft they are allowed to access.  Admin and Owner roles automatically see every aircraft.
 
-Beyond the base role, each user carries three capability flags: **pilot** (personal logbook, reservations, flight logging), **maintenance** (edit aircraft and components, manage maintenance), and **view-only** (removes all write access regardless of the other settings).  Administrators can also fine-tune a per-aircraft permission grid (view/edit aircraft, maintenance read level, flight logging, reservations, …) or grant a user access to **all aircraft, including ones added later**.  See the [access control reference](access-control.md) for the full model and the default permissions per role.
+Beyond the base role, each user carries three capability flags, set per hangar (a person who also belongs to another hangar keeps that hangar's own settings there): **pilot** (personal logbook, reservations, flight logging), **maintenance** (edit aircraft and components, manage maintenance), and **view-only** (removes all write access regardless of the other settings).  Administrators can also fine-tune a per-aircraft permission grid (view/edit aircraft, maintenance read level, flight logging, reservations, …) or grant a user access to **all aircraft, including ones added later**.  See the [access control reference](access-control.md) for the full model and the default permissions per role.
 
 The aircraft detail page adapts to each role: the sections shown, the actions available, and the order in which sections appear all change depending on who is viewing.  See the [aircraft detail layout reference](detail_layout_aircraft.md) for the full section-by-role matrix.
 

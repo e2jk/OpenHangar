@@ -19,6 +19,7 @@ from models import (
 )
 from services import capability_tokens as tokens
 from sqlalchemy.exc import OperationalError
+from utils import is_view_only  # pyright: ignore[reportMissingImports]
 
 from passports import groups, invitations
 from passports.management import BuilderError, require_actor
@@ -219,7 +220,7 @@ def roster(series: PassportSeries, actor_id: int) -> dict[str, Any]:
 def joinable_editions(series: PassportSeries, user_id: int) -> list[dict[str, Any]]:
     groups.require_series(series, user_id)
     user = db.session.get(User, user_id)
-    if user is None or user.view_only:
+    if user is None or is_view_only(user_id, series.tenant_id):
         return []
     rows = (
         db.session.query(Passport, PassportInvitation)

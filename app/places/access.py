@@ -12,6 +12,7 @@ from models import (
     User,
     db,
 )
+from utils import is_view_only  # pyright: ignore[reportMissingImports]
 
 
 class PlaceError(ValueError):
@@ -30,7 +31,7 @@ def actor(tenant_id: int, user_id: int, *, writing: bool = False) -> User:
         )
         .first()
     )
-    if user is None or (writing and user.view_only):
+    if user is None or (writing and is_view_only(user_id, tenant_id)):
         raise PlaceError(_("You cannot make this change."))
     return user
 
@@ -55,13 +56,22 @@ def collection_access(
     editing: bool = False,
     managing: bool = False,
 ) -> PlaceCollection:
-    user = actor(tenant_id, user_id, writing=editing or managing)
+    actor(tenant_id, user_id, writing=editing or managing)
     collection = db.session.get(PlaceCollection, collection_id)
     if collection is None or collection.tenant_id != tenant_id:
         raise PlaceError(_("Collection not found."))
     member = db.session.get(PlaceCollectionMember, (collection_id, user_id))
     if managing:
-        permitted = collection.created_by_user_id == user_id or user.is_instance_admin
+        # Only the collection's owner manages it: an administrator (instance
+        # or hangar) sees and changes other people's collections only when
+        # they were shared with them, like anyone else.
+        # A collection whose owner's account was removed is managed by its
+        # members with edit rights.
+        permitted = collection.created_by_user_id == user_id or (
+            collection.created_by_user_id is None
+            and member is not None
+            and member.can_edit
+        )
     else:
         permitted = member is not None and (not editing or member.can_edit)
     if not permitted:

@@ -204,11 +204,16 @@ def test_removed_and_inactive_users_cannot_join(
         p = db.session.get(Passport, invited["passport"])
         row = db.session.get(PassportInvitation, p.id)
         user = db.session.get(User, invited["other"])
-        for column in ["is_active", "view_only"]:
-            setattr(user, column, column == "view_only")
-            with pytest.raises(BuilderError):
-                invitations.join(user.id, row.token_hash, p.id, consent_values())
-            setattr(user, column, column != "view_only")
+        user.is_active = False
+        with pytest.raises(BuilderError):
+            invitations.join(user.id, row.token_hash, p.id, consent_values())
+        user.is_active = True
+        # Read-only in the passport's hangar: that membership's flag counts.
+        membership = db.session.get(TenantUser, (user.id, p.tenant_id))
+        membership.view_only = True
+        with pytest.raises(BuilderError):
+            invitations.join(user.id, row.token_hash, p.id, consent_values())
+        membership.view_only = False
         with pytest.raises(BuilderError):
             invitations.join(999999, row.token_hash, p.id, consent_values())
         block = PassportGroupBlock(

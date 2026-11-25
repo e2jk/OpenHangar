@@ -14,7 +14,6 @@ from models import (
     PassportParticipant,
     PassportStampPhoto,
     PassportVisit,
-    User,
     db,
 )
 from passports.eligibility import passport_progress
@@ -23,6 +22,7 @@ from passports.management import BuilderError
 from PIL import Image
 from werkzeug.datastructures import FileStorage
 
+from tests.auth_helpers import set_membership_flags
 from tests.test_passport_builder import signin
 from tests.test_passport_management import owner
 
@@ -112,7 +112,7 @@ def test_manual_arrival_controls_and_permissions(
     with app.app_context():
         p = db.session.get(Passport, pid)
         p.archived_at = None
-        db.session.get(User, owner["other"]).view_only = True
+        set_membership_flags(owner["other"], view_only=True)
         db.session.commit()
     assert client.post(base, data={"action": "visit"}).status_code == 403
     signin(client, uid)
