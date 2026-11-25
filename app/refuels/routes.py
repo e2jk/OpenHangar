@@ -20,9 +20,11 @@ from models import (  # pyright: ignore[reportMissingImports]
     Role,
     db,
 )
+from sqlalchemy import false  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
     activity,
     current_membership,
+    current_user_role,
     login_required,
     require_role,
     user_can_access_aircraft,
@@ -109,6 +111,10 @@ def list_refuels(aircraft_id: int) -> ResponseReturnValue:
     )
     if period_start is not None:
         expense_query = expense_query.filter(Expense.date >= period_start)
+    if current_user_role() not in (Role.ADMIN, Role.OWNER):
+        # Fuel costs are expenses: owners and admins only, as on the
+        # expenses pages (the template hides the cost columns too).
+        expense_query = expense_query.filter(false())
     summary = summarize(
         events,
         expense_query.all(),

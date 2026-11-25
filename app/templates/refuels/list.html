@@ -57,6 +57,7 @@
         <div class="text-muted oh-fs-08">{{ ngettext('one refuel', '%(n)d refuels', s.refuel_count, n=s.refuel_count) }}</div>
       </div>
     </div>
+    {% if is_owner %}
     <div class="col-6 col-md-3">
       <div class="ac-stat-card">
         <div class="ac-stat-value">
@@ -75,6 +76,7 @@
         <div class="text-muted oh-fs-08">{% if s.price_per_litre is not none %}{{ s.currency }}/L{% else %}{{ _('No costed fuel quantities yet') }}{% endif %}</div>
       </div>
     </div>
+    {% endif %}
     <div class="col-6 col-md-3">
       <div class="ac-stat-card">
         <div class="ac-stat-value">{% if s.litres_per_engine_hour is not none %}{{ '%.1f'|format(s.litres_per_engine_hour) }}{% else %}—{% endif %}</div>
@@ -86,6 +88,8 @@
     </div>
   </div>
 
+  {# Costs: owners and admins only, like expenses. #}
+  {% if is_owner %}
   <div class="ac-form-card mb-4">
     <div class="text-muted oh-fs-09 mb-2">{{ _('Fuel cost') }}</div>
     <div class="row g-3">
@@ -115,6 +119,7 @@
     </p>
     {% endif %}
   </div>
+  {% endif %}
 
   {% if events %}
   <div class="ac-form-card p-0 mb-4">
@@ -125,8 +130,10 @@
           <th class="ps-3">{{ _('Date') }}</th>
           <th>{{ _('Refuel') }}</th>
           <th class="text-end">{{ _('Quantity') }}</th>
+          {% if is_owner %}
           <th class="text-end">{{ _('Cost') }}</th>
           <th class="text-end">{{ _('Price per litre') }}</th>
+          {% endif %}
           <th class="pe-3"></th>
         </tr>
       </thead>
@@ -143,6 +150,7 @@
             {% endif %}
           </td>
           <td class="align-middle text-end fw-semibold oh-text-navy text-nowrap">{{ '%.1f'|format(ev.quantity) }} {{ ev.unit }}</td>
+          {% if is_owner %}
           <td class="align-middle text-end text-nowrap">
             {% if ev.expense %}{{ '%.2f'|format(ev.expense.amount|float) }} {{ ev.expense.currency }}
               {% if ev.expense.paid_amount is not none %}<div class="text-muted oh-fs-08">{{ _('paid %(amount)s %(currency)s', amount='%.2f'|format(ev.expense.paid_amount|float), currency=ev.expense.paid_currency) }}</div>{% endif %}
@@ -151,6 +159,7 @@
           <td class="align-middle text-end text-nowrap">
             {% if ev.price_per_litre is not none %}{{ '%.2f'|format(ev.price_per_litre) }} {{ ev.expense.currency }}/L{% else %}<span class="text-muted">—</span>{% endif %}
           </td>
+          {% endif %}
           <td class="pe-3 text-end align-middle text-nowrap">
             {% if is_owner %}
               {% if ev.expense %}

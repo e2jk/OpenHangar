@@ -781,7 +781,8 @@
           </td>
           <td class="oh-text-navy fw-semibold text-nowrap">{{ '%.1f'|format(ev.quantity) }} {{ ev.unit }}</td>
           <td class="text-end pe-3 text-nowrap">
-            {% if ev.expense %}{{ '%.2f'|format(ev.expense.amount|float) }} {{ ev.expense.currency }}{% else %}<span class="text-muted">—</span>{% endif %}
+            {# Costs: owners and admins only, like expenses. #}
+            {% if ev.expense and is_owner %}{{ '%.2f'|format(ev.expense.amount|float) }} {{ ev.expense.currency }}{% else %}<span class="text-muted">—</span>{% endif %}
           </td>
         </tr>
         {% endfor %}

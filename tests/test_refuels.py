@@ -412,3 +412,21 @@ class TestAircraftDetailRefuelsSection:
         assert "Fuel log" in page
         assert "EBAW → EGMC" in page
         assert "42.0 L" in page and "92.40 EUR" in page
+        # Fuel costs are expenses: a pilot sees the refuels, not what they cost.
+        with app.app_context():
+            from models import TenantUser, UserAllAircraftAccess
+
+            from tests.test_refuels import _create_user_and_tenant as _mk
+
+            pilot_uid, _t = _mk(app, "fuelpilot@example.com", role=Role.PILOT)
+            membership = TenantUser.query.filter_by(user_id=pilot_uid).one()
+            membership.tenant_id = tenant_id
+            db.session.add(
+                UserAllAircraftAccess(user_id=pilot_uid, tenant_id=tenant_id)
+            )
+            db.session.commit()
+        _login(app, client, "fuelpilot@example.com")
+        page = client.get(f"/aircraft/{ac_id}").data.decode()
+        assert "42.0 L" in page and "92.40" not in page
+        log = client.get(f"/aircraft/{ac_id}/refuels").data.decode()
+        assert "42.0 L" in log and "92.40" not in log
