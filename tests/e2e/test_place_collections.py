@@ -308,4 +308,37 @@ def test_add_place_can_link_an_airfield_from_the_collapsed_picker(
     )
     page.get_by_role("button", name="Save place", exact=True).click()
     page.wait_for_url(re.compile(r"/places/\d+$"))
-    expect(page.get_by_text(re.compile("EBNM"))).to_be_visible()
+    expect(page.locator("#place-airfields")).to_contain_text("EBNM")
+
+
+def test_bulk_move_keeps_a_group_of_places_together(passport_page: Page) -> None:
+    page = passport_page
+    suffix = uuid4().hex[:8]
+    destination = f"Bulk destination {suffix}"
+    page.goto("/places/collections/new")
+    page.get_by_label("Collection name", exact=True).fill(destination)
+    page.get_by_role("button", name="Create collection", exact=True).click()
+    page.wait_for_url(re.compile(r"/places/collections/\d+/settings$"))
+    collection_id = page.url.split("/")[-2]
+
+    names = [f"First place {suffix}", f"Second place {suffix}"]
+    for name in names:
+        page.goto("/places/new")
+        page.get_by_label("Place name (optional)", exact=True).fill(name)
+        page.locator("#place-address-query").fill("50.49, 4.77")
+        page.get_by_role("button", name="Search", exact=True).click()
+        expect(page.get_by_label("Latitude", exact=True)).to_have_value("50.4900000")
+        page.get_by_role("button", name="Save place", exact=True).click()
+        page.wait_for_url(re.compile(r"/places/\d+$"))
+
+    page.goto("/places/")
+    first = page.get_by_label(f"Select {names[0]}", exact=True)
+    expect(first).to_be_hidden()
+    page.locator("#places-bulk-move summary").click()
+    first.check()
+    page.get_by_label(f"Select {names[1]}", exact=True).check()
+    page.get_by_label("Destination collection", exact=True).select_option(collection_id)
+    page.get_by_role("button", name="Move", exact=True).click()
+    page.wait_for_url(re.compile(rf"/places/\?collection={collection_id}$"))
+    for name in names:
+        expect(page.get_by_role("link", name=name, exact=True)).to_be_visible()
