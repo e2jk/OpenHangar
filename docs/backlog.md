@@ -1141,8 +1141,6 @@ passports.
   passports both.
 
 **Places list**
-- On large screens, show two place cards per row instead of one column
-  filling only the left half.
 - In a card: add space between the place's name and the "no airfield" pill;
   show each linked airfield's ICAO code in the same kind of pill, with its
   full name on hover; make tag pills links that filter the current page to
