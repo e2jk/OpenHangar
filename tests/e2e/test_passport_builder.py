@@ -258,7 +258,10 @@ def test_passport_destination_discovery(
     page.locator("#discovery-mode").select_option("distance")
     page.locator("#discovery-limit").fill("100")
     expect(page.locator("#discovery-slider")).to_have_value("100")
-    page.get_by_role("button", name="Find destinations", exact=True).click()
+    click_and_settle(
+        page, page.get_by_role("button", name="Find destinations", exact=True)
+    )
+    page.wait_for_url(re.compile(r"[?&]mode=distance(?:&|$)"))
     expect(page.locator("table tbody")).to_contain_text(destination)
     expect(
         page.locator("#passport-discovery-map .leaflet-overlay-pane path")
