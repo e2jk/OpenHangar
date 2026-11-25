@@ -402,7 +402,9 @@ Host path inside the container where encrypted backup archives are written.
 Passphrase used to AES-256-GCM encrypt backup ZIP archives.
 
 - **Default**: unset — backups are stored unencrypted
-- Whitespace-only values are rejected at startup.
+- Whitespace-only values are rejected at startup, and so is any value
+  containing "change" — the example values in `docker/.env.example` and the
+  Raspberry Pi compose file are published, so they would protect nothing.
 - **Store the key separately from the backup files** (e.g. in a password manager).
   Without it a backup cannot be decrypted.
 - **Generate with**: `openssl rand -hex 32`

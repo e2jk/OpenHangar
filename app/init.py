@@ -2201,6 +2201,17 @@ def _validate_config(app: Flask) -> None:
             "Generate one with: openssl rand -hex 32"
         )
 
+    # OPENHANGAR_BACKUP_ENCRYPTION_KEY: never the example value from
+    # docker/.env.example or the Raspberry Pi compose file — a key published in
+    # the repository would protect nothing (backups hold TOTP secrets too).
+    backup_key = _env_or_file("BACKUP_ENCRYPTION_KEY") or ""
+    if "change" in backup_key.lower():
+        errors.append(
+            "OPENHANGAR_BACKUP_ENCRYPTION_KEY appears to be a placeholder value. "
+            "Generate a real key with: openssl rand -hex 32 (keep the old one to "
+            "restore backups made with it)"
+        )
+
     # OPENHANGAR_ENV: must be one of the known values when set
     _raw_env = os.environ.get("OPENHANGAR_ENV", "")
     if _raw_env and _raw_env not in ("production", "development", "test", "demo"):
