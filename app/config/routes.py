@@ -665,8 +665,9 @@ def update_tenant_slug() -> ResponseReturnValue:
 
 @config_bp.route("/map-tiles", methods=["POST"])
 @login_required
+@require_instance_admin
 def update_map_tiles() -> ResponseReturnValue:
-    # ADMIN/OWNER enforcement is handled by config_bp.before_request.
+    # The OpenAIP key is shared by every hangar of the instance.
     key = request.form.get("openaip_api_key", "").strip()
     setting = db.session.get(AppSetting, "openaip_api_key")
     if key:
@@ -685,9 +686,9 @@ def update_map_tiles() -> ResponseReturnValue:
 
 
 @config_bp.route("/run", methods=["POST"])
+@require_instance_admin
 def run_backup_now() -> ResponseReturnValue:
-    if not session.get("user_id"):
-        abort(403)
+    # A backup holds the whole instance (every hangar's data and files).
     try:
         record = run_backup()
         flash(_("Backup completed: %(filename)s", filename=record.filename), "success")
@@ -760,9 +761,8 @@ def update_profile() -> ResponseReturnValue:
 
 
 @config_bp.route("/email/test", methods=["POST"])
+@require_instance_admin
 def test_email() -> ResponseReturnValue:
-    if not session.get("user_id"):
-        abort(403)
     from models import User  # pyright: ignore[reportMissingImports]
     from services.email_service import (
         EmailNotConfiguredError,
@@ -792,9 +792,8 @@ def test_email() -> ResponseReturnValue:
 
 
 @config_bp.route("/check-version", methods=["POST"])
+@require_instance_admin
 def check_version() -> ResponseReturnValue:
-    if not session.get("user_id"):
-        abort(403)
     import json as _json
     from datetime import datetime
 

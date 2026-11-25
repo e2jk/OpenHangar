@@ -93,6 +93,8 @@ def _setup_user(app):
             email="pilot@test.com",
             password_hash=_pw_hash.hash("pw"),
             is_active=True,
+            # Backups, email and version checks are instance-wide.
+            is_instance_admin=True,
         )
         db.session.add(user)
         db.session.flush()
@@ -549,9 +551,10 @@ class TestTriggerBackup:
         fake.stdout = _make_valid_dump()
         return fake
 
-    def test_aborts_403_when_not_logged_in(self, client):
+    def test_signed_out_is_sent_to_login(self, client):
         resp = client.post("/config/run")
-        assert resp.status_code == 403
+        assert resp.status_code == 302
+        assert "/login" in resp.headers["Location"]
 
     def test_aborts_403_in_demo_mode(self, client):
         with patch.dict(os.environ, {"OPENHANGAR_ENV": "demo"}):

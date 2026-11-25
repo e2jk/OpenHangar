@@ -36,6 +36,8 @@ def _create_user_and_tenant(app, email="pilot@example.com"):
             email=email,
             password_hash=_pw_hash.hash("testpass"),
             is_active=True,
+            # Backups, email and version checks are instance-wide.
+            is_instance_admin=True,
         )
         db.session.add(user)
         db.session.flush()
@@ -322,7 +324,8 @@ class TestConfigEmailSection:
 class TestSendTestEmail:
     def test_test_email_not_logged_in(self, app, client):
         resp = client.post("/config/email/test")
-        assert resp.status_code == 403
+        assert resp.status_code == 302
+        assert "/login" in resp.headers["Location"]
 
     def test_test_email_stale_user_id_returns_403(self, app, client):
         with client.session_transaction() as sess:

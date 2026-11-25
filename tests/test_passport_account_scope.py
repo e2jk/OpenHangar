@@ -192,6 +192,9 @@ def test_operator_sees_and_deliberately_promotes_a_restricted_member(
     with app.app_context():
         admin = db.session.get(TenantUser, (scoped["other"], scoped["tenant"]))
         admin.role = Role.OWNER
+        # The fixture makes the member an instance admin, whom only the
+        # instance admin may manage: a plain member is what is promoted here.
+        db.session.get(User, scoped["user"]).is_instance_admin = False
         db.session.commit()
     signin(client, scoped["other"])
     listing = client.get("/config/users/")
