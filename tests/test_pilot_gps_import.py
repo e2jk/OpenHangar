@@ -50,10 +50,10 @@ def _gpx_bytes(speeds_ms=None) -> bytes:
     """).encode()
 
 
-def _make_user_and_aircraft(app):
+def _make_user_and_aircraft(app, email="pgps@example.com", reg="OO-PIL"):
     with app.app_context():
         user = User(
-            email="pgps@example.com",
+            email=email,
             password_hash=_pw_hash.hash("pw"),
             is_active=True,
         )
@@ -67,7 +67,7 @@ def _make_user_and_aircraft(app):
         )
         ac = Aircraft(
             tenant_id=tenant.id,
-            registration="OO-PIL",
+            registration=reg,
             make="Piper",
             model="PA-28",
             logbook_time_precision="tenth_hour",
@@ -1273,6 +1273,65 @@ class TestPilotConfirmMatchedFlightIdOverride:
         with app.app_context():
             assert db.session.get(Flight, other_id).gps_track_id is not None
             assert db.session.get(Flight, default_id).gps_track_id is None
+
+    def test_a_flight_that_was_not_offered_is_never_linked(self, client, app):
+        """A posted id outside the offered candidates (here another
+        organisation's flight) is ignored: no track, no crew seat on it."""
+        import decimal
+
+        uid, _, ac_id = _make_user_and_aircraft(app)
+        _other_uid, _other_tid, other_ac_id = _make_user_and_aircraft(
+            app, email="victim@example.com", reg="OO-VIC"
+        )
+        _login(client, uid)
+
+        with app.app_context():
+            offered = Flight(
+                aircraft_id=ac_id,
+                date=datetime(2024, 6, 1).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("1.0"),
+            )
+            victim = Flight(
+                aircraft_id=other_ac_id,
+                date=datetime(2024, 6, 1).date(),
+                departure_icao="EBNM",
+                arrival_icao="EBAW",
+                flight_time=decimal.Decimal("1.0"),
+            )
+            db.session.add_all([offered, victim])
+            db.session.commit()
+            offered_id, victim_id = offered.id, victim.id
+
+        seg = _seg_dict(0, matched_flight_id=offered_id)
+        seg["matched_ambiguous"] = True
+        seg["matched_candidates"] = [
+            {
+                "id": offered_id,
+                "str": "offered",
+                "aircraft_id": ac_id,
+                "aircraft_reg": "OO-PIL",
+                "has_existing_track": False,
+            }
+        ]
+        _set_upload_session(client, uid, segments=[seg])
+
+        client.post(
+            "/pilot/gps-import/confirm-one",
+            data={
+                "seg_idx": "0",
+                "pilot_role": "dual",
+                "resolution": "other_aircraft",
+                "matched_flight_id": str(victim_id),
+            },
+            follow_redirects=True,
+        )
+
+        with app.app_context():
+            victim = db.session.get(Flight, victim_id)
+            assert victim.gps_track_id is None
+            assert uid not in (victim.pic_user_id, victim.second_crew_user_id)
 
     def test_none_of_these_creates_new_flight_instead(self, client, app):
         import decimal
