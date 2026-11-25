@@ -665,7 +665,12 @@ disable that channel. A 60-second debounce per event type prevents alert storms.
 **Escalated events that trigger an alert:**
 - `auth.login.account_locked` / `auth.login.account_blocked` — active brute force
 - `auth.totp.replay` — targeted session attack
+- `auth.totp.locked` — five wrong authenticator codes for one user: someone
+  may hold the password and be guessing the second factor (the codes are
+  then refused for 30 minutes)
+- `auth.totp.disabled` — two-factor authentication turned off on an account
 - `users.role.changed` / `users.access.revoked` — post-authentication privilege change
+- `backup.verification_failed` — a backup that could not be verified
 
 ### `OPENHANGAR_ALERT_NTFY_TOPIC_URL`
 

@@ -34,6 +34,9 @@ _ESCALATED: frozenset[str] = frozenset(
         "auth.login.account_locked",
         "auth.login.account_blocked",
         "auth.totp.replay",
+        # Five wrong authenticator codes in a row: someone may hold the
+        # password and be guessing the second factor.
+        "auth.totp.locked",
         # Disabling 2FA is a classic account-takeover step (an attacker locking
         # out the legitimate owner); rare enough to alert on without noise.
         "auth.totp.disabled",
