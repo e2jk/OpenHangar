@@ -1609,6 +1609,37 @@ class TestGenerateTracksGif:
             result = generate_tracks_gif(self._sample_rows())
         assert result[:3] == b"GIF"
 
+    def test_a_long_history_keeps_a_bounded_number_of_frames(self, app, monkeypatch):
+        """More tracks than _GIF_MAX_FRAMES: every n-th frame is kept, the
+        last track's frame always, then the final "all tracks" frame."""
+        import io as _io
+
+        from PIL import Image as _Img  # pyright: ignore[reportMissingImports]
+        from utils import generate_tracks_gif  # pyright: ignore[reportMissingImports]
+
+        monkeypatch.setattr("utils._GIF_MAX_FRAMES", 2)
+        rows = [
+            {
+                "date": f"2024-0{i + 1}-01",
+                "dep": "EBNM",
+                "arr": "EBAW",
+                "geojson": {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": [[4.0 + i / 10, 51.0], [4.5 + i / 10, 51.3]],
+                    },
+                    "properties": {},
+                },
+            }
+            for i in range(5)
+        ]
+        with app.app_context():
+            result = generate_tracks_gif(rows)
+        frames = _Img.open(_io.BytesIO(result)).n_frames
+        # stride ceil(5 / 2) = 3: frames of tracks 3 and 5, then the final one
+        assert frames == 3
+
     def test_openaip_overlay_attempted_when_key_provided(self, app):
         """Lines 173-178: OpenAIP overlay branch is entered when key is set."""
         import io as _io

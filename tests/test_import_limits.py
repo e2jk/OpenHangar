@@ -234,6 +234,23 @@ class TestGpsPointBudget:
         ):
             gps_import.parse_gps_file(data, name)
 
+    def test_gpx_points_without_a_time_count_too(self, app, monkeypatch):
+        """Points without a usable time are skipped, but still read: they
+        count against the budget like the others."""
+        from aircraft import gps_import
+
+        monkeypatch.setattr(gps_import, "_MAX_POINTS_PER_FILE", 5)
+        points = '<trkpt lat="50.1" lon="4.1"/>' * 10
+        data = (
+            '<gpx xmlns="http://www.topografix.com/GPX/1/1"><trk><trkseg>'
+            f"{points}</trkseg></trk></gpx>"
+        ).encode()
+        with (
+            app.test_request_context(),
+            pytest.raises(ValueError, match="too many points"),
+        ):
+            gps_import.parse_gps_file(data, "track.gpx")
+
 
 class TestRoutes:
     def test_pilot_import_refuses_a_bomb_with_a_message(self, app, client, no_openpyxl):
@@ -264,6 +281,53 @@ class TestRoutes:
         assert rv.status_code == 422
         assert b"too large to import" in rv.data
 
+    def test_amp_import_ignores_a_merged_range_over_the_whole_sheet(self, app, client):
+        """A few bytes declaring A1:XFD1048576 merged: openpyxl's full mode
+        would build an object per merged cell, read-only mode streams the
+        rows and the programme imports as usual."""
+        from tests.test_amp_import_routes import _VALID_ROWS, _make_xlsx
+
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _amp_login(app, client)
+        source = zipfile.ZipFile(io.BytesIO(_make_xlsx(_VALID_ROWS)))
+        out = io.BytesIO()
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as target:
+            for entry in source.infolist():
+                content = source.read(entry.filename)
+                if entry.filename == "xl/worksheets/sheet1.xml":
+                    content = content.replace(
+                        b"</sheetData>",
+                        b'</sheetData><mergeCells count="1">'
+                        b'<mergeCell ref="A1:XFD1048576"/></mergeCells>',
+                    )
+                target.writestr(entry, content)
+        rv = client.post(
+            f"/aircraft/{acid}/maintenance/import",
+            data={"amp_file": (io.BytesIO(out.getvalue()), "amp.xlsx")},
+            content_type="multipart/form-data",
+        )
+        assert rv.status_code == 200
+        assert b"Engine 100 hr inspection" in rv.data
+
+    def test_amp_import_refuses_more_rows_than_the_budget(
+        self, app, client, monkeypatch
+    ):
+        from tests.test_amp_import_routes import _VALID_ROWS, _make_xlsx
+
+        monkeypatch.setattr("maintenance.amp_import.MAX_ROWS", 3)
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _amp_login(app, client)
+        rows = [*_VALID_ROWS, *([["", "Extra task", "", "", "50FH", ""]] * 5)]
+        rv = client.post(
+            f"/aircraft/{acid}/maintenance/import",
+            data={"amp_file": (io.BytesIO(_make_xlsx(rows)), "amp.xlsx")},
+            content_type="multipart/form-data",
+        )
+        assert rv.status_code == 422
+        assert b"too large to import" in rv.data
+
 
 def test_merged_ranges_starting_outside_the_cells_read_are_ignored():
     from pilots.logbook_import import _merge_label_map
@@ -271,3 +335,17 @@ def test_merged_ranges_starting_outside_the_cells_read_are_ignored():
     rows = [["GROUP", None], ["a", "b"]]
     ranges = [(1, 1, 2, 1), (1, 5, 3, 9), (4, 2, 6, 2)]  # (min_col, min_row, ...)
     assert _merge_label_map(ranges, rows) == {(0, 0): "GROUP", (0, 1): "GROUP"}
+
+
+def test_merged_ranges_only_fill_the_header_band_within_each_row():
+    """A range over thousands of rows, wider than the rows themselves, only
+    fills the rows searched for the header, as wide as each row really is;
+    and only the first ranges are read."""
+    from pilots.logbook_import import _MAX_MERGED_RANGES, _merge_label_map
+
+    rows = [["GROUP"]] + [["x"] for _ in range(49_999)]
+    labels = _merge_label_map([(1, 1, 120, 50_000)], rows)
+    assert labels == {(r, 0): "GROUP" for r in range(20)}
+
+    many = [(1, 1, 1, 1)] * (_MAX_MERGED_RANGES + 5) + [(1, 2, 1, 2)]
+    assert _merge_label_map(many, rows) == {(0, 0): "GROUP"}

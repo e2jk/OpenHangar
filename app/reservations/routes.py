@@ -25,6 +25,7 @@ from flask import (  # pyright: ignore[reportMissingImports]
     url_for,
 )
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+from flask_babel import ngettext  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
     AircraftBookingSettings,
@@ -158,6 +159,41 @@ def _has_conflict(
         MaintenanceDowntime.end_dt > start_dt,
     )
     return dq.first() is not None
+
+
+# Bookings and downtimes must start and end within this many years of today.
+# Anything further out is a typo (or 9999-12-31), and the calendars would
+# otherwise have to step through every day of it.
+_DATE_REACH_YEARS = 10
+
+
+def _out_of_reach(*moments: datetime | None) -> bool:
+    """True when one of the given moments lies further than
+    _DATE_REACH_YEARS from now (missing ones are checked elsewhere)."""
+    reach = timedelta(days=366 * _DATE_REACH_YEARS)
+    now = datetime.now(UTC)
+    return any(m is not None and abs(m - now) > reach for m in moments)
+
+
+def _days_in_month(
+    start: datetime, end: datetime, month_start: datetime, month_end: datetime
+) -> list[_date]:
+    """The days of [start, end] that fall in the displayed month: a long
+    booking or downtime costs one step per shown day, never per day it lasts."""
+    first = max(start.date(), month_start.date())
+    last = min(end.date(), month_end.date())
+    return [first + timedelta(days=n) for n in range((last - first).days + 1)]
+
+
+def _date_reach_error() -> str:
+    return str(
+        ngettext(
+            "Dates must be within one year of today.",
+            "Dates must be within %(n)s years of today.",
+            _DATE_REACH_YEARS,
+            n=_DATE_REACH_YEARS,
+        )
+    )
 
 
 def _parse_datetime(s: str) -> datetime | None:
@@ -513,20 +549,14 @@ def calendar_view(aircraft_id: int):
 
     day_reservations: dict = defaultdict(list)
     for r in reservations:
-        # A reservation may span multiple days — add it to each day it touches
-        cur = r.start_dt.date()
-        end = r.end_dt.date()
-        while cur <= end:
-            day_reservations[cur].append(r)
-            cur += timedelta(days=1)
+        # A reservation may span multiple days — add it to each shown day it touches
+        for day in _days_in_month(r.start_dt, r.end_dt, month_start, month_end):
+            day_reservations[day].append(r)
 
     day_downtimes: dict = defaultdict(list)
     for d in downtimes:
-        cur = d.start_dt.date()
-        end = d.end_dt.date()
-        while cur <= end:
-            day_downtimes[cur].append(d)
-            cur += timedelta(days=1)
+        for day in _days_in_month(d.start_dt, d.end_dt, month_start, month_end):
+            day_downtimes[day].append(d)
 
     # Prev / next month navigation
     prev_month = month - 1 or 12
@@ -579,6 +609,8 @@ def _save_downtime(ac: Aircraft, d: MaintenanceDowntime | None):
         errors.append(_("End date/time is required."))
     if start_dt and end_dt and end_dt <= start_dt:
         errors.append(_("End must be after start."))
+    if _out_of_reach(start_dt, end_dt):
+        errors.append(_date_reach_error())
 
     if errors:
         for msg in errors:
@@ -1157,6 +1189,8 @@ def _save_reservation(
         errors.append(_("Start date/time is required."))
     if not end_dt:
         errors.append(_("End date/time is required."))
+    if _out_of_reach(start_dt, end_dt):
+        errors.append(_date_reach_error())
     if start_dt and end_dt:
         if end_dt <= start_dt:
             errors.append(_("End must be after start."))

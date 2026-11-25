@@ -6,7 +6,7 @@ Covers the checks added to create_app() / _validate_config():
 - MAX_UPLOAD_BYTES must be a plain integer and positive
 - SYNC_SCAN_INTERVAL must be a plain positive integer when set
 - DATABASE_URL must use a PostgreSQL scheme in production
-- BACKUP_ENCRYPTION_KEY must not be whitespace-only
+- BACKUP_ENCRYPTION_KEY must not be whitespace-only or a shipped placeholder
 - Multiple errors reported together
 """
 
@@ -268,6 +268,26 @@ class TestBackupEncryptionKey:
     def test_unset_passes(self, monkeypatch):
         monkeypatch.delenv("OPENHANGAR_BACKUP_ENCRYPTION_KEY", raising=False)
         _validate_config(_app_with(GOOD))
+
+    @pytest.mark.parametrize(
+        "placeholder",
+        ["change-me-backup-encryption-key", "CHANGE_THIS_backup_enc_key"],
+    )
+    def test_shipped_example_value_raises(self, monkeypatch, placeholder):
+        """The example values from docker/.env.example and the Raspberry Pi
+        compose file are refused: a key published in the repository would
+        encrypt nothing."""
+        monkeypatch.setenv("OPENHANGAR_BACKUP_ENCRYPTION_KEY", placeholder)
+        with pytest.raises(RuntimeError, match="BACKUP_ENCRYPTION_KEY.*placeholder"):
+            _validate_config(_app_with(GOOD))
+
+    def test_placeholder_from_secret_file_raises(self, monkeypatch, tmp_path):
+        key_file = tmp_path / "backup_key"
+        key_file.write_text("change-me-backup-encryption-key\n")
+        monkeypatch.delenv("OPENHANGAR_BACKUP_ENCRYPTION_KEY", raising=False)
+        monkeypatch.setenv("OPENHANGAR_BACKUP_ENCRYPTION_KEY_FILE", str(key_file))
+        with pytest.raises(RuntimeError, match="BACKUP_ENCRYPTION_KEY.*placeholder"):
+            _validate_config(_app_with(GOOD))
 
 
 class TestRestoreEncryptionKey:

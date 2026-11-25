@@ -21,7 +21,6 @@ Email alerts reuse the existing OPENHANGAR_SMTP_* env vars.
 import json
 import logging
 import os
-import smtplib
 import threading
 import time
 import urllib.error
@@ -35,6 +34,9 @@ _ESCALATED: frozenset[str] = frozenset(
         "auth.login.account_locked",
         "auth.login.account_blocked",
         "auth.totp.replay",
+        # Five wrong authenticator codes in a row: someone may hold the
+        # password and be guessing the second factor.
+        "auth.totp.locked",
         # Disabling 2FA is a classic account-takeover step (an attacker locking
         # out the legitimate owner); rare enough to alert on without noise.
         "auth.totp.disabled",
@@ -151,11 +153,11 @@ class SecurityAlertHandler(logging.Handler):
             msg["From"] = from_addr
             msg["To"] = to
 
-            conn = smtplib.SMTP(host, port, timeout=10)
-            if use_tls:
-                conn.ehlo()
-                conn.starttls()
-                conn.ehlo()
+            from services.email_service import (  # pyright: ignore[reportMissingImports]
+                open_smtp_connection,
+            )
+
+            conn = open_smtp_connection(host, port, use_tls=use_tls)
             if user:
                 conn.login(user, password)
             conn.sendmail(from_addr, [to], msg.as_bytes())

@@ -27,6 +27,15 @@ from quotes import (  # pyright: ignore[reportMissingImports]
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
+def _assert_verifying(context):
+    """The TLS context checks the server's certificate and host name."""
+    import ssl
+
+    assert isinstance(context, ssl.SSLContext)
+    assert context.verify_mode == ssl.CERT_REQUIRED
+    assert context.check_hostname is True
+
+
 def _create_user_and_tenant(app, email="pilot@example.com"):
     with app.app_context():
         tenant = Tenant(name="Test Hangar")
@@ -102,6 +111,7 @@ class TestEmailService:
 
         mock_smtp.assert_called_once_with("smtp.example.com", 587, timeout=10)
         mock_smtp_instance.starttls.assert_called_once()
+        _assert_verifying(mock_smtp_instance.starttls.call_args.kwargs["context"])
         mock_smtp_instance.login.assert_called_once_with("user@example.com", "secret")
         mock_smtp_instance.sendmail.assert_called_once()
         mock_smtp_instance.quit.assert_called_once()
@@ -128,7 +138,10 @@ class TestEmailService:
         ):
             email_service.send_email("to@example.com", "Hello", "Body text")
 
-        mock_smtp_ssl.assert_called_once_with("mail.example.com", 465, timeout=10)
+        mock_smtp_ssl.assert_called_once()
+        assert mock_smtp_ssl.call_args.args == ("mail.example.com", 465)
+        assert mock_smtp_ssl.call_args.kwargs["timeout"] == 10
+        _assert_verifying(mock_smtp_ssl.call_args.kwargs["context"])
         mock_smtp.assert_not_called()
         mock_instance.starttls.assert_not_called()
         mock_instance.login.assert_called_once_with("user@example.com", "secret")

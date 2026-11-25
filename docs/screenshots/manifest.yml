@@ -274,7 +274,7 @@ screenshots:
 
   - id: explore_where_next
     description: "Where next? — search both Places and passports from the home airfield, with reasons for each destination"
-    url_template: "/explore/where-next?source=both&passport={passport_id}&speed=115&visited=1"
+    url_template: "/explore/where-next?source=both&stamp_book={passport_id}&speed=115&visited=1"
     resolve_passport_title: "Flying friends"
     auth: admin
     wait_for: "#passport-discovery-map .leaflet-tile-loaded"

@@ -328,6 +328,22 @@ class TestFlightFormUpload:
         )
         assert (uploads / "_pilots" / str(uid) / "gps_logs" / "broken.gpx").is_file()
 
+    def test_an_oversized_upload_is_neither_parsed_nor_kept(
+        self, app, client, uploads, monkeypatch
+    ):
+        """The flight form takes GPS files up to the same size as the GPS
+        imports: a larger one is refused before it is read in full."""
+        monkeypatch.setattr("flights.routes._GPS_UPLOAD_MAX_BYTES", 100)
+        uid, _slug, _ac_id = _world(app, "gof9@example.com")
+        _login(client, uid)
+        resp = client.post(
+            "/flights/parse-gps",
+            data={"gps_file": (io.BytesIO(_gpx_bytes()), "big.gpx")},
+            content_type="multipart/form-data",
+        )
+        assert resp.get_json()["success"] is False
+        assert not (uploads / "_pilots" / str(uid) / "gps_logs" / "big.gpx").exists()
+
     def test_forged_archive_name_is_not_linked(self, app, client, uploads):
         uid, _slug, ac_id = _world(app, "gof6@example.com")
         _login(client, uid)
