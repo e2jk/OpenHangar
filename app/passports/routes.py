@@ -129,7 +129,8 @@ def index() -> ResponseReturnValue:
         can_create = True
     except BuilderError:
         can_create = False
-    summaries = progress_many(passports, session["user_id"])
+    user_id = session["user_id"]
+    summaries = progress_many(passports, user_id)
     by_series: dict[int, list[Passport]] = {}
     cards: list[tuple[Passport, list[Passport]]] = []
     for passport in passports:
@@ -146,13 +147,28 @@ def index() -> ResponseReturnValue:
             p for p in reversed(editions.ordered(series_passports)) if p != featured
         ]
         cards.append((featured, history))
-    cards.sort(key=lambda card: (card[0].title, card[0].id))
+    group_series = accessible_group_series().order_by("title", "id").all()
+    series_titles = {series.id: series.title for series in group_series}
+    series_titles.update(
+        (series.id, series.title)
+        for series in PassportSeries.query.filter(
+            PassportSeries.id.in_(by_series),
+            PassportSeries.owner_user_id == user_id,
+        )
+    )
+    cards.sort(
+        key=lambda card: (
+            series_titles.get(card[0].series_id, card[0].title),
+            card[0].id,
+        )
+    )
     return render_template(
         "passports/index.html",
         can_create=can_create,
         can_export=exports.account_has_data(*_actor(), passports),
         cards=cards,
-        group_series=accessible_group_series().order_by("title", "id").all(),
+        group_series=group_series,
+        series_titles=series_titles,
         summaries=summaries,
         card_maps={p.id: _progress_map_rows(summaries[p.id]["rows"]) for p, _ in cards},
     )
