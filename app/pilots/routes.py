@@ -1088,7 +1088,7 @@ def _compute_totals_sql(pilot_user_id: int) -> dict[str, object]:
     so a flight where this pilot was PIC doesn't accidentally credit them
     with the other occupant's dual/instructor time, or vice versa.
     """
-    from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
+    from sqlalchemy import and_, or_  # pyright: ignore[reportMissingImports]
 
     mine = or_(
         Flight.pic_user_id == pilot_user_id,
@@ -1113,9 +1113,19 @@ def _compute_totals_sql(pilot_user_id: int) -> dict[str, object]:
         .filter(mine)
         .one()
     )
+    # On a flight with no other pilot linked, every function column is this
+    # pilot's own (the rule visible_function_fields shows rows by): a
+    # standalone entry, an imported instructor row or the opening balance
+    # sits in the PIC slot yet carries dual / co-pilot / instructor time.
+    alone_as_pic = and_(
+        Flight.pic_user_id == pilot_user_id, Flight.second_crew_user_id.is_(None)
+    )
+    alone_as_second = and_(
+        Flight.second_crew_user_id == pilot_user_id, Flight.pic_user_id.is_(None)
+    )
     fn_pic = (
         db.session.query(func.sum(Flight.function_pic))
-        .filter(Flight.pic_user_id == pilot_user_id, not_fstd)
+        .filter(or_(Flight.pic_user_id == pilot_user_id, alone_as_second), not_fstd)
         .scalar()
     )
     fn_second = (
@@ -1124,7 +1134,9 @@ def _compute_totals_sql(pilot_user_id: int) -> dict[str, object]:
             func.sum(Flight.function_dual),
             func.sum(Flight.function_instructor),
         )
-        .filter(Flight.second_crew_user_id == pilot_user_id, not_fstd)
+        .filter(
+            or_(Flight.second_crew_user_id == pilot_user_id, alone_as_pic), not_fstd
+        )
         .one()
     )
 
