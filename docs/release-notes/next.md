@@ -28,3 +28,8 @@
   relay with a self-signed or private certificate needs that certificate
   trusted (see `OPENHANGAR_SMTP_USE_TLS` in the configuration guide).
   Security alert e-mails now also work on port 465.
+- OpenHangar no longer starts with the example backup encryption key from
+  `docker/.env.example` or the Raspberry Pi compose file: that key is
+  public. If your instance stops at startup with this message, generate a
+  real key (`openssl rand -hex 32`) and keep the old one to restore backups
+  made with it.
