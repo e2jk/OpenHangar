@@ -32,13 +32,19 @@ def _make_env(app, role, *, is_pilot=False, is_maintenance=False, view_only=Fals
             email=f"user-{role.value}@test.dev",
             password_hash=_pw_hash.hash("password-12-chars"),
             is_active=True,
-            is_pilot=is_pilot,
-            is_maintenance=is_maintenance,
-            view_only=view_only,
         )
         db.session.add(user)
         db.session.flush()
-        db.session.add(TenantUser(user_id=user.id, tenant_id=tenant.id, role=role))
+        db.session.add(
+            TenantUser(
+                user_id=user.id,
+                tenant_id=tenant.id,
+                role=role,
+                is_pilot=is_pilot,
+                is_maintenance=is_maintenance,
+                view_only=view_only,
+            )
+        )
         ac = Aircraft(
             tenant_id=tenant.id, registration="OO-TST", make="Test", model="T"
         )
@@ -364,7 +370,7 @@ class TestUserFlagsRoute:
         )
         assert resp.status_code == 200
         with app.app_context():
-            u = db.session.get(User, pilot_id)
+            u = TenantUser.query.filter_by(user_id=pilot_id).one()
             assert u.is_pilot is True
             assert u.is_maintenance is False
             assert u.view_only is False
@@ -379,7 +385,7 @@ class TestUserFlagsRoute:
         )
         assert resp.status_code == 200
         with app.app_context():
-            u = db.session.get(User, pilot_id)
+            u = TenantUser.query.filter_by(user_id=pilot_id).one()
             assert u.view_only is True
             assert u.is_pilot is False
 
@@ -393,7 +399,7 @@ class TestUserFlagsRoute:
         )
         assert resp.status_code == 200
         with app.app_context():
-            u = db.session.get(User, owner_id)
+            u = TenantUser.query.filter_by(user_id=owner_id).one()
             assert u.is_pilot is False  # unchanged
 
 

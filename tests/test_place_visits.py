@@ -6,12 +6,13 @@ from datetime import date, timedelta
 import pytest
 from flask import Flask, render_template
 from flask.testing import FlaskClient
-from models import Flight, PlaceVisit, User, db
+from models import Flight, PlaceVisit, db
 from places import visits
 from places.access import PlaceError
 from places.collections import create_collection, set_member
 from places.management import save_place
 
+from tests.auth_helpers import set_membership_flags
 from tests.test_place_collections import people
 from tests.test_place_management import form
 from tests.test_place_sharing import signin
@@ -99,7 +100,7 @@ def test_a_view_only_account_cannot_record(
     app: Flask, client: FlaskClient, people: dict[str, int], place: dict[str, int]
 ) -> None:
     with app.app_context():
-        db.session.get(User, people["reader"]).view_only = True
+        set_membership_flags(people["reader"], view_only=True)
         db.session.commit()
     signin(client, people, "reader")
     assert client.post(f"/places/{place['place']}/visits").status_code == 302

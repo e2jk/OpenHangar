@@ -564,13 +564,11 @@ def update_user_flags(user_id: int) -> ResponseReturnValue:
     if refused := _refuse_if_protected(tu):
         return refused
 
-    user = db.session.get(User, user_id)
-    if not user:
-        abort(404)
-
-    user.is_pilot = "is_pilot" in request.form
-    user.is_maintenance = "is_maintenance" in request.form
-    user.view_only = "view_only" in request.form
+    # The flags belong to this hangar's membership: they never reach the
+    # account's other hangars.
+    tu.is_pilot = "is_pilot" in request.form
+    tu.is_maintenance = "is_maintenance" in request.form
+    tu.view_only = "view_only" in request.form
     db.session.commit()
     flash(_("User flags updated."), "success")
     return redirect(url_for("users.list_users"))

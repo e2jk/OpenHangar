@@ -37,11 +37,11 @@ class BuilderError(ValueError):
 def require_actor(tenant_id: int, user_id: int, *, creating: bool = False) -> User:
     user: User | None = db.session.get(User, user_id)
     membership = db.session.get(TenantUser, (user_id, tenant_id))
-    if user is None or not user.is_active or user.view_only or membership is None:
+    if user is None or not user.is_active or membership is None or membership.view_only:
         raise BuilderError(_("You cannot manage passports with this account."), 403)
     if creating and not (
         membership.access_scope in ("personal", "logbook")
-        or user.is_pilot
+        or membership.is_pilot
         or membership.role
         in (Role.ADMIN, Role.OWNER, Role.PILOT, Role.STUDENT, Role.INSTRUCTOR)
     ):

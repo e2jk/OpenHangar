@@ -1156,13 +1156,15 @@ def notification_preferences() -> ResponseReturnValue:
     role = current_user_role()
 
     is_owner = role in (Role.ADMIN, Role.OWNER)
-    is_pilot = (
-        role in (Role.ADMIN, Role.OWNER, Role.PILOT, Role.INSTRUCTOR) or user.is_pilot
+    is_pilot = role in (Role.ADMIN, Role.OWNER, Role.PILOT, Role.INSTRUCTOR) or bool(
+        tu and tu.is_pilot
     )
-    is_maint = (
-        role in (Role.ADMIN, Role.OWNER, Role.MAINTENANCE, Role.INSTRUCTOR)
-        or user.is_maintenance
-    )
+    is_maint = role in (
+        Role.ADMIN,
+        Role.OWNER,
+        Role.MAINTENANCE,
+        Role.INSTRUCTOR,
+    ) or bool(tu and tu.is_maintenance)
 
     from passports.reminders import has_participation
 
