@@ -33,3 +33,6 @@
   public. If your instance stops at startup with this message, generate a
   real key (`openssl rand -hex 32`) and keep the old one to restore backups
   made with it.
+- "Where next?" links now name the chosen passports `stamp_book=` in the
+  address instead of `passport=`, which security scanners mistook for a
+  password in the URL. Existing bookmarks keep working.

@@ -78,14 +78,31 @@ def test_chosen_passports_limit_the_search(
 ) -> None:
     ids = _setup(app, owner)
     signin(client, owner["user"])
-    page = _search(client, owner, passport=owner["passport"]).get_data(as_text=True)
+    page = _search(client, owner, stamp_book=owner["passport"]).get_data(as_text=True)
     assert ">Shared</a>" in page and ">Single</a>" not in page
     assert "Second</b> passport" not in page.split("<tbody>")[1]
+    # Bookmarks made with the former parameter name still choose it.
+    legacy = _search(client, owner, passport=owner["passport"]).get_data(as_text=True)
+    assert ">Shared</a>" in legacy and ">Single</a>" not in legacy
     # A passport the user cannot open, or an archived one, is ignored: the
     # search falls back to every active passport.
     for foreign in (999999, ids["old"]):
-        page = _search(client, owner, passport=foreign).get_data(as_text=True)
+        page = _search(client, owner, stamp_book=foreign).get_data(as_text=True)
         assert ">Shared</a>" in page and ">Single</a>" in page
+
+
+def test_no_link_names_a_parameter_after_a_password(
+    app: Flask, client: FlaskClient, owner: dict[str, int]
+) -> None:
+    """URL scanners report any parameter whose name contains "pass" as a
+    password in the URL (ZAP rule 10024): the page, its form and its
+    download links never use one."""
+    _setup(app, owner)
+    signin(client, owner["user"])
+    page = _search(client, owner, stamp_book=owner["passport"]).get_data(as_text=True)
+    assert "passport=" not in page
+    assert 'name="passport"' not in page
+    assert 'name="stamp_book"' in page
 
 
 def test_downloads_cover_the_chosen_passports(
@@ -93,9 +110,9 @@ def test_downloads_cover_the_chosen_passports(
 ) -> None:
     _setup(app, owner)
     signin(client, owner["user"])
-    page = _search(client, owner, passport=owner["passport"]).get_data(as_text=True)
-    assert "download=gpx" in page and f"passport={owner['passport']}" in page
-    download = _search(client, owner, passport=owner["passport"], download="gpx")
+    page = _search(client, owner, stamp_book=owner["passport"]).get_data(as_text=True)
+    assert "download=gpx" in page and f"stamp_book={owner['passport']}" in page
+    download = _search(client, owner, stamp_book=owner["passport"], download="gpx")
     assert download.status_code == 200
     assert (
         'filename="where-next-unvisited.gpx"' in download.headers["Content-Disposition"]
@@ -128,14 +145,14 @@ def test_the_old_passport_url_redirects_with_its_inputs(
     location = urlsplit(response.headers["Location"])
     assert location.path == URL
     assert parse_qs(location.query) == {
-        "passport": [str(owner["passport"])],
+        "stamp_book": [str(owner["passport"])],
         "limit": ["20"],
         "download": ["kml"],
     }
     assert client.get("/passports/999999/where-next").status_code == 404
     # The passport page links straight to the new page.
     detail = client.get(f"/passports/{owner['passport']}/").get_data(as_text=True)
-    assert f"/explore/where-next?passport={owner['passport']}" in detail
+    assert f"/explore/where-next?stamp_book={owner['passport']}" in detail
 
 
 def test_without_passports_the_page_says_how_to_start(

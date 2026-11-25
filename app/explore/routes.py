@@ -72,11 +72,22 @@ def _active_passports() -> list[Passport]:
     )
 
 
+# The query parameter naming the passports to search. Not "passport": URL
+# scanners take any parameter whose name contains "pass" for a password in the
+# URL (ZAP rule 10024). Links and the form use this name; the old one is still
+# read, so existing bookmarks keep working.
+PASSPORT_PARAM = "stamp_book"
+_LEGACY_PASSPORT_PARAM = "passport"
+
+
 def _chosen(passports: list[Passport]) -> list[Passport]:
     """The passports to search: those ticked (only the user's own active
     ones count), else all of them."""
     wanted = {
-        pid for pid in request.args.getlist("passport", type=db_id) if pid is not None
+        pid
+        for name in (PASSPORT_PARAM, _LEGACY_PASSPORT_PARAM)
+        for pid in request.args.getlist(name, type=db_id)
+        if pid is not None
     }
     chosen = [p for p in passports if p.id in wanted]
     return chosen or passports
@@ -260,7 +271,7 @@ def where_next() -> ResponseReturnValue:
         "places"
         if place_id is not None
         else "passports"
-        if request.args.get("passport")
+        if request.args.get(PASSPORT_PARAM) or request.args.get(_LEGACY_PASSPORT_PARAM)
         else "both"
         if len(sources) == 2
         else sources[0]
@@ -441,7 +452,7 @@ def where_next() -> ResponseReturnValue:
         (key, request.args[key][:100]) for key in QUERY_KEYS if key in request.args
     ]
     if len(chosen) != len(passports):
-        query += [("passport", str(p.id)) for p in chosen]
+        query += [(PASSPORT_PARAM, str(p.id)) for p in chosen]
     if len(chosen_collections) != len(collections):
         query += [("collection", str(c.id)) for c in chosen_collections]
     waypoint_links = (
@@ -539,6 +550,6 @@ def redirect_from_passport(passport_id: int) -> ResponseReturnValue:
     target = (
         url_for("explore.where_next")
         + "?"
-        + urlencode([("passport", str(passport_id)), *query])
+        + urlencode([(PASSPORT_PARAM, str(passport_id)), *query])
     )
     return redirect(target)
