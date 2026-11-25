@@ -36,6 +36,7 @@ from models import (
 from utils import (
     activity,
     current_membership,  # pyright: ignore[reportMissingImports]
+    current_user_role,
     login_required,
     require_role,
 )
@@ -79,6 +80,44 @@ def _tenant_id() -> int:
 # ── User list ─────────────────────────────────────────────────────────────────
 
 
+def _protection_reason(tu: TenantUser) -> str | None:
+    """Why the signed-in user may not manage this member, or None.
+
+    Only an admin manages another admin, and only the instance admin manages
+    the instance admin's account: an owner cannot demote, strip or revoke the
+    people who administer the hangar or the instance.
+    """
+    target = db.session.get(User, tu.user_id)
+    if target is not None and target.is_instance_admin:
+        actor = db.session.get(User, session["user_id"])
+        if actor is None or not actor.is_instance_admin:
+            return str(
+                _(
+                    "Only the instance administrator can change the instance "
+                    "administrator's access."
+                )
+            )
+    if tu.role == Role.ADMIN and current_user_role() != Role.ADMIN:
+        return str(_("Only an admin can change another admin's access."))
+    return None
+
+
+def _refuse_if_protected(tu: TenantUser) -> ResponseReturnValue | None:
+    """A redirect with the reason when this member is protected, else None."""
+    reason = _protection_reason(tu)
+    if reason is None:
+        return None
+    _log.warning(
+        "[SECURITY] users.protected_target_refused target_user_id=%s admin_user_id=%s path=%s ip=%s",
+        _sl(str(tu.user_id)),
+        _sl(str(session["user_id"])),
+        _sl(request.path),
+        _sl(request.remote_addr),
+    )
+    flash(reason, "danger")
+    return redirect(url_for("users.list_users"))
+
+
 @users_bp.route("/")
 @login_required
 @require_role(Role.ADMIN, Role.OWNER)
@@ -106,9 +145,13 @@ def list_users() -> ResponseReturnValue:
         row.user_id
         for row in UserAllAircraftAccess.query.filter_by(tenant_id=tid).all()
     }
+    protected_user_ids = {
+        tu.user_id for tu in tenant_users if _protection_reason(tu) is not None
+    }
     return render_template(
         "users/list.html",
         tenant_users=tenant_users,
+        protected_user_ids=protected_user_ids,
         invitations=invitations,
         role_labels=ROLE_LABELS,
         current_user_id=session["user_id"],
@@ -317,6 +360,8 @@ def personal_logbook(user_id: int) -> ResponseReturnValue:
     tu = TenantUser.query.filter_by(user_id=user_id, tenant_id=tid).first_or_404()
     if tu.access_scope == "full" or user_id == session["user_id"]:
         abort(400)
+    if refused := _refuse_if_protected(tu):
+        return refused
     enable = request.form.get("enable") == "yes"
     tu.access_scope = "logbook" if enable else "personal"
     db.session.commit()
@@ -349,6 +394,8 @@ def change_role(user_id: int) -> ResponseReturnValue:
         return redirect(url_for("users.list_users"))
 
     tu = TenantUser.query.filter_by(user_id=user_id, tenant_id=tid).first_or_404()
+    if refused := _refuse_if_protected(tu):
+        return refused
     role_raw = request.form.get("role", "")
     try:
         new_role = Role(role_raw)
@@ -388,10 +435,21 @@ def revoke_access(user_id: int) -> ResponseReturnValue:
         return redirect(url_for("users.list_users"))
 
     tu = TenantUser.query.filter_by(user_id=user_id, tenant_id=tid).first_or_404()
-    user = db.session.get(User, user_id)
-    if user:
-        user.is_active = False
+    if refused := _refuse_if_protected(tu):
+        return refused
     db.session.delete(tu)
+    db.session.flush()
+    # Revoking removes this hangar's membership only. The account itself is
+    # switched off only when it belongs nowhere else: a member of another
+    # hangar (or someone who joined a passport group here) keeps signing in
+    # there.
+    user = db.session.get(User, user_id)
+    if (
+        user is not None
+        and not user.is_instance_admin
+        and TenantUser.query.filter_by(user_id=user_id).first() is None
+    ):
+        user.is_active = False
     db.session.commit()
     _log.warning(
         "[SECURITY] users.access.revoked target_user_id=%s admin_user_id=%s ip=%s",
@@ -499,10 +557,12 @@ def toggle_all_planes(user_id: int) -> ResponseReturnValue:
 @require_role(Role.ADMIN, Role.OWNER)
 def update_user_flags(user_id: int) -> ResponseReturnValue:
     tid = _tenant_id()
-    TenantUser.query.filter_by(user_id=user_id, tenant_id=tid).first_or_404()
+    tu = TenantUser.query.filter_by(user_id=user_id, tenant_id=tid).first_or_404()
     if user_id == session["user_id"]:
         flash(_("You cannot change your own capability flags."), "danger")
         return redirect(url_for("users.list_users"))
+    if refused := _refuse_if_protected(tu):
+        return refused
 
     user = db.session.get(User, user_id)
     if not user:

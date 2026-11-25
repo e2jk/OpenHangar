@@ -60,20 +60,20 @@ msgstr[1] "🎉 Cela fait %(n)s ans que vous avez obtenu votre PPL !"
 msgid "🎉 Today is the anniversary of your PPL!"
 msgstr "🎉 Aujourd'hui, c'est l'anniversaire de l'obtention de votre PPL !"
 
-#: app/init.py:1199
+#: app/init.py:1202
 #, python-format
 msgid "This upload is too large (maximum %(mb)s MB in total). Please upload the files in smaller batches."
 msgstr "Cet envoi est trop volumineux (maximum %(mb)s Mo au total). Veuillez envoyer les fichiers en plusieurs fois."
 
-#: app/init.py:1226
+#: app/init.py:1229
 msgid "Some text entered is too long, so nothing was saved. Please shorten it and try again."
 msgstr "Un texte saisi est trop long, rien n’a donc été enregistré. Veuillez le raccourcir et réessayer."
 
-#: app/flights/form_parsing.py:459 app/init.py:1231
+#: app/flights/form_parsing.py:459 app/init.py:1234
 msgid "A number entered is far too large, so nothing was saved. Please check the values and try again."
 msgstr "Un nombre saisi est beaucoup trop grand, rien n’a donc été enregistré. Veuillez vérifier les valeurs et réessayer."
 
-#: app/init.py:1284
+#: app/init.py:1287
 msgid "The sign-in form had expired. Please sign in again."
 msgstr "Le formulaire de connexion avait expiré. Veuillez vous reconnecter."
 
@@ -643,12 +643,12 @@ msgstr "L'authentification à deux facteurs est maintenant active sur votre comp
 msgid "Account creation is disabled in demo mode."
 msgstr "La création de compte est désactivée en mode démo."
 
-#: app/auth/routes.py:617 app/users/routes.py:255
+#: app/auth/routes.py:617 app/users/routes.py:298
 msgid "A valid email address is required."
 msgstr "Une adresse e-mail valide est obligatoire."
 
 #: app/auth/routes.py:619 app/auth/routes.py:958 app/auth/routes.py:1109
-#: app/users/routes.py:257
+#: app/users/routes.py:300
 msgid "Password must be at least 12 characters."
 msgstr "Le mot de passe doit comporter au moins 12 caractères."
 
@@ -693,7 +693,7 @@ msgid "Current password is incorrect."
 msgstr "Le mot de passe actuel est incorrect."
 
 #: app/auth/routes.py:961 app/auth/routes.py:1112
-#: app/passports/registration.py:114 app/users/routes.py:259
+#: app/passports/registration.py:114 app/users/routes.py:302
 msgid "Passwords do not match."
 msgstr "Les mots de passe ne correspondent pas."
 
@@ -1020,18 +1020,18 @@ msgstr "Scan terminé — aucun nouveau fichier trouvé."
 msgid "Invalid category."
 msgstr "Catégorie invalide."
 
-#: app/documents/routes.py:1272
+#: app/documents/routes.py:1281
 #, python-format
 msgid "Folder renamed to '%(cat)s' — one file processed."
 msgid_plural "Folder renamed to '%(cat)s' — %(n)s files processed."
 msgstr[0] "Dossier renommé en « %(cat)s » — un fichier traité."
 msgstr[1] "Dossier renommé en « %(cat)s » — %(n)s fichiers traités."
 
-#: app/documents/routes.py:1335
+#: app/documents/routes.py:1344
 msgid "Document imported."
 msgstr "Document importé."
 
-#: app/documents/routes.py:1349
+#: app/documents/routes.py:1358
 msgid "File ignored."
 msgstr "Fichier ignoré."
 
@@ -3443,7 +3443,7 @@ msgstr "un ancien membre"
 #: app/places/visits.py:105 app/places/visits.py:139
 #: app/templates/passports/detail.html:30
 #: app/templates/passports/detail.html:35
-#: app/templates/passports/series.html:32 app/templates/users/list.html:46
+#: app/templates/passports/series.html:32 app/templates/users/list.html:47
 msgid "you"
 msgstr "vous"
 
@@ -3486,7 +3486,7 @@ msgstr "Photo de vol"
 #: app/templates/maintenance/fleet.html:3
 #: app/templates/maintenance/fleet.html:12
 #: app/templates/maintenance/list.html:3 app/templates/maintenance/list.html:11
-#: app/templates/share/public.html:53 app/templates/users/list.html:122
+#: app/templates/share/public.html:53 app/templates/users/list.html:123
 #: app/templates/users/permissions.html:61
 #: app/templates/users/permissions.html:96
 msgid "Maintenance"
@@ -4133,7 +4133,7 @@ msgstr[1] "L'assurance de %(reg)s expire le %(date)s (%(days)s jours restants)."
 #: app/templates/dashboard.html:311
 #: app/templates/passports/invitation_settings.html:13
 #: app/templates/passports/public_settings.html:15
-#: app/templates/users/list.html:172
+#: app/templates/users/list.html:173
 msgid "Expires"
 msgstr "Expire"
 
@@ -4572,7 +4572,7 @@ msgstr "Tableau de bord"
 #: app/templates/landing.html:241 app/templates/partials/_crew_claims.html:49
 #: app/templates/reservations/calendar.html:193
 #: app/templates/reservations/detail.html:29
-#: app/templates/reservations/fleet.html:37 app/templates/users/list.html:117
+#: app/templates/reservations/fleet.html:37 app/templates/users/list.html:118
 #: app/templates/users/permissions.html:61
 #: app/templates/users/permissions.html:96
 msgid "Pilot"
@@ -4974,7 +4974,7 @@ msgstr "Visite médicale"
 #: app/templates/dashboard.html:316 app/templates/dashboard.html:414
 #: app/templates/dashboard.html:425 app/templates/passports/detail.html:25
 #: app/templates/passports/vouchers.html:12
-#: app/templates/reservations/fleet.html:111 app/templates/users/list.html:184
+#: app/templates/reservations/fleet.html:111 app/templates/users/list.html:185
 msgid "Expired"
 msgstr "Expiré"
 
@@ -5205,7 +5205,7 @@ msgstr "Notes"
 #: app/templates/reservations/calendar.html:140
 #: app/templates/reservations/calendar.html:200
 #: app/templates/reservations/fleet.html:39 app/templates/users/list.html:37
-#: app/templates/users/list.html:174
+#: app/templates/users/list.html:175
 msgid "Actions"
 msgstr "Actions"
 
@@ -5708,8 +5708,8 @@ msgstr "Réservoirs de carburant"
 #: app/templates/pilots/entry_form.html:89
 #: app/templates/pilots/entry_form.html:149
 #: app/templates/pwa/share_target.html:85
-#: app/templates/pwa/share_target.html:103 app/templates/users/list.html:224
-#: app/templates/users/list.html:229
+#: app/templates/pwa/share_target.html:103 app/templates/users/list.html:225
+#: app/templates/users/list.html:230
 msgid "optional"
 msgstr "facultatif"
 
@@ -5808,7 +5808,7 @@ msgstr "Détermine comment les temps de vol importés via GPS sont arrondis dans
 #: app/templates/pwa/share_target.html:118
 #: app/templates/refuels/refuel_form.html:59
 #: app/templates/reservations/downtime_form.html:70
-#: app/templates/users/list.html:101
+#: app/templates/users/list.html:102
 msgid "Save"
 msgstr "Enregistrer"
 
@@ -6555,8 +6555,8 @@ msgid "Revoke this share link?"
 msgstr "Révoquer ce lien de partage ?"
 
 #: app/templates/aircraft/detail.html:1221
-#: app/templates/config/renters_list.html:67 app/templates/users/list.html:146
-#: app/templates/users/list.html:199
+#: app/templates/config/renters_list.html:67 app/templates/users/list.html:147
+#: app/templates/users/list.html:200
 msgid "Revoke"
 msgstr "Révoquer"
 
@@ -7769,7 +7769,7 @@ msgstr "Ajouter un élément d'équipement"
 #: app/templates/airworthiness/equipment_board.html:47
 #: app/templates/auth/setup.html:304 app/templates/flights/flight_form.html:393
 #: app/templates/partials/_crew_claims.html:50 app/templates/users/list.html:34
-#: app/templates/users/list.html:171 app/templates/users/list.html:234
+#: app/templates/users/list.html:172 app/templates/users/list.html:235
 msgid "Role"
 msgstr "Rôle"
 
@@ -7855,7 +7855,7 @@ msgstr[1] "%(n)s documents au total"
 #: app/templates/partials/_logbook_list_controls.html:58
 #: app/templates/passports/detail.html:34
 #: app/templates/passports/discussion.html:14
-#: app/templates/places/index.html:11 app/templates/users/list.html:85
+#: app/templates/places/index.html:11 app/templates/users/list.html:86
 msgid "All"
 msgstr "Tout"
 
@@ -8157,11 +8157,11 @@ msgstr "Modifier le mot de passe et gérer la double authentification"
 #: app/templates/maintenance/_amp_export_body.html:193
 #: app/templates/maintenance/amp_declaration_form.html:162
 #: app/templates/users/invite_accept.html:23 app/templates/users/list.html:33
-#: app/templates/users/list.html:170 app/templates/users/list.html:229
+#: app/templates/users/list.html:171 app/templates/users/list.html:230
 msgid "Email"
 msgstr "E-mail"
 
-#: app/templates/auth/profile.html:31 app/templates/users/list.html:224
+#: app/templates/auth/profile.html:31 app/templates/users/list.html:225
 msgid "Display name"
 msgstr "Nom d'affichage"
 
@@ -8423,7 +8423,7 @@ msgstr "Invitez vos copropriétaires"
 msgid "Add your co-owners here. We'll generate a secure link for each person to create their account. You can add more later."
 msgstr "Ajoutez vos copropriétaires ici. Nous générerons un lien sécurisé pour que chaque personne puisse créer son compte. Vous pourrez en ajouter d'autres plus tard."
 
-#: app/templates/auth/setup.html:296 app/templates/users/list.html:226
+#: app/templates/auth/setup.html:296 app/templates/users/list.html:227
 msgid "e.g. Alice Dupont"
 msgstr "ex. Alice Dupont"
 
@@ -9060,7 +9060,7 @@ msgstr "Contrôlez qui peut accéder à ce hangar et ce qu'il peut faire."
 msgid "No users yet."
 msgstr "Aucun utilisateur pour l'instant."
 
-#: app/templates/config/settings.html:96 app/templates/users/list.html:161
+#: app/templates/config/settings.html:96 app/templates/users/list.html:162
 msgid "Open invitations"
 msgstr "Invitations en attente"
 
@@ -12252,12 +12252,12 @@ msgstr "Vous êtes hors ligne — affichage de la copie enregistrée sur cet app
 msgid "A read-only copy of this logbook, saved on this device so you can read it without a connection. It is updated each time you open the logbook while online. Changes need a connection."
 msgstr "Une copie en lecture seule de ce carnet, enregistrée sur cet appareil pour pouvoir le consulter sans connexion. Elle est mise à jour chaque fois que vous ouvrez le carnet en ligne. Les modifications nécessitent une connexion."
 
-#: app/templates/offline/_snapshot_notice.html:14
+#: app/templates/offline/_snapshot_notice.html:16
 #, python-brace-format
 msgid "Saved {when}."
 msgstr "Enregistrée le {when}."
 
-#: app/templates/offline/_snapshot_notice.html:15
+#: app/templates/offline/_snapshot_notice.html:17
 msgid "No copy of this logbook on this device yet — open the logbook once while online."
 msgstr "Pas encore de copie de ce carnet sur cet appareil — ouvrez le carnet une fois en ligne."
 
@@ -16458,7 +16458,7 @@ msgstr "Gérer les accès et les rôles de votre hangar"
 msgid "Current Users"
 msgstr "Utilisateurs actuels"
 
-#: app/templates/users/list.html:35 app/templates/users/list.html:250
+#: app/templates/users/list.html:35 app/templates/users/list.html:251
 msgid "Aircraft access"
 msgstr "Accès aux avions"
 
@@ -16466,96 +16466,96 @@ msgstr "Accès aux avions"
 msgid "Capability flags"
 msgstr "Indicateurs de capacité"
 
-#: app/templates/users/list.html:49
+#: app/templates/users/list.html:50
 msgid "inactive"
 msgstr "inactif"
 
-#: app/templates/users/list.html:54 app/templates/users/list.html:59
+#: app/templates/users/list.html:55 app/templates/users/list.html:60
 msgid "Personal account with pilot logbook"
 msgstr "Compte personnel avec carnet de vol"
 
-#: app/templates/users/list.html:54 app/templates/users/list.html:59
+#: app/templates/users/list.html:55 app/templates/users/list.html:60
 msgid "Personal account"
 msgstr "Compte personnel"
 
-#: app/templates/users/list.html:68
+#: app/templates/users/list.html:69
 msgid "No aircraft access"
 msgstr "Aucun accès aux aéronefs"
 
-#: app/templates/users/list.html:74
+#: app/templates/users/list.html:75
 msgid "Remove personal logbook access"
 msgstr "Retirer l’accès au carnet de vol personnel"
 
-#: app/templates/users/list.html:74
+#: app/templates/users/list.html:75
 msgid "Enable personal logbook"
 msgstr "Activer le carnet de vol personnel"
 
-#: app/templates/users/list.html:79 app/templates/users/permissions.html:49
+#: app/templates/users/list.html:80 app/templates/users/permissions.html:49
 msgid "All aircraft"
 msgstr "Tous les avions"
 
-#: app/templates/users/list.html:107
+#: app/templates/users/list.html:108
 msgid "No aircraft"
 msgstr "Aucun avion"
 
-#: app/templates/users/list.html:127
+#: app/templates/users/list.html:128
 msgid "View only"
 msgstr "Lecture seule"
 
-#: app/templates/users/list.html:140 app/templates/users/permissions.html:5
+#: app/templates/users/list.html:141 app/templates/users/permissions.html:5
 #: app/templates/users/permissions.html:13
 msgid "Permissions"
 msgstr "Permissions"
 
-#: app/templates/users/list.html:144
+#: app/templates/users/list.html:145
 msgid "Revoke access for this user?"
 msgstr "Révoquer l'accès à cet utilisateur ?"
 
-#: app/templates/users/list.html:173
+#: app/templates/users/list.html:174
 msgid "Link"
 msgstr "Lien"
 
-#: app/templates/users/list.html:180
+#: app/templates/users/list.html:181
 msgid "(any)"
 msgstr "(tous)"
 
-#: app/templates/users/list.html:197
+#: app/templates/users/list.html:198
 msgid "Revoke this invitation?"
 msgstr "Révoquer cette invitation ?"
 
-#: app/templates/users/list.html:210
+#: app/templates/users/list.html:211
 msgid "No pending invitations."
 msgstr "Aucune invitation en attente."
 
-#: app/templates/users/list.html:215
+#: app/templates/users/list.html:216
 msgid "Invite Users"
 msgstr "Inviter des utilisateurs"
 
-#: app/templates/users/list.html:231
+#: app/templates/users/list.html:232
 msgid "user@example.com"
 msgstr "utilisateur@exemple.com"
 
-#: app/templates/users/list.html:243
+#: app/templates/users/list.html:244
 msgid "Viewer (read-only): read-only access to aircraft, maintenance and flights, plus personal features (passports, Places)."
 msgstr "Observateur (lecture seule) : accès en lecture seule aux avions, à la maintenance et aux vols, plus les fonctions personnelles (passeports, Lieux)."
 
-#: app/templates/users/list.html:244
+#: app/templates/users/list.html:245
 msgid "For someone who only needs passports and Places, with no access to the aircraft, invite them to a passport instead: they get a Personal account."
 msgstr "Pour une personne qui n'a besoin que des passeports et des Lieux, sans accès aux avions, invitez-la plutôt à un passeport : elle obtient un compte personnel."
 
-#: app/templates/users/list.html:250
+#: app/templates/users/list.html:251
 msgid "leave empty for none"
 msgstr "laisser vide pour aucun"
 
-#: app/templates/users/list.html:267
+#: app/templates/users/list.html:268
 msgid "Add another person"
 msgstr "Ajouter une autre personne"
 
-#: app/templates/users/list.html:273
+#: app/templates/users/list.html:274
 msgid "Create invitations"
 msgstr "Créer des invitations"
 
-#: app/templates/users/list.html:276
+#: app/templates/users/list.html:277
 msgid "Invitation links are valid for 7 days. If email is provided and SMTP is configured, the link is sent automatically."
 msgstr "Les liens d'invitation sont valables 7 jours. Si un e-mail est fourni et que le SMTP est configuré, le lien est envoyé automatiquement."
 
@@ -16589,93 +16589,101 @@ msgstr "Défaut du rôle"
 msgid "Save permissions"
 msgstr "Enregistrer les permissions"
 
-#: app/users/routes.py:139
+#: app/users/routes.py:96
+msgid "Only the instance administrator can change the instance administrator's access."
+msgstr "Seul l’administrateur de l’instance peut modifier les accès de l’administrateur de l’instance."
+
+#: app/users/routes.py:101
+msgid "Only an admin can change another admin's access."
+msgstr "Seul un administrateur peut modifier les accès d’un autre administrateur."
+
+#: app/users/routes.py:182
 msgid "No invitations to create."
 msgstr "Aucune invitation à créer."
 
-#: app/users/routes.py:190
+#: app/users/routes.py:233
 #, python-format
 msgid "Invitation created. Share this link: %(url)s"
 msgstr "Invitation créée. Partagez ce lien : %(url)s"
 
-#: app/users/routes.py:195
+#: app/users/routes.py:238
 #, python-format
 msgid "%(n)s invitations created."
 msgstr "%(n)s invitation(s) créée(s)."
 
-#: app/users/routes.py:212
+#: app/users/routes.py:255
 msgid "You've been invited to OpenHangar"
 msgstr "Vous avez été invité sur OpenHangar"
 
-#: app/users/routes.py:233
+#: app/users/routes.py:276
 msgid "This invitation has already been used."
 msgstr "Cette invitation a déjà été utilisée."
 
-#: app/users/routes.py:237
+#: app/users/routes.py:280
 msgid "This invitation has expired."
 msgstr "Cette invitation a expiré."
 
-#: app/users/routes.py:261
+#: app/users/routes.py:304
 msgid "An account with this email already exists."
 msgstr "Un compte avec cette adresse e-mail existe déjà."
 
-#: app/users/routes.py:300
+#: app/users/routes.py:343
 msgid "Account created. You can now log in."
 msgstr "Compte créé. Vous pouvez maintenant vous connecter."
 
-#: app/users/routes.py:331
+#: app/users/routes.py:376
 msgid "Personal pilot logbook enabled."
 msgstr "Carnet de vol personnel activé."
 
-#: app/users/routes.py:333
+#: app/users/routes.py:378
 msgid "Personal pilot logbook access removed. The entries are kept."
 msgstr "Accès au carnet de vol personnel retiré. Les entrées sont conservées."
 
-#: app/users/routes.py:348
+#: app/users/routes.py:393
 msgid "You cannot change your own role."
 msgstr "Vous ne pouvez pas modifier votre propre rôle."
 
-#: app/users/routes.py:374
+#: app/users/routes.py:421
 msgid "Role updated."
 msgstr "Rôle mis à jour."
 
-#: app/users/routes.py:387
+#: app/users/routes.py:434
 msgid "You cannot revoke your own access."
 msgstr "Vous ne pouvez pas révoquer votre propre accès."
 
-#: app/users/routes.py:402
+#: app/users/routes.py:460
 msgid "Access revoked."
 msgstr "Accès révoqué."
 
-#: app/users/routes.py:417
+#: app/users/routes.py:475
 msgid "Invitation revoked."
 msgstr "Invitation révoquée."
 
-#: app/users/routes.py:433 app/users/routes.py:479
+#: app/users/routes.py:491 app/users/routes.py:537
 msgid "Owners and admins always have full fleet access."
 msgstr "Les propriétaires et administrateurs ont toujours un accès complet à la flotte."
 
-#: app/users/routes.py:464
+#: app/users/routes.py:522
 msgid "Aircraft access updated."
 msgstr "Accès aux avions mis à jour."
 
-#: app/users/routes.py:490
+#: app/users/routes.py:548
 msgid "All-aircraft access updated."
 msgstr "Accès à tous les avions mis à jour."
 
-#: app/users/routes.py:504
+#: app/users/routes.py:562
 msgid "You cannot change your own capability flags."
 msgstr "Vous ne pouvez pas modifier vos propres indicateurs de capacité."
 
-#: app/users/routes.py:515
+#: app/users/routes.py:575
 msgid "User flags updated."
 msgstr "Indicateurs utilisateur mis à jour."
 
-#: app/users/routes.py:547
+#: app/users/routes.py:607
 msgid "Owners and admins always have full fleet access — no custom permissions needed."
 msgstr "Les propriétaires et administrateurs ont toujours accès à toute la flotte — aucune permission personnalisée requise."
 
-#: app/users/routes.py:586
+#: app/users/routes.py:646
 msgid "Permissions updated."
 msgstr "Permissions mises à jour."
 
