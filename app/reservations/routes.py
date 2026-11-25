@@ -1215,6 +1215,22 @@ def _save_reservation(
                             h=settings.max_booking_hours,
                         )
                     )
+    if (
+        r is not None
+        and r.status == ReservationStatus.CONFIRMED
+        and start_dt
+        and end_dt
+        and end_dt > start_dt
+        and _has_conflict(ac.id, start_dt, end_dt, exclude_id=r.id)
+    ):
+        # A confirmed booking keeps its confirmation when edited: it must
+        # stay clear of the others, as confirming it had to.
+        errors.append(
+            _(
+                "These times overlap an existing confirmed reservation or "
+                "maintenance downtime."
+            )
+        )
 
     if errors:
         for msg in errors:
