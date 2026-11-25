@@ -854,6 +854,14 @@ def _amp_import_tmp_dir() -> str:
     return d
 
 
+def _open_amp_workbook(data: bytes) -> openpyxl.Workbook:
+    """The uploaded programme, read-only: openpyxl's full mode builds one
+    object for every cell of each merged range, so a few bytes declaring
+    A1:XFD1048576 merged would exhaust memory. Read-only mode streams the
+    rows and ignores merges (the parser never needs them)."""
+    return openpyxl.load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+
+
 def _cleanup_amp_import_tmp(uid: int) -> None:
     meta = session.get(_AMP_IMPORT_SESSION_KEY)
     if meta and meta.get("uid") == uid:
@@ -931,7 +939,7 @@ def import_amp_upload(aircraft_id: int) -> ResponseReturnValue:
         # to before it starts (S08). The confirm step re-reads this same,
         # already-checked file from its temporary copy.
         check_xlsx_archive(data, max_expanded=_MAX_AMP_EXPANDED_BYTES)
-        wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True)
+        wb = _open_amp_workbook(data)
         components = list(ac.components)
         rows = parse_amp_rows(wb, components)
     except ValueError as exc:
@@ -993,7 +1001,7 @@ def import_amp_commit(aircraft_id: int) -> ResponseReturnValue:
 
     with open(tmp_path, "rb") as fh:
         data = fh.read()
-    wb = openpyxl.load_workbook(io.BytesIO(data), data_only=True)
+    wb = _open_amp_workbook(data)
     components = list(ac.components)
     components_by_id = {c.id: c for c in components}
     rows = parse_amp_rows(wb, components)
