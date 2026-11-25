@@ -35,6 +35,25 @@ def N_(s: str) -> str:
     return s
 
 
+def holds_non_demo_data(db: SQLAlchemy) -> bool:
+    """True when the database holds accounts but no demo slot: a real
+    instance, which demo mode's wipe must never touch.
+
+    A demo database always has its visitor slots (demo_seed), and a real
+    instance never does, so they mark which kind this is — including demo
+    databases built before this check existed.
+    """
+    inspector = inspect(db.engine)
+    if not inspector.has_table("users"):
+        return False
+    with db.engine.connect() as conn:
+        if conn.execute(text("SELECT 1 FROM users LIMIT 1")).first() is None:
+            return False
+        if not inspector.has_table("demo_slots"):
+            return True
+        return conn.execute(text("SELECT 1 FROM demo_slots LIMIT 1")).first() is None
+
+
 def reset_schema(db: SQLAlchemy) -> None:
     """Drop and recreate the demo database's public schema, then rebuild tables.
 

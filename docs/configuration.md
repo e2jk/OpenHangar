@@ -152,8 +152,16 @@ Application environment. Controls debug output, seed data loading, and email
 suppression.
 
 - **Allowed values**: `production`, `development`, `test`, `demo`
-- **Default**: `production`
-- Never set to `development` on an internet-facing host.
+- **Default**: `production` — the only value for a real instance.
+- `development`: runs Flask's own server with the interactive debugger, and
+  loads the development seed (accounts with published passwords) into an
+  empty database. Never on an internet-facing host.
+- `test`: shows full error tracebacks on error pages. For the test suite only.
+- `demo`: **erases the whole database and loads the demo seed on every
+  container start.** For the public demo only, on its own database. To
+  protect a real instance set to `demo` by mistake, the container refuses to
+  start (and changes nothing) when the database holds accounts but no demo
+  slots; set `production` again, or give demo mode its own empty database.
 
 ### `OPENHANGAR_E2E_SEED`
 
