@@ -507,3 +507,46 @@ class TestAirframeImportRoute:
             assert fe.engine_time == Decimal("0.8")
             assert fe.departure_time == time(8, 48)
             assert Flight.query.filter_by(aircraft_id=acid).count() == 2
+
+
+def test_overwrite_never_pushes_another_pilot_off_their_flight(app):
+    """Pilot B imports a row for a flight pilot X logged and picks
+    "overwrite": X stays PIC with their values, B takes the free seat."""
+    from datetime import date
+    from decimal import Decimal
+
+    from models import Flight, User, db  # pyright: ignore[reportMissingImports]
+    from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
+        merge_into_existing,
+    )
+
+    with app.app_context():
+        x = User(email="x@example.com", password_hash="x", is_active=True)
+        b = User(email="b@example.com", password_hash="x", is_active=True)
+        db.session.add_all([x, b])
+        db.session.flush()
+        fe = Flight(
+            date=date(2026, 6, 1),
+            pic_user_id=x.id,
+            function_pic=Decimal("1.5"),
+            departure_icao="EBAW",
+            notes="X's remark",
+        )
+        db.session.add(fe)
+        db.session.flush()
+        merge_into_existing(
+            fe,
+            {
+                "function_dual": Decimal("2.0"),
+                "departure_icao": "EBKT",
+                "notes": "B's remark",
+            },
+            b.id,
+            fill_only=False,
+        )
+        assert fe.pic_user_id == x.id
+        assert fe.function_pic == Decimal("1.5")
+        assert fe.departure_icao == "EBAW"
+        assert fe.second_crew_user_id == b.id
+        assert fe.function_dual == Decimal("2.0")  # B's own, empty before
+        assert fe.notes.startswith("X's remark")  # kept, never replaced
