@@ -1326,7 +1326,7 @@ def import_reconcile(pending_id: int) -> ResponseReturnValue:
 
     aircraft_id_raw = request.form.get("aircraft_id")
     try:
-        aircraft_id: int | None = int(aircraft_id_raw) if aircraft_id_raw else None
+        aircraft_id: int | None = db_id(aircraft_id_raw) if aircraft_id_raw else None
     except (ValueError, TypeError):
         aircraft_id = None
     if aircraft_id is not None:

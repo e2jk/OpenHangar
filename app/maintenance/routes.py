@@ -3,6 +3,7 @@ import io
 import json
 import os
 import uuid
+import zipfile
 from datetime import date as _date
 from typing import Any
 
@@ -45,6 +46,9 @@ from models import (
     db,
     next_due_date,
 )  # pyright: ignore[reportMissingImports]
+from openpyxl.utils.exceptions import (  # pyright: ignore[reportMissingImports]
+    InvalidFileException,
+)
 from pwa import pending  # pyright: ignore[reportMissingImports]
 from services.authorization import (
     AuthorizationService,  # pyright: ignore[reportMissingImports]
@@ -968,6 +972,11 @@ def import_amp_upload(aircraft_id: int) -> ResponseReturnValue:
         rows = parse_amp_rows(wb, components)
     except ValueError as exc:
         flash(str(exc), "danger")
+        return render_template("maintenance/amp_import_upload.html", aircraft=ac), 422
+    except (zipfile.BadZipFile, InvalidFileException, KeyError):
+        # A corrupt or renamed file: openpyxl's own errors used to end in a
+        # server error.
+        flash(_("This file is not a readable .xlsx workbook."), "danger")
         return render_template("maintenance/amp_import_upload.html", aircraft=ac), 422
 
     if not rows:
