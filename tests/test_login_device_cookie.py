@@ -79,3 +79,30 @@ def test_signing_in_keeps_the_addresss_failures(app, client):
     _sign_in(client)
     with app.app_context():
         assert login_throttle.record_failure(_ip_key("127.0.0.1"), 3600) == 2
+
+
+def test_demo_slots_cannot_be_opened_with_the_shared_password(app, client, monkeypatch):
+    _make_user(app)
+    monkeypatch.setenv("OPENHANGAR_ENV", "demo")
+    resp = client.post(
+        "/login",
+        data={
+            "email": "demo-owner-1@openhangar.demo",
+            "password": "demo-slot-password",
+        },
+    )
+    assert resp.status_code == 403
+    assert b"opened from the demo page" in resp.data
+
+
+def test_demo_slot_credentials_cannot_be_changed(app, client, monkeypatch):
+    _make_user(app)
+    with app.app_context():
+        uid = User.query.filter_by(email=EMAIL).one().id
+    with client.session_transaction() as sess:
+        sess["user_id"] = uid
+    monkeypatch.setenv("OPENHANGAR_ENV", "demo")
+    resp = client.post("/profile", data={"action": "setup_totp"}, follow_redirects=True)
+    assert b"cannot be changed in the demo" in resp.data
+    with app.app_context():
+        assert db.session.get(User, uid).totp_secret is None
