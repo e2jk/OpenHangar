@@ -1355,6 +1355,32 @@ class TestServiceTrigger:
             assert t.due_date == date(2027, 4, 1)
             assert float(t.due_engine_hours) == 250.0
 
+    def test_serviced_one_off_item_is_no_longer_overdue(self, app, client):
+        """An item with no interval (done once) stops being due once it is
+        serviced: it used to stay overdue with its past due date."""
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        with app.app_context():
+            t = MaintenanceTrigger(
+                aircraft_id=acid,
+                name="AD 2025-0123 one-time inspection",
+                trigger_type=TriggerType.CALENDAR,
+                due_date=date(2026, 1, 1),
+            )
+            db.session.add(t)
+            db.session.commit()
+            trid = t.id
+        _login(app, client)
+        client.post(
+            f"/aircraft/{acid}/maintenance/{trid}/service",
+            data={"performed_at": "2026-02-01"},
+        )
+        with app.app_context():
+            t = db.session.get(MaintenanceTrigger, trid)
+            assert t.due_date is None
+            assert t.status(current_engine_hours=0, current_landings=0) != "overdue"
+            assert len(t.records) == 1
+
     def test_combined_trigger_service_form_shows_both_fields_required(
         self, app, client
     ):

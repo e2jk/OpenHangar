@@ -1200,3 +1200,15 @@ Items from the audit that need a feature of their own rather than a fix.
   shows existing links again from it). Add an expiry date to choose when
   creating a link, and store a digest as passport shares (`PublicShare`) do,
   showing a link only once when it is created.
+- **Hangar time zone.** "Today" (expiry and overdue boundaries, currency) is
+  the server's date, UTC in Docker: an item that expired yesterday evening,
+  local time, shows as valid until 01:00 or 02:00. Booking times typed in a
+  local-time picker are stored as UTC. Add a hangar time zone setting and use
+  it for "today" and for booking input.
+- **Expenses of a deleted flight.** Per-flight expenses (renter fuel, say)
+  are left out of the wet rate; deleting the flight clears their link and
+  they start counting as operating costs. Keep a per-flight marker that does
+  not depend on the link, or ask what to do with them when deleting.
+- **Costs in several currencies.** Each expense has its own currency, but
+  the cost dashboard adds amounts whatever their currency. Fix one currency
+  per hangar, or total each currency apart.

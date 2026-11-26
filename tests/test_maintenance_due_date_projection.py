@@ -1,3 +1,5 @@
+import pytest
+
 """
 Tests for backlog item: maintenance due-date projection from utilization trend.
 """
@@ -155,6 +157,17 @@ class TestWeeklyUtilizationRate:
             rate = weekly_utilization_rate(acid, HoursBasis.ENGINE, today=today)
         assert rate is not None
         assert rate > 0
+
+    def test_rate_counts_from_the_first_flight_of_the_window(self, app):
+        """Flown only in the last 21 days: 8 h over 3 weeks, not 90 days."""
+        tid = _create_tenant(app)
+        acid = _add_aircraft(app, tid)
+        today = date.today()
+        for days_ago in (0, 7, 14, 21):
+            _add_flight(app, acid, today - timedelta(days=days_ago), engine_time=2.0)
+        with app.app_context():
+            rate = weekly_utilization_rate(acid, HoursBasis.ENGINE, today=today)
+        assert rate == pytest.approx(8.0 / 3)
 
     def test_uses_flight_basis_when_requested(self, app):
         tid = _create_tenant(app)
