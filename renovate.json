@@ -26,6 +26,11 @@
       "commitMessageTopic": "vendor asset {{depName}}"
     },
     {
+      "matchPackageNames": ["psycopg", "psycopg-binary"],
+      "groupName": "psycopg",
+      "description": "psycopg loads the compiled parts of the same psycopg-binary version: updated apart (PRs #606/#607), every database import fails."
+    },
+    {
       "matchManagers": ["github-actions"],
       "matchPackageNames": ["github/codeql-action/*"],
       "groupName": "codeql-action",
