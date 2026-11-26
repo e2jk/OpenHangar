@@ -56,7 +56,7 @@ services:
       - "-loglevel=${SOCKET_PROXY_LOG_LEVEL:-WARN}"
       - "-listenip=0.0.0.0"
       - "-allowfrom=traefik"
-      - '-allowGET=/v1\..{1,2}/(version|_ping|containers/.*|events.*)'
+      - '-allowGET=/v1\..{1,2}/(version|_ping|containers/json|containers/[a-zA-Z0-9_.-]+/json|events)'
       - "-allowHEAD=/_ping"
     # Runs as the image's built-in unprivileged "nobody" user (65534), paired
     # with the host's docker group so it can read (but the mount below is
