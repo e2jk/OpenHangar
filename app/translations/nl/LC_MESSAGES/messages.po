@@ -3292,8 +3292,8 @@ msgstr "De maker van de collectie moet bewerkingsrechten behouden."
 msgid "The creator must transfer or delete the collection before leaving."
 msgstr "De maker moet de collectie overdragen of verwijderen voordat die de collectie verlaat."
 
-#: app/places/collections.py:201 app/places/routes.py:276
-#: app/places/routes.py:282 app/places/routes.py:289
+#: app/places/collections.py:201 app/places/routes.py:281
+#: app/places/routes.py:287 app/places/routes.py:294
 msgid "Choose a member of this collection."
 msgstr "Kies een lid van deze collectie."
 
@@ -3373,23 +3373,23 @@ msgstr "Voormalig lid"
 msgid "Confirm the permanent deletion of this place."
 msgstr "Bevestig de definitieve verwijdering van deze plaats."
 
-#: app/places/routes.py:161
+#: app/places/routes.py:166
 msgid "Select places and a destination collection."
 msgstr "Selecteer plaatsen en een doelcollectie."
 
-#: app/places/routes.py:300
+#: app/places/routes.py:305
 msgid "Invitation saved. Ask your friend to sign in and open Places."
 msgstr "Uitnodiging opgeslagen. Vraag je vriend om in te loggen en Plaatsen te openen."
 
-#: app/places/routes.py:306 app/places/sharing.py:74 app/places/sharing.py:98
+#: app/places/routes.py:311 app/places/sharing.py:74 app/places/sharing.py:98
 msgid "Invitation not found or expired."
 msgstr "Uitnodiging niet gevonden of verlopen."
 
-#: app/places/routes.py:311 app/places/tags.py:29 app/places/tags.py:73
+#: app/places/routes.py:316 app/places/tags.py:29 app/places/tags.py:73
 msgid "Tag not found."
 msgstr "Tag niet gevonden."
 
-#: app/places/routes.py:329
+#: app/places/routes.py:334
 msgid "Review the collection totals and confirm its deletion."
 msgstr "Controleer het aantal plaatsen en bezoeken in de collectie en bevestig de verwijdering."
 
@@ -5765,7 +5765,7 @@ msgstr "Definieer één regel per tank (slechts één voor een enkele gecombinee
 #: app/templates/maintenance/trigger_form.html:29
 #: app/templates/passports/builder.html:16
 #: app/templates/passports/next_edition.html:8
-#: app/templates/places/index.html:12
+#: app/templates/places/index.html:20
 msgid "Name"
 msgstr "Naam"
 
@@ -7165,8 +7165,8 @@ msgstr[1] "%(n)s onderdelen"
 #: app/templates/aircraft/list.html:73 app/templates/passports/detail.html:20
 #: app/templates/passports/print.html:19 app/templates/passports/series.html:10
 #: app/templates/passports/series.html:28
-#: app/templates/passports/vouchers.html:10 app/templates/places/index.html:12
-#: app/templates/places/index.html:48 app/templates/places/place_detail.html:9
+#: app/templates/passports/vouchers.html:10 app/templates/places/index.html:20
+#: app/templates/places/index.html:56 app/templates/places/place_detail.html:9
 msgid "Archived"
 msgstr "Gearchiveerd"
 
@@ -7896,7 +7896,7 @@ msgstr[1] "%(n)s documenten totaal"
 #: app/templates/partials/_logbook_list_controls.html:58
 #: app/templates/passports/detail.html:34
 #: app/templates/passports/discussion.html:14
-#: app/templates/places/index.html:12 app/templates/users/list.html:86
+#: app/templates/places/index.html:20 app/templates/users/list.html:86
 msgid "All"
 msgstr "Alle"
 
@@ -8912,7 +8912,7 @@ msgstr "Drempelwaarde"
 #: app/templates/config/notifications.html:170
 #: app/templates/config/tenant_list.html:47
 #: app/templates/passports/group_members.html:16
-#: app/templates/places/index.html:12
+#: app/templates/places/index.html:20
 msgid "Active"
 msgstr "Actief"
 
@@ -10627,7 +10627,7 @@ msgstr "Vliegveldpaspoorten"
 #: app/templates/passports/series.html:19
 #: app/templates/passports/vouchers.html:12
 #: app/templates/passports/vouchers.html:33
-#: app/templates/passports/vouchers.html:40
+#: app/templates/passports/vouchers.html:40 app/templates/places/index.html:15
 #: app/templates/places/place_form.html:29
 msgid "Airfield"
 msgstr "Vliegveld"
@@ -12616,7 +12616,7 @@ msgid "Anyone"
 msgstr "Iedereen"
 
 #: app/templates/partials/_list_filters.html:73
-#: app/templates/places/index.html:12
+#: app/templates/places/index.html:20
 msgid "Apply filters"
 msgstr "Filters toepassen"
 
@@ -13164,7 +13164,7 @@ msgstr "Door jou bezocht"
 #: app/templates/passports/record_visit.html:14
 #: app/templates/passports/series.html:17
 #: app/templates/passports/series.html:19 app/templates/passports/target.html:9
-#: app/templates/places/index.html:12 app/templates/places/index.html:45
+#: app/templates/places/index.html:20 app/templates/places/index.html:53
 msgid "Visited"
 msgstr "Bezocht"
 
@@ -15260,7 +15260,7 @@ msgstr "Voorkeur"
 msgid "%(distance)s km from this place"
 msgstr "%(distance)s km van deze plek"
 
-#: app/templates/places/_airfields.html:3 app/templates/places/index.html:39
+#: app/templates/places/_airfields.html:3 app/templates/places/index.html:47
 #: app/templates/places/place_form.html:31
 msgid "No linked airfield"
 msgstr "Geen gekoppeld vliegveld"
@@ -15587,126 +15587,130 @@ msgstr "Collecties met plekken"
 msgid "All collections"
 msgstr "Alle collecties"
 
-#: app/templates/places/index.html:12
+#: app/templates/places/index.html:17
+msgid "Clear airfield filter"
+msgstr "Vliegveldfilter wissen"
+
+#: app/templates/places/index.html:20
 msgid "Show places"
 msgstr "Plaatsen tonen"
 
-#: app/templates/places/index.html:12
+#: app/templates/places/index.html:20
 msgid "Active and archived"
 msgstr "Actief en gearchiveerd"
 
-#: app/templates/places/index.html:12
+#: app/templates/places/index.html:20
 msgid "Bin"
 msgstr "Prullenbak"
 
-#: app/templates/places/index.html:12
+#: app/templates/places/index.html:20
 msgid "My visits"
 msgstr "Mijn bezoeken"
 
-#: app/templates/places/index.html:12 app/templates/places/index.html:45
+#: app/templates/places/index.html:20 app/templates/places/index.html:53
 msgid "Not yet visited"
 msgstr "Nog niet bezocht"
 
-#: app/templates/places/index.html:12
+#: app/templates/places/index.html:20
 msgid "Tag"
 msgstr "Tag"
 
-#: app/templates/places/index.html:12
+#: app/templates/places/index.html:20
 msgid "All tags"
 msgstr "Alle tags"
 
-#: app/templates/places/index.html:12
+#: app/templates/places/index.html:20
 msgid "Sort by"
 msgstr "Sorteren op"
 
-#: app/templates/places/index.html:12
+#: app/templates/places/index.html:20
 msgid "Date added"
 msgstr "Datum toegevoegd"
 
-#: app/templates/places/index.html:12
+#: app/templates/places/index.html:20
 msgid "Last visit"
 msgstr "Laatste bezoek"
 
-#: app/templates/places/index.html:12
+#: app/templates/places/index.html:20
 msgid "Location"
 msgstr "Locatie"
 
-#: app/templates/places/index.html:12 app/templates/places/index.html:47
+#: app/templates/places/index.html:20 app/templates/places/index.html:55
 #: app/templates/places/place_detail.html:19
 msgid "Location still to add"
 msgstr "Locatie nog toe te voegen"
 
-#: app/templates/places/index.html:12
+#: app/templates/places/index.html:20
 msgid "Located"
 msgstr "Locatie bekend"
 
-#: app/templates/places/index.html:12
+#: app/templates/places/index.html:20
 msgid "Airfield links"
 msgstr "Vliegveldkoppelingen"
 
-#: app/templates/places/index.html:12
+#: app/templates/places/index.html:20
 msgid "With linked airfields"
 msgstr "Met gekoppelde vliegvelden"
 
-#: app/templates/places/index.html:12
+#: app/templates/places/index.html:20
 msgid "Without linked airfields"
 msgstr "Zonder gekoppelde vliegvelden"
 
-#: app/templates/places/index.html:13
+#: app/templates/places/index.html:21
 msgid "Places in the bin are permanently deleted after 30 days. Any editor can restore them before then."
 msgstr "Plaatsen in de prullenbak worden na 30 dagen definitief verwijderd. Elk lid met bewerkingsrechten kan ze voor die tijd herstellen."
 
-#: app/templates/places/index.html:22
+#: app/templates/places/index.html:30
 msgid "Move to another collection"
 msgstr "Naar een andere collectie verplaatsen"
 
-#: app/templates/places/index.html:25 app/templates/places/place_detail.html:23
+#: app/templates/places/index.html:33 app/templates/places/place_detail.html:23
 msgid "Destination collection"
 msgstr "Doelcollectie"
 
-#: app/templates/places/index.html:27
+#: app/templates/places/index.html:35
 msgid "Choose a collection"
 msgstr "Kies een collectie"
 
-#: app/templates/places/index.html:29
+#: app/templates/places/index.html:37
 msgid "Move"
 msgstr "Verplaatsen"
 
-#: app/templates/places/index.html:32
+#: app/templates/places/index.html:40
 #, python-format
 msgid "Select %(place)s"
 msgstr "Selecteer %(place)s"
 
-#: app/templates/places/index.html:32 app/templates/places/place_detail.html:16
+#: app/templates/places/index.html:40 app/templates/places/place_detail.html:16
 msgid "Place photo"
 msgstr "Foto van de plaats"
 
-#: app/templates/places/index.html:45
+#: app/templates/places/index.html:53
 #, python-format
 msgid "Last visited %(date)s"
 msgstr "Laatst bezocht op %(date)s"
 
-#: app/templates/places/index.html:51
+#: app/templates/places/index.html:59
 msgid "Restore place"
 msgstr "Plaats herstellen"
 
-#: app/templates/places/index.html:51 app/templates/places/place_detail.html:24
+#: app/templates/places/index.html:59 app/templates/places/place_detail.html:24
 msgid "I confirm the permanent deletion of this place and its visits."
 msgstr "Ik bevestig de definitieve verwijdering van deze plaats en de bijbehorende bezoeken."
 
-#: app/templates/places/index.html:51 app/templates/places/place_detail.html:24
+#: app/templates/places/index.html:59 app/templates/places/place_detail.html:24
 msgid "Permanently delete place"
 msgstr "Plaats definitief verwijderen"
 
-#: app/templates/places/index.html:51
+#: app/templates/places/index.html:59
 msgid "No places in this view yet."
 msgstr "Er zijn nog geen plaatsen in deze weergave."
 
-#: app/templates/places/index.html:52
+#: app/templates/places/index.html:60
 msgid "Download GPX"
 msgstr "GPX downloaden"
 
-#: app/templates/places/index.html:52
+#: app/templates/places/index.html:60
 msgid "Download KML"
 msgstr "KML downloaden"
 

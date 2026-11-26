@@ -1,5 +1,8 @@
 # Security hardening: sign-in, links, uploads, backups and upgrades
 
+- Click an airfield code on a place card to filter Places to that airfield
+  within the current collection or across all your collections.
+
 - Places shows three cards per row on the widest screens. Airfield and
   visit badges wrap below the place name when space is tight. Dinant is a
   named example of a place still to locate in the sample data.
