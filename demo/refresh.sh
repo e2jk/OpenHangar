@@ -25,10 +25,9 @@ done
 [ -f "${COMPOSE_DIR}/.env" ] || { echo "ERROR: .env not found in any parent directory"; exit 1; }
 ENV_FILE="$(readlink -f "${COMPOSE_DIR}/.env")"
 
-# Read image and container/service name from .env, fall back to defaults if not set.
-# Resolves one level of ${VAR} indirection (e.g. OPENHANGAR_DEMO_IMAGE=${OPENHANGAR_IMAGE})
-# since docker compose's own .env parser supports that but this hand-rolled reader
-# otherwise wouldn't, and would hand a literal "${VAR}" string to `docker pull`.
+# Read the container/service name from .env, fall back to the default if not set.
+# Resolves one level of ${VAR} indirection (e.g. X=${Y}), as docker compose's
+# own .env parser does.
 _env_val() {
   local val
   val="$(grep -E "^${1}=" "${ENV_FILE}" 2>/dev/null | cut -d= -f2 | tr -d "\"'" | head -1)"
@@ -37,8 +36,13 @@ _env_val() {
   fi
   printf '%s' "${val}"
 }
-IMAGE="$(_env_val OPENHANGAR_DEMO_IMAGE)"
-IMAGE="${IMAGE:-ghcr.io/e2jk/openhangar:latest}"
+# The image the launcher pulled and verified, by digest: the demo runs exactly
+# that, never whatever a tag points to by the time Compose looks it up.
+IMAGE="${OPENHANGAR_VERIFIED_IMAGE:-}"
+if [ -z "${IMAGE}" ]; then
+  echo "ERROR: OPENHANGAR_VERIFIED_IMAGE is not set: run this through openhangar-launcher.sh refresh, which verifies the image first."
+  exit 1
+fi
 CONTAINER="$(_env_val OPENHANGAR_DEMO_WEB_CONTAINER)"
 CONTAINER="${CONTAINER:-openhangar-demo-web}"
 SERVICE="${CONTAINER}"
@@ -57,26 +61,20 @@ else
   echo "OPENHANGAR_DEMO_NEXT_WIPE_UTC=${NEXT_WIPE}" >> "${ENV_FILE}"
 fi
 
-# ── 2. Pull latest image and detect if it changed ────────────────────────────
-log "Pulling latest image..."
-OLD_ID=$(docker image inspect "${IMAGE}" --format '{{.Id}}' 2>/dev/null || echo "none")
-if docker pull --quiet "${IMAGE}"; then
-  NEW_ID=$(docker image inspect "${IMAGE}" --format '{{.Id}}' 2>/dev/null || echo "none")
-else
-  log "WARNING: Image pull failed -- continuing with existing image"
-  NEW_ID="${OLD_ID}"
-fi
-
+# ── 2. Recreate the web container from the verified image ────────────────────
+CURRENT=$(docker inspect --format '{{.Image}}' "${CONTAINER}" 2>/dev/null || echo "none")
+NEW_ID=$(docker image inspect "${IMAGE}" --format '{{.Id}}' 2>/dev/null || echo "unknown")
 # Recreating the container is the wipe: in demo mode, every start rebuilds the
 # schema, reseeds the demo slots and reapplies the env-var settings
 # (docker-init-db.py). --force-recreate makes sure it happens even when
 # nothing in the config changed.
-if [ "${OLD_ID}" != "${NEW_ID}" ]; then
-  log "New image detected -- recreating web container..."
+if [ "${CURRENT}" != "${NEW_ID}" ]; then
+  log "New image ${IMAGE} -- recreating web container..."
 else
   log "Image unchanged -- recreating web container..."
 fi
-docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
+# A variable set here overrides .env for Compose's interpolation.
+OPENHANGAR_DEMO_IMAGE="${IMAGE}" docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
   --env-file "${ENV_FILE}" up -d --force-recreate "${SERVICE}"
 
 # ── 3. Wait for the wiped and reseeded demo to serve again ───────────────────

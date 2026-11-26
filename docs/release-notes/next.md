@@ -73,7 +73,8 @@
 - The demo's scheduled wipe is down for about half as long: the refresh
   script no longer resets the database while the restarted app is still
   reseeding it, which crashed it into a second restart. It also finishes
-  again, so old images get pruned.
+  again, so old images get pruned, and it runs the demo from the exact
+  image the launcher verified, by digest, instead of pulling the tag again.
 
 **Maintenance**
 
