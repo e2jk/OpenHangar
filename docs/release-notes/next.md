@@ -25,3 +25,7 @@
 **Maintenance**
 
 - Updated the Ruff linter and formatter to 0.17.5.
+- The offline-login browser tests no longer fail now and then with
+  "database is locked": their test server answers a page again when two
+  requests collide on its SQLite file while the service worker loads
+  several pages at once.

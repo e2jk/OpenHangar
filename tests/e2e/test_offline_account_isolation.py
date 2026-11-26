@@ -12,6 +12,37 @@ pytestmark = pytest.mark.e2e
 PASSWORD = "OfflineBrowserPassword123!"
 
 
+def _retry_locked_reads(app):
+    """Answer a GET again when this test server's SQLite file was busy.
+
+    The server is threaded on purpose (tests hold one request while others go
+    through), and the service worker loads several pages at once after a
+    login. When two requests that have both read then both write (/places/
+    creates the personal collection on a first visit), SQLite refuses the
+    second at once with "database is locked" instead of waiting, and the page
+    fails. A GET can simply be answered again. PostgreSQL, used in
+    production, has no such conflict. (Queueing every transaction with BEGIN
+    IMMEDIATE instead changed the timing enough to stall the worker upgrade
+    in test_logout_permission_loss_and_worker_upgrade_retire_private_cache.)
+    """
+    from sqlalchemy.exc import OperationalError
+
+    wsgi_app = app.wsgi_app
+
+    def retrying(environ, start_response):
+        retries = 2 if environ.get("REQUEST_METHOD") in ("GET", "HEAD") else 0
+        for attempt in range(retries):
+            try:
+                return wsgi_app(environ, start_response)
+            except OperationalError as exc:
+                if "database is locked" not in str(exc):
+                    raise
+                time.sleep(0.2 * (attempt + 1))  # the session was removed on teardown
+        return wsgi_app(environ, start_response)
+
+    app.wsgi_app = retrying
+
+
 @pytest.fixture
 def isolated_offline_server(tmp_path, monkeypatch):
     import pw_hash
@@ -98,6 +129,7 @@ def isolated_offline_server(tmp_path, monkeypatch):
         flash("TEST-SAVED-ONCE", "success")
         return redirect("/pilot/minimums")
 
+    _retry_locked_reads(app)
     server = make_server("127.0.0.1", 0, app, threaded=True)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
