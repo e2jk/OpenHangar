@@ -1755,7 +1755,7 @@ def test_an_invitation_claimed_meanwhile_creates_no_account(app, client):
 def test_the_invitation_email_is_translated(app, client):
     from unittest.mock import patch
 
-    tid, admin_uid = _make_tenant_user(app, "admin@fr-invite.dev", Role.ADMIN)
+    _tid, admin_uid = _make_tenant_user(app, "admin@fr-invite.dev", Role.ADMIN)
     with app.app_context():
         db.session.get(User, admin_uid).language = "fr"
         db.session.commit()
