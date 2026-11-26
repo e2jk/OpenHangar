@@ -257,15 +257,15 @@ msgstr "%(reg)s opgeslagen."
 msgid "Ownership updated."
 msgstr "Eigendom bijgewerkt."
 
-#: app/aircraft/routes.py:992 app/config/routes.py:1710
+#: app/aircraft/routes.py:992 app/config/routes.py:1716
 msgid "Payment amount must be positive."
 msgstr "Het betalingsbedrag moet positief zijn."
 
-#: app/aircraft/routes.py:995 app/config/routes.py:1713
+#: app/aircraft/routes.py:995 app/config/routes.py:1719
 msgid "Invalid payment amount."
 msgstr "Ongeldig betalingsbedrag."
 
-#: app/aircraft/routes.py:1002 app/config/routes.py:1720
+#: app/aircraft/routes.py:1002 app/config/routes.py:1726
 msgid "Invalid payment date."
 msgstr "Ongeldige betalingsdatum."
 
@@ -278,7 +278,7 @@ msgstr "Betaling — %(note)s"
 msgid "Payment"
 msgstr "Betaling"
 
-#: app/aircraft/routes.py:1024 app/config/routes.py:1743
+#: app/aircraft/routes.py:1024 app/config/routes.py:1749
 msgid "Payment recorded."
 msgstr "Betaling geregistreerd."
 
@@ -542,64 +542,64 @@ msgstr "EASA-knooppunt toegevoegd."
 msgid "EASA source node removed."
 msgstr "EASA-knooppunt verwijderd."
 
-#: app/airworthiness/routes.py:356
+#: app/airworthiness/routes.py:382
 msgid "Document added."
 msgstr "Document toegevoegd."
 
-#: app/airworthiness/routes.py:377
+#: app/airworthiness/routes.py:403
 msgid "Only manually added documents can be deleted."
 msgstr "Alleen handmatig toegevoegde documenten kunnen worden verwijderd."
 
-#: app/airworthiness/routes.py:381 app/documents/routes.py:757
+#: app/airworthiness/routes.py:407 app/documents/routes.py:757
 #: app/documents/routes.py:997
 msgid "Document deleted."
 msgstr "Document verwijderd."
 
-#: app/airworthiness/routes.py:420
+#: app/airworthiness/routes.py:444
 msgid "Status updated."
 msgstr "Status bijgewerkt."
 
-#: app/airworthiness/routes.py:456
+#: app/airworthiness/routes.py:480
 msgid "Installed STC added."
 msgstr "Geïnstalleerde STC toegevoegd."
 
-#: app/airworthiness/routes.py:473
+#: app/airworthiness/routes.py:497
 msgid "Installed STC removed."
 msgstr "Geïnstalleerde STC verwijderd."
 
-#: app/airworthiness/routes.py:520
+#: app/airworthiness/routes.py:544
 msgid "AD/SB item added."
 msgstr "AD/SB-item toegevoegd."
 
-#: app/airworthiness/routes.py:547
+#: app/airworthiness/routes.py:571
 msgid "AD/SB item updated."
 msgstr "AD/SB-item bijgewerkt."
 
-#: app/airworthiness/routes.py:566
+#: app/airworthiness/routes.py:590
 msgid "AD/SB item removed."
 msgstr "AD/SB-item verwijderd."
 
-#: app/airworthiness/routes.py:633
+#: app/airworthiness/routes.py:657
 msgid "Equipment unit added."
 msgstr "Uitrustingsonderdeel toegevoegd."
 
-#: app/airworthiness/routes.py:670
+#: app/airworthiness/routes.py:694
 msgid "Equipment unit updated."
 msgstr "Uitrustingsonderdeel bijgewerkt."
 
-#: app/airworthiness/routes.py:694
+#: app/airworthiness/routes.py:718
 msgid "Equipment unit removed."
 msgstr "Uitrustingsonderdeel verwijderd."
 
-#: app/airworthiness/routes.py:716
+#: app/airworthiness/routes.py:740
 msgid "Estimated cost must be a non-negative number."
 msgstr "Geschatte kosten moeten een niet-negatief getal zijn."
 
-#: app/airworthiness/routes.py:727
+#: app/airworthiness/routes.py:751
 msgid "Wish-list item added."
 msgstr "Verlanglijst-item toegevoegd."
 
-#: app/airworthiness/routes.py:746
+#: app/airworthiness/routes.py:770
 msgid "Wish-list item removed."
 msgstr "Verlanglijst-item verwijderd."
 
@@ -783,155 +783,152 @@ msgstr "OpenAIP API-sleutel verwijderd."
 msgid "Backup completed: %(filename)s"
 msgstr "Back-up voltooid: %(filename)s"
 
-#: app/config/routes.py:698
-#, python-format
-msgid "Backup failed: %(error)s"
-msgstr "Back-up mislukt: %(error)s"
+#: app/config/routes.py:699
+msgid "Backup failed. The server log has the details."
+msgstr "Back-up mislukt. Het serverlogboek bevat de details."
 
-#: app/config/routes.py:725
+#: app/config/routes.py:726
 msgid "Invalid operating model."
 msgstr "Ongeldig exploitatiemodel."
 
-#: app/config/routes.py:761
+#: app/config/routes.py:762
 msgid "Usage profile updated."
 msgstr "Gebruiksprofiel bijgewerkt."
 
-#: app/config/routes.py:788
+#: app/config/routes.py:789
 #, python-format
 msgid "Test email sent to %(email)s."
 msgstr "Test-e-mail verzonden naar %(email)s."
 
-#: app/config/routes.py:790
+#: app/config/routes.py:791
 #, python-format
 msgid "Email not configured: %(error)s"
 msgstr "E-mail niet geconfigureerd: %(error)s"
 
-#: app/config/routes.py:792
-#, python-format
-msgid "Email send failed: %(error)s"
-msgstr "Verzenden van e-mail mislukt: %(error)s"
+#: app/config/routes.py:796
+msgid "Email send failed. The server log has the details."
+msgstr "Verzenden van de e-mail mislukt. Het serverlogboek bevat de details."
 
-#: app/config/routes.py:824
+#: app/config/routes.py:828
 msgid "Version check refreshed."
 msgstr "Versiecontrole vernieuwd."
 
-#: app/config/routes.py:915
+#: app/config/routes.py:919
 msgid "An upgrade is already in progress."
 msgstr "Er is al een update bezig."
 
-#: app/config/routes.py:918
+#: app/config/routes.py:922
 msgid "Upgrade already triggered."
 msgstr "Update al geactiveerd."
 
-#: app/config/routes.py:930
-#, python-format
-msgid "Pre-upgrade backup failed, upgrade not triggered: %(error)s"
-msgstr "Backup vóór de upgrade is mislukt, upgrade niet gestart: %(error)s"
+#: app/config/routes.py:936
+msgid "Pre-upgrade backup failed, upgrade not triggered. The server log has the details."
+msgstr "Back-up vóór de upgrade mislukt, upgrade niet gestart. Het serverlogboek bevat de details."
 
-#: app/config/routes.py:943
+#: app/config/routes.py:949
 #, python-format
 msgid "Backup created (%(filename)s). Upgrade triggered — the service will restart shortly."
 msgstr "Backup aangemaakt (%(filename)s). Upgrade gestart — de service wordt binnenkort opnieuw gestart."
 
-#: app/config/routes.py:1042
+#: app/config/routes.py:1048
 msgid "Tenant name is required."
 msgstr "Naam van de huurder is verplicht."
 
-#: app/config/routes.py:1045
+#: app/config/routes.py:1051
 msgid "Admin email is required."
 msgstr "E-mail van de beheerder is verplicht."
 
-#: app/config/routes.py:1076
+#: app/config/routes.py:1082
 #, python-format
 msgid "Tenant '%(name)s' created. Share this invite link with the owner: %(url)s"
 msgstr "Omgeving '%(name)s' aangemaakt. Deel deze uitnodigingslink met de eigenaar: %(url)s"
 
-#: app/config/routes.py:1102
+#: app/config/routes.py:1108
 #, python-format
 msgid "Tenant '%(name)s' reactivated."
 msgstr "Huurder '%(name)s' geheractiveerd."
 
-#: app/config/routes.py:1104
+#: app/config/routes.py:1110
 #, python-format
 msgid "Tenant '%(name)s' deactivated."
 msgstr "Huurder '%(name)s' gedeactiveerd."
 
-#: app/config/routes.py:1130
+#: app/config/routes.py:1136
 msgid "No user selected."
 msgstr "Geen gebruiker geselecteerd."
 
-#: app/config/routes.py:1211
+#: app/config/routes.py:1217
 msgid "Cannot save: no tenant associated."
 msgstr "Kan niet opslaan: geen groep gekoppeld."
 
-#: app/config/routes.py:1249
+#: app/config/routes.py:1255
 msgid "Notification preferences saved."
 msgstr "Meldingsvoorkeuren opgeslagen."
 
-#: app/config/routes.py:1328
+#: app/config/routes.py:1334
 #, python-format
 msgid "Back-fill complete: one of %(total)d entry resolved."
 msgid_plural "Back-fill complete: %(updated)d of %(total)d entries resolved."
 msgstr[0] "Aanvulling voltooid: één van %(total)d vermelding opgelost."
 msgstr[1] "Aanvulling voltooid: %(updated)d van %(total)d vermeldingen opgelost."
 
-#: app/config/routes.py:1364
+#: app/config/routes.py:1370
 #, python-format
 msgid "Back-fill complete: %(count)d entry linked to a managed aircraft."
 msgid_plural "Back-fill complete: %(count)d entries linked to a managed aircraft."
 msgstr[0] "Aanvulling voltooid: %(count)d vermelding gekoppeld aan een beheerd vliegtuig."
 msgstr[1] "Aanvulling voltooid: %(count)d vermeldingen gekoppeld aan een beheerd vliegtuig."
 
-#: app/config/routes.py:1496
+#: app/config/routes.py:1502
 msgid "Select a valid renter."
 msgstr "Selecteer een geldige huurder."
 
-#: app/config/routes.py:1503 app/config/routes.py:1508
+#: app/config/routes.py:1509 app/config/routes.py:1514
 msgid "Invalid aircraft selection."
 msgstr "Ongeldige toestelselectie."
 
-#: app/config/routes.py:1511
+#: app/config/routes.py:1517
 msgid "Granted date is required and must be a valid date."
 msgstr "De toekenningsdatum is verplicht en moet een geldige datum zijn."
 
-#: app/config/routes.py:1513
+#: app/config/routes.py:1519
 msgid "Expiry date cannot be before the granted date."
 msgstr "De vervaldatum mag niet vóór de toekenningsdatum liggen."
 
-#: app/config/routes.py:1527
+#: app/config/routes.py:1533
 msgid "This file type is not allowed for the rental agreement."
 msgstr "Dit bestandstype is niet toegestaan voor het huurcontract."
 
-#: app/config/routes.py:1571
+#: app/config/routes.py:1577
 msgid "Rental agreement"
 msgstr "Huurcontract"
 
-#: app/config/routes.py:1577
+#: app/config/routes.py:1583
 msgid "Renter authorization saved."
 msgstr "Huurautorisatie opgeslagen."
 
-#: app/config/routes.py:1623
+#: app/config/routes.py:1629
 msgid "Renter authorization revoked."
 msgstr "Huurautorisatie ingetrokken."
 
-#: app/config/routes.py:1737
+#: app/config/routes.py:1743
 msgid "Payment received"
 msgstr "Betaling ontvangen"
 
-#: app/config/routes.py:1853
+#: app/config/routes.py:1859
 msgid "Every flight with a GPS track was checked again."
 msgstr "Elke vlucht met een GPS-spoor is opnieuw gecontroleerd."
 
-#: app/config/routes.py:1882
+#: app/config/routes.py:1888
 msgid "This difference no longer applies."
 msgstr "Dit verschil is niet meer van toepassing."
 
-#: app/config/routes.py:1893
+#: app/config/routes.py:1899
 #, python-format
 msgid "Flight corrected: %(old)s → %(new)s. Nothing else was changed; the flight's notes record the paper logbook value."
 msgstr "Vlucht gecorrigeerd: %(old)s → %(new)s. Verder is niets gewijzigd; de notities van de vlucht vermelden de waarde uit het papieren logboek."
 
-#: app/config/routes.py:1929
+#: app/config/routes.py:1935
 msgid "Difference dismissed."
 msgstr "Verschil terzijde gelegd."
 

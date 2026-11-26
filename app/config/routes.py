@@ -694,8 +694,9 @@ def run_backup_now() -> ResponseReturnValue:
     try:
         record = run_backup()
         flash(_("Backup completed: %(filename)s", filename=record.filename), "success")
-    except RuntimeError as exc:
-        flash(_("Backup failed: %(error)s", error=exc), "danger")
+    except RuntimeError:
+        log.exception("Manual backup failed")
+        flash(_("Backup failed. The server log has the details."), "danger")
     return redirect(url_for("config.index"))
 
 
@@ -789,7 +790,10 @@ def test_email() -> ResponseReturnValue:
     except EmailNotConfiguredError as exc:
         flash(_("Email not configured: %(error)s", error=exc), "warning")
     except EmailSendError as exc:
-        flash(_("Email send failed: %(error)s", error=exc), "danger")
+        log.warning(
+            "Test email failed: %s", str(exc).splitlines()[0] if str(exc) else ""
+        )
+        flash(_("Email send failed. The server log has the details."), "danger")
     return redirect(url_for("config.index"))
 
 
@@ -924,11 +928,13 @@ def trigger_upgrade() -> ResponseReturnValue:
     # rather than proceed without a fresh safety net.
     try:
         record = run_backup()
-    except RuntimeError as exc:
+    except RuntimeError:
+        # The details (pg_dump's own output) go to the log, never the page.
+        log.exception("Pre-upgrade backup failed")
         flash(
             _(
-                "Pre-upgrade backup failed, upgrade not triggered: %(error)s",
-                error=exc,
+                "Pre-upgrade backup failed, upgrade not triggered. "
+                "The server log has the details."
             ),
             "danger",
         )
