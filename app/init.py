@@ -757,6 +757,25 @@ def create_app() -> Flask:
 
         return format_preview_cell(val, target)
 
+    @app.template_global("qr_data_url")
+    def qr_data_url(text: str) -> str:
+        """An SVG QR code of *text* as a data: URL, drawn here: the
+        authenticator setup pages no longer need a QR script in the browser
+        (the qrcodejs package is unmaintained)."""
+        import base64
+
+        import qrcode  # pyright: ignore[reportMissingImports]
+        from qrcode.image.svg import SvgPathImage  # pyright: ignore[reportMissingImports]
+
+        svg = qrcode.make(
+            text,
+            image_factory=SvgPathImage,
+            error_correction=qrcode.constants.ERROR_CORRECT_M,
+            box_size=10,
+            border=2,
+        ).to_string()
+        return "data:image/svg+xml;base64," + base64.b64encode(svg).decode()
+
     @app.template_global("review_values_differ")
     def _review_values_differ_global(old: Any, new: Any, places: int = 2) -> bool:
         from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]

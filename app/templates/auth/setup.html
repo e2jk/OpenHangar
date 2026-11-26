@@ -96,7 +96,7 @@
       </p>
 
       <div class="totp-qr-wrapper">
-        <div id="qr-container" data-totp-uri="{{ provisioning_uri }}"></div>
+        <img id="qr-container" src="{{ qr_data_url(provisioning_uri) }}" width="200" height="200" alt="{{ _('QR code to scan with your authenticator app') }}">
         <div class="totp-secret-display">{{ totp_secret }}</div>
         <div class="form-text mt-2">{{ _("Enter this key manually if you can't scan the QR code.") }}</div>
       </div>
