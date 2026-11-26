@@ -380,6 +380,10 @@ def list_triggers(aircraft_id: int) -> ResponseReturnValue:
     tid = _tenant_id()
     uid = session["user_id"]
     maint_view = AuthorizationService.maintenance_view_level(uid, aircraft_id, tid)
+    if maint_view == "none":
+        # Neither maintenance read permission on this aircraft (an explicit
+        # grant without them): no maintenance data at all.
+        abort(403)
 
     def _status(t: MaintenanceTrigger) -> str:
         return t.status(

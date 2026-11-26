@@ -791,3 +791,15 @@ class TestWritePermissionsEnforced:
         _login(client, uid)
         resp = client.post(f"/aircraft/{foreign_id}/reservations/new", data={})
         assert resp.status_code == 404
+
+
+def test_maintenance_view_level_none_sees_no_maintenance(app, client):
+    """A grant without either maintenance read bit means no maintenance data
+    (it used to fall back to the full view)."""
+    _tid, uid, acid = _make_env(app, Role.PILOT)
+    no_maintenance = PermissionBit.ROLE_DEFAULTS["pilot"] & ~(
+        PermissionBit.READ_MAINT_FULL | PermissionBit.READ_MAINT_LIMITED
+    )
+    _grant_with_mask(app, uid, acid, no_maintenance)
+    _login(client, uid)
+    assert client.get(f"/aircraft/{acid}/maintenance").status_code == 403
