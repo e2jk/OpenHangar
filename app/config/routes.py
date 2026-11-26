@@ -35,6 +35,7 @@ from init import _env_or_file  # pyright: ignore[reportMissingImports]
 from models import AppSetting, BackupRecord, db  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
     DB_INT_MAX,
+    absolute_url,
     activity,
     current_membership,
     db_id,
@@ -1081,9 +1082,7 @@ def tenant_create() -> ResponseReturnValue:
             _(
                 "Tenant '%(name)s' created. Share this invite link with the owner: %(url)s",
                 name=name,
-                url=url_for(
-                    "users.accept_invite", token=invitation.token, _external=True
-                ),
+                url=absolute_url("users.accept_invite", token=invitation.token),
             ),
             "success",
         )
@@ -1148,7 +1147,7 @@ def tenant_reset_owner_password(tenant_id: int) -> ResponseReturnValue:
     db.session.add(token)
     db.session.commit()
 
-    reset_url = url_for("auth.reset_password", token=token.token, _external=True)
+    reset_url = absolute_url("auth.reset_password", token=token.token)
     return render_template(
         "config/tenant_reset_token.html",
         tenant=tenant,

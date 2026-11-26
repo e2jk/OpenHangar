@@ -23,7 +23,6 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 
-from flask import url_for  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     CrewInviteKind,
     CrewInviteStatus,
@@ -40,7 +39,7 @@ from sqlalchemy.orm import (  # pyright: ignore[reportMissingImports]
     contains_eager,
     joinedload,
 )
-from utils import tenant_pilots  # pyright: ignore[reportMissingImports]
+from utils import absolute_url, tenant_pilots  # pyright: ignore[reportMissingImports]
 
 from flights.shared_flight import (  # pyright: ignore[reportMissingImports]
     SECOND_CREW_FUNCTION_FIELD,
@@ -369,7 +368,7 @@ def notify_invite_answered(invite: FlightCrewInvite, accepted: bool) -> None:
                 "route": route,
                 "date": fe.date.isoformat(),
             },
-            "cta_url": url_for("pilots.view_entry", entry_id=fe.id, _external=True),
+            "cta_url": absolute_url("pilots.view_entry", entry_id=fe.id),
         },
     )
 
@@ -403,7 +402,7 @@ def notify_claim_created(claim: FlightCrewInvite) -> None:
                     "route": route,
                     "date": fe.date.isoformat(),
                 },
-                "cta_url": url_for("pilots.logbook", _external=True) + "#crew-claims",
+                "cta_url": absolute_url("pilots.logbook") + "#crew-claims",
                 "cta_label": _l("Review in OpenHangar"),
             },
         )
@@ -445,7 +444,7 @@ def notify_claim_answered(
                 "route": route,
                 "date": fe.date.isoformat(),
             },
-            "cta_url": url_for("pilots.logbook", _external=True),
+            "cta_url": absolute_url("pilots.logbook"),
         },
     )
 
@@ -496,8 +495,7 @@ def notify_invites(invites: list[FlightCrewInvite], tenant_id: int) -> None:
                         (_l("Aircraft"), fe.display_registration or "—"),
                         (_l("Your role"), slot_label),
                     ],
-                    "cta_url": url_for("pilots.logbook", _external=True)
-                    + "#crew-invites",
+                    "cta_url": absolute_url("pilots.logbook") + "#crew-invites",
                     "cta_label": _l("Review in OpenHangar"),
                 },
                 target_user_ids=[invite.invited_user_id],

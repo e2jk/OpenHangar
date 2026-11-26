@@ -34,6 +34,7 @@ from models import (
     db,
 )
 from utils import (
+    absolute_url,
     activity,
     current_membership,  # pyright: ignore[reportMissingImports]
     current_user_role,
@@ -229,7 +230,7 @@ def invite() -> ResponseReturnValue:
             "user.invited", invitation_id=inv.id, email=email_raw or "", role=str(role)
         )
 
-        accept_url = url_for("users.accept_invite", token=inv.token, _external=True)
+        accept_url = absolute_url("users.accept_invite", token=inv.token)
         created_urls.append(accept_url)
 
         if email_raw:
