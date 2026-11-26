@@ -1,4 +1,4 @@
-# Security hardening: sign-in, links, uploads, backups and upgrades
+# Security hardening, a mobile Explore menu and Places visit suggestions
 
 **Navigation and Places**
 
@@ -91,4 +91,7 @@
   listed the uploaded site yet, so the update check sees new versions
   without a manual re-run.
 - psycopg and psycopg-binary are updated to 3.3.9 together; Renovate now
-  always proposes them in one PR, and a test checks they match.
+  always proposes them in one PR, and a test checks they match; coverage
+  7.17.3 and stevedore 5.10.0 (test and security-scan tools).
+- The invitation e-mail greets with the same "Hello" text as the other
+  e-mails (one string to translate, not two near-identical ones).

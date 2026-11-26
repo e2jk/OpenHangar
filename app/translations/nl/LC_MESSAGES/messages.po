@@ -3313,7 +3313,7 @@ msgstr "Plek zonder naam"
 #: app/templates/explore/where_next.html:39
 #: app/templates/explore/where_next.html:40
 #: app/templates/partials/_explore_links.html:2
-#: app/templates/places/collection_settings.html:57
+#: app/templates/places/collection_settings.html:60
 #: app/templates/places/index.html:3 app/templates/places/index.html:6
 msgid "Places"
 msgstr "Plaatsen"
@@ -3359,9 +3359,9 @@ msgid "Choose a collection you can edit."
 msgstr "Kies een collectie die je mag bewerken."
 
 #: app/places/place_routes.py:240
-#: app/templates/places/collection_settings.html:13
-#: app/templates/places/collection_settings.html:19
-#: app/templates/places/collection_settings.html:55
+#: app/templates/places/collection_settings.html:16
+#: app/templates/places/collection_settings.html:22
+#: app/templates/places/collection_settings.html:58
 msgid "Unnamed member"
 msgstr "Lid zonder naam"
 
@@ -4106,7 +4106,7 @@ msgstr "Upload een geldige JPEG-, PNG- of WebP-foto (maximaal 20 megapixels)."
 
 #: app/services/notification_service.py:367
 #: app/services/notification_service.py:1269
-#: app/templates/email/notif/welcome.html:1
+#: app/templates/email/notif/welcome.html:1 app/users/routes.py:265
 #, python-format
 msgid "Hello %(name)s,"
 msgstr "Hallo %(name)s,"
@@ -13433,7 +13433,7 @@ msgid "Whole group, including history"
 msgstr "Hele groep, inclusief geschiedenis"
 
 #: app/templates/passports/group_members.html:17
-#: app/templates/places/collection_settings.html:13
+#: app/templates/places/collection_settings.html:16
 msgid "Remove member"
 msgstr "Lid verwijderen"
 
@@ -15292,7 +15292,7 @@ msgid "No, thanks"
 msgstr "Nee, bedankt"
 
 #: app/templates/places/_visits.html:4
-#: app/templates/places/collection_settings.html:57
+#: app/templates/places/collection_settings.html:60
 msgid "Visits"
 msgstr "Bezoeken"
 
@@ -15419,13 +15419,13 @@ msgid "Collection rights"
 msgstr "Rechten in de collectie"
 
 #: app/templates/places/collection_settings.html:4
-#: app/templates/places/collection_settings.html:13
+#: app/templates/places/collection_settings.html:16
 #: app/templates/places/join_collection.html:5
 msgid "Can edit"
 msgstr "Mag bewerken"
 
 #: app/templates/places/collection_settings.html:4
-#: app/templates/places/collection_settings.html:13
+#: app/templates/places/collection_settings.html:16
 #: app/templates/places/join_collection.html:5
 msgid "Can view and record own visits"
 msgstr "Mag bekijken en eigen bezoeken vastleggen"
@@ -15439,127 +15439,128 @@ msgstr "Collectie-instellingen"
 msgid "Back to places"
 msgstr "Terug naar plaatsen"
 
-#: app/templates/places/collection_settings.html:9
+#: app/templates/places/collection_settings.html:8
+#: app/templates/places/collection_settings.html:13
+msgid "Use as my default collection"
+msgstr "Instellen als mijn standaardcollectie"
+
+#: app/templates/places/collection_settings.html:12
 #: app/templates/places/new_collection.html:6
 msgid "Collection name"
 msgstr "Collectienaam"
 
-#: app/templates/places/collection_settings.html:9
+#: app/templates/places/collection_settings.html:12
 msgid "Rename collection"
 msgstr "Collectie hernoemen"
 
-#: app/templates/places/collection_settings.html:11
-msgid "Use as my default collection"
-msgstr "Instellen als mijn standaardcollectie"
-
-#: app/templates/places/collection_settings.html:13
+#: app/templates/places/collection_settings.html:16
 msgid "Collection members"
 msgstr "Collectieleden"
 
-#: app/templates/places/collection_settings.html:13
+#: app/templates/places/collection_settings.html:16
 msgid "Change rights"
 msgstr "Rechten wijzigen"
 
-#: app/templates/places/collection_settings.html:14
+#: app/templates/places/collection_settings.html:17
 msgid "Your places and visits stay in the collection when you leave. Copy any places you want to keep first."
 msgstr "Je plaatsen en bezoeken blijven in de collectie als je vertrekt. Kopieer eerst de plaatsen die je zelf wilt bewaren."
 
-#: app/templates/places/collection_settings.html:14
+#: app/templates/places/collection_settings.html:17
 msgid "Leave collection"
 msgstr "Collectie verlaten"
 
-#: app/templates/places/collection_settings.html:18
+#: app/templates/places/collection_settings.html:21
 msgid "Add a friend"
 msgstr "Een vriend toevoegen"
 
-#: app/templates/places/collection_settings.html:19
+#: app/templates/places/collection_settings.html:22
 msgid "Choose a user"
 msgstr "Kies een gebruiker"
 
-#: app/templates/places/collection_settings.html:19
+#: app/templates/places/collection_settings.html:22
 msgid "Add member"
 msgstr "Lid toevoegen"
 
-#: app/templates/places/collection_settings.html:20
+#: app/templates/places/collection_settings.html:23
 msgid "Exact email address"
 msgstr "Exact e-mailadres"
 
-#: app/templates/places/collection_settings.html:20
+#: app/templates/places/collection_settings.html:23
 msgid "The invitation appears when your friend signs in with this email and opens Places. It expires after 30 days. No email is sent."
 msgstr "De uitnodiging verschijnt als je vriend met dit e-mailadres inlogt en Plaatsen opent. Deze verloopt na 30 dagen. Er wordt geen e-mail verstuurd."
 
-#: app/templates/places/collection_settings.html:20
+#: app/templates/places/collection_settings.html:23
 msgid "Save invitation"
 msgstr "Uitnodiging opslaan"
 
-#: app/templates/places/collection_settings.html:21
+#: app/templates/places/collection_settings.html:24
 msgid "Collection invitation link"
 msgstr "Uitnodigingslink voor de collectie"
 
-#: app/templates/places/collection_settings.html:22
+#: app/templates/places/collection_settings.html:25
 msgid "Pending collection invitations"
 msgstr "Openstaande uitnodigingen voor deze collectie"
 
-#: app/templates/places/collection_settings.html:22
+#: app/templates/places/collection_settings.html:25
 msgid "Revoke invitation"
 msgstr "Uitnodiging intrekken"
 
-#: app/templates/places/collection_settings.html:27
+#: app/templates/places/collection_settings.html:30
 #: app/templates/places/place_form.html:20
 msgid "Tags"
 msgstr "Tags"
 
-#: app/templates/places/collection_settings.html:28
+#: app/templates/places/collection_settings.html:31
 msgid "Renaming to an existing tag merges them."
 msgstr "Als je een tag een bestaande naam geeft, worden beide tags samengevoegd."
 
-#: app/templates/places/collection_settings.html:36
+#: app/templates/places/collection_settings.html:39
 msgid "Tag name"
 msgstr "Tagnaam"
 
-#: app/templates/places/collection_settings.html:37
+#: app/templates/places/collection_settings.html:40
 msgid "Rename tag"
 msgstr "Tag hernoemen"
 
-#: app/templates/places/collection_settings.html:39
+#: app/templates/places/collection_settings.html:42
 #, python-format
 msgid "Used by one place"
 msgid_plural "Used by %(num)d places"
 msgstr[0] "Gebruikt door één plaats"
 msgstr[1] "Gebruikt door %(num)d plaatsen"
 
-#: app/templates/places/collection_settings.html:39
+#: app/templates/places/collection_settings.html:42
 msgid "Unused"
 msgstr "Ongebruikt"
 
-#: app/templates/places/collection_settings.html:43
+#: app/templates/places/collection_settings.html:46
 msgid "Delete tag"
 msgstr "Tag verwijderen"
 
-#: app/templates/places/collection_settings.html:45
+#: app/templates/places/collection_settings.html:48
 #, python-format
 msgid "Remove from one place"
 msgid_plural "Remove from %(num)d places"
 msgstr[0] "Verwijderen bij één plaats"
 msgstr[1] "Verwijderen bij %(num)d plaatsen"
 
-#: app/templates/places/collection_settings.html:55
+#: app/templates/places/collection_settings.html:58
 msgid "Transfer collection"
 msgstr "Collectie overdragen"
 
-#: app/templates/places/collection_settings.html:55
+#: app/templates/places/collection_settings.html:58
 msgid "New collection owner"
 msgstr "Nieuwe eigenaar van de collectie"
 
-#: app/templates/places/collection_settings.html:57
+#: app/templates/places/collection_settings.html:60
 msgid "Delete collection"
 msgstr "Collectie verwijderen"
 
-#: app/templates/places/collection_settings.html:57
+#: app/templates/places/collection_settings.html:60
 msgid "Deleting this collection also permanently deletes its places and visits."
 msgstr "Als je deze collectie verwijdert, worden ook de plaatsen en bezoeken definitief verwijderd."
 
-#: app/templates/places/collection_settings.html:57
+#: app/templates/places/collection_settings.html:60
 msgid "I confirm the permanent deletion of this collection."
 msgstr "Ik bevestig de definitieve verwijdering van deze collectie."
 
@@ -16778,11 +16779,6 @@ msgstr "Uitnodiging aangemaakt. Deel deze link: %(url)s"
 #, python-format
 msgid "%(n)s invitations created."
 msgstr "%(n)s uitnodiging(en) aangemaakt."
-
-#: app/users/routes.py:265
-#, python-format
-msgid "Hi %(name)s,"
-msgstr "Hallo %(name)s,"
 
 #: app/users/routes.py:267
 #, python-format
