@@ -2851,6 +2851,18 @@ class ShareToken(db.Model):
     def is_active(self) -> bool:
         return self.revoked_at is None
 
+    @property
+    def opens_publicly(self) -> bool:
+        """Whether the link still shows its aircraft: not revoked, aircraft
+        not archived, hangar not deactivated (an archived aircraft or a
+        closed hangar used to stay public through its old links)."""
+        ac = self.aircraft
+        return (
+            self.is_active
+            and ac.archived_at is None
+            and ac.tenant.is_active
+        )
+
 
 class PublicShare(db.Model):
     """A revocable capability; resource adapters enforce ownership and projection.

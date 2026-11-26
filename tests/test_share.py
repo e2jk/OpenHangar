@@ -782,3 +782,23 @@ class TestShareCacheAuthorization:
         response = client.get(path)
         assert response.status_code == 404
         assert response.headers["Cache-Control"] == "no-store, private"
+
+
+def test_links_close_when_the_aircraft_is_archived_or_the_hangar_deactivated(
+    app, client
+):
+    _uid, tid, acid = _setup(app)
+    _add_token(app, acid, "arch1234")
+    _add_token(app, acid, "show1234", access_level="showcase")
+    assert client.get("/share/arch1234").status_code == 200
+    assert client.get("/showcase/show1234").status_code == 200
+    with app.app_context():
+        db.session.get(Aircraft, acid).archived_at = datetime(2026, 1, 1, tzinfo=UTC)
+        db.session.commit()
+    assert client.get("/share/arch1234").status_code == 404
+    assert client.get("/showcase/show1234").status_code == 404
+    with app.app_context():
+        db.session.get(Aircraft, acid).archived_at = None
+        db.session.get(Tenant, tid).is_active = False
+        db.session.commit()
+    assert client.get("/share/arch1234").status_code == 404
