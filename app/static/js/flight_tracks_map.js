@@ -40,7 +40,11 @@
     function makeLayer(t, opacity) {
       var lyr = L.geoJSON(t.geojson, { style: { color: '#d526e0', weight: 4, opacity: opacity } });
       lyr.finalOpacity = opacity;
-      lyr.bindTooltip(t.date + ' ' + t.dep + '→' + t.arr);
+      // As text: Leaflet renders a string tooltip as HTML, and the places
+      // are typed by pilots.
+      var label = document.createElement('span');
+      label.textContent = t.date + ' ' + t.dep + '→' + t.arr;
+      lyr.bindTooltip(label);
       lyr.on('mouseover', function () { lyr.setStyle({ color: '#3068fa', weight: 4, opacity: 1 }); });
       lyr.on('mouseout', function () { lyr.setStyle({ color: '#d526e0', weight: 4, opacity: lyr.finalOpacity }); });
       lyr.on('click', function () { window.location.href = t.view_url; });

@@ -32,9 +32,16 @@
       var g = geojson.features[0].geometry;
       if (g && g.coordinates) coords = g.coordinates;
     }
+    // Leaflet renders a string tooltip as HTML: the place names are typed
+    // by pilots, so they go in as text.
+    function text(value) {
+      var span = document.createElement('span');
+      span.textContent = value;
+      return span;
+    }
     if (coords && coords.length > 0) {
-      L.circleMarker([coords[0][1], coords[0][0]], { radius: 7, color: '#28a745', fillColor: '#28a745', fillOpacity: 1 }).bindTooltip(dep).addTo(map);
-      L.circleMarker([coords[coords.length - 1][1], coords[coords.length - 1][0]], { radius: 7, color: '#dc3545', fillColor: '#dc3545', fillOpacity: 1 }).bindTooltip(arr).addTo(map);
+      L.circleMarker([coords[0][1], coords[0][0]], { radius: 7, color: '#28a745', fillColor: '#28a745', fillOpacity: 1 }).bindTooltip(text(dep)).addTo(map);
+      L.circleMarker([coords[coords.length - 1][1], coords[coords.length - 1][0]], { radius: 7, color: '#dc3545', fillColor: '#dc3545', fillOpacity: 1 }).bindTooltip(text(arr)).addTo(map);
     }
   }
   document.addEventListener('DOMContentLoaded', init);
