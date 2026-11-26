@@ -26,9 +26,27 @@ _scheme, _sep, _rest = database_url.partition("://")
 if _sep:
     database_url = f"{_scheme.split('+', 1)[0]}{_sep}{_rest}"
 
+# Says why it is waiting (every 10 s), stops at once on an error that
+# waiting cannot fix (a wrong password, user or database), and gives up after
+# 5 minutes: it used to loop forever, silently, on a typo in the password.
+_FATAL = ("password authentication failed", "does not exist", "no password supplied")
+_GIVE_UP_AFTER_S = 300
+_started = time.monotonic()
+_attempt = 0
 while True:
+    _attempt += 1
     try:
         psycopg.connect(database_url, connect_timeout=1).close()
         break
-    except psycopg.OperationalError:
+    except psycopg.OperationalError as exc:
+        # psycopg's message names the host and user, never the password.
+        reason = " ".join(str(exc).split())
+        if any(marker in reason for marker in _FATAL):
+            print(f"Cannot connect to PostgreSQL: {reason}", flush=True)
+            raise SystemExit(1) from None
+        if time.monotonic() - _started > _GIVE_UP_AFTER_S:
+            print(f"PostgreSQL still unreachable after 5 minutes: {reason}", flush=True)
+            raise SystemExit(1) from None
+        if _attempt % 10 == 1:
+            print(f"Waiting for PostgreSQL ({reason})", flush=True)
         time.sleep(1)
