@@ -872,3 +872,11 @@ class TestDraftAndCanonicalPdf:
             assert os.path.exists(path)
         client.post(f"/aircraft/{acid}/amp/revisions/{rev_id}/delete")
         assert not os.path.exists(path)
+
+
+def test_the_pdf_export_fetches_no_file_or_link():
+    import pytest
+    from maintenance.routes import _refuse_fetch  # pyright: ignore[reportMissingImports]
+
+    with pytest.raises(ValueError):
+        _refuse_fetch("file:///etc/passwd")

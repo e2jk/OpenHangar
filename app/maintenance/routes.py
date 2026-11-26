@@ -113,6 +113,15 @@ def _get_trigger_or_404(aircraft: Aircraft, trigger_id: int) -> MaintenanceTrigg
 # ── Fleet maintenance overview ────────────────────────────────────────────────
 
 
+
+def _refuse_fetch(url: str, *args: Any, **kwargs: Any) -> dict[str, Any]:
+    """WeasyPrint's URL fetcher for the AMP PDF: nothing is fetched. The
+    templates need no file or link, and the default one follows http(s)://
+    and file:// links, so markup slipped into user content could read a
+    server file or reach an internal address."""
+    raise ValueError(f"PDF export fetches no resource ({url[:40]})")
+
+
 @maintenance_bp.route("/maintenance")
 @login_required
 @require_maint_access
@@ -1311,7 +1320,7 @@ def _render_and_cache_amp_pdf(context: dict[str, Any], revision: AmpRevision) ->
     is_draft — only call this when the caller has already established the
     current data matches this revision."""
     html = render_template("maintenance/amp_export_pdf.html", is_draft=False, **context)
-    pdf_bytes: bytes = HTML(string=html, base_url=request.url_root).write_pdf()
+    pdf_bytes: bytes = HTML(string=html, url_fetcher=_refuse_fetch).write_pdf()
     folder, stored_name = _amp_pdf_storage_path(revision.id)
     os.makedirs(folder, exist_ok=True)
     with open(os.path.join(folder, stored_name), "wb") as f:
@@ -1377,7 +1386,7 @@ def export_amp_pdf(aircraft_id: int) -> ResponseReturnValue:
         html = render_template(
             "maintenance/amp_export_pdf.html", is_draft=is_draft, **context
         )
-        pdf_bytes = HTML(string=html, base_url=request.url_root).write_pdf()
+        pdf_bytes = HTML(string=html, url_fetcher=_refuse_fetch).write_pdf()
 
     return Response(
         pdf_bytes,

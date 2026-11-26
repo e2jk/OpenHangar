@@ -1803,12 +1803,15 @@ def gatus_badge(badge_path: str) -> ResponseReturnValue:
     badge_url = f"{base_url}/api/v1/endpoints/{endpoint_key}/{safe_path}"
     req = urllib.request.Request(badge_url)
     if auth_header:
-        req.add_header("Authorization", f"Basic {auth_header}")
+        # Not passed on if Gatus redirects elsewhere (urllib copies ordinary
+        # headers to the redirect's target, whatever its host).
+        req.add_unredirected_header("Authorization", f"Basic {auth_header}")
     try:
         with urllib.request.urlopen(req, timeout=5) as resp:  # nosec B310
             content = resp.read()
-            content_type = resp.headers.get("Content-Type", "image/svg+xml")
-        return current_app.response_class(content, mimetype=content_type)
+        # Always served as an image: shown on this site's origin, an HTML
+        # answer would otherwise render as a page here.
+        return current_app.response_class(content, mimetype="image/svg+xml")
     except urllib.error.URLError as exc:
         log.warning("Gatus badge fetch failed (%s): %s", badge_url, repr(exc))
         return abort(503)

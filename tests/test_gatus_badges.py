@@ -228,3 +228,19 @@ class TestGatusBadgeRoute:
         ):
             resp = client.get("/config/gatus-badge/uptimes/24h/badge.svg")
         assert resp.status_code == 503
+
+
+def test_badge_is_served_as_an_image_whatever_gatus_answers(app, client):
+    from unittest.mock import MagicMock, patch
+
+    _login(app, client)
+    mock_resp = MagicMock()
+    mock_resp.__enter__.return_value = mock_resp
+    mock_resp.read.return_value = b"<html><script>x</script></html>"
+    mock_resp.headers = {"Content-Type": "text/html"}
+    with (
+        patch.dict("os.environ", {"OPENHANGAR_GATUS_ENDPOINT_URL": _VALID_URL}),
+        patch("urllib.request.urlopen", return_value=mock_resp),
+    ):
+        resp = client.get("/config/gatus-badge/uptimes/1h/badge.svg")
+    assert resp.mimetype == "image/svg+xml"
