@@ -43,3 +43,14 @@ def test_a_name_without_extension_is_numbered_too():
     assert _unique_arcname("README", used) == "README"
     assert _unique_arcname("readme", used) == "readme (2)"
     assert _unique_arcname("", used) == "document"
+
+
+def test_attachment_disposition_survives_odd_registrations():
+    """A registration with a quote, a backslash or a non-Latin-1 letter
+    gives a valid header: an ASCII fallback plus the exact UTF-8 name."""
+    from utils import attachment_disposition  # pyright: ignore[reportMissingImports]
+
+    header = attachment_disposition('Ö"Z\\x_flights.csv')
+    assert header.startswith('attachment; filename="Zx_flights.csv";')
+    assert "filename*=UTF-8''%C3%96%22Z%5Cx_flights.csv" in header
+    assert attachment_disposition("ÖÄ").startswith('attachment; filename="download"')

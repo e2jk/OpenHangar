@@ -15,6 +15,7 @@ from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 from models import Aircraft, db  # pyright: ignore[reportMissingImports]
 from services.csv_export import safe_csv_text
 from utils import (  # pyright: ignore[reportMissingImports]
+    attachment_disposition,
     current_membership,
     login_required,
     months_back,
@@ -153,5 +154,5 @@ def utilization_report_csv(aircraft_id: int) -> ResponseReturnValue:
     return Response(
         buf.getvalue(),
         mimetype="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
+        headers={"Content-Disposition": attachment_disposition(filename)},
     )

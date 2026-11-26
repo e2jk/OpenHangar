@@ -59,6 +59,7 @@ from sqlalchemy.orm import selectinload  # pyright: ignore[reportMissingImports]
 from utils import (
     accessible_aircraft,
     activity,
+    attachment_disposition,
     compute_aircraft_statuses,
     current_membership,
     login_required,
@@ -1359,7 +1360,7 @@ def export_amp_pdf(aircraft_id: int) -> ResponseReturnValue:
             return Response(
                 pdf_bytes,
                 mimetype="application/pdf",
-                headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+                headers={"Content-Disposition": attachment_disposition(filename)},
             )
 
     if not is_draft and latest_revision:
@@ -1377,7 +1378,7 @@ def export_amp_pdf(aircraft_id: int) -> ResponseReturnValue:
     return Response(
         pdf_bytes,
         mimetype="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={"Content-Disposition": attachment_disposition(filename)},
     )
 
 
@@ -1430,5 +1431,5 @@ def download_amp_revision_pdf(
     return Response(
         pdf_bytes,
         mimetype="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={"Content-Disposition": attachment_disposition(filename)},
     )

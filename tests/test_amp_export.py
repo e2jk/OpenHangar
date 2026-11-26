@@ -641,9 +641,8 @@ class TestPdfExport:
         # No revision recorded yet — falls back to today's date and "draft"
         # (not "R00": that's a real, meaningful first-published revision).
         today = date.today().isoformat()
-        assert (
-            r.headers["Content-Disposition"]
-            == f'attachment; filename="{today}-AMP-OO-LKN-draft.pdf"'
+        assert r.headers["Content-Disposition"].startswith(
+            f'attachment; filename="{today}-AMP-OO-LKN-draft.pdf"'
         )
         assert r.data[:5] == b"%PDF-"
 
@@ -656,9 +655,8 @@ class TestPdfExport:
         _login(app, client)
         r = client.get(f"/aircraft/{acid}/maintenance/amp/export/pdf")
         assert r.status_code == 200
-        assert (
-            r.headers["Content-Disposition"]
-            == 'attachment; filename="2023-04-03-AMP-OO-CPE-2.pdf"'
+        assert r.headers["Content-Disposition"].startswith(
+            'attachment; filename="2023-04-03-AMP-OO-CPE-2.pdf"'
         )
 
     def test_filename_sanitised_for_unusual_registration(self, app, client):
@@ -726,9 +724,8 @@ class TestDraftAndCanonicalPdf:
         _login(app, client)
         r = client.get(f"/aircraft/{acid}/maintenance/amp/export/pdf")
         today = date.today().isoformat()
-        assert (
-            r.headers["Content-Disposition"]
-            == f'attachment; filename="{today}-AMP-OO-LKN-draft.pdf"'
+        assert r.headers["Content-Disposition"].startswith(
+            f'attachment; filename="{today}-AMP-OO-LKN-draft.pdf"'
         )
 
     def test_pdf_watermarked_when_draft(self, app, client):
@@ -820,9 +817,8 @@ class TestDraftAndCanonicalPdf:
         _add_trigger(app, acid, name="New item added after R00")
         r = client.get(f"/aircraft/{acid}/amp/revisions/{rev_id}/pdf")
         assert r.status_code == 200
-        assert (
-            r.headers["Content-Disposition"]
-            == 'attachment; filename="2026-01-01-AMP-OO-LKN-R00.pdf"'
+        assert r.headers["Content-Disposition"].startswith(
+            'attachment; filename="2026-01-01-AMP-OO-LKN-R00.pdf"'
         )
         assert r.data[:5] == b"%PDF-"
 
