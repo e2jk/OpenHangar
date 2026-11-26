@@ -859,3 +859,35 @@ class TestSnagNotificationI18n:
         assert "Grounding" in ctx["subject_key"]
         assert "notification_title_key" in ctx
         assert "notification_message_key" in ctx
+
+
+def test_a_pilot_cannot_delete_a_grounding_snag_and_deletions_are_logged(
+    app, client, caplog
+):
+    import logging
+
+    from models import Role, TenantUser, UserAircraftAccess
+
+    _, tenant_id = _create_user_and_tenant(app)
+    ac_id = _add_aircraft(app, tenant_id)
+    grounding = _add_snag(app, ac_id, title="Flat tyre", is_grounding=True)
+    minor = _add_snag(app, ac_id, title="Loose knob")
+    with app.app_context():
+        membership = TenantUser.query.filter_by(tenant_id=tenant_id).one()
+        membership.role = Role.PILOT
+        membership.is_pilot = True
+        db.session.add(
+            UserAircraftAccess(user_id=membership.user_id, aircraft_id=ac_id)
+        )
+        db.session.commit()
+    _login(app, client)
+    resp = client.post(
+        f"/aircraft/{ac_id}/snags/{grounding}/delete", follow_redirects=True
+    )
+    assert b"only be deleted by an owner or maintenance" in resp.data
+    with caplog.at_level(logging.INFO):
+        client.post(f"/aircraft/{ac_id}/snags/{minor}/delete")
+    assert any("[ACTIVITY] snag.deleted" in r.message for r in caplog.records)
+    with app.app_context():
+        assert db.session.get(Snag, grounding) is not None
+        assert db.session.get(Snag, minor) is None
