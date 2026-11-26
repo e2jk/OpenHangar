@@ -5,10 +5,10 @@
 
 #places-bulk-move:not([open]) ~ #places-list .place-bulk-choice { display: none; }
 
-.place-tag-filter {
+.place-filter-pill {
   text-decoration: none;
 }
-.place-tag-filter:hover,
-.place-tag-filter:focus-visible {
+.place-filter-pill:hover,
+.place-filter-pill:focus-visible {
   text-decoration: underline;
 }

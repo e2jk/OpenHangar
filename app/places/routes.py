@@ -123,10 +123,15 @@ def index() -> ResponseReturnValue:
         **listing,
         **airfield_map_data(links),
         airfields_by_place=airfields_by_place,
+        selected_airfield=next(
+            (link for link in links if link["airfield_id"] == listing["airfield_id"]),
+            None,
+        ),
         can_download=bool(waypoint_selection(listing["rows"]).points),
         export_args={
             "collection": collection_id,
             "tag": listing["tag_id"],
+            "airfield": listing["airfield_id"],
             **{
                 key: listing[key]
                 for key in ("visited", "state", "location", "linked", "sort")

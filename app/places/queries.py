@@ -73,6 +73,11 @@ def list_places(
         query = query.filter(Place.id.not_in(linked_places))
     else:
         linked = "all"
+    airfield_id = args.get("airfield", type=db_id)
+    if airfield_id is not None:
+        query = query.filter(
+            Place.id.in_(linked_places.where(PlaceAirfield.airfield_id == airfield_id))
+        )
     location = args.get("location", "all")
     if location == "missing":
         query = query.filter(Place.latitude.is_(None))
@@ -143,4 +148,5 @@ def list_places(
         "visited": visited,
         "sort": sort,
         "tag_id": tag_id,
+        "airfield_id": airfield_id,
     }

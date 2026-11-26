@@ -397,3 +397,18 @@ def test_places_cards_fit_three_across_and_wrap_status_pills(
                 >= title.getBoundingClientRect().bottom;
         }"""
     )
+
+
+def test_place_airfield_pill_filters_and_can_be_cleared(passport_page: Page) -> None:
+    page = passport_page
+    page.goto("/places/")
+    cards = page.locator("#places-list > li")
+    initial_count = cards.count()
+    assert initial_count > 1
+    cards.get_by_role("link", name="EBCI", exact=True).click()
+    page.wait_for_url(re.compile(r"[?&]airfield=\d+"))
+    expect(cards).to_have_count(1)
+    expect(cards.first).to_contain_text("Pairi Daiza")
+    page.get_by_role("link", name="Clear airfield filter").click()
+    expect(cards).to_have_count(initial_count)
+    assert "airfield=" not in page.url

@@ -693,11 +693,60 @@ def test_place_cards_distinguish_airfield_status_and_tags_without_showing_addres
     listing = client.get("/places/").text
     assert address not in listing
     assert (
-        'bg-primary-subtle text-primary-emphasis text-wrap" title="Test Airfield">EBTS'
+        'bg-primary-subtle text-primary-emphasis text-wrap place-filter-pill" title="Test Airfield"'
         in listing
     )
     assert 'text-warning-emphasis">No linked airfield' in listing
-    assert 'text-secondary-emphasis place-tag-filter" href="/places/?tag=' in listing
+    assert 'text-secondary-emphasis place-filter-pill" href="/places/?tag=' in listing
     assert re.search(r'text-body-secondary">\s*Not yet visited', listing)
     assert "Last visited" in listing
     assert address in client.get(f"/places/{destinations['alpha']}").text
+
+
+def test_airfield_filter_keeps_collection_and_other_filters(
+    app: Flask,
+    client: FlaskClient,
+    people: dict[str, int],
+    destinations: dict[str, int],
+) -> None:
+    from urllib.parse import parse_qs, urlsplit
+
+    from passports.catalogue import create_custom
+    from places.airfields import add_link
+
+    with app.app_context():
+        t, u = people["tenant"], people["creator"]
+        field = create_custom(t, "Shared airfield", code="EBTS")
+        add_link(t, u, destinations["alpha"], field.id)
+        add_link(t, u, destinations["zulu"], field.id)
+        db.session.commit()
+        fid = field.id
+
+    signin(client, people)
+    selected = destinations["collection"]
+    listing = client.get(f"/places/?collection={selected}&visited=visited").text
+    match = re.search(r'title="Shared airfield" href="([^"]+)"[^>]*>EBTS</a>', listing)
+    assert match is not None
+    href = unescape(match[1])
+    query = parse_qs(urlsplit(href).query)
+    assert query["collection"] == [str(selected)]
+    assert query["visited"] == ["visited"]
+    assert query["airfield"] == [str(fid)]
+
+    scoped = client.get(href)
+    assert [row["name"] for row in points(scoped)] == ["Alpha"]
+    assert f'name="airfield" value="{fid}"' in scoped.text
+    assert "Clear airfield filter" in scoped.text
+    assert 'aria-current="true">EBTS' in scoped.text
+
+    all_collections = client.get(f"/places/?airfield={fid}")
+    assert [row["name"] for row in points(all_collections)] == ["Alpha", "Zulu"]
+    export = client.get(f"/places/export.gpx?airfield={fid}&visited=visited")
+    assert (
+        export.status_code == 200
+        and "Alpha" in export.text
+        and "Zulu" not in export.text
+    )
+
+    signin(client, people, "outsider")
+    assert points(client.get(f"/places/?airfield={fid}")) == []
