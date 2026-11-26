@@ -3995,12 +3995,12 @@ def seed_places(
 ) -> None:
     """A shared "Our places" collection (Phase 42g): the owner, the second
     pilot and the Personal-account friend all edit it; a few located places
-    with tags and airfield links, an unlocated idea for Dinant, and
-    a visit each by the owner and the friend. Call after seed_group_passport (it needs the
-    friend's account)."""
+    with tags and airfield links, a tag no place uses yet, an unlocated idea
+    for Dinant, and a visit each by the owner and the friend. Call after
+    seed_group_passport (it needs the friend's account)."""
     from datetime import date
 
-    from models import PlaceVisit, User
+    from models import PlaceTag, PlaceVisit, User
     from passports import catalogue as cat  # pyright: ignore[reportMissingImports]
     from places.airfields import add_link  # pyright: ignore[reportMissingImports]
     from places.collections import (  # pyright: ignore[reportMissingImports]
@@ -4024,6 +4024,9 @@ def seed_places(
         )
         for title, lat, lon, address, tags in _OUR_PLACES
     ]
+    # A tag no place uses yet: collection settings shows it as "Unused",
+    # deletable without confirmation.
+    db.session.add(PlaceTag(collection_id=collection.id, name="Beach"))
     # Airfields to fly to each place from (42d), with how to get there;
     # Bouillon Castle has a pin but stays unlinked.
     by_ident = {row.ident: row for row in cat.load_catalogue()}
