@@ -59,3 +59,6 @@
   password, and refuses to serve production without a database URL.
 - The PR-text job no longer runs code from the pushed branch with the
   owner's token; Renovate no longer merges major updates on its own.
+- A release retries its documentation-site deploy once when GitHub has not
+  listed the uploaded site yet, so the update check sees new versions
+  without a manual re-run.
