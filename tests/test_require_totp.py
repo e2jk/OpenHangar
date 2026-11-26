@@ -112,6 +112,9 @@ class TestRequireTotpEnrolPage:
         r = client.get("/login?step=totp-enrol")
         assert r.status_code == 200
         assert b"qr-container" in r.data
+        # Drawn on the server, no QR script in the browser.
+        assert b'src="data:image/svg+xml;base64,' in r.data
+        assert b"qrcode.min.js" not in r.data
 
     def test_post_invalid_code_stays_on_page(self, app, client):
         _make_tenant_and_user(app, require_totp=True)

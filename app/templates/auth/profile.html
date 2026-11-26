@@ -77,7 +77,7 @@
         <p class="mb-2">{{ _('Scan the QR code with your authenticator app') }}
           (Google Authenticator, Authy, 1Password, etc.), {{ _('then enter the 6-digit code to confirm.') }}</p>
         <div class="totp-qr-wrapper mb-3">
-          <div id="qr-container" data-totp-uri="{{ totp_uri }}"></div>
+          <img id="qr-container" src="{{ qr_data_url(totp_uri) }}" width="200" height="200" alt="{{ _('QR code to scan with your authenticator app') }}">
           <div class="totp-secret-display">{{ totp_secret }}</div>
           <div class="form-text mt-1">{{ _("Enter this key manually if you can't scan the QR code.") }}</div>
         </div>

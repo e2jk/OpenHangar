@@ -194,18 +194,6 @@ function _ohInit() {
     if (ohAnchorEl) ohAnchorEl.scrollIntoView();
   }
 
-  /* ── QR code (TOTP setup on profile page) ──────────────────────── */
-  var qrEl = document.getElementById('qr-container');
-  if (qrEl && qrEl.dataset.totpUri && !_ohIsInit(qrEl) && typeof QRCode !== 'undefined') {
-    _ohMarkInit(qrEl);
-    new QRCode(qrEl, {
-      text: qrEl.dataset.totpUri,
-      width: 200, height: 200,
-      colorDark: '#000000', colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M
-    });
-  }
-
   /* ── Expense form: initial fuel-fields toggle ───────────────────── */
   if (document.getElementById('expense_type')) window.toggleFuelFields();
 

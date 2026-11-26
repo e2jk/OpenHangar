@@ -52,7 +52,7 @@
         {{ _('Your administrator requires two-factor authentication. Scan the QR code to set it up before continuing.') }}
       </div>
       <div class="totp-qr-wrapper mb-3">
-        <div id="qr-container" {% if totp_uri %}data-totp-uri="{{ totp_uri }}"{% endif %}></div>
+        {% if totp_uri %}<img id="qr-container" src="{{ qr_data_url(totp_uri) }}" width="200" height="200" alt="{{ _('QR code to scan with your authenticator app') }}">{% endif %}
         <div class="totp-secret-display">{{ totp_secret }}</div>
         <div class="form-text mt-1">{{ _("Enter this key manually if you can't scan the QR code.") }}</div>
       </div>
