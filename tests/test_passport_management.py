@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import pytest
 from flask import Flask
+from flask.testing import FlaskClient
 from models import (
     Flight,
     Passport,
@@ -273,3 +274,20 @@ def test_preview_and_removal_protection(app: Flask, owner: dict[str, int]) -> No
             )["visited"]
             == 0
         )
+
+
+@pytest.mark.parametrize(
+    ("value", "status"),
+    [("1", 200), ("0", 200), ("", 200), ("1 AND 1=1 -- ", 400), ("yes", 400)],
+)
+def test_frequency_takes_only_on_or_off(
+    app: Flask, client: FlaskClient, owner: dict[str, int], value: str, status: int
+) -> None:
+    """A tampered on/off switch is a bad request, never answered as if it
+    were valid (URL scanners read that as an injection)."""
+    with client.session_transaction() as sess:
+        sess["user_id"] = owner["user"]
+    resp = client.get(
+        f"/passports/{owner['passport']}/", query_string={"frequency": value}
+    )
+    assert resp.status_code == status

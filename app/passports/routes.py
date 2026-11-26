@@ -34,6 +34,7 @@ from models import (
 from utils import (
     current_membership,
     db_id,
+    flag_arg,
     list_index,
     login_required,
 )
@@ -254,7 +255,7 @@ def detail(passport_id: int) -> ResponseReturnValue:
         progress=progress,
         map_rows=map_rows,
         state=state,
-        frequency=request.args.get("frequency") == "1",
+        frequency=flag_arg("frequency"),
         can_manage=can_manage,
         group_view=shared is not None,
         count_scopes=shared["count_scopes"] if shared else [],
