@@ -2,6 +2,8 @@
 
 **Navigation and Places**
 
+- Collection settings put the name, members and invitations first. Tags
+  appear in cards, with three per row on larger screens.
 - Click an airfield code on a place card to filter Places to that airfield
   within the current collection or across all your collections.
 - Places shows three cards per row on the widest screens. Airfield and
