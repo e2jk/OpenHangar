@@ -416,9 +416,9 @@ class TestAircraftDetailRefuelsSection:
         with app.app_context():
             from models import TenantUser, UserAllAircraftAccess
 
-            from tests.test_refuels import _create_user_and_tenant as _mk
-
-            pilot_uid, _t = _mk(app, "fuelpilot@example.com", role=Role.PILOT)
+            pilot_uid, _t = _create_user_and_tenant(
+                app, "fuelpilot@example.com", role=Role.PILOT
+            )
             membership = TenantUser.query.filter_by(user_id=pilot_uid).one()
             membership.tenant_id = tenant_id
             db.session.add(
