@@ -269,6 +269,12 @@ def _login_credentials() -> ResponseReturnValue:
         )
         return render_template("auth/login.html", step="credentials"), 429
 
+    if _is_demo() and email.endswith("@openhangar.demo"):
+        # Every demo slot shares one password published with the code: a
+        # visitor could otherwise sign in to another visitor's slot.
+        flash(_("Demo accounts are opened from the demo page."), "warning")
+        return render_template("auth/login.html", step="credentials"), 403
+
     user = User.query.filter_by(email=email, is_active=True).first()
     password_hash = user.password_hash if user else _DUMMY_HASH
     # Always verify — never short-circuit on user is None.
@@ -1055,6 +1061,11 @@ def profile() -> ResponseReturnValue:
 
     if request.method == "POST":
         action = request.form.get("action")
+        if _is_demo() and action != "update_name":
+            # A demo slot is shared by successive visitors: its password and
+            # authenticator stay as seeded.
+            flash(_("Sign-in settings cannot be changed in the demo."), "warning")
+            return redirect(url_for("auth.profile"))
         if action == "update_name":
             return _profile_update_name(user)
         if action == "change_password":
