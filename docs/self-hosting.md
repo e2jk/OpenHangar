@@ -44,6 +44,11 @@ deployment behind a [Traefik](https://traefik.io/) reverse proxy:
    ```bash
    docker compose up -d
    ```
+5. Open `https://<OPENHANGAR_HOSTNAME>/setup` at once and create the first
+   account: until then, whoever reaches the page first becomes the instance
+   admin. To close that window, set `OPENHANGAR_SETUP_TOKEN` in `.env` first
+   and open `/setup?token=<the token>` instead (see the
+   [configuration reference](configuration.md#openhangar_setup_token)).
 
 ### Minimal setup (no reverse proxy)
 

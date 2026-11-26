@@ -69,6 +69,7 @@ documented inline in [`docker/.env.example`](../docker/.env.example).
 | [`OPENHANGAR_DEMO_SLOT_COUNT`](#openhangar_demo_slot_count) | No | `20` | [Demo mode](#demo-mode) |
 | [`OPENHANGAR_DEMO_BUSY_WINDOW_MINUTES`](#openhangar_demo_busy_window_minutes) | No | `60` | [Demo mode](#demo-mode) |
 | [`OPENHANGAR_INSTANCE_URL`](#openhangar_instance_url) | No | — | [Core](#core) |
+| [`OPENHANGAR_SETUP_TOKEN`](#openhangar_setup_token) | No | — | [Core](#core) |
 | [`OPENHANGAR_REPO_URL`](#openhangar_repo_url) | No | GitHub URL | [Core](#core) |
 
 ---
@@ -281,6 +282,21 @@ client who can choose that header could make an e-mail point to another site.
 - Must be a fully qualified URL (including `https://`).
 - Typically derived from `OPENHANGAR_HOSTNAME` in the compose file:
   `OPENHANGAR_INSTANCE_URL=https://${OPENHANGAR_HOSTNAME}`
+
+### `OPENHANGAR_SETUP_TOKEN`
+
+A secret the first-run setup wizard asks for. Until the first account exists,
+whoever reaches `/setup` first creates it and becomes the instance admin; a
+new public hostname shows up in certificate-transparency logs within minutes,
+and scanners visit it. With this set, the wizard opens only from
+`https://your-openhangar-instance/setup?token=<the token>`; any other visit
+gets a "setup link required" page.
+
+- **Default**: unset — the wizard is open to the first visitor (fine when the
+  instance is not reachable from the internet until it is set up)
+- **Format**: any string; generate one with `openssl rand -hex 16`
+- **Effect**: checked once per browser session, and ignored once an account
+  exists, so it can stay in `.env` or be removed after setup
 
 ### `OPENHANGAR_REPO_URL`
 

@@ -38,6 +38,7 @@ from services import auth_challenges as challenges
 from services import auth_sessions
 from services import login_throttle as throttle
 from services import totp as totp_codes
+from sqlalchemy import text as sa_text
 from utils import login_required
 from werkzeug.wrappers import Response
 
@@ -613,6 +614,9 @@ def setup() -> ResponseReturnValue:
     if not _no_users():
         return redirect(url_for("config.index"))
 
+    if not _setup_token_ok():
+        return render_template("auth/setup_token_required.html"), 403
+
     # Determine current step from form data (POST) or query string (GET)
     step = request.form.get("step") or request.args.get("step", "account")
     if step not in _WIZARD_STEPS:
@@ -873,6 +877,27 @@ def _setup_co_owners() -> ResponseReturnValue:
     return redirect(url_for("auth.setup", step="summary"))
 
 
+def _setup_token_ok() -> bool:
+    """With OPENHANGAR_SETUP_TOKEN set, the wizard opens only from a link
+    carrying it (/setup?token=...): until the first account exists, whoever
+    reaches /setup first would otherwise become the instance admin."""
+    expected = os.environ.get("OPENHANGAR_SETUP_TOKEN", "").strip()
+    if not expected or session.get("setup_token_ok"):
+        return True
+    if hmac.compare_digest(request.args.get("token", ""), expected):
+        session["setup_token_ok"] = True
+        return True
+    return False
+
+
+def _serialize_setup() -> None:
+    """Two browsers finishing the wizard at once would both find no user and
+    both create an instance admin: on PostgreSQL the finish holds a lock for
+    its transaction and checks again (SQLite already serializes writers)."""
+    if db.session.get_bind().dialect.name == "postgresql":
+        db.session.execute(sa_text("SELECT pg_advisory_xact_lock(4823901)"))
+
+
 def _setup_finish() -> ResponseReturnValue:
     required = ["setup_email", "setup_operating_model"]
     challenge = challenges.get("setup_challenge", "setup")
@@ -886,6 +911,10 @@ def _setup_finish() -> ResponseReturnValue:
 
     if not challenges.consume(challenge):
         return redirect(url_for("auth.setup"))
+    _serialize_setup()
+    if not _no_users():
+        db.session.rollback()
+        return redirect(url_for("auth.login"))
     from models import UserInvitation
 
     operating_model_raw = session.get("setup_operating_model", "")

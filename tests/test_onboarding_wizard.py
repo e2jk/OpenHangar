@@ -906,3 +906,42 @@ def test_an_unknown_setup_step_posted_is_not_acted_on(app, client):
     assert response.status_code in (200, 302)
     with app.app_context():
         assert User.query.count() == 0
+
+
+def test_with_a_setup_token_the_wizard_needs_the_link(app, client, monkeypatch):
+    monkeypatch.setenv("OPENHANGAR_SETUP_TOKEN", "s3cret-setup")
+    assert client.get("/setup").status_code == 403
+    assert client.get("/setup?token=wrong").status_code == 403
+    assert _step_account(client).status_code == 403
+    assert client.get("/setup?token=s3cret-setup").status_code == 200
+    # Remembered for the rest of the wizard.
+    _full_wizard_logbook_only(client)
+    with app.app_context():
+        assert User.query.count() == 1
+
+
+def test_a_wizard_finished_after_another_one_creates_no_second_admin(app, client):
+    _step_account(client)
+    _step_totp_skip(client)
+    _create_owner(app, email="first@example.com")  # another browser finished first
+    resp = _step_operating_model(client, "sole_pilot")
+    assert resp.status_code == 302
+    with app.app_context():
+        assert User.query.count() == 1
+        assert User.query.filter_by(email="owner@example.com").first() is None
+
+
+def test_setup_finish_takes_the_postgresql_lock(app):
+    from unittest.mock import MagicMock, patch
+
+    from auth.routes import _serialize_setup  # pyright: ignore[reportMissingImports]
+
+    bind = MagicMock()
+    bind.dialect.name = "postgresql"
+    with (
+        app.app_context(),
+        patch.object(db.session, "get_bind", return_value=bind),
+        patch.object(db.session, "execute") as execute,
+    ):
+        _serialize_setup()
+    assert "pg_advisory_xact_lock" in str(execute.call_args[0][0])
