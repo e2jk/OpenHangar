@@ -241,7 +241,7 @@ def _resolve_component(ac: Aircraft) -> Component | None:
     if not raw:
         return None
     try:
-        cid = int(raw)
+        cid = db_id(raw)
     except (ValueError, TypeError):
         return None
     comp = db.session.get(Component, cid)

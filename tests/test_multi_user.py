@@ -1395,6 +1395,38 @@ class TestInviteAircraftIds:
             assert inv is not None
             assert inv.aircraft_ids == []
 
+    def test_invite_drops_another_hangars_aircraft(self, app, client):
+        """An aircraft of another hangar (or a deleted one) is never stored
+        on the invitation: accepting it used to fail with a server error."""
+        tid, admin_uid = _make_tenant_user(app, "admin@invac3.dev", Role.ADMIN)
+        own = _make_aircraft(app, tid)
+        other_tid, _other = _make_tenant_user(app, "other@invac3.dev", Role.ADMIN)
+        from models import Aircraft
+
+        with app.app_context():
+            foreign = Aircraft(
+                tenant_id=other_tid, registration="OO-FOR", make="X", model="Y"
+            )
+            db.session.add(foreign)
+            db.session.commit()
+            foreign_id = foreign.id
+        _login(client, admin_uid)
+        client.post(
+            "/config/users/invite",
+            data={
+                "role": "pilot",
+                "email": "",
+                "aircraft_ids": [f"{own},{foreign_id},999999"],
+            },
+        )
+        with app.app_context():
+            inv = (
+                UserInvitation.query.filter_by(tenant_id=tid)
+                .order_by(UserInvitation.id.desc())
+                .first()
+            )
+            assert inv.aircraft_ids == [own]
+
     def test_invite_with_valid_aircraft_id_stores_it(self, app, client):
         """users/routes.py:127 — valid aircraft_id stored on invitation."""
         tid, admin_uid = _make_tenant_user(app, "admin@invac2.dev", Role.ADMIN)

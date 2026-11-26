@@ -37,6 +37,7 @@ from utils import (
     activity,
     current_membership,  # pyright: ignore[reportMissingImports]
     current_user_role,
+    db_id,
     login_required,
     require_role,
 )
@@ -201,9 +202,17 @@ def invite() -> ResponseReturnValue:
                 aircraft_ids_lists[i].split(",") if i < len(aircraft_ids_lists) else []
             )
             try:
-                invited_aircraft_ids = [int(x) for x in raw_ids if x.strip()]
+                wanted = {db_id(x) for x in raw_ids if x.strip()}
             except ValueError:
-                invited_aircraft_ids = []
+                wanted = set()
+            # Only this hangar's aircraft: a foreign or deleted id used to
+            # make accepting the invitation fail with a server error.
+            invited_aircraft_ids = sorted(
+                ac.id
+                for ac in Aircraft.query.filter(
+                    Aircraft.id.in_(wanted), Aircraft.tenant_id == tid
+                )
+            )
 
         inv = UserInvitation(
             tenant_id=tid,
@@ -493,7 +502,7 @@ def update_aircraft_access(user_id: int) -> ResponseReturnValue:
 
     raw_ids = request.form.getlist("aircraft_ids")
     try:
-        new_ids = {int(x) for x in raw_ids if x}
+        new_ids = {db_id(x) for x in raw_ids if x}
     except ValueError:
         return abort(400)
 
