@@ -158,7 +158,7 @@ def public_view(token: str, registration: str | None = None) -> ResponseReturnVa
     # the URL (e.g. after a re-registration) is simply ignored rather than
     # validated.
     st = ShareToken.query.filter_by(token=token).first()
-    if not st or not st.is_active or st.access_level == "showcase":
+    if not st or not st.opens_publicly or st.access_level == "showcase":
         abort(404)
 
     ac = st.aircraft
@@ -232,7 +232,7 @@ def public_view(token: str, registration: str | None = None) -> ResponseReturnVa
 @share_bp.route("/showcase/<registration>/<token>")
 def showcase_view(token: str, registration: str | None = None) -> ResponseReturnValue:
     st = ShareToken.query.filter_by(token=token, access_level="showcase").first()
-    if not st or not st.is_active:
+    if not st or not st.opens_publicly:
         abort(404)
 
     resp = make_response(
@@ -249,7 +249,7 @@ def showcase_photo(token: str, photo_id: int) -> ResponseReturnValue:
     from services.safe_paths import send_inside
 
     st = ShareToken.query.filter_by(token=token, access_level="showcase").first()
-    if not st or not st.is_active:
+    if not st or not st.opens_publicly:
         abort(404)
     photo = db.session.get(AircraftPhoto, photo_id)
     if not photo or photo.aircraft_id != st.aircraft_id:
