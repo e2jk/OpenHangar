@@ -1444,6 +1444,15 @@ def checkout(aircraft_id: int, res_id: int):
         return redirect(
             url_for("reservations.reservation_detail", aircraft_id=ac.id, res_id=r.id)
         )
+    reservation_day = datetime.combine(
+        r.start_dt.astimezone(UTC).date(), time.min, tzinfo=UTC
+    )
+    if datetime.now(UTC) < reservation_day:
+        # The detail page offers check-out from the booking's day only.
+        flash(_("A reservation can be checked out from its day on."), "warning")
+        return redirect(
+            url_for("reservations.reservation_detail", aircraft_id=ac.id, res_id=r.id)
+        )
 
     dispatch_record = (
         DispatchRecord.query.filter_by(reservation_id=r.id).populate_existing().first()

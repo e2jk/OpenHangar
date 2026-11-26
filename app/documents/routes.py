@@ -411,15 +411,21 @@ def title_suggestions() -> ResponseReturnValue:
         )
     else:
         tid = _tenant_id()
+        # Only aircraft this user may open, and only documents their role may
+        # see (sensitive ones and expense receipts filtered as on the list).
         aircraft_ids = [
             row.id
             for row in Aircraft.query.filter_by(tenant_id=tid)
             .with_entities(Aircraft.id)
             .all()
+            if user_can_access_aircraft(row.id)
         ]
-        base = Document.query.filter(
-            Document.aircraft_id.in_(aircraft_ids),
-            Document.title.isnot(None),
+        base = visible_documents(
+            Document.query.filter(
+                Document.aircraft_id.in_(aircraft_ids),
+                Document.title.isnot(None),
+            ),
+            _current_role(),
         )
         if owner_type == "component":
             base = base.filter(Document.component_id.isnot(None))

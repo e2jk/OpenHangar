@@ -54,3 +54,26 @@ def test_attachment_disposition_survives_odd_registrations():
     assert header.startswith('attachment; filename="Zx_flights.csv";')
     assert "filename*=UTF-8''%C3%96%22Z%5Cx_flights.csv" in header
     assert attachment_disposition("ÖÄ").startswith('attachment; filename="download"')
+
+
+def test_title_suggestions_skip_documents_the_role_cannot_see(app, client):
+    """Suggestions never reveal a sensitive document's title to a role that
+    may not see it."""
+    from models import Role, TenantUser  # pyright: ignore[reportMissingImports]
+
+    from tests.test_documents import _add_document
+
+    _uid, tid = _create_user_and_tenant(app)
+    acid = _add_aircraft(app, tid, "OO-SUG")
+    _add_document(app, acid, title="Secret settlement", is_sensitive=True)
+    _add_document(app, acid, title="Service manual")
+    from models import UserAircraftAccess  # pyright: ignore[reportMissingImports]
+
+    with app.app_context():
+        membership = TenantUser.query.filter_by(tenant_id=tid).one()
+        membership.role = Role.VIEWER
+        db.session.add(UserAircraftAccess(user_id=membership.user_id, aircraft_id=acid))
+        db.session.commit()
+    _login(app, client)
+    data = client.get("/documents/title-suggestions?q=S&owner_type=aircraft").get_json()
+    assert "Service manual" in str(data) and "Secret settlement" not in str(data)
