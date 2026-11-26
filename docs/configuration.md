@@ -31,6 +31,7 @@ documented inline in [`docker/.env.example`](../docker/.env.example).
 | [`OPENHANGAR_WEB_THREADS`](#openhangar_web_threads) | No | `4` | [Core](#core) |
 | [`OPENHANGAR_ACCESS_LOG`](#openhangar_access_log) | No | *(log file in `/data/logs/`)* | [Core](#core) |
 | [`OPENHANGAR_UPGRADE_DIR`](#openhangar_upgrade_dir) | No | *(one-click upgrades disabled)* | [Core](#core) |
+| [`OPENHANGAR_ALLOW_UNVERIFIED_UPGRADE`](#openhangar_allow_unverified_upgrade) | No | *(unset: refused)* | [Core](#core) |
 | [`OPENHANGAR_SKIP_BACKGROUND_THREADS`](#openhangar_skip_background_threads) | No | *(unset)* | [Core](#core) |
 | [`OPENHANGAR_VERSION`](#openhangar_version) | No | *(set by the Docker image)* | [Core](#core) |
 | [`OPENHANGAR_DB_HOST`](#openhangar_db_host) | No | `db` | [Database](#database) |
@@ -367,6 +368,18 @@ Container path of the shared directory used by the one-click upgrade feature.
   next to `.env`;
   if yours is elsewhere, set `OPENHANGAR_UPGRADE_HOST_DIR` to its host path in
   `.env` (read by the launcher on the host, not by the container).
+
+### `OPENHANGAR_ALLOW_UNVERIFIED_UPGRADE`
+
+Read by `upgrade.sh` on the host, from `.env`. A one-click upgrade checks
+the new image's cosign signature first and stops if it cannot: cosign is
+missing, or the image has no registry digest (a locally built one).
+
+- **Allowed values**: `1` to upgrade anyway, without verification.
+- **Default**: unset — such an upgrade is refused and the running container
+  is left as it is (it used to go ahead with only a warning).
+- **Use case**: a test instance running a locally built image. Install
+  cosign instead on any instance holding real data.
 
 ### `OPENHANGAR_SKIP_BACKGROUND_THREADS`
 
