@@ -86,6 +86,11 @@ ENV OPENHANGAR_VERSION=${VERSION}
 
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/venv/bin:$PATH"
+# Fontconfig (WeasyPrint's PDFs) keeps its font cache under XDG_CACHE_HOME.
+# The reference setups run the container read-only with only /tmp writable;
+# without this, every PDF logs "Fontconfig error: No writable cache
+# directories" and rescans the fonts.
+ENV XDG_CACHE_HOME=/tmp/.cache
 
 # The python:3.14-alpine base image ships its own pip/setuptools/wheel in the
 # system site-packages (separate from the app's /venv, which already has
