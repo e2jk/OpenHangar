@@ -950,3 +950,37 @@ class TestRenterAuthorizationNotification:
 
             run_daily_checks(app)
             assert mock_check.called
+
+
+def test_rental_agreements_open_for_owners_only(app, client, tmp_path):
+    """A signed agreement used to be stored but never servable: the owner
+    opens it now; another pilot of the hangar still cannot."""
+    from io import BytesIO
+
+    uid, tid = _make_user(app, "owner-agr@ex.com", role=Role.OWNER)
+    renter_uid, _ = _make_user(app, "renter-agr@ex.com", role=Role.PILOT)
+    other_uid, _ = _make_user(app, "other-agr@ex.com", role=Role.PILOT)
+    with app.app_context():
+        for member in (renter_uid, other_uid):
+            db.session.add(TenantUser(user_id=member, tenant_id=tid, role=Role.PILOT))
+        db.session.commit()
+    app.config["UPLOAD_FOLDER"] = str(tmp_path)
+    _login(app, client, uid)
+    client.post(
+        "/config/renters/add",
+        data={
+            "renter_user_id": str(renter_uid),
+            "granted_on": "2026-06-01",
+            "agreement": (BytesIO(b"%PDF-1.4 signed"), "agreement.pdf"),
+        },
+        content_type="multipart/form-data",
+    )
+    with app.app_context():
+        doc = Document.query.filter(Document.renter_authorization_id.isnot(None)).one()
+        auth_id, url = doc.renter_authorization_id, f"/uploads/{doc.filename}"
+    assert client.get(url).data == b"%PDF-1.4 signed"
+    assert url.encode() in client.get(f"/config/renters/{auth_id}/edit").data
+    _login(app, client, other_uid)
+    with client.session_transaction() as sess:
+        sess["tenant_id"] = tid
+    assert client.get(url).status_code == 404

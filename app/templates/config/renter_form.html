@@ -91,7 +91,7 @@
         <div class="form-text">
           {{ _('Uploading a new file adds another agreement document; existing ones are kept.') }}
           {% for doc in auth.agreement_documents %}
-          <div><i class="bi bi-file-earmark me-1"></i>{{ doc.original_filename }} ({{ doc.uploaded_at.strftime('%Y-%m-%d') }})</div>
+          <div><i class="bi bi-file-earmark me-1"></i><a href="{{ url_for('flights.serve_upload', filename=doc.filename) }}" target="_blank" hx-boost="false">{{ doc.original_filename }}</a> ({{ doc.uploaded_at.strftime('%Y-%m-%d') }})</div>
           {% endfor %}
         </div>
         {% endif %}

@@ -643,9 +643,20 @@ def serve_upload(filename: str) -> ResponseReturnValue:
             may_see_document,
         )
 
-        if doc.pilot_user_id is None and not may_see_document(doc, current_user_role()):
+        if doc.renter_authorization_id is not None:
+            # A signed rental agreement: the hangar's owners and admins, or
+            # the renter it is for (it used to be stored but never servable).
+            ra = doc.renter_authorization
+            if ra.tenant_id != _tenant_id() or (
+                current_user_role() not in (Role.ADMIN, Role.OWNER)
+                and ra.renter_user_id != session["user_id"]
+            ):
+                abort(404)
+        elif doc.pilot_user_id is None and not may_see_document(
+            doc, current_user_role()
+        ):
             abort(404)
-        if doc.aircraft_id is not None:
+        elif doc.aircraft_id is not None:
             # Covers aircraft docs and component docs (which always carry aircraft_id too).
             _get_aircraft_or_404(
                 doc.aircraft_id
