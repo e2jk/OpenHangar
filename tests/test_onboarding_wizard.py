@@ -921,10 +921,18 @@ def test_with_a_setup_token_the_wizard_needs_the_link(app, client, monkeypatch):
 
 
 def test_a_wizard_finished_after_another_one_creates_no_second_admin(app, client):
+    from unittest.mock import patch
+
     _step_account(client)
     _step_totp_skip(client)
-    _create_owner(app, email="first@example.com")  # another browser finished first
-    resp = _step_operating_model(client, "sole_pilot")
+
+    def other_browser_finishes_first() -> None:
+        _create_owner(app, email="first@example.com")
+
+    with patch(
+        "auth.routes._serialize_setup", side_effect=other_browser_finishes_first
+    ):
+        resp = _step_operating_model(client, "sole_pilot")
     assert resp.status_code == 302
     with app.app_context():
         assert User.query.count() == 1
