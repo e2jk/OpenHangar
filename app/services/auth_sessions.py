@@ -232,6 +232,13 @@ def validate() -> bool:
     elif not user.is_instance_admin:
         _clear_login()
         return False
+    elif not user.totp_secret:
+        # An instance admin's login is not bound to one hangar, but a hangar
+        # of theirs that turns on "require 2FA" signs them out as well.
+        home = login_membership(user)
+        if home is not None and home.tenant.require_totp:
+            _clear_login()
+            return False
     _bind_context(user.id, record.tenant_id, record.expires_at)
     return True
 

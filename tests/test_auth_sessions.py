@@ -483,3 +483,17 @@ def test_signed_out_token_is_cleared_normally_once_its_grace_period_ends(app):
     )
     assert late.status_code == 302
     assert _sets_session_cookie(late)
+
+
+def test_instance_admin_without_2fa_is_signed_out_when_their_hangar_requires_it(app):
+    uid, tid = make_user(app, required=False)
+    with app.app_context():
+        db.session.get(User, uid).is_instance_admin = True
+        db.session.commit()
+    admin = logged_in(app)
+    with app.app_context():
+        record = AuthSession.query.filter_by(user_id=uid).first()
+        assert record.tenant_id is None  # not bound to a hangar
+        db.session.get(Tenant, tid).require_totp = True
+        db.session.commit()
+    assert admin.get("/profile").status_code == 302

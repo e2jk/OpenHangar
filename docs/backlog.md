@@ -1194,3 +1194,9 @@ Items from the audit that need a feature of their own rather than a fix.
   invitations. Send a code to the address before the account is created
   (the passport registration flow already does this) or before
   address-matched invitations show up for it.
+- **Aircraft share links: optional expiry, and store only a digest.** Links
+  now close when the aircraft is archived or the hangar deactivated, but
+  they never expire, and the token is stored as is (the owner's share page
+  shows existing links again from it). Add an expiry date to choose when
+  creating a link, and store a digest as passport shares (`PublicShare`) do,
+  showing a link only once when it is created.
