@@ -1,6 +1,7 @@
 import contextlib
 import decimal
 import json as _json
+import mimetypes
 import os
 import uuid
 from datetime import (
@@ -672,7 +673,27 @@ def serve_upload(filename: str) -> ResponseReturnValue:
     from services.safe_paths import send_inside
 
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
-    return send_inside(folder, filename)
+    # Shown in the browser only for types that cannot run script on this
+    # site; anything else (an HTML or SVG file synced in, say) downloads.
+    mimetype = mimetypes.guess_type(filename)[0] or "application/octet-stream"
+    return send_inside(
+        folder,
+        filename,
+        mimetype=mimetype,
+        as_attachment=mimetype not in _INLINE_UPLOAD_TYPES,
+    )
+
+
+_INLINE_UPLOAD_TYPES = frozenset(
+    {
+        "application/pdf",
+        "image/gif",
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "text/plain",
+    }
+)
 
 
 # ── Fleet logbook ─────────────────────────────────────────────────────────────
