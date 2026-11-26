@@ -136,7 +136,7 @@ def test_password_reset_revokes_sessions_and_pending_challenges(app):
         )
         db.session.add(reset)
         db.session.commit()
-        token = reset.token
+        token = reset.raw_token
     response = app.test_client().post(
         f"/reset-password/{token}",
         data={
