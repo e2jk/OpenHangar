@@ -240,7 +240,52 @@
     cleanMap(root, map);
   }
 
-  function init() { initMap(); initEditor(); }
+  function initCandidateMap() {
+    var root = document.getElementById('airfield-candidate-map');
+    if (!root || root.dataset.ohInited || typeof L === 'undefined') return;
+    var rows = document.querySelectorAll('#airfield-candidates [data-latitude]');
+    if (!rows.length) return;
+    root.dataset.ohInited = '1';
+    root.hidden = false;
+
+    var place = L.latLng(Number(root.dataset.latitude), Number(root.dataset.longitude));
+    var map = L.map(root, { zoomAnimation: false, fadeAnimation: false }).setView(place, 11);
+    window.ohAddBaseLayers(map, null);
+    var placeLabel = document.createElement('strong');
+    placeLabel.textContent = root.dataset.place;
+    L.circleMarker(place, { radius: 8, color: '#0d6efd', weight: 3, fillOpacity: 0.8 })
+      .bindPopup(placeLabel).addTo(map);
+
+    var bounds = L.latLngBounds([place]);
+    rows.forEach(function (row) {
+      var point = L.latLng(Number(row.dataset.latitude), Number(row.dataset.longitude));
+      var popup = row.querySelector('[data-airfield-popup]').cloneNode(true);
+      var form = popup.querySelector('form');
+      if (form) form.setAttribute('hx-boost', 'false');
+      var label = popup.querySelector('strong').textContent.trim();
+      L.marker(point, { title: label, alt: label }).bindPopup(popup).addTo(map);
+      bounds.extend(point);
+    });
+    var longitude = Math.max(bounds.getEast() - place.lng, place.lng - bounds.getWest());
+    var latitude = Math.max(bounds.getNorth() - place.lat, place.lat - bounds.getSouth());
+    map.fitBounds([[place.lat - latitude, place.lng - longitude],
+                   [place.lat + latitude, place.lng + longitude]],
+                  { padding: [25, 25], maxZoom: 13 });
+    cleanMap(root, map);
+  }
+
+  function initPassportRadius() {
+    var slider = document.getElementById('passport-place-range');
+    if (!slider || slider.dataset.ohInited) return;
+    slider.dataset.ohInited = '1';
+    var output = document.querySelector('[data-radius-value]');
+    var numberFormat = new Intl.NumberFormat(document.documentElement.lang, { maximumFractionDigits: 1 });
+    function showRadius() { output.value = numberFormat.format(slider.valueAsNumber); }
+    slider.addEventListener('input', showRadius);
+    showRadius();
+  }
+
+  function init() { initMap(); initEditor(); initCandidateMap(); initPassportRadius(); }
   document.addEventListener('DOMContentLoaded', init);
   document.addEventListener('htmx:afterSettle', init);
 })();

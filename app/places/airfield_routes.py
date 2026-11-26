@@ -3,11 +3,11 @@
 from flask import abort, flash, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_babel import gettext as _
-from models import db
+from models import PlaceCollection, db
 from services.destination_search import DestinationError, positive
 from utils import db_id, login_required
 
-from places import airfields, candidates
+from places import airfields, candidates, passport_links
 from places.access import PlaceError, place_access
 from places.routes import context, places_bp
 
@@ -56,6 +56,27 @@ def airfield_links(place_id: int) -> ResponseReturnValue:
             else:
                 raise PlaceError(_("Choose an airfield action."))
             db.session.commit()
+            if action == "add":
+                return_to = request.form.get("return_to")
+                if return_to == "suggestions":
+                    return redirect(
+                        url_for(
+                            "places.passport_suggestions",
+                            radius=request.args.get("radius"),
+                        )
+                    )
+                if return_to == "passport":
+                    passport_id = request.form.get("passport_id", type=db_id)
+                    target_id = request.form.get("target_id", type=db_id)
+                    if passport_id is not None and target_id is not None:
+                        return redirect(
+                            url_for(
+                                "passports.target_detail",
+                                passport_id=passport_id,
+                                target_id=target_id,
+                                radius=request.args.get("radius"),
+                            )
+                        )
             return redirect(url_for("places.airfield_links", place_id=place.id))
         except PlaceError as exc:
             db.session.rollback()
@@ -80,9 +101,11 @@ def airfield_links(place_id: int) -> ResponseReturnValue:
     return render_template(
         "places/airfield_links.html",
         place=place,
+        collection=db.session.get(PlaceCollection, place.collection_id),
         linked=linked,
         results=results,
         linked_ids=linked_ids,
+        passport_fields=passport_links.passport_fields(tid, uid),
         airfield_types={
             "small_airport": _("Small airfield"),
             "medium_airport": _("Medium airport"),
@@ -94,3 +117,18 @@ def airfield_links(place_id: int) -> ResponseReturnValue:
         query=query,
         radius=radius,
     ), status
+
+
+@places_bp.get("/passport-suggestions")
+@login_required
+def passport_suggestions() -> ResponseReturnValue:
+    tid, uid = context()
+    radius, error = passport_links.search_radius(request.args.get("radius", "15"))
+    fields = passport_links.passport_fields(tid, uid)
+    suggestions = passport_links.nearby_places(tid, uid, fields, radius)
+    return render_template(
+        "places/passport_suggestions.html",
+        radius=radius,
+        error=error,
+        suggestions=suggestions,
+    ), 400 if error else 200

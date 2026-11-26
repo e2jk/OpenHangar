@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% set no_history_cache = true %}
+{% block title %}{{ _('Places near passport airfields') }} — OpenHangar{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h1>{{ _('Places near passport airfields') }}</h1>
+  <nav class="d-flex gap-3 mb-3">
+    <a href="{{ url_for('places.index') }}">{{ _('Places') }}</a>
+    <a href="{{ url_for('passports.index') }}">{{ _('Airfield passports') }}</a>
+  </nav>
+  {% if error %}<p class="text-danger" role="alert">{{ error }}</p>{% endif %}
+  <form method="get" class="mb-4" id="passport-place-radius">
+    <label class="form-label" for="passport-place-range">{{ _('Nearby radius (km)') }}</label>
+    <input class="form-range" type="range" id="passport-place-range" name="radius"
+           min="0.1" max="200" step="any" value="{{ radius }}">
+    <div class="d-flex align-items-center gap-3">
+      <output for="passport-place-range" data-radius-value>{{ radius | round(1) }}</output>
+      <button class="btn btn-ac-ghost">{{ _('Search') }}</button>
+    </div>
+  </form>
+  {% set return_to = 'suggestions' %}
+  {% include 'places/_passport_suggestions.html' %}
+</div>
+{% endblock %}

@@ -759,9 +759,25 @@ def target_detail(passport_id: int, target_id: int) -> ResponseReturnValue:
             discussion_comments = comments.feed(scope).limit(3).all()
         except BuilderError as exc:
             return abort(exc.status, description=str(exc))
+    from places import airfields, passport_links
+
+    uid = session["user_id"]
+    place_radius, place_radius_error = passport_links.search_radius(
+        request.args.get("radius", "15")
+    )
+    linked_places = airfields.linked_airfields(
+        passport.tenant_id, uid, airfield_id=target["id"]
+    )
+    nearby_places = passport_links.nearby_places(
+        passport.tenant_id, uid, {target["id"]: target}, place_radius
+    )
     return _builder_response(
         render_template(
             "passports/target.html",
+            linked_places=linked_places,
+            nearby_places=nearby_places,
+            place_radius=place_radius,
+            place_radius_error=place_radius_error,
             discussion_comments=discussion_comments,
             passport=passport,
             target=target,

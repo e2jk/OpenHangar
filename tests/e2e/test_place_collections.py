@@ -484,3 +484,51 @@ def test_place_card_opens_the_place_and_keeps_its_pills(passport_page: Page) -> 
     card.get_by_role("link", name="Family", exact=True).click()
     page.wait_for_url(re.compile(r"/places/\?.*tag=\d+"))
     expect(page.locator("#places-list > li")).to_have_count(1)
+
+
+def test_airfield_candidate_map_can_link_from_a_popup(passport_page: Page) -> None:
+    page = passport_page
+    page.goto("/places/new")
+    page.get_by_label("Place name (optional)", exact=True).fill(
+        "Airfield map " + uuid4().hex[:8]
+    )
+    page.get_by_label("Latitude", exact=True).fill("51.23")
+    page.get_by_label("Longitude", exact=True).fill("4.42")
+    page.get_by_role("button", name="Save place", exact=True).click()
+    place_path = re.compile(r"/places/\d+$")
+    page.wait_for_url(place_path)
+    place_url = page.url
+    breadcrumb = page.get_by_role("navigation", name="Place collections", exact=True)
+    collections = breadcrumb.get_by_role("link", name="Collections", exact=True)
+    collection = breadcrumb.locator("li").nth(1).get_by_role("link")
+    collection_url = collection.get_attribute("href")
+    assert collection_url and re.fullmatch(r"/places/\?collection=\d+", collection_url)
+    page.get_by_role("link", name="Manage airfield links").click()
+    expect(collections).to_have_attribute("href", "/places/")
+    expect(collection).to_have_attribute("href", collection_url)
+    breadcrumb.get_by_role("link", name="Back to place").click()
+    page.wait_for_url(place_url)
+    page.get_by_role("link", name="Manage airfield links").click()
+    page.get_by_label("Airfield name or code").fill("EBAW")
+    page.get_by_role("button", name="Search", exact=True).click()
+
+    candidate_map = page.locator("#airfield-candidate-map")
+    expect(candidate_map).to_be_visible()
+    candidate_map.locator('[title^="EBAW"]').click()
+    popup = candidate_map.locator(".leaflet-popup")
+    expect(popup).to_contain_text("EBAW")
+    popup.get_by_role("button", name="Link airfield").click()
+    expect(
+        page.get_by_role("heading", name="Linked airfields", exact=True)
+    ).to_be_visible()
+    expect(page.get_by_role("heading", name=re.compile("EBAW"))).to_be_visible()
+
+    page.goto("/places/passport-suggestions")
+    slider = page.locator("#passport-place-range")
+    slider.evaluate(
+        "input => { input.value = 30; input.dispatchEvent(new Event('input', {bubbles: true})); }"
+    )
+    expect(page.locator("[data-radius-value]")).to_have_text("30")
+    page.get_by_role("button", name="Search", exact=True).click()
+    page.wait_for_url(re.compile(r"/places/passport-suggestions\?radius=30$"))
+    expect(slider).to_have_value("30")

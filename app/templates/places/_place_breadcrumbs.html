@@ -1,0 +1,9 @@
+<nav aria-label="{{ _('Place collections') }}">
+<ol class="breadcrumb">
+<li class="breadcrumb-item"><a href="{{ url_for('places.index') }}">{{ _('Collections') }}</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('places.index', collection=collection.id) }}">{{ collection.name }}</a>{% if place.archived %} <span class="badge bg-secondary">{{ _('Archived') }}</span>{% endif %}</li>
+{% if link_to_place | default(false) %}
+<li class="breadcrumb-item"><a href="{{ url_for('places.place_detail', place_id=place.id) }}">{{ _('Back to place') }}</a></li>
+{% endif %}
+</ol>
+</nav>
