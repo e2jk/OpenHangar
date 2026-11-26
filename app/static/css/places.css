@@ -4,3 +4,11 @@
 .place-detail-photo { max-height: 360px; object-fit: contain; }
 
 #places-bulk-move:not([open]) ~ #places-list .place-bulk-choice { display: none; }
+
+.place-tag-filter {
+  text-decoration: none;
+}
+.place-tag-filter:hover,
+.place-tag-filter:focus-visible {
+  text-decoration: underline;
+}

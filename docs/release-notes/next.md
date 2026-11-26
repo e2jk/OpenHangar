@@ -1,5 +1,8 @@
 # Security hardening: sign-in, links, uploads, backups and upgrades
 
+- Place cards distinguish linked airfields, missing airfields and tags.
+  Street addresses are shown on place detail pages.
+
 - Place pages suggest visits from past landings at linked airfields. Record
   the visit or dismiss the flight for that place.
 
