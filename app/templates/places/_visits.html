@@ -35,7 +35,7 @@
 {% endfor %}
 </ul>
 {% endif %}
-{% if place_suggestions %}
+{% if place_suggestions is defined and place_suggestions %}
 <details class="mt-3" id="place-visit-suggestions" open>
   <summary class="fw-semibold mb-2">{{ _('Suggested visits from past landings') }}</summary>
   {% include "places/_visit_suggestions.html" %}
