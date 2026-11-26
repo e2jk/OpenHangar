@@ -4359,8 +4359,12 @@ class TestFlightTrackImageRoute:
 
         resp = client.get(f"/flights/{flight_id}/track/image.png")
         assert resp.status_code == 200
-        assert "immutable" in resp.headers.get("Cache-Control", "")
-        assert resp.headers.get("ETag") is not None
+        # Checked on each visit: the track can change under the same URL.
+        assert resp.headers.get("Cache-Control") == "private, no-cache"
+        etag = resp.headers.get("ETag")
+        assert etag is not None
+        again = client.get(resp.request.path, headers={"If-None-Match": etag})
+        assert again.status_code == 304
 
     def test_default_variant_is_cached_after_first_render(self, app, client):
         from unittest.mock import patch
@@ -4471,8 +4475,12 @@ class TestFlightTrackGifRoute:
 
         resp = client.get(f"/flights/{flight_id}/track/animation.gif")
         assert resp.status_code == 200
-        assert "immutable" in resp.headers.get("Cache-Control", "")
-        assert resp.headers.get("ETag") is not None
+        # Checked on each visit: the track can change under the same URL.
+        assert resp.headers.get("Cache-Control") == "private, no-cache"
+        etag = resp.headers.get("ETag")
+        assert etag is not None
+        again = client.get(resp.request.path, headers={"If-None-Match": etag})
+        assert again.status_code == 304
 
     def test_default_variant_is_cached_after_first_render(self, app, client):
         from unittest.mock import patch

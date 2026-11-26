@@ -11,6 +11,7 @@ Covers:
 """
 
 import json
+import os
 import re
 from pathlib import Path
 from typing import ClassVar
@@ -109,13 +110,28 @@ class TestServiceWorker:
         assert "__SW_CACHE_VERSION__" not in body
         assert "openhangar-" in body
 
-    def test_sw_js_dev_cache_version_is_random(self, client, monkeypatch):
-        # Without a real version, each request should produce a unique cache name
-        # so the SW never serves stale static assets in dev/test environments.
+    def test_sw_js_dev_cache_version_follows_static_files(
+        self, client, monkeypatch, tmp_path
+    ):
+        # Stable between fetches (no reinstall at each update check), new
+        # once a static file changes (no stale script after an edit).
+        import init
+
         monkeypatch.delenv("OPENHANGAR_VERSION", raising=False)
+        mtime = {"value": 1}
+        monkeypatch.setattr(init, "_newest_static_mtime", lambda _f: mtime["value"])
         body1 = client.get("/sw.js").data.decode()
-        body2 = client.get("/sw.js").data.decode()
-        assert body1 != body2
+        assert body1 == client.get("/sw.js").data.decode()
+        mtime["value"] = 2
+        assert client.get("/sw.js").data.decode() != body1
+
+        (tmp_path / "vendor").mkdir()
+        (tmp_path / "a.js").write_text("1")
+        (tmp_path / "vendor" / "b.js").write_text("1")
+        os.utime(tmp_path / "a.js", (1000, 1000))
+        os.utime(tmp_path / "vendor" / "b.js", (5000, 5000))
+        monkeypatch.undo()
+        assert init._newest_static_mtime(str(tmp_path)) == 1_000_000
 
     def test_sw_js_file_exists(self):
         assert (_STATIC_DIR / "js" / "sw.js").exists()
@@ -726,14 +742,3 @@ def test_share_sheet_post_needs_no_form_token_but_another_site_is_refused(app, c
         assert client.post("/pwa/shared/discard").status_code == 400
     finally:
         app.config["WTF_CSRF_ENABLED"] = False
-
-
-def test_dev_service_worker_keeps_one_cache_name_per_server_start(client, monkeypatch):
-    import re
-
-    monkeypatch.setenv("OPENHANGAR_VERSION", "development")
-    names = {
-        re.search(rb"openhangar-[0-9a-f]{16}", client.get("/sw.js").data).group(0)
-        for _ in range(2)
-    }
-    assert len(names) == 1

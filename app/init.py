@@ -68,10 +68,27 @@ def _normalize_database_url(db_url: str) -> str:
 
 SUPPORTED_LOCALES = ["en", "fr", "nl"]
 
+
 # Authenticated responses that may be cached only with revalidation (private,
 # no-cache). Everything else authenticated is no-store; see _security_headers.
+def _newest_static_mtime(folder: str) -> int:
+    """The newest modification time (in ms) of the app's own static files."""
+    newest = 0.0
+    for dirpath, dirs, files in os.walk(folder):
+        dirs[:] = [d for d in dirs if d != "vendor"]
+        for name in files:
+            newest = max(newest, os.path.getmtime(os.path.join(dirpath, name)))
+    return int(newest * 1000)
+
+
 _REVALIDATED_PRIVATE_ENDPOINTS = frozenset(
-    {"aircraft.serve_photo", "aircraft.serve_photo_thumb"}
+    {
+        "aircraft.serve_photo",
+        "aircraft.serve_photo_thumb",
+        # A flight's track image: its ETag follows the image's bytes.
+        "flights.flight_track_image",
+        "flights.flight_track_gif",
+    }
 )
 
 LOCALE_META = {
@@ -843,10 +860,11 @@ def create_app() -> Flask:
         cache_name = (
             f"openhangar-{version}"
             if version and version != "development"
-            # One name per server start in development: a new one on every
-            # fetch made the browser reinstall the worker and wipe its
-            # caches at each update check.
-            else f"openhangar-{app.config.setdefault('DEV_SW_CACHE', secrets.token_hex(8))}"
+            # In development, follows the newest static file: a new name on
+            # every fetch made the browser reinstall the worker and wipe its
+            # caches at each update check, while one fixed name would keep
+            # serving a script edited since.
+            else f"openhangar-dev-{_newest_static_mtime(app.static_folder or '')}"
         )
         content = content.replace("__SW_CACHE_VERSION__", cache_name)
         response = Response(content, mimetype="application/javascript")

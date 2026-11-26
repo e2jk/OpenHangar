@@ -67,7 +67,11 @@ def _resolve_report_range(
         except ValueError:
             pass
         else:
-            if custom_start <= custom_end:
+            # Years 1900-2999 only: the report also covers the period before,
+            # and one starting near year 1 overflowed the date type (a 500).
+            if custom_start <= custom_end and (
+                1900 <= custom_start.year and custom_end.year <= 2999
+            ):
                 return custom_start, custom_end, None, from_raw, to_raw
 
     period_months = request.args.get("period", DEFAULT_PERIOD_MONTHS, type=months_back)
