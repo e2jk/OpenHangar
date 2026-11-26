@@ -67,29 +67,37 @@ else
   NEW_ID="${OLD_ID}"
 fi
 
+# Recreating the container is the wipe: in demo mode, every start rebuilds the
+# schema, reseeds the demo slots and reapplies the env-var settings
+# (docker-init-db.py). --force-recreate makes sure it happens even when
+# nothing in the config changed.
 if [ "${OLD_ID}" != "${NEW_ID}" ]; then
   log "New image detected -- recreating web container..."
-  docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
-    --env-file "${ENV_FILE}" up -d --pull always "${SERVICE}"
 else
-  log "Image unchanged -- recreating web container to apply updated config..."
-  docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
-    --env-file "${ENV_FILE}" up -d "${SERVICE}"
+  log "Image unchanged -- recreating web container..."
 fi
+docker compose --file "${COMPOSE_DIR}/docker-compose.yml" \
+  --env-file "${ENV_FILE}" up -d --force-recreate "${SERVICE}"
 
-# ── 3. Reset schema and reseed demo slots ────────────────────────────────────
-# Wait for the container to be healthy before seeding
-log "Waiting for ${CONTAINER} to be healthy..."
-for i in $(seq 1 30); do
+# ── 3. Wait for the wiped and reseeded demo to serve again ───────────────────
+# The reseed takes a few minutes on a small server. Docker marks the container
+# unhealthy while it runs (the healthcheck's start period is shorter), so keep
+# waiting through that until it turns healthy or the deadline passes. Don't
+# run reset-db/seed-demo here: doing so while the start-up reseed is still
+# running drops its tables and crashes it, which doubles the downtime.
+WAIT_SECONDS=600
+log "Waiting for ${CONTAINER} to be healthy (up to ${WAIT_SECONDS}s)..."
+STATUS="starting"
+for _ in $(seq 1 $((WAIT_SECONDS / 5))); do
   STATUS=$(docker inspect --format='{{.State.Health.Status}}' "${CONTAINER}" 2>/dev/null || echo "starting")
   if [ "${STATUS}" = "healthy" ]; then break; fi
-  sleep 2
+  sleep 5
 done
-
-log "Resetting database schema..."
-docker exec "${CONTAINER}" flask reset-db
-log "Reseeding demo slots..."
-docker exec "${CONTAINER}" flask seed-demo
+if [ "${STATUS}" != "healthy" ]; then
+  log "ERROR: ${CONTAINER} not healthy after ${WAIT_SECONDS}s (last status: ${STATUS})"
+  exit 1
+fi
+log "Demo wiped and reseeded."
 
 # ── 4. Remove dangling images to free disk space ──────────────────────────────
 log "Pruning unused Docker images..."

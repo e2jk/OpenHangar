@@ -70,6 +70,10 @@
 - A corrupt AMP workbook, a restore with folder entries, one bad GPX value
   or a report range near year 1 no longer end in an error page; track
   images update when their track changes.
+- The demo's scheduled wipe is down for about half as long: the refresh
+  script no longer resets the database while the restarted app is still
+  reseeding it, which crashed it into a second restart. It also finishes
+  again, so old images get pruned.
 
 **Maintenance**
 

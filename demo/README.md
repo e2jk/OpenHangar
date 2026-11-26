@@ -98,9 +98,9 @@ Each time `refresh.sh` runs:
 
 1. **Writes the next wipe timestamp** to `.env` (`DEMO_NEXT_WIPE_UTC = now + 3 h`) — the app reads this to show the countdown banner.
 2. **Pulls the latest image** from `ghcr.io/e2jk/openhangar:latest`.
-3. **Rebuilds the container** if a newer image was found; otherwise just restarts the app container.
-4. **Prunes dangling Docker images** (`docker image prune -f`) to reclaim disk space.
-5. **Waits for the container to be healthy**, then runs `flask reset-db` and `flask seed-demo` inside it to wipe and reseed all visitor slots.
+3. **Recreates the app container**, with the new image if one was found. In demo mode every start rebuilds the schema and reseeds all visitor slots, so this is the wipe.
+4. **Waits for the container to be healthy** again (up to 10 minutes: the reseed takes a few minutes on a small server), and exits with an error if it isn't.
+5. **Prunes dangling Docker images** (`docker image prune -f`) to reclaim disk space.
 
 The script is idempotent — safe to run manually at any time:
 
