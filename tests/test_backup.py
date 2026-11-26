@@ -234,6 +234,23 @@ class TestPgDump:
 # ── Unit tests: run_backup ────────────────────────────────────────────────────
 
 
+def test_backup_files_are_readable_by_their_owner_only(app):
+    import stat
+
+    from config.routes import run_backup  # pyright: ignore[reportMissingImports]
+
+    fake = MagicMock()
+    fake.returncode = 0
+    fake.stdout = _make_valid_dump()
+    with app.app_context():
+        app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://u:p@h/db"
+        with patch("config.routes.subprocess.run", return_value=fake):
+            record = run_backup()
+        for path in (record.path, record.path.replace(".zip.enc", ".meta")):
+            assert stat.S_IMODE(os.stat(path).st_mode) == 0o600, path
+
+
+
 class TestRunBackup:
     def _mock_pg_dump(self, sql=None):
         sql = sql or _make_valid_dump()

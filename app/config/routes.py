@@ -198,14 +198,14 @@ def _run_backup_locked() -> BackupRecord:
     db.session.flush()  # get an id without committing
 
     # Hidden temporary files in the backup folder itself (same filesystem, so
-    # the final rename is atomic; normal file permissions, like the archive
-    # always had); removed whatever happens.
+    # the final rename is atomic), readable by the app's user only (the
+    # archive holds the whole database); removed whatever happens.
     zip_tmp = os.path.join(backup_folder, f".{filename}.zip.partial")
     out_tmp = zip_tmp
     try:
         sql_bytes = _pg_dump(database_url)
         with (
-            open(zip_tmp, "xb") as raw,
+            _private_new_file(zip_tmp) as raw,
             zipfile.ZipFile(raw, "w", zipfile.ZIP_DEFLATED) as zf,
         ):
             zf.writestr("openhangar.sql", sql_bytes)
@@ -219,7 +219,7 @@ def _run_backup_locked() -> BackupRecord:
             with open(zip_tmp, "rb") as fh:
                 nonce, ciphertext = _encrypt_parts(fh.read(), key)
             out_tmp = os.path.join(backup_folder, f".{filename}.partial")
-            with open(out_tmp, "xb") as fh:
+            with _private_new_file(out_tmp) as fh:
                 for part in (nonce, ciphertext):
                     fh.write(part)
                     digest.update(part)
@@ -240,7 +240,7 @@ def _run_backup_locked() -> BackupRecord:
         os.replace(out_tmp, path)  # complete archive, under its final name
 
         meta_path = path.replace(".zip.enc", ".meta")
-        with open(meta_path, "w") as fh:
+        with _private_new_file(meta_path, text=True, replace=True) as fh:
             json.dump(metadata, fh, indent=2)
 
         record.size_bytes = size
@@ -281,6 +281,14 @@ def _add_uploads_to_zip(zf: zipfile.ZipFile, upload_folder: str) -> None:
     ):
         rel_path = os.path.relpath(full_path, upload_folder)
         zf.write(full_path, arcname=f"uploads/{rel_path}")
+
+
+def _private_new_file(path: str, *, text: bool = False, replace: bool = False) -> Any:
+    """Open a new file readable and writable by its owner only (0600): a
+    backup used to get the default 0644, readable by any user of the host on
+    the bind-mounted folder."""
+    flags = os.O_WRONLY | os.O_CREAT | (os.O_TRUNC if replace else os.O_EXCL)
+    return os.fdopen(os.open(path, flags, 0o600), "w" if text else "wb")
 
 
 def _pg_dump(database_url: str) -> bytes:
