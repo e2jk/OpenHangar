@@ -272,3 +272,38 @@ def test_an_airfields_former_code_matches_flights_of_its_time(
     # Only the flight from when EBOLD was this airfield's code.
     assert {r["date"] for r in rows} == {today - timedelta(days=10)}
     assert {r["code"] for r in rows} == {"EBOLD"}
+
+
+def test_manual_visit_suppresses_only_its_own_place_date_and_author(
+    app: Flask, client: FlaskClient, people: dict[str, int], landed: dict[str, int]
+) -> None:
+    with app.app_context():
+        flight = db.session.get(Flight, landed["flight"])
+        visit = visits.record(
+            people["tenant"],
+            people["creator"],
+            landed["castle"],
+            {"visit_date": flight.date.isoformat()},
+        )
+        visits.record(
+            people["tenant"],
+            people["creator"],
+            landed["fair"],
+            {"visit_date": (flight.date - timedelta(days=1)).isoformat()},
+        )
+        db.session.commit()
+        visit_id = visit.id
+
+    assert [row["place"] for row in _suggestions(app, people, "creator")] == ["Fair"]
+    assert len(_suggestions(app, people, "reader")) == 2
+    signin(client, people)
+    # A suggestion already open in another tab must leave the manual visit intact.
+    assert (
+        client.post(
+            f"/places/{landed['castle']}/visits/from-flight/{landed['flight']}"
+        ).status_code
+        == 302
+    )
+    with app.app_context():
+        visit = PlaceVisit.query.filter_by(place_id=landed["castle"]).one()
+        assert visit.id == visit_id and visit.flight_id is None
