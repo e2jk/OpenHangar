@@ -308,6 +308,50 @@ class TestDataChecksPage:
         assert "No differences found" in page
         assert "Data checks to review" not in client.get("/config/").data.decode()
 
+    def test_dismiss_all_preserves_flights_and_other_hangars(self, client, app):
+        from models import Aircraft, Tenant  # pyright: ignore[reportMissingImports]
+
+        uid, tid, aircraft_id = _make_user_and_aircraft(app)
+        first = _tracked_flight(app, aircraft_id)
+        second = _tracked_flight(app, aircraft_id, day=19)
+        with app.app_context():
+            other_tenant = Tenant(name="Other")
+            db.session.add(other_tenant)
+            db.session.flush()
+            other_tid = other_tenant.id
+            other_aircraft = Aircraft(
+                tenant_id=other_tid, registration="OO-OTH", make="X", model="Y"
+            )
+            db.session.add(other_aircraft)
+            db.session.commit()
+            other_aircraft_id = other_aircraft.id
+        _tracked_flight(app, other_aircraft_id)
+        _login(client, uid)
+        url = "/config/data-checks/dismiss-all"
+        assert url in client.get("/config/data-checks").text
+        response = client.post(url, follow_redirects=True)
+        assert "2 differences dismissed." in response.text
+        assert url not in response.text
+        with app.app_context():
+            assert dc.open_count(tid) == 0
+            assert sum(len(group) for _, group in dc.open_findings(other_tid)) == 1
+            dismissals = DataCheckDismissal.query.all()
+            assert {row.flight_id for row in dismissals} == {first, second}
+            assert {row.dismissed_by_user_id for row in dismissals} == {uid}
+            for fid in (first, second):
+                flight = db.session.get(Flight, fid)
+                assert flight.arrival_icao == "EDBK"
+                assert flight.gps_track_id is not None
+        response = client.post(url, follow_redirects=True)
+        assert "There are no open differences to dismiss." in response.text
+
+    def test_dismiss_all_one_difference(self, client, app):
+        uid, _, aircraft_id = _make_user_and_aircraft(app)
+        _tracked_flight(app, aircraft_id)
+        _login(client, uid)
+        response = client.post("/config/data-checks/dismiss-all", follow_redirects=True)
+        assert "One difference dismissed." in response.text
+
     def test_run_checks_tool_rechecks_everything(self, client, app):
         """Data tools' "Run data checks": every aircraft checked anew, the
         cached results ignored, then the Data checks page."""
@@ -383,6 +427,7 @@ class TestDataChecksPage:
         assert "No differences found" in client.get("/config/data-checks").data.decode()
         rv = client.post("/config/data-checks/run", follow_redirects=True)
         assert "No differences found" in rv.data.decode()
+        assert client.post("/config/data-checks/dismiss-all").status_code == 404
 
 
 class TestDailyRefresh:

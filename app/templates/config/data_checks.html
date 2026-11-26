@@ -10,6 +10,12 @@
       <p class="page-sub">{{ _('Differences between logged flights and their GPS tracks, gaps in the counters, and overlapping flights') }}</p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
+      {% if groups %}
+      <form method="post" action="{{ url_for('config.data_checks_dismiss_all') }}"
+            data-confirm="{{ _('Dismiss every open difference in this hangar? The logbook entries stay as recorded.') }}">
+        <button type="submit" class="btn btn-ac-ghost btn-sm">{{ _('Dismiss all') }}</button>
+      </form>
+      {% endif %}
       <a href="{{ url_for('config.index') }}" class="btn btn-ac-ghost btn-sm">
         <i class="bi bi-arrow-left me-1"></i>{{ _('Configuration') }}
       </a>
