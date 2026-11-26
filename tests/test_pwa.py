@@ -692,3 +692,37 @@ class TestStaleSignedOutPageIsShown:
         network = network[: network.index("\n}\n")]
         assert network.count("if (!next.owner) return response;") == 2
         assert network.count("throw new Error('offline-identity-retired');") == 2
+
+
+def test_share_sheet_post_needs_no_form_token_but_another_site_is_refused(app, client):
+    """The phone's share sheet posts with no CSRF token: that one POST is
+    exempt, refused when the browser marks it cross-site, and every other
+    form still needs its token."""
+    from io import BytesIO
+
+    from models import User, db
+
+    with app.app_context():
+        u = User(email="share_csrf@test.com", password_hash="x", is_active=True)
+        u.is_instance_admin = True
+        db.session.add(u)
+        db.session.commit()
+        uid = u.id
+    with client.session_transaction() as sess:
+        sess["user_id"] = uid
+    app.config["WTF_CSRF_ENABLED"] = True
+    try:
+
+        def share(headers):
+            return client.post(
+                "/pwa/shared",
+                data={"files": (BytesIO(b"%PDF-1.4 x"), "a.pdf"), "title": ""},
+                content_type="multipart/form-data",
+                headers=headers,
+            )
+
+        assert share({"Sec-Fetch-Site": "none"}).status_code == 200
+        assert share({"Sec-Fetch-Site": "cross-site"}).status_code == 403
+        assert client.post("/pwa/shared/discard").status_code == 400
+    finally:
+        app.config["WTF_CSRF_ENABLED"] = False

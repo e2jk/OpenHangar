@@ -4,6 +4,7 @@ from typing import cast
 
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
+    abort,
     flash,
     redirect,
     render_template,
@@ -24,6 +25,7 @@ from models import (  # pyright: ignore[reportMissingImports]
 from services import account_scope  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
     accessible_aircraft,
+    cross_site_request,
     current_membership,
     db_id,
     has_pilot_access,
@@ -160,6 +162,10 @@ def share_target_get() -> ResponseReturnValue:
 @pwa_bp.route("/pwa/shared", methods=["POST"])
 @login_required
 def share_target() -> ResponseReturnValue:
+    if cross_site_request():
+        # Not CSRF-protected (see init.py): the share sheet itself sends
+        # Sec-Fetch-Site "none", another site "cross-site".
+        return abort(403)
     files = request.files.getlist("files")
     title = request.form.get("title", "").strip()
 

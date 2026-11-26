@@ -614,7 +614,13 @@ def create_app() -> Flask:
     # in a stale-but-served page must stay valid until the session itself
     # expires, not Flask-WTF's 1-hour default.
     app.config["WTF_CSRF_TIME_LIMIT"] = None
-    CSRFProtect(app)
+    csrf = CSRFProtect(app)
+    # The PWA share target: the phone's share sheet posts there with no form
+    # token. It only keeps the files for the signed-in user (one pending
+    # share, replacing any earlier one); nothing is saved until the chooser,
+    # which is CSRF-protected, is submitted. pwa.routes refuses it from
+    # another site.
+    csrf.exempt("pwa.routes.share_target")
 
     from extensions import cache as _cache  # pyright: ignore[reportMissingImports]
     from extensions import limiter as _limiter  # pyright: ignore[reportMissingImports]
