@@ -550,3 +550,29 @@ def test_overwrite_never_pushes_another_pilot_off_their_flight(app):
         assert fe.second_crew_user_id == b.id
         assert fe.function_dual == Decimal("2.0")  # B's own, empty before
         assert fe.notes.startswith("X's remark")  # kept, never replaced
+
+
+def test_overwrite_seats_the_importer_as_pic_when_that_seat_is_free(app):
+    from datetime import date
+    from decimal import Decimal
+
+    from models import Flight, User, db  # pyright: ignore[reportMissingImports]
+    from pilots.logbook_import import (  # pyright: ignore[reportMissingImports]
+        merge_into_existing,
+    )
+
+    with app.app_context():
+        x = User(email="sx@example.com", password_hash="x", is_active=True)
+        b = User(email="sb@example.com", password_hash="x", is_active=True)
+        db.session.add_all([x, b])
+        db.session.flush()
+        fe = Flight(
+            date=date(2026, 6, 2),
+            second_crew_user_id=x.id,
+            function_dual=Decimal("1.0"),
+        )
+        db.session.add(fe)
+        db.session.flush()
+        merge_into_existing(fe, {"function_pic": Decimal("1.0")}, b.id, fill_only=False)
+        assert fe.pic_user_id == b.id
+        assert fe.second_crew_user_id == x.id
