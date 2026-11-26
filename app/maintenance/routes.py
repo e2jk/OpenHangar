@@ -113,7 +113,6 @@ def _get_trigger_or_404(aircraft: Aircraft, trigger_id: int) -> MaintenanceTrigg
 # ── Fleet maintenance overview ────────────────────────────────────────────────
 
 
-
 def _refuse_fetch(url: str, *args: Any, **kwargs: Any) -> dict[str, Any]:
     """WeasyPrint's URL fetcher for the AMP PDF: nothing is fetched. The
     templates need no file or link, and the default one follows http(s)://

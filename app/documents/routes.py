@@ -39,6 +39,7 @@ from models import (  # pyright: ignore[reportMissingImports]
     db,
 )
 from services import document_lifecycle as lifecycle  # pyright: ignore[reportMissingImports]
+from services.images import strip_metadata  # pyright: ignore[reportMissingImports]
 from services.safe_paths import (  # pyright: ignore[reportMissingImports]
     regular_files,
     resolve_inside,
@@ -256,6 +257,7 @@ def _save_upload(file: FileStorage, label: str) -> tuple[str, str, int]:
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")
     os.makedirs(folder, exist_ok=True)
     file.save(os.path.join(folder, stored))
+    strip_metadata(os.path.join(folder, stored))
     mime = mimetypes.guess_type(original)[0] or "application/octet-stream"
     size = os.path.getsize(os.path.join(folder, stored))
     return stored, mime, size
@@ -352,6 +354,8 @@ def _save_upload_canonical(
         dest = _safe_join(folder, relpath)
 
     file.save(dest)
+    # A receipt or document photo would otherwise keep its GPS position.
+    strip_metadata(dest)
     mime = mimetypes.guess_type(original)[0] or "application/octet-stream"
     size = os.path.getsize(dest)
     return relpath, mime, size

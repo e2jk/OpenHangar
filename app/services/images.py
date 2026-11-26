@@ -60,3 +60,60 @@ def store(folder: Path, data: bytes) -> str:
     folder.mkdir(parents=True, exist_ok=True)
     (folder / filename).write_bytes(data)
     return filename
+
+
+# JPEG APP1 holds EXIF (GPS position, camera, time) and XMP; APP13 holds
+# IPTC. PNG keeps the same in its eXIf and text chunks.
+_JPEG_METADATA_MARKERS = frozenset({0xE1, 0xED})
+_PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+_PNG_METADATA_CHUNKS = frozenset({b"eXIf", b"tEXt", b"zTXt", b"iTXt"})
+
+
+def _jpeg_without_metadata(data: bytes) -> bytes | None:
+    out, i = bytearray(data[:2]), 2
+    while i + 4 <= len(data):
+        if data[i] != 0xFF:
+            return None
+        marker = data[i + 1]
+        if marker == 0xFF:  # fill byte
+            i += 1
+            continue
+        if marker == 0xDA:  # start of scan: the image data follows
+            out += data[i:]
+            return bytes(out)
+        length = int.from_bytes(data[i + 2 : i + 4], "big")
+        if marker not in _JPEG_METADATA_MARKERS:
+            out += data[i : i + 2 + length]
+        i += 2 + length
+    return None
+
+
+def _png_without_metadata(data: bytes) -> bytes | None:
+    out, i = bytearray(_PNG_SIGNATURE), len(_PNG_SIGNATURE)
+    while i + 12 <= len(data):
+        length = int.from_bytes(data[i : i + 4], "big")
+        kind = data[i + 4 : i + 8]
+        end = i + 12 + length
+        if kind not in _PNG_METADATA_CHUNKS:
+            out += data[i:end]
+        if kind == b"IEND":
+            return bytes(out)
+        i = end
+    return None
+
+
+def strip_metadata(path: str) -> None:
+    """Remove EXIF/XMP/IPTC (GPS position included) from a stored JPEG or
+    PNG document without re-encoding it, so a scan keeps its quality. Any
+    other file, or one that does not parse, is left as it is."""
+    with open(path, "rb") as fh:
+        data = fh.read()
+    if data.startswith(b"\xff\xd8"):
+        cleaned = _jpeg_without_metadata(data)
+    elif data.startswith(_PNG_SIGNATURE):
+        cleaned = _png_without_metadata(data)
+    else:
+        return
+    if cleaned is not None and cleaned != data:
+        with open(path, "wb") as fh:
+            fh.write(cleaned)
