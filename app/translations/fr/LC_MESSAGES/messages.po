@@ -7166,7 +7166,7 @@ msgstr[1] "%(n)s composants"
 #: app/templates/passports/print.html:19 app/templates/passports/series.html:10
 #: app/templates/passports/series.html:28
 #: app/templates/passports/vouchers.html:10 app/templates/places/index.html:12
-#: app/templates/places/index.html:32 app/templates/places/place_detail.html:9
+#: app/templates/places/index.html:48 app/templates/places/place_detail.html:9
 msgid "Archived"
 msgstr "Archivé"
 
@@ -13164,7 +13164,7 @@ msgstr "Visité par vous"
 #: app/templates/passports/record_visit.html:14
 #: app/templates/passports/series.html:17
 #: app/templates/passports/series.html:19 app/templates/passports/target.html:9
-#: app/templates/places/index.html:12 app/templates/places/index.html:32
+#: app/templates/places/index.html:12 app/templates/places/index.html:45
 msgid "Visited"
 msgstr "Visité"
 
@@ -15260,7 +15260,7 @@ msgstr "Préféré"
 msgid "%(distance)s km from this place"
 msgstr "À %(distance)s km de ce lieu"
 
-#: app/templates/places/_airfields.html:3 app/templates/places/index.html:32
+#: app/templates/places/_airfields.html:3 app/templates/places/index.html:39
 #: app/templates/places/place_form.html:31
 msgid "No linked airfield"
 msgstr "Aucun aérodrome associé"
@@ -15603,7 +15603,7 @@ msgstr "Corbeille"
 msgid "My visits"
 msgstr "Mes visites"
 
-#: app/templates/places/index.html:12 app/templates/places/index.html:32
+#: app/templates/places/index.html:12 app/templates/places/index.html:45
 msgid "Not yet visited"
 msgstr "Pas encore visité"
 
@@ -15631,7 +15631,7 @@ msgstr "Dernière visite"
 msgid "Location"
 msgstr "Localisation"
 
-#: app/templates/places/index.html:12 app/templates/places/index.html:32
+#: app/templates/places/index.html:12 app/templates/places/index.html:47
 #: app/templates/places/place_detail.html:19
 msgid "Location still to add"
 msgstr "Localisation à ajouter"
@@ -15681,27 +15681,32 @@ msgstr "Sélectionner %(place)s"
 msgid "Place photo"
 msgstr "Photo du lieu"
 
-#: app/templates/places/index.html:32
+#: app/templates/places/index.html:45
+#, python-format
+msgid "Last visited %(date)s"
+msgstr "Dernière visite le %(date)s"
+
+#: app/templates/places/index.html:51
 msgid "Restore place"
 msgstr "Restaurer le lieu"
 
-#: app/templates/places/index.html:32 app/templates/places/place_detail.html:24
+#: app/templates/places/index.html:51 app/templates/places/place_detail.html:24
 msgid "I confirm the permanent deletion of this place and its visits."
 msgstr "Je confirme la suppression définitive de ce lieu et de ses visites."
 
-#: app/templates/places/index.html:32 app/templates/places/place_detail.html:24
+#: app/templates/places/index.html:51 app/templates/places/place_detail.html:24
 msgid "Permanently delete place"
 msgstr "Supprimer définitivement le lieu"
 
-#: app/templates/places/index.html:32
+#: app/templates/places/index.html:51
 msgid "No places in this view yet."
 msgstr "Aucun lieu dans cette vue pour le moment."
 
-#: app/templates/places/index.html:33
+#: app/templates/places/index.html:52
 msgid "Download GPX"
 msgstr "Télécharger le fichier GPX"
 
-#: app/templates/places/index.html:33
+#: app/templates/places/index.html:52
 msgid "Download KML"
 msgstr "Télécharger le fichier KML"
 

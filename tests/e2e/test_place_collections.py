@@ -370,3 +370,30 @@ def test_place_offers_actions_for_past_landings(passport_page: Page) -> None:
         page.locator("#place-visits").get_by_role("link", name="Flight")
     ).to_be_visible()
     assert page.url == place_url
+
+
+def test_places_cards_fit_three_across_and_wrap_status_pills(
+    passport_page: Page,
+) -> None:
+    page = passport_page
+    page.goto("/places/")
+    cards = page.locator("#places-list > li")
+    for width, count in [(1440, 3), (1200, 2), (390, 1)]:
+        page.set_viewport_size({"width": width, "height": 900})
+        assert (
+            cards.evaluate_all(
+                """cards => {
+                const top = cards[0].getBoundingClientRect().top;
+                return cards.filter(card => card.getBoundingClientRect().top === top).length;
+            }"""
+            )
+            == count
+        )
+    title = cards.first.locator(".text-break > div > a").first
+    assert title.evaluate(
+        """title => {
+            title.textContent = 'An especially long place name with several words';
+            return title.nextElementSibling.getBoundingClientRect().top
+                >= title.getBoundingClientRect().bottom;
+        }"""
+    )
