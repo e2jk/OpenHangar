@@ -142,34 +142,33 @@ html:not([data-js-ok]) #js-warn-banner { display: block; }
   color: #fff;
 }
 
-/* Inline navbar (lg+) on a window too narrow for everything on one row —
-   e.g. a browser tiled to half a screen. Without this, every nav label
-   wrapped word by word ("Log / a / flight") and stretched the profile and
-   logout buttons to three lines tall. Instead: no label ever wraps, and
-   when the row is full the whole link list moves to a second row while
-   the profile/logout buttons and the theme/language switcher stay on the
-   first row, at the right.
-   How: the row is laid out right to left (row-reverse + wrap), with the
-   orders below reproducing the normal left-to-right sequence. Wrapping
-   happens at the end of a flex line — here its left end — so the item
-   that drops to the next line is the link list, and its margin-right:auto
-   (.me-auto) keeps it left-aligned on whichever row it's on. */
+/* Keep the brand and account controls at either side of the menu.
+   Only the links in the middle wrap when their available width shrinks. */
 @media (min-width: 992px) {
   #navMenu { flex: 1 1 auto; min-width: 0; }
   #navMenu .offcanvas-body {
-    flex-direction: row-reverse;
-    flex-wrap: wrap;
     align-items: center;
-    row-gap: .25rem;
-    width: 100%;
+    column-gap: .25rem;
   }
-  #navMenu .offcanvas-body > .dropdown { order: 1; }
-  #navMenu .offcanvas-body > .theme-toggle-btn { order: 2; }
-  #navMenu .offcanvas-body > #oh-logout-link { order: 3; }
-  #navMenu .offcanvas-body > .btn-nav-login:not(#oh-logout-link) { order: 4; }
-  #navMenu .offcanvas-body > .navbar-nav { order: 5; }
+  #navMenu .navbar-nav {
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    min-width: 0;
+    --bs-nav-link-padding-y: .2rem;
+  }
+  .oh-navbar-actions {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    margin-inline-start: auto;
+  }
   #navMenu .nav-link,
   #navMenu .btn-nav-login { white-space: nowrap; }
+
+  /* Compact link padding at the desktop breakpoint leaves room for two rows. */
+  @media (max-width: 1199.98px) {
+    #navMenu .navbar-nav { --bs-navbar-nav-link-padding-x: .3rem; }
+  }
 }
 
 /* ── Hero sections (landing + welcome share the same background) ── */
@@ -520,15 +519,15 @@ nav.navbar.mayday #oh-mayday-banner {
   position: fixed;
   bottom: 0;
   left: 0;
-  width: 100vw;
+  width: 100%;
   display: flex;
   background: var(--oh-ink);
   border-top: 2px solid rgba(255,255,255,.1);
   padding-bottom: env(safe-area-inset-bottom);
   z-index: 1030;
-  overflow: hidden;
 }
-.oh-bottom-nav a {
+.oh-bottom-nav > a,
+.oh-bottom-nav-item {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -541,20 +540,28 @@ nav.navbar.mayday #oh-mayday-banner {
   min-width: 0;
   transition: color .15s, background .15s;
 }
-.oh-bottom-nav a.active { color: var(--oh-signal); }
-.oh-bottom-nav a:active {
+.oh-bottom-nav > a.active, .oh-bottom-nav-item.active { color: var(--oh-signal); }
+.oh-bottom-nav > a:active, .oh-bottom-nav-item:active {
   color: #fff;
   background: rgba(255,255,255,.1);
   transition: none; /* instant on press; .15s transition kicks in on release */
 }
-.oh-bottom-nav a i { font-size: 1.4rem; line-height: 1; }
-.oh-bottom-nav a span {
+.oh-bottom-nav > a i, .oh-bottom-nav-item i { font-size: 1.4rem; line-height: 1; }
+.oh-bottom-nav > a > span, .oh-bottom-nav-item > span {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   width: 100%;
   text-align: center;
 }
+
+.oh-bottom-explore { flex: 1; min-width: 0; }
+.oh-bottom-nav-item {
+  width: 100%;
+  background: transparent;
+  border: 0;
+}
+.oh-bottom-explore .dropdown-menu { max-width: 100vw; }
 
 @media (max-width: 991.98px) {
   body { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }

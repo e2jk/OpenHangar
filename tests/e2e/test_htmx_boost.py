@@ -27,6 +27,7 @@ Run with:  pytest --e2e tests/e2e/test_htmx_boost.py --override-ini='addopts='
 import contextlib
 
 import pytest
+from playwright.sync_api import expect
 
 pytestmark = pytest.mark.e2e
 
@@ -1199,3 +1200,54 @@ class TestExternalLinksNotIntercepted:
             f"Current page URL changed after target=_blank click — got {page.url!r}. "
             "The link may have navigated the current tab instead of opening a new one."
         )
+
+
+def test_mobile_bottom_explore_menu(logged_in_page, live_server_url):
+    page = logged_in_page
+    page.set_viewport_size({"width": 390, "height": 844})
+    page.goto(f"{live_server_url}/aircraft/")
+    nav = page.locator(".oh-bottom-nav")
+    explore = nav.get_by_role("button", name="Explore", exact=True)
+    menu = nav.locator(".dropdown-menu")
+    expect(explore).to_be_visible()
+    assert not menu.is_visible()
+    explore.click()
+    assert menu.get_by_role("link").all_text_contents() == [
+        "Where next?",
+        "Places",
+        "Airfield passports",
+    ]
+    menu.get_by_role("link", name="Places", exact=True).click()
+    page.wait_for_url(f"{live_server_url}/places/")
+    expect(explore).to_have_class("oh-bottom-nav-item active")
+    expect(menu).to_be_hidden()
+    page.set_viewport_size({"width": 1200, "height": 844})
+    expect(nav).to_be_hidden()
+
+
+def test_desktop_navigation_wraps_whole_links(logged_in_page, live_server_url):
+    page = logged_in_page
+    page.goto(f"{live_server_url}/aircraft/")
+    menu = page.locator("#navMenu")
+    measure = """menu => {
+            const items = [...menu.querySelectorAll('.navbar-nav > .nav-item')];
+            const controls = menu.querySelector('.oh-navbar-actions').getBoundingClientRect();
+            const boxes = items.map(item => item.getBoundingClientRect());
+            const brand = document.querySelector('.navbar-brand').getBoundingClientRect();
+            const middle = (controls.top + controls.bottom) / 2;
+            return {
+                rows: new Set(boxes.map(box => Math.round(box.top))).size,
+                linksFit: boxes.every(box => box.left >= brand.right && box.right <= controls.left),
+                controlsFit: controls.right <= document.documentElement.clientWidth,
+                controlsBesideLinks: boxes[0].top <= middle
+                    && boxes.at(-1).bottom >= middle,
+            };
+        }"""
+    for width, rows in [(1600, 1), (992, 2)]:
+        page.set_viewport_size({"width": width, "height": 844})
+        assert menu.evaluate(measure) == {
+            "rows": rows,
+            "linksFit": True,
+            "controlsFit": True,
+            "controlsBesideLinks": True,
+        }
