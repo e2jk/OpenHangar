@@ -342,3 +342,31 @@ def test_bulk_move_keeps_a_group_of_places_together(passport_page: Page) -> None
     page.wait_for_url(re.compile(rf"/places/\?collection={collection_id}$"))
     for name in names:
         expect(page.get_by_role("link", name=name, exact=True)).to_be_visible()
+
+
+def test_place_offers_actions_for_past_landings(passport_page: Page) -> None:
+    page = passport_page
+    page.goto("/places/")
+    page.get_by_role("link", name="Pairi Daiza", exact=True).click()
+    panel = page.locator("#place-visit-suggestions")
+    expect(panel).to_be_visible()
+    expect(panel).to_contain_text("You landed at EBCI")
+    assert panel.get_by_role("button", name="Record a visit").count() > 3
+
+    place_url = page.url
+    dismiss = panel.locator('form[action$="/dismiss"]').first
+    dismissed_action = dismiss.get_attribute("action")
+    assert dismissed_action is not None
+    dismiss.get_by_role("button", name="Dismiss", exact=True).click()
+    expect(panel.locator(f'form[action="{dismissed_action}"]')).to_have_count(0)
+    assert page.url == place_url
+
+    record = panel.locator('form:not([action$="/dismiss"])').first
+    action = record.get_attribute("action")
+    assert action is not None
+    record.get_by_role("button", name="Record a visit", exact=True).click()
+    expect(panel.locator(f'form[action="{action}"]')).to_have_count(0)
+    expect(
+        page.locator("#place-visits").get_by_role("link", name="Flight")
+    ).to_be_visible()
+    assert page.url == place_url

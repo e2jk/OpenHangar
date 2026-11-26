@@ -255,6 +255,9 @@ def place_detail(place_id: int) -> ResponseReturnValue:
         "places/place_detail.html",
         visited=visit_panel["visited"],
         visit_panel=visit_panel,
+        place_suggestions=visits.flight_suggestions(tid, uid, place_id=place.id)
+        if visit_panel["can_record"] and linked and not place.archived
+        else [],
         linked_airfields=linked,
         **airfield_map_data(linked),
         place=place,

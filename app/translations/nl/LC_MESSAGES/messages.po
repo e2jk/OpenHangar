@@ -1317,7 +1317,7 @@ msgstr "Route"
 #: app/services/notification_service.py:973 app/snags/routes.py:267
 #: app/snags/routes.py:317 app/templates/aircraft/wb_list.html:30
 #: app/templates/auth/setup.html:365 app/templates/base.html:221
-#: app/templates/base.html:347 app/templates/config/renter_form.html:33
+#: app/templates/base.html:345 app/templates/config/renter_form.html:33
 #: app/templates/config/tenant_list.html:32 app/templates/dashboard.html:134
 #: app/templates/dashboard.html:756 app/templates/documents/list.html:35
 #: app/templates/documents/list.html:217
@@ -2301,7 +2301,7 @@ msgstr "Neem deel aan dit paspoort voordat je bezoeken vastlegt."
 msgid "Reopen this passport before editing it."
 msgstr "Heropen dit paspoort voordat u het bewerkt."
 
-#: app/passports/evidence.py:44 app/places/visits.py:40 app/places/visits.py:44
+#: app/passports/evidence.py:44 app/places/visits.py:41 app/places/visits.py:45
 msgid "Enter a valid visit date."
 msgstr "Voer een geldige bezoekdatum in."
 
@@ -2536,7 +2536,7 @@ msgid "Choose a public-sharing action."
 msgstr "Kies een actie voor openbaar delen."
 
 #: app/passports/registration.py:75 app/places/sharing.py:42
-#: app/templates/base.html:461
+#: app/templates/base.html:466
 msgid "Enter a valid email address."
 msgstr "Voer een geldig e-mailadres in."
 
@@ -3301,7 +3301,7 @@ msgstr "Kies een lid van deze collectie."
 msgid "Enter valid latitude and longitude coordinates."
 msgstr "Voer een geldige breedtegraad en lengtegraad in."
 
-#: app/places/coordinates.py:104 app/places/place_routes.py:301
+#: app/places/coordinates.py:104 app/places/place_routes.py:304
 msgid "Paste decimal or DMS coordinates, or a map link containing coordinates."
 msgstr "Plak decimale coördinaten of graden, minuten en seconden, of een kaartlink met coördinaten."
 
@@ -3309,10 +3309,10 @@ msgstr "Plak decimale coördinaten of graden, minuten en seconden, of een kaartl
 msgid "Unnamed place"
 msgstr "Plek zonder naam"
 
-#: app/places/exports.py:193 app/templates/base.html:245
-#: app/templates/explore/where_next.html:10
+#: app/places/exports.py:193 app/templates/explore/where_next.html:10
 #: app/templates/explore/where_next.html:39
 #: app/templates/explore/where_next.html:40
+#: app/templates/partials/_explore_links.html:2
 #: app/templates/places/collection_settings.html:40
 #: app/templates/places/index.html:3 app/templates/places/index.html:6
 msgid "Places"
@@ -3354,7 +3354,7 @@ msgstr "Alleen de eigenaar van de plaats of de maker van de collectie kan deze d
 msgid "Airfield search failed. Try again."
 msgstr "Het zoeken naar een vliegveld is mislukt. Probeer het opnieuw."
 
-#: app/places/place_routes.py:202 app/places/place_routes.py:329
+#: app/places/place_routes.py:202 app/places/place_routes.py:332
 msgid "Choose a collection you can edit."
 msgstr "Kies een collectie die je mag bewerken."
 
@@ -3365,11 +3365,11 @@ msgstr "Kies een collectie die je mag bewerken."
 msgid "Unnamed member"
 msgstr "Lid zonder naam"
 
-#: app/places/place_routes.py:266 app/places/place_routes.py:267
+#: app/places/place_routes.py:269 app/places/place_routes.py:270
 msgid "Former member"
 msgstr "Voormalig lid"
 
-#: app/places/place_routes.py:344
+#: app/places/place_routes.py:347
 msgid "Confirm the permanent deletion of this place."
 msgstr "Bevestig de definitieve verwijdering van deze plaats."
 
@@ -3437,7 +3437,7 @@ msgstr "Voer een tagnaam van maximaal 80 tekens in."
 msgid "Confirm removal of this tag from every place using it."
 msgstr "Bevestig dat je deze tag wilt verwijderen bij alle plaatsen die deze gebruiken."
 
-#: app/places/visit_routes.py:38 app/places/visit_routes.py:85
+#: app/places/visit_routes.py:38 app/places/visit_routes.py:86
 msgid "Visit recorded."
 msgstr "Bezoek opgeslagen."
 
@@ -3449,41 +3449,41 @@ msgstr "Bezoek bijgewerkt."
 msgid "Visit removed."
 msgstr "Bezoek verwijderd."
 
-#: app/places/visits.py:42
+#: app/places/visits.py:43
 msgid "A visit cannot be in the future."
 msgstr "Een bezoek kan niet in de toekomst liggen."
 
-#: app/places/visits.py:48
+#: app/places/visits.py:49
 #, python-format
 msgid "Keep the visit note under %(count)s characters."
 msgstr "Houd de bezoeknotitie onder %(count)s tekens."
 
-#: app/places/visits.py:73
+#: app/places/visits.py:74
 msgid "Visit not found."
 msgstr "Bezoek niet gevonden."
 
-#: app/places/visits.py:103
+#: app/places/visits.py:104
 msgid "a former member"
 msgstr "een voormalig lid"
 
-#: app/places/visits.py:105 app/places/visits.py:139
+#: app/places/visits.py:106 app/places/visits.py:140
 #: app/templates/passports/detail.html:30
 #: app/templates/passports/detail.html:35
 #: app/templates/passports/series.html:32 app/templates/users/list.html:47
 msgid "you"
 msgstr "u"
 
-#: app/places/visits.py:117
+#: app/places/visits.py:118
 #, python-format
 msgid "%(names)s and %(last)s"
 msgstr "%(names)s en %(last)s"
 
-#: app/places/visits.py:141
+#: app/places/visits.py:142
 #, python-format
 msgid "Last visited %(date)s by %(people)s"
 msgstr "Laatst bezocht op %(date)s door %(people)s"
 
-#: app/places/visits.py:181
+#: app/places/visits.py:182
 msgid "Flight not found."
 msgstr "Vlucht niet gevonden."
 
@@ -4541,8 +4541,8 @@ msgstr "Downloaden"
 #: app/templates/_doc_viewer_modal.html:14
 #: app/templates/aircraft/owner_account.html:22
 #: app/templates/aircraft/owners_billing.html:20 app/templates/base.html:185
-#: app/templates/base.html:210 app/templates/base.html:301
-#: app/templates/base.html:310 app/templates/base.html:323
+#: app/templates/base.html:210 app/templates/base.html:299
+#: app/templates/base.html:308 app/templates/base.html:321
 #: app/templates/dashboard.html:818
 #: app/templates/partials/_flight_tracks_map.html:70
 #: app/templates/pilots/logbook.html:98
@@ -4550,7 +4550,7 @@ msgid "Close"
 msgstr "Sluiten"
 
 #: app/templates/auth/login.html:4 app/templates/auth/login.html:43
-#: app/templates/base.html:58 app/templates/base.html:277
+#: app/templates/base.html:58 app/templates/base.html:274
 #: app/templates/errors/403.html:31 app/templates/landing.html:281
 #: app/templates/welcome.html:20
 msgid "Log in"
@@ -4593,7 +4593,7 @@ msgid "The demo environment is being reset. Please wait — the page will reload
 msgstr "De demo-omgeving wordt opnieuw ingesteld. Even geduld — de pagina wordt automatisch herladen zodra ze gereed is."
 
 #: app/templates/base.html:182 app/templates/base.html:184
-#: app/templates/base.html:453
+#: app/templates/base.html:458
 msgid "Install app"
 msgstr "App installeren"
 
@@ -4605,19 +4605,19 @@ msgstr "Voeg OpenHangar toe aan uw startscherm voor snelle toegang."
 msgid "Not now"
 msgstr "Niet nu"
 
-#: app/templates/base.html:193 app/templates/base.html:452
+#: app/templates/base.html:193 app/templates/base.html:457
 msgid "Offline"
 msgstr "Offline"
 
 #: app/templates/auth/profile.html:16 app/templates/base.html:217
-#: app/templates/base.html:342 app/templates/config/settings.html:52
+#: app/templates/base.html:340 app/templates/config/settings.html:52
 #: app/templates/dashboard.html:3 app/templates/dashboard.html:120
 #: app/templates/errors/403.html:27 app/templates/errors/404.html:27
 #: app/templates/users/list.html:18
 msgid "Dashboard"
 msgstr "Dashboard"
 
-#: app/templates/base.html:232 app/templates/base.html:358
+#: app/templates/base.html:232 app/templates/base.html:356
 #: app/templates/dashboard.html:757 app/templates/landing.html:33
 #: app/templates/landing.html:241 app/templates/partials/_crew_claims.html:49
 #: app/templates/reservations/calendar.html:193
@@ -4633,7 +4633,7 @@ msgid "Flights waiting for your confirmation"
 msgstr "Vluchten die op uw bevestiging wachten"
 
 #: app/templates/aircraft/detail.html:488 app/templates/base.html:235
-#: app/templates/base.html:354 app/templates/dashboard.html:638
+#: app/templates/base.html:352 app/templates/dashboard.html:638
 #: app/templates/dashboard.html:658 app/templates/dashboard.html:705
 #: app/templates/dashboard.html:815 app/templates/flights/fleet.html:15
 #: app/templates/flights/flight_form.html:4
@@ -4643,68 +4643,50 @@ msgid "Log a flight"
 msgstr "Vlucht registreren"
 
 #: app/templates/aircraft/flight_detail.html:110 app/templates/base.html:239
-#: app/templates/base.html:362 app/templates/flights/flight_form.html:848
+#: app/templates/base.html:360 app/templates/flights/flight_form.html:848
 #: app/templates/pilots/logbook.html:19
 msgid "Pilot logbook"
 msgstr "Pilootlogboek"
 
-#: app/templates/base.html:242
+#: app/templates/base.html:242 app/templates/base.html:366
 msgid "Explore"
 msgstr "Verkennen"
 
-#: app/templates/base.html:244 app/templates/explore/where_next.html:3
-#: app/templates/explore/where_next.html:6
-#: app/templates/passports/detail.html:12 app/templates/places/index.html:9
-#: app/templates/places/place_detail.html:18
-msgid "Where next?"
-msgstr "Waarheen nu?"
-
-#: app/templates/base.html:247 app/templates/base.html:365
-#: app/templates/explore/where_next.html:40
-#: app/templates/passports/confirm.html:3 app/templates/passports/detail.html:4
-#: app/templates/passports/detail.html:7
-#: app/templates/passports/draft_error.html:3
-#: app/templates/passports/index.html:3 app/templates/passports/index.html:6
-#: app/templates/passports/series.html:8
-#: app/templates/passports/start_logbook.html:5
-msgid "Airfield passports"
-msgstr "Vliegveldpaspoorten"
-
-#: app/templates/base.html:253
+#: app/templates/base.html:249
 msgid "My account"
 msgstr "Mijn rekening"
 
-#: app/templates/base.html:258 app/templates/config/data_checks.html:14
+#: app/templates/base.html:254 app/templates/config/data_checks.html:14
 #: app/templates/config/notifications.html:16
 #: app/templates/config/settings.html:3 app/templates/config/settings.html:44
 msgid "Configuration"
 msgstr "Configuratie"
 
-#: app/templates/base.html:258
+#: app/templates/base.html:254
 msgid "Update available"
 msgstr "Update beschikbaar"
 
-#: app/templates/base.html:258
+#: app/templates/base.html:254
 msgid "Data checks to review"
 msgstr "Gegevenscontroles na te kijken"
 
-#: app/templates/auth/profile.html:3 app/templates/base.html:269
+#: app/templates/auth/profile.html:3 app/templates/base.html:266
 msgid "Profile"
 msgstr "Profiel"
 
-#: app/templates/base.html:272
+#: app/templates/base.html:269
 msgid "Log Out"
 msgstr "Uitloggen"
 
-#: app/templates/base.html:308
+#: app/templates/base.html:306
 msgid "This instance still has pre-upgrade pilot-logbook/crew data that wasn't automatically converted to the new unified logbook. It's preserved as-is in the database but no longer reachable from the interface."
 msgstr "Deze instantie bevat nog pilotenlogboek-/bemanningsgegevens van vóór de upgrade die niet automatisch zijn geconverteerd naar het nieuwe unified logboek. Deze gegevens blijven ongewijzigd bewaard in de database, maar zijn niet meer bereikbaar via de interface."
 
-#: app/templates/base.html:309
+#: app/templates/base.html:307
 msgid "Please open an issue if you need help extracting it."
 msgstr "Open een issue als u hulp nodig heeft om deze gegevens te extraheren."
 
-#: app/templates/base.html:378
+#: app/templates/base.html:383
 msgid "open-source aircraft ops"
 msgstr "open-source vliegtuigbeheer"
 
@@ -4714,7 +4696,7 @@ msgstr "open-source vliegtuigbeheer"
 #: app/templates/airworthiness/avionics_unit_form.html:47
 #: app/templates/airworthiness/dashboard.html:95
 #: app/templates/airworthiness/equipment_board.html:50
-#: app/templates/airworthiness/status_form.html:21 app/templates/base.html:382
+#: app/templates/airworthiness/status_form.html:21 app/templates/base.html:387
 #: app/templates/config/renters_list.html:33
 #: app/templates/config/settings.html:302
 #: app/templates/config/settings.html:401
@@ -4754,7 +4736,7 @@ msgstr "Status"
 #: app/templates/airworthiness/status_form.html:61
 #: app/templates/airworthiness/stc_form.html:50
 #: app/templates/airworthiness/wishlist_form.html:45
-#: app/templates/base.html:398 app/templates/config/renter_form.html:104
+#: app/templates/base.html:403 app/templates/config/renter_form.html:104
 #: app/templates/documents/edit_form.html:16
 #: app/templates/documents/edit_form.html:103
 #: app/templates/documents/pilot_upload_form.html:16
@@ -4799,7 +4781,7 @@ msgstr "Status"
 msgid "Cancel"
 msgstr "Annuleren"
 
-#: app/templates/base.html:399 app/templates/partials/_crew_invites.html:33
+#: app/templates/base.html:404 app/templates/partials/_crew_invites.html:33
 #: app/templates/partials/_crew_invites.html:72
 #: app/templates/pilots/gps_import_review.html:347
 #: app/templates/reservations/calendar.html:220
@@ -4807,55 +4789,55 @@ msgstr "Annuleren"
 msgid "Confirm"
 msgstr "Bevestigen"
 
-#: app/templates/base.html:454
+#: app/templates/base.html:459
 msgid "You're offline — this can't be saved right now. Reconnect and try again."
 msgstr "U bent offline — dit kan nu niet worden opgeslagen. Maak opnieuw verbinding en probeer het opnieuw."
 
-#: app/templates/base.html:457
+#: app/templates/base.html:462
 msgid "Please fill out this field."
 msgstr "Vul dit veld in."
 
-#: app/templates/base.html:458
+#: app/templates/base.html:463
 msgid "Please select an item in the list."
 msgstr "Selecteer een item in de lijst."
 
-#: app/templates/base.html:459
+#: app/templates/base.html:464
 msgid "Please check this box if you want to proceed."
 msgstr "Vink dit vakje aan om door te gaan."
 
-#: app/templates/base.html:460
+#: app/templates/base.html:465
 msgid "Please select one of these options."
 msgstr "Selecteer een van deze opties."
 
-#: app/templates/base.html:462
+#: app/templates/base.html:467
 msgid "Please enter a valid URL."
 msgstr "Voer een geldige URL in."
 
-#: app/templates/base.html:463
+#: app/templates/base.html:468
 msgid "Please match the requested format."
 msgstr "Gebruik de gevraagde opmaak."
 
-#: app/templates/base.html:464
+#: app/templates/base.html:469
 #, python-brace-format
 msgid "Please use at least {min} characters (currently {n})."
 msgstr "Gebruik ten minste {min} tekens (momenteel {n})."
 
-#: app/templates/base.html:465
+#: app/templates/base.html:470
 #, python-brace-format
 msgid "Please use no more than {max} characters (currently {n})."
 msgstr "Gebruik maximaal {max} tekens (momenteel {n})."
 
-#: app/templates/base.html:466
+#: app/templates/base.html:471
 #, python-brace-format
 msgid "Value must be {min} or more."
 msgstr "De waarde moet {min} of hoger zijn."
 
-#: app/templates/base.html:467
+#: app/templates/base.html:472
 #, python-brace-format
 msgid "Value must be {max} or less."
 msgstr "De waarde moet {max} of lager zijn."
 
-#: app/templates/base.html:468
+#: app/templates/base.html:473
 msgid "Please enter a valid value."
 msgstr "Voer een geldige waarde in."
 
@@ -8670,6 +8652,7 @@ msgid "Use the GPS value"
 msgstr "GPS-waarde gebruiken"
 
 #: app/templates/config/data_checks.html:94
+#: app/templates/places/_visit_suggestions.html:14
 msgid "Dismiss"
 msgstr "Terzijde leggen"
 
@@ -10431,6 +10414,14 @@ msgstr "Geen uitgaven geregistreerd."
 msgid "Add first expense"
 msgstr "Eerste uitgave toevoegen"
 
+#: app/templates/explore/where_next.html:3
+#: app/templates/explore/where_next.html:6
+#: app/templates/partials/_explore_links.html:1
+#: app/templates/passports/detail.html:12 app/templates/places/index.html:9
+#: app/templates/places/place_detail.html:18
+msgid "Where next?"
+msgstr "Waarheen nu?"
+
 #: app/templates/explore/where_next.html:7
 msgid "Discover open airfields not yet stamped in your passports, and airfields near the places you want to visit. Distances are great-circle nautical miles; times assume constant cruise speed, still air and direct flight, excluding climb, approach and routing."
 msgstr "Ontdek open vliegvelden die nog niet gestempeld zijn in je paspoorten, en vliegvelden bij de plaatsen die je wilt bezoeken. Afstanden zijn grootcirkelafstanden in zeemijlen; tijden gaan uit van constante kruissnelheid, windstilte en directe vlucht, zonder klim, nadering of omwegen."
@@ -10616,6 +10607,17 @@ msgstr[1] "%(num)d plaatsen hebben nog geen vliegveld."
 #: app/templates/explore/where_next.html:40
 msgid "Add places or create an airfield passport to find where to fly next."
 msgstr "Voeg plaatsen toe of maak een vliegveldpaspoort om te vinden waar je nu heen vliegt."
+
+#: app/templates/explore/where_next.html:40
+#: app/templates/partials/_explore_links.html:4
+#: app/templates/passports/confirm.html:3 app/templates/passports/detail.html:4
+#: app/templates/passports/detail.html:7
+#: app/templates/passports/draft_error.html:3
+#: app/templates/passports/index.html:3 app/templates/passports/index.html:6
+#: app/templates/passports/series.html:8
+#: app/templates/passports/start_logbook.html:5
+msgid "Airfield passports"
+msgstr "Vliegveldpaspoorten"
 
 #: app/templates/explore/where_next.html:41
 #: app/templates/passports/builder.html:62
@@ -12998,7 +13000,7 @@ msgstr "Paspoort archiveren"
 #: app/templates/passports/detail.html:9
 #: app/templates/passports/record_visit.html:3
 #: app/templates/passports/record_visit.html:7
-#: app/templates/places/_visit_suggestions.html:9
+#: app/templates/places/_visit_suggestions.html:10
 msgid "Record a visit"
 msgstr "Bezoek registreren"
 
@@ -15275,17 +15277,17 @@ msgstr "Kaart met plaatsen"
 msgid "Orange markers show linked airfields; dashed lines connect them to places."
 msgstr "Oranje markeringen tonen gekoppelde vliegvelden; stippellijnen verbinden ze met plekken."
 
-#: app/templates/places/_visit_suggestions.html:6
+#: app/templates/places/_visit_suggestions.html:7
 #, python-format
 msgid "You landed at %(code)s on %(date)s, %(km)s km from %(place)s. Record a visit?"
 msgstr "Je bent op %(date)s geland op %(code)s, %(km)s km van %(place)s. Een bezoek opslaan?"
 
-#: app/templates/places/_visit_suggestions.html:6
+#: app/templates/places/_visit_suggestions.html:7
 #, python-format
 msgid "You landed at %(code)s on %(date)s, the airfield for %(place)s. Record a visit?"
 msgstr "Je bent op %(date)s geland op %(code)s, het vliegveld voor %(place)s. Een bezoek opslaan?"
 
-#: app/templates/places/_visit_suggestions.html:13
+#: app/templates/places/_visit_suggestions.html:14
 msgid "No, thanks"
 msgstr "Nee, bedankt"
 
@@ -15309,6 +15311,10 @@ msgstr "Corrigeren of verwijderen"
 #: app/templates/places/_visits.html:30
 msgid "Remove this visit"
 msgstr "Dit bezoek verwijderen"
+
+#: app/templates/places/_visits.html:40
+msgid "Suggested visits from past landings"
+msgstr "Voorgestelde bezoeken op basis van eerdere landingen"
 
 #: app/templates/places/airfield_links.html:3
 #: app/templates/places/airfield_links.html:6

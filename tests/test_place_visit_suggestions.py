@@ -71,6 +71,7 @@ def landed(app: Flask, people: dict[str, int]) -> dict[str, int]:
             "castle": castle.id,
             "fair": unlocated.id,
             "flight": flights[0].id,
+            "older_flight": flights[1].id,
             "other_flight": flights[4].id,
         }
 
@@ -307,3 +308,41 @@ def test_manual_visit_suppresses_only_its_own_place_date_and_author(
     with app.app_context():
         visit = PlaceVisit.query.filter_by(place_id=landed["castle"]).one()
         assert visit.id == visit_id and visit.flight_id is None
+
+
+def test_place_offers_older_landings_and_actions_return_to_that_place(
+    app: Flask, client: FlaskClient, people: dict[str, int], landed: dict[str, int]
+) -> None:
+    _pilot(app, people)
+    signin(client, people)
+    castle = f"/places/{landed['castle']}"
+    fair = f"/places/{landed['fair']}"
+    old = f"/visits/from-flight/{landed['older_flight']}"
+    recent = f"/visits/from-flight/{landed['flight']}"
+
+    logbook = client.get("/pilot/logbook").text
+    assert castle + old not in logbook
+    page = client.get(castle).text
+    assert "Suggested visits from past landings" in page
+    assert castle + old in page and castle + recent in page
+    assert fair + recent not in page
+    assert f"from-flight/{landed['other_flight']}" not in page
+
+    response = client.post(castle + old + "/dismiss", data={"from_place": "1"})
+    assert response.location == castle
+    assert castle + old not in client.get(castle).text
+    assert fair + old in client.get(fair).text
+
+    response = client.post(castle + recent, data={"from_place": "1"})
+    assert response.location == castle
+    assert "Suggested visits from past landings" not in client.get(castle).text
+    with app.app_context():
+        visit = PlaceVisit.query.filter_by(place_id=landed["castle"]).one()
+        assert visit.flight_id == landed["flight"]
+
+    signin(client, people, "reader")
+    assert castle + recent in client.get(castle).text
+    with app.app_context():
+        set_membership_flags(people["reader"], view_only=True)
+        db.session.commit()
+    assert "Suggested visits from past landings" not in client.get(castle).text

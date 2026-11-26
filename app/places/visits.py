@@ -14,6 +14,7 @@ from typing import Any
 from flask_babel import format_date
 from flask_babel import gettext as _
 from models import Flight, Place, PlaceVisit, PlaceVisitDismissal, User, db
+from sqlalchemy import func
 
 from places.access import PlaceError, actor, place_access
 
@@ -183,14 +184,19 @@ def _own_flight(user_id: int, flight_id: int) -> Flight:
 
 
 def flight_suggestions(
-    tenant_id: int, user_id: int, aircraft_id: int | None = None
+    tenant_id: int,
+    user_id: int,
+    aircraft_id: int | None = None,
+    *,
+    place_id: int | None = None,
 ) -> list[dict[str, Any]]:
-    """Recent own flights (as pilot or second crew) that arrived at an airfield
+    """Own flights (as pilot or second crew) that arrived at an airfield
     linked to a place in one of the user's collections, not yet recorded as a
     visit on that date or from that flight, nor dismissed: "You landed at EBXX, 4 km from
     Pairi Daiza — record a visit?". Never recorded automatically. An arrival
     matches an airfield's current codes or a code it had on that date; on an
-    aircraft's logbook, only that aircraft's flights are offered."""
+    aircraft's logbook, only that aircraft's flights are offered. Logbooks
+    show a few recent suggestions; a place shows all of its matching history."""
     from datetime import timedelta
 
     from models import PassportAirfieldAlias
@@ -198,7 +204,9 @@ def flight_suggestions(
     from places.airfields import linked_airfields
 
     try:
-        links = linked_airfields(tenant_id, user_id)
+        links = linked_airfields(
+            tenant_id, user_id, place_ids=[place_id] if place_id is not None else None
+        )
     except PlaceError:
         return []
     by_airfield: dict[int, list[dict[str, Any]]] = {}
@@ -217,13 +225,22 @@ def flight_suggestions(
         aliases.setdefault(alias.code.strip().upper(), []).append(alias)
     query = Flight.query.filter(
         db.or_(Flight.pic_user_id == user_id, Flight.second_crew_user_id == user_id),
-        Flight.date >= date.today() - timedelta(days=SUGGESTION_DAYS),
         Flight.date <= date.today(),
         Flight.arrival_icao.isnot(None),
     )
+    if place_id is None:
+        query = query.filter(
+            Flight.date >= date.today() - timedelta(days=SUGGESTION_DAYS)
+        )
+    else:
+        query = query.filter(
+            func.upper(func.trim(Flight.arrival_icao)).in_(
+                by_code.keys() | aliases.keys()
+            )
+        )
     if aircraft_id is not None:
         query = query.filter(Flight.aircraft_id == aircraft_id)
-    flights = query.order_by(Flight.date.desc(), Flight.id.desc()).all()
+    flights = query.order_by(Flight.date.desc(), Flight.id.desc()).yield_per(200)
     place_ids = {link["place_id"] for link in links}
     recorded_visits = PlaceVisit.query.filter(
         PlaceVisit.user_id == user_id,
@@ -234,7 +251,8 @@ def flight_suggestions(
         (row.flight_id, row.place_id)
         for row in PlaceVisitDismissal.query.filter(
             PlaceVisitDismissal.user_id == user_id,
-            PlaceVisitDismissal.flight_id.in_([f.id for f in flights]),
+            PlaceVisitDismissal.place_id.in_(place_ids),
+            PlaceVisitDismissal.flight_id.in_(query.with_entities(Flight.id).statement),
         )
     }
     suggestions: list[dict[str, Any]] = []
@@ -264,7 +282,7 @@ def flight_suggestions(
                         "distance_km": link["distance_km"],
                     }
                 )
-                if len(suggestions) == MAX_SUGGESTIONS:
+                if place_id is None and len(suggestions) == MAX_SUGGESTIONS:
                     return suggestions
     return suggestions
 

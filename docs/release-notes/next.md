@@ -1,5 +1,8 @@
 # Security hardening: sign-in, links, uploads, backups and upgrades
 
+- Place pages suggest visits from past landings at linked airfields. Record
+  the visit or dismiss the flight for that place.
+
 - Flight logbooks skip place visit suggestions when you already recorded a
   visit to that place on the landing date.
 
