@@ -262,7 +262,9 @@ def _try_send_invite_email(
         )
 
         # In the inviter's language: the invitee's is not known yet.
-        greeting = _("Hi %(name)s,", name=display_name) + "\n\n" if display_name else ""
+        greeting = (
+            _("Hello %(name)s,", name=display_name) + "\n\n" if display_name else ""
+        )
         body = _(
             "You have been invited to join an OpenHangar hangar as %(role)s.",
             role=ROLE_LABELS[role],
