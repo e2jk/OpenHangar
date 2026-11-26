@@ -506,7 +506,7 @@ def test_verified_existing_account_keeps_passport_context_through_recovery(
         )
         db.session.add(reset)
         db.session.commit()
-        reset_url = "/reset-password/" + reset.token
+        reset_url = "/reset-password/" + reset.raw_token
     assert client.post(
         reset_url, data={"new_password": PASSWORD, "confirm_password": PASSWORD}
     ).location.endswith("/login")

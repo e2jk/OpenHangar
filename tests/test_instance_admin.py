@@ -407,7 +407,7 @@ class TestPasswordResetToken:
             )
             db.session.add(token)
             db.session.commit()
-            return token.token
+            return token.raw_token
 
     def test_instance_admin_can_generate_reset_token(self, app, client):
         ia_id, _ = _make_user(app, email="ia7@example.com", is_instance_admin=True)

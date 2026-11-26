@@ -1139,6 +1139,10 @@ def tenant_reset_owner_password(tenant_id: int) -> ResponseReturnValue:
     if not tu or tu.role not in (Role.OWNER, Role.ADMIN):
         abort(403)
 
+    # A new link voids the user's earlier unused ones.
+    PasswordResetToken.query.filter_by(user_id=owner_user_id, used_at=None).update(
+        {"used_at": datetime.now(UTC)}, synchronize_session=False
+    )
     token = PasswordResetToken(
         user_id=owner_user_id,
         generated_by_user_id=admin.id,
@@ -1147,7 +1151,7 @@ def tenant_reset_owner_password(tenant_id: int) -> ResponseReturnValue:
     db.session.add(token)
     db.session.commit()
 
-    reset_url = absolute_url("auth.reset_password", token=token.token)
+    reset_url = absolute_url("auth.reset_password", token=token.raw_token)
     return render_template(
         "config/tenant_reset_token.html",
         tenant=tenant,
