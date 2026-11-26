@@ -1,5 +1,6 @@
 import contextlib
 import decimal
+import hashlib
 import json as _json
 import mimetypes
 import os
@@ -1307,7 +1308,6 @@ def decline_crew_invite(invite_id: int) -> ResponseReturnValue:
 @require_pilot_access
 def flight_track_image(flight_id: int) -> ResponseReturnValue:
     """Return a static PNG of the flight's GPS track."""
-    from flask import Response  # pyright: ignore[reportMissingImports]
     from utils import (
         generate_single_track_image,  # pyright: ignore[reportMissingImports]
     )
@@ -1346,15 +1346,25 @@ def flight_track_image(flight_id: int) -> ResponseReturnValue:
     qual_sfx = "-hires" if hires else ""
     suffix = orient_sfx + qual_sfx
     filename = f"flight_{flight_id}_track{suffix}.png"
-    return Response(
-        png_bytes,
-        mimetype="image/png",
+    return _track_image_response(png_bytes, "image/png", filename)
+
+
+def _track_image_response(
+    data: bytes, mimetype: str, filename: str
+) -> ResponseReturnValue:
+    """A track image, checked again on each visit: the track can change
+    (files combined or removed) under the same URL, and the image was
+    cached for a year, publicly, under an ETag that never changed."""
+    response = Response(
+        data,
+        mimetype=mimetype,
         headers={
             "Content-Disposition": attachment_disposition(filename),
-            "Cache-Control": "public, max-age=31536000, immutable",
-            "ETag": f'"{track.id}"',
+            "Cache-Control": "private, no-cache",
         },
     )
+    response.set_etag(hashlib.sha256(data).hexdigest()[:32])
+    return response.make_conditional(request)
 
 
 @flights_bp.route("/flights/<int:flight_id>/track/animation.gif")
@@ -1362,7 +1372,6 @@ def flight_track_image(flight_id: int) -> ResponseReturnValue:
 @require_pilot_access
 def flight_track_gif(flight_id: int) -> ResponseReturnValue:
     """Return an animated GIF of the flight's GPS track drawn progressively."""
-    from flask import Response  # pyright: ignore[reportMissingImports]
     from utils import generate_single_track_gif  # pyright: ignore[reportMissingImports]
 
     fe = _get_flight_or_404(flight_id)
@@ -1399,15 +1408,7 @@ def flight_track_gif(flight_id: int) -> ResponseReturnValue:
     qual_sfx = "-hires" if hires else ""
     suffix = orient_sfx + qual_sfx
     filename = f"flight_{flight_id}_track{suffix}.gif"
-    return Response(
-        gif_bytes,
-        mimetype="image/gif",
-        headers={
-            "Content-Disposition": attachment_disposition(filename),
-            "Cache-Control": "public, max-age=31536000, immutable",
-            "ETag": f'"{track.id}"',
-        },
-    )
+    return _track_image_response(gif_bytes, "image/gif", filename)
 
 
 @flights_bp.route("/flights/registration-lookup")
