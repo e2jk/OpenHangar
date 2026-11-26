@@ -209,16 +209,26 @@ _verify_image_signature() {
     if [ -x /usr/local/bin/cosign ]; then
       cosign_bin="/usr/local/bin/cosign"
     else
-      log "WARNING: cosign is not installed — the image signature was NOT verified before this upgrade."
-      log "WARNING: install cosign (https://docs.sigstore.dev/cosign/system_config/installation/) so future upgrades can verify it."
-      return 0
+      # Refused unless explicitly allowed: an unverified image is run with
+      # the database and every secret of the instance.
+      if [ "$(_env_val OPENHANGAR_ALLOW_UNVERIFIED_UPGRADE)" = "1" ]; then
+        log "WARNING: cosign is not installed — upgrading WITHOUT verifying the image (OPENHANGAR_ALLOW_UNVERIFIED_UPGRADE=1)."
+        return 0
+      fi
+      log "ERROR: cosign is not installed, so the image cannot be verified: upgrade refused."
+      log "Install cosign (https://docs.sigstore.dev/cosign/system_config/installation/), or set OPENHANGAR_ALLOW_UNVERIFIED_UPGRADE=1 in .env to upgrade without verification."
+      return 1
     fi
   fi
   local digest_ref
   digest_ref="$(docker image inspect "${image_ref}" --format '{{index .RepoDigests 0}}' 2>/dev/null || echo "")"
   if [ -z "${digest_ref}" ]; then
-    log "WARNING: could not resolve a digest reference for ${image_ref} — skipping signature verification."
-    return 0
+    if [ "$(_env_val OPENHANGAR_ALLOW_UNVERIFIED_UPGRADE)" = "1" ]; then
+      log "WARNING: no registry digest for ${image_ref} — upgrading WITHOUT verifying it (OPENHANGAR_ALLOW_UNVERIFIED_UPGRADE=1)."
+      return 0
+    fi
+    log "ERROR: could not resolve a digest reference for ${image_ref}, so it cannot be verified: upgrade refused."
+    return 1
   fi
   log "Verifying image signature (cosign) for ${digest_ref}..."
   if "${cosign_bin}" verify \
