@@ -1559,6 +1559,22 @@ def capped_rows(query: Any) -> tuple[list[Any], bool]:
     return rows[:SHOW_ALL_LIMIT], len(rows) > SHOW_ALL_LIMIT
 
 
+def attachment_disposition(filename: str) -> str:
+    """A Content-Disposition header for downloading `filename` as is: an
+    ASCII fallback (quotes, backslashes and control characters dropped) and
+    the exact name in RFC 5987 form. A registration in a file name used to
+    go in raw, so a quote or a non-Latin-1 character broke the header."""
+    from urllib.parse import quote
+
+    fallback = (
+        "".join(
+            c for c in filename.encode("ascii", "ignore").decode() if c.isprintable()
+        ).translate({ord('"'): None, ord("\\"): None})
+        or "download"
+    )
+    return f"attachment; filename=\"{fallback}\"; filename*=UTF-8''{quote(filename)}"
+
+
 def flag_arg(name: str) -> bool:
     """An on/off query parameter: absent, "" or "0" is off, "1" is on, and
     anything else is a bad request (400) rather than silently "off" — the

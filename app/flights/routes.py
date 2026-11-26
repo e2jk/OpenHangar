@@ -74,6 +74,7 @@ from utils import (
     SHOW_ALL_LIMIT,
     accessible_aircraft,
     activity,
+    attachment_disposition,
     capped_rows,
     current_membership,
     current_user_role,
@@ -1311,7 +1312,7 @@ def flight_track_image(flight_id: int) -> ResponseReturnValue:
         png_bytes,
         mimetype="image/png",
         headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Disposition": attachment_disposition(filename),
             "Cache-Control": "public, max-age=31536000, immutable",
             "ETag": f'"{track.id}"',
         },
@@ -1364,7 +1365,7 @@ def flight_track_gif(flight_id: int) -> ResponseReturnValue:
         gif_bytes,
         mimetype="image/gif",
         headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Content-Disposition": attachment_disposition(filename),
             "Cache-Control": "public, max-age=31536000, immutable",
             "ETag": f'"{track.id}"',
         },

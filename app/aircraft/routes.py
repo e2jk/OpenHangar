@@ -92,6 +92,7 @@ from sqlalchemy.orm import selectinload  # pyright: ignore[reportMissingImports]
 from utils import (
     accessible_aircraft,
     activity,
+    attachment_disposition,
     compute_aircraft_statuses,
     current_membership,
     current_user_role,
@@ -1170,7 +1171,7 @@ def owner_statement_csv(aircraft_id: int, user_id: int) -> ResponseReturnValue:
     return Response(
         csv_text,
         mimetype="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
+        headers={"Content-Disposition": attachment_disposition(filename)},
     )
 
 
@@ -1230,7 +1231,7 @@ def my_share_statement_csv(aircraft_id: int) -> ResponseReturnValue:
     return Response(
         csv_text,
         mimetype="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
+        headers={"Content-Disposition": attachment_disposition(filename)},
     )
 
 
@@ -3510,7 +3511,7 @@ def flight_tracks_gif(aircraft_id: int) -> ResponseReturnValue:
     return Response(
         gif_bytes,
         mimetype="image/gif",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={"Content-Disposition": attachment_disposition(filename)},
     )
 
 
