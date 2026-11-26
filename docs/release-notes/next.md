@@ -2,8 +2,12 @@
 
 **Navigation and Places**
 
-- Collection settings put the name, members and invitations first. Tags
-  appear in cards, with three per row on larger screens.
+- Collection settings put the name, members and invitations first. On
+  larger screens, the collection name, its members and "Add a friend" sit
+  side by side, as do "Transfer collection" and "Delete collection", and
+  tags appear in cards, three per row. Each tag card puts Rename next to
+  the name and Delete next to its confirmation, which only tags in use ask
+  for.
 - Click an airfield code on a place card to filter Places to that airfield
   within the current collection or across all your collections.
 - Places shows three cards per row on the widest screens. Airfield and

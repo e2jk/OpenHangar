@@ -434,6 +434,26 @@ def test_collection_settings_orders_sections_and_wraps_tag_cards(
     tags = settings.locator("#collection-tag-cards > div")
     for width, count in [(1200, 3), (390, 1)]:
         page.set_viewport_size({"width": width, "height": 900})
+        # Grouped sections share a row on large screens only.
+        for group in [
+            ["#collection-name", "#collection-members", "#collection-add-friend"],
+            ["#collection-transfer", "#collection-delete"],
+        ]:
+            side_by_side = settings.evaluate(
+                """(root, ids) => {
+                const boxes = ids
+                    .map(id => root.querySelector(id).getBoundingClientRect());
+                return boxes.every((box, i) => i === 0 || (
+                    box.top === boxes[0].top && boxes[i - 1].right <= box.left));
+            }""",
+                group,
+            )
+            assert side_by_side is (width == 1200), (group, width)
+        counts = settings.locator("#collection-delete-counts > div")
+        tops = counts.evaluate_all(
+            "items => items.map(item => item.getBoundingClientRect().top)"
+        )
+        assert len(tops) == 2 and len(set(tops)) == 1
         assert (
             tags.evaluate_all(
                 """cards => {

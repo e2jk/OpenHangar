@@ -62,6 +62,12 @@ class TestDevSeedEndToEnd:
                 for link in PlaceAirfield.query.filter_by(collection_id=collection.id)
             }
             assert len(linked) == 3 and dinant.id not in linked
+            from models import PlaceTag, PlaceTagAssignment
+
+            beach = PlaceTag.query.filter_by(
+                collection_id=collection.id, name="Beach"
+            ).one()
+            assert not PlaceTagAssignment.query.filter_by(tag_id=beach.id).first()
 
     def test_shared_ownership_seeded_on_robin(self, app, monkeypatch):
         """Phase 39: the Robin (OO-GRN) gets 3 co-owners via the legacy
