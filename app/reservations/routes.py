@@ -90,6 +90,8 @@ def _safe_next(next_url: str, fallback: str) -> str:
         and not parsed.scheme
         and not parsed.netloc
         and next_url.startswith("/")
+        # "//host" and "///host" are read by browsers as another site.
+        and not next_url.startswith("//")
     ):
         return next_url
     return fallback

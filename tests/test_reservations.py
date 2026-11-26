@@ -885,6 +885,14 @@ class TestConfirmDeclineReservation:
         assert r.status_code == 302
         assert "evil.com" not in r.headers["Location"]
 
+    def test_scheme_relative_next_url_falls_back(self, app, client):
+        """ "///evil.com" (and "//evil.com") parse with no host but browsers
+        go to that site: never used as a redirect target."""
+        from reservations.routes import _safe_next  # pyright: ignore[reportMissingImports]
+
+        assert _safe_next("///evil.com", "/home") == "/home"
+        assert _safe_next("/calendar?x=1", "/home") == "/calendar?x=1"
+
     def test_next_url_with_malformed_ipv6_bracket_falls_back(self, app, client):
         """routes.py:56 — urlparse() raises ValueError on "//[" (invalid IPv6-bracket
         syntax); this must fall back to the calendar instead of 500ing. Found by the
