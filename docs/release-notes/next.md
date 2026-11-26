@@ -1,4 +1,9 @@
-# No more font-cache errors in the logs of a read-only container
+# Whole place cards open the place; no font-cache errors in the logs
+
+**Places**
+
+- A click anywhere on a place card in Places opens that place, not just its
+  name; its airfield and tag pills still filter the list.
 
 - Dismiss all open data checks for the current hangar in one action.
 
