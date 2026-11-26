@@ -1673,3 +1673,29 @@ class TestReservationNotificationExceptions:
                 },
             )
         assert r.status_code == 302
+
+
+def test_a_booking_cannot_be_checked_out_before_its_day(app, client):
+    """The detail page offers check-out from the booking's day on; the
+    check-out itself now refuses earlier days too."""
+    from models import DispatchRecord  # pyright: ignore[reportMissingImports]
+
+    uid, tid = _make_user(app, "owner@ex.com")
+    ac_id = _make_aircraft(app, tid)
+    res_id = _make_reservation(
+        app,
+        ac_id,
+        uid,
+        start="2030-06-01T09:00",
+        end="2030-06-01T11:00",
+        status=ReservationStatus.CONFIRMED,
+    )
+    _login(app, client, uid)
+    resp = client.post(
+        f"/aircraft/{ac_id}/reservations/{res_id}/checkout",
+        data={"hobbs_out": "100"},
+        follow_redirects=True,
+    )
+    assert b"checked out from its day on" in resp.data
+    with app.app_context():
+        assert DispatchRecord.query.filter_by(reservation_id=res_id).count() == 0
