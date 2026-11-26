@@ -1692,3 +1692,61 @@ class TestEditPermissions:
         _login(client, admin_uid)
         resp = client.get(f"/config/users/{pilot_id}/permissions")
         assert resp.status_code == 404
+
+
+def test_an_invitation_to_an_address_creates_that_address_only(app, client):
+    from datetime import UTC, datetime, timedelta
+
+    tid, admin_uid = _make_tenant_user(app, "admin@bind.dev", Role.ADMIN)
+    with app.app_context():
+        inv = UserInvitation(
+            tenant_id=tid,
+            invited_by_user_id=admin_uid,
+            email="friend@bind.dev",
+            role=Role.PILOT,
+            expires_at=datetime.now(UTC) + timedelta(days=1),
+        )
+        db.session.add(inv)
+        db.session.commit()
+        token = inv.token
+    client.post(
+        f"/config/users/invite/{token}",
+        data={
+            "email": "someone-else@bind.dev",
+            "password": "a-long-password-1",
+            "password2": "a-long-password-1",
+        },
+    )
+    with app.app_context():
+        assert User.query.filter_by(email="someone-else@bind.dev").first() is None
+        assert User.query.filter_by(email="friend@bind.dev").first() is not None
+
+
+def test_an_invitation_claimed_meanwhile_creates_no_account(app, client):
+    from datetime import UTC, datetime, timedelta
+    from unittest.mock import patch
+
+    tid, admin_uid = _make_tenant_user(app, "admin@race.dev", Role.ADMIN)
+    with app.app_context():
+        inv = UserInvitation(
+            tenant_id=tid,
+            invited_by_user_id=admin_uid,
+            role=Role.PILOT,
+            expires_at=datetime.now(UTC) + timedelta(days=1),
+        )
+        db.session.add(inv)
+        db.session.commit()
+        token = inv.token
+    with patch("flask_sqlalchemy.query.Query.update", return_value=0):
+        resp = client.post(
+            f"/config/users/invite/{token}",
+            data={
+                "email": "late@race.dev",
+                "password": "a-long-password-1",
+                "password2": "a-long-password-1",
+            },
+            follow_redirects=True,
+        )
+    assert b"already been used" in resp.data
+    with app.app_context():
+        assert User.query.filter_by(email="late@race.dev").first() is None
