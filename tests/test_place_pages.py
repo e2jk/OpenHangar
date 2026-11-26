@@ -671,3 +671,30 @@ def test_place_tags_accept_commas_and_suggest_used_visible_tags(
         ).status_code
         == 400
     )
+
+
+def test_place_cards_distinguish_airfield_status_and_tags_without_showing_address(
+    app: Flask,
+    client: FlaskClient,
+    people: dict[str, int],
+    destinations: dict[str, int],
+) -> None:
+    from passports.catalogue import create_custom
+    from places.airfields import add_link
+
+    address = "123 Preview Street"
+    with app.app_context():
+        place = db.session.get(Place, destinations["alpha"])
+        place.address = address
+        airfield = create_custom(people["tenant"], "Test Airfield", code="EBTS")
+        add_link(people["tenant"], people["creator"], place.id, airfield.id)
+        db.session.commit()
+    signin(client, people)
+    listing = client.get("/places/").text
+    assert address not in listing
+    assert (
+        'bg-primary-subtle text-primary-emphasis" title="Test Airfield">EBTS' in listing
+    )
+    assert 'text-warning-emphasis">No linked airfield' in listing
+    assert 'text-secondary-emphasis place-tag-filter" href="/places/?tag=' in listing
+    assert address in client.get(f"/places/{destinations['alpha']}").text

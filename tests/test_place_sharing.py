@@ -150,7 +150,7 @@ def test_collection_pages_are_private_tenant_scoped_and_available_without_pilot_
     with app.app_context():
         c = PlaceCollection.query.filter_by(name="Friends").one()
         cid = c.id
-        destination(cid, p["creator"], address="Secret museum address")
+        place_id = destination(cid, p["creator"], address="Secret museum address").id
         db.session.commit()
     page = client.get(settings)
     assert page.status_code == 200 and 'name="member"' in page.text
@@ -181,7 +181,10 @@ def test_collection_pages_are_private_tenant_scoped_and_available_without_pilot_
     )
     signin(client, p, "reader")
     assert client.get(settings).status_code == 200
-    assert "Secret museum address" in client.get(f"/places/?collection={cid}").text
+    listing = client.get(f"/places/?collection={cid}")
+    assert "Museum" in listing.text
+    assert "Secret museum address" not in listing.text
+    assert "Secret museum address" in client.get(f"/places/{place_id}").text
     denied = client.post(settings, data={"action": "rename", "name": "Stolen"})
     assert denied.status_code == 400
     assert "Secret museum address" not in client.get("/places/?collection=99999").text
@@ -190,6 +193,7 @@ def test_collection_pages_are_private_tenant_scoped_and_available_without_pilot_
     assert client.post(settings, data={"action": "leave"}).status_code == 302
     assert client.get(settings).status_code == 404
     signin(client, p, "outsider")
+    assert client.get(f"/places/{place_id}").status_code == 404
     assert client.get(f"/places/?collection={cid}").status_code == 404
     signin(client, p, "admin")
     # An administrator neither manages nor sees a collection not shared
