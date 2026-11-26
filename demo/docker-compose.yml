@@ -2,6 +2,10 @@ networks:
   # Must already exist on the VPS: sudo docker network create traefik-network
   traefik-network:
     external: true
+  # The demo database is reachable from the demo web container only, not
+  # from Traefik or the other containers on traefik-network.
+  demo-backend:
+    internal: true
 
 services:
   openhangar-demo-db:
@@ -16,7 +20,7 @@ services:
       # PostgreSQL 18+ images: mount /var/lib/postgresql, not .../data
       - ./openhangar-demo/postgres_data:/var/lib/postgresql
     networks:
-      - traefik-network
+      - demo-backend
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${OPENHANGAR_DEMO_POSTGRES_USER}"]
       interval: 30s
@@ -29,6 +33,21 @@ services:
     container_name: ${OPENHANGAR_DEMO_WEB_CONTAINER:-openhangar-demo-web}
     networks:
       - traefik-network
+      - demo-backend
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - "no-new-privileges:true"
+    cap_drop:
+      - ALL
+    pids_limit: 256
+    mem_limit: 1g
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.openhangar-demo.rule=Host(`${OPENHANGAR_DEMO_HOSTNAME}`)"
@@ -38,7 +57,8 @@ services:
       - "traefik.http.routers.openhangar-demo.tls.certresolver=letsencrypt"
       - "traefik.http.services.openhangar-demo.loadbalancer.server.port=5000"
       - "traefik.http.services.openhangar-demo.loadbalancer.passhostheader=true"
-      - "traefik.http.routers.openhangar-demo.middlewares=compresstraefik-demo"
+      # demo-ratelimit was defined below but never attached to the router.
+      - "traefik.http.routers.openhangar-demo.middlewares=compresstraefik-demo,demo-ratelimit"
       - "traefik.http.middlewares.compresstraefik-demo.compress=true"
       - "traefik.docker.network=traefik-network"
       - "traefik.http.middlewares.demo-ratelimit.ratelimit.average=10"

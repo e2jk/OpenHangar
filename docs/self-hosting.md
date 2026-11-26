@@ -81,6 +81,22 @@ services:
       - ./openhangar/backups:/data/backups
     ports:
       - "5000:5000"
+    # The reference compose's hardening: read-only code, no privilege
+    # escalation or capabilities, bounded processes, memory and logs.
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - "no-new-privileges:true"
+    cap_drop:
+      - ALL
+    pids_limit: 256
+    mem_limit: 1g
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   db_data:
