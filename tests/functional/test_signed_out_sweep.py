@@ -20,6 +20,7 @@ PUBLIC = {
     "health": (200, None),
     "health_ready": (200, None),
     "robots_txt": (200, None),
+    "security_txt": (200, None),
     "favicon": (200, None),
     "pwa_manifest": (200, None),
     "service_worker": (200, None),
