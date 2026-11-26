@@ -652,12 +652,12 @@ msgstr "L'authentification à deux facteurs est maintenant active sur votre comp
 msgid "Account creation is disabled in demo mode."
 msgstr "La création de compte est désactivée en mode démo."
 
-#: app/auth/routes.py:735 app/users/routes.py:320
+#: app/auth/routes.py:735 app/users/routes.py:322
 msgid "A valid email address is required."
 msgstr "Une adresse e-mail valide est obligatoire."
 
 #: app/auth/routes.py:737 app/auth/routes.py:1106 app/auth/routes.py:1267
-#: app/users/routes.py:322
+#: app/users/routes.py:324
 msgid "Password must be at least 12 characters."
 msgstr "Le mot de passe doit comporter au moins 12 caractères."
 
@@ -706,7 +706,7 @@ msgid "Current password is incorrect."
 msgstr "Le mot de passe actuel est incorrect."
 
 #: app/auth/routes.py:1109 app/auth/routes.py:1270
-#: app/passports/registration.py:114 app/users/routes.py:324
+#: app/passports/registration.py:114 app/users/routes.py:326
 msgid "Passwords do not match."
 msgstr "Les mots de passe ne correspondent pas."
 
@@ -936,9 +936,20 @@ msgstr "Cette différence ne s’applique plus."
 msgid "Flight corrected: %(old)s → %(new)s. Nothing else was changed; the flight's notes record the paper logbook value."
 msgstr "Vol corrigé : %(old)s → %(new)s. Rien d’autre n’a été modifié ; les notes du vol indiquent la valeur du carnet papier."
 
-#: app/config/routes.py:1952
+#: app/config/routes.py:1944
 msgid "Difference dismissed."
 msgstr "Différence écartée."
+
+#: app/config/routes.py:1970
+#, python-format
+msgid "One difference dismissed."
+msgid_plural "%(n)d differences dismissed."
+msgstr[0] "Une différence ignorée."
+msgstr[1] "%(n)d différences ignorées."
+
+#: app/config/routes.py:1978
+msgid "There are no open differences to dismiss."
+msgstr "Il n’y a aucune différence à ignorer."
 
 #: app/documents/routes.py:85 app/templates/pilots/profile.html:234
 msgid "Licence"
@@ -1270,7 +1281,7 @@ msgstr "%(name)s a enregistré un vol avec vous à bord. Confirmez-le pour l’a
 #: app/templates/aircraft/owners_billing.html:154
 #: app/templates/aircraft/wb_entry.html:29
 #: app/templates/aircraft/wb_list.html:71
-#: app/templates/config/data_checks.html:57
+#: app/templates/config/data_checks.html:63
 #: app/templates/config/renter_account.html:47
 #: app/templates/config/renter_account.html:68
 #: app/templates/documents/reconcile.html:64
@@ -3532,7 +3543,7 @@ msgstr "Navigabilité"
 
 #: app/pwa/routes.py:89 app/templates/aircraft/detail.html:385
 #: app/templates/aircraft/flight_detail.html:26
-#: app/templates/config/data_checks.html:43 app/templates/dashboard.html:241
+#: app/templates/config/data_checks.html:49 app/templates/dashboard.html:241
 #: app/templates/flights/logbook_component.html:4
 #: app/templates/flights/logbook_component.html:15
 #: app/templates/pilots/entry_detail.html:5
@@ -4043,17 +4054,17 @@ msgstr "Contribution au fonds de réserve — vol du %(date)s (%(hours)s h)"
 msgid "Reserve fund contribution (%(pct)s%%) — %(month)s"
 msgstr "Contribution au fonds de réserve (%(pct)s%%) — %(month)s"
 
-#: app/services/data_checks.py:457
+#: app/services/data_checks.py:478
 #, python-format
 msgid "Departure airfield corrected from the GPS track; the paper logbook says %(value)s."
 msgstr "Aérodrome de départ corrigé d’après la trace GPS ; le carnet papier indique %(value)s."
 
-#: app/services/data_checks.py:463
+#: app/services/data_checks.py:484
 #, python-format
 msgid "Arrival airfield corrected from the GPS track; the paper logbook says %(value)s."
 msgstr "Aérodrome d’arrivée corrigé d’après la trace GPS ; le carnet papier indique %(value)s."
 
-#: app/services/data_checks.py:469
+#: app/services/data_checks.py:490
 #, python-format
 msgid "Date corrected from the GPS track; the paper logbook says %(value)s."
 msgstr "Date corrigée d’après la trace GPS ; le carnet papier indique %(value)s."
@@ -4106,7 +4117,7 @@ msgstr "Téléversez une photo JPEG, PNG ou WebP valide (20 mégapixels maximum)
 
 #: app/services/notification_service.py:367
 #: app/services/notification_service.py:1269
-#: app/templates/email/notif/welcome.html:1 app/users/routes.py:265
+#: app/templates/email/notif/welcome.html:1 app/users/routes.py:266
 #, python-format
 msgid "Hello %(name)s,"
 msgstr "Bonjour %(name)s,"
@@ -4656,7 +4667,7 @@ msgstr "Explorer"
 msgid "My account"
 msgstr "Mon compte"
 
-#: app/templates/base.html:254 app/templates/config/data_checks.html:14
+#: app/templates/base.html:254 app/templates/config/data_checks.html:20
 #: app/templates/config/notifications.html:16
 #: app/templates/config/settings.html:3 app/templates/config/settings.html:44
 msgid "Configuration"
@@ -6995,17 +7006,17 @@ msgid "The logbook and this GPS track differ:"
 msgstr "Le carnet et cette trace GPS diffèrent :"
 
 #: app/templates/aircraft/gps_import_review.html:237
-#: app/templates/config/data_checks.html:55
+#: app/templates/config/data_checks.html:61
 msgid "Departure airfield"
 msgstr "Aérodrome de départ"
 
 #: app/templates/aircraft/gps_import_review.html:238
-#: app/templates/config/data_checks.html:56
+#: app/templates/config/data_checks.html:62
 msgid "Arrival airfield"
 msgstr "Aérodrome d’arrivée"
 
 #: app/templates/aircraft/gps_import_review.html:240
-#: app/templates/config/data_checks.html:61
+#: app/templates/config/data_checks.html:67
 msgid "GPS track outside the logged times"
 msgstr "Trace GPS en dehors des heures enregistrées"
 
@@ -8540,30 +8551,38 @@ msgstr "Vérifications des données"
 msgid "Differences between logged flights and their GPS tracks, gaps in the counters, and overlapping flights"
 msgstr "Différences entre les vols enregistrés et leurs traces GPS, écarts dans les compteurs et vols qui se chevauchent"
 
-#: app/templates/config/data_checks.html:20
+#: app/templates/config/data_checks.html:15
+msgid "Dismiss every open difference in this hangar? The logbook entries stay as recorded."
+msgstr "Ignorer toutes les différences à examiner dans ce hangar ? Les entrées du carnet de vol sont conservées."
+
+#: app/templates/config/data_checks.html:16
+msgid "Dismiss all"
+msgstr "Tout ignorer"
+
+#: app/templates/config/data_checks.html:26
 msgid "The logbook is never changed on its own: each difference below is only corrected when you choose to use the GPS value. That changes only the one field named on its line — the departure airfield, the arrival airfield or the date; times, counters and everything else stay as logged — and adds a note to the flight with what the paper logbook says, so the paper logbook can stay as written. Dismiss the ones that are right as logged — they are not listed again unless the GPS track changes. Checked daily, and whenever this page is opened."
 msgstr "Le carnet n’est jamais modifié de lui-même : chaque différence ci-dessous n’est corrigée que si vous choisissez d’utiliser la valeur GPS. Seul le champ indiqué sur sa ligne change — l’aérodrome de départ, l’aérodrome d’arrivée ou la date ; les heures, les compteurs et tout le reste restent tels qu’enregistrés — et une note est ajoutée au vol avec ce qu’indique le carnet papier, qui peut ainsi rester tel qu’il est écrit. Écartez celles qui sont correctes telles qu’enregistrées — elles ne réapparaissent que si la trace GPS change. Vérifié chaque jour, et à chaque ouverture de cette page."
 
-#: app/templates/config/data_checks.html:21
+#: app/templates/config/data_checks.html:27
 msgid "A counter gap is a flight whose flight or engine counter doesn't start where the previous flight's ended: a typo, or flights missing from the log."
 msgstr "Un écart de compteur est un vol dont le compteur de vol ou moteur ne commence pas là où celui du vol précédent s’est arrêté : une faute de frappe, ou des vols absents du carnet."
 
-#: app/templates/config/data_checks.html:22
+#: app/templates/config/data_checks.html:28
 msgid "Overlapping flights are two flights of one aircraft logged at times that overlap: one of them has the wrong date or times."
 msgstr "Des vols qui se chevauchent sont deux vols d’un même aéronef enregistrés à des heures qui se recouvrent : l’un d’eux a une date ou des heures erronées."
 
-#: app/templates/config/data_checks.html:27
+#: app/templates/config/data_checks.html:33
 msgid "No differences found between the flights and their GPS tracks, no gaps in the counters, and no overlapping flights."
 msgstr "Aucune différence trouvée entre les vols et leurs traces GPS, aucun écart dans les compteurs et aucun vol qui se chevauche."
 
-#: app/templates/config/data_checks.html:34
+#: app/templates/config/data_checks.html:40
 #, python-format
 msgid "one difference"
 msgid_plural "%(n)d differences"
 msgstr[0] "une différence"
 msgstr[1] "%(n)d différences"
 
-#: app/templates/config/data_checks.html:41
+#: app/templates/config/data_checks.html:47
 #: app/templates/flights/removed_gps_files.html:24
 #: app/templates/partials/_crew_claims.html:48
 #: app/templates/partials/_flight_corrections.html:15
@@ -8573,98 +8592,98 @@ msgstr[1] "%(n)d différences"
 msgid "Flight"
 msgstr "Vol"
 
-#: app/templates/config/data_checks.html:42
+#: app/templates/config/data_checks.html:48
 msgid "Check"
 msgstr "Contrôle"
 
-#: app/templates/config/data_checks.html:44
+#: app/templates/config/data_checks.html:50
 msgid "GPS"
 msgstr "GPS"
 
-#: app/templates/config/data_checks.html:45
+#: app/templates/config/data_checks.html:51
 msgid "Action"
 msgstr "Action"
 
-#: app/templates/config/data_checks.html:58
+#: app/templates/config/data_checks.html:64
 #: app/templates/flights/airframe_import_review.html:52
 #: app/templates/flights/flight_form.html:547
 msgid "Flight counter start"
 msgstr "Compteur de vol initial"
 
-#: app/templates/config/data_checks.html:59
+#: app/templates/config/data_checks.html:65
 #: app/templates/flights/airframe_import_review.html:54
 #: app/templates/flights/flight_form.html:515
 msgid "Engine counter start"
 msgstr "Compteur moteur initial"
 
-#: app/templates/config/data_checks.html:60
+#: app/templates/config/data_checks.html:66
 msgid "Overlapping flight"
 msgstr "Vol qui en chevauche un autre"
 
-#: app/templates/config/data_checks.html:66
+#: app/templates/config/data_checks.html:72
 #, python-format
 msgid "Previous flight ended at %(value)s"
 msgstr "Le vol précédent s’est terminé à %(value)s"
 
-#: app/templates/config/data_checks.html:68
+#: app/templates/config/data_checks.html:74
 #, python-format
 msgid "Another flight of this aircraft is logged %(window)s that day"
 msgstr "Un autre vol de cet aéronef est enregistré de %(window)s ce jour-là"
 
-#: app/templates/config/data_checks.html:70
+#: app/templates/config/data_checks.html:76
 msgid "no airfield nearby"
 msgstr "aucun aérodrome à proximité"
 
-#: app/templates/config/data_checks.html:71
+#: app/templates/config/data_checks.html:77
 #, python-format
 msgid "%(km)s km from %(icao)s"
 msgstr "à %(km)s km de %(icao)s"
 
-#: app/templates/config/data_checks.html:77
+#: app/templates/config/data_checks.html:83
 #, python-format
 msgid "Change only the departure airfield from %(old)s to %(new)s? The times, date and everything else stay as logged; a note with the paper logbook value is added to the flight."
 msgstr "Changer uniquement l’aérodrome de départ de %(old)s en %(new)s ? Les heures, la date et tout le reste restent tels qu’enregistrés ; une note avec la valeur du carnet papier est ajoutée au vol."
 
-#: app/templates/config/data_checks.html:78
+#: app/templates/config/data_checks.html:84
 msgid "Changes only the departure airfield."
 msgstr "Ne change que l’aérodrome de départ."
 
-#: app/templates/config/data_checks.html:80
+#: app/templates/config/data_checks.html:86
 #, python-format
 msgid "Change only the arrival airfield from %(old)s to %(new)s? The times, date and everything else stay as logged; a note with the paper logbook value is added to the flight."
 msgstr "Changer uniquement l’aérodrome d’arrivée de %(old)s en %(new)s ? Les heures, la date et tout le reste restent tels qu’enregistrés ; une note avec la valeur du carnet papier est ajoutée au vol."
 
-#: app/templates/config/data_checks.html:81
+#: app/templates/config/data_checks.html:87
 msgid "Changes only the arrival airfield."
 msgstr "Ne change que l’aérodrome d’arrivée."
 
-#: app/templates/config/data_checks.html:83
+#: app/templates/config/data_checks.html:89
 #, python-format
 msgid "Change only the date from %(old)s to %(new)s? The times, airfields and everything else stay as logged; a note with the paper logbook value is added to the flight."
 msgstr "Changer uniquement la date de %(old)s en %(new)s ? Les heures, les aérodromes et tout le reste restent tels qu’enregistrés ; une note avec la valeur du carnet papier est ajoutée au vol."
 
-#: app/templates/config/data_checks.html:84
+#: app/templates/config/data_checks.html:90
 msgid "Changes only the date."
 msgstr "Ne change que la date."
 
-#: app/templates/config/data_checks.html:89
+#: app/templates/config/data_checks.html:95
 msgid "Use the GPS value"
 msgstr "Utiliser la valeur GPS"
 
-#: app/templates/config/data_checks.html:94
+#: app/templates/config/data_checks.html:100
 #: app/templates/places/_visit_suggestions.html:14
 msgid "Dismiss"
 msgstr "Écarter"
 
-#: app/templates/config/data_checks.html:96
+#: app/templates/config/data_checks.html:102
 msgid "Open both flights to check their dates and times — or dismiss it if they are right."
 msgstr "Ouvrez les deux vols pour vérifier leurs dates et heures — ou ignorez-le s’ils sont corrects."
 
-#: app/templates/config/data_checks.html:96
+#: app/templates/config/data_checks.html:102
 msgid "Open the flight to check its counters — or dismiss it if flights are missing from the log or the counter was replaced."
 msgstr "Ouvrez le vol pour vérifier ses compteurs — ou ignorez l’écart si des vols manquent au carnet ou si le compteur a été remplacé."
 
-#: app/templates/config/data_checks.html:96
+#: app/templates/config/data_checks.html:102
 msgid "Nothing to correct automatically — open the flight to check its times."
 msgstr "Rien à corriger automatiquement — ouvrez le vol pour vérifier ses heures."
 
@@ -16780,95 +16799,95 @@ msgstr "Invitation créée. Partagez ce lien : %(url)s"
 msgid "%(n)s invitations created."
 msgstr "%(n)s invitation(s) créée(s)."
 
-#: app/users/routes.py:267
+#: app/users/routes.py:269
 #, python-format
 msgid "You have been invited to join an OpenHangar hangar as %(role)s."
 msgstr "Vous êtes invité à rejoindre un hangar OpenHangar en tant que %(role)s."
 
-#: app/users/routes.py:270
+#: app/users/routes.py:272
 msgid "Accept your invitation here:"
 msgstr "Acceptez votre invitation ici :"
 
-#: app/users/routes.py:272
+#: app/users/routes.py:274
 #, python-format
 msgid "This link expires in one day."
 msgid_plural "This link expires in %(n)s days."
 msgstr[0] "Ce lien expire dans un jour."
 msgstr[1] "Ce lien expire dans %(n)s jours."
 
-#: app/users/routes.py:279
+#: app/users/routes.py:281
 msgid "You've been invited to OpenHangar"
 msgstr "Vous avez été invité sur OpenHangar"
 
-#: app/users/routes.py:296 app/users/routes.py:348
+#: app/users/routes.py:298 app/users/routes.py:350
 msgid "This invitation has already been used."
 msgstr "Cette invitation a déjà été utilisée."
 
-#: app/users/routes.py:300
+#: app/users/routes.py:302
 msgid "This invitation has expired."
 msgstr "Cette invitation a expiré."
 
-#: app/users/routes.py:326
+#: app/users/routes.py:328
 msgid "An account with this email already exists."
 msgstr "Un compte avec cette adresse e-mail existe déjà."
 
-#: app/users/routes.py:377
+#: app/users/routes.py:379
 msgid "Account created. You can now log in."
 msgstr "Compte créé. Vous pouvez maintenant vous connecter."
 
-#: app/users/routes.py:410
+#: app/users/routes.py:412
 msgid "Personal pilot logbook enabled."
 msgstr "Carnet de vol personnel activé."
 
-#: app/users/routes.py:412
+#: app/users/routes.py:414
 msgid "Personal pilot logbook access removed. The entries are kept."
 msgstr "Accès au carnet de vol personnel retiré. Les entrées sont conservées."
 
-#: app/users/routes.py:427
+#: app/users/routes.py:429
 msgid "You cannot change your own role."
 msgstr "Vous ne pouvez pas modifier votre propre rôle."
 
-#: app/users/routes.py:455
+#: app/users/routes.py:457
 msgid "Role updated."
 msgstr "Rôle mis à jour."
 
-#: app/users/routes.py:468
+#: app/users/routes.py:470
 msgid "You cannot revoke your own access."
 msgstr "Vous ne pouvez pas révoquer votre propre accès."
 
-#: app/users/routes.py:494
+#: app/users/routes.py:496
 msgid "Access revoked."
 msgstr "Accès révoqué."
 
-#: app/users/routes.py:509
+#: app/users/routes.py:511
 msgid "Invitation revoked."
 msgstr "Invitation révoquée."
 
-#: app/users/routes.py:525 app/users/routes.py:571
+#: app/users/routes.py:527 app/users/routes.py:573
 msgid "Owners and admins always have full fleet access."
 msgstr "Les propriétaires et administrateurs ont toujours un accès complet à la flotte."
 
-#: app/users/routes.py:556
+#: app/users/routes.py:558
 msgid "Aircraft access updated."
 msgstr "Accès aux avions mis à jour."
 
-#: app/users/routes.py:582
+#: app/users/routes.py:584
 msgid "All-aircraft access updated."
 msgstr "Accès à tous les avions mis à jour."
 
-#: app/users/routes.py:596
+#: app/users/routes.py:598
 msgid "You cannot change your own capability flags."
 msgstr "Vous ne pouvez pas modifier vos propres indicateurs de capacité."
 
-#: app/users/routes.py:607
+#: app/users/routes.py:609
 msgid "User flags updated."
 msgstr "Indicateurs utilisateur mis à jour."
 
-#: app/users/routes.py:639
+#: app/users/routes.py:641
 msgid "Owners and admins always have full fleet access — no custom permissions needed."
 msgstr "Les propriétaires et administrateurs ont toujours accès à toute la flotte — aucune permission personnalisée requise."
 
-#: app/users/routes.py:678
+#: app/users/routes.py:680
 msgid "Permissions updated."
 msgstr "Permissions mises à jour."
 

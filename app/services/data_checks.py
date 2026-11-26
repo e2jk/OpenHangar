@@ -38,6 +38,8 @@ from models import (  # pyright: ignore[reportMissingImports]
     GpsTrack,
     db,
 )
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 # Kinds of finding.
 DEPARTURE = "departure"
@@ -378,6 +380,27 @@ def open_findings(
         if kept:
             result.append((ac, kept))
     return result
+
+
+def dismiss_findings(findings: list[Finding], user_id: int) -> int:
+    """Save dismissals once, even if the same findings are submitted concurrently."""
+    table = DataCheckDismissal.__table__
+    insert = pg_insert if db.engine.dialect.name == "postgresql" else sqlite_insert
+    dismissed = 0
+    # Bound the number of parameters in each statement, including on SQLite.
+    for start in range(0, len(findings), 200):
+        rows = [
+            {"flight_id": f.flight_id, "key": f.key, "dismissed_by_user_id": user_id}
+            for f in findings[start : start + 200]
+        ]
+        result = db.session.execute(
+            insert(table)
+            .values(rows)
+            .on_conflict_do_nothing(index_elements=[table.c.flight_id, table.c.key])
+            .returning(table.c.id)
+        )
+        dismissed += len(result.scalars().all())
+    return dismissed
 
 
 def open_counter_gaps(aircraft_id: int) -> list[Finding]:

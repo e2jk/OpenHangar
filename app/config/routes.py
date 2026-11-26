@@ -1930,26 +1930,51 @@ def data_check_fix(flight_id: int) -> ResponseReturnValue:
 @login_required
 def data_check_dismiss(flight_id: int) -> ResponseReturnValue:
     """Leave one finding as it is; it's no longer listed or counted."""
-    from models import DataCheckDismissal  # pyright: ignore[reportMissingImports]
     from services.data_checks import (  # pyright: ignore[reportMissingImports]
+        dismiss_findings,
         find,
         refresh_open_count,
     )
 
     flight, tid = _data_check_flight(flight_id)
     key = request.form.get("key", "")
-    if (
-        find(flight, key) is not None
-        and not DataCheckDismissal.query.filter_by(flight_id=flight.id, key=key).first()
-    ):
-        db.session.add(
-            DataCheckDismissal(
-                flight_id=flight.id, key=key, dismissed_by_user_id=session["user_id"]
-            )
-        )
+    finding = find(flight, key)
+    if finding is not None and dismiss_findings([finding], session["user_id"]):
         activity("data_check.dismissed", flight_id=flight.id, key=key)
-        db.session.flush()
     flash(_("Difference dismissed."), "info")
+    refresh_open_count(tid)
+    db.session.commit()
+    return redirect(url_for("config.data_checks"))
+
+
+@config_bp.post("/data-checks/dismiss-all")
+@login_required
+def data_checks_dismiss_all() -> ResponseReturnValue:
+    """Dismiss all open findings in the current hangar without editing flights."""
+    from services.data_checks import (  # pyright: ignore[reportMissingImports]
+        dismiss_findings,
+        open_findings,
+        refresh_open_count,
+    )
+
+    tid = _data_checks_tenant_id()
+    if tid is None:
+        abort(404)
+    findings = [finding for _aircraft, group in open_findings(tid) for finding in group]
+    count = dismiss_findings(findings, session["user_id"])
+    if count:
+        activity("data_check.dismissed_all", count=count)
+        flash(
+            ngettext(
+                "One difference dismissed.",
+                "%(n)d differences dismissed.",
+                count,
+                n=count,
+            ),
+            "success",
+        )
+    else:
+        flash(_("There are no open differences to dismiss."), "info")
     refresh_open_count(tid)
     db.session.commit()
     return redirect(url_for("config.data_checks"))
