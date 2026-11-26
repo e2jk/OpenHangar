@@ -647,17 +647,20 @@ def update_tenant_slug() -> ResponseReturnValue:
             else:
                 os.rename(old_dir, new_dir)
 
-        # Rewrite stored paths in the database
+        # Rewrite stored paths in the database (the prefix matched as text:
+        # a "_" or "%" in it is not a wildcard).
         prefix_old = old_slug + "/"
         prefix_new = slug + "/"
-        for doc in Document.query.filter(Document.filename.like(old_slug + "/%")).all():
+        for doc in Document.query.filter(
+            Document.filename.startswith(prefix_old, autoescape=True)
+        ).all():
             doc.filename = prefix_new + doc.filename[len(prefix_old) :]
         for pr in PendingReconcile.query.filter(
-            PendingReconcile.filepath.like(old_slug + "/%")
+            PendingReconcile.filepath.startswith(prefix_old, autoescape=True)
         ).all():
             pr.filepath = prefix_new + pr.filepath[len(prefix_old) :]
         for photo in AircraftPhoto.query.filter(
-            AircraftPhoto.filename.like(old_slug + "/%")
+            AircraftPhoto.filename.startswith(prefix_old, autoescape=True)
         ).all():
             photo.filename = prefix_new + photo.filename[len(prefix_old) :]
 
