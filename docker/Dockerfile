@@ -152,8 +152,7 @@ RUN echo "apk-cache-bust: ${APK_CACHE_BUST}" && \
 
 WORKDIR /app
 
-# Create non-root user early so --chown on COPY instructions below is valid.
-# This avoids a slow recursive chown over /app after the fact. uid/gid are
+# The non-root runtime user (owns /data only, below). uid/gid are
 # pinned to 1000 (rather than left to adduser's default) because bind-mount
 # ownership instructions elsewhere (docs/development.md) rely on that value.
 RUN addgroup -g 1000 appuser && adduser -D -u 1000 -G appuser -s /bin/bash appuser
@@ -163,31 +162,34 @@ COPY --from=builder /venv /venv
 
 # Copy translations first so pybabel compile is cached independently of other
 # source changes — the compiled .mo files survive the full app/ COPY below.
-COPY --chown=appuser:appuser app/translations/ /app/translations/
+COPY app/translations/ /app/translations/
 RUN pybabel compile -d /app/translations
 
-# Copy the rest of the application code
-COPY --chown=appuser:appuser app/ /app/
+# Copy the rest of the application code. Code and scripts stay owned by
+# root (the runtime user can read, not change them): code running as the
+# app's user could otherwise persist by editing /app or the scripts the host
+# runs, wherever the container is not read-only. Only /data is the app's.
+COPY app/ /app/
 
 # Copy pre-built vendor assets from the vendor stage (npm-installed, no CDN needed)
-COPY --chown=appuser:appuser --from=vendor /tmp/vendor/ /app/static/vendor/
+COPY --from=vendor /tmp/vendor/ /app/static/vendor/
 
 # Bundle the demo management scripts so the host can mount them out
 # (kept separate from /app/demo/ which is the Python blueprint)
-COPY --chown=appuser:appuser demo/ /app/demo-scripts/
+COPY demo/ /app/demo-scripts/
 
 # Bundle the restore script outside /app so it survives the app bind-mount
-COPY --chown=appuser:appuser docker/restore.sh /usr/local/bin/restore.sh
+COPY docker/restore.sh /usr/local/bin/restore.sh
 
 # Bundle the upgrade script; the host's launcher copies it (and restore.sh,
 # and the demo's refresh.sh) out of this signed image to run it
-COPY --chown=appuser:appuser docker/upgrade.sh /usr/local/bin/upgrade.sh
-COPY --chown=appuser:appuser docker/openhangar-launcher.sh /usr/local/bin/openhangar-launcher.sh
+COPY docker/upgrade.sh /usr/local/bin/upgrade.sh
+COPY docker/openhangar-launcher.sh /usr/local/bin/openhangar-launcher.sh
 
 # Copy entrypoint (executable) and helper script (invoked as `python
 # wait-for-postgres.py`, so it needs no execute bit of its own)
-COPY --chown=appuser:appuser --chmod=755 docker/docker-entrypoint.sh /usr/local/bin/
-COPY --chown=appuser:appuser docker/wait-for-postgres.py /usr/local/bin/
+COPY --chmod=755 docker/docker-entrypoint.sh /usr/local/bin/
+COPY docker/wait-for-postgres.py /usr/local/bin/
 
 RUN mkdir -p /data/uploads /data/backups && chown -R appuser:appuser /data
 
