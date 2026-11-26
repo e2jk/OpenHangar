@@ -1,21 +1,18 @@
 # Security hardening: sign-in, links, uploads, backups and upgrades
 
+**Navigation and Places**
+
 - Click an airfield code on a place card to filter Places to that airfield
   within the current collection or across all your collections.
-
 - Places shows three cards per row on the widest screens. Airfield and
   visit badges wrap below the place name when space is tight. Dinant is a
   named example of a place still to locate in the sample data.
-
 - Place cards distinguish linked airfields, missing airfields and tags.
   Street addresses are shown on place detail pages.
-
 - Place pages suggest visits from past landings at linked airfields. Record
   the visit or dismiss the flight for that place.
-
 - Flight logbooks skip place visit suggestions when you already recorded a
   visit to that place on the landing date.
-
 - On phones, the bottom Explore menu groups Where next?, Places and Airfield
   Passports. On desktop, navigation links wrap when space is tight.
 
