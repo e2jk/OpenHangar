@@ -1,5 +1,8 @@
 # Security hardening: sign-in, links, uploads, backups and upgrades
 
+- On phones, the bottom Explore menu groups Where next?, Places and Airfield
+  Passports. On desktop, navigation links wrap when space is tight.
+
 **Security and privacy**
 
 - Ten wrong passwords no longer lock you out of your own account from a

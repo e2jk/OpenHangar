@@ -1,0 +1,5 @@
+<li><a class="dropdown-item" href="{{ url_for('explore.where_next') }}"><i class="bi bi-signpost-split me-1" aria-hidden="true"></i>{{ _('Where next?') }}</a></li>
+<li><a class="dropdown-item" href="{{ url_for('places.index') }}"><i class="bi bi-geo-alt me-1" aria-hidden="true"></i>{{ _('Places') }}</a></li>
+{% if is_pilot or has_passports or passport_only %}
+<li><a class="dropdown-item" href="{{ url_for('passports.index') }}"><i class="bi bi-passport me-1" aria-hidden="true"></i>{{ _('Airfield passports') }}</a></li>
+{% endif %}

@@ -241,11 +241,7 @@
           <li class="nav-item dropdown">
             <button type="button" class="nav-link dropdown-toggle btn btn-link" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-compass me-1"></i>{{ _('Explore') }}</button>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{{ url_for('explore.where_next') }}"><i class="bi bi-signpost-split me-1"></i>{{ _('Where next?') }}</a></li>
-              <li><a class="dropdown-item" href="{{ url_for('places.index') }}"><i class="bi bi-geo-alt me-1"></i>{{ _('Places') }}</a></li>
-              {% if is_pilot or has_passports or passport_only %}
-              <li><a class="dropdown-item" href="{{ url_for('passports.index') }}"><i class="bi bi-passport me-1"></i>{{ _('Airfield passports') }}</a></li>
-              {% endif %}
+              {% include 'partials/_explore_links.html' %}
             </ul>
           </li>
           {% if has_renter_account %}
@@ -264,6 +260,7 @@
           <ul class="navbar-nav me-auto mb-2 mb-lg-0"></ul>
           {% endif %}
         {% endif %}
+        <div class="oh-navbar-actions">
         {% if logged_in %}
         <a href="{{ url_for('auth.profile') }}" class="btn btn-nav-login ms-2">
           <i class="bi bi-person-circle me-1"></i>{{ nav_user_label or _('Profile') }}
@@ -282,6 +279,7 @@
            expanded list) on mobile, while still appearing inline at the end
            of the navbar row at lg+ — same as before this was moved here. #}
         {% include 'partials/_theme_lang_switcher.html' %}
+        </div>
         </div>
       </div>
       {% else %}
@@ -361,9 +359,16 @@
     {% if personal_logbook %}
     <a href="{{ url_for('pilots.logbook') }}" class="{{ 'active' if _ep.startswith('pilots.') }}"><i class="bi bi-journal-text"></i><span>{{ _('Pilot logbook') }}</span></a>
     {% endif %}
-    {% if is_pilot or has_passports or passport_only %}
-    <a href="{{ url_for('passports.index') }}" class="{{ 'active' if _ep.startswith('passports.') }}"><i class="bi bi-passport"></i><span>{{ _('Airfield passports') }}</span></a>
-    {% endif %}
+    <div class="dropup oh-bottom-explore">
+      <button type="button" id="oh-bottom-explore" class="oh-bottom-nav-item{{ ' active' if _ep.startswith(('explore.', 'places.', 'passports.')) }}"
+              data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-compass" aria-hidden="true"></i>
+        <span>{{ _('Explore') }}</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="oh-bottom-explore">
+        {% include 'partials/_explore_links.html' %}
+      </ul>
+    </div>
   </nav>
   {% endif %}
 
