@@ -3292,6 +3292,11 @@ class WeightBalanceEntry(db.Model):
     is_in_envelope = db.Column(db.Boolean, nullable=False)
     # {station_id_str: value} — fuel stations store volume (L or gal), non-fuel store kg
     station_weights = db.Column(db.JSON, nullable=False, default=dict)
+    # Who made the calculation: only they (or an owner/admin) change it.
+    # NULL for calculations made before this was recorded.
+    created_by_user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

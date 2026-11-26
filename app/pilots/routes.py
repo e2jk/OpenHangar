@@ -86,6 +86,7 @@ from sqlalchemy import case, func, or_  # pyright: ignore[reportMissingImports]
 from sqlalchemy.orm import selectinload  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
     SHOW_ALL_LIMIT,
+    accessible_aircraft,
     capped_rows,
     current_user_role,
     db_id,
@@ -2449,10 +2450,9 @@ def download_gps_logs() -> ResponseReturnValue:
 def pilot_gps_import_upload() -> ResponseReturnValue:
     uid = _current_user_id()
     tenant_id = _pilot_tenant_id(uid)
+    # The aircraft this pilot may log on, not every aircraft of the hangar.
     tenant_aircraft = (
-        Aircraft.query.filter_by(tenant_id=tenant_id)
-        .order_by(Aircraft.registration)
-        .all()
+        sorted(accessible_aircraft(tenant_id), key=lambda ac: ac.registration)
         if tenant_id
         else []
     )
@@ -2841,10 +2841,9 @@ def pilot_gps_import_review() -> ResponseReturnValue:
     _gps_state_save(state, "pilot_gps_import")
 
     tenant_id = _pilot_tenant_id(uid)
+    # The aircraft this pilot may log on, not every aircraft of the hangar.
     tenant_aircraft = (
-        Aircraft.query.filter_by(tenant_id=tenant_id)
-        .order_by(Aircraft.registration)
-        .all()
+        sorted(accessible_aircraft(tenant_id), key=lambda ac: ac.registration)
         if tenant_id
         else []
     )
