@@ -20,6 +20,7 @@ from models import (  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
     activity,
     current_membership,
+    current_user_role,
     login_required,
     require_role,
     user_can_access_aircraft,
@@ -436,8 +437,28 @@ def delete_snag(aircraft_id: int, snag_id: int) -> ResponseReturnValue:
     if not s.is_open:
         flash(_("Closed snags are archived and cannot be deleted."), "danger")
         return redirect(url_for("snags.list_snags", aircraft_id=ac.id))
+    if s.is_grounding and current_user_role() not in (
+        Role.ADMIN,
+        Role.OWNER,
+        Role.MAINTENANCE,
+    ):
+        # Deleting would put the aircraft back in service with no trace: a
+        # pilot resolves it, or asks an owner or maintenance to.
+        flash(
+            _("A grounding snag can only be deleted by an owner or maintenance."),
+            "danger",
+        )
+        return redirect(url_for("snags.list_snags", aircraft_id=ac.id))
     title = s.title
+    snag_id_deleted, was_grounding = s.id, s.is_grounding
     db.session.delete(s)
     db.session.commit()
+    activity(
+        "snag.deleted",
+        snag_id=snag_id_deleted,
+        aircraft_id=ac.id,
+        title=title,
+        is_grounding=was_grounding,
+    )
     flash(_("Snag '%(title)s' deleted.", title=title), "success")
     return redirect(url_for("snags.list_snags", aircraft_id=ac.id))
