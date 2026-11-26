@@ -43,3 +43,38 @@ def test_passport_only_account_can_read_robots_txt(
         friend_id = friend.id
     signin(client, friend_id)
     assert client.get("/robots.txt").status_code == 200
+
+
+def test_passport_only_account_can_open_public_links(
+    app: Flask, client: FlaskClient
+) -> None:
+    from models import Aircraft, ShareToken
+
+    with app.app_context():
+        tenant = Tenant(name="Links club")
+        owner = User(email="links-owner@example.com", password_hash="unused")
+        friend = User(email="links-friend@example.com", password_hash="unused")
+        db.session.add_all([tenant, owner, friend])
+        db.session.flush()
+        ac = Aircraft(tenant_id=tenant.id, registration="OO-LNK", make="X", model="Y")
+        db.session.add_all(
+            [
+                ac,
+                TenantUser(user_id=owner.id, tenant_id=tenant.id, role=Role.OWNER),
+                TenantUser(
+                    user_id=friend.id,
+                    tenant_id=tenant.id,
+                    role=None,
+                    access_scope="personal",
+                ),
+            ]
+        )
+        db.session.flush()
+        db.session.add(
+            ShareToken(aircraft_id=ac.id, token="lnk12345", access_level="summary")
+        )
+        db.session.commit()
+        friend_id = friend.id
+    signin(client, friend_id)
+    assert client.get("/share/lnk12345").status_code == 200
+    assert client.get("/.well-known/security.txt").status_code == 200

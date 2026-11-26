@@ -25,6 +25,7 @@ from extensions import _rate_limiting_disabled  # pyright: ignore[reportMissingI
 from extensions import limiter as _limiter
 from flask import (  # pyright: ignore[reportMissingImports]
     Blueprint,
+    Response,
     abort,
     current_app,
     flash,
@@ -670,6 +671,11 @@ def serve_upload(filename: str) -> ResponseReturnValue:
         if fe is None:
             abort(404)
         _get_flight_or_404(fe.id)
+    return send_upload(filename)
+
+
+def send_upload(filename: str) -> Response:
+    """Send a stored upload; the caller has checked who may see it."""
     from services.safe_paths import send_inside
 
     folder = current_app.config.get("UPLOAD_FOLDER", "/data/uploads")

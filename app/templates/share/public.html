@@ -115,7 +115,7 @@
         {% if doc.is_image %}<i class="bi bi-image text-primary me-2"></i>
         {% elif ext == 'pdf' %}<i class="bi bi-file-earmark-pdf text-danger me-2"></i>
         {% else %}<i class="bi bi-file-earmark text-muted me-2"></i>{% endif %}
-        <a href="{{ url_for('flights.serve_upload', filename=doc.filename) }}" target="_blank"
+        <a href="{{ url_for('share.shared_document', token=token.token, doc_id=doc.id) }}" target="_blank"
  class="text-decoration-none oh-text-navy">
           {{ doc.title or doc.original_filename }}
         </a>

@@ -166,6 +166,7 @@ var NOT_CACHED_PATTERNS = [
   [/^\/showcase\/[^/]+$/, 'public showcase link — same "revoked token must stop working" reasoning as /share'],
   [/^\/showcase\/[^/]+\/[^/]+$/, 'same public showcase link, with the registration as a cosmetic URL prefix — same reasoning'],
   [/^\/showcase\/[^/]+\/photos\/\d+\/img$/, 'showcase photo — same reasoning, must stop being servable once the token is revoked'],
+  [/^\/share\/[^/]+\/documents\/\d+$/, 'document of a full share link — same reasoning, must stop being servable once the token is revoked'],
   [/^\/squawk\/\d+$/, 'easter egg']
 ];
 

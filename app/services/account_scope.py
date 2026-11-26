@@ -101,6 +101,17 @@ ACCOUNT_ENDPOINTS = frozenset(
         "robots_txt",
         "health",
         "api_banners",
+        "security_txt",
+        # Public, token-scoped pages open to anyone with the link: a Personal
+        # account signed in used to get a 403 where a visitor got the page.
+        "share.public_view",
+        "share.showcase_view",
+        "share.showcase_photo",
+        "share.shared_document",
+        "users.accept_invite",
+        "squawk.squawk",
+        "hangar.secret",
+        "not_yet_implemented",
     }
 )
 

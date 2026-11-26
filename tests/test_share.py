@@ -802,3 +802,43 @@ def test_links_close_when_the_aircraft_is_archived_or_the_hangar_deactivated(
         db.session.get(Tenant, tid).is_active = False
         db.session.commit()
     assert client.get("/share/arch1234").status_code == 404
+
+
+def test_full_links_open_their_listed_documents_without_signing_in(app, client):
+    import os
+
+    from models import Document
+
+    _uid, _tid, acid = _setup(app)
+    _add_token(app, acid, "full1234", access_level="full")
+    _add_token(app, acid, "summ1234", access_level="summary")
+    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+    ids = {}
+    with app.app_context():
+        for name, sensitive in (("manual.pdf", False), ("secret.pdf", True)):
+            with open(os.path.join(app.config["UPLOAD_FOLDER"], name), "wb") as f:
+                f.write(b"%PDF-1.4 " + name.encode())
+            doc = Document(
+                aircraft_id=acid,
+                filename=name,
+                original_filename=name,
+                is_sensitive=sensitive,
+            )
+            db.session.add(doc)
+            db.session.flush()
+            ids[name] = doc.id
+        db.session.commit()
+    page = client.get("/share/full1234")
+    assert f"/share/full1234/documents/{ids['manual.pdf']}".encode() in page.data
+    assert b"/uploads/" not in page.data
+    resp = client.get(f"/share/full1234/documents/{ids['manual.pdf']}")
+    assert resp.status_code == 200 and resp.data.startswith(b"%PDF")
+    assert (
+        client.get(f"/share/full1234/documents/{ids['secret.pdf']}").status_code == 404
+    )
+    assert (
+        client.get(f"/share/summ1234/documents/{ids['manual.pdf']}").status_code == 404
+    )
+    assert (
+        client.get(f"/share/zzzz9999/documents/{ids['manual.pdf']}").status_code == 404
+    )
