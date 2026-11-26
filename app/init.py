@@ -843,7 +843,10 @@ def create_app() -> Flask:
         cache_name = (
             f"openhangar-{version}"
             if version and version != "development"
-            else f"openhangar-{secrets.token_hex(8)}"
+            # One name per server start in development: a new one on every
+            # fetch made the browser reinstall the worker and wipe its
+            # caches at each update check.
+            else f"openhangar-{app.config.setdefault('DEV_SW_CACHE', secrets.token_hex(8))}"
         )
         content = content.replace("__SW_CACHE_VERSION__", cache_name)
         response = Response(content, mimetype="application/javascript")

@@ -726,3 +726,14 @@ def test_share_sheet_post_needs_no_form_token_but_another_site_is_refused(app, c
         assert client.post("/pwa/shared/discard").status_code == 400
     finally:
         app.config["WTF_CSRF_ENABLED"] = False
+
+
+def test_dev_service_worker_keeps_one_cache_name_per_server_start(client, monkeypatch):
+    import re
+
+    monkeypatch.setenv("OPENHANGAR_VERSION", "development")
+    names = {
+        re.search(rb"openhangar-[0-9a-f]{16}", client.get("/sw.js").data).group(0)
+        for _ in range(2)
+    }
+    assert len(names) == 1
