@@ -3963,7 +3963,7 @@ def seed_group_passport(
 
 # Places in Belgium worth a flight, for the shared "Our places" collection
 # (Phase 42g): (title, latitude, longitude, address, tags). Coordinates are
-# public landmarks; the last entry is a saved link still to locate.
+# public landmarks. The unlocated idea is seeded separately.
 _OUR_PLACES = [
     (
         "Pairi Daiza",
@@ -3995,7 +3995,7 @@ def seed_places(
 ) -> None:
     """A shared "Our places" collection (Phase 42g): the owner, the second
     pilot and the Personal-account friend all edit it; a few located places
-    with tags and airfield links, a saved Instagram link still to locate, and
+    with tags and airfield links, an unlocated idea for Dinant, and
     a visit each by the owner and the friend. Call after seed_group_passport (it needs the
     friend's account)."""
     from datetime import date
@@ -4025,7 +4025,7 @@ def seed_places(
         for title, lat, lon, address, tags in _OUR_PLACES
     ]
     # Airfields to fly to each place from (42d), with how to get there;
-    # Bouillon Castle stays unlinked, so "1 place has no airfield yet" shows.
+    # Bouillon Castle has a pin but stays unlinked.
     by_ident = {row.ident: row for row in cat.load_catalogue()}
     for place, code, note in (
         (places[0], "EBCI", "Taxi, 25 minutes"),
@@ -4040,7 +4040,7 @@ def seed_places(
         tenant_id,
         friend.id,
         collection.id,
-        {"external_url": "https://www.instagram.com/explore/locations/"},
+        {"title": "Dinant"},
     )
     today = date.today()
     db.session.add_all(
