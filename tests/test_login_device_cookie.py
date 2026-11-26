@@ -106,3 +106,18 @@ def test_demo_slot_credentials_cannot_be_changed(app, client, monkeypatch):
     assert b"cannot be changed in the demo" in resp.data
     with app.app_context():
         assert db.session.get(User, uid).totp_secret is None
+
+
+def test_another_site_cannot_sign_out_or_switch_language_or_theme(app, client):
+    _make_user(app)
+    _sign_in(client)
+    cross = {"Sec-Fetch-Site": "cross-site"}
+    client.get("/logout", headers=cross)
+    assert client.get("/profile").status_code == 200  # still signed in
+    client.get("/set-language/fr", headers=cross)
+    client.get("/set-theme/dark", headers=cross)
+    with app.app_context():
+        user = User.query.filter_by(email=EMAIL).one()
+        assert user.language != "fr" and user.theme != "dark"
+    client.get("/logout", headers={"Sec-Fetch-Site": "same-origin"})
+    assert client.get("/profile").status_code == 302

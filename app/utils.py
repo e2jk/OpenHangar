@@ -1559,6 +1559,13 @@ def capped_rows(query: Any) -> tuple[list[Any], bool]:
     return rows[:SHOW_ALL_LIMIT], len(rows) > SHOW_ALL_LIMIT
 
 
+def cross_site_request() -> bool:
+    """Whether the browser says this request comes from another site
+    (Sec-Fetch-Site). Sign-out, language and theme are links (GET), so they
+    ignore such requests: another site could otherwise trigger them."""
+    return request.headers.get("Sec-Fetch-Site") == "cross-site"
+
+
 def absolute_url(endpoint: str, **values: Any) -> str:
     """An absolute link to `endpoint`, for e-mails and links people copy.
     Built from OPENHANGAR_INSTANCE_URL when set: the request's own host

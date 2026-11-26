@@ -2857,11 +2857,7 @@ class ShareToken(db.Model):
         not archived, hangar not deactivated (an archived aircraft or a
         closed hangar used to stay public through its old links)."""
         ac = self.aircraft
-        return (
-            self.is_active
-            and ac.archived_at is None
-            and ac.tenant.is_active
-        )
+        return self.is_active and ac.archived_at is None and ac.tenant.is_active
 
 
 class PublicShare(db.Model):

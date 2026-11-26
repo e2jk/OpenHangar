@@ -40,7 +40,7 @@ from services import auth_sessions
 from services import login_throttle as throttle
 from services import totp as totp_codes
 from sqlalchemy import text as sa_text
-from utils import login_required
+from utils import cross_site_request, login_required
 from werkzeug.wrappers import Response
 
 _log = logging.getLogger("openhangar.auth")
@@ -549,6 +549,9 @@ def _login_totp_enrol() -> ResponseReturnValue:
 
 @auth_bp.route("/logout")
 def logout() -> ResponseReturnValue:
+    if cross_site_request():
+        # A link or redirect from another site cannot sign anyone out.
+        return redirect(url_for("index"))
     slot_id = session.get("demo_slot_id")
     auth_sessions.revoke_current()
     session.clear()
