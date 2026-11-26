@@ -7,12 +7,14 @@ from unittest.mock import patch
 import pytest
 from flask import Flask
 from flask.testing import FlaskClient
-from models import PlaceAirfield, db
+from models import Passport, PassportAirfield, Place, PlaceAirfield, db
 from passports.catalogue import CatalogueAirfield, add_alias
 from places import candidates
 from places.access import PlaceError
 from places.airfields import add_link, linked_airfields
+from places.passport_links import passport_fields
 
+from tests.auth_helpers import set_membership_flags
 from tests.test_place_airfields import field, links, people
 from tests.test_place_sharing import signin
 
@@ -427,3 +429,101 @@ def test_manual_heliports_and_closed_fields_are_searchable_but_never_suggested(
             p["tenant"], p["creator"], x["place"], query="Manual"
         )
         assert keys.issubset({row["key"] for row in searched})
+
+
+def test_passport_place_suggestions_and_links(
+    app: Flask, client: FlaskClient, people: dict[str, int], links: dict[str, int]
+) -> None:
+    tid, uid = people["tenant"], people["creator"]
+    with app.app_context():
+        owned = Passport(tenant_id=tid, owner_user_id=uid, title="My airport passport")
+        private = Passport(
+            tenant_id=tid,
+            owner_user_id=people["outsider"],
+            title="Private other passport",
+        )
+        distant = field(tid, "Distant airport", latitude=50.75)
+        public = field(
+            tid,
+            "Public airport",
+            source="ourairports",
+            source_id="distant-public",
+            latitude=54.0,
+            overrides={"name": "Private airfield correction"},
+        )
+        db.session.add_all([owned, private])
+        db.session.flush()
+        target = PassportAirfield(
+            tenant_id=tid, passport_id=owned.id, airfield_id=links["field"]
+        )
+        db.session.add_all(
+            [
+                target,
+                PassportAirfield(
+                    tenant_id=tid,
+                    passport_id=owned.id,
+                    airfield_id=public.id,
+                    public_catalogue=True,
+                ),
+                PassportAirfield(
+                    tenant_id=tid, passport_id=owned.id, airfield_id=distant.id
+                ),
+                PassportAirfield(
+                    tenant_id=tid, passport_id=private.id, airfield_id=links["field"]
+                ),
+            ]
+        )
+        db.session.commit()
+        passport_id, target_id = owned.id, target.id
+        place_name = db.session.get(Place, links["place"]).title
+        assert passport_fields(tid, uid)[public.id]["name"] == "Public airport"
+    signin(client, people)
+    airfields = f"/places/{links['place']}/airfields"
+    target_url = f"/passports/{passport_id}/airfields/{target_id}"
+    suggestions_url = "/places/passport-suggestions"
+
+    for url in ("/places/", "/passports/"):
+        assert suggestions_url in client.get(url).text
+    nearby = client.get(airfields)
+    assert nearby.status_code == 200
+    assert 'id="airfield-candidate-map"' in nearby.text
+    assert "In your passports" in nearby.text and "My airport passport" in nearby.text
+    assert "Private other passport" not in nearby.text
+
+    shared = client.get(suggestions_url)
+    assert shared.status_code == 200 and "My airport passport" in shared.text
+    assert 'type="range"' in shared.text and place_name in shared.text
+    assert "Distant airport" not in shared.text
+    assert "Distant airport" in client.get(suggestions_url + "?radius=30").text
+    assert client.get(suggestions_url + "?radius=nan").status_code == 400
+    target = client.get(target_url)
+    assert target.status_code == 200 and "Places near this airfield" in target.text
+    assert place_name in target.text and "Link airfield" in target.text
+    assert "Enter a valid search radius" in client.get(target_url + "?radius=300").text
+    assert place_name not in client.get(target_url + "?radius=0.1").text
+
+    link = {"action": "add", "key": f"field:{links['field']}"}
+    done = client.post(
+        airfields + "?radius=30", data={**link, "return_to": "suggestions"}
+    )
+    assert done.headers["Location"] == suggestions_url + "?radius=30"
+    assert "No nearby places to link" in client.get(suggestions_url).text
+    assert "Linked places" in client.get(target_url).text
+    back = client.post(
+        airfields,
+        data={
+            **link,
+            "return_to": "passport",
+            "passport_id": passport_id,
+            "target_id": target_id,
+        },
+    )
+    assert back.headers["Location"] == target_url
+
+    signin(client, people, "reader")
+    assert "No nearby places to link" in client.get(suggestions_url).text
+    with app.app_context():
+        set_membership_flags(uid, view_only=True)
+        db.session.commit()
+    signin(client, people)
+    assert "No nearby places to link" in client.get(suggestions_url + "?radius=30").text

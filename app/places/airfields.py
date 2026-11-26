@@ -153,6 +153,7 @@ def linked_airfields(
     include_visited: bool = True,
     place_ids: Sequence[int] | None = None,
     include_archived: bool = False,
+    airfield_id: int | None = None,
 ) -> list[dict[str, Any]]:
     """Return member-visible links, without flights, photos or others' visits.
 
@@ -190,6 +191,8 @@ def linked_airfields(
         query = query.filter(Place.collection_id.in_(collection_ids))
     if place_ids is not None:
         query = query.filter(Place.id.in_(place_ids))
+    if airfield_id is not None:
+        query = query.filter(PlaceAirfield.airfield_id == airfield_id)
     if not include_visited:
         query = query.filter(~visited)
     result = []

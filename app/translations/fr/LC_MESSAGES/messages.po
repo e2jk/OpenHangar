@@ -940,14 +940,14 @@ msgstr "Vol corrigé : %(old)s → %(new)s. Rien d’autre n’a été modifi�
 msgid "Difference dismissed."
 msgstr "Différence écartée."
 
-#: app/config/routes.py:1970
+#: app/config/routes.py:1969
 #, python-format
 msgid "One difference dismissed."
 msgid_plural "%(n)d differences dismissed."
 msgstr[0] "Une différence ignorée."
 msgstr[1] "%(n)d différences ignorées."
 
-#: app/config/routes.py:1978
+#: app/config/routes.py:1977
 msgid "There are no open differences to dismiss."
 msgstr "Il n’y a aucune différence à ignorer."
 
@@ -3227,31 +3227,31 @@ msgstr "Lieu introuvable."
 msgid "Choose an airfield action."
 msgstr "Choisissez une action pour cet aérodrome."
 
-#: app/places/airfield_routes.py:67
+#: app/places/airfield_routes.py:88 app/places/passport_links.py:58
 msgid "search radius"
 msgstr "rayon de recherche"
 
-#: app/places/airfield_routes.py:87
+#: app/places/airfield_routes.py:110
 msgid "Small airfield"
 msgstr "Petit aérodrome"
 
-#: app/places/airfield_routes.py:88
+#: app/places/airfield_routes.py:111
 msgid "Medium airport"
 msgstr "Aéroport de taille moyenne"
 
-#: app/places/airfield_routes.py:89
+#: app/places/airfield_routes.py:112
 msgid "Large airport"
 msgstr "Grand aéroport"
 
-#: app/places/airfield_routes.py:90
+#: app/places/airfield_routes.py:113
 msgid "Seaplane base"
 msgstr "Hydrobase"
 
-#: app/places/airfield_routes.py:91
+#: app/places/airfield_routes.py:114
 msgid "Heliport"
 msgstr "Héliport"
 
-#: app/places/airfield_routes.py:92
+#: app/places/airfield_routes.py:115
 msgid "Closed airfield"
 msgstr "Aérodrome fermé"
 
@@ -3326,6 +3326,7 @@ msgstr "Lieu sans nom"
 #: app/templates/partials/_explore_links.html:2
 #: app/templates/places/collection_settings.html:60
 #: app/templates/places/index.html:3 app/templates/places/index.html:6
+#: app/templates/places/passport_suggestions.html:8
 msgid "Places"
 msgstr "Lieux"
 
@@ -4054,17 +4055,17 @@ msgstr "Contribution au fonds de réserve — vol du %(date)s (%(hours)s h)"
 msgid "Reserve fund contribution (%(pct)s%%) — %(month)s"
 msgstr "Contribution au fonds de réserve (%(pct)s%%) — %(month)s"
 
-#: app/services/data_checks.py:478
+#: app/services/data_checks.py:540
 #, python-format
 msgid "Departure airfield corrected from the GPS track; the paper logbook says %(value)s."
 msgstr "Aérodrome de départ corrigé d’après la trace GPS ; le carnet papier indique %(value)s."
 
-#: app/services/data_checks.py:484
+#: app/services/data_checks.py:546
 #, python-format
 msgid "Arrival airfield corrected from the GPS track; the paper logbook says %(value)s."
 msgstr "Aérodrome d’arrivée corrigé d’après la trace GPS ; le carnet papier indique %(value)s."
 
-#: app/services/data_checks.py:490
+#: app/services/data_checks.py:552
 #, python-format
 msgid "Date corrected from the GPS track; the paper logbook says %(value)s."
 msgstr "Date corrigée d’après la trace GPS ; le carnet papier indique %(value)s."
@@ -7176,8 +7177,9 @@ msgstr[1] "%(n)s composants"
 #: app/templates/aircraft/list.html:73 app/templates/passports/detail.html:20
 #: app/templates/passports/print.html:19 app/templates/passports/series.html:10
 #: app/templates/passports/series.html:28
-#: app/templates/passports/vouchers.html:10 app/templates/places/index.html:20
-#: app/templates/places/index.html:56 app/templates/places/place_detail.html:9
+#: app/templates/passports/vouchers.html:10
+#: app/templates/places/_place_breadcrumbs.html:4
+#: app/templates/places/index.html:20 app/templates/places/index.html:58
 msgid "Archived"
 msgstr "Archivé"
 
@@ -7391,8 +7393,8 @@ msgstr "Enregistrer le paiement"
 #: app/templates/aircraft/owners_billing.html:101
 #: app/templates/aircraft/owners_billing.html:158
 #: app/templates/passports/record_visit.html:29
-#: app/templates/passports/target.html:32
-#: app/templates/passports/target.html:38 app/templates/places/_visits.html:10
+#: app/templates/passports/target.html:57
+#: app/templates/passports/target.html:63 app/templates/places/_visits.html:10
 #: app/templates/places/_visits.html:25
 msgid "Note (optional)"
 msgstr "Note (facultatif)"
@@ -7711,14 +7713,14 @@ msgstr "Vérifier la référence pièce"
 #: app/templates/passports/builder.html:49
 #: app/templates/passports/detail.html:34
 #: app/templates/passports/detail.html:39
-#: app/templates/passports/detail.html:42 app/templates/passports/index.html:30
+#: app/templates/passports/detail.html:42 app/templates/passports/index.html:31
 #: app/templates/passports/print.html:27
 #: app/templates/passports/public_view.html:20
 #: app/templates/passports/record_visit.html:14
 #: app/templates/passports/series.html:17
 #: app/templates/passports/series.html:19 app/templates/passports/target.html:9
 #: app/templates/places/_airfields.html:3
-#: app/templates/places/airfield_links.html:13
+#: app/templates/places/airfield_links.html:32
 msgid "Closed"
 msgstr "Clos"
 
@@ -10437,7 +10439,7 @@ msgstr "Ajouter la première dépense"
 #: app/templates/explore/where_next.html:6
 #: app/templates/partials/_explore_links.html:1
 #: app/templates/passports/detail.html:12 app/templates/places/index.html:9
-#: app/templates/places/place_detail.html:18
+#: app/templates/places/place_detail.html:13
 msgid "Where next?"
 msgstr "Où aller ensuite ?"
 
@@ -10635,6 +10637,7 @@ msgstr "Ajoutez des lieux ou créez un passeport d’aérodromes pour trouver o�
 #: app/templates/passports/index.html:3 app/templates/passports/index.html:6
 #: app/templates/passports/series.html:8
 #: app/templates/passports/start_logbook.html:5
+#: app/templates/places/passport_suggestions.html:9
 msgid "Airfield passports"
 msgstr "Passeports d’aérodromes"
 
@@ -12939,7 +12942,7 @@ msgid "Add a missing airfield"
 msgstr "Ajouter un aérodrome manquant"
 
 #: app/templates/passports/builder.html:56
-#: app/templates/places/airfield_links.html:14
+#: app/templates/places/airfield_links.html:52
 msgid "Airfield name"
 msgstr "Nom de l’aérodrome"
 
@@ -13038,7 +13041,7 @@ msgstr "Bons"
 msgid "Edit passport"
 msgstr "Modifier le passeport"
 
-#: app/templates/passports/detail.html:14 app/templates/passports/index.html:44
+#: app/templates/passports/detail.html:14 app/templates/passports/index.html:45
 msgid "Linked editions"
 msgstr "Éditions liées"
 
@@ -13071,7 +13074,7 @@ msgstr "Inviter des amis"
 #: app/templates/passports/detail.html:18
 #: app/templates/passports/group_members.html:3
 #: app/templates/passports/group_members.html:4
-#: app/templates/passports/index.html:52
+#: app/templates/passports/index.html:53
 #: app/templates/passports/invitation_settings.html:20
 #: app/templates/passports/series.html:7
 msgid "Group members"
@@ -13177,13 +13180,13 @@ msgstr "Visité par vous"
 
 #: app/templates/passports/detail.html:34
 #: app/templates/passports/detail.html:39
-#: app/templates/passports/detail.html:42 app/templates/passports/index.html:29
+#: app/templates/passports/detail.html:42 app/templates/passports/index.html:30
 #: app/templates/passports/print.html:27
 #: app/templates/passports/public_view.html:20
 #: app/templates/passports/record_visit.html:14
 #: app/templates/passports/series.html:17
 #: app/templates/passports/series.html:19 app/templates/passports/target.html:9
-#: app/templates/places/index.html:20 app/templates/places/index.html:53
+#: app/templates/places/index.html:20 app/templates/places/index.html:55
 msgid "Visited"
 msgstr "Visité"
 
@@ -13193,7 +13196,7 @@ msgstr "Pas encore visité par vous"
 
 #: app/templates/passports/detail.html:34
 #: app/templates/passports/detail.html:39
-#: app/templates/passports/detail.html:42 app/templates/passports/index.html:29
+#: app/templates/passports/detail.html:42 app/templates/passports/index.html:30
 #: app/templates/passports/print.html:27 app/templates/passports/series.html:17
 #: app/templates/passports/series.html:19 app/templates/passports/target.html:9
 msgid "Not visited"
@@ -13228,13 +13231,13 @@ msgid "Visited by friends"
 msgstr "Visité par des amis"
 
 #: app/templates/passports/detail.html:39
-#: app/templates/passports/detail.html:42 app/templates/passports/index.html:30
+#: app/templates/passports/detail.html:42 app/templates/passports/index.html:31
 #: app/templates/passports/series.html:17
 #: app/templates/passports/series.html:19 app/templates/passports/target.html:9
 msgid "Recorded visits"
 msgstr "Visites enregistrées"
 
-#: app/templates/passports/detail.html:39 app/templates/passports/index.html:31
+#: app/templates/passports/detail.html:39 app/templates/passports/index.html:32
 #: app/templates/passports/series.html:17
 msgid "Passport visit map"
 msgstr "Carte des visites du passeport"
@@ -13336,7 +13339,7 @@ msgid "Experience date (optional)"
 msgstr "Date de l’expérience (facultative)"
 
 #: app/templates/passports/discussion.html:31
-#: app/templates/passports/target.html:35
+#: app/templates/passports/target.html:60
 #: app/templates/pilots/entry_form.html:312
 msgid "Save Changes"
 msgstr "Enregistrer les modifications"
@@ -13561,38 +13564,44 @@ msgstr "Le remplacement d’une liste importée conserve les aérodromes ayant d
 msgid "Create passport"
 msgstr "Créer un passeport"
 
-#: app/templates/passports/index.html:7
+#: app/templates/passports/index.html:7 app/templates/places/index.html:9
+#: app/templates/places/passport_suggestions.html:3
+#: app/templates/places/passport_suggestions.html:6
+msgid "Places near passport airfields"
+msgstr "Lieux près des aérodromes de vos passeports"
+
+#: app/templates/passports/index.html:8
 #: app/templates/passports/record_visit.html:38
 msgid "Fly yourself? Keep your own pilot logbook on this account and your logged arrivals fill your passports automatically."
 msgstr "Vous pilotez vous-même ? Tenez votre propre carnet de vol sur ce compte et vos arrivées enregistrées rempliront automatiquement vos passeports."
 
-#: app/templates/passports/index.html:7
+#: app/templates/passports/index.html:8
 #: app/templates/passports/record_visit.html:38
 #: app/templates/passports/start_logbook.html:2
 #: app/templates/passports/start_logbook.html:6
 #: app/templates/passports/start_logbook.html:18
-#: app/templates/passports/target.html:38
+#: app/templates/passports/target.html:63
 msgid "Start my pilot logbook"
 msgstr "Commencer mon carnet de vol"
 
-#: app/templates/passports/index.html:11
+#: app/templates/passports/index.html:12
 #, python-format
 msgid "%(visited)d of %(total)d airfields visited (%(percent)d%%)"
 msgstr "%(visited)d aérodromes visités sur %(total)d (%(percent)d %%)"
 
-#: app/templates/passports/index.html:35
+#: app/templates/passports/index.html:36
 msgid "Other editions"
 msgstr "Autres éditions"
 
-#: app/templates/passports/index.html:51
+#: app/templates/passports/index.html:52
 msgid "No passports yet."
 msgstr "Aucun passeport pour le moment."
 
-#: app/templates/passports/index.html:52
+#: app/templates/passports/index.html:53
 msgid "Groups and edition history"
 msgstr "Groupes et historique des éditions"
 
-#: app/templates/passports/index.html:53
+#: app/templates/passports/index.html:54
 #: app/templates/passports/record_visit.html:36
 msgid "Export my passport data"
 msgstr "Exporter mes données de passeports"
@@ -13705,8 +13714,8 @@ msgid "Photos do not count as visits."
 msgstr "Les photos ne comptent pas comme des visites."
 
 #: app/templates/passports/print.html:12 app/templates/passports/print.html:24
-#: app/templates/passports/print.html:29 app/templates/passports/target.html:40
-#: app/templates/passports/target.html:41
+#: app/templates/passports/print.html:29 app/templates/passports/target.html:65
+#: app/templates/passports/target.html:66
 msgid "Private stamp photo"
 msgstr "Photo privée du tampon"
 
@@ -13873,8 +13882,8 @@ msgid "Only read to suggest the airfield and date; the photo is not saved."
 msgstr "Lue uniquement pour suggérer l’aérodrome et la date ; la photo n’est pas enregistrée."
 
 #: app/templates/passports/record_visit.html:27
-#: app/templates/passports/target.html:31
-#: app/templates/passports/target.html:38
+#: app/templates/passports/target.html:56
+#: app/templates/passports/target.html:63
 msgid "Visit date"
 msgstr "Date de visite"
 
@@ -13883,7 +13892,7 @@ msgid "Only visits within the passport dates and not in the future count. You ca
 msgstr "Seules les visites comprises dans les dates du passeport et non futures sont prises en compte. Vous pourrez modifier ou supprimer une visite depuis la page de son aérodrome."
 
 #: app/templates/passports/record_visit.html:32
-#: app/templates/passports/target.html:38 app/templates/places/_visits.html:26
+#: app/templates/passports/target.html:63 app/templates/places/_visits.html:26
 msgid "Save visit"
 msgstr "Enregistrer la visite"
 
@@ -14129,107 +14138,129 @@ msgstr "Photo du tampon partagée par %(name)s"
 msgid "Open discussion"
 msgstr "Ouvrir la discussion"
 
-#: app/templates/passports/target.html:20
+#: app/templates/passports/target.html:21
+msgid "Places near this airfield"
+msgstr "Lieux près de cet aérodrome"
+
+#: app/templates/passports/target.html:23
+msgid "Linked places"
+msgstr "Lieux associés"
+
+#: app/templates/passports/target.html:34
+#: app/templates/places/airfield_links.html:14
+#: app/templates/places/passport_suggestions.html:13
+msgid "Nearby radius (km)"
+msgstr "Rayon de recherche (km)"
+
+#: app/templates/passports/target.html:38
+#: app/templates/places/airfield_links.html:14
+#: app/templates/places/passport_suggestions.html:18
+#: app/templates/places/place_form.html:14
+#: app/templates/places/place_form.html:28
+msgid "Search"
+msgstr "Rechercher"
+
+#: app/templates/passports/target.html:45
 msgid "Visit evidence"
 msgstr "Justificatifs de visite"
 
-#: app/templates/passports/target.html:22
+#: app/templates/passports/target.html:47
 msgid "Logged arrival"
 msgstr "Arrivée du carnet de vol"
 
-#: app/templates/passports/target.html:22
+#: app/templates/passports/target.html:47
 msgid "Confirmed GPS visit"
 msgstr "Visite GPS confirmée"
 
-#: app/templates/passports/target.html:22
+#: app/templates/passports/target.html:47
 msgid "Manual visit"
 msgstr "Visite manuelle"
 
-#: app/templates/passports/target.html:22
+#: app/templates/passports/target.html:47
 msgid "Excluded from credit"
 msgstr "Exclu du décompte"
 
-#: app/templates/passports/target.html:24
+#: app/templates/passports/target.html:49
 msgid "View flight"
 msgstr "Voir le vol"
 
-#: app/templates/passports/target.html:25
+#: app/templates/passports/target.html:50
 msgid "Restore arrival credit"
 msgstr "Rétablir le décompte de cette arrivée"
 
-#: app/templates/passports/target.html:25
+#: app/templates/passports/target.html:50
 msgid "Exclude this arrival"
 msgstr "Exclure cette arrivée"
 
-#: app/templates/passports/target.html:25
+#: app/templates/passports/target.html:50
 msgid "Delete manual visit"
 msgstr "Supprimer la visite manuelle"
 
-#: app/templates/passports/target.html:28
+#: app/templates/passports/target.html:53
 msgid "Edit manual visit"
 msgstr "Modifier la visite manuelle"
 
-#: app/templates/passports/target.html:33
-#: app/templates/passports/target.html:38
+#: app/templates/passports/target.html:58
+#: app/templates/passports/target.html:63
 #: app/templates/passports/vouchers.html:21
 msgid "Supporting flight (optional, latest 200 eligible flights)"
 msgstr "Vol justificatif (facultatif, les 200 derniers vols admissibles)"
 
-#: app/templates/passports/target.html:34
-#: app/templates/passports/target.html:38
+#: app/templates/passports/target.html:59
+#: app/templates/passports/target.html:63
 msgid "Independent manual visit"
 msgstr "Visite manuelle indépendante"
 
-#: app/templates/passports/target.html:34
+#: app/templates/passports/target.html:59
 msgid "Current supporting flight"
 msgstr "Vol justificatif actuel"
 
-#: app/templates/passports/target.html:37
+#: app/templates/passports/target.html:62
 msgid "No qualifying visits recorded yet."
 msgstr "Aucune visite admissible enregistrée pour le moment."
 
-#: app/templates/passports/target.html:38
+#: app/templates/passports/target.html:63
 msgid "Record a manual visit"
 msgstr "Enregistrer une visite manuelle"
 
-#: app/templates/passports/target.html:38
+#: app/templates/passports/target.html:63
 msgid "Manual visits are kept with this passport and included in your passport data export."
 msgstr "Les visites manuelles sont conservées avec ce passeport et incluses dans l’export de vos données de passeport."
 
-#: app/templates/passports/target.html:39
-#: app/templates/passports/target.html:41
+#: app/templates/passports/target.html:64
+#: app/templates/passports/target.html:66
 msgid "Stamp photo shared with this group"
 msgstr "Photo du tampon partagée avec ce groupe"
 
-#: app/templates/passports/target.html:39
+#: app/templates/passports/target.html:64
 msgid "Participants of this edition who share their visits see this photo with your group display name. Sharing it with the group does not publish it on a public link. Uploading a new photo makes it private again."
 msgstr "Les participants de cette édition qui partagent leurs visites voient cette photo avec votre nom dans le groupe. La partager avec le groupe ne la publie pas sur un lien public. Téléverser une nouvelle photo la rend de nouveau privée."
 
-#: app/templates/passports/target.html:40
+#: app/templates/passports/target.html:65
 msgid "This photo is visible only to you. Uploading it does not earn a visit or publish it."
 msgstr "Cette photo n’est visible que par vous. Son téléversement ne valide aucune visite et ne la publie pas."
 
-#: app/templates/passports/target.html:42
+#: app/templates/passports/target.html:67
 msgid "Stop sharing with the group"
 msgstr "Ne plus partager avec le groupe"
 
-#: app/templates/passports/target.html:42
+#: app/templates/passports/target.html:67
 msgid "Share with this group"
 msgstr "Partager avec ce groupe"
 
-#: app/templates/passports/target.html:43
+#: app/templates/passports/target.html:68
 msgid "Delete photo"
 msgstr "Supprimer la photo"
 
-#: app/templates/passports/target.html:44
+#: app/templates/passports/target.html:69
 msgid "Participants of this edition who share their visits will see it with your group display name. You can stop sharing at any time. It appears on a public link only if you publish it there separately."
 msgstr "Les participants de cette édition qui partagent leurs visites la verront avec votre nom dans le groupe. Vous pouvez arrêter le partage à tout moment. Elle n’apparaît sur un lien public que si vous l’y publiez séparément."
 
-#: app/templates/passports/target.html:45
+#: app/templates/passports/target.html:70
 msgid "JPEG, PNG or WebP, up to 10 MB and 20 megapixels"
 msgstr "JPEG, PNG ou WebP, 10 Mo et 20 mégapixels maximum"
 
-#: app/templates/passports/target.html:45
+#: app/templates/passports/target.html:70
 msgid "Upload photo"
 msgstr "Téléverser la photo"
 
@@ -15259,7 +15290,7 @@ msgid "All airports visited"
 msgstr "Tous les aérodromes visités"
 
 #: app/templates/places/_airfields.html:2
-#: app/templates/places/airfield_links.html:8
+#: app/templates/places/airfield_links.html:10
 msgid "Linked airfields"
 msgstr "Aérodromes associés"
 
@@ -15268,18 +15299,19 @@ msgid "Manage airfield links"
 msgstr "Gérer les aérodromes associés"
 
 #: app/templates/places/_airfields.html:3
-#: app/templates/places/airfield_links.html:8
+#: app/templates/places/airfield_links.html:10
 msgid "Preferred"
 msgstr "Préféré"
 
 #: app/templates/places/_airfields.html:3
-#: app/templates/places/airfield_links.html:8
-#: app/templates/places/airfield_links.html:13
+#: app/templates/places/_passport_suggestions.html:13
+#: app/templates/places/airfield_links.html:10
+#: app/templates/places/airfield_links.html:31
 #, python-format
 msgid "%(distance)s km from this place"
 msgstr "À %(distance)s km de ce lieu"
 
-#: app/templates/places/_airfields.html:3 app/templates/places/index.html:47
+#: app/templates/places/_airfields.html:3 app/templates/places/index.html:49
 #: app/templates/places/place_form.html:31
 msgid "No linked airfield"
 msgstr "Aucun aérodrome associé"
@@ -15295,6 +15327,28 @@ msgstr "Carte des lieux"
 #: app/templates/places/_map.html:3
 msgid "Orange markers show linked airfields; dashed lines connect them to places."
 msgstr "Les repères orange indiquent les aérodromes associés ; les pointillés les relient aux lieux."
+
+#: app/templates/places/_passport_suggestions.html:23
+#: app/templates/places/airfield_links.html:43
+msgid "Link airfield"
+msgstr "Associer l’aérodrome"
+
+#: app/templates/places/_passport_suggestions.html:29
+msgid "No nearby places to link within this radius."
+msgstr "Aucun lieu à associer dans ce rayon."
+
+#: app/templates/places/_place_breadcrumbs.html:1
+#: app/templates/places/index.html:11
+msgid "Place collections"
+msgstr "Collections de lieux"
+
+#: app/templates/places/_place_breadcrumbs.html:3
+msgid "Collections"
+msgstr "Collections"
+
+#: app/templates/places/_place_breadcrumbs.html:6
+msgid "Back to place"
+msgstr "Retour au lieu"
 
 #: app/templates/places/_visit_suggestions.html:7
 #, python-format
@@ -15341,95 +15395,85 @@ msgstr "Visites suggérées à partir de vos atterrissages passés"
 msgid "Airfields for %(place)s"
 msgstr "Aérodromes pour %(place)s"
 
-#: app/templates/places/airfield_links.html:7
-msgid "Back to place"
-msgstr "Retour au lieu"
-
-#: app/templates/places/airfield_links.html:8
+#: app/templates/places/airfield_links.html:10
 msgid "How to get there"
 msgstr "Comment s’y rendre"
 
-#: app/templates/places/airfield_links.html:8
+#: app/templates/places/airfield_links.html:10
 msgid "Save airfield link"
 msgstr "Enregistrer l’association"
 
-#: app/templates/places/airfield_links.html:8
+#: app/templates/places/airfield_links.html:10
 msgid "Unlink airfield"
 msgstr "Dissocier l’aérodrome"
 
-#: app/templates/places/airfield_links.html:9
+#: app/templates/places/airfield_links.html:11
 msgid "Find an airfield"
 msgstr "Rechercher un aérodrome"
 
-#: app/templates/places/airfield_links.html:10
+#: app/templates/places/airfield_links.html:12
 msgid "Nearby suggestions exclude heliports and closed airfields. Search by name or code to choose any airfield. Nothing is linked automatically."
 msgstr "Les suggestions à proximité excluent les héliports et les aérodromes fermés. Recherchez par nom ou par code pour choisir n’importe quel aérodrome. Rien n’est associé automatiquement."
 
-#: app/templates/places/airfield_links.html:11
+#: app/templates/places/airfield_links.html:13
 msgid "Add this place’s location to see nearby suggestions, or search for an airfield by name or code."
 msgstr "Ajoutez la localisation de ce lieu pour voir les suggestions à proximité, ou recherchez un aérodrome par nom ou par code."
 
-#: app/templates/places/airfield_links.html:12
+#: app/templates/places/airfield_links.html:14
 #: app/templates/places/place_form.html:27
 msgid "Airfield name or code"
 msgstr "Nom ou code de l’aérodrome"
 
-#: app/templates/places/airfield_links.html:12
-msgid "Nearby radius (km)"
-msgstr "Rayon de recherche (km)"
+#: app/templates/places/airfield_links.html:20
+msgid "Map of nearby airfields"
+msgstr "Carte des aérodromes à proximité"
 
-#: app/templates/places/airfield_links.html:12
-#: app/templates/places/place_form.html:14
-#: app/templates/places/place_form.html:28
-msgid "Search"
-msgstr "Rechercher"
-
-#: app/templates/places/airfield_links.html:13
+#: app/templates/places/airfield_links.html:32
 msgid "Manual airfield"
 msgstr "Aérodrome ajouté manuellement"
 
-#: app/templates/places/airfield_links.html:13
+#: app/templates/places/airfield_links.html:32
 msgid "Other airfield"
 msgstr "Autre aérodrome"
 
-#: app/templates/places/airfield_links.html:13
+#: app/templates/places/airfield_links.html:34
+msgid "In your passports"
+msgstr "Dans vos passeports"
+
+#: app/templates/places/airfield_links.html:38
 msgid "Already linked"
 msgstr "Déjà associé"
 
-#: app/templates/places/airfield_links.html:13
-msgid "Link airfield"
-msgstr "Associer l’aérodrome"
-
-#: app/templates/places/airfield_links.html:13
+#: app/templates/places/airfield_links.html:50
 msgid "Showing the first 200 results. Refine the search to find another airfield."
 msgstr "Les 200 premiers résultats sont affichés. Affinez la recherche pour trouver un autre aérodrome."
 
-#: app/templates/places/airfield_links.html:13
+#: app/templates/places/airfield_links.html:51
 #: app/templates/places/place_form.html:24
 msgid "No matching airfields in this search."
 msgstr "Aucun aérodrome ne correspond à cette recherche."
 
-#: app/templates/places/airfield_links.html:14
+#: app/templates/places/airfield_links.html:52
 msgid "Airfield missing from the catalogue?"
 msgstr "Aérodrome absent du catalogue ?"
 
-#: app/templates/places/airfield_links.html:14
+#: app/templates/places/airfield_links.html:52
 msgid "Add a manual airfield, such as a microlight field. Its details will be shared with this collection."
 msgstr "Ajoutez un aérodrome manuellement, par exemple un terrain ULM. Ses informations seront partagées avec cette collection."
 
-#: app/templates/places/airfield_links.html:14
+#: app/templates/places/airfield_links.html:52
 msgid "Airfield code (optional)"
 msgstr "Code de l’aérodrome (facultatif)"
 
-#: app/templates/places/airfield_links.html:14
+#: app/templates/places/airfield_links.html:52
 msgid "Airfield latitude (optional)"
 msgstr "Latitude de l’aérodrome (facultative)"
 
-#: app/templates/places/airfield_links.html:14
+#: app/templates/places/airfield_links.html:52
 msgid "Airfield longitude (optional)"
 msgstr "Longitude de l’aérodrome (facultative)"
 
-#: app/templates/places/airfield_links.html:14
+#: app/templates/places/airfield_links.html:52
 msgid "Create and link airfield"
 msgstr "Créer et associer l’aérodrome"
 
@@ -15602,10 +15646,6 @@ msgstr "Enregistrez les lieux à visiter et partagez une collection avec vos ami
 msgid "Collection invitations"
 msgstr "Invitations à des collections"
 
-#: app/templates/places/index.html:11 app/templates/places/place_detail.html:6
-msgid "Place collections"
-msgstr "Collections de lieux"
-
 #: app/templates/places/index.html:11
 msgid "All collections"
 msgstr "Toutes les collections"
@@ -15630,7 +15670,7 @@ msgstr "Corbeille"
 msgid "My visits"
 msgstr "Mes visites"
 
-#: app/templates/places/index.html:20 app/templates/places/index.html:53
+#: app/templates/places/index.html:20 app/templates/places/index.html:55
 msgid "Not yet visited"
 msgstr "Pas encore visité"
 
@@ -15658,8 +15698,8 @@ msgstr "Dernière visite"
 msgid "Location"
 msgstr "Localisation"
 
-#: app/templates/places/index.html:20 app/templates/places/index.html:55
-#: app/templates/places/place_detail.html:19
+#: app/templates/places/index.html:20 app/templates/places/index.html:57
+#: app/templates/places/place_detail.html:14
 msgid "Location still to add"
 msgstr "Localisation à ajouter"
 
@@ -15687,7 +15727,7 @@ msgstr "Les lieux dans la corbeille sont supprimés définitivement après 30 jo
 msgid "Move to another collection"
 msgstr "Déplacer vers une autre collection"
 
-#: app/templates/places/index.html:33 app/templates/places/place_detail.html:23
+#: app/templates/places/index.html:33 app/templates/places/place_detail.html:18
 msgid "Destination collection"
 msgstr "Collection de destination"
 
@@ -15704,36 +15744,36 @@ msgstr "Déplacer"
 msgid "Select %(place)s"
 msgstr "Sélectionner %(place)s"
 
-#: app/templates/places/index.html:40 app/templates/places/place_detail.html:16
+#: app/templates/places/index.html:40 app/templates/places/place_detail.html:11
 msgid "Place photo"
 msgstr "Photo du lieu"
 
-#: app/templates/places/index.html:53
+#: app/templates/places/index.html:55
 #, python-format
 msgid "Last visited %(date)s"
 msgstr "Dernière visite le %(date)s"
 
-#: app/templates/places/index.html:59
+#: app/templates/places/index.html:61
 msgid "Restore place"
 msgstr "Restaurer le lieu"
 
-#: app/templates/places/index.html:59 app/templates/places/place_detail.html:24
+#: app/templates/places/index.html:61 app/templates/places/place_detail.html:19
 msgid "I confirm the permanent deletion of this place and its visits."
 msgstr "Je confirme la suppression définitive de ce lieu et de ses visites."
 
-#: app/templates/places/index.html:59 app/templates/places/place_detail.html:24
+#: app/templates/places/index.html:61 app/templates/places/place_detail.html:19
 msgid "Permanently delete place"
 msgstr "Supprimer définitivement le lieu"
 
-#: app/templates/places/index.html:59
+#: app/templates/places/index.html:61
 msgid "No places in this view yet."
 msgstr "Aucun lieu dans cette vue pour le moment."
 
-#: app/templates/places/index.html:60
+#: app/templates/places/index.html:62
 msgid "Download GPX"
 msgstr "Télécharger le fichier GPX"
 
-#: app/templates/places/index.html:60
+#: app/templates/places/index.html:62
 msgid "Download KML"
 msgstr "Télécharger le fichier KML"
 
@@ -15756,49 +15796,45 @@ msgstr "Créer la collection"
 msgid "Edit place"
 msgstr "Modifier le lieu"
 
-#: app/templates/places/place_detail.html:8
-msgid "Collections"
-msgstr "Collections"
-
-#: app/templates/places/place_detail.html:12
+#: app/templates/places/place_detail.html:7
 #, python-format
 msgid "Place owner: %(name)s"
 msgstr "Propriétaire du lieu : %(name)s"
 
-#: app/templates/places/place_detail.html:12
+#: app/templates/places/place_detail.html:7
 #, python-format
 msgid "Last changed by %(name)s on %(date)s"
 msgstr "Dernière modification par %(name)s le %(date)s"
 
-#: app/templates/places/place_detail.html:14
+#: app/templates/places/place_detail.html:9
 msgid "Visit website"
 msgstr "Consulter le site web"
 
-#: app/templates/places/place_detail.html:22
+#: app/templates/places/place_detail.html:17
 msgid "Unarchive place"
 msgstr "Désarchiver le lieu"
 
-#: app/templates/places/place_detail.html:22
+#: app/templates/places/place_detail.html:17
 msgid "Archive place"
 msgstr "Archiver le lieu"
 
-#: app/templates/places/place_detail.html:22
+#: app/templates/places/place_detail.html:17
 msgid "Move to bin"
 msgstr "Mettre à la corbeille"
 
-#: app/templates/places/place_detail.html:23
+#: app/templates/places/place_detail.html:18
 msgid "Copy or move"
 msgstr "Copier ou déplacer"
 
-#: app/templates/places/place_detail.html:23
+#: app/templates/places/place_detail.html:18
 msgid "Copy place"
 msgstr "Copier le lieu"
 
-#: app/templates/places/place_detail.html:23
+#: app/templates/places/place_detail.html:18
 msgid "Move place"
 msgstr "Déplacer le lieu"
 
-#: app/templates/places/place_detail.html:23
+#: app/templates/places/place_detail.html:18
 msgid "Copies keep the content and photo, but no visits. Moving requires every visitor to belong to the destination collection."
 msgstr "Les copies conservent le contenu et la photo, sans les visites. Pour déplacer un lieu, toutes les personnes ayant enregistré une visite doivent faire partie de la collection de destination."
 

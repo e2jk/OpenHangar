@@ -17,6 +17,31 @@
 {% for comment in discussion_comments %}<div class="card mb-3"><div class="card-body"><p><strong>{{ comment.author_display_name }}</strong> · {{ format_datetime(comment.created_at) }}</p><p class="passport-comment-body text-break">{{ comment.body }}</p></div></div>{% endfor %}
 <p><a class="btn btn-ac-ghost" href="{{ url_for('passports.discussion', series_id=passport.series_id, airfield_id=target.id) }}">{{ _('Open discussion') }}</a></p></section>
 {% endif %}
+<section id="airfield-places" class="mb-4" aria-labelledby="airfield-places-heading">
+  <h2 id="airfield-places-heading">{{ _('Places near this airfield') }}</h2>
+  {% if linked_places %}
+  <h3 class="h5">{{ _('Linked places') }}</h3>
+  <ul>
+    {% for place in linked_places %}
+    <li><a href="{{ url_for('places.place_detail', place_id=place.place_id) }}">{{ place.place_name }}</a></li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% if place_radius_error %}<p class="text-danger" role="alert">{{ place_radius_error }}</p>{% endif %}
+  <form method="get" action="{{ url_for('passports.target_detail', passport_id=passport.id, target_id=target.target_id) }}#airfield-places"
+        class="d-flex flex-wrap align-items-end gap-2 mb-3">
+    <div>
+      <label class="form-label" for="airfield-place-radius">{{ _('Nearby radius (km)') }}</label>
+      <input class="form-control" type="number" name="radius" id="airfield-place-radius"
+             min="0.1" max="200" step="0.1" value="{{ place_radius }}" required>
+    </div>
+    <button class="btn btn-ac-ghost">{{ _('Search') }}</button>
+  </form>
+  {% set suggestions = nearby_places %}
+  {% set radius = place_radius %}
+  {% set return_to = 'passport' %}
+  {% include 'places/_passport_suggestions.html' %}
+</section>
 <h2>{{ _('Visit evidence') }}</h2>
 {% for event in target.events %}<div class="card mb-3"><div class="card-body">
 <p>{{ event.date }}{% if event.time %} {{ event.time }}{% endif %} — {{ _('Logged arrival') if event.kind == 'arrival' else (_('Confirmed GPS visit') if event.kind == 'confirmed_gps' else _('Manual visit')) }}{% if event.aircraft %} · {{ event.aircraft }}{% endif %}{% if event.excluded %} · {{ _('Excluded from credit') }}{% endif %}</p>

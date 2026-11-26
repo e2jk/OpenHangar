@@ -1,0 +1,30 @@
+{% if suggestions %}
+<ul class="list-group mb-3" id="passport-place-suggestions">
+  {% for suggestion in suggestions %}
+  <li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div>
+      <a href="{{ url_for('places.place_detail', place_id=suggestion.place_id) }}">{{ suggestion.place_name }}</a>
+      <span class="text-body-secondary">· {{ suggestion.collection_name }}</span>
+      {% if return_to == 'suggestions' %}
+      <div><strong>{{ suggestion.field.icao_code or suggestion.field.ident or '' }} {{ suggestion.field.name }}</strong>
+        <span class="text-body-secondary">· {{ suggestion.field.passports | join(', ') }}</span>
+      </div>
+      {% endif %}
+      <span>{{ _('%(distance)s km from this place', distance=format_decimal(suggestion.distance, format='#,##0.0')) }}</span>
+    </div>
+    <form method="post" action="{{ url_for('places.airfield_links', place_id=suggestion.place_id, radius=radius) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="key" value="field:{{ suggestion.field.id }}">
+      <input type="hidden" name="return_to" value="{{ return_to }}">
+      {% if return_to == 'passport' %}
+      <input type="hidden" name="passport_id" value="{{ passport.id }}">
+      <input type="hidden" name="target_id" value="{{ target.target_id }}">
+      {% endif %}
+      <button class="btn btn-ac-primary" name="action" value="add">{{ _('Link airfield') }}</button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>{{ _('No nearby places to link within this radius.') }}</p>
+{% endif %}

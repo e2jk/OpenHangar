@@ -1,6 +1,11 @@
-# Clickable place cards and dismissing all data checks at once
+# Link places to passport airfields and review data checks
 
 **Places**
+
+- See nearby airfields on a map when linking them to a place, with your
+  passports marked in the results. Passport airfields also show linked
+  places and nearby candidates, and both sections lead to one suggestions page.
+  The airfield linking page also links back to the place and its collection.
 
 - A click anywhere on a place card in Places opens that place, not just its
   name; its airfield and tag pills still filter the list.
@@ -16,3 +21,7 @@
 - A container run read-only, as the reference setups do, no longer logs
   "Fontconfig error: No writable cache directories" on every PDF: the
   font cache now lives in the writable /tmp.
+
+**Maintenance**
+
+- Updated the Ruff linter and formatter to 0.17.5.

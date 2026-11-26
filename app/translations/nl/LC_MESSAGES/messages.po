@@ -940,14 +940,14 @@ msgstr "Vlucht gecorrigeerd: %(old)s → %(new)s. Verder is niets gewijzigd; de 
 msgid "Difference dismissed."
 msgstr "Verschil terzijde gelegd."
 
-#: app/config/routes.py:1970
+#: app/config/routes.py:1969
 #, python-format
 msgid "One difference dismissed."
 msgid_plural "%(n)d differences dismissed."
 msgstr[0] "Eén verschil genegeerd."
 msgstr[1] "%(n)d verschillen genegeerd."
 
-#: app/config/routes.py:1978
+#: app/config/routes.py:1977
 msgid "There are no open differences to dismiss."
 msgstr "Er zijn geen openstaande verschillen om te negeren."
 
@@ -3227,31 +3227,31 @@ msgstr "Plaats niet gevonden."
 msgid "Choose an airfield action."
 msgstr "Kies een actie voor het vliegveld."
 
-#: app/places/airfield_routes.py:67
+#: app/places/airfield_routes.py:88 app/places/passport_links.py:58
 msgid "search radius"
 msgstr "zoekstraal"
 
-#: app/places/airfield_routes.py:87
+#: app/places/airfield_routes.py:110
 msgid "Small airfield"
 msgstr "Klein vliegveld"
 
-#: app/places/airfield_routes.py:88
+#: app/places/airfield_routes.py:111
 msgid "Medium airport"
 msgstr "Middelgrote luchthaven"
 
-#: app/places/airfield_routes.py:89
+#: app/places/airfield_routes.py:112
 msgid "Large airport"
 msgstr "Grote luchthaven"
 
-#: app/places/airfield_routes.py:90
+#: app/places/airfield_routes.py:113
 msgid "Seaplane base"
 msgstr "Watervliegbasis"
 
-#: app/places/airfield_routes.py:91
+#: app/places/airfield_routes.py:114
 msgid "Heliport"
 msgstr "Helihaven"
 
-#: app/places/airfield_routes.py:92
+#: app/places/airfield_routes.py:115
 msgid "Closed airfield"
 msgstr "Gesloten vliegveld"
 
@@ -3326,6 +3326,7 @@ msgstr "Plek zonder naam"
 #: app/templates/partials/_explore_links.html:2
 #: app/templates/places/collection_settings.html:60
 #: app/templates/places/index.html:3 app/templates/places/index.html:6
+#: app/templates/places/passport_suggestions.html:8
 msgid "Places"
 msgstr "Plaatsen"
 
@@ -4054,17 +4055,17 @@ msgstr "Reservefondsbijdrage — vlucht %(date)s (%(hours)s h)"
 msgid "Reserve fund contribution (%(pct)s%%) — %(month)s"
 msgstr "Reservefondsbijdrage (%(pct)s%%) — %(month)s"
 
-#: app/services/data_checks.py:478
+#: app/services/data_checks.py:540
 #, python-format
 msgid "Departure airfield corrected from the GPS track; the paper logbook says %(value)s."
 msgstr "Vertrekvliegveld gecorrigeerd volgens het GPS-spoor; het papieren logboek vermeldt %(value)s."
 
-#: app/services/data_checks.py:484
+#: app/services/data_checks.py:546
 #, python-format
 msgid "Arrival airfield corrected from the GPS track; the paper logbook says %(value)s."
 msgstr "Aankomstvliegveld gecorrigeerd volgens het GPS-spoor; het papieren logboek vermeldt %(value)s."
 
-#: app/services/data_checks.py:490
+#: app/services/data_checks.py:552
 #, python-format
 msgid "Date corrected from the GPS track; the paper logbook says %(value)s."
 msgstr "Datum gecorrigeerd volgens het GPS-spoor; het papieren logboek vermeldt %(value)s."
@@ -7176,8 +7177,9 @@ msgstr[1] "%(n)s onderdelen"
 #: app/templates/aircraft/list.html:73 app/templates/passports/detail.html:20
 #: app/templates/passports/print.html:19 app/templates/passports/series.html:10
 #: app/templates/passports/series.html:28
-#: app/templates/passports/vouchers.html:10 app/templates/places/index.html:20
-#: app/templates/places/index.html:56 app/templates/places/place_detail.html:9
+#: app/templates/passports/vouchers.html:10
+#: app/templates/places/_place_breadcrumbs.html:4
+#: app/templates/places/index.html:20 app/templates/places/index.html:58
 msgid "Archived"
 msgstr "Gearchiveerd"
 
@@ -7391,8 +7393,8 @@ msgstr "Betaling registreren"
 #: app/templates/aircraft/owners_billing.html:101
 #: app/templates/aircraft/owners_billing.html:158
 #: app/templates/passports/record_visit.html:29
-#: app/templates/passports/target.html:32
-#: app/templates/passports/target.html:38 app/templates/places/_visits.html:10
+#: app/templates/passports/target.html:57
+#: app/templates/passports/target.html:63 app/templates/places/_visits.html:10
 #: app/templates/places/_visits.html:25
 msgid "Note (optional)"
 msgstr "Notitie (optioneel)"
@@ -7711,14 +7713,14 @@ msgstr "Onderdeelnummer controleren"
 #: app/templates/passports/builder.html:49
 #: app/templates/passports/detail.html:34
 #: app/templates/passports/detail.html:39
-#: app/templates/passports/detail.html:42 app/templates/passports/index.html:30
+#: app/templates/passports/detail.html:42 app/templates/passports/index.html:31
 #: app/templates/passports/print.html:27
 #: app/templates/passports/public_view.html:20
 #: app/templates/passports/record_visit.html:14
 #: app/templates/passports/series.html:17
 #: app/templates/passports/series.html:19 app/templates/passports/target.html:9
 #: app/templates/places/_airfields.html:3
-#: app/templates/places/airfield_links.html:13
+#: app/templates/places/airfield_links.html:32
 msgid "Closed"
 msgstr "Afgesloten"
 
@@ -10437,7 +10439,7 @@ msgstr "Eerste uitgave toevoegen"
 #: app/templates/explore/where_next.html:6
 #: app/templates/partials/_explore_links.html:1
 #: app/templates/passports/detail.html:12 app/templates/places/index.html:9
-#: app/templates/places/place_detail.html:18
+#: app/templates/places/place_detail.html:13
 msgid "Where next?"
 msgstr "Waarheen nu?"
 
@@ -10635,6 +10637,7 @@ msgstr "Voeg plaatsen toe of maak een vliegveldpaspoort om te vinden waar je nu 
 #: app/templates/passports/index.html:3 app/templates/passports/index.html:6
 #: app/templates/passports/series.html:8
 #: app/templates/passports/start_logbook.html:5
+#: app/templates/places/passport_suggestions.html:9
 msgid "Airfield passports"
 msgstr "Vliegveldpaspoorten"
 
@@ -12939,7 +12942,7 @@ msgid "Add a missing airfield"
 msgstr "Een ontbrekend vliegveld toevoegen"
 
 #: app/templates/passports/builder.html:56
-#: app/templates/places/airfield_links.html:14
+#: app/templates/places/airfield_links.html:52
 msgid "Airfield name"
 msgstr "Naam van het vliegveld"
 
@@ -13038,7 +13041,7 @@ msgstr "Bonnen"
 msgid "Edit passport"
 msgstr "Paspoort bewerken"
 
-#: app/templates/passports/detail.html:14 app/templates/passports/index.html:44
+#: app/templates/passports/detail.html:14 app/templates/passports/index.html:45
 msgid "Linked editions"
 msgstr "Gekoppelde edities"
 
@@ -13071,7 +13074,7 @@ msgstr "Vrienden uitnodigen"
 #: app/templates/passports/detail.html:18
 #: app/templates/passports/group_members.html:3
 #: app/templates/passports/group_members.html:4
-#: app/templates/passports/index.html:52
+#: app/templates/passports/index.html:53
 #: app/templates/passports/invitation_settings.html:20
 #: app/templates/passports/series.html:7
 msgid "Group members"
@@ -13177,13 +13180,13 @@ msgstr "Door jou bezocht"
 
 #: app/templates/passports/detail.html:34
 #: app/templates/passports/detail.html:39
-#: app/templates/passports/detail.html:42 app/templates/passports/index.html:29
+#: app/templates/passports/detail.html:42 app/templates/passports/index.html:30
 #: app/templates/passports/print.html:27
 #: app/templates/passports/public_view.html:20
 #: app/templates/passports/record_visit.html:14
 #: app/templates/passports/series.html:17
 #: app/templates/passports/series.html:19 app/templates/passports/target.html:9
-#: app/templates/places/index.html:20 app/templates/places/index.html:53
+#: app/templates/places/index.html:20 app/templates/places/index.html:55
 msgid "Visited"
 msgstr "Bezocht"
 
@@ -13193,7 +13196,7 @@ msgstr "Niet door u bezocht"
 
 #: app/templates/passports/detail.html:34
 #: app/templates/passports/detail.html:39
-#: app/templates/passports/detail.html:42 app/templates/passports/index.html:29
+#: app/templates/passports/detail.html:42 app/templates/passports/index.html:30
 #: app/templates/passports/print.html:27 app/templates/passports/series.html:17
 #: app/templates/passports/series.html:19 app/templates/passports/target.html:9
 msgid "Not visited"
@@ -13228,13 +13231,13 @@ msgid "Visited by friends"
 msgstr "Bezocht door vrienden"
 
 #: app/templates/passports/detail.html:39
-#: app/templates/passports/detail.html:42 app/templates/passports/index.html:30
+#: app/templates/passports/detail.html:42 app/templates/passports/index.html:31
 #: app/templates/passports/series.html:17
 #: app/templates/passports/series.html:19 app/templates/passports/target.html:9
 msgid "Recorded visits"
 msgstr "Vastgelegde bezoeken"
 
-#: app/templates/passports/detail.html:39 app/templates/passports/index.html:31
+#: app/templates/passports/detail.html:39 app/templates/passports/index.html:32
 #: app/templates/passports/series.html:17
 msgid "Passport visit map"
 msgstr "Bezoekkaart van het paspoort"
@@ -13336,7 +13339,7 @@ msgid "Experience date (optional)"
 msgstr "Datum van de ervaring (optioneel)"
 
 #: app/templates/passports/discussion.html:31
-#: app/templates/passports/target.html:35
+#: app/templates/passports/target.html:60
 #: app/templates/pilots/entry_form.html:312
 msgid "Save Changes"
 msgstr "Wijzigingen opslaan"
@@ -13561,38 +13564,44 @@ msgstr "Bij het vervangen van een geïmporteerde lijst blijven vliegvelden met o
 msgid "Create passport"
 msgstr "Paspoort aanmaken"
 
-#: app/templates/passports/index.html:7
+#: app/templates/passports/index.html:7 app/templates/places/index.html:9
+#: app/templates/places/passport_suggestions.html:3
+#: app/templates/places/passport_suggestions.html:6
+msgid "Places near passport airfields"
+msgstr "Plaatsen bij vliegvelden in je paspoorten"
+
+#: app/templates/passports/index.html:8
 #: app/templates/passports/record_visit.html:38
 msgid "Fly yourself? Keep your own pilot logbook on this account and your logged arrivals fill your passports automatically."
 msgstr "Vlieg je zelf? Houd je eigen pilootlogboek bij op dit account en je gelogde aankomsten vullen je paspoorten automatisch."
 
-#: app/templates/passports/index.html:7
+#: app/templates/passports/index.html:8
 #: app/templates/passports/record_visit.html:38
 #: app/templates/passports/start_logbook.html:2
 #: app/templates/passports/start_logbook.html:6
 #: app/templates/passports/start_logbook.html:18
-#: app/templates/passports/target.html:38
+#: app/templates/passports/target.html:63
 msgid "Start my pilot logbook"
 msgstr "Mijn pilootlogboek starten"
 
-#: app/templates/passports/index.html:11
+#: app/templates/passports/index.html:12
 #, python-format
 msgid "%(visited)d of %(total)d airfields visited (%(percent)d%%)"
 msgstr "%(visited)d van %(total)d vliegvelden bezocht (%(percent)d%%)"
 
-#: app/templates/passports/index.html:35
+#: app/templates/passports/index.html:36
 msgid "Other editions"
 msgstr "Andere edities"
 
-#: app/templates/passports/index.html:51
+#: app/templates/passports/index.html:52
 msgid "No passports yet."
 msgstr "Nog geen paspoorten."
 
-#: app/templates/passports/index.html:52
+#: app/templates/passports/index.html:53
 msgid "Groups and edition history"
 msgstr "Groepen en editiegeschiedenis"
 
-#: app/templates/passports/index.html:53
+#: app/templates/passports/index.html:54
 #: app/templates/passports/record_visit.html:36
 msgid "Export my passport data"
 msgstr "Mijn paspoortgegevens exporteren"
@@ -13705,8 +13714,8 @@ msgid "Photos do not count as visits."
 msgstr "Foto’s tellen niet als bezoeken."
 
 #: app/templates/passports/print.html:12 app/templates/passports/print.html:24
-#: app/templates/passports/print.html:29 app/templates/passports/target.html:40
-#: app/templates/passports/target.html:41
+#: app/templates/passports/print.html:29 app/templates/passports/target.html:65
+#: app/templates/passports/target.html:66
 msgid "Private stamp photo"
 msgstr "Privéfoto van de stempel"
 
@@ -13873,8 +13882,8 @@ msgid "Only read to suggest the airfield and date; the photo is not saved."
 msgstr "Alleen gelezen om het vliegveld en de datum voor te stellen; de foto wordt niet bewaard."
 
 #: app/templates/passports/record_visit.html:27
-#: app/templates/passports/target.html:31
-#: app/templates/passports/target.html:38
+#: app/templates/passports/target.html:56
+#: app/templates/passports/target.html:63
 msgid "Visit date"
 msgstr "Bezoekdatum"
 
@@ -13883,7 +13892,7 @@ msgid "Only visits within the passport dates and not in the future count. You ca
 msgstr "Alleen bezoeken binnen de paspoortdata en niet in de toekomst tellen mee. Je kunt een bezoek later wijzigen of verwijderen op de pagina van het vliegveld."
 
 #: app/templates/passports/record_visit.html:32
-#: app/templates/passports/target.html:38 app/templates/places/_visits.html:26
+#: app/templates/passports/target.html:63 app/templates/places/_visits.html:26
 msgid "Save visit"
 msgstr "Bezoek opslaan"
 
@@ -14129,107 +14138,129 @@ msgstr "Stempelfoto gedeeld door %(name)s"
 msgid "Open discussion"
 msgstr "Gesprek openen"
 
-#: app/templates/passports/target.html:20
+#: app/templates/passports/target.html:21
+msgid "Places near this airfield"
+msgstr "Plaatsen bij dit vliegveld"
+
+#: app/templates/passports/target.html:23
+msgid "Linked places"
+msgstr "Gekoppelde plaatsen"
+
+#: app/templates/passports/target.html:34
+#: app/templates/places/airfield_links.html:14
+#: app/templates/places/passport_suggestions.html:13
+msgid "Nearby radius (km)"
+msgstr "Zoekstraal (km)"
+
+#: app/templates/passports/target.html:38
+#: app/templates/places/airfield_links.html:14
+#: app/templates/places/passport_suggestions.html:18
+#: app/templates/places/place_form.html:14
+#: app/templates/places/place_form.html:28
+msgid "Search"
+msgstr "Zoeken"
+
+#: app/templates/passports/target.html:45
 msgid "Visit evidence"
 msgstr "Bezoekbewijs"
 
-#: app/templates/passports/target.html:22
+#: app/templates/passports/target.html:47
 msgid "Logged arrival"
 msgstr "Vastgelegde aankomst"
 
-#: app/templates/passports/target.html:22
+#: app/templates/passports/target.html:47
 msgid "Confirmed GPS visit"
 msgstr "Bevestigd GPS-bezoek"
 
-#: app/templates/passports/target.html:22
+#: app/templates/passports/target.html:47
 msgid "Manual visit"
 msgstr "Handmatig bezoek"
 
-#: app/templates/passports/target.html:22
+#: app/templates/passports/target.html:47
 msgid "Excluded from credit"
 msgstr "Telt niet mee"
 
-#: app/templates/passports/target.html:24
+#: app/templates/passports/target.html:49
 msgid "View flight"
 msgstr "Vlucht bekijken"
 
-#: app/templates/passports/target.html:25
+#: app/templates/passports/target.html:50
 msgid "Restore arrival credit"
 msgstr "Aankomst weer laten meetellen"
 
-#: app/templates/passports/target.html:25
+#: app/templates/passports/target.html:50
 msgid "Exclude this arrival"
 msgstr "Deze aankomst uitsluiten"
 
-#: app/templates/passports/target.html:25
+#: app/templates/passports/target.html:50
 msgid "Delete manual visit"
 msgstr "Handmatig bezoek verwijderen"
 
-#: app/templates/passports/target.html:28
+#: app/templates/passports/target.html:53
 msgid "Edit manual visit"
 msgstr "Handmatig bezoek bewerken"
 
-#: app/templates/passports/target.html:33
-#: app/templates/passports/target.html:38
+#: app/templates/passports/target.html:58
+#: app/templates/passports/target.html:63
 #: app/templates/passports/vouchers.html:21
 msgid "Supporting flight (optional, latest 200 eligible flights)"
 msgstr "Ondersteunende vlucht (optioneel, laatste 200 geldige vluchten)"
 
-#: app/templates/passports/target.html:34
-#: app/templates/passports/target.html:38
+#: app/templates/passports/target.html:59
+#: app/templates/passports/target.html:63
 msgid "Independent manual visit"
 msgstr "Onafhankelijk handmatig bezoek"
 
-#: app/templates/passports/target.html:34
+#: app/templates/passports/target.html:59
 msgid "Current supporting flight"
 msgstr "Huidige ondersteunende vlucht"
 
-#: app/templates/passports/target.html:37
+#: app/templates/passports/target.html:62
 msgid "No qualifying visits recorded yet."
 msgstr "Nog geen geldige bezoeken vastgelegd."
 
-#: app/templates/passports/target.html:38
+#: app/templates/passports/target.html:63
 msgid "Record a manual visit"
 msgstr "Handmatig bezoek vastleggen"
 
-#: app/templates/passports/target.html:38
+#: app/templates/passports/target.html:63
 msgid "Manual visits are kept with this passport and included in your passport data export."
 msgstr "Handmatige bezoeken blijven bij dit paspoort en zitten in de export van je paspoortgegevens."
 
-#: app/templates/passports/target.html:39
-#: app/templates/passports/target.html:41
+#: app/templates/passports/target.html:64
+#: app/templates/passports/target.html:66
 msgid "Stamp photo shared with this group"
 msgstr "Stempelfoto gedeeld met deze groep"
 
-#: app/templates/passports/target.html:39
+#: app/templates/passports/target.html:64
 msgid "Participants of this edition who share their visits see this photo with your group display name. Sharing it with the group does not publish it on a public link. Uploading a new photo makes it private again."
 msgstr "Deelnemers aan deze editie die hun bezoeken delen, zien deze foto met je weergavenaam in de groep. Delen met de groep publiceert de foto niet via een openbare link. Als je een nieuwe foto uploadt, is die weer privé."
 
-#: app/templates/passports/target.html:40
+#: app/templates/passports/target.html:65
 msgid "This photo is visible only to you. Uploading it does not earn a visit or publish it."
 msgstr "Deze foto is alleen voor jou zichtbaar. Uploaden telt niet als bezoek en maakt de foto niet openbaar."
 
-#: app/templates/passports/target.html:42
+#: app/templates/passports/target.html:67
 msgid "Stop sharing with the group"
 msgstr "Niet meer delen met de groep"
 
-#: app/templates/passports/target.html:42
+#: app/templates/passports/target.html:67
 msgid "Share with this group"
 msgstr "Delen met deze groep"
 
-#: app/templates/passports/target.html:43
+#: app/templates/passports/target.html:68
 msgid "Delete photo"
 msgstr "Foto verwijderen"
 
-#: app/templates/passports/target.html:44
+#: app/templates/passports/target.html:69
 msgid "Participants of this edition who share their visits will see it with your group display name. You can stop sharing at any time. It appears on a public link only if you publish it there separately."
 msgstr "Deelnemers aan deze editie die hun bezoeken delen, zien de foto met je weergavenaam in de groep. Je kunt het delen op elk moment stoppen. De foto verschijnt alleen via een openbare link als je hem daar apart publiceert."
 
-#: app/templates/passports/target.html:45
+#: app/templates/passports/target.html:70
 msgid "JPEG, PNG or WebP, up to 10 MB and 20 megapixels"
 msgstr "JPEG, PNG of WebP, maximaal 10 MB en 20 megapixels"
 
-#: app/templates/passports/target.html:45
+#: app/templates/passports/target.html:70
 msgid "Upload photo"
 msgstr "Foto uploaden"
 
@@ -15259,7 +15290,7 @@ msgid "All airports visited"
 msgstr "Alle bezochte luchthavens"
 
 #: app/templates/places/_airfields.html:2
-#: app/templates/places/airfield_links.html:8
+#: app/templates/places/airfield_links.html:10
 msgid "Linked airfields"
 msgstr "Gekoppelde vliegvelden"
 
@@ -15268,18 +15299,19 @@ msgid "Manage airfield links"
 msgstr "Gekoppelde vliegvelden beheren"
 
 #: app/templates/places/_airfields.html:3
-#: app/templates/places/airfield_links.html:8
+#: app/templates/places/airfield_links.html:10
 msgid "Preferred"
 msgstr "Voorkeur"
 
 #: app/templates/places/_airfields.html:3
-#: app/templates/places/airfield_links.html:8
-#: app/templates/places/airfield_links.html:13
+#: app/templates/places/_passport_suggestions.html:13
+#: app/templates/places/airfield_links.html:10
+#: app/templates/places/airfield_links.html:31
 #, python-format
 msgid "%(distance)s km from this place"
 msgstr "%(distance)s km van deze plek"
 
-#: app/templates/places/_airfields.html:3 app/templates/places/index.html:47
+#: app/templates/places/_airfields.html:3 app/templates/places/index.html:49
 #: app/templates/places/place_form.html:31
 msgid "No linked airfield"
 msgstr "Geen gekoppeld vliegveld"
@@ -15295,6 +15327,28 @@ msgstr "Kaart met plaatsen"
 #: app/templates/places/_map.html:3
 msgid "Orange markers show linked airfields; dashed lines connect them to places."
 msgstr "Oranje markeringen tonen gekoppelde vliegvelden; stippellijnen verbinden ze met plekken."
+
+#: app/templates/places/_passport_suggestions.html:23
+#: app/templates/places/airfield_links.html:43
+msgid "Link airfield"
+msgstr "Vliegveld koppelen"
+
+#: app/templates/places/_passport_suggestions.html:29
+msgid "No nearby places to link within this radius."
+msgstr "Binnen deze straal zijn er geen plaatsen om te koppelen."
+
+#: app/templates/places/_place_breadcrumbs.html:1
+#: app/templates/places/index.html:11
+msgid "Place collections"
+msgstr "Collecties met plekken"
+
+#: app/templates/places/_place_breadcrumbs.html:3
+msgid "Collections"
+msgstr "Collecties"
+
+#: app/templates/places/_place_breadcrumbs.html:6
+msgid "Back to place"
+msgstr "Terug naar de plek"
 
 #: app/templates/places/_visit_suggestions.html:7
 #, python-format
@@ -15341,95 +15395,85 @@ msgstr "Voorgestelde bezoeken op basis van eerdere landingen"
 msgid "Airfields for %(place)s"
 msgstr "Vliegvelden voor %(place)s"
 
-#: app/templates/places/airfield_links.html:7
-msgid "Back to place"
-msgstr "Terug naar de plek"
-
-#: app/templates/places/airfield_links.html:8
+#: app/templates/places/airfield_links.html:10
 msgid "How to get there"
 msgstr "Hoe je er komt"
 
-#: app/templates/places/airfield_links.html:8
+#: app/templates/places/airfield_links.html:10
 msgid "Save airfield link"
 msgstr "Vliegveldkoppeling opslaan"
 
-#: app/templates/places/airfield_links.html:8
+#: app/templates/places/airfield_links.html:10
 msgid "Unlink airfield"
 msgstr "Vliegveld loskoppelen"
 
-#: app/templates/places/airfield_links.html:9
+#: app/templates/places/airfield_links.html:11
 msgid "Find an airfield"
 msgstr "Vliegveld zoeken"
 
-#: app/templates/places/airfield_links.html:10
+#: app/templates/places/airfield_links.html:12
 msgid "Nearby suggestions exclude heliports and closed airfields. Search by name or code to choose any airfield. Nothing is linked automatically."
 msgstr "Suggesties in de buurt bevatten geen helihavens of gesloten vliegvelden. Zoek op naam of code om een vliegveld te kiezen. Er wordt niets automatisch gekoppeld."
 
-#: app/templates/places/airfield_links.html:11
+#: app/templates/places/airfield_links.html:13
 msgid "Add this place’s location to see nearby suggestions, or search for an airfield by name or code."
 msgstr "Voeg de locatie van deze plek toe voor suggesties in de buurt, of zoek een vliegveld op naam of code."
 
-#: app/templates/places/airfield_links.html:12
+#: app/templates/places/airfield_links.html:14
 #: app/templates/places/place_form.html:27
 msgid "Airfield name or code"
 msgstr "Naam of code van het vliegveld"
 
-#: app/templates/places/airfield_links.html:12
-msgid "Nearby radius (km)"
-msgstr "Zoekstraal (km)"
+#: app/templates/places/airfield_links.html:20
+msgid "Map of nearby airfields"
+msgstr "Kaart van nabijgelegen vliegvelden"
 
-#: app/templates/places/airfield_links.html:12
-#: app/templates/places/place_form.html:14
-#: app/templates/places/place_form.html:28
-msgid "Search"
-msgstr "Zoeken"
-
-#: app/templates/places/airfield_links.html:13
+#: app/templates/places/airfield_links.html:32
 msgid "Manual airfield"
 msgstr "Handmatig toegevoegd vliegveld"
 
-#: app/templates/places/airfield_links.html:13
+#: app/templates/places/airfield_links.html:32
 msgid "Other airfield"
 msgstr "Ander vliegveld"
 
-#: app/templates/places/airfield_links.html:13
+#: app/templates/places/airfield_links.html:34
+msgid "In your passports"
+msgstr "In je paspoorten"
+
+#: app/templates/places/airfield_links.html:38
 msgid "Already linked"
 msgstr "Al gekoppeld"
 
-#: app/templates/places/airfield_links.html:13
-msgid "Link airfield"
-msgstr "Vliegveld koppelen"
-
-#: app/templates/places/airfield_links.html:13
+#: app/templates/places/airfield_links.html:50
 msgid "Showing the first 200 results. Refine the search to find another airfield."
 msgstr "De eerste 200 resultaten worden getoond. Verfijn de zoekopdracht om een ander vliegveld te vinden."
 
-#: app/templates/places/airfield_links.html:13
+#: app/templates/places/airfield_links.html:51
 #: app/templates/places/place_form.html:24
 msgid "No matching airfields in this search."
 msgstr "Geen vliegvelden gevonden voor deze zoekopdracht."
 
-#: app/templates/places/airfield_links.html:14
+#: app/templates/places/airfield_links.html:52
 msgid "Airfield missing from the catalogue?"
 msgstr "Ontbreekt het vliegveld in de catalogus?"
 
-#: app/templates/places/airfield_links.html:14
+#: app/templates/places/airfield_links.html:52
 msgid "Add a manual airfield, such as a microlight field. Its details will be shared with this collection."
 msgstr "Voeg een vliegveld handmatig toe, bijvoorbeeld een ULM-terrein. De gegevens worden gedeeld met deze collectie."
 
-#: app/templates/places/airfield_links.html:14
+#: app/templates/places/airfield_links.html:52
 msgid "Airfield code (optional)"
 msgstr "Vliegveldcode (optioneel)"
 
-#: app/templates/places/airfield_links.html:14
+#: app/templates/places/airfield_links.html:52
 msgid "Airfield latitude (optional)"
 msgstr "Breedtegraad van het vliegveld (optioneel)"
 
-#: app/templates/places/airfield_links.html:14
+#: app/templates/places/airfield_links.html:52
 msgid "Airfield longitude (optional)"
 msgstr "Lengtegraad van het vliegveld (optioneel)"
 
-#: app/templates/places/airfield_links.html:14
+#: app/templates/places/airfield_links.html:52
 msgid "Create and link airfield"
 msgstr "Vliegveld aanmaken en koppelen"
 
@@ -15602,10 +15646,6 @@ msgstr "Bewaar plaatsen die een bezoek waard zijn en deel een collectie met vrie
 msgid "Collection invitations"
 msgstr "Uitnodigingen voor collecties"
 
-#: app/templates/places/index.html:11 app/templates/places/place_detail.html:6
-msgid "Place collections"
-msgstr "Collecties met plekken"
-
 #: app/templates/places/index.html:11
 msgid "All collections"
 msgstr "Alle collecties"
@@ -15630,7 +15670,7 @@ msgstr "Prullenbak"
 msgid "My visits"
 msgstr "Mijn bezoeken"
 
-#: app/templates/places/index.html:20 app/templates/places/index.html:53
+#: app/templates/places/index.html:20 app/templates/places/index.html:55
 msgid "Not yet visited"
 msgstr "Nog niet bezocht"
 
@@ -15658,8 +15698,8 @@ msgstr "Laatste bezoek"
 msgid "Location"
 msgstr "Locatie"
 
-#: app/templates/places/index.html:20 app/templates/places/index.html:55
-#: app/templates/places/place_detail.html:19
+#: app/templates/places/index.html:20 app/templates/places/index.html:57
+#: app/templates/places/place_detail.html:14
 msgid "Location still to add"
 msgstr "Locatie nog toe te voegen"
 
@@ -15687,7 +15727,7 @@ msgstr "Plaatsen in de prullenbak worden na 30 dagen definitief verwijderd. Elk 
 msgid "Move to another collection"
 msgstr "Naar een andere collectie verplaatsen"
 
-#: app/templates/places/index.html:33 app/templates/places/place_detail.html:23
+#: app/templates/places/index.html:33 app/templates/places/place_detail.html:18
 msgid "Destination collection"
 msgstr "Doelcollectie"
 
@@ -15704,36 +15744,36 @@ msgstr "Verplaatsen"
 msgid "Select %(place)s"
 msgstr "Selecteer %(place)s"
 
-#: app/templates/places/index.html:40 app/templates/places/place_detail.html:16
+#: app/templates/places/index.html:40 app/templates/places/place_detail.html:11
 msgid "Place photo"
 msgstr "Foto van de plaats"
 
-#: app/templates/places/index.html:53
+#: app/templates/places/index.html:55
 #, python-format
 msgid "Last visited %(date)s"
 msgstr "Laatst bezocht op %(date)s"
 
-#: app/templates/places/index.html:59
+#: app/templates/places/index.html:61
 msgid "Restore place"
 msgstr "Plaats herstellen"
 
-#: app/templates/places/index.html:59 app/templates/places/place_detail.html:24
+#: app/templates/places/index.html:61 app/templates/places/place_detail.html:19
 msgid "I confirm the permanent deletion of this place and its visits."
 msgstr "Ik bevestig de definitieve verwijdering van deze plaats en de bijbehorende bezoeken."
 
-#: app/templates/places/index.html:59 app/templates/places/place_detail.html:24
+#: app/templates/places/index.html:61 app/templates/places/place_detail.html:19
 msgid "Permanently delete place"
 msgstr "Plaats definitief verwijderen"
 
-#: app/templates/places/index.html:59
+#: app/templates/places/index.html:61
 msgid "No places in this view yet."
 msgstr "Er zijn nog geen plaatsen in deze weergave."
 
-#: app/templates/places/index.html:60
+#: app/templates/places/index.html:62
 msgid "Download GPX"
 msgstr "GPX downloaden"
 
-#: app/templates/places/index.html:60
+#: app/templates/places/index.html:62
 msgid "Download KML"
 msgstr "KML downloaden"
 
@@ -15756,49 +15796,45 @@ msgstr "Collectie aanmaken"
 msgid "Edit place"
 msgstr "Plaats bewerken"
 
-#: app/templates/places/place_detail.html:8
-msgid "Collections"
-msgstr "Collecties"
-
-#: app/templates/places/place_detail.html:12
+#: app/templates/places/place_detail.html:7
 #, python-format
 msgid "Place owner: %(name)s"
 msgstr "Eigenaar van de plaats: %(name)s"
 
-#: app/templates/places/place_detail.html:12
+#: app/templates/places/place_detail.html:7
 #, python-format
 msgid "Last changed by %(name)s on %(date)s"
 msgstr "Laatst gewijzigd door %(name)s op %(date)s"
 
-#: app/templates/places/place_detail.html:14
+#: app/templates/places/place_detail.html:9
 msgid "Visit website"
 msgstr "Website bezoeken"
 
-#: app/templates/places/place_detail.html:22
+#: app/templates/places/place_detail.html:17
 msgid "Unarchive place"
 msgstr "Plaats uit archief halen"
 
-#: app/templates/places/place_detail.html:22
+#: app/templates/places/place_detail.html:17
 msgid "Archive place"
 msgstr "Plaats archiveren"
 
-#: app/templates/places/place_detail.html:22
+#: app/templates/places/place_detail.html:17
 msgid "Move to bin"
 msgstr "Naar prullenbak"
 
-#: app/templates/places/place_detail.html:23
+#: app/templates/places/place_detail.html:18
 msgid "Copy or move"
 msgstr "Kopiëren of verplaatsen"
 
-#: app/templates/places/place_detail.html:23
+#: app/templates/places/place_detail.html:18
 msgid "Copy place"
 msgstr "Plaats kopiëren"
 
-#: app/templates/places/place_detail.html:23
+#: app/templates/places/place_detail.html:18
 msgid "Move place"
 msgstr "Plaats verplaatsen"
 
-#: app/templates/places/place_detail.html:23
+#: app/templates/places/place_detail.html:18
 msgid "Copies keep the content and photo, but no visits. Moving requires every visitor to belong to the destination collection."
 msgstr "Kopieën behouden de inhoud en foto, zonder bezoeken. Verplaatsen kan alleen als elke bezoeker lid is van de doelcollectie."
 
