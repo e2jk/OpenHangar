@@ -60,9 +60,10 @@ def delete_visit(place_id: int, visit_id: int) -> ResponseReturnValue:
     return _done(place_id, _("Visit removed."))
 
 
-def _back() -> ResponseReturnValue:
-    """Back to the page that showed the suggestion: the aircraft logbook named
-    by its id, else the pilot logbook. Never a URL taken from the form."""
+def _back(place_id: int) -> ResponseReturnValue:
+    """Return to the place or logbook that showed the suggestion."""
+    if request.form.get("from_place") == "1":
+        return redirect(url_for("places.place_detail", place_id=place_id))
     aircraft_id = request.form.get("aircraft", type=db_id)
     if aircraft_id is not None:
         return redirect(url_for("flights.list_flights", aircraft_id=aircraft_id))
@@ -80,10 +81,10 @@ def visit_from_flight(place_id: int, flight_id: int) -> ResponseReturnValue:
         if isinstance(exc, visits.NotFound):
             return abort(404)
         flash(str(exc), "danger")
-        return _back()
+        return _back(place_id)
     db.session.commit()
     flash(_("Visit recorded."), "success")
-    return _back()
+    return _back(place_id)
 
 
 @places_bp.route(
@@ -99,9 +100,9 @@ def dismiss_visit_suggestion(place_id: int, flight_id: int) -> ResponseReturnVal
         if isinstance(exc, visits.NotFound):
             return abort(404)
         flash(str(exc), "danger")
-        return _back()
+        return _back(place_id)
     db.session.commit()
-    return _back()
+    return _back(place_id)
 
 
 @places_bp.app_context_processor
