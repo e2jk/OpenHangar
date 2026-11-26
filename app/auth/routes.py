@@ -1291,6 +1291,9 @@ def reset_password(token: str) -> ResponseReturnValue:
         user.totp_secret = None  # clear TOTP so the user can re-enrol
         user.totp_last_step = None
         db.session.commit()
+        # The new password works at once: a lock from the failures that led
+        # to the reset no longer keeps the user out for half an hour.
+        throttle.clear(_account_key(user.email.strip().lower()))
 
         flash(_("Password reset successfully. You can now log in."), "success")
         return redirect(url_for("auth.login"))

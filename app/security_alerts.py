@@ -84,11 +84,21 @@ class SecurityAlertHandler(logging.Handler):
             if event_type not in _ESCALATED:
                 return
 
+            # Per event and subject (the message): one users.role.changed
+            # alert used to hide any other for a minute, a second action
+            # included.
+            key = f"{event_type}:{record.getMessage()}"
             now = time.monotonic()
             with self._lock:
-                if now - self._debounce.get(event_type, 0.0) < _DEBOUNCE_SECONDS:
+                if now - self._debounce.get(key, 0.0) < _DEBOUNCE_SECONDS:
                     return
-                self._debounce[event_type] = now
+                if len(self._debounce) > 1000:  # keep it bounded
+                    self._debounce = {
+                        k: t
+                        for k, t in self._debounce.items()
+                        if now - t < _DEBOUNCE_SECONDS
+                    }
+                self._debounce[key] = now
 
             body = self.format(record)
             self._dispatch(event_type, body)

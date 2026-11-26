@@ -21,7 +21,9 @@ from flask import (  # pyright: ignore[reportMissingImports]
     url_for,
 )
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
-from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
+from flask_babel import gettext as _
+from flask_babel import lazy_gettext as _l  # pyright: ignore[reportMissingImports]
+from flask_babel import ngettext
 from models import (
     Aircraft,
     PermissionBit,
@@ -61,13 +63,13 @@ def _block_in_demo() -> None:
 
 
 ROLE_LABELS = {
-    Role.ADMIN: "Admin",
-    Role.OWNER: "Owner",
-    Role.PILOT: "Pilot / Renter",
-    Role.STUDENT: "Student",
-    Role.INSTRUCTOR: "Instructor",
-    Role.MAINTENANCE: "Maintenance",
-    Role.VIEWER: "Viewer (read-only)",
+    Role.ADMIN: _l("Admin"),
+    Role.OWNER: _l("Owner"),
+    Role.PILOT: _l("Pilot / Renter"),
+    Role.STUDENT: _l("Student"),
+    Role.INSTRUCTOR: _l("Instructor"),
+    Role.MAINTENANCE: _l("Maintenance"),
+    Role.VIEWER: _l("Viewer (read-only)"),
 }
 
 
@@ -259,15 +261,23 @@ def _try_send_invite_email(
             send_email,  # pyright: ignore[reportMissingImports]
         )
 
-        greeting = f"Hi {display_name},\n\n" if display_name else ""
+        # In the inviter's language: the invitee's is not known yet.
+        greeting = _("Hi %(name)s,", name=display_name) + "\n\n" if display_name else ""
+        body = _(
+            "You have been invited to join an OpenHangar hangar as %(role)s.",
+            role=ROLE_LABELS[role],
+        )
+        accept = _("Accept your invitation here:")
+        expiry = ngettext(
+            "This link expires in one day.",
+            "This link expires in %(n)s days.",
+            _INVITATION_EXPIRY_DAYS,
+            n=_INVITATION_EXPIRY_DAYS,
+        )
         send_email(
             to=to,
             subject=_("You've been invited to OpenHangar"),
-            text_body=(
-                f"{greeting}You have been invited to join an OpenHangar hangar as {ROLE_LABELS[role]}.\n\n"
-                f"Accept your invitation here:\n{accept_url}\n\n"
-                f"This link expires in {_INVITATION_EXPIRY_DAYS} days."
-            ),
+            text_body=f"{greeting}{body}\n\n{accept}\n{accept_url}\n\n{expiry}",
         )
     except Exception:
         current_app.logger.warning(

@@ -121,3 +121,41 @@ def test_another_site_cannot_sign_out_or_switch_language_or_theme(app, client):
         assert user.language != "fr" and user.theme != "dark"
     client.get("/logout", headers={"Sec-Fetch-Site": "same-origin"})
     assert client.get("/profile").status_code == 302
+
+
+def test_session_lifetime_must_be_a_sensible_number_of_days(app, monkeypatch):
+    import pytest
+    from init import _session_lifetime_days, _validate_config  # pyright: ignore[reportMissingImports]
+
+    for bad in ("thirty", "0", "-5", "99999"):
+        monkeypatch.setenv("OPENHANGAR_SESSION_LIFETIME_DAYS", bad)
+        assert _session_lifetime_days() is None
+        with pytest.raises(RuntimeError, match="OPENHANGAR_SESSION_LIFETIME_DAYS"):
+            _validate_config(app)
+    monkeypatch.setenv("OPENHANGAR_SESSION_LIFETIME_DAYS", "14")
+    assert _session_lifetime_days() == 14
+
+
+def test_a_password_reset_lifts_the_account_lock(app, client):
+    from datetime import UTC, datetime, timedelta
+
+    from models import PasswordResetToken  # pyright: ignore[reportMissingImports]
+
+    _make_user(app)
+    _lock_account(client)
+    with app.app_context():
+        user = User.query.filter_by(email=EMAIL).one()
+        reset = PasswordResetToken(
+            user_id=user.id,
+            generated_by_user_id=user.id,
+            expires_at=datetime.now(UTC) + timedelta(hours=1),
+        )
+        db.session.add(reset)
+        db.session.commit()
+        raw = reset.raw_token
+    new = "another-password-1"
+    client.post(
+        f"/reset-password/{raw}",
+        data={"new_password": new, "confirm_password": new},
+    )
+    assert _sign_in(client, password=new).status_code == 302
