@@ -49,11 +49,34 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    security_opt:
+      - "no-new-privileges:true"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
   # ── OpenHangar web application ───────────────────────────────────────────────
   web:
     image: ghcr.io/e2jk/openhangar:latest
+    # Same hardening as the reference compose: the code is read-only, no
+    # privilege escalation or capabilities, bounded processes, memory and logs.
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - "no-new-privileges:true"
+    cap_drop:
+      - ALL
+    pids_limit: 256
+    mem_limit: 768m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     depends_on:
       db:
         condition: service_healthy
