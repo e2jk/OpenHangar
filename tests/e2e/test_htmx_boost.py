@@ -1230,24 +1230,29 @@ def test_desktop_navigation_wraps_whole_links(logged_in_page, live_server_url):
     page.goto(f"{live_server_url}/aircraft/")
     menu = page.locator("#navMenu")
     measure = """menu => {
-            const items = [...menu.querySelectorAll('.navbar-nav > .nav-item')];
+            const nav = menu.querySelector('.navbar-nav');
+            const items = [...nav.querySelectorAll(':scope > .nav-item')];
             const controls = menu.querySelector('.oh-navbar-actions').getBoundingClientRect();
             const boxes = items.map(item => item.getBoundingClientRect());
             const brand = document.querySelector('.navbar-brand').getBoundingClientRect();
             const middle = (controls.top + controls.bottom) / 2;
             return {
                 rows: new Set(boxes.map(box => Math.round(box.top))).size,
+                fitsOneRow: boxes.reduce((width, box) => width + box.width, 0)
+                    <= nav.getBoundingClientRect().width,
                 linksFit: boxes.every(box => box.left >= brand.right && box.right <= controls.left),
                 controlsFit: controls.right <= document.documentElement.clientWidth,
                 controlsBesideLinks: boxes[0].top <= middle
                     && boxes.at(-1).bottom >= middle,
             };
         }"""
-    for width, rows in [(1600, 1), (992, 2)]:
+    for width in (1600, 992):
         page.set_viewport_size({"width": width, "height": 844})
-        assert menu.evaluate(measure) == {
-            "rows": rows,
-            "linksFit": True,
-            "controlsFit": True,
-            "controlsBesideLinks": True,
-        }
+        layout = menu.evaluate(measure)
+        assert layout["linksFit"] and layout["controlsFit"]
+        assert layout["controlsBesideLinks"]
+        # Different system fonts change the space the labels need. Wrap
+        # when they run out of room, even at a wide viewport.
+        assert (layout["rows"] == 1) == layout["fitsOneRow"]
+        if width == 992:
+            assert layout["rows"] > 1

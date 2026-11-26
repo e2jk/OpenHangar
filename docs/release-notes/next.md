@@ -20,7 +20,8 @@
 - Flight logbooks skip place visit suggestions when you already recorded a
   visit to that place on the landing date.
 - On phones, the bottom Explore menu groups Where next?, Places and Airfield
-  Passports. On desktop, navigation links wrap when space is tight.
+  Passports. On desktop, navigation links wrap between the logo and account
+  controls when space is tight.
 
 **Security and privacy**
 
