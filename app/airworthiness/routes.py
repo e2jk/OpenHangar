@@ -316,6 +316,32 @@ def delete_node(aircraft_id: int, node_id: int) -> ResponseReturnValue:
 # ── Documents ─────────────────────────────────────────────────────────────────
 
 
+def _form_date(raw: str) -> date | None:
+    """An optional ISO date from a form; a malformed one is a bad request
+    (a date input never sends one), not a server error."""
+    if not raw:
+        return None
+    try:
+        return date.fromisoformat(raw)
+    except ValueError:
+        return abort(400)
+
+
+def _doc_url(raw: str) -> str | None:
+    """A document link everyone with the aircraft sees: web links only. A
+    bare address gets https://; any other scheme (javascript:, data:, file:)
+    is refused."""
+    value = raw.strip()
+    if not value:
+        return None
+    scheme = value.split(":", 1)[0].lower() if ":" in value else ""
+    if scheme in ("http", "https"):
+        return value
+    if scheme and "." not in scheme:
+        return abort(400)
+    return f"https://{value}"
+
+
 @airworthiness_bp.route(
     "/aircraft/<aircraft_ref:aircraft_id>/airworthiness/documents/new",
     methods=["GET", "POST"],
@@ -333,14 +359,14 @@ def add_document(aircraft_id: int) -> ResponseReturnValue:
             abort(400)
 
         expiry_raw = request.form.get("expiry_date", "").strip()
-        expiry = date.fromisoformat(expiry_raw) if expiry_raw else None
+        expiry = _form_date(expiry_raw)
 
         doc = AirworthinessDocument(
             doc_type=request.form["doc_type"].strip(),
             reference=request.form["reference"].strip(),
             title=request.form.get("title", "").strip() or None,
             component_id=component_id,
-            doc_url=request.form.get("doc_url", "").strip() or None,
+            doc_url=_doc_url(request.form.get("doc_url", "")),
             expiry_date=expiry,
         )
         db.session.add(doc)
@@ -412,10 +438,8 @@ def update_status(aircraft_id: int, doc_id: int) -> ResponseReturnValue:
 
         st.status = new_status
         st.notes = request.form.get("notes", "").strip() or None
-        st.compliance_date = (
-            date.fromisoformat(compliance_raw) if compliance_raw else None
-        )
-        st.next_review_date = date.fromisoformat(review_raw) if review_raw else None
+        st.compliance_date = _form_date(compliance_raw)
+        st.next_review_date = _form_date(review_raw)
         db.session.commit()
         flash(_("Status updated."), "success")
         return redirect(url_for("airworthiness.dashboard", aircraft_id=aircraft_id))
@@ -448,7 +472,7 @@ def add_stc(aircraft_id: int) -> ResponseReturnValue:
             stc_number=request.form["stc_number"].strip(),
             title=request.form.get("title", "").strip() or None,
             tc_holder=request.form.get("tc_holder", "").strip() or None,
-            installation_date=date.fromisoformat(install_raw) if install_raw else None,
+            installation_date=_form_date(install_raw),
             notes=request.form.get("notes", "").strip() or None,
         )
         db.session.add(stc)

@@ -1196,6 +1196,35 @@ class TestAddDocument:
         resp = client.get(f"/aircraft/{ac_id}/airworthiness/documents/new")
         assert resp.status_code == 200
 
+    @pytest.mark.parametrize(
+        ("field", "value", "status"),
+        [
+            ("expiry_date", "2026-13-45", 400),
+            ("doc_url", "javascript:alert(1)", 400),
+            ("doc_url", "data:text/html,x", 400),
+            ("doc_url", "www.example.com/arc.pdf", 302),
+        ],
+    )
+    def test_bad_dates_and_links_are_refused(self, app, client, field, value, status):
+        """A crafted date is a 400, not a 500; a document link is a web link
+        (a bare address gets https://), never javascript: or data:."""
+        _, tenant_id = _create_user_and_tenant(app)
+        ac_id = _add_aircraft(app, tenant_id)
+        comp_id = _add_component(app, ac_id)
+        _login(app, client)
+        data = {
+            "component_id": comp_id,
+            "doc_type": AirworthinessDocType.ARC,
+            "reference": "ARC-X",
+            field: value,
+        }
+        resp = client.post(f"/aircraft/{ac_id}/airworthiness/documents/new", data=data)
+        assert resp.status_code == status
+        if status == 302:
+            with app.app_context():
+                doc = AirworthinessDocument.query.filter_by(reference="ARC-X").one()
+                assert doc.doc_url == "https://www.example.com/arc.pdf"
+
     def test_post_creates_manual_document(self, app, client):
         _, tenant_id = _create_user_and_tenant(app)
         ac_id = _add_aircraft(app, tenant_id)
