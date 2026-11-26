@@ -187,7 +187,7 @@ def flight_suggestions(
 ) -> list[dict[str, Any]]:
     """Recent own flights (as pilot or second crew) that arrived at an airfield
     linked to a place in one of the user's collections, not yet recorded as a
-    visit from that flight nor dismissed: "You landed at EBXX, 4 km from
+    visit on that date or from that flight, nor dismissed: "You landed at EBXX, 4 km from
     Pairi Daiza — record a visit?". Never recorded automatically. An arrival
     matches an airfield's current codes or a code it had on that date; on an
     aircraft's logbook, only that aircraft's flights are offered."""
@@ -224,13 +224,13 @@ def flight_suggestions(
     if aircraft_id is not None:
         query = query.filter(Flight.aircraft_id == aircraft_id)
     flights = query.order_by(Flight.date.desc(), Flight.id.desc()).all()
-    recorded = {
-        (row.flight_id, row.place_id)
-        for row in PlaceVisit.query.filter(
-            PlaceVisit.user_id == user_id,
-            PlaceVisit.flight_id.in_([f.id for f in flights]),
-        )
-    } | {
+    place_ids = {link["place_id"] for link in links}
+    recorded_visits = PlaceVisit.query.filter(
+        PlaceVisit.user_id == user_id,
+        PlaceVisit.place_id.in_(place_ids),
+    ).all()
+    recorded_days = {(row.place_id, row.visit_date) for row in recorded_visits}
+    recorded = {(row.flight_id, row.place_id) for row in recorded_visits} | {
         (row.flight_id, row.place_id)
         for row in PlaceVisitDismissal.query.filter(
             PlaceVisitDismissal.user_id == user_id,
@@ -248,7 +248,10 @@ def flight_suggestions(
         }
         for airfield_id in sorted(airfield_ids):
             for link in by_airfield[airfield_id]:
-                if (flight.id, link["place_id"]) in recorded:
+                if (flight.id, link["place_id"]) in recorded or (
+                    link["place_id"],
+                    flight.date,
+                ) in recorded_days:
                     continue
                 recorded.add((flight.id, link["place_id"]))
                 suggestions.append(
@@ -272,6 +275,18 @@ def record_from_flight(
     """The suggested visit: on the flight's date, linked to the flight."""
     place = _place(tenant_id, user_id, place_id)
     flight = _own_flight(user_id, flight_id)
+    existing: PlaceVisit | None = (
+        PlaceVisit.query.filter_by(place_id=place.id, user_id=user_id)
+        .filter(
+            db.or_(
+                PlaceVisit.visit_date == flight.date, PlaceVisit.flight_id == flight.id
+            )
+        )
+        .order_by(PlaceVisit.id)
+        .first()
+    )
+    if existing is not None:
+        return existing
     visit = PlaceVisit(
         place_id=place.id,
         user_id=user_id,
