@@ -22,6 +22,7 @@ from flask import (
 from flask.typing import ResponseReturnValue  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 from flask_babel import ngettext  # pyright: ignore[reportMissingImports]
+from itsdangerous import BadSignature, URLSafeTimedSerializer
 from markupsafe import Markup, escape
 from models import (
     OperatingModel,
@@ -38,6 +39,7 @@ from services import auth_sessions
 from services import login_throttle as throttle
 from services import totp as totp_codes
 from utils import login_required
+from werkzeug.wrappers import Response
 
 _log = logging.getLogger("openhangar.auth")
 
@@ -139,6 +141,41 @@ def _account_key(email: str) -> str:
     return "acct:" + hashlib.sha256(email.encode()).hexdigest()
 
 
+# A browser that signed in to an account before carries this signed cookie:
+# the account lock (10 failures from anywhere) does not stop it, so someone
+# sending bad passwords cannot keep the real user out (OWASP "device
+# cookie"). The address backoff still applies to it.
+_DEVICE_COOKIE = "oh_login_device"
+_DEVICE_MAX_AGE = 180 * 24 * 3600
+
+
+def _device_serializer() -> URLSafeTimedSerializer:
+    return URLSafeTimedSerializer(current_app.secret_key or "", salt="login-device")
+
+
+def _trusted_device(email: str) -> bool:
+    raw = request.cookies.get(_DEVICE_COOKIE)
+    if not raw:
+        return False
+    try:
+        value = _device_serializer().loads(raw, max_age=_DEVICE_MAX_AGE)
+    except BadSignature:
+        return False
+    return hmac.compare_digest(str(value), _account_key(email))
+
+
+def _remember_device(response: Response, user: User) -> Response:
+    response.set_cookie(
+        _DEVICE_COOKIE,
+        _device_serializer().dumps(_account_key(user.email.strip().lower())),
+        max_age=_DEVICE_MAX_AGE,
+        httponly=True,
+        secure=bool(current_app.config.get("SESSION_COOKIE_SECURE")),
+        samesite="Lax",
+    )
+    return response
+
+
 def _no_users() -> bool:
     return db.session.query(User).count() == 0
 
@@ -215,7 +252,7 @@ def _login_credentials() -> ResponseReturnValue:
             "danger",
         )
         return render_template("auth/login.html", step="credentials"), 429
-    if throttle.blocked_for(_account_key(email)):
+    if throttle.blocked_for(_account_key(email)) and not _trusted_device(email):
         _log.warning(
             "[SECURITY] auth.login.account_blocked email=%s ip=%s",
             _sl(email),
@@ -272,8 +309,10 @@ def _login_credentials() -> ResponseReturnValue:
         flash(_("Invalid email or password."), "danger")
         return render_template("auth/login.html", step="credentials")
 
-    # Credentials verified — clear failure counters for this IP and account.
-    throttle.clear(_ip_key(ip), _account_key(email))
+    # Credentials verified: clear the account's failures. The address's stay
+    # until they expire, or anyone holding one valid account could reset the
+    # backoff between guesses at others.
+    throttle.clear(_account_key(email))
 
     # Upgrade legacy bcrypt hashes to Argon2id transparently at login time.
     # Same password, so the user's other logins stay valid.
@@ -409,10 +448,13 @@ def _finish_login(
     if warning:
         flash(warning, "warning")
     # Tell the service worker to refresh the selected account/context's page.
-    return redirect(
-        url_for("passports.detail", passport_id=passport.id, _swr_fresh=1)
-        if passport
-        else url_for("index", _swr_fresh=1)
+    return _remember_device(
+        redirect(
+            url_for("passports.detail", passport_id=passport.id, _swr_fresh=1)
+            if passport
+            else url_for("index", _swr_fresh=1)
+        ),
+        user,
     )
 
 
