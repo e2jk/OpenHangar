@@ -613,6 +613,12 @@ def service_trigger(aircraft_id: int, trigger_id: int) -> ResponseReturnValue:
             t.due_landings = landings_at_service + t.interval_landings
         if unscheduled and (t.due_date is not None or t.due_engine_hours is not None):
             t.needs_review = False
+        if not unscheduled and not (
+            t.interval_days or t.interval_hours or t.interval_landings
+        ):
+            # A one-off item (an AD done once, say): serviced means done. It
+            # used to keep its past due value and stay overdue.
+            t.due_date = t.due_engine_hours = t.due_landings = None
 
         shared = pending.submitted("maintenance", ac.id)
         if shared is not None:

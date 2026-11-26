@@ -51,7 +51,12 @@ def weekly_utilization_rate(
     )
     if hours <= 0:
         return None
-    return hours / (WINDOW_DAYS / 7.0)
+    # Over the days since the first flight of the window, not the whole
+    # window: an aircraft back from maintenance three weeks ago flew its
+    # hours in three weeks, and averaging them over 90 days put the
+    # projected date (much) later than it will be.
+    span_days = (today - min(flight_dates)).days
+    return hours / (max(span_days, MIN_SPAN_DAYS) / 7.0)
 
 
 def project_due_date(

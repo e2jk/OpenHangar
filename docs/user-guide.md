@@ -382,6 +382,12 @@ Minimums are never edited on the day of a flight — the "Log a flight" form sho
 
 - The dashboard shows a colour status badge (green / yellow / red) per aircraft.
 - The Maintenance list view sorts items by urgency: overdue → due soon → scheduled, grouped by which engine/propeller/component each item is scoped to (or "Airframe / general" for items that aren't).
+- When an item becomes overdue: a calendar item on the day after its due date
+  (on the due day itself it is still "due soon"); an hours or landings item as
+  soon as the counter reaches its due value. Tolerances some programmes allow
+  (such as 10 % or 10 h on an inspection) are not applied: enter the extended
+  value as the due figure if you use one. An item with no interval (done once,
+  such as a one-time AD) is no longer due once it is marked serviced.
 - Overdue items also appear as alerts on the dashboard.
 
 ![Maintenance overview](screenshots/maintenance.png)
