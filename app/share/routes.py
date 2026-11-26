@@ -5,6 +5,7 @@ Share blueprint — public read-only aircraft status pages via token.
 import io
 import secrets
 from datetime import UTC
+from typing import Any
 
 from flask import (
     Blueprint,
@@ -38,8 +39,6 @@ share_bp = Blueprint("share", __name__)
 
 _OWNER_ROLES = (Role.ADMIN, Role.OWNER)
 
-_TOKEN_LENGTH = 16
-
 
 @share_bp.after_request
 def _private_share_response(response: Response) -> Response:
@@ -53,10 +52,35 @@ def _private_share_response(response: Response) -> Response:
     return response
 
 
+def _shared_documents(ac: Aircraft) -> Any:
+    """The documents a "full" link shows: not sensitive, not receipts."""
+    return Document.query.filter_by(aircraft_id=ac.id, is_sensitive=False).filter(
+        Document.expense_id.is_(None)  # receipts: owners only
+    )
+
+
+@share_bp.route("/share/<token>/documents/<int:doc_id>")
+def shared_document(token: str, doc_id: int) -> ResponseReturnValue:
+    """A document listed on a "full" link, opened through that link: the
+    list used to point to the signed-in upload route, so every public viewer
+    landed on the login page."""
+    st = ShareToken.query.filter_by(token=token, access_level="full").first()
+    if not st or not st.opens_publicly:
+        abort(404)
+    doc = _shared_documents(st.aircraft).filter(Document.id == doc_id).first()
+    if doc is None:
+        abort(404)
+    from flights.routes import send_upload  # pyright: ignore[reportMissingImports]
+
+    response = send_upload(doc.filename)
+    response.headers["X-Robots-Tag"] = "noindex, nofollow"
+    return response
+
+
 def _generate_token() -> str:
-    """Return a unique 16-character URL-safe token (~72 bits of entropy)."""
+    """Return a unique 16-character URL-safe token (96 bits of entropy)."""
     while True:
-        candidate = secrets.token_urlsafe(12)[:_TOKEN_LENGTH]
+        candidate = secrets.token_urlsafe(12)  # 12 bytes: 16 characters
         if not ShareToken.query.filter_by(token=candidate).first():
             return candidate
 
@@ -191,11 +215,7 @@ def public_view(token: str, registration: str | None = None) -> ResponseReturnVa
             .all()
         )
         recent_documents = (
-            Document.query.filter_by(aircraft_id=ac.id, is_sensitive=False)
-            .filter(Document.expense_id.is_(None))  # receipts: owners only
-            .order_by(Document.uploaded_at.desc())
-            .limit(10)
-            .all()
+            _shared_documents(ac).order_by(Document.uploaded_at.desc()).limit(10).all()
         )
 
     resp = make_response(

@@ -55,8 +55,8 @@ def weekly_utilization_rate(
     # window: an aircraft back from maintenance three weeks ago flew its
     # hours in three weeks, and averaging them over 90 days put the
     # projected date (much) later than it will be.
-    span_days = (today - min(flight_dates)).days
-    return hours / (max(span_days, MIN_SPAN_DAYS) / 7.0)
+    span_days: int = (today - min(flight_dates)).days
+    return float(hours) / (max(span_days, MIN_SPAN_DAYS) / 7.0)
 
 
 def project_due_date(
