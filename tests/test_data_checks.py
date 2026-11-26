@@ -491,12 +491,13 @@ class TestPageWording:
         assert "Nothing to correct automatically" in page
 
 
-def _countered(fid, day, dep=None, fc=(None, None), ec=(None, None)):
+def _countered(fid, day, dep=None, fc=(None, None), ec=(None, None), *, takeoff=None):
     return SimpleNamespace(
         id=fid,
         aircraft_id=1,
         date=date(2025, 3, day),
         departure_time=dep,
+        takeoff_time=takeoff,
         flight_time_counter_start=fc[0],
         flight_time_counter_end=fc[1],
         engine_time_counter_start=ec[0],
@@ -521,6 +522,63 @@ class TestCounterGaps:
             "102.5",
         )
         assert gap.key == "flight_counter:102.5" and gap.suggestion == ""
+
+    def test_untimed_entry_bridges_timed_flights_and_the_next_day(self):
+        flights = [
+            _countered(1, 18, time(8), fc=(1541.8, 1542.1), ec=(1954.8, 1955.3)),
+            _countered(2, 18, time(16), fc=(1542.3, 1543.0), ec=(1956.0, 1956.9)),
+            _countered(3, 18, fc=(1542.1, 1542.3), ec=(1955.3, 1956.0)),
+            _countered(4, 26, time(7), fc=(1543.0, 1545.2), ec=(1956.9, 1959.5)),
+        ]
+        assert dc.check_counters(flights) == []
+
+    def test_takeoff_time_is_used_when_departure_time_is_missing(self):
+        flights = [
+            _countered(1, 18, time(16), ec=(11, 12)),
+            _countered(2, 18, ec=(10, 11), takeoff=time(8)),
+        ]
+        assert dc.check_counters(flights) == []
+
+    def test_takeoff_times_cannot_break_a_continuous_import_order(self):
+        flights = [
+            _countered(1, 18, ec=(10, 11), takeoff=time(16)),
+            _countered(2, 18, ec=(11, 12), takeoff=time(8)),
+        ]
+        assert dc.check_counters(flights) == []
+
+    def test_conflicting_counters_preserve_gaps(self):
+        flights = [
+            _countered(1, 18, time(16), fc=(11, 12), ec=(20, 21)),
+            _countered(2, 18, fc=(10, 11), ec=(21, 22)),
+        ]
+        assert [(gap.flight_id, gap.kind) for gap in dc.check_counters(flights)] == [
+            (2, dc.FLIGHT_COUNTER)
+        ]
+
+    def test_a_second_counter_can_order_equal_flight_readings(self):
+        flights = [
+            _countered(1, 18, time(8), fc=(10, 10), ec=(20, 21)),
+            _countered(2, 18, fc=(10, 10), ec=(21, 22)),
+            _countered(3, 18, time(16), fc=(10, 10), ec=(22, 23)),
+        ]
+        assert dc.check_counters(flights) == []
+
+    def test_ambiguous_counter_orders_keep_the_existing_order(self):
+        flights = [
+            _countered(1, 18, time(8), fc=(1, 2), ec=(10, 20)),
+            _countered(2, 18, time(16), fc=(2.02, 3), ec=(20.02, 30)),
+            _countered(3, 18, fc=(2, 2.01), ec=(20.01, 20.02)),
+            _countered(4, 18, fc=(2.01, 2.02), ec=(20, 20.01)),
+        ]
+        assert {gap.flight_id for gap in dc.check_counters(flights)} == {3}
+
+    def test_counter_order_cannot_reverse_timed_entries(self):
+        flights = [
+            _countered(1, 18, time(8), ec=(21, 22)),
+            _countered(2, 18, time(16), ec=(20, 21)),
+            _countered(3, 18, ec=(22, 23)),
+        ]
+        assert len(dc.check_counters(flights)) == 2
 
     def test_a_missing_end_breaks_the_chain(self):
         flights = [

@@ -8,6 +8,8 @@
 **Data checks**
 
 - Dismiss all open data checks for the current hangar in one action.
+- Data checks use takeoff time and continuous counter readings to place flights
+  with missing departure times, avoiding false counter-gap alerts.
 
 **Fixes**
 
