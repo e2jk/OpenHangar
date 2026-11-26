@@ -1148,6 +1148,28 @@ class TestServeUpload:
             assert resp.status_code == 200
             assert resp.data == b"image content"
 
+    def test_html_and_svg_uploads_download_instead_of_opening(self, app, client):
+        """A synced HTML or SVG file would run script on this site if shown
+        inline: it is sent as a download; images and PDFs still open."""
+        _uid, tid = _create_user_and_tenant(app)
+        acid = _add_aircraft(app, tid)
+        _login(app, client)
+        os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+        for fname in ("synced.html", "synced.svg", "manual.pdf"):
+            with open(os.path.join(app.config["UPLOAD_FOLDER"], fname), "wb") as f:
+                f.write(b"<script>alert(1)</script>")
+            with app.app_context():
+                db.session.add(
+                    Document(aircraft_id=acid, filename=fname, original_filename=fname)
+                )
+                db.session.commit()
+        for fname in ("synced.html", "synced.svg"):
+            with client.get(f"/uploads/{fname}") as resp:
+                assert resp.headers["Content-Disposition"].startswith("attachment")
+        with client.get("/uploads/manual.pdf") as resp:
+            assert resp.mimetype == "application/pdf"
+            assert "attachment" not in resp.headers.get("Content-Disposition", "")
+
 
 # ── Edit flight ────────────────────────────────────────────────────────────────
 
