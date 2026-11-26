@@ -40,6 +40,12 @@ def app(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[Flask]:
     yield from postgres_app(monkeypatch, tmp_path)
 
 
+def _today(r: Reservation) -> None:
+    """Move a booking to the current hour."""
+    r.start_dt = datetime.now(UTC).replace(minute=0, second=0, microsecond=0)
+    r.end_dt = r.start_dt + timedelta(hours=1)
+
+
 @pytest.fixture
 def booking(app: Flask) -> Booking:
     with app.app_context():
@@ -202,6 +208,7 @@ def test_duplicate_dispatch(
     with app.app_context():
         r = db.session.get(Reservation, ids[0])
         r.status = ReservationStatus.CONFIRMED
+        _today(r)  # check-out opens on the booking's day
         if stage == "checkin":
             db.session.add(
                 DispatchRecord(
@@ -341,7 +348,9 @@ def test_cancellation_and_checkout(
 ) -> None:
     _, _, ids = booking
     with app.app_context():
-        db.session.get(Reservation, ids[0]).status = ReservationStatus.CONFIRMED
+        r = db.session.get(Reservation, ids[0])
+        r.status = ReservationStatus.CONFIRMED
+        _today(r)  # check-out opens on the booking's day
         db.session.commit()
     checkout = (
         f"reservations/{ids[0]}/checkout",
