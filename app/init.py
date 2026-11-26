@@ -1,7 +1,7 @@
 import os
 import secrets
 import sqlite3
-from datetime import UTC, timedelta
+from datetime import UTC, datetime, timedelta
 from functools import cache
 from typing import Any
 from urllib.parse import urlparse
@@ -1720,8 +1720,9 @@ def create_app() -> Flask:
 
     @app.route("/not-yet-implemented")
     def not_yet_implemented() -> ResponseReturnValue:
-        feature = request.args.get("feature", "This feature")
-        return render_template("not_yet_implemented.html", feature=feature), 501
+        # No text from the link: it was shown in bold on this site, so a
+        # crafted link could display any message as if from the instance.
+        return render_template("not_yet_implemented.html"), 501
 
     @app.route("/set-language/<lang>")
     def set_language(lang: str) -> ResponseReturnValue:
@@ -1786,6 +1787,21 @@ def create_app() -> Flask:
         ):
             next_url = "/"
         return _bare_redirect(next_url)
+
+    @app.route("/.well-known/security.txt")
+    def security_txt() -> ResponseReturnValue:
+        # RFC 9116: where to report a vulnerability. Expires is required and
+        # must be under a year away, so it is always half a year from now.
+        expires = (datetime.now(UTC) + timedelta(days=182)).strftime(
+            "%Y-%m-%dT00:00:00Z"
+        )
+        body = (
+            "Contact: https://github.com/e2jk/OpenHangar/security/advisories/new\n"
+            f"Expires: {expires}\n"
+            "Preferred-Languages: en, fr, nl\n"
+            "Policy: https://github.com/e2jk/OpenHangar/security/policy\n"
+        )
+        return Response(body, mimetype="text/plain")
 
     @app.route("/robots.txt")
     def robots_txt() -> ResponseReturnValue:
