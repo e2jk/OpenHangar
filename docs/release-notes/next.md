@@ -63,6 +63,9 @@
 - Each pilot's or aircraft's GPS file archive is limited to 1 GB.
 - Document title suggestions only cover aircraft and documents you may see,
   and a maintenance page without a maintenance read permission shows nothing.
+- A pilot can no longer delete another pilot's flight or change their mass &
+  balance calculations (owners and admins still can); the GPS import only
+  lists the aircraft you may fly.
 - An aircraft link resolves to your own hangar's aircraft when another hangar
   uses the same registration.
 - Admin pages no longer show raw backup or e-mail server errors (they go to
