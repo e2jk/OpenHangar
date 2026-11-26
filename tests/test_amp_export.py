@@ -880,3 +880,19 @@ def test_the_pdf_export_fetches_no_file_or_link():
 
     with pytest.raises(ValueError):
         _refuse_fetch("file:///etc/passwd")
+
+
+def test_a_corrupt_workbook_is_refused_with_a_message(app, client):
+    import io
+
+    _uid, tid = _create_user_and_tenant(app)
+    acid = _add_aircraft(app, tid, registration="OO-BAD")
+    _login(app, client)
+    for content in (b"this is not a zip", b"PK\x03\x04 broken zip"):
+        r = client.post(
+            f"/aircraft/{acid}/maintenance/import",
+            data={"amp_file": (io.BytesIO(content), "sched.xlsx")},
+            content_type="multipart/form-data",
+        )
+        assert r.status_code == 422
+        assert b"not a readable .xlsx workbook" in r.data
