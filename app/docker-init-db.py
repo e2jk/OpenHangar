@@ -56,6 +56,42 @@ def _apply_env_settings(app: object) -> None:
             print("Environment settings applied.")
 
 
+def _migrations_pending(app: object) -> bool:
+    from alembic.migration import MigrationContext
+    from alembic.script import ScriptDirectory
+    from flask import Flask
+
+    assert isinstance(app, Flask)
+    config = app.extensions["migrate"].migrate.get_config()
+    head = ScriptDirectory.from_config(config).get_current_head()
+    with db.engine.connect() as conn:
+        current = MigrationContext.configure(conn).get_current_revision()
+    return current != head
+
+
+def _backup_before_migrating() -> None:
+    """A fresh backup before changing the schema: "Upgrade now" and a manual
+    pull used to migrate with only the last nightly backup to go back to.
+    No migration runs without it: the old image still works on this data."""
+    from config.routes import run_backup
+
+    print("Pending migrations: backing up the database first...")
+    try:
+        record = run_backup()
+    except (RuntimeError, OSError) as exc:  # pg_dump, disk, a backup running
+        print(f"Backup failed: {exc}", flush=True)
+        record = None
+    if record is None or record.status != "ok":
+        print(
+            "ERROR: the backup before migrating failed, so the database was not "
+            "migrated. Fix the backup (see the log above), or go back to the "
+            "previous image.",
+            flush=True,
+        )
+        sys.exit(1)
+    print(f"Backup saved: {record.filename}")
+
+
 def _run_migrations(app: object) -> None:
     """Apply pending Alembic migrations, stamping first if needed."""
     from flask import Flask
@@ -75,6 +111,8 @@ def _run_migrations(app: object) -> None:
                 "Stamp complete. Future schema changes will be applied as migrations."
             )
         else:
+            if has_users and _migrations_pending(app):
+                _backup_before_migrating()
             print("Running database migrations...")
             upgrade()
             print("Migrations complete.")

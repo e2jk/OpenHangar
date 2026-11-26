@@ -228,6 +228,11 @@ docker compose up -d openhangar-web
 The container runs `alembic upgrade head` automatically on startup to apply
 any pending database migrations.
 
+When there are migrations to apply to a database that holds data, the
+container first makes a backup (as **Back up now** does) and migrates only
+once it succeeded; if the backup fails, the container stops without
+touching the database, and the previous image still works on it.
+
 ### Image signature verification
 
 Every image CI publishes to `ghcr.io/e2jk/openhangar` is signed (keyless,
