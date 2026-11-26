@@ -1727,9 +1727,12 @@ def create_app() -> Flask:
     @app.route("/set-language/<lang>")
     def set_language(lang: str) -> ResponseReturnValue:
         from flask import abort
+        from utils import cross_site_request  # pyright: ignore[reportMissingImports]
 
         if lang not in SUPPORTED_LOCALES:
             abort(400)
+        if cross_site_request():
+            return _bare_redirect("/")
         if session.get("user_id") and not session.get("demo_slot_id"):
             from models import User
 
@@ -1761,9 +1764,12 @@ def create_app() -> Flask:
     @app.route("/set-theme/<theme>")
     def set_theme(theme: str) -> ResponseReturnValue:
         from flask import abort
+        from utils import cross_site_request  # pyright: ignore[reportMissingImports]
 
         if theme not in ("light", "dark", "system"):
             abort(400)
+        if cross_site_request():
+            return _bare_redirect("/")
         if session.get("user_id") and not session.get("demo_slot_id"):
             from models import User
 
