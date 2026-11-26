@@ -217,6 +217,20 @@ class TestPgDump:
         assert result == b"SELECT 1;"
 
 
+    def test_password_goes_in_the_environment_not_the_command_line(self):
+        from config.routes import _pg_dump  # pyright: ignore[reportMissingImports]
+
+        fake_result = MagicMock()
+        fake_result.returncode = 0
+        fake_result.stdout = b""
+        with patch("config.routes.subprocess.run", return_value=fake_result) as run:
+            _pg_dump("postgresql+psycopg://user:s3cr%40t@db:5432/openhangar")
+        cmd, env = run.call_args.args[0], run.call_args.kwargs["env"]
+        assert not any("s3cr" in part for part in cmd)
+        assert cmd[-1] == "postgresql://user@db:5432/openhangar"
+        assert env["PGPASSWORD"] == "s3cr@t"
+
+
 # ── Unit tests: run_backup ────────────────────────────────────────────────────
 
 
@@ -802,7 +816,9 @@ class TestDropAndRestoreSchema:
         assert cmd[:2] == ["psql", "--no-password"]
         assert cmd[2] == "-f"
         assert cmd[3].endswith(".sql")
-        assert cmd[4] == "postgresql://u:p@h/db"
+        # The password travels in the environment, not in the process list.
+        assert cmd[4] == "postgresql://u@h/db"
+        assert mock_sub.call_args.kwargs["env"]["PGPASSWORD"] == "p"
 
     def test_raises_on_psql_failure(self, app):
         from init import (
