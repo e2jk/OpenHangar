@@ -268,9 +268,15 @@ password-reset and share URLs as well as ordinary requests.
 ### `OPENHANGAR_INSTANCE_URL`
 
 Public URL of this OpenHangar instance. When set, it is included in the footer
-of outgoing emails so recipients know which instance sent the message.
+of outgoing emails so recipients know which instance sent the message, and
+every absolute link the app writes (in e-mails, invitations, password-reset
+and passport links) starts with it, whatever host a request named. Set it in
+production: without it those links take their host from the request (its
+`Host` / `X-Forwarded-Host` header, see `OPENHANGAR_TRUSTED_HOSTS`), and a
+client who can choose that header could make an e-mail point to another site.
 
-- **Default**: unset — emails show a generic "this OpenHangar instance" phrase
+- **Default**: unset — emails show a generic "this OpenHangar instance" phrase,
+  and links use the request's host
 - **Example**: `https://hangar.example.com`
 - Must be a fully qualified URL (including `https://`).
 - Typically derived from `OPENHANGAR_HOSTNAME` in the compose file:

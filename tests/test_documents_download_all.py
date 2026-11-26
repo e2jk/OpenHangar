@@ -77,3 +77,16 @@ def test_title_suggestions_skip_documents_the_role_cannot_see(app, client):
     _login(app, client)
     data = client.get("/documents/title-suggestions?q=S&owner_type=aircraft").get_json()
     assert "Service manual" in str(data) and "Secret settlement" not in str(data)
+
+
+def test_absolute_url_ignores_a_spoofed_host_when_the_instance_url_is_set(
+    app, monkeypatch
+):
+    """E-mail links come from OPENHANGAR_INSTANCE_URL, not the request's
+    Host header, when it is set."""
+    from utils import absolute_url  # pyright: ignore[reportMissingImports]
+
+    with app.test_request_context("/", headers={"Host": "evil.example"}):
+        assert absolute_url("pilots.logbook").startswith("http://evil.example/")
+        monkeypatch.setenv("OPENHANGAR_INSTANCE_URL", "https://hangar.example/")
+        assert absolute_url("pilots.logbook") == "https://hangar.example/pilot/logbook"

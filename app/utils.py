@@ -1559,6 +1559,18 @@ def capped_rows(query: Any) -> tuple[list[Any], bool]:
     return rows[:SHOW_ALL_LIMIT], len(rows) > SHOW_ALL_LIMIT
 
 
+def absolute_url(endpoint: str, **values: Any) -> str:
+    """An absolute link to `endpoint`, for e-mails and links people copy.
+    Built from OPENHANGAR_INSTANCE_URL when set: the request's own host
+    comes from its Host / X-Forwarded-Host headers, which a client can set
+    when the app is reachable without a proxy that overwrites them, and the
+    link would then point to another site."""
+    instance_url = os.environ.get("OPENHANGAR_INSTANCE_URL", "").strip().rstrip("/")
+    if instance_url:
+        return instance_url + url_for(endpoint, **values)
+    return url_for(endpoint, _external=True, **values)
+
+
 def attachment_disposition(filename: str) -> str:
     """A Content-Disposition header for downloading `filename` as is: an
     ASCII fallback (quotes, backslashes and control characters dropped) and

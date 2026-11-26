@@ -18,7 +18,11 @@ from flask.typing import ResponseReturnValue
 from flask_babel import gettext as _
 from models import Passport, PassportStampPhoto, PublicShare, db, fits_column
 from services import public_shares
-from utils import db_id, login_required
+from utils import (
+    absolute_url,  # pyright: ignore[reportMissingImports]
+    db_id,
+    login_required,
+)
 
 from passports import groups, passports_bp, public_access, public_projection
 from passports.access import require_passport
@@ -186,7 +190,7 @@ def public_settings(passport_id: int) -> ResponseReturnValue:
         participant=participant,
         share=share,
         error=error,
-        public_url=url_for("passports.public_view", token=token, _external=True)
+        public_url=absolute_url("passports.public_view", token=token)
         if token and owner
         else None,
         publishes=participant is not None

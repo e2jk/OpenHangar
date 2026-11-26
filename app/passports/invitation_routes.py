@@ -25,7 +25,11 @@ from models import (
 )
 from services import auth_challenges, auth_sessions
 from services import capability_tokens as tokens
-from utils import current_membership, login_required
+from utils import (
+    absolute_url,  # pyright: ignore[reportMissingImports]
+    current_membership,
+    login_required,
+)
 
 from passports import groups, invitations, passports_bp, registration
 from passports.management import BuilderError
@@ -92,7 +96,7 @@ def invitation_settings(passport_id: int) -> ResponseReturnValue:
         passport=passport,
         invitation=row,
         can_open=invitations.enrolled(passport, session["user_id"]),
-        invite_url=url_for("passports.join_passport", token=token, _external=True)
+        invite_url=absolute_url("passports.join_passport", token=token)
         if token
         else None,
         error=error,

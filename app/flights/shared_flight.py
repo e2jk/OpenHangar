@@ -21,7 +21,6 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 
-from flask import url_for  # pyright: ignore[reportMissingImports]
 from flask_babel import gettext as _  # pyright: ignore[reportMissingImports]
 from flask_babel import lazy_gettext as _l  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
@@ -48,6 +47,7 @@ from pilots.form_parsing import (  # pyright: ignore[reportMissingImports]
     _parse_time,
 )
 from sqlalchemy import or_  # pyright: ignore[reportMissingImports]
+from utils import absolute_url  # pyright: ignore[reportMissingImports]
 
 log = logging.getLogger(__name__)
 
@@ -468,7 +468,7 @@ def notify_shared_changes(fe: Flight, actor_id: int, before: dict[str, str]) -> 
                     "date": fe.date.isoformat(),
                 },
                 "details": _change_details(changes),
-                "cta_url": url_for("pilots.view_entry", entry_id=fe.id, _external=True),
+                "cta_url": absolute_url("pilots.view_entry", entry_id=fe.id),
             },
         )
 
@@ -496,8 +496,7 @@ def notify_suggestion_created(suggestion: FlightCorrectionSuggestion) -> None:
                     "date": fe.date.isoformat(),
                 },
                 "details": _change_details(changes),
-                "cta_url": url_for("pilots.logbook", _external=True)
-                + "#flight-corrections",
+                "cta_url": absolute_url("pilots.logbook") + "#flight-corrections",
                 "cta_label": _l("Review in OpenHangar"),
             },
         )
@@ -526,6 +525,6 @@ def notify_suggestion_rejected(
                 "date": fe.date.isoformat(),
             },
             "details": _change_details(changes),
-            "cta_url": url_for("flights.crew_entry", flight_id=fe.id, _external=True),
+            "cta_url": absolute_url("flights.crew_entry", flight_id=fe.id),
         },
     )
