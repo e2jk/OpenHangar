@@ -15,6 +15,7 @@ from typing import Any
 from flask import (  # pyright: ignore[reportMissingImports]
     abort,
     redirect,
+    request,
     session,
     url_for,
 )
@@ -1556,6 +1557,18 @@ def capped_rows(query: Any) -> tuple[list[Any], bool]:
     """The query's rows up to SHOW_ALL_LIMIT, and whether there were more."""
     rows = query.limit(SHOW_ALL_LIMIT + 1).all()
     return rows[:SHOW_ALL_LIMIT], len(rows) > SHOW_ALL_LIMIT
+
+
+def flag_arg(name: str) -> bool:
+    """An on/off query parameter: absent, "" or "0" is off, "1" is on, and
+    anything else is a bad request (400) rather than silently "off" — the
+    page then never answers a tampered value as if it were valid."""
+    value = request.args.get(name)
+    if value in (None, "", "0"):
+        return False
+    if value == "1":
+        return True
+    return abort(400)
 
 
 def require_role(*roles: str) -> Callable[..., Any]:

@@ -13,7 +13,7 @@ from models import (
     PassportSeriesMember,
     db,
 )
-from utils import current_membership, db_id, login_required
+from utils import current_membership, db_id, flag_arg, login_required
 
 from passports import editions, groups, memberships, ownership, passports_bp
 from passports.drafts import new_draft, save_draft
@@ -208,7 +208,7 @@ def series_detail(series_id: int) -> ResponseReturnValue:
         comparisons=comparison["comparisons"],
         map_rows=map_rows,
         oldest=request.args.get("priority") == "oldest",
-        frequency=request.args.get("frequency") == "1",
+        frequency=flag_arg("frequency"),
     )
 
 
@@ -281,7 +281,7 @@ def _group_series(series: PassportSeries, user_id: int) -> ResponseReturnValue:
             comparisons=comparison["comparisons"],
             map_rows=map_rows,
             oldest=request.args.get("priority") == "oldest",
-            frequency=request.args.get("frequency") == "1",
+            frequency=flag_arg("frequency"),
         )
     except BuilderError as exc:
         return abort(exc.status)
