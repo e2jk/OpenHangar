@@ -26,9 +26,11 @@
     if (btn) {
       var label = btn.dataset.verifying || 'Verifying…';
       btn.disabled = true;
-      btn.innerHTML =
-        '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' +
-        label;
+      var spinner = document.createElement('span');
+      spinner.className = 'spinner-border spinner-border-sm me-2';
+      spinner.setAttribute('role', 'status');
+      spinner.setAttribute('aria-hidden', 'true');
+      btn.replaceChildren(spinner, document.createTextNode(label));
     }
 
     if (form) {

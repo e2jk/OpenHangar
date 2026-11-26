@@ -3,6 +3,14 @@
      serialised into the sessionStorage snapshot; WeakSet references are not). */
   var _mapInited = typeof WeakSet !== 'undefined' ? new WeakSet() : null;
 
+  // An icon (or spinner) followed by a translated label, added as text.
+  function iconText(el, tag, cls, text) {
+    var icon = document.createElement(tag);
+    icon.className = cls;
+    if (tag === 'span') icon.setAttribute('role', 'status');
+    el.replaceChildren(icon, document.createTextNode(text));
+  }
+
   function init() {
     var tracksEl = document.getElementById('tracks-data');
     if (!tracksEl) return;
@@ -121,7 +129,7 @@
 
     function animStep() {
       if (animIdx >= tracks.length) {
-        playBtn.innerHTML = '<i class="bi bi-arrow-counterclockwise me-1"></i>' + LABEL_REPLAY;
+        iconText(playBtn, 'i', 'bi bi-arrow-counterclockwise me-1', LABEL_REPLAY);
         playBtn.classList.remove('d-none');
         stopBtn.classList.add('d-none');
         if (progress) progress.textContent = tracks.length + ' / ' + tracks.length;
@@ -201,7 +209,7 @@
       animLayers.forEach(function (l) { l.remove(); });
       layerObjs.forEach(function (l) { l.addTo(map); });
       fitAll(allBounds);
-      playBtn.innerHTML = '<i class="bi bi-play-fill me-1"></i>' + LABEL_ANIMATE;
+      iconText(playBtn, 'i', 'bi bi-play-fill me-1', LABEL_ANIMATE);
       playBtn.classList.remove('d-none');
       stopBtn.classList.add('d-none');
       if (progress) { progress.classList.add('d-none'); }
@@ -240,7 +248,7 @@
       }
 
       function gifFetch(url) {
-        gifBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>' + LABEL_EXPORTING;
+        iconText(gifBtn, 'span', 'spinner-border spinner-border-sm me-1', LABEL_EXPORTING);
         gifBtn.classList.add('disabled');
         gifBtn.setAttribute('aria-disabled', 'true');
         var restore = function () {
@@ -295,7 +303,7 @@
             }
             i += 1;
             var label = LABEL_GENERATING.replace('{i}', i).replace('{n}', GIF_ALL_VARIANTS.length);
-            modalExportAll.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>' + label;
+            iconText(modalExportAll, 'span', 'spinner-border spinner-border-sm me-1', label);
             var v = GIF_ALL_VARIANTS[i - 1];
             var url = gifBaseUrl + '?orientation=' + encodeURIComponent(v.orientation)
                                  + '&quality='     + encodeURIComponent(v.quality);

@@ -121,8 +121,14 @@
     div.className = 'alert ' + (alertClass || 'alert-info') + ' alert-dismissible fade show';
     div.setAttribute('role', 'alert');
     if (id) div.id = id;
-    div.innerHTML = '<i class="bi ' + (iconClass || 'bi-cloud-check') + ' me-1"></i>' + msg +
-      '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+    // The message is a translation from the server: added as text.
+    var icon = document.createElement('i');
+    icon.className = 'bi ' + (iconClass || 'bi-cloud-check') + ' me-1';
+    var close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'btn-close';
+    close.setAttribute('data-bs-dismiss', 'alert');
+    div.append(icon, document.createTextNode(msg), close);
     container.prepend(div);
   }
 

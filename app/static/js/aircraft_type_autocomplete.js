@@ -79,9 +79,14 @@
         li.id = listId + '-opt-' + i;
         li.className = 'aircraft-type-ac-item px-2 py-1 d-flex gap-2 rounded';
         li.setAttribute('role', 'option');
-        li.innerHTML =
-          '<span class="fw-semibold ac-code-col">' + r.code + '</span>' +
-          '<span class="text-muted text-truncate small">' + r.name + '</span>';
+        // As text: the codes and names come from data files, never markup.
+        var code = document.createElement('span');
+        code.className = 'fw-semibold ac-code-col';
+        code.textContent = r.code;
+        var name = document.createElement('span');
+        name.className = 'text-muted text-truncate small';
+        name.textContent = r.name;
+        li.append(code, name);
         li.addEventListener('mousedown', function (e) { e.preventDefault(); selectItem(r.code, r.name, r.manufacturer, r.model); });
         li.addEventListener('mouseover', function () { setActive(i); });
         dropdown.appendChild(li);

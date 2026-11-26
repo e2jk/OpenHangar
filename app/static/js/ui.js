@@ -277,15 +277,19 @@ function _ohInit() {
     var _ohUpgradeWasDown  = false;
     var _ohUpgradeFailN    = 0;
 
-    function _ohSetUpgradeBanner(cls, html) {
+    // The message is a translation: added as text, never as markup.
+    function _ohSetUpgradeBanner(cls, msg) {
       var el = document.getElementById('upgrade-progress-banner');
-      if (el) { el.className = 'alert ' + cls + ' mb-4'; el.innerHTML = html; }
+      if (!el) return;
+      el.className = 'alert ' + cls + ' mb-4';
+      var icon = document.createElement('i');
+      icon.className = 'bi bi-exclamation-triangle me-2';
+      el.replaceChildren(icon, document.createTextNode(msg));
     }
 
     function _ohPollUpgrade() {
       if (Date.now() - _ohUpgradeStartMs > 5 * 60 * 1000) {
-        _ohSetUpgradeBanner('alert-warning',
-          '<i class="bi bi-exclamation-triangle me-2"></i>' + _ohUpgradeMsgWait);
+        _ohSetUpgradeBanner('alert-warning', _ohUpgradeMsgWait);
         return;
       }
       fetch(_ohUpgradePollUrl, {credentials: 'same-origin'})
@@ -307,8 +311,7 @@ function _ohInit() {
             return;
           }
           if (data.status === 'failed') {
-            _ohSetUpgradeBanner('alert-danger',
-              '<i class="bi bi-exclamation-triangle me-2"></i>' + _ohUpgradeMsgFail);
+            _ohSetUpgradeBanner('alert-danger', _ohUpgradeMsgFail);
             return;
           }
           if (data.status !== 'idle') { _ohUpgradeActive = true; }
