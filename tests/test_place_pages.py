@@ -693,11 +693,18 @@ def test_place_cards_distinguish_airfield_status_and_tags_without_showing_addres
     listing = client.get("/places/").text
     assert address not in listing
     assert (
-        'bg-primary-subtle text-primary-emphasis text-wrap place-filter-pill" title="Test Airfield"'
+        'bg-primary-subtle text-primary-emphasis text-wrap place-filter-pill place-card-control" title="Test Airfield"'
         in listing
     )
     assert 'text-warning-emphasis">No linked airfield' in listing
-    assert 'text-secondary-emphasis place-filter-pill" href="/places/?tag=' in listing
+    assert (
+        'text-secondary-emphasis place-filter-pill place-card-control" href="/places/?tag='
+        in listing
+    )
+    # The whole card opens the place; the pills stay clickable above it.
+    assert (
+        f'<a class="stretched-link" href="/places/{destinations["alpha"]}">' in listing
+    )
     assert re.search(r'text-body-secondary">\s*Not yet visited', listing)
     assert "Last visited" in listing
     assert address in client.get(f"/places/{destinations['alpha']}").text

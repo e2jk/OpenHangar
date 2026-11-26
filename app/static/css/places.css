@@ -5,6 +5,17 @@
 
 #places-bulk-move:not([open]) ~ #places-list .place-bulk-choice { display: none; }
 
+/* A place card opens the place from anywhere on it (the title's
+   stretched-link); links and controls inside it stay above that layer. */
+.place-card-control {
+  position: relative;
+  z-index: 2;
+}
+.place-card:has(.stretched-link:hover),
+.place-card:has(.stretched-link:focus-visible) {
+  border-color: var(--bs-primary-border-subtle);
+}
+
 .place-filter-pill {
   text-decoration: none;
 }

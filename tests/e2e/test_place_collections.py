@@ -463,3 +463,24 @@ def test_collection_settings_orders_sections_and_wraps_tag_cards(
             )
             == count
         )
+
+
+def test_place_card_opens_the_place_and_keeps_its_pills(passport_page: Page) -> None:
+    page = passport_page
+    page.set_viewport_size({"width": 1440, "height": 900})
+    page.goto("/places/")
+    card = page.locator("#places-list > li", has_text="Pairi Daiza").locator(
+        ".place-card"
+    )
+    # An empty spot in the card's bottom-right corner, away from every link.
+    box = card.bounding_box()
+    assert box is not None
+    card.click(position={"x": box["width"] - 8, "y": box["height"] - 8})
+    page.wait_for_url(re.compile(r"/places/\d+$"))
+    expect(page.locator("h1")).to_contain_text("Pairi Daiza")
+
+    page.goto("/places/")
+    card = page.locator("#places-list > li", has_text="Pairi Daiza")
+    card.get_by_role("link", name="Family", exact=True).click()
+    page.wait_for_url(re.compile(r"/places/\?.*tag=\d+"))
+    expect(page.locator("#places-list > li")).to_have_count(1)
