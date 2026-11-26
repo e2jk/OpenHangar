@@ -526,6 +526,7 @@ class TestSWRRouteCoverage:
     _NOT_A_PAGE: ClassVar[set[str]] = {
         "/favicon.ico",
         "/robots.txt",
+        "/.well-known/security.txt",
         "/manifest.json",
         "/sw.js",
         "/health",

@@ -150,9 +150,17 @@ class TestNotYetImplemented:
     def test_returns_501(self, client):
         assert client.get("/not-yet-implemented").status_code == 501
 
-    def test_feature_name_in_response(self, client):
-        resp = client.get("/not-yet-implemented?feature=Logbook")
-        assert b"Logbook" in resp.data
+    def test_text_from_the_link_is_not_shown(self, client):
+        resp = client.get("/not-yet-implemented?feature=Call+us+now")
+        assert b"<strong>Call us now</strong>" not in resp.data
+        assert b"on the roadmap" in resp.data
+
+    def test_security_txt_points_to_the_advisories(self, client):
+        resp = client.get("/.well-known/security.txt")
+        assert resp.status_code == 200
+        assert resp.mimetype == "text/plain"
+        assert b"Contact: https://github.com/e2jk/OpenHangar/security" in resp.data
+        assert b"Expires: 20" in resp.data
 
 
 # ── Login ─────────────────────────────────────────────────────────────────────
