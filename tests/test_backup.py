@@ -1290,6 +1290,7 @@ class TestRestoreBackup:
                 ),
             )
             zf.mkdir("uploads/")  # bare directory entry
+            zf.mkdir("uploads/hangar/empty/")  # a folder entry below it
             zf.writestr("uploads/real.pdf", b"%PDF")
         archive_path = os.path.join(backup_dir, "openhangar_backup_direntry.zip")
         with open(archive_path, "wb") as fh:
@@ -1306,6 +1307,7 @@ class TestRestoreBackup:
 
         assert result.exit_code == 0
         assert os.path.exists(os.path.join(upload_folder, "real.pdf"))
+        assert os.path.isdir(os.path.join(upload_folder, "hangar", "empty"))
 
 
 # ── Restore path: verify docs decryption matches backup output ────────────────
