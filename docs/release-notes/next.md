@@ -62,3 +62,5 @@
 - A release retries its documentation-site deploy once when GitHub has not
   listed the uploaded site yet, so the update check sees new versions
   without a manual re-run.
+- psycopg and psycopg-binary are updated to 3.3.9 together; Renovate now
+  always proposes them in one PR, and a test checks they match.
