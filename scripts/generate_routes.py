@@ -32,6 +32,8 @@ from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+# The seeded reset link (app/dev_seed.py); stored as a digest in the database.
+_E2E_RESET_TOKEN = "e2e-crawl-reset-token"
 sys.path.insert(0, str(PROJECT_ROOT / "app"))
 
 # ── Known public endpoints (no login required) ───────────────────────────────
@@ -267,9 +269,8 @@ def _query_samples(app) -> dict:
         e2e_invite = UserInvitation.query.filter_by(
             token="e2e-crawl-invite-token"
         ).first()
-        e2e_reset = PasswordResetToken.query.filter_by(
-            token="e2e-crawl-reset-token"
-        ).first()
+        # Stored as a digest: found by the link's own value.
+        e2e_reset = PasswordResetToken.find(_E2E_RESET_TOKEN)
         pilot = User.query.filter_by(email="pilot@openhangar.dev").first()
 
         samples = {
@@ -336,7 +337,7 @@ def _query_samples(app) -> dict:
             totp_secret=_DEV_TOTP_SECRET,
             pe_linked_id=samples["flight_id"],
             invite_token=e2e_invite.token if e2e_invite else None,
-            reset_token=e2e_reset.token if e2e_reset else None,
+            reset_token=_E2E_RESET_TOKEN if e2e_reset else None,
             share_token=(
                 share_token.token if share_token and e2e_invite and e2e_reset else None
             ),
