@@ -1,4 +1,4 @@
-# Security hardening: sign-in, links, uploads and backups
+# Security hardening: sign-in, links, uploads, backups and upgrades
 
 **Security and privacy**
 
@@ -21,6 +21,15 @@
   be opened from the demo page.
 - Backups are readable by the app's user only, and the database password
   no longer appears in the server's process list.
+- One-click upgrades refuse an image whose signature cannot be checked
+  (`OPENHANGAR_ALLOW_UNVERIFIED_UPGRADE=1` to allow it), and the container
+  backs up before applying migrations.
+- The Docker image keeps its code read-only for the app; the Raspberry Pi,
+  demo and minimal setups get the reference hardening; Traefik, PostgreSQL
+  and rclone are pinned by digest; the Docker socket proxy allows only what
+  Traefik needs.
+- Authenticator QR codes are drawn on the server (one script less on every
+  page).
 - An instance admin without 2FA is signed out when their hangar requires
   it; a security alert no longer hides a second one of the same type for a
   minute; the AMP PDF fetches no file or link, the status badge is always an
@@ -46,3 +55,7 @@
   (verifying link-only invitations, share-link expiry, a hangar time zone,
   expenses of deleted flights, costs in several currencies).
 - A test no longer imports its own module (a CodeQL note).
+- The app explains why it is waiting for PostgreSQL and stops on a wrong
+  password, and refuses to serve production without a database URL.
+- The PR-text job no longer runs code from the pushed branch with the
+  owner's token; Renovate no longer merges major updates on its own.
