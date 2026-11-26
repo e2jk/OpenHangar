@@ -1856,10 +1856,13 @@ def _suggested_aircraft_for_device(device_id: str | None) -> int | None:
     """Return the aircraft_id most recently used with this device_id, or None."""
     if not device_id:
         return None
+    # Only among the aircraft this user may open: another hangar's (or an
+    # ungranted one's) use of the same GPS device stays unseen.
+    allowed = [ac.id for ac in accessible_aircraft(_tenant_id())]
     row = (
         db.session.query(Flight.aircraft_id)
         .join(GpsTrack, Flight.gps_track_id == GpsTrack.id)
-        .filter(GpsTrack.device_id == device_id)
+        .filter(GpsTrack.device_id == device_id, Flight.aircraft_id.in_(allowed))
         .order_by(
             Flight.date.desc(),
             Flight.departure_time.desc().nullslast(),
@@ -1876,7 +1879,11 @@ def _check_gps_duplicate(gps_data: dict[str, Any]) -> dict[str, Any] | None:
     aircraft_id = request.form.get("aircraft_id", type=db_id)
     if aircraft_id is not None:
         ac = db.session.get(Aircraft, aircraft_id)
-        if not ac or ac.tenant_id != _tenant_id():
+        if (
+            not ac
+            or ac.tenant_id != _tenant_id()
+            or not user_can_access_aircraft(ac.id)
+        ):
             aircraft_id = None
     dup = _find_duplicate_flight(
         aircraft_id=aircraft_id,
@@ -2439,6 +2446,15 @@ def delete_flight(aircraft_id: int, flight_id: int) -> ResponseReturnValue:
     fe = db.session.get(Flight, flight_id)
     if not fe or fe.aircraft_id != ac.id:
         abort(404)
+    uid = session.get("user_id")
+    if current_user_role() not in (Role.ADMIN, Role.OWNER) and uid not in (
+        fe.pic_user_id,
+        fe.second_crew_user_id,
+        fe.created_by_user_id,
+    ):
+        # Another pilot's flight: only its crew, whoever logged it, or an
+        # owner may remove it from the aircraft log.
+        abort(403)
     label = f"{fe.departure_icao}→{fe.arrival_icao} on {fe.date}"
     # Linked to another pilot's logbook: take it off this aircraft's log but
     # keep it for them as an "other aircraft" flight (flights/crew_removal.py).

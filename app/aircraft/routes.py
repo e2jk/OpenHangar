@@ -1700,6 +1700,17 @@ def wb_list(aircraft_id: int) -> ResponseReturnValue:
 # ── Mass & Balance: new / edit entry ─────────────────────────────────────────
 
 
+def _check_wb_entry_owner(entry: WeightBalanceEntry) -> None:
+    """Another pilot's calculation is changed only by its author or an owner
+    (or admin); one made before authors were recorded stays open to all."""
+    if (
+        entry.created_by_user_id is not None
+        and entry.created_by_user_id != session.get("user_id")
+        and current_user_role() not in (Role.ADMIN, Role.OWNER)
+    ):
+        abort(403)
+
+
 @aircraft_bp.route("/<aircraft_ref:aircraft_id>/wb/new", methods=["GET", "POST"])
 @aircraft_bp.route(
     "/<aircraft_ref:aircraft_id>/wb/<int:entry_id>/edit", methods=["GET", "POST"]
@@ -1718,6 +1729,7 @@ def wb_entry(aircraft_id: int, entry_id: int | None = None) -> ResponseReturnVal
         entry = db.session.get(WeightBalanceEntry, entry_id)
         if not entry or entry.config_id != cfg.id:
             abort(404)
+        _check_wb_entry_owner(entry)
 
     if request.method == "POST":
         from datetime import date as _date
@@ -1804,7 +1816,9 @@ def wb_entry(aircraft_id: int, entry_id: int | None = None) -> ResponseReturnVal
             )
 
         if entry is None:
-            entry = WeightBalanceEntry(config_id=cfg.id)
+            entry = WeightBalanceEntry(
+                config_id=cfg.id, created_by_user_id=session.get("user_id")
+            )
             db.session.add(entry)
 
         entry.date = entry_date
@@ -1841,6 +1855,7 @@ def wb_entry_delete(aircraft_id: int, entry_id: int) -> ResponseReturnValue:
     entry = db.session.get(WeightBalanceEntry, entry_id)
     if not entry or entry.config_id != ac.wb_config.id:
         abort(404)
+    _check_wb_entry_owner(entry)
     db.session.delete(entry)
     db.session.commit()
     flash(_("W&B calculation deleted."), "success")

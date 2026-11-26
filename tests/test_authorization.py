@@ -803,3 +803,108 @@ def test_maintenance_view_level_none_sees_no_maintenance(app, client):
     _grant_with_mask(app, uid, acid, no_maintenance)
     _login(client, uid)
     assert client.get(f"/aircraft/{acid}/maintenance").status_code == 403
+
+
+def _second_pilot(app, tid, acid, email="other-pilot@test.dev"):
+    with app.app_context():
+        other = User(email=email, password_hash="x", is_active=True)
+        db.session.add(other)
+        db.session.flush()
+        db.session.add(
+            TenantUser(user_id=other.id, tenant_id=tid, role=Role.PILOT, is_pilot=True)
+        )
+        db.session.add(UserAircraftAccess(user_id=other.id, aircraft_id=acid))
+        db.session.commit()
+        return other.id
+
+
+def test_a_pilot_cannot_delete_another_pilots_flight(app, client):
+    from datetime import date
+
+    from models import Flight
+
+    tid, uid, acid = _make_env(app, Role.PILOT, is_pilot=True)
+    _grant_specific(app, uid, acid)
+    other = _second_pilot(app, tid, acid)
+    with app.app_context():
+        theirs = Flight(
+            aircraft_id=acid,
+            date=date(2026, 5, 1),
+            pic_user_id=other,
+            created_by_user_id=other,
+        )
+        mine = Flight(
+            aircraft_id=acid,
+            date=date(2026, 5, 2),
+            pic_user_id=uid,
+            created_by_user_id=uid,
+        )
+        db.session.add_all([theirs, mine])
+        db.session.commit()
+        theirs_id, mine_id = theirs.id, mine.id
+    _login(client, uid)
+    assert (
+        client.post(f"/aircraft/{acid}/flights/{theirs_id}/delete").status_code == 403
+    )
+    assert client.post(f"/aircraft/{acid}/flights/{mine_id}/delete").status_code == 302
+    with app.app_context():
+        assert db.session.get(Flight, theirs_id) is not None
+
+
+def test_wb_calculations_are_changed_by_their_author_or_an_owner(app, client):
+    from datetime import date
+
+    from models import WeightBalanceEntry
+
+    from tests.test_wb import _add_wb_config
+
+    tid, uid, acid = _make_env(app, Role.PILOT, is_pilot=True)
+    _grant_specific(app, uid, acid)
+    other = _second_pilot(app, tid, acid)
+    cfg_id, _ = _add_wb_config(app, acid)
+    with app.app_context():
+        ids = []
+        for author in (other, None):
+            e = WeightBalanceEntry(
+                config_id=cfg_id,
+                date=date(2026, 1, 1),
+                total_weight=900.0,
+                loaded_cg=1.05,
+                is_in_envelope=True,
+                station_weights={},
+                created_by_user_id=author,
+            )
+            db.session.add(e)
+            db.session.flush()
+            ids.append(e.id)
+        db.session.commit()
+    theirs, legacy = ids
+    _login(client, uid)
+    assert client.get(f"/aircraft/{acid}/wb/{theirs}/edit").status_code == 403
+    assert client.post(f"/aircraft/{acid}/wb/{theirs}/delete").status_code == 403
+    # Made before authors were recorded: still open to every pilot.
+    assert client.post(f"/aircraft/{acid}/wb/{legacy}/delete").status_code == 302
+    _login(client, other)
+    assert client.post(f"/aircraft/{acid}/wb/{theirs}/delete").status_code == 302
+
+
+def test_new_wb_calculation_records_its_author(app, client):
+    from models import WeightBalanceEntry
+
+    from tests.test_wb import _add_wb_config
+
+    _tid, uid, acid = _make_env(app, Role.OWNER, is_pilot=True)
+    _cfg, st_ids = _add_wb_config(app, acid)
+    _login(client, uid)
+    client.post(
+        f"/aircraft/{acid}/wb/new",
+        data={
+            "date": "2026-03-01",
+            "label": "x",
+            f"weight_{st_ids[0]}": "80.0",
+            f"weight_{st_ids[1]}": "0.0",
+            f"volume_{st_ids[2]}": "50",
+        },
+    )
+    with app.app_context():
+        assert WeightBalanceEntry.query.one().created_by_user_id == uid
