@@ -27,8 +27,9 @@ from __future__ import annotations
 import json
 import math
 from dataclasses import asdict, dataclass
-from datetime import UTC, date, datetime, timedelta
-from typing import Any
+from datetime import UTC, date, datetime, time, timedelta
+from itertools import groupby, pairwise
+from typing import Any, cast
 
 from models import (  # pyright: ignore[reportMissingImports]
     Aircraft,
@@ -216,25 +217,84 @@ def check_flight(
     return found
 
 
-def check_counters(flights: list[Any]) -> list[Finding]:
-    """Counter gaps among one aircraft's *flights*: each flight whose flight
-    or engine counter start differs from the previous flight's end (in
-    logbook order: date, departure time, id). A flight without an end value
-    breaks the chain — the next start isn't compared with an older one."""
-    ordered = sorted(
+_COUNTERS = (
+    (FLIGHT_COUNTER, "flight_time_counter_start", "flight_time_counter_end"),
+    (ENGINE_COUNTER, "engine_time_counter_start", "engine_time_counter_end"),
+)
+
+
+def _departure_time(flight: Flight) -> time | None:
+    return cast("time | None", flight.departure_time or flight.takeoff_time)
+
+
+def _counter_differences(previous: Flight, following: Flight) -> list[float]:
+    return [
+        abs(float(start) - float(end))
+        for _, start_name, end_name in _COUNTERS
+        if (start := getattr(following, start_name)) is not None
+        and (end := getattr(previous, end_name)) is not None
+    ]
+
+
+def _continuous(first: Flight, second: Flight) -> bool:
+    differences = _counter_differences(first, second)
+    return bool(differences) and max(differences) <= _COUNTER_TOLERANCE
+
+
+def _counter_order(day: list[Flight]) -> list[Flight]:
+    """Reorder a day only when the available counters support one sequence."""
+    timed = [flight.id for flight in day if flight.departure_time is not None]
+    if len(timed) == len(day) or all(_continuous(a, b) for a, b in pairwise(day)):
+        return day
+
+    candidates: dict[tuple[int, ...], list[Flight]] = {}
+
+    def consider(candidate: list[Flight]) -> None:
+        if [f.id for f in candidate if f.departure_time is not None] != timed:
+            return
+        if all(_continuous(a, b) for a, b in pairwise(candidate)):
+            candidates[tuple(f.id for f in candidate)] = candidate
+
+    if all(_departure_time(f) is not None for f in day):
+        consider(sorted(day, key=lambda f: (_departure_time(f) or time.min, f.id)))
+
+    for _, start_attr, end_attr in _COUNTERS:
+        readings = [
+            (getattr(flight, start_attr), getattr(flight, end_attr)) for flight in day
+        ]
+        if any(start is None or end is None for start, end in readings):
+            continue
+        # Equal readings cannot establish an order on this counter alone.
+        if len(set(readings)) != len(day):
+            continue
+        readings_by_id = dict(zip((f.id for f in day), readings))
+        consider(sorted(day, key=lambda f: readings_by_id[f.id]))
+
+    return next(iter(candidates.values())) if len(candidates) == 1 else day
+
+
+def check_counters(flights: list[Flight]) -> list[Finding]:
+    """Report gaps between successive flights, with conservative same-day ordering.
+
+    Preserve known departure times and use takeoff times or counter sequences
+    when the available counters support a continuous order. Missing ends break the counter chain.
+    """
+    by_time = sorted(
         flights,
         key=lambda f: (
             f.date or date.min,
             f.departure_time is None,
-            f.departure_time or datetime.min.time(),
+            f.departure_time or time.min,
             f.id,
         ),
     )
+    ordered = [
+        flight
+        for _, day in groupby(by_time, key=lambda f: f.date)
+        for flight in _counter_order(list(day))
+    ]
     found: list[Finding] = []
-    for kind, start_attr, end_attr in (
-        (FLIGHT_COUNTER, "flight_time_counter_start", "flight_time_counter_end"),
-        (ENGINE_COUNTER, "engine_time_counter_start", "engine_time_counter_end"),
-    ):
+    for kind, start_attr, end_attr in _COUNTERS:
         previous_end: float | None = None
         for flight in ordered:
             start = getattr(flight, start_attr)
@@ -303,7 +363,7 @@ def _fingerprint(aircraft_id: int) -> str:
         .one()
     )
     stamp = _utc(last_change).isoformat() if last_change else ""
-    return f"2|{count}|{stamp}|{newest_track or ''}"
+    return f"3|{count}|{stamp}|{newest_track or ''}"
 
 
 def _check_aircraft(aircraft_id: int) -> list[Finding]:
