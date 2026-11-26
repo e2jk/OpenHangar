@@ -298,8 +298,10 @@ def accept_invite(token: str) -> ResponseReturnValue:
             prefill_email="",
         )
 
-    # POST — create user
-    email = request.form.get("email", "").strip().lower()
+    # POST — create user. An invitation sent to an address is for that
+    # address only: the form shows it read-only, and it is not taken from
+    # the form (Places and passport invitations trust the account's address).
+    email = (inv.email or request.form.get("email", "")).strip().lower()
     password = request.form.get("password", "")
     password2 = request.form.get("password2", "")
 
@@ -323,6 +325,19 @@ def accept_invite(token: str) -> ResponseReturnValue:
             prefill_email=email,
         )
 
+    # Claimed first, in one conditional update: two submits of one link at
+    # once cannot both create an account.
+    claimed = (
+        UserInvitation.query.filter_by(id=inv.id, accepted_at=None).update(
+            {"accepted_at": datetime.now(UTC)}, synchronize_session=False
+        )
+        == 1
+    )
+    if not claimed:
+        db.session.rollback()
+        flash(_("This invitation has already been used."), "warning")
+        return redirect(url_for("auth.login"))
+
     user = User(
         email=email,
         password_hash=_pw.hash(password),
@@ -344,7 +359,6 @@ def accept_invite(token: str) -> ResponseReturnValue:
         for acid in inv.aircraft_ids:
             db.session.add(UserAircraftAccess(user_id=user.id, aircraft_id=acid))
 
-    inv.accepted_at = datetime.now(UTC)
     db.session.commit()
     activity(
         "user.invite_accepted", invitation_id=inv.id, email=email, user_id_new=user.id

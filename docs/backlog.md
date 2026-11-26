@@ -1181,3 +1181,16 @@ tracks, deferred track images, the download-all ZIP spooled to disk, and
   and imported H:MM values round half-to-even (1:15 → 1.2 but 1:45 → 1.8), so
   H:MM logbooks drift. Store minutes (or a wider decimal) with a migration,
   or drop the "minute" option and round half-up consistently.
+
+## Security follow-ups (2026-11-25 audit)
+
+Items from the audit that need a feature of their own rather than a fix.
+
+- **Verify the address chosen on a link-only invitation.** An invitation sent
+  to an address now creates that address only, but one shared as a bare link
+  lets the invitee type any address, unverified. Places collection and
+  passport invitations match accounts by address, so an invitee could
+  register a friend's address first and see that friend's pending
+  invitations. Send a code to the address before the account is created
+  (the passport registration flow already does this) or before
+  address-matched invitations show up for it.
