@@ -275,7 +275,7 @@ def _drop_and_restore_schema(database_url: str, sql_bytes: bytes) -> None:
 
     from models import db  # pyright: ignore[reportMissingImports]
     from sqlalchemy import text  # pyright: ignore[reportMissingImports]
-    from utils import to_libpq_url  # pyright: ignore[reportMissingImports]
+    from utils import libpq_target  # pyright: ignore[reportMissingImports]
 
     # Close the ORM session while its connection is still alive so Flask's
     # teardown has nothing left to rollback after we terminate other backends.
@@ -322,8 +322,10 @@ def _drop_and_restore_schema(database_url: str, sql_bytes: bytes) -> None:
         tmp_path = tmp.name
 
     try:
+        target, password_env = libpq_target(database_url)
         result = subprocess.run(  # nosec B603
-            ["psql", "--no-password", "-f", tmp_path, to_libpq_url(database_url)],
+            ["psql", "--no-password", "-f", tmp_path, target],
+            env={**os.environ, **password_env},
             timeout=600,
             check=False,  # returncode checked explicitly below
         )

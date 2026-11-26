@@ -39,10 +39,10 @@ from utils import (  # pyright: ignore[reportMissingImports]
     activity,
     current_membership,
     db_id,
+    libpq_target,
     login_required,
     months_back,
     require_instance_admin,
-    to_libpq_url,
 )
 
 config_bp = Blueprint("config", __name__, url_prefix="/config")
@@ -287,9 +287,9 @@ def _pg_dump(database_url: str) -> bytes:
     """Run pg_dump against *database_url* and return the SQL as bytes."""
     env = os.environ.copy()
     if database_url.startswith("postgresql"):
-        libpq_url = to_libpq_url(database_url)
+        libpq_url, password_env = libpq_target(database_url)
+        env.update(password_env)
         env["DATABASE_URL"] = libpq_url
-        # pg_dump reads PGPASSWORD / connection string
         cmd = [
             "pg_dump",
             "--no-password",

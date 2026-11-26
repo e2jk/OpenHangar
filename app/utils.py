@@ -88,6 +88,25 @@ def to_libpq_url(database_url: str) -> str:
     return f"{scheme.split('+', 1)[0]}{sep}{rest}" if sep else database_url
 
 
+def libpq_target(database_url: str) -> tuple[str, dict[str, str]]:
+    """The libpq URL for pg_dump/psql without its password, and the
+    environment variables that carry the password instead: on the command
+    line, any user of the host could read it in the process list."""
+    from sqlalchemy.engine import URL, make_url  # pyright: ignore[reportMissingImports]
+
+    parsed = make_url(database_url)
+    without_password = URL.create(
+        parsed.drivername,
+        username=parsed.username,
+        host=parsed.host,
+        port=parsed.port,
+        database=parsed.database,
+        query=parsed.query,
+    )
+    env = {"PGPASSWORD": str(parsed.password)} if parsed.password is not None else {}
+    return to_libpq_url(without_password.render_as_string()), env
+
+
 # ── Tracks GIF export ─────────────────────────────────────────────────────────
 
 _GIF_W, _GIF_H = 800, 480
