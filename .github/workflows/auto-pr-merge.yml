@@ -100,13 +100,21 @@ jobs:
       contents: write       # gh pr merge
       pull-requests: write  # gh pr create / gh pr merge
     steps:
-      # Only for scripts/release_notes.py and the release summary file —
-      # nothing from the checkout is executed with the PAT except that
-      # repo-owned script, on the owner's own pushed commit.
+      # The pushed commit: data only (the release summary file). Nothing
+      # from it runs with the PAT: anyone who can push a ship* branch could
+      # otherwise change the script below to read the token.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
           fetch-depth: 1
+      # The script that writes the PR text, as it is on main (a change to it
+      # in a ship batch applies from the next batch on).
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+          ref: main
+          path: trusted
       - name: Open PR (if none exists) and enable auto-merge
         env:
           # A PR authored by github-actions[bot] (i.e. opened with the
@@ -157,7 +165,7 @@ jobs:
               # with nothing (else a new entry could pass for a rewording).
               if gh release view --json name,body > "$RUNNER_TEMP/latest.json" 2>/dev/null; then
                 jq -r '.body' "$RUNNER_TEMP/latest.json" > "$RUNNER_TEMP/latest-notes.md"
-                if ! python3 scripts/release_notes.py already-released "$RUNNER_TEMP/next-base.md" \
+                if ! python3 trusted/scripts/release_notes.py already-released "$RUNNER_TEMP/next-base.md" \
                     "$RUNNER_TEMP/latest-notes.md" --heading "$(jq -r '.name' "$RUNNER_TEMP/latest.json")" >/dev/null; then
                   : > "$RUNNER_TEMP/next-base.md"
                 fi
@@ -167,8 +175,8 @@ jobs:
           fi
           # A `# <title>` first line in next.md (when it changed in this
           # batch) is the PR title; otherwise the count of commits by kind.
-          title=$(printf '%s\n' "$subjects" | python3 scripts/release_notes.py title "${summary_args[@]}" "${later_args[@]}")
-          body=$(printf '%s\n' "$subjects" | python3 scripts/release_notes.py body "${summary_args[@]}" "${later_args[@]}")
+          title=$(printf '%s\n' "$subjects" | python3 trusted/scripts/release_notes.py title "${summary_args[@]}" "${later_args[@]}")
+          body=$(printf '%s\n' "$subjects" | python3 trusted/scripts/release_notes.py body "${summary_args[@]}" "${later_args[@]}")
 
           pr_number=$(gh pr list --head "$HEAD_BRANCH" --base main --state open --json number --jq '.[0].number // empty')
           if [ -z "$pr_number" ]; then
