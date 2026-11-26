@@ -5,37 +5,45 @@
 {% block title %}{{ _('Collection settings') }} — OpenHangar{% endblock %}
 {% block content %}
 <div class="container py-4" id="place-collection-settings"><h1>{{ collection.name }}</h1><p><a href="{{ url_for('places.index', collection=collection.id) }}">{{ _('Back to places') }}</a></p>
+{% if can_manage %}
+<h2>{{ _('Collection name') }}</h2><form method="post" class="mb-4">{{ csrf() }}<input class="form-control mb-2" name="name" aria-label="{{ _('Collection name') }}" maxlength="128" required value="{{ collection.name }}"><button class="btn btn-ac-ghost" name="action" value="rename">{{ _('Rename collection') }}</button></form>
+{% endif %}
 {% if can_edit %}<form method="post" class="mb-3">{{ csrf() }}<button type="submit" class="btn btn-ac-ghost" name="action" value="default">{{ _('Use as my default collection') }}</button></form>{% endif %}
 <h2>{{ _('Collection members') }}</h2><ul>{% for member, person in members %}<li>{{ person.name or _('Unnamed member') }} — {{ _('Can edit') if member.can_edit else _('Can view and record own visits') }}{% if can_manage and member.user_id != collection.created_by_user_id %}<form method="post" class="d-inline-flex flex-wrap gap-2 mb-2 mw-100">{{ csrf() }}<input type="hidden" name="member" value="{{ member.user_id }}">{{ rights() }}<button type="submit" name="action" value="member" class="btn btn-ac-ghost">{{ _('Change rights') }}</button><button type="submit" name="action" value="remove" class="btn btn-ac-ghost">{{ _('Remove member') }}</button></form>{% endif %}</li>{% endfor %}</ul>
 {% if can_leave %}<form method="post" class="mb-4">{{ csrf() }}<p>{{ _('Your places and visits stay in the collection when you leave. Copy any places you want to keep first.') }}</p><button class="btn btn-ac-ghost" name="action" value="leave">{{ _('Leave collection') }}</button></form>{% endif %}
+{% if can_manage %}
+<h2>{{ _('Add a friend') }}</h2>
+{% if organisation_access %}<form method="post" class="mb-4">{{ csrf() }}<label for="collection-user" class="form-label">{{ _('Choose a user') }}</label><select class="form-select mb-2" id="collection-user" name="member" required>{% for person in available %}<option value="{{ person.id }}">{{ person.name or _('Unnamed member') }} — {{ person.email }}</option>{% endfor %}</select>{{ rights() }}<button class="btn btn-ac-ghost mt-2" name="action" value="member">{{ _('Add member') }}</button></form>
+{% else %}<form method="post" class="mb-4">{{ csrf() }}<label class="form-label" for="collection-email">{{ _('Exact email address') }}</label><input class="form-control mb-2" id="collection-email" name="email" type="email" maxlength="255" required>{{ rights() }}<p class="form-text">{{ _('The invitation appears when your friend signs in with this email and opens Places. It expires after 30 days. No email is sent.') }}</p><button class="btn btn-ac-ghost" name="action" value="invite">{{ _('Save invitation') }}</button></form>{% endif %}
+<p><a href="{{ url_for('places.join_collection', collection_id=collection.id, _external=true) }}">{{ _('Collection invitation link') }}</a></p>
+{% if pending %}<h3>{{ _('Pending collection invitations') }}</h3><ul>{% for invitation in pending %}<li>{{ invitation.email }}<form method="post" class="d-inline">{{ csrf() }}<input type="hidden" name="invitation" value="{{ invitation.id }}"><button class="btn btn-ac-ghost" name="action" value="revoke">{{ _('Revoke invitation') }}</button></form></li>{% endfor %}</ul>{% endif %}
+{% endif %}
 {% if can_edit %}
 <h2>{{ _('Tags') }}</h2>
 <p>{{ _('Renaming to an existing tag merges them.') }}</p>
+<div class="row g-3 mb-4" id="collection-tag-cards">
 {% for tag, count in collection_tags %}
-<div class="mb-3">
+<div class="col-12 col-lg-4">
+<div class="card card-body h-100">
   <form method="post">{{ csrf() }}
     <input type="hidden" name="tag" value="{{ tag.id }}">
     <label class="form-label" for="collection-tag-{{ tag.id }}">{{ _('Tag name') }} · {{ ngettext('Used by one place', 'Used by %(num)d places', count) if count else _('Unused') }}</label>
     <input class="form-control mb-2" id="collection-tag-{{ tag.id }}" name="name" value="{{ tag.name }}" maxlength="80" required>
     <button class="btn btn-ac-ghost" name="action" value="tag-rename">{{ _('Rename tag') }}</button>
   </form>
-  <form method="post" class="mt-2">{{ csrf() }}
+  <form method="post" class="mt-auto pt-2">{{ csrf() }}
     <input type="hidden" name="tag" value="{{ tag.id }}">
     {% if count %}
-    <label class="form-check-label me-2"><input type="checkbox" class="form-check-input" name="confirm" value="yes" required> {{ _('Remove this tag from every place using it') }}</label>
+    <label class="form-check-label d-block mb-2"><input type="checkbox" class="form-check-input" name="confirm" value="yes" required> {{ _('Remove this tag from every place using it') }}</label>
     {% endif %}
     <button class="btn btn-ac-ghost" name="action" value="tag-delete">{{ _('Delete tag') }}</button>
   </form>
 </div>
+</div>
 {% endfor %}
+</div>
 {% endif %}
 {% if can_manage %}
-<h2>{{ _('Collection name') }}</h2><form method="post" class="mb-4">{{ csrf() }}<input class="form-control mb-2" name="name" aria-label="{{ _('Collection name') }}" maxlength="128" required value="{{ collection.name }}"><button class="btn btn-ac-ghost" name="action" value="rename">{{ _('Rename collection') }}</button></form>
-<h2>{{ _('Add a friend') }}</h2>
-{% if organisation_access %}<form method="post" class="mb-4">{{ csrf() }}<label for="collection-user" class="form-label">{{ _('Choose a user') }}</label><select class="form-select mb-2" id="collection-user" name="member" required>{% for person in available %}<option value="{{ person.id }}">{{ person.name or _('Unnamed member') }} — {{ person.email }}</option>{% endfor %}</select>{{ rights() }}<button class="btn btn-ac-ghost mt-2" name="action" value="member">{{ _('Add member') }}</button></form>
-{% else %}<form method="post" class="mb-4">{{ csrf() }}<label class="form-label" for="collection-email">{{ _('Exact email address') }}</label><input class="form-control mb-2" id="collection-email" name="email" type="email" maxlength="255" required>{{ rights() }}<p class="form-text">{{ _('The invitation appears when your friend signs in with this email and opens Places. It expires after 30 days. No email is sent.') }}</p><button class="btn btn-ac-ghost" name="action" value="invite">{{ _('Save invitation') }}</button></form>{% endif %}
-<p><a href="{{ url_for('places.join_collection', collection_id=collection.id, _external=true) }}">{{ _('Collection invitation link') }}</a></p>
-{% if pending %}<h3>{{ _('Pending collection invitations') }}</h3><ul>{% for invitation in pending %}<li>{{ invitation.email }}<form method="post" class="d-inline">{{ csrf() }}<input type="hidden" name="invitation" value="{{ invitation.id }}"><button class="btn btn-ac-ghost" name="action" value="revoke">{{ _('Revoke invitation') }}</button></form></li>{% endfor %}</ul>{% endif %}
 <h2>{{ _('Transfer collection') }}</h2><form method="post" class="mb-4">{{ csrf() }}<label for="collection-creator" class="form-label">{{ _('New collection owner') }}</label><select class="form-select mb-2" id="collection-creator" name="member" required>{% for member, person in members if member.user_id != collection.created_by_user_id %}<option value="{{ member.user_id }}">{{ person.name or _('Unnamed member') }}</option>{% endfor %}</select><button class="btn btn-ac-ghost" name="action" value="transfer">{{ _('Transfer collection') }}</button></form>
 <h2>{{ _('Delete collection') }}</h2><p>{{ _('Deleting this collection also permanently deletes its places and visits.') }}</p><dl><dt>{{ _('Places') }}</dt><dd>{{ counts[0] }}</dd><dt>{{ _('Visits') }}</dt><dd>{{ counts[1] }}</dd></dl><form method="post">{{ csrf() }}<input type="hidden" name="places" value="{{ counts[0] }}"><input type="hidden" name="visits" value="{{ counts[1] }}"><label class="form-check-label mb-2"><input class="form-check-input" type="checkbox" name="confirm" value="yes" required> {{ _('I confirm the permanent deletion of this collection.') }}</label><br><button class="btn btn-danger" name="action" value="delete">{{ _('Delete collection') }}</button></form>
 {% endif %}

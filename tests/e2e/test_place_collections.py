@@ -412,3 +412,34 @@ def test_place_airfield_pill_filters_and_can_be_cleared(passport_page: Page) -> 
     page.get_by_role("link", name="Clear airfield filter").click()
     expect(cards).to_have_count(initial_count)
     assert "airfield=" not in page.url
+
+
+def test_collection_settings_orders_sections_and_wraps_tag_cards(
+    logged_in_page, live_server_url
+):
+    page = logged_in_page
+    page.goto(f"{live_server_url}/places/")
+    page.get_by_label("Collection settings: Our places", exact=True).click()
+    settings = page.locator("#place-collection-settings")
+    expect(settings.locator("h2")).to_have_text(
+        [
+            "Collection name",
+            "Collection members",
+            "Add a friend",
+            "Tags",
+            "Transfer collection",
+            "Delete collection",
+        ]
+    )
+    tags = settings.locator("#collection-tag-cards > div")
+    for width, count in [(1200, 3), (390, 1)]:
+        page.set_viewport_size({"width": width, "height": 900})
+        assert (
+            tags.evaluate_all(
+                """cards => {
+                const top = cards[0].getBoundingClientRect().top;
+                return cards.filter(card => card.getBoundingClientRect().top === top).length;
+            }"""
+            )
+            == count
+        )
