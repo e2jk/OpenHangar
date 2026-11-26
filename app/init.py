@@ -530,7 +530,8 @@ def create_app() -> Flask:
     ).strip().lower() not in ("0", "false", "no")
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-    _session_days = int(os.environ.get("OPENHANGAR_SESSION_LIFETIME_DAYS", "30"))
+    # An invalid value is reported by _validate_config (with the others).
+    _session_days = _session_lifetime_days() or 30
     app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=_session_days)
 
     flask_env = os.environ.get("OPENHANGAR_ENV", "production")
@@ -2255,9 +2256,27 @@ def create_app() -> Flask:
     return app
 
 
+def _session_lifetime_days() -> int | None:
+    """OPENHANGAR_SESSION_LIFETIME_DAYS (default 30), None when it is not a
+    whole number of days from 1 to 3650: a typo used to stop the app with a
+    raw traceback, and 0 or less expired every login at once."""
+    raw = os.environ.get("OPENHANGAR_SESSION_LIFETIME_DAYS", "30").strip()
+    try:
+        days = int(raw)
+    except ValueError:
+        return None
+    return days if 1 <= days <= 3650 else None
+
+
 def _validate_config(app: Flask) -> None:
     """Collect and report all configuration problems at once rather than one at a time."""
     errors: list[str] = []
+    if _session_lifetime_days() is None:
+        errors.append(
+            "OPENHANGAR_SESSION_LIFETIME_DAYS must be a whole number of days "
+            "from 1 to 3650 (got "
+            f"{os.environ.get('OPENHANGAR_SESSION_LIFETIME_DAYS', '')!r})"
+        )
 
     # OPENHANGAR_SECRET_KEY: minimum length (existence and placeholder already checked above)
     secret = app.config.get("SECRET_KEY", "")

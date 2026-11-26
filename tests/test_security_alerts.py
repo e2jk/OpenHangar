@@ -149,11 +149,29 @@ class TestDebounce:
         h.emit(_make_record(msg))
 
         # Simulate debounce window expiry
-        h._debounce["auth.login.account_locked"] = (
+        h._debounce[f"auth.login.account_locked:{msg}"] = (
             time.monotonic() - _DEBOUNCE_SECONDS - 1
         )
         h.emit(_make_record(msg))
         assert len(dispatched) == 2
+
+    def test_same_event_about_another_subject_still_alerts(self, monkeypatch):
+        """One role change no longer hides a second one for a minute."""
+        h = _fresh_handler()
+        dispatched = []
+        monkeypatch.setattr(h, "_dispatch", lambda et, d: dispatched.append(et))
+
+        h.emit(_make_record("[SECURITY] auth.login.account_locked email=a ip=1"))
+        h.emit(_make_record("[SECURITY] auth.login.account_locked email=b ip=1"))
+        assert len(dispatched) == 2
+
+    def test_debounce_memory_stays_bounded(self, monkeypatch):
+        h = _fresh_handler()
+        monkeypatch.setattr(h, "_dispatch", lambda et, d: None)
+        old = time.monotonic() - _DEBOUNCE_SECONDS - 1
+        h._debounce.update({f"k{i}": old for i in range(1001)})
+        h.emit(_make_record("[SECURITY] auth.login.account_locked email=z ip=1"))
+        assert len(h._debounce) == 1
 
     def test_different_event_types_debounced_independently(self, monkeypatch):
         h = _fresh_handler()

@@ -287,7 +287,14 @@ def _snooze_url(token: str) -> str:
         "notifications.snooze", {"token": token}
     )
     instance_url = os.environ.get("OPENHANGAR_INSTANCE_URL", "").strip()
-    return f"{instance_url.rstrip('/')}{path}" if instance_url else path
+    if instance_url:
+        return f"{instance_url.rstrip('/')}{path}"
+    from flask import has_request_context, request  # pyright: ignore[reportMissingImports]
+
+    # Without it, a reminder sent while answering a request still gets a
+    # working link; the daily run (no request) can only give the path, so
+    # the configuration guide asks for OPENHANGAR_INSTANCE_URL.
+    return request.host_url.rstrip("/") + path if has_request_context() else path
 
 
 # ── Dispatch ──────────────────────────────────────────────────────────────────

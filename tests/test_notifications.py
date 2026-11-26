@@ -2547,3 +2547,16 @@ class TestSnoozeRoute:
         response = client.get(f"/notifications/snooze/{token}")
         assert response.status_code == 200
         assert b"snoozed" in response.data.lower()
+
+
+def test_snooze_links_are_absolute_whenever_a_host_is_known(app, monkeypatch):
+    from services.notification_service import _snooze_url  # pyright: ignore[reportMissingImports]
+
+    monkeypatch.delenv("OPENHANGAR_INSTANCE_URL", raising=False)
+    with app.app_context():
+        assert _snooze_url("abc").startswith("/notifications/snooze/")
+    with app.test_request_context("/", base_url="https://hangar.example"):
+        assert _snooze_url("abc") == "https://hangar.example/notifications/snooze/abc"
+    monkeypatch.setenv("OPENHANGAR_INSTANCE_URL", "https://set.example/")
+    with app.app_context():
+        assert _snooze_url("abc") == "https://set.example/notifications/snooze/abc"

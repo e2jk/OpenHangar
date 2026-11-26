@@ -1750,3 +1750,21 @@ def test_an_invitation_claimed_meanwhile_creates_no_account(app, client):
     assert b"already been used" in resp.data
     with app.app_context():
         assert User.query.filter_by(email="late@race.dev").first() is None
+
+
+def test_the_invitation_email_is_translated(app, client):
+    from unittest.mock import patch
+
+    tid, admin_uid = _make_tenant_user(app, "admin@fr-invite.dev", Role.ADMIN)
+    with app.app_context():
+        db.session.get(User, admin_uid).language = "fr"
+        db.session.commit()
+    _login(client, admin_uid)
+    with patch("services.email_service.send_email") as send:
+        client.post(
+            "/config/users/invite",
+            data={"role": "pilot", "email": "ami@fr-invite.dev", "display_name": "Ami"},
+        )
+    body = send.call_args.kwargs["text_body"]
+    assert "Bonjour Ami," in body and "Pilote / locataire" in body
+    assert "Ce lien expire dans" in body
