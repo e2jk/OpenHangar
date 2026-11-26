@@ -2082,6 +2082,12 @@ def create_app() -> Flask:
                             file=sys.stderr,
                         )
                         sys.exit(1)
+                    if entry.endswith("/"):
+                        # A folder entry (a zip re-packed by another tool):
+                        # opening it as a file failed after the database had
+                        # already been replaced, leaving a half restore.
+                        os.makedirs(dest, exist_ok=True)
+                        continue
                     os.makedirs(os.path.dirname(dest), exist_ok=True)
                     with open(dest, "wb") as fh:
                         fh.write(zf.read(entry))

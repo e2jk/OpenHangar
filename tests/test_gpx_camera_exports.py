@@ -292,3 +292,20 @@ class TestXmlRootName:
             started = time.perf_counter()
             assert _xml_root_name(crafted) == ""
             assert time.perf_counter() - started < 1.0
+
+
+def test_a_malformed_altitude_or_speed_drops_that_value_not_the_file():
+    from aircraft.gps_import import _parse_gpx  # pyright: ignore[reportMissingImports]
+
+    pts = [
+        (
+            50.46 + i * 0.01,
+            4.76,
+            "abc" if i == 3 else 300,
+            "nan" if i == 5 else ("x" if i == 4 else 50),
+            _T0 + timedelta(seconds=60 * i),
+        )
+        for i in range(12)
+    ]
+    parsed = _parse_gpx(_skydemon_gpx(pts), "track.gpx")
+    assert parsed is not None

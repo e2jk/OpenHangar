@@ -381,6 +381,17 @@ def _drop_bad_fixes(
 _DERIVED_SPEED_SPAN_S = 5.0
 
 
+def _optional_float(el: Any) -> float | None:
+    """The element's number, None when absent, empty or not a finite number."""
+    if el is None or not el.text:
+        return None
+    try:
+        value = float(el.text)
+    except ValueError:
+        return None
+    return value if math.isfinite(value) else None
+
+
 def _speeds_from_positions(points: list[tuple[float, float, datetime]]) -> list[float]:
     """Ground speed in knots at each (lat, lon, time) point, from the
     distance covered since the latest point at least _DERIVED_SPEED_SPAN_S
@@ -439,15 +450,13 @@ def _parse_gpx(data: bytes, filename: str) -> ParsedGpsFile:
         except (ValueError, TypeError):
             continue
 
+        # A malformed altitude or speed drops that value, not the file (one
+        # bad point in a real export used to reject the whole import).
         ele_el = trkpt.find(q("ele"))
-        alt_m = float(ele_el.text) if ele_el is not None and ele_el.text else 0.0
+        alt_m = _optional_float(ele_el) or 0.0
 
-        speed_el = trkpt.find(q("speed"))
-        speed_kt = (
-            float(speed_el.text) * _MS_TO_KT
-            if speed_el is not None and speed_el.text
-            else None
-        )
+        speed = _optional_float(trkpt.find(q("speed")))
+        speed_kt = speed * _MS_TO_KT if speed is not None else None
 
         time_el = trkpt.find(q("time"))
         if time_el is None or not time_el.text:
