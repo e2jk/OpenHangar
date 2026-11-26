@@ -216,7 +216,6 @@ class TestPgDump:
             result = _pg_dump("postgresql://user:pw@localhost/db")
         assert result == b"SELECT 1;"
 
-
     def test_password_goes_in_the_environment_not_the_command_line(self):
         from config.routes import _pg_dump  # pyright: ignore[reportMissingImports]
 
@@ -248,7 +247,6 @@ def test_backup_files_are_readable_by_their_owner_only(app):
             record = run_backup()
         for path in (record.path, record.path.replace(".zip.enc", ".meta")):
             assert stat.S_IMODE(os.stat(path).st_mode) == 0o600, path
-
 
 
 class TestRunBackup:
