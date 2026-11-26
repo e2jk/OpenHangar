@@ -152,8 +152,8 @@ META_PATH="${ARCHIVE%.zip.enc}.meta"
 BACKUP_VERSION="unknown"
 BACKUP_ALEMBIC="unknown"
 if [ -f "${META_PATH}" ]; then
-  BACKUP_VERSION=$(python3 -c "import json; d=json.load(open('${META_PATH}')); print(d.get('app_version','unknown'))" 2>/dev/null || echo "unknown")
-  BACKUP_ALEMBIC=$(python3 -c "import json; d=json.load(open('${META_PATH}')); print(d.get('alembic_head') or 'unknown')" 2>/dev/null || echo "unknown")
+  BACKUP_VERSION=$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1])).get("app_version", "unknown"))' "${META_PATH}" 2>/dev/null || echo "unknown")
+  BACKUP_ALEMBIC=$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1])).get("alembic_head") or "unknown")' "${META_PATH}" 2>/dev/null || echo "unknown")
   log "Backup metadata: version=${BACKUP_VERSION}  alembic=${BACKUP_ALEMBIC}"
 else
   log "WARNING: No metadata sidecar found (${META_PATH}) — version check will be done inside the container."
