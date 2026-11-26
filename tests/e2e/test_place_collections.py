@@ -255,7 +255,7 @@ def test_link_only_idea_can_gain_an_airfield_location_and_own_visit(
     assert json.loads(page.locator("#places-map").get_attribute("data-points"))[0][
         "visited"
     ]
-    page.locator("#place-visits summary").click()
+    page.locator("#place-visits summary", has_text="Correct or remove").click()
     page.get_by_role("button", name="Remove this visit", exact=True).click()
     expect(page.locator("#place-visits")).to_contain_text(
         "Nobody has recorded a visit yet"
