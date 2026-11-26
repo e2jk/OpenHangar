@@ -1,5 +1,8 @@
 # Security hardening: sign-in, links, uploads, backups and upgrades
 
+- Places shows three cards per row on the widest screens. Airfield and
+  visit badges wrap below the place name when space is tight.
+
 - Place cards distinguish linked airfields, missing airfields and tags.
   Street addresses are shown on place detail pages.
 
