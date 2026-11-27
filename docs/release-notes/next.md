@@ -20,4 +20,5 @@
   filters and visit frequency update the map and list automatically.
 - Where next? shows collection and passport filters in separate cards,
   hides filters for inactive sources, and groups the two visit-history
-  filters together.
+  filters together. By default, it shows unvisited places and airfields
+  where you have no logged landing.

@@ -57,6 +57,7 @@ QUERY_KEYS = (
     "trip",
     "source",
     "visited",
+    "unvisited_places",
     "place",
     "tag",
     "never_landed",
@@ -280,8 +281,14 @@ def where_next() -> ResponseReturnValue:
     )
     if source not in {"places", "passports", "both"}:
         source = "both"
-    include_visited = request.args.get("visited") == "1"
-    never_landed = request.args.get("never_landed") == "1"
+    # Keep existing links that explicitly include visited places working.
+    only_unvisited_places = (
+        request.args.get(
+            "unvisited_places", "0" if request.args.get("visited") == "1" else "1"
+        )
+        != "0"
+    )
+    never_landed = request.args.get("never_landed") != "0"
     tag = (request.args.get("tag") or "").strip()[:80]
     aircraft = (
         []
@@ -408,7 +415,7 @@ def where_next() -> ResponseReturnValue:
                 tenant_id,
                 uid,
                 collection_ids,
-                include_visited=include_visited,
+                include_visited=not only_unvisited_places,
                 place_ids=place_ids,
             ),
         )
@@ -520,7 +527,7 @@ def where_next() -> ResponseReturnValue:
         chosen_collection_ids={c.id for c in chosen_collections},
         sources=sources,
         source=source,
-        include_visited=include_visited,
+        only_unvisited_places=only_unvisited_places,
         place_id=place_id,
         unlinked=unlinked,
         tags=tags,

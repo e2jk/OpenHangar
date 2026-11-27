@@ -333,15 +333,18 @@ def test_passport_destination_discovery(
         }"""
     )
 
-    page.locator("#discovery-visited").check()
-    page.locator("#discovery-never-landed").check()
+    expect(page.locator("#discovery-visited")).to_be_checked()
+    expect(page.locator("#discovery-never-landed")).to_be_checked()
+    page.locator("#discovery-visited").uncheck()
     page.locator("#discovery-source-places").check()
     expect(passports_card).to_be_hidden()
     expect(passports_card.locator('input[name="stamp_book"]').first).to_be_disabled()
     page.locator("#discovery-source-passports").check()
     expect(collections_card).to_be_hidden()
     expect(page.locator("#discovery-visited")).to_be_disabled()
-    expect(page.locator("#discovery-shared-landing-slot input")).to_be_checked()
+    expect(
+        page.locator("#discovery-shared-landing-slot #discovery-never-landed")
+    ).to_be_checked()
     page.locator("#discovery-never-landed").uncheck()
     page.locator("#discovery-query").fill("EBNM")
     page.get_by_role("button", name="Search airfields", exact=True).click()
@@ -373,6 +376,7 @@ def test_passport_destination_discovery(
         page, page.get_by_role("button", name="Find destinations", exact=True)
     )
     page.wait_for_url(re.compile(r"[?&]mode=distance(?:&|$)"))
+    expect(page.locator("#discovery-never-landed")).not_to_be_checked()
     expect(page.locator("table tbody")).to_contain_text(destination)
     expect(
         page.locator("#passport-discovery-map .leaflet-overlay-pane path")

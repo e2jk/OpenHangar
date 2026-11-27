@@ -282,6 +282,10 @@ def test_choosing_the_source_collections_and_visited_places(
         as_text=True
     )
     assert ">Millfield</a>" in visited
+    expanded = _search(client, owner, source="places", unvisited_places="0").text
+    assert ">Millfield</a>" in expanded
+    assert 'id="discovery-visited" checked' not in expanded
+    assert 'id="discovery-visited" checked' in places_only
     other = _search(client, owner, source="places", collection=ids["other"]).get_data(
         as_text=True
     )
@@ -366,9 +370,12 @@ def test_tag_and_never_landed_filters_and_the_place_pins(
             )
         )
         db.session.commit()
-    fresh = _search(client, owner, never_landed="1").get_data(as_text=True)
+    fresh = _search(client, owner).text
     assert ">Lakeside</a>" not in fresh and ">Shared</a>" in fresh
-    assert 'id="discovery-never-landed" checked' in fresh or "checked" in fresh
+    assert 'id="discovery-never-landed" checked' in fresh
+    expanded = _search(client, owner, never_landed="0").text
+    assert ">Lakeside</a>" in expanded
+    assert "never_landed=0" in expanded
 
 
 def test_a_passport_or_place_link_preselects_its_source(
