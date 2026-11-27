@@ -8,6 +8,8 @@
     if (input.dataset.ohInited) return;
     input.dataset.ohInited = '1';
     const endpoint = input.dataset.airportAc;
+    const reference = input.dataset.airportAcReference &&
+      document.getElementById(input.dataset.airportAcReference);
     let dropdown = null;
     let items = [];
     let activeIdx = -1;
@@ -44,9 +46,10 @@
       }
     }
 
-    function selectItem(code, name) {
-      input.value = code;
-      hint.textContent = name;
+    function selectItem(item) {
+      input.value = item.code;
+      if (reference) reference.value = item.reference || '';
+      hint.textContent = item.name;
       closeDropdown();
     }
 
@@ -71,7 +74,7 @@
         name.className = 'text-muted text-truncate small';
         name.textContent = r.name;
         li.append(code, name);
-        li.addEventListener('mousedown', function (e) { e.preventDefault(); selectItem(r.code, r.name); });
+        li.addEventListener('mousedown', function (e) { e.preventDefault(); selectItem(r); });
         li.addEventListener('mouseover', function () { setActive(i); });
         dropdown.appendChild(li);
       });
@@ -86,11 +89,18 @@
     function fetchResults(q) {
       fetch(endpoint + '?q=' + encodeURIComponent(q))
         .then(function (r) { return r.json(); })
-        .then(function (d) { buildDropdown(d.results || []); })
+        .then(function (d) {
+          if (input.value.trim() === q) buildDropdown(d.results || []);
+        })
         .catch(function () { closeDropdown(); });
     }
 
+    input.addEventListener('airport-ac:selected', function (event) {
+      clearTimeout(debounceId);
+      selectItem(event.detail);
+    });
     input.addEventListener('input', function () {
+      if (reference) reference.value = '';
       var q = input.value.trim();
       hint.textContent = '';
       clearTimeout(debounceId);
@@ -105,7 +115,7 @@
       } else if (e.key === 'ArrowUp') {
         e.preventDefault(); setActive(Math.max(activeIdx - 1, 0));
       } else if (e.key === 'Enter' && activeIdx >= 0) {
-        e.preventDefault(); selectItem(items[activeIdx].code, items[activeIdx].name);
+        e.preventDefault(); selectItem(items[activeIdx]);
       } else if (e.key === 'Escape') {
         closeDropdown();
       }

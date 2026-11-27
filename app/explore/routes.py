@@ -28,7 +28,7 @@ from flask import (
 )
 from flask.typing import ResponseReturnValue
 from flask_babel import gettext as _
-from models import Passport, PilotProfile, PlaceCollection, db
+from models import Passport, PassportAirfieldIdentity, PilotProfile, PlaceCollection, db
 from passports import builder, discovery, waypoints
 from passports.access import accessible_passports, require_passport
 from passports.catalogue_access import visible_identity_ids
@@ -45,16 +45,11 @@ explore_bp = Blueprint("explore", __name__, url_prefix="/explore")
 QUERY_KEYS = (
     "aircraft",
     "origin",
-    "q",
+    "origin_key",
     "start",
     "mode",
     "speed",
     "limit",
-    "usable_fuel",
-    "flow",
-    "reserve",
-    "range",
-    "trip",
     "source",
     "visited",
     "unvisited_places",
@@ -239,6 +234,30 @@ def _unlinked(tenant_id: int, collection_ids: list[int]) -> int:
     )
 
 
+def _origin_input(field: dict[str, Any]) -> str:
+    return str(field.get("icao_code") or field.get("ident") or field["key"])
+
+
+@explore_bp.route("/airfield-search")
+@login_required
+def origin_search() -> ResponseReturnValue:
+    membership = current_membership()
+    if membership is None:
+        abort(403)
+    return {
+        "results": [
+            {
+                "code": _origin_input(field),
+                "name": field["name"],
+                "reference": field["key"],
+            }
+            for field in discovery.origin_choices(
+                membership.tenant_id, request.args.get("q", "")[:100]
+            )
+        ]
+    }
+
+
 @explore_bp.route("/where-next")
 @login_required
 def where_next() -> ResponseReturnValue:
@@ -307,79 +326,91 @@ def where_next() -> ResponseReturnValue:
         )
         if selected is None:
             abort(404)
-    elif not {"aircraft", "speed"} & request.args.keys() and len(aircraft) == 1:
+    elif "aircraft" not in request.args and len(aircraft) == 1:
         selected = aircraft[0]
     profile = PilotProfile.query.filter_by(user_id=uid).first()
-    home = discovery.home_descriptor(selected, tenant_id) or discovery.home_descriptor(
-        profile, tenant_id
-    )
+    aircraft_home = discovery.home_descriptor(selected, tenant_id)
+    pilot_home = discovery.home_descriptor(profile, tenant_id)
+    home = aircraft_home or pilot_home
     # A passport's excluded arrivals only apply when it is searched alone.
     participant = participant_for(chosen[0].id, uid) if len(chosen) == 1 else None
     latest = discovery.latest_arrival(
         tenant_id, uid, participant.id if participant else None
     )
-    searches = discovery.origin_choices(tenant_id, request.args.get("q", "")[:100])
-    automatic_origin = next(
-        (
-            field
-            for field in (home, latest)
-            if field is not None
-            and field.get("latitude") is not None
-            and field.get("longitude") is not None
-        ),
-        None,
-    )
-    origin_key = request.args.get("origin") or (
-        automatic_origin["key"] if automatic_origin else ""
-    )
-    if request.args.get("start") == "latest" and latest:
-        origin_key = latest["key"]
-    if request.args.get("start") == "home" and home:
+    proposals = {
+        key: field
+        for key, field in (
+            ("aircraft_home", aircraft_home),
+            ("pilot_home", pilot_home),
+            ("latest", latest),
+        )
+        if field is not None
+        and field.get("latitude") is not None
+        and field.get("longitude") is not None
+    }
+    automatic_origin = next(iter(proposals.values()), None)
+    origin_input = request.args.get("origin", "").strip()[:81]
+    origin_key = origin_input or (automatic_origin["key"] if automatic_origin else "")
+    start = request.args.get("start", "")
+    if start in proposals:
+        origin_key = proposals[start]["key"]
+    elif start == "home" and home:
         origin_key = home["key"]
+    origin_suggestions: dict[str, tuple[str, dict[str, Any], str]] = {}
+    for key, field in proposals.items():
+        origin_suggestions.setdefault(field["key"], (key, field, _origin_input(field)))
     origin = None
     errors = []
     if origin_key:
-        origin = builder.available_fields(tenant_id).get(origin_key)
+        fields = builder.available_fields(tenant_id)
+        reference = fields.get(request.args.get("origin_key", ""))
+        if (
+            origin_key == origin_input
+            and reference
+            and _origin_input(reference).casefold() == origin_input.casefold()
+        ):
+            origin = reference
+        else:
+            origin = fields.get(origin_key)
+        if origin is None and ":" not in origin_key and len(origin_key) <= 80:
+            try:
+                match = discovery.resolve_home(tenant_id, origin_key)
+                if isinstance(match, PassportAirfieldIdentity):
+                    origin = fields.get(f"field:{match.id}")
+                elif match is not None:
+                    origin = fields.get(f"catalogue:{match.source_id}")
+            except BuilderError:
+                pass  # The form shows the same error for an unresolved or ambiguous code.
         if origin is None:
-            errors.append(_("Choose a reference airfield from the search results."))
+            errors.append(
+                _(
+                    "Enter a valid airfield code or choose a reference airfield from the suggestions."
+                )
+            )
         elif origin.get("latitude") is None or origin.get("longitude") is None:
             errors.append(
                 _("This reference airfield has no coordinates. Choose another.")
             )
-    mode = request.args.get("mode", "time")
+    saved = session.get("where_next_range", {})
+    mode = request.args.get("mode", saved.get("mode", "time"))
     if mode not in {"distance", "time"}:
         mode = "time"
-    defaults = {
-        "speed": str(selected.cruise_speed_knots)
+    default_speed = (
+        str(selected.cruise_speed_knots)
         if selected and selected.cruise_speed_knots is not None
-        else "100",
-        "limit": "100",
-        "usable_fuel": "",
-        "flow": str(selected.fuel_flow)
-        if selected and selected.fuel_flow is not None
-        else "",
-        "reserve": "",
-    }
-    preference = discovery.reserve_preference(uid)
-    if preference is not None:
-        defaults["reserve"] = str(preference)
+        else "100"
+    )
     values = {
-        key: (request.args.get(key) or value)[:100] for key, value in defaults.items()
+        "speed": request.args.get("speed", saved.get("speed", default_speed))[:100],
+        "limit": request.args.get("limit", saved.get("limit", "100"))[:100],
     }
-    if selected is None and request.args.get("speed") == "":
-        values["speed"] = ""
     parsed = {}
-    for key, label, maximum in [
+    for key, label, maximum in (
         ("speed", _("cruise speed"), 9999.99),
         ("limit", _("distance/time limit"), 21600),
-        ("usable_fuel", _("usable fuel"), 999999),
-        ("flow", _("fuel flow"), 9999.99),
-        ("reserve", _("reserve minutes"), 1440),
-    ]:
+    ):
         try:
-            parsed[key] = discovery.positive(
-                values[key], label, maximum, zero=key == "reserve"
-            )
+            parsed[key] = discovery.positive(values[key], label, maximum)
         except BuilderError as exc:
             parsed[key] = None
             errors.append(str(exc))
@@ -387,17 +418,8 @@ def where_next() -> ResponseReturnValue:
     speed = parsed["speed"]
     if mode == "time" and speed is None:
         errors.append(_("Enter a cruise speed for time mode, or use distance mode."))
-    returning = request.args.get("trip") == "return"
-    range_nm = discovery.theoretical_range(
-        speed, parsed["usable_fuel"], parsed["flow"], parsed["reserve"], returning
-    )
-    range_enabled = request.args.get("range") == "1"
-    if range_enabled and range_nm is None:
-        errors.append(
-            _(
-                "Theoretical range is unknown. Enter usable fuel, fuel flow, speed and an explicit reserve leaving positive flight time. The distance/time filter still applies."
-            )
-        )
+    if request.args.get("remember_range") == "1" and parsed["limit"] and not errors:
+        session["where_next_range"] = {"mode": mode, **values}
     merged, pending = (
         _passport_reasons(chosen, uid) if source in {"passports", "both"} else ({}, [])
     )
@@ -440,7 +462,7 @@ def where_next() -> ResponseReturnValue:
         speed,
         limit,
         mode,
-        range_nm if range_enabled else None,
+        None,
         tie_breaker=lambda row: row["key"],
     )
     # At equal distance, more reasons first (the sort is stable).
@@ -473,6 +495,12 @@ def where_next() -> ResponseReturnValue:
     query: list[tuple[str, str]] = [
         (key, request.args[key][:100]) for key in QUERY_KEYS if key in request.args
     ]
+    query = [
+        (key, value) for key, value in query if key not in {"mode", "speed", "limit"}
+    ]
+    query.extend(
+        (("mode", mode), ("speed", values["speed"]), ("limit", values["limit"]))
+    )
     if len(chosen) != len(passports):
         query += [(PASSPORT_PARAM, str(p.id)) for p in chosen]
     if len(chosen_collections) != len(collections):
@@ -495,8 +523,6 @@ def where_next() -> ResponseReturnValue:
         if mode == "distance"
         else None
     )
-    if radius is not None and range_enabled and range_nm is not None:
-        radius = min(radius, range_nm)
     map_data = {
         "origin": {
             key: float(origin[key])
@@ -533,29 +559,15 @@ def where_next() -> ResponseReturnValue:
         tags=tags,
         tag=tag,
         never_landed=never_landed,
-        aircraft=aircraft,
-        selected=selected,
-        home=home,
-        latest=latest,
-        origin_options=list(
-            {
-                field["key"]: field
-                for field in [origin, home, latest, *searches]
-                if field is not None
-            }.values()
-        ),
+        origin_suggestions=list(origin_suggestions.values()),
         origin=origin,
-        origin_key=origin_key,
+        origin_input=_origin_input(origin) if origin else origin_input,
         rows=rows,
         missing=missing,
         values=values,
         mode=mode,
-        range_enabled=range_enabled,
-        returning=returning,
-        range_nm=range_nm,
         map_data=map_data,
         errors=errors,
-        preference=preference,
         waypoint_links=waypoint_links,
         omitted_waypoints=selection.omitted,
     )

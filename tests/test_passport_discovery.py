@@ -1,4 +1,4 @@
-"""Discovery defaults, distances, explicit fuel assumptions and permission boundaries."""
+"""Discovery defaults, distances, and permission boundaries."""
 
 import re
 from datetime import date
@@ -11,10 +11,6 @@ from models import (
     Flight,
     PassportAirfield,
     PassportAirfieldIdentity,
-    PersonalMinimumsItem,
-    PersonalMinimumsRevision,
-    PersonalMinimumsSection,
-    PersonalMinimumsTag,
     PilotProfile,
     Role,
     TenantUser,
@@ -69,53 +65,32 @@ def test_discovery_page_and_aircraft_access(
     with app.app_context():
         db.session.get(TenantUser, (uid, tid)).role = Role.ADMIN
         db.session.commit()
-    automatic = client.get(
-        path,
-        follow_redirects=True,
-        query_string={
-            "aircraft": aid,
-            "origin": "",
-            "speed": "",
-            "flow": "",
-            "usable_fuel": "80",
-            "reserve": "60",
-            "range": "1",
-            "trip": "return",
-        },
-    )
+    automatic = client.get(path, follow_redirects=True, query_string={"aircraft": aid})
+    assert "Starting from" in automatic.text
     assert (
-        "150.0 nm" in automatic.text
-        and "Choose a reference airfield to find destinations." not in automatic.text
+        'id="discovery-speed" step="0.01" min="0.01" max="9999.99" value="100.00"'
+        in automatic.text
     )
+    assert "Optional theoretical range" not in automatic.text
     response = client.get(
         path,
         follow_redirects=True,
         query_string={
             "aircraft": aid,
-            "q": "Nam",
             "start": "latest",
             "mode": "time",
             "speed": 100,
             "limit": 120,
-            "usable_fuel": 80,
-            "flow": 20,
-            "reserve": 60,
-            "range": 1,
-            "trip": "return",
+            "never_landed": "0",
         },
     )
-    assert (
-        response.status_code == 200
-        and "150.0 nm" in response.text
-        and "Near destination" in response.text
-    )
+    assert response.status_code == 200 and "Near destination" in response.text
     assert "No open, unvisited" not in response.text
     assert "unknown" in response.text.lower()
     for args, message in [
-        ({"origin": "field:999999"}, "Choose a reference"),
+        ({"origin": "field:999999"}, "Enter a valid airfield code"),
         ({"origin": "catalogue:2"}, "no coordinates"),
         ({"mode": "time", "speed": ""}, "Enter a cruise speed"),
-        ({"range": 1}, "range is unknown"),
         ({"speed": "NaN"}, "valid cruise"),
     ]:
         result = client.get(path, follow_redirects=True, query_string=args)
@@ -142,28 +117,12 @@ def test_discovery_page_and_aircraft_access(
     assert client.get(path, follow_redirects=True).status_code == 404
 
 
-def test_discovery_uses_published_reserve_and_new_aircraft_home(
+def test_discovery_uses_new_aircraft_home(
     app: Flask, client: FlaskClient, owner: dict[str, int], catalogue: Any
 ) -> None:
     signin(client, owner["user"])
     with app.app_context():
         db.session.get(TenantUser, (owner["user"], owner["tenant"])).role = Role.ADMIN
-        rev = PersonalMinimumsRevision(
-            user_id=owner["user"], revision_number=1, status="active"
-        )
-        db.session.add(rev)
-        db.session.flush()
-        section = PersonalMinimumsSection(revision_id=rev.id, title="Fuel")
-        db.session.add(section)
-        db.session.flush()
-        db.session.add(
-            PersonalMinimumsItem(
-                section_id=section.id,
-                label="Reserve",
-                semantic_tag=PersonalMinimumsTag.MIN_FUEL_RESERVE_MINUTES,
-                numeric_value=45,
-            )
-        )
         db.session.commit()
     # Materialise a catalogue home while creating an aircraft with required fields.
     response = client.post(
@@ -186,7 +145,7 @@ def test_discovery_uses_published_reserve_and_new_aircraft_home(
         query_string={"aircraft": aid},
         follow_redirects=True,
     )
-    assert response.status_code == 200 and "published personal minimum" in response.text
+    assert response.status_code == 200 and "Starting from: Heliport" in response.text
 
 
 def test_discovery_slider_range_follows_mode(

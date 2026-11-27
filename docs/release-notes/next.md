@@ -1,4 +1,4 @@
-# Improve place details and flight data checks
+# Improve destination discovery, passports, and data checks
 
 - Place details show associated airfields as cards below the map and mark
   those in your passports. Where next? now leads the page actions. Ownership,
@@ -21,4 +21,9 @@
 - Where next? shows collection and passport filters in separate cards,
   hides filters for inactive sources, and groups the two visit-history
   filters together. By default, it shows unvisited places and airfields
-  where you have no logged landing.
+  where you have no logged landing. Choose the reference airfield directly
+  from one field with suggestions by code or name. It starts from an
+  aircraft or pilot home airfield, or the latest logged arrival, with
+  quick picks when more than one is available. Search by distance or by
+  cruise speed and duration, with the last search settings remembered
+  for the session.
