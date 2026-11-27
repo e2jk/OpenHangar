@@ -211,7 +211,15 @@ def test_fee_exemptions_change_the_learned_pattern(app: Flask) -> None:
             for row in fee_checks.missing_fees([aircraft_id], start, today, today)
         ] == [target]
         key = fee_checks.feedback_key(fee_checks.LANDING, "EBBR", "no_fee")
-        for flight_id in exempt_ids:
-            fee_checks.record_feedback(flight_id, key, None)
+        fee_checks.record_feedback(exempt_ids[0], key, None)
+        db.session.add(
+            Expense(
+                aircraft_id=aircraft_id,
+                flight_entry_id=exempt_ids[1],
+                expense_type=ExpenseType.LANDING_FEE,
+                date=today - timedelta(days=20),
+                amount=0,
+            )
+        )
         db.session.commit()
         assert not fee_checks.missing_fees([aircraft_id], start, today, today)
