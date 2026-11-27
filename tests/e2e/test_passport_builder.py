@@ -47,7 +47,15 @@ def test_passport_builder_map_survives_htmx_navigation(
     page.on("pageerror", lambda error: errors.append(error.stack or str(error)))
     title = "Browser passport " + uuid4().hex[:8]
     page.goto(live_server_url + "/passports/")
-    page.get_by_role("link", name="Create passport", exact=True).click()
+    header = page.locator(".page-header")
+    create = header.get_by_role("link", name="Create passport", exact=True)
+    suggestions = header.get_by_role(
+        "link", name="Places near passport airfields", exact=True
+    )
+    create_box, suggestions_box = create.bounding_box(), suggestions.bounding_box()
+    assert create_box and suggestions_box
+    assert create_box["y"] == suggestions_box["y"]
+    create.click()
     expect(page.locator("#passport-builder")).to_have_attribute("data-oh-inited", "1")
     expect(page.locator("#passport-map-data")).to_have_count(1)
     expect(page.locator("#passport-selection-map .leaflet-map-pane")).to_have_count(1)
@@ -91,13 +99,67 @@ def test_passport_builder_map_survives_htmx_navigation(
     page.get_by_role("button", name="Save passport", exact=True).click()
     page.wait_for_url(re.compile(r"/passports/\d+/$"))
     expect(page.get_by_role("heading", name=title, exact=True)).to_be_visible()
+    header = page.locator(".page-header")
+    expect(header.locator("h1.page-title")).to_have_text(title)
+    expect(
+        header.get_by_role("link", name="Airfield passports", exact=True)
+    ).to_be_visible()
+    expect(header.locator(":scope > div").last.get_by_role("link")).to_have_text(
+        ["Record a visit", "Edit passport", "Where next?"]
+    )
+    assert page.locator("#passport-state").evaluate(
+        """select => {
+            const input = select.getBoundingClientRect();
+            const label = select.labels[0].getBoundingClientRect();
+            return label.right <= input.left + 1 &&
+                Math.abs((label.top + label.bottom) - (input.top + input.bottom)) <= 2;
+        }"""
+    )
+    for label in ("Print passport", "Vouchers", "Delete passport"):
+        assert page.get_by_role("link", name=label, exact=True).evaluate(
+            """link => Boolean(document.querySelector('#passport-targets')
+                .compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING)"""
+        )
+    editions = page.get_by_role("link", name="Link editions", exact=True)
+    expect(editions.locator("xpath=..").get_by_role("link")).to_have_text(
+        ["Link editions", "Create next edition"]
+    )
+    delete = page.get_by_role("link", name="Delete passport", exact=True)
+    assert delete.evaluate(
+        "link => link.parentElement.childElementCount === 1 && !link.parentElement.nextElementSibling"
+    )
+    passport_url = page.url
+    page.set_viewport_size({"width": 1280, "height": 900})
     page.goto("/passports/")
     card = page.locator("article").filter(
         has=page.get_by_role("heading", name=title, exact=True)
     )
-    expect(card.locator(".leaflet-overlay-pane path")).to_have_count(2)
-    expect(card.get_by_text(re.compile(r"of 2 airfields visited .*%"))).to_be_visible()
-    card.get_by_role("link", name=title, exact=True).click()
+    markers = card.locator(".leaflet-overlay-pane path")
+    expect(markers).to_have_count(2)
+    progress = card.get_by_text(re.compile(r"of 2 airfields visited .*%"))
+    expect(progress).to_be_visible()
+    heading_box = card.get_by_role("heading", name=title, exact=True).bounding_box()
+    progress_box = progress.bounding_box()
+    assert heading_box and progress_box
+    assert abs(heading_box["y"] - progress_box["y"]) < heading_box["height"]
+
+    markers.first.click()
+    popup_link = card.locator(".leaflet-popup-content a")
+    expect(popup_link).to_be_visible()
+    target_path = popup_link.get_attribute("href")
+    assert target_path
+    popup_link.click()
+    expect(page).to_have_url(live_server_url + target_path)
+
+    page.goto("/passports/")
+    progress.scroll_into_view_if_needed()
+    progress_box = progress.bounding_box()
+    assert progress_box
+    page.mouse.click(
+        progress_box["x"] + progress_box["width"] / 2,
+        progress_box["y"] + progress_box["height"] / 2,
+    )
+    expect(page).to_have_url(passport_url)
     expect(page.locator("#passport-progress-map .leaflet-map-pane")).to_have_count(1)
     page.get_by_role("link", name="Edit passport", exact=True).click()
     expect(page.locator("#passport-selection-map .leaflet-map-pane")).to_have_count(1)
@@ -147,6 +209,9 @@ def test_passport_builder_without_javascript(
         ).to_be_visible()
         page.get_by_role("link", name=title, exact=True).click()
         expect(page.locator("table tbody")).to_contain_text("Visited")
+        page.locator("#passport-state").select_option("unvisited")
+        page.get_by_role("button", name="Apply", exact=True).click()
+        expect(page.get_by_text("No airfields match this view.")).to_be_visible()
         page.get_by_role("link", name="Delete passport", exact=True).click()
         page.get_by_role("button", name="Delete passport", exact=True).click()
         page.wait_for_url(live_server_url + "/passports/")
@@ -189,9 +254,18 @@ def test_passport_visits_frequency_and_htmx_map(
     sizes = [page.evaluate(radius, [n, True]) for n in (0, 1, 2, 8, 5000)]
     assert sizes == sorted(sizes) and sizes[0] < sizes[1] < sizes[3]
     assert sizes[-1] == 18
+    expect(page.get_by_role("button", name="Apply", exact=True)).to_have_count(0)
+    page.locator("#passport-state").select_option("unvisited")
+    expect(page.locator("#passport-targets")).to_have_count(0)
+    expect(
+        page.locator("#passport-progress-map .leaflet-overlay-pane path")
+    ).to_have_count(0)
+    page.locator("#passport-state").select_option("visited")
+    expect(page.locator("#passport-targets tbody tr")).to_have_count(1)
     page.locator("#passport-frequency").check()
-    page.get_by_role("button", name="Apply", exact=True).click()
     expect(page.locator("#passport-progress")).to_have_attribute("data-frequency", "1")
+    page.locator("#passport-frequency").uncheck()
+    expect(page.locator("#passport-progress")).to_have_attribute("data-frequency", "0")
     page.locator("#passport-progress-map .leaflet-overlay-pane path").click(force=True)
     expect(page.locator(".leaflet-popup-content a")).to_be_visible()
     page.locator(".leaflet-popup-content a").click()
