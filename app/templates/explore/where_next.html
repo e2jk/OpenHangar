@@ -8,10 +8,72 @@
 {% for error in errors %}<div class="alert alert-warning" role="alert">{{ error }}</div>{% endfor %}
 <form method="get" class="ac-form-card p-3 mb-4" id="passport-discovery-form">
 {% if sources|length > 1 %}<fieldset class="mb-3"><legend class="form-label fs-6">{{ _('Search in') }}</legend><div class="d-flex flex-wrap gap-3">{% for value, label in [('both', _('Places and passports')), ('places', _('Places')), ('passports', _('Passports'))] %}<div class="form-check"><input class="form-check-input" type="radio" name="source" value="{{ value }}" id="discovery-source-{{ value }}" {% if source == value %}checked{% endif %}><label class="form-check-label" for="discovery-source-{{ value }}">{{ label }}</label></div>{% endfor %}</div></fieldset>{% endif %}
-{% if place_id %}<input type="hidden" name="place" value="{{ place_id }}">{% endif %}
-{% if collections and source != 'passports' %}<fieldset class="mb-3"><legend class="form-label fs-6">{{ _('Search in collections') }}</legend><div class="d-flex flex-wrap gap-3">{% for c in collections %}<div class="form-check"><input class="form-check-input" type="checkbox" name="collection" value="{{ c.id }}" id="discovery-collection-{{ c.id }}" {% if c.id in chosen_collection_ids %}checked{% endif %}><label class="form-check-label" for="discovery-collection-{{ c.id }}">{{ c.name }}</label></div>{% endfor %}<div class="form-check"><input class="form-check-input" type="checkbox" name="visited" value="1" id="discovery-visited" {% if include_visited %}checked{% endif %}><label class="form-check-label" for="discovery-visited">{{ _('Include places I have visited') }}</label></div></div><div class="form-text">{{ _('All your collections when none is ticked.') }}</div></fieldset>{% endif %}
-<div class="row g-3 mb-3">{% if tags and source != 'passports' %}<div class="col-md-6"><label for="discovery-tag" class="form-label">{{ _('Places with the tag') }}</label><select class="form-select" name="tag" id="discovery-tag"><option value="">{{ _('Any tag') }}</option>{% for name in tags %}<option value="{{ name }}" {% if name|lower == tag|lower %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></div>{% endif %}<div class="col-md-6 align-self-end"><div class="form-check"><input class="form-check-input" type="checkbox" name="never_landed" value="1" id="discovery-never-landed" {% if never_landed %}checked{% endif %}><label class="form-check-label" for="discovery-never-landed">{{ _('Only airfields I have never landed at') }}</label></div></div></div>
-{% if passports and source != 'places' %}<fieldset class="mb-3"><legend class="form-label fs-6">{{ _('Search in passports') }}</legend><div class="d-flex flex-wrap gap-3">{% for p in passports %}<div class="form-check"><input class="form-check-input" type="checkbox" name="stamp_book" value="{{ p.id }}" id="discovery-passport-{{ p.id }}" {% if p.id in chosen_ids %}checked{% endif %}><label class="form-check-label" for="discovery-passport-{{ p.id }}">{{ p.title }}</label></div>{% endfor %}</div><div class="form-text">{{ _('All your active passports when none is ticked.') }}</div></fieldset>{% endif %}
+{% macro landing_filter() %}
+<div class="form-check" id="discovery-landing-filter">
+  <input class="form-check-input" type="checkbox" name="never_landed" value="1" id="discovery-never-landed" {% if never_landed %}checked{% endif %}>
+  <label class="form-check-label" for="discovery-never-landed">{{ _('Only airfields I have never landed at') }}</label>
+</div>
+{% endmacro %}
+{% if collections or passports %}
+<div class="row g-3 mb-3">
+  {% if collections %}
+  <div class="col-12 col-lg" data-discovery-source="places"{% if source == 'passports' %} hidden{% endif %}>
+    <div class="card h-100">
+      <fieldset class="card-body"{% if source == 'passports' %} disabled{% endif %}>
+        <legend class="float-none w-auto fs-6 fw-semibold">{{ _('Search in collections') }}</legend>
+        {% if place_id %}<input type="hidden" name="place" value="{{ place_id }}">{% endif %}
+        <div class="d-flex flex-wrap gap-3">
+          {% for c in collections %}
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="collection" value="{{ c.id }}" id="discovery-collection-{{ c.id }}" {% if c.id in chosen_collection_ids %}checked{% endif %}>
+            <label class="form-check-label text-break" for="discovery-collection-{{ c.id }}">{{ c.name }}</label>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="form-text">{{ _('All your collections when none is ticked.') }}</div>
+        {% if tags %}
+        <div class="mt-3">
+          <label for="discovery-tag" class="form-label">{{ _('Places with the tag') }}</label>
+          <select class="form-select" name="tag" id="discovery-tag">
+            <option value="">{{ _('Any tag') }}</option>
+            {% for name in tags %}<option value="{{ name }}" {% if name|lower == tag|lower %}selected{% endif %}>{{ name }}</option>{% endfor %}
+          </select>
+        </div>
+        {% endif %}
+        <div class="mt-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="visited" value="1" id="discovery-visited" {% if include_visited %}checked{% endif %}>
+            <label class="form-check-label" for="discovery-visited">{{ _('Include places I have visited') }}</label>
+          </div>
+          <div id="discovery-collection-landing-slot">{% if source != 'passports' %}{{ landing_filter() }}{% endif %}</div>
+        </div>
+      </fieldset>
+    </div>
+  </div>
+  {% endif %}
+  {% if passports %}
+  <div class="col-12 col-lg" data-discovery-source="passports"{% if source == 'places' %} hidden{% endif %}>
+    <div class="card h-100">
+      <fieldset class="card-body"{% if source == 'places' %} disabled{% endif %}>
+        <legend class="float-none w-auto fs-6 fw-semibold">{{ _('Search in passports') }}</legend>
+        <div class="d-flex flex-wrap gap-3">
+          {% for p in passports %}
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="stamp_book" value="{{ p.id }}" id="discovery-passport-{{ p.id }}" {% if p.id in chosen_ids %}checked{% endif %}>
+            <label class="form-check-label text-break" for="discovery-passport-{{ p.id }}">{{ p.title }}</label>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="form-text">{{ _('All your active passports when none is ticked.') }}</div>
+      </fieldset>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+<div id="discovery-shared-landing-slot" class="mb-3"{% if collections and source != 'passports' %} hidden{% endif %}>
+  {% if not collections or source == 'passports' %}{{ landing_filter() }}{% endif %}
+</div>
 <div class="row g-3">
 {% if not passport_only %}<div class="col-md-6"><label for="discovery-aircraft" class="form-label">{{ _('Aircraft (optional)') }}</label><select class="form-select" name="aircraft" id="discovery-aircraft"><option value="">{{ _('Unmanaged aircraft / session inputs') }}</option>{% for ac in aircraft %}<option value="{{ ac.id }}" {% if selected and selected.id == ac.id %}selected{% endif %}>{{ ac.registration }}</option>{% endfor %}</select></div>{% endif %}
 <div class="col-md-6"><label for="discovery-origin" class="form-label">{{ _('Reference airfield') }}</label><select class="form-select" name="origin" id="discovery-origin"><option value="">{{ _('Use aircraft home, then pilot home') }}</option>{% for field in origin_options %}<option value="{{ field.key }}" {% if field.key == origin_key %}selected{% endif %}>{{ field.ident or field.key }} — {{ field.name }}</option>{% endfor %}</select></div>
