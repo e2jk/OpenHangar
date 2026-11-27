@@ -142,8 +142,16 @@ class TestExpenseModel:
         assert ExpenseType.PARTS == "parts"
         assert ExpenseType.INSURANCE == "insurance"
         assert ExpenseType.OTHER == "other"
-        assert len(ExpenseType.ALL) == 4
-        assert len(ExpenseType.LABELS) == 4
+        assert ExpenseType.ALL == {
+            "fuel",
+            "parts",
+            "insurance",
+            "other",
+            "landing_fee",
+            "takeoff_fee",
+            "airfield_fees",
+        }
+        assert set(ExpenseType.LABELS) == ExpenseType.ALL
 
     def test_expense_category_constants(self):
         assert ExpenseCategory.FIXED == "fixed"

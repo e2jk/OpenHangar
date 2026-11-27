@@ -122,6 +122,7 @@ var NOT_CACHED_ROUTES = {
   '/setup': 'first-run auth wizard — same reasoning as /login',
   '/profile': 'account security settings (password/TOTP) — always show current state, never a cached one',
   '/documents/reconcile': 'admin utility, infrequent access',
+  '/expenses/fee-checks': 'live expense worklist; linked and reviewed fees must disappear immediately',
   '/config/data-checks': 'admin worklist recomputed on each visit; a cached copy would still list differences just corrected or dismissed',
   '/flights/removed-gps-files': 'short-lived trash list; a cached copy would offer to restore files already restored or purged',
   '/pilot/minimums/history': 'revision history list, infrequent access',

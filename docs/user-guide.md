@@ -456,6 +456,10 @@ reminder: no reminder while the next certificate is already on file.
 
 ### Understanding operating costs
 
+Admins and owners can open **Likely missing airfield fees** from the aircraft’s **Expenses** page or from **Configuration → Data checks**. The review uses up to a year of earlier flights by the same aircraft at each airfield, with separate histories for takeoff and landing. It looks for at least three charges of the same kind and a consistent pattern among movements with a known fee status. Unreviewed movements have an unknown fee status. New flights get seven days for expenses to arrive.
+
+Use **Record airfield fee** on a flight to enter a linked expense. The review also recognizes clearly labeled older expenses that are already linked to flights. For a suggestion, you can add an expense, link a matching existing expense on the same aircraft, confirm **No separate fee due** for an exemption or prepaid movement, or defer review for 30 days. Only the reviewer creates or links expenses.
+
 The **Cost dashboard** (linked from the aircraft's Expenses section) splits expenses into fixed and operating categories and divides them by the hours actually flown, giving the true all-in hourly (wet) rate over a selectable period.
 
 ![Cost dashboard](screenshots/cost_dashboard.png)
