@@ -5,7 +5,13 @@ from typing import Any
 
 from flask import Flask
 from flask.testing import FlaskClient
-from models import Passport, PassportParticipant, PassportSeries, db
+from models import (
+    Passport,
+    PassportAirfieldIdentity,
+    PassportParticipant,
+    PassportSeries,
+    db,
+)
 from passports import groups
 
 from tests.test_passport_builder import signin
@@ -133,12 +139,16 @@ def test_leaving_participant_drops_out_of_live_figures(
 
 
 def test_personal_passports_have_no_group_figures_or_filters(
-    client: FlaskClient, owner: dict[str, int]
+    app: Flask, client: FlaskClient, owner: dict[str, int]
 ) -> None:
     signin(client, owner["user"])
     path = f"/passports/{owner['passport']}/"
     page = client.get(path).text
     assert "Group progress" not in page and "Visited by anyone" not in page
+    legend = "Blue: visited by you. Grey: not visited."
+    closed_legend = "Dashed outline: closed."
+    assert page.index(legend) < page.index("Counts show your recorded full-stop visits")
+    assert closed_legend not in page
     # Group-only filter values fall back to showing every airfield.
     nobody = client.get(path, query_string={"state": "nobody", "participant": 1}).text
     assert "No airfields match this view." not in nobody
@@ -153,6 +163,15 @@ def test_personal_passports_have_no_group_figures_or_filters(
         for state in ("visited", "unvisited")
     }
     assert shown["visited"] != shown["unvisited"]
+
+    with app.app_context():
+        db.session.get(PassportAirfieldIdentity, owner["field"]).is_closed = True
+        db.session.commit()
+    assert closed_legend in client.get(path).text
+    empty_state = "unvisited" if shown["visited"] else "visited"
+    assert (
+        closed_legend not in client.get(path, query_string={"state": empty_state}).text
+    )
 
 
 def test_linked_editions_compare_group_and_each_participant_independently(

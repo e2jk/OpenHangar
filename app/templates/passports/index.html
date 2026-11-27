@@ -3,8 +3,13 @@
 {% block title %}{{ _('Airfield passports') }} — OpenHangar{% endblock %}
 {% block content %}
 <div class="container py-4">
-<div class="page-header mb-4"><h1 class="page-title">{{ _('Airfield passports') }}</h1>{% if can_create %}<a class="btn btn-ac-primary" href="{{ url_for('passports.new_passport') }}">{{ _('Create passport') }}</a>{% endif %}</div>
-<p><a class="btn btn-ac-ghost" href="{{ url_for('places.passport_suggestions') }}">{{ _('Places near passport airfields') }}</a></p>
+<div class="page-header mb-4">
+  <h1 class="page-title">{{ _('Airfield passports') }}</h1>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-ac-ghost" href="{{ url_for('places.passport_suggestions') }}">{{ _('Places near passport airfields') }}</a>
+    {% if can_create %}<a class="btn btn-ac-primary" href="{{ url_for('passports.new_passport') }}">{{ _('Create passport') }}</a>{% endif %}
+  </div>
+</div>
 {% if passport_only and not personal_logbook %}<p>{{ _('Fly yourself? Keep your own pilot logbook on this account and your logged arrivals fill your passports automatically.') }} <a href="{{ url_for('passports.start_logbook') }}">{{ _('Start my pilot logbook') }}</a></p>{% endif %}
 {% macro progress_for(passport) %}
   {% set progress = summaries[passport.id] %}
@@ -18,14 +23,17 @@
     <article class="card h-100">
       <div class="card-body">
         {% set series_title = series_titles.get(passport.series_id) %}
-        {% if series_title and series_title != passport.title %}
-        <h2 class="h5 text-break">{{ series_title }}</h2>
-        <p class="mb-1 text-break"><a href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ passport.title }}</a></p>
-        {% else %}
-        <h2 class="h5 text-break"><a href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ passport.title }}</a></h2>
-        {% endif %}
-        <p>{{ progress_for(passport) }}</p>
-        <div data-passport-progress data-fields="{{ card_maps[passport.id] | tojson | forceescape }}"
+        {% set show_series = series_title and series_title != passport.title %}
+        {% if show_series %}<h2 class="h5 text-break">{{ series_title }}</h2>{% endif %}
+        <div class="d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-3">
+          {% if show_series %}
+          <p class="mb-0 text-break"><a class="stretched-link" href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ passport.title }}</a></p>
+          {% else %}
+          <h2 class="h5 mb-0 text-break"><a class="stretched-link" href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ passport.title }}</a></h2>
+          {% endif %}
+          <p class="mb-0">{{ progress_for(passport) }}</p>
+        </div>
+        <div class="position-relative z-2" data-passport-progress data-fields="{{ card_maps[passport.id] | tojson | forceescape }}"
              data-target-url="{{ url_for('passports.target_detail', passport_id=passport.id, target_id=0) }}"
              data-visited="{{ _('Visited') }}" data-unvisited="{{ _('Not visited') }}"
              data-closed="{{ _('Closed') }}" data-visits="{{ _('Recorded visits') }}">
@@ -33,16 +41,16 @@
         </div>
         {% if history %}
         <details class="mt-3">
-          <summary>{{ _('Other editions') }}</summary>
+          <summary class="position-relative z-2">{{ _('Other editions') }}</summary>
           <ul class="mb-0">
             {% for edition in history %}
-            <li><a href="{{ url_for('passports.detail', passport_id=edition.id) }}">{{ edition.title }}</a> · {{ progress_for(edition) }}</li>
+            <li><a class="position-relative z-2" href="{{ url_for('passports.detail', passport_id=edition.id) }}">{{ edition.title }}</a> · {{ progress_for(edition) }}</li>
             {% endfor %}
           </ul>
         </details>
         {% endif %}
         {% if passport.series_id and (passport.is_group or passport.owner_user_id == session.get('user_id')) %}
-        <a class="d-inline-block mt-3" href="{{ url_for('passports.series_detail', series_id=passport.series_id) }}">{{ _('Linked editions') }}</a>
+        <a class="d-inline-block mt-3 position-relative z-2" href="{{ url_for('passports.series_detail', series_id=passport.series_id) }}">{{ _('Linked editions') }}</a>
         {% endif %}
       </div>
     </article>
