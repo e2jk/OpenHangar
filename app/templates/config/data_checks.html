@@ -42,73 +42,71 @@
     <span class="oh-reg-plate">{{ aircraft.registration }}</span>
     <span class="text-muted oh-fs-09 ms-2">{{ ngettext('one difference', '%(n)d differences', findings|length, n=findings|length) }}</span>
   </h2>
-  <div class="ac-form-card p-0 mb-3">
-    <div class="table-responsive">
-      <table class="table table-hover mb-0 oh-fs-09">
-        <thead class="table-group-divider">
-          <tr>
-            <th class="ps-3">{{ _('Flight') }}</th>
-            <th>{{ _('Check') }}</th>
-            <th>{{ _('Logbook') }}</th>
-            <th>{{ _('GPS') }}</th>
-            <th class="pe-3 text-end">{{ _('Action') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for f in findings %}
-          <tr>
-            <td class="ps-3 align-middle">
-              <a href="{{ url_for('aircraft.flight_detail', aircraft_id=aircraft.id, flight_id=f.flight_id) }}">{{ f.flight_date }}</a>
-            </td>
-            <td class="align-middle">
-              {% if f.kind == 'departure' %}{{ _('Departure airfield') }}
-              {% elif f.kind == 'arrival' %}{{ _('Arrival airfield') }}
-              {% elif f.kind == 'date' %}{{ _('Date') }}
-              {% elif f.kind == 'flight_counter' %}{{ _('Flight counter start') }}
-              {% elif f.kind == 'engine_counter' %}{{ _('Engine counter start') }}
-              {% elif f.kind == 'overlap' %}{{ _('Overlapping flight') }}
-              {% else %}{{ _('GPS track outside the logged times') }}{% endif %}
-            </td>
-            <td class="align-middle fw-semibold">{{ f.logged or '—' }}</td>
-            <td class="align-middle">
-              {% if f.kind in ('flight_counter', 'engine_counter') %}
-              {{ _('Previous flight ended at %(value)s', value=f.gps) }}
-              {% elif f.kind == 'overlap' %}
-              {{ _('Another flight of this aircraft is logged %(window)s that day', window=f.gps) }}
-              {% else %}
-              {{ f.gps or _('no airfield nearby') }}
-              {% if f.distance_km is not none %}<div class="text-muted small">{{ _('%(km)s km from %(icao)s', km='%.0f'|format(f.distance_km), icao=f.logged) }}</div>{% endif %}
-              {% endif %}
-            </td>
-            <td class="pe-3 align-middle text-end text-nowrap">
-              {% if f.suggestion %}
-              {% if f.kind == 'departure' %}
-              {% set _change = _('Change only the departure airfield from %(old)s to %(new)s? The times, date and everything else stay as logged; a note with the paper logbook value is added to the flight.', old=f.logged or '—', new=f.suggestion) %}
-              {% set _scope = _('Changes only the departure airfield.') %}
-              {% elif f.kind == 'arrival' %}
-              {% set _change = _('Change only the arrival airfield from %(old)s to %(new)s? The times, date and everything else stay as logged; a note with the paper logbook value is added to the flight.', old=f.logged or '—', new=f.suggestion) %}
-              {% set _scope = _('Changes only the arrival airfield.') %}
-              {% else %}
-              {% set _change = _('Change only the date from %(old)s to %(new)s? The times, airfields and everything else stay as logged; a note with the paper logbook value is added to the flight.', old=f.logged or '—', new=f.suggestion) %}
-              {% set _scope = _('Changes only the date.') %}
-              {% endif %}
-              <form method="post" action="{{ url_for('config.data_check_fix', flight_id=f.flight_id) }}" class="d-inline"
-                    data-confirm="{{ _change }}">
-                <input type="hidden" name="key" value="{{ f.key }}">
-                <button type="submit" class="btn btn-ac-primary btn-sm">{{ _('Use the GPS value') }}</button>
-              </form>
-              {% endif %}
-              <form method="post" action="{{ url_for('config.data_check_dismiss', flight_id=f.flight_id) }}" class="d-inline">
-                <input type="hidden" name="key" value="{{ f.key }}">
-                <button type="submit" class="btn btn-ac-ghost btn-sm">{{ _('Dismiss') }}</button>
-              </form>
-              {% if f.suggestion %}<div class="text-muted small mt-1">{{ _scope }}</div>{% elif f.kind == 'overlap' %}<div class="text-muted small mt-1">{{ _('Open both flights to check their dates and times — or dismiss it if they are right.') }}</div>{% elif f.kind in ('flight_counter', 'engine_counter') %}<div class="text-muted small mt-1">{{ _('Open the flight to check its counters — or dismiss it if flights are missing from the log or the counter was replaced.') }}</div>{% else %}<div class="text-muted small mt-1">{{ _('Nothing to correct automatically — open the flight to check its times.') }}</div>{% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  <div class="ac-form-card p-0 mb-3 oh-fs-09" role="table" aria-labelledby="aircraft-{{ aircraft.id }}">
+    <div class="row g-0 d-none d-md-flex px-3 py-2 fw-semibold" role="row">
+      <div class="col-md-2 pe-2" role="columnheader">{{ _('Flight') }}</div>
+      <div class="col-md-2 pe-2" role="columnheader">{{ _('Check') }}</div>
+      <div class="col-md-2 pe-2" role="columnheader">{{ _('Logbook') }}</div>
+      <div class="col-md-3 pe-2" role="columnheader">{{ _('GPS') }}</div>
+      <div class="col-md-3 text-end" role="columnheader">{{ _('Action') }}</div>
     </div>
+    {% for f in findings %}
+    <div class="row g-0 row-gap-2 px-3 py-3 border-top align-items-md-center" role="row">
+      <div role="cell" class="col-6 col-md-2 pe-2 text-break">
+        <a href="{{ url_for('aircraft.flight_detail', aircraft_id=aircraft.id, flight_id=f.flight_id) }}">{{ f.flight_date }}</a>
+      </div>
+      <div role="cell" class="col-6 col-md-2 pe-2 text-break">
+        {% if f.kind == 'departure' %}{{ _('Departure airfield') }}
+        {% elif f.kind == 'arrival' %}{{ _('Arrival airfield') }}
+        {% elif f.kind == 'date' %}{{ _('Date') }}
+        {% elif f.kind == 'flight_counter' %}{{ _('Flight counter start') }}
+        {% elif f.kind == 'engine_counter' %}{{ _('Engine counter start') }}
+        {% elif f.kind == 'overlap' %}{{ _('Overlapping flight') }}
+        {% else %}{{ _('GPS track outside the logged times') }}{% endif %}
+      </div>
+      <div role="cell" class="col-6 col-md-2 pe-2 text-break">
+        <span class="d-block d-md-none small text-body-secondary">{{ _('Logbook') }}</span>
+        <span class="fw-semibold">{{ f.logged or '—' }}</span>
+      </div>
+      <div role="cell" class="col-6 col-md-3 pe-2 text-break">
+        <span class="d-block d-md-none small text-body-secondary">{{ _('GPS') }}</span>
+        {% if f.kind in ('flight_counter', 'engine_counter') %}
+        {{ _('Previous flight ended at %(value)s', value=f.gps) }}
+        {% elif f.kind == 'overlap' %}
+        {{ _('Another flight of this aircraft is logged %(window)s that day', window=f.gps) }}
+        {% else %}
+        {{ f.gps or _('no airfield nearby') }}
+        {% if f.distance_km is not none %}<div class="text-muted small">{{ _('%(km)s km from %(icao)s', km='%.0f'|format(f.distance_km), icao=f.logged) }}</div>{% endif %}
+        {% endif %}
+      </div>
+      <div role="cell" class="col-12 col-md-3 text-md-end text-break">
+        <div class="d-flex flex-wrap justify-content-md-end gap-1">
+          {% if f.suggestion %}
+          {% if f.kind == 'departure' %}
+          {% set _change = _('Change only the departure airfield from %(old)s to %(new)s? The times, date and everything else stay as logged; a note with the paper logbook value is added to the flight.', old=f.logged or '—', new=f.suggestion) %}
+          {% set _scope = _('Changes only the departure airfield.') %}
+          {% elif f.kind == 'arrival' %}
+          {% set _change = _('Change only the arrival airfield from %(old)s to %(new)s? The times, date and everything else stay as logged; a note with the paper logbook value is added to the flight.', old=f.logged or '—', new=f.suggestion) %}
+          {% set _scope = _('Changes only the arrival airfield.') %}
+          {% else %}
+          {% set _change = _('Change only the date from %(old)s to %(new)s? The times, airfields and everything else stay as logged; a note with the paper logbook value is added to the flight.', old=f.logged or '—', new=f.suggestion) %}
+          {% set _scope = _('Changes only the date.') %}
+          {% endif %}
+          <form method="post" action="{{ url_for('config.data_check_fix', flight_id=f.flight_id) }}"
+                data-confirm="{{ _change }}">
+            <input type="hidden" name="key" value="{{ f.key }}">
+            <button type="submit" class="btn btn-ac-primary btn-sm">{{ _('Use the GPS value') }}</button>
+          </form>
+          {% endif %}
+          <form method="post" action="{{ url_for('config.data_check_dismiss', flight_id=f.flight_id) }}">
+            <input type="hidden" name="key" value="{{ f.key }}">
+            <button type="submit" class="btn btn-ac-ghost btn-sm">{{ _('Dismiss') }}</button>
+          </form>
+        </div>
+        {% if f.suggestion %}<div class="text-muted small mt-1">{{ _scope }}</div>{% elif f.kind == 'overlap' %}<div class="text-muted small mt-1">{{ _('Open both flights to check their dates and times — or dismiss it if they are right.') }}</div>{% elif f.kind in ('flight_counter', 'engine_counter') %}<div class="text-muted small mt-1">{{ _('Open the flight to check its counters — or dismiss it if flights are missing from the log or the counter was replaced.') }}</div>{% else %}<div class="text-muted small mt-1">{{ _('Nothing to correct automatically — open the flight to check its times.') }}</div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
   </div>
   {% endfor %}
 </div>

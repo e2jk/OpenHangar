@@ -1293,7 +1293,7 @@ msgstr "%(name)s a enregistré un vol avec vous à bord. Confirmez-le pour l’a
 #: app/templates/aircraft/owners_billing.html:154
 #: app/templates/aircraft/wb_entry.html:29
 #: app/templates/aircraft/wb_list.html:71
-#: app/templates/config/data_checks.html:66
+#: app/templates/config/data_checks.html:61
 #: app/templates/config/renter_account.html:47
 #: app/templates/config/renter_account.html:68
 #: app/templates/documents/reconcile.html:64
@@ -3557,7 +3557,8 @@ msgstr "Navigabilité"
 
 #: app/pwa/routes.py:89 app/templates/aircraft/detail.html:385
 #: app/templates/aircraft/flight_detail.html:30
-#: app/templates/config/data_checks.html:52 app/templates/dashboard.html:241
+#: app/templates/config/data_checks.html:49
+#: app/templates/config/data_checks.html:68 app/templates/dashboard.html:241
 #: app/templates/flights/logbook_component.html:4
 #: app/templates/flights/logbook_component.html:15
 #: app/templates/pilots/entry_detail.html:5
@@ -7027,17 +7028,17 @@ msgid "The logbook and this GPS track differ:"
 msgstr "Le carnet et cette trace GPS diffèrent :"
 
 #: app/templates/aircraft/gps_import_review.html:237
-#: app/templates/config/data_checks.html:64
+#: app/templates/config/data_checks.html:59
 msgid "Departure airfield"
 msgstr "Aérodrome de départ"
 
 #: app/templates/aircraft/gps_import_review.html:238
-#: app/templates/config/data_checks.html:65
+#: app/templates/config/data_checks.html:60
 msgid "Arrival airfield"
 msgstr "Aérodrome d’arrivée"
 
 #: app/templates/aircraft/gps_import_review.html:240
-#: app/templates/config/data_checks.html:70
+#: app/templates/config/data_checks.html:65
 msgid "GPS track outside the logged times"
 msgstr "Trace GPS en dehors des heures enregistrées"
 
@@ -8611,7 +8612,7 @@ msgid_plural "%(n)d differences"
 msgstr[0] "une différence"
 msgstr[1] "%(n)d différences"
 
-#: app/templates/config/data_checks.html:50
+#: app/templates/config/data_checks.html:47
 #: app/templates/flights/removed_gps_files.html:24
 #: app/templates/partials/_crew_claims.html:48
 #: app/templates/partials/_flight_corrections.html:15
@@ -8621,49 +8622,50 @@ msgstr[1] "%(n)d différences"
 msgid "Flight"
 msgstr "Vol"
 
-#: app/templates/config/data_checks.html:51
+#: app/templates/config/data_checks.html:48
 msgid "Check"
 msgstr "Contrôle"
 
-#: app/templates/config/data_checks.html:53
+#: app/templates/config/data_checks.html:50
+#: app/templates/config/data_checks.html:72
 msgid "GPS"
 msgstr "GPS"
 
-#: app/templates/config/data_checks.html:54
+#: app/templates/config/data_checks.html:51
 msgid "Action"
 msgstr "Action"
 
-#: app/templates/config/data_checks.html:67
+#: app/templates/config/data_checks.html:62
 #: app/templates/flights/airframe_import_review.html:52
 #: app/templates/flights/flight_form.html:547
 msgid "Flight counter start"
 msgstr "Compteur de vol initial"
 
-#: app/templates/config/data_checks.html:68
+#: app/templates/config/data_checks.html:63
 #: app/templates/flights/airframe_import_review.html:54
 #: app/templates/flights/flight_form.html:515
 msgid "Engine counter start"
 msgstr "Compteur moteur initial"
 
-#: app/templates/config/data_checks.html:69
+#: app/templates/config/data_checks.html:64
 msgid "Overlapping flight"
 msgstr "Vol qui en chevauche un autre"
 
-#: app/templates/config/data_checks.html:75
+#: app/templates/config/data_checks.html:74
 #, python-format
 msgid "Previous flight ended at %(value)s"
 msgstr "Le vol précédent s’est terminé à %(value)s"
 
-#: app/templates/config/data_checks.html:77
+#: app/templates/config/data_checks.html:76
 #, python-format
 msgid "Another flight of this aircraft is logged %(window)s that day"
 msgstr "Un autre vol de cet aéronef est enregistré de %(window)s ce jour-là"
 
-#: app/templates/config/data_checks.html:79
+#: app/templates/config/data_checks.html:78
 msgid "no airfield nearby"
 msgstr "aucun aérodrome à proximité"
 
-#: app/templates/config/data_checks.html:80
+#: app/templates/config/data_checks.html:79
 #, python-format
 msgid "%(km)s km from %(icao)s"
 msgstr "à %(km)s km de %(icao)s"
@@ -8704,15 +8706,15 @@ msgstr "Utiliser la valeur GPS"
 msgid "Dismiss"
 msgstr "Écarter"
 
-#: app/templates/config/data_checks.html:105
+#: app/templates/config/data_checks.html:106
 msgid "Open both flights to check their dates and times — or dismiss it if they are right."
 msgstr "Ouvrez les deux vols pour vérifier leurs dates et heures — ou ignorez-le s’ils sont corrects."
 
-#: app/templates/config/data_checks.html:105
+#: app/templates/config/data_checks.html:106
 msgid "Open the flight to check its counters — or dismiss it if flights are missing from the log or the counter was replaced."
 msgstr "Ouvrez le vol pour vérifier ses compteurs — ou ignorez l’écart si des vols manquent au carnet ou si le compteur a été remplacé."
 
-#: app/templates/config/data_checks.html:105
+#: app/templates/config/data_checks.html:106
 msgid "Nothing to correct automatically — open the flight to check its times."
 msgstr "Rien à corriger automatiquement — ouvrez le vol pour vérifier ses heures."
 
