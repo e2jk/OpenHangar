@@ -25,13 +25,13 @@
         {% set series_title = series_titles.get(passport.series_id) %}
         {% set show_series = series_title and series_title != passport.title %}
         {% if show_series %}<h2 class="h5 text-break">{{ series_title }}</h2>{% endif %}
-        <div class="d-flex flex-wrap align-items-baseline justify-content-between gap-2 mb-3">
+        <div class="d-flex flex-wrap flex-lg-nowrap align-items-baseline justify-content-between gap-2 mb-3">
           {% if show_series %}
           <p class="mb-0 text-break"><a class="stretched-link" href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ passport.title }}</a></p>
           {% else %}
           <h2 class="h5 mb-0 text-break"><a class="stretched-link" href="{{ url_for('passports.detail', passport_id=passport.id) }}">{{ passport.title }}</a></h2>
           {% endif %}
-          <p class="mb-0">{{ progress_for(passport) }}</p>
+          <p class="mb-0 flex-lg-shrink-0">{{ progress_for(passport) }}</p>
         </div>
         <div class="position-relative z-2" data-passport-progress data-fields="{{ card_maps[passport.id] | tojson | forceescape }}"
              data-target-url="{{ url_for('passports.target_detail', passport_id=passport.id, target_id=0) }}"
