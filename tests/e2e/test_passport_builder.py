@@ -313,6 +313,15 @@ def test_passport_destination_discovery(
     passport_url = page.url
     page.get_by_role("link", name="Where next?", exact=True).click()
     expect(page.locator("#passport-discovery")).to_have_attribute("data-oh-inited", "1")
+    assert page.get_by_role("radiogroup", name="Search in").evaluate(
+        """group => {
+            const centers = [...group.children].map(el => {
+                const {top, bottom} = el.getBoundingClientRect();
+                return (top + bottom) / 2;
+            });
+            return Math.max(...centers) - Math.min(...centers) < 2;
+        }"""
+    )
     collections_card = page.locator('[data-discovery-source="places"]')
     passports_card = page.locator('[data-discovery-source="passports"]')
     expect(collections_card).to_be_hidden()
@@ -346,17 +355,11 @@ def test_passport_destination_discovery(
         page.locator("#discovery-shared-landing-slot #discovery-never-landed")
     ).to_be_checked()
     page.locator("#discovery-never-landed").uncheck()
-    page.locator("#discovery-query").fill("EBNM")
-    page.get_by_role("button", name="Search airfields", exact=True).click()
-    option = page.locator("#discovery-origin option").filter(has_text="EBNM").first
-    expect(option).to_have_count(1)
-    value = option.get_attribute("value")
-    assert value is not None
-    page.locator("#discovery-origin").select_option(value)
-    # The search reloaded the page (an htmx swap): the new airfield option
-    # shows before passport_discovery.js re-attaches its slider/number sync
-    # on htmx:afterSettle. Pressing Home in that gap moved only the slider.
-    expect(page.locator("#passport-discovery")).to_have_attribute("data-oh-inited", "1")
+    discovery_url = page.url
+    page.locator("#discovery-origin").fill("Namur")
+    page.get_by_role("option", name=re.compile(r"^EBNM\b")).click()
+    expect(page.locator("#discovery-origin")).to_have_value("EBNM")
+    assert page.url == discovery_url
     page.locator("#discovery-slider").press("Home")
     expect(page.locator("#discovery-limit")).to_have_value("1")
     page.locator("#discovery-limit").fill("100")
@@ -365,7 +368,13 @@ def test_passport_destination_discovery(
     expect(page.locator("#discovery-slider")).to_have_attribute("max", "300")
     page.locator("#discovery-mode").select_option("distance")
     expect(page.locator("#discovery-slider")).to_have_attribute("max", "500")
+    expect(page.locator("#discovery-speed")).to_be_hidden()
+    expect(page.locator("#discovery-limit-label")).to_have_text("Distance (NM)")
+    expect(page.locator("#discovery-slider-label")).to_have_text("Adjust distance")
     page.locator("#discovery-mode").select_option("time")
+    expect(page.locator("#discovery-speed")).to_be_visible()
+    expect(page.locator("#discovery-limit-label")).to_have_text("Minutes")
+    expect(page.locator("#discovery-slider-label")).to_have_text("Adjust duration")
     expect(page.locator("#discovery-slider")).to_have_attribute("max", "300")
     page.locator("#discovery-slider").press("End")
     expect(page.locator("#discovery-limit")).to_have_value("300")
@@ -1083,13 +1092,11 @@ def test_invited_friend_registration_without_javascript(
             guest.get_by_role("heading", name="Where next?", exact=True)
         ).to_be_visible()
         expect(guest.locator("#discovery-aircraft")).to_have_count(0)
-        guest.locator("#discovery-query").fill("EBBR")
-        guest.get_by_role("button", name="Search airfields", exact=True).click()
-        expect(guest.locator("#discovery-origin")).to_contain_text("EBBR")
-        guest.locator("#discovery-origin").select_option(index=1)
+        guest.locator("#discovery-origin").fill("EBBR")
         guest.get_by_role("button", name="Find destinations", exact=True).click()
         guest.wait_for_url(lambda url: "origin=" in url)
-        expect(guest.locator("#discovery-origin")).not_to_have_value("")
+        expect(guest.locator("#discovery-origin")).to_have_value("EBBR")
+        expect(guest.get_by_text(re.compile(r"^Starting from:"))).to_be_visible()
         guest.goto(live_server_url + "/passports/")
         guest.get_by_role("link", name="Create passport", exact=True).click()
         guest.locator("#passport-title").fill("Guest personal tour " + title)

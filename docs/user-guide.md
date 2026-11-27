@@ -288,9 +288,13 @@ equal distance the airfields with more reasons come first. Places with no
 airfield yet are counted, so you can link one. You can narrow places to one tag.
 Closed airfields never appear. The
 map shows the places and lines to the airfields that serve them. Opened from a
-passport, Where next? searches that passport; from a place, that place. You can save a home airfield on your pilot profile and a home/cruise
-speed on an aircraft, or use session-only inputs. Optional range estimates need
-explicit usable fuel, flow and reserve assumptions.
+passport, Where next? searches that passport; from a place, that place. The
+reference airfield defaults to the selected aircraft's home, then your pilot
+home, then your latest logged arrival. Enter a code directly, choose an
+autocomplete suggestion, or use a quick pick when several defaults are
+available. You can save home airfields and aircraft cruise speeds, or use
+session-only inputs. The last distance or cruise speed and duration are
+remembered for the browser session.
 
 Link successive editions to revisit earlier lists or combine their maps, with
 newest/oldest visit colours and optional frequency weighting. In a group, frequency

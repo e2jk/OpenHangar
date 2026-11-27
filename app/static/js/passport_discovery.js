@@ -29,18 +29,38 @@
       option.addEventListener('change', syncSourceCards);
     });
     syncSourceCards();
+    var origin = document.getElementById('discovery-origin');
+    var originReference = document.getElementById('discovery-origin-key');
+    form.querySelectorAll('[data-discovery-origin]').forEach(function (button) {
+      button.type = 'button';
+      button.addEventListener('click', function () {
+        origin.value = button.dataset.discoveryOrigin;
+        originReference.value = button.dataset.discoveryReference;
+        origin.dispatchEvent(new CustomEvent('airport-ac:selected', {
+          detail: { code: origin.value, reference: originReference.value, name: button.dataset.discoveryName }
+        }));
+      });
+    });
     var slider = document.getElementById('discovery-slider');
     var limit = document.getElementById('discovery-limit');
     var mode = document.getElementById('discovery-mode');
+    var speedField = document.getElementById('discovery-speed-field');
+    var limitLabel = document.getElementById('discovery-limit-label');
+    var sliderLabel = document.getElementById('discovery-slider-label');
     // The slider covers a practical range for the mode (nm or minutes); the
     // number field still accepts larger values, pinning the slider at its end.
     function setSliderRange() {
-      slider.max = mode && mode.value === 'time' ? slider.dataset.maxTime : slider.dataset.maxDistance;
+      var timed = mode.value === 'time';
+      slider.max = timed ? slider.dataset.maxTime : slider.dataset.maxDistance;
+      speedField.hidden = !timed;
+      limitLabel.textContent = timed ? limitLabel.dataset.time : limitLabel.dataset.distance;
+      sliderLabel.textContent = timed ? sliderLabel.dataset.time : sliderLabel.dataset.distance;
       slider.value = limit.value;
     }
     slider.addEventListener('input', function () { limit.value = slider.value; });
     limit.addEventListener('input', function () { slider.value = limit.value; });
-    if (mode) mode.addEventListener('change', setSliderRange);
+    mode.addEventListener('change', setSliderRange);
+    setSliderRange();
     if (typeof L === 'undefined') return;
     var data = JSON.parse(root.dataset.map);
     var map = L.map('passport-discovery-map', { zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false }).setView([50.5, 5], 5);

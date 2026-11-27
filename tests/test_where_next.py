@@ -5,12 +5,15 @@ redirecting to it."""
 from datetime import UTC, date, datetime
 from urllib.parse import parse_qs, urlsplit
 
+import pytest
 from flask import Flask
 from flask.testing import FlaskClient
 from models import (
     Aircraft,
+    Flight,
     PassportAirfield,
     PassportAirfieldIdentity,
+    PilotProfile,
     Role,
     TenantUser,
     db,
@@ -19,9 +22,10 @@ from passports.catalogue import create_custom
 from passports.management import create_personal, metadata_values
 
 from tests.test_passport_builder import signin
+from tests.test_passport_foundation import catalogue
 from tests.test_passport_management import owner
 
-__all__ = ["owner"]
+__all__ = ["catalogue", "owner"]
 
 URL = "/explore/where-next"
 
@@ -61,6 +65,148 @@ def _search(client: FlaskClient, owner: dict[str, int], **args: object):
     return client.get(
         URL, query_string={"origin": f"field:{owner['field']}", "limit": 50, **args}
     )
+
+
+def test_reference_airfield_autocomplete_and_direct_code(
+    app: Flask,
+    client: FlaskClient,
+    owner: dict[str, int],
+    catalogue: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _setup(app, owner)
+    signin(client, owner["user"])
+    response = client.get("/explore/airfield-search", query_string={"q": "SNGL"})
+    result = next(row for row in response.json["results"] if row["name"] == "Single")
+    assert result["code"] == "SNGL" and result["reference"].startswith("field:")
+    assert client.get("/explore/airfield-search?q=S").json == {"results": []}
+    for params in (
+        {"origin": "sngl"},
+        {"origin": "SNGL", "origin_key": result["reference"]},
+        {"origin": "SNGL", "origin_key": f"field:{owner['field']}"},
+    ):
+        page = client.get(URL, query_string=params).text
+        assert "Starting from: Single" in page
+    page = client.get(URL, query_string={"origin": "ZZZZ"}).text
+    assert "Enter a valid airfield code" in page
+    assert (
+        "Starting from: Namur" in client.get(URL, query_string={"origin": "EBNM"}).text
+    )
+    monkeypatch.setattr("explore.routes.current_membership", lambda: None)
+    assert client.get("/explore/airfield-search?q=Namur").status_code == 403
+
+
+def test_reference_defaults_and_quick_picks(
+    app: Flask, client: FlaskClient, owner: dict[str, int]
+) -> None:
+    with app.app_context():
+        tenant = owner["tenant"]
+        db.session.get(TenantUser, (owner["user"], tenant)).role = Role.ADMIN
+        aircraft_home = create_custom(
+            tenant, "Aircraft field", code="ACFT", latitude=50, longitude=4
+        )
+        pilot_home = create_custom(
+            tenant, "Pilot field", code="PLTF", latitude=50, longitude=5
+        )
+        create_custom(tenant, "Arrival field", code="ARRV", latitude=50, longitude=6)
+        db.session.add_all(
+            [
+                Aircraft(
+                    tenant_id=tenant,
+                    registration="OO-ORI",
+                    make="Cessna",
+                    model="172",
+                    home_airfield_id=aircraft_home.id,
+                ),
+                PilotProfile(user_id=owner["user"], home_airfield_id=pilot_home.id),
+                Flight(
+                    pic_user_id=owner["user"],
+                    date=date(2025, 3, 1),
+                    arrival_icao="ARRV",
+                    landing_count=1,
+                ),
+            ]
+        )
+        db.session.commit()
+    signin(client, owner["user"])
+    default = client.get(URL).text
+    assert "Starting from: Aircraft field" in default
+    assert 'value="ACFT" data-airport-ac=' in default
+    for choice, name in (("pilot_home", "Pilot field"), ("latest", "Arrival field")):
+        assert f'name="start" value="{choice}"' in default
+        assert (
+            f"Starting from: {name}"
+            in client.get(URL, query_string={"start": choice}).text
+        )
+    assert (
+        "Starting from: Aircraft field"
+        in client.get(URL, query_string={"start": "home", "origin": "ARRV"}).text
+    )
+    assert (
+        "Starting from: Pilot field"
+        in client.get(URL, query_string={"aircraft": ""}).text
+    )
+    with app.app_context():
+        PilotProfile.query.filter_by(
+            user_id=owner["user"]
+        ).one().home_airfield_id = None
+        db.session.commit()
+    arrival = client.get(URL, query_string={"aircraft": ""}).text
+    assert "Starting from: Arrival field" in arrival
+    assert 'name="start"' not in arrival
+
+
+def test_search_remembers_only_valid_distance_or_duration(
+    app: Flask, client: FlaskClient, owner: dict[str, int]
+) -> None:
+    _setup(app, owner)
+    signin(client, owner["user"])
+    distance = _search(
+        client, owner, mode="distance", limit="42", speed="116", remember_range="1"
+    ).text
+    assert 'value="distance" selected' in distance
+    assert 'id="discovery-aircraft"' not in distance
+    assert "Optional theoretical range" not in distance
+    current = client.get(URL).text
+    assert 'value="distance" selected' in current
+    assert 'value="42"' in current and 'value="116"' in current
+    assert (
+        _search(
+            client, owner, mode="time", limit="50", speed="bad", remember_range="1"
+        ).status_code
+        == 200
+    )
+    assert 'value="distance" selected' in client.get(URL).text
+    _search(client, owner, mode="time", limit="34", speed="118", remember_range="1")
+    current = client.get(URL).text
+    assert 'value="time" selected' in current
+    assert 'value="34"' in current and 'value="118"' in current
+
+
+def test_missing_coordinates_note_only_when_needed(
+    app: Flask, client: FlaskClient, owner: dict[str, int]
+) -> None:
+    _setup(app, owner)
+    signin(client, owner["user"])
+    note = "Targets without coordinates cannot be distance-filtered"
+    page = _search(client, owner).text
+    assert note not in page
+    assert "Downloads contain only open airfields" not in page
+    assert page.index("</table>") < page.index("Download GPX waypoints")
+    assert page.index("</table>") < page.index("Download KML waypoints")
+    with app.app_context():
+        field = create_custom(owner["tenant"], "Unmapped field")
+        db.session.flush()
+        db.session.add(
+            PassportAirfield(
+                tenant_id=owner["tenant"],
+                passport_id=owner["passport"],
+                airfield_id=field.id,
+            )
+        )
+        db.session.commit()
+    result = _search(client, owner).text
+    assert note in result and "(1)</p>" in result
 
 
 def test_one_row_per_airfield_with_every_passport_as_a_reason(

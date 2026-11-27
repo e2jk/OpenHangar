@@ -171,7 +171,10 @@ def origin_choices(rows: Iterable[dict[str, Any]], query: str) -> list[dict[str,
         field["key"]: field
         for field in rows
         if all(
-            word in f"{field.get('ident') or ''} {field['name']}".casefold()
+            word
+            in " ".join(
+                (field.get("ident") or "", field.get("icao_code") or "", field["name"])
+            ).casefold()
             for word in words
         )
     }
