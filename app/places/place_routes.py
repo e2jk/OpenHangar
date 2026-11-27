@@ -28,7 +28,7 @@ from models import (
 from services import geocoding
 from utils import db_id, is_view_only, login_required
 
-from places import airfields, candidates, management, visits
+from places import airfields, candidates, management, passport_links, visits
 from places.access import (
     PlaceError,
     actor,
@@ -259,6 +259,7 @@ def place_detail(place_id: int) -> ResponseReturnValue:
         if visit_panel["can_record"] and linked and not place.archived
         else [],
         linked_airfields=linked,
+        passport_fields=passport_links.passport_fields(tid, uid) if linked else {},
         **airfield_map_data(linked),
         place=place,
         collection=collection,
