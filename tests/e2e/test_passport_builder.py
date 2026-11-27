@@ -291,6 +291,12 @@ def test_passport_destination_discovery(
     page.on("pageerror", lambda error: errors.append(str(error)))
     title = "Discovery " + uuid4().hex[:8]
     destination = "Discovery field " + uuid4().hex[:8]
+    page.goto(live_server_url + "/places/")
+    page.get_by_role("link", name="New collection", exact=True).click()
+    page.get_by_label("Collection name", exact=True).fill(title)
+    page.get_by_role("button", name="Create collection", exact=True).click()
+    page.wait_for_url(re.compile(r"/places/collections/\d+/settings$"))
+    collection_url = page.url
     page.goto(live_server_url + "/passports/new")
     page.locator("#passport-title").fill(title)
     page.get_by_text("Add a missing airfield", exact=True).click()
@@ -306,6 +312,37 @@ def test_passport_destination_discovery(
     page.wait_for_url(re.compile(r"/passports/\d+/$"))
     passport_url = page.url
     page.get_by_role("link", name="Where next?", exact=True).click()
+    expect(page.locator("#passport-discovery")).to_have_attribute("data-oh-inited", "1")
+    collections_card = page.locator('[data-discovery-source="places"]')
+    passports_card = page.locator('[data-discovery-source="passports"]')
+    expect(collections_card).to_be_hidden()
+    expect(passports_card).to_be_visible()
+    expect(page.locator("#discovery-visited")).to_be_disabled()
+
+    page.locator("#discovery-source-both").check()
+    expect(collections_card).to_be_visible()
+    expect(passports_card).to_be_visible()
+    assert page.locator("#discovery-never-landed").evaluate(
+        "el => el.closest('[data-discovery-source]').dataset.discoverySource === 'places'"
+    )
+    assert page.locator("#passport-discovery-form").evaluate(
+        """form => {
+            const [a, b] = [...form.querySelectorAll('[data-discovery-source]')]
+                .map(card => card.getBoundingClientRect());
+            return a.top === b.top && a.right <= b.left + 1;
+        }"""
+    )
+
+    page.locator("#discovery-visited").check()
+    page.locator("#discovery-never-landed").check()
+    page.locator("#discovery-source-places").check()
+    expect(passports_card).to_be_hidden()
+    expect(passports_card.locator('input[name="stamp_book"]').first).to_be_disabled()
+    page.locator("#discovery-source-passports").check()
+    expect(collections_card).to_be_hidden()
+    expect(page.locator("#discovery-visited")).to_be_disabled()
+    expect(page.locator("#discovery-shared-landing-slot input")).to_be_checked()
+    page.locator("#discovery-never-landed").uncheck()
     page.locator("#discovery-query").fill("EBNM")
     page.get_by_role("button", name="Search airfields", exact=True).click()
     option = page.locator("#discovery-origin option").filter(has_text="EBNM").first
@@ -385,6 +422,10 @@ def test_passport_destination_discovery(
     page.get_by_role("link", name="Delete passport", exact=True).click()
     page.get_by_role("button", name="Delete passport", exact=True).click()
     page.wait_for_url(live_server_url + "/passports/")
+    page.goto(collection_url)
+    page.get_by_label("I confirm the permanent deletion of this collection.").check()
+    page.get_by_role("button", name="Delete collection", exact=True).click()
+    page.wait_for_url(live_server_url + "/places/")
     assert not errors, errors
 
 

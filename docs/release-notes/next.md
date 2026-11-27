@@ -18,3 +18,6 @@
   together and Delete passport on its own line. Visit-count guidance follows
   the map legend, which describes closed airfields when listed. Airfield
   filters and visit frequency update the map and list automatically.
+- Where next? shows collection and passport filters in separate cards,
+  hides filters for inactive sources, and groups the two visit-history
+  filters together.

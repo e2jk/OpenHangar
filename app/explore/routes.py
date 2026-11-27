@@ -395,10 +395,9 @@ def where_next() -> ResponseReturnValue:
         _passport_reasons(chosen, uid) if source in {"passports", "both"} else ({}, [])
     )
     unlinked = 0
-    tags: list[str] = []
-    if source in {"places", "both"} and chosen_collections:
-        collection_ids = [c.id for c in chosen_collections]
-        tags = _tag_names(collection_ids)
+    collection_ids = [c.id for c in chosen_collections]
+    tags = _tag_names(collection_ids) if collection_ids else []
+    if source in {"places", "both"} and collection_ids:
         place_ids = [place_id] if place_id is not None else None
         if tag:
             tagged = set(_tagged_places(collection_ids, tag))

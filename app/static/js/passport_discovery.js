@@ -3,6 +3,32 @@
     var root = document.getElementById('passport-discovery');
     if (!root || root.dataset.ohInited) return;
     root.dataset.ohInited = '1';
+    var form = document.getElementById('passport-discovery-form');
+    var sourceOptions = form.querySelectorAll('input[name="source"]');
+    var sourceCards = form.querySelectorAll('[data-discovery-source]');
+    var landingFilter = document.getElementById('discovery-landing-filter');
+    var collectionLandingSlot = document.getElementById('discovery-collection-landing-slot');
+    var sharedLandingSlot = document.getElementById('discovery-shared-landing-slot');
+    function syncSourceCards() {
+      var selectedSource = form.querySelector('input[name="source"]:checked');
+      if (!selectedSource) return;
+      sourceCards.forEach(function (card) {
+        var inactive = selectedSource.value !== 'both' &&
+          selectedSource.value !== card.dataset.discoverySource;
+        card.hidden = inactive;
+        card.querySelector('fieldset').disabled = inactive;
+      });
+      // This filter applies to both sources. Keep the same checkbox value
+      // when moving it next to the place-visit filter or back out of the card.
+      var useCollectionSlot = collectionLandingSlot && selectedSource.value !== 'passports';
+      var landingSlot = useCollectionSlot ? collectionLandingSlot : sharedLandingSlot;
+      if (landingFilter.parentElement !== landingSlot) landingSlot.appendChild(landingFilter);
+      sharedLandingSlot.hidden = Boolean(useCollectionSlot);
+    }
+    sourceOptions.forEach(function (option) {
+      option.addEventListener('change', syncSourceCards);
+    });
+    syncSourceCards();
     var slider = document.getElementById('discovery-slider');
     var limit = document.getElementById('discovery-limit');
     var mode = document.getElementById('discovery-mode');

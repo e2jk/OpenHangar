@@ -381,10 +381,14 @@ def test_a_passport_or_place_link_preselects_its_source(
     )
     assert 'value="passports" id="discovery-source-passports" checked' in from_passport
     assert "km from Castle" not in from_passport
+    assert 'data-discovery-source="places" hidden' in from_passport
+    assert 'class="card-body" disabled' in from_passport
+    assert '<option value="Museum"' in from_passport
     from_place = client.get(URL, query_string={"place": ids["castle"]}).get_data(
         as_text=True
     )
     assert 'value="places" id="discovery-source-places" checked' in from_place
+    assert 'data-discovery-source="passports" hidden' in from_place
 
 
 def test_first_load_uses_a_single_aircraft_home_and_searches_both_sources(
