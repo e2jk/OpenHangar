@@ -3312,7 +3312,7 @@ msgstr "Choisissez un membre de cette collection."
 msgid "Enter valid latitude and longitude coordinates."
 msgstr "Saisissez une latitude et une longitude valides."
 
-#: app/places/coordinates.py:104 app/places/place_routes.py:304
+#: app/places/coordinates.py:104 app/places/place_routes.py:305
 msgid "Paste decimal or DMS coordinates, or a map link containing coordinates."
 msgstr "Collez des coordonnées décimales ou en degrés, minutes et secondes, ou un lien de carte contenant des coordonnées."
 
@@ -3366,7 +3366,7 @@ msgstr "Seuls le propriétaire du lieu ou la personne qui a créé la collection
 msgid "Airfield search failed. Try again."
 msgstr "La recherche d’aérodrome a échoué. Réessayez."
 
-#: app/places/place_routes.py:202 app/places/place_routes.py:332
+#: app/places/place_routes.py:202 app/places/place_routes.py:333
 msgid "Choose a collection you can edit."
 msgstr "Choisissez une collection que vous pouvez modifier."
 
@@ -3377,11 +3377,11 @@ msgstr "Choisissez une collection que vous pouvez modifier."
 msgid "Unnamed member"
 msgstr "Membre sans nom"
 
-#: app/places/place_routes.py:269 app/places/place_routes.py:270
+#: app/places/place_routes.py:270 app/places/place_routes.py:271
 msgid "Former member"
 msgstr "Ancien membre"
 
-#: app/places/place_routes.py:347
+#: app/places/place_routes.py:348
 msgid "Confirm the permanent deletion of this place."
 msgstr "Confirmez la suppression définitive de ce lieu."
 
@@ -7719,7 +7719,7 @@ msgstr "Vérifier la référence pièce"
 #: app/templates/passports/record_visit.html:14
 #: app/templates/passports/series.html:17
 #: app/templates/passports/series.html:19 app/templates/passports/target.html:9
-#: app/templates/places/_airfields.html:3
+#: app/templates/places/_airfields.html:15
 #: app/templates/places/airfield_links.html:32
 msgid "Closed"
 msgstr "Clos"
@@ -10439,7 +10439,7 @@ msgstr "Ajouter la première dépense"
 #: app/templates/explore/where_next.html:6
 #: app/templates/partials/_explore_links.html:1
 #: app/templates/passports/detail.html:12 app/templates/places/index.html:9
-#: app/templates/places/place_detail.html:13
+#: app/templates/places/place_detail.html:5
 msgid "Where next?"
 msgstr "Où aller ensuite ?"
 
@@ -15289,21 +15289,26 @@ msgstr[1] "%(n)s vols"
 msgid "All airports visited"
 msgstr "Tous les aérodromes visités"
 
-#: app/templates/places/_airfields.html:2
+#: app/templates/places/_airfields.html:3
 #: app/templates/places/airfield_links.html:10
 msgid "Linked airfields"
 msgstr "Aérodromes associés"
 
-#: app/templates/places/_airfields.html:2
+#: app/templates/places/_airfields.html:4
 msgid "Manage airfield links"
 msgstr "Gérer les aérodromes associés"
 
-#: app/templates/places/_airfields.html:3
+#: app/templates/places/_airfields.html:14
 #: app/templates/places/airfield_links.html:10
 msgid "Preferred"
 msgstr "Préféré"
 
-#: app/templates/places/_airfields.html:3
+#: app/templates/places/_airfields.html:18
+#: app/templates/places/airfield_links.html:34
+msgid "In your passports"
+msgstr "Dans vos passeports"
+
+#: app/templates/places/_airfields.html:20
 #: app/templates/places/_passport_suggestions.html:13
 #: app/templates/places/airfield_links.html:10
 #: app/templates/places/airfield_links.html:31
@@ -15311,12 +15316,12 @@ msgstr "Préféré"
 msgid "%(distance)s km from this place"
 msgstr "À %(distance)s km de ce lieu"
 
-#: app/templates/places/_airfields.html:3 app/templates/places/index.html:49
+#: app/templates/places/_airfields.html:28 app/templates/places/index.html:49
 #: app/templates/places/place_form.html:31
 msgid "No linked airfield"
 msgstr "Aucun aérodrome associé"
 
-#: app/templates/places/_airfields.html:3
+#: app/templates/places/_airfields.html:28
 msgid "No airfield is linked to this place yet."
 msgstr "Aucun aérodrome n’est encore associé à ce lieu."
 
@@ -15435,10 +15440,6 @@ msgstr "Aérodrome ajouté manuellement"
 #: app/templates/places/airfield_links.html:32
 msgid "Other airfield"
 msgstr "Autre aérodrome"
-
-#: app/templates/places/airfield_links.html:34
-msgid "In your passports"
-msgstr "Dans vos passeports"
 
 #: app/templates/places/airfield_links.html:38
 msgid "Already linked"
@@ -15699,7 +15700,7 @@ msgid "Location"
 msgstr "Localisation"
 
 #: app/templates/places/index.html:20 app/templates/places/index.html:57
-#: app/templates/places/place_detail.html:14
+#: app/templates/places/place_detail.html:11
 msgid "Location still to add"
 msgstr "Localisation à ajouter"
 
@@ -15727,7 +15728,7 @@ msgstr "Les lieux dans la corbeille sont supprimés définitivement après 30 jo
 msgid "Move to another collection"
 msgstr "Déplacer vers une autre collection"
 
-#: app/templates/places/index.html:33 app/templates/places/place_detail.html:18
+#: app/templates/places/index.html:33 app/templates/places/place_detail.html:24
 msgid "Destination collection"
 msgstr "Collection de destination"
 
@@ -15744,7 +15745,7 @@ msgstr "Déplacer"
 msgid "Select %(place)s"
 msgstr "Sélectionner %(place)s"
 
-#: app/templates/places/index.html:40 app/templates/places/place_detail.html:11
+#: app/templates/places/index.html:40 app/templates/places/place_detail.html:10
 msgid "Place photo"
 msgstr "Photo du lieu"
 
@@ -15757,11 +15758,11 @@ msgstr "Dernière visite le %(date)s"
 msgid "Restore place"
 msgstr "Restaurer le lieu"
 
-#: app/templates/places/index.html:61 app/templates/places/place_detail.html:19
+#: app/templates/places/index.html:61 app/templates/places/place_detail.html:29
 msgid "I confirm the permanent deletion of this place and its visits."
 msgstr "Je confirme la suppression définitive de ce lieu et de ses visites."
 
-#: app/templates/places/index.html:61 app/templates/places/place_detail.html:19
+#: app/templates/places/index.html:61 app/templates/places/place_detail.html:29
 msgid "Permanently delete place"
 msgstr "Supprimer définitivement le lieu"
 
@@ -15796,45 +15797,45 @@ msgstr "Créer la collection"
 msgid "Edit place"
 msgstr "Modifier le lieu"
 
-#: app/templates/places/place_detail.html:7
+#: app/templates/places/place_detail.html:8
+msgid "Visit website"
+msgstr "Consulter le site web"
+
+#: app/templates/places/place_detail.html:16
 #, python-format
 msgid "Place owner: %(name)s"
 msgstr "Propriétaire du lieu : %(name)s"
 
-#: app/templates/places/place_detail.html:7
+#: app/templates/places/place_detail.html:17
 #, python-format
 msgid "Last changed by %(name)s on %(date)s"
 msgstr "Dernière modification par %(name)s le %(date)s"
 
-#: app/templates/places/place_detail.html:9
-msgid "Visit website"
-msgstr "Consulter le site web"
-
-#: app/templates/places/place_detail.html:17
+#: app/templates/places/place_detail.html:19
 msgid "Unarchive place"
 msgstr "Désarchiver le lieu"
 
-#: app/templates/places/place_detail.html:17
+#: app/templates/places/place_detail.html:19
 msgid "Archive place"
 msgstr "Archiver le lieu"
 
-#: app/templates/places/place_detail.html:17
+#: app/templates/places/place_detail.html:19
 msgid "Move to bin"
 msgstr "Mettre à la corbeille"
 
-#: app/templates/places/place_detail.html:18
+#: app/templates/places/place_detail.html:24
 msgid "Copy or move"
 msgstr "Copier ou déplacer"
 
-#: app/templates/places/place_detail.html:18
+#: app/templates/places/place_detail.html:24
 msgid "Copy place"
 msgstr "Copier le lieu"
 
-#: app/templates/places/place_detail.html:18
+#: app/templates/places/place_detail.html:24
 msgid "Move place"
 msgstr "Déplacer le lieu"
 
-#: app/templates/places/place_detail.html:18
+#: app/templates/places/place_detail.html:24
 msgid "Copies keep the content and photo, but no visits. Moving requires every visitor to belong to the destination collection."
 msgstr "Les copies conservent le contenu et la photo, sans les visites. Pour déplacer un lieu, toutes les personnes ayant enregistré une visite doivent faire partie de la collection de destination."
 

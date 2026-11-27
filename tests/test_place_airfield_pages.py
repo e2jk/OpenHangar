@@ -509,6 +509,25 @@ def test_passport_place_suggestions_and_links(
     assert done.headers["Location"] == suggestions_url + "?radius=30"
     assert "No nearby places to link" in client.get(suggestions_url).text
     assert "Linked places" in client.get(target_url).text
+    detail = client.get(f"/places/{links['place']}")
+    assert detail.status_code == 200
+    assert detail.text.index('id="places-map"') < detail.text.index(
+        'id="place-airfields"'
+    )
+    airfield_section = detail.text.split('id="place-airfields"', 1)[1].split(
+        "</section>", 1
+    )[0]
+    assert "row-cols-lg-3" in airfield_section
+    assert (
+        "In your passports" in airfield_section
+        and "My airport passport" in airfield_section
+    )
+    assert "Private other passport" not in airfield_section
+    assert detail.text.index("Where next?") < detail.text.index("Add place")
+    assert detail.text.index("Place owner:") < detail.text.index("Copy or move")
+    metadata = detail.text.split("Place owner:", 1)[1].split("</div>", 1)[0]
+    assert "Last changed by" in metadata
+    assert "Archive place" in metadata and "Move to bin" in metadata
     back = client.post(
         airfields,
         data={
