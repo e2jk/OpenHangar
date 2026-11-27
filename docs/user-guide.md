@@ -280,12 +280,13 @@ unvisited fields remain visible but are excluded from the achievable total.
 Use **Where next?** (in the **Explore** menu, or from a passport's page) to find
 open unvisited fields within a distance or still-air time limit, across all your
 active passports or the ones you tick, and the airfields linked to your places
-(**Search in** places, passports or both; visited places are left out unless you
-include them). Each airfield is listed once with all its reasons — "Not yet
+(**Search in** places, passports or both). Both visit-history filters are checked
+by default. Untick either filter to include places you have visited or airfields
+where you have landed. Each airfield is listed once with all its reasons — "Not yet
 stamped in *Belgian passport 2026*", "4.0 km from *Pairi Daiza* (taxi)" — and at
 equal distance the airfields with more reasons come first. Places with no
-airfield yet are counted, so you can link one. Narrow places to one tag, or
-keep only airfields you have never landed at; closed airfields never appear. The
+airfield yet are counted, so you can link one. You can narrow places to one tag.
+Closed airfields never appear. The
 map shows the places and lines to the airfields that serve them. Opened from a
 passport, Where next? searches that passport; from a place, that place. You can save a home airfield on your pilot profile and a home/cruise
 speed on an aircraft, or use session-only inputs. Optional range estimates need
