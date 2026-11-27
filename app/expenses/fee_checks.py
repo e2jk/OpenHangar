@@ -102,7 +102,7 @@ def missing_fees(
         Flight.entry_type == LogbookEntryType.FLIGHT,
         Flight.date.between(first_day, end),
     ).with_entities(Flight.id)
-    charged_by_flight: dict[int, set[str]] = defaultdict(set)
+    status_by_flight: dict[int, dict[str, bool]] = defaultdict(dict)
     for expense in Expense.query.join(
         Flight, Flight.id == Expense.flight_entry_id
     ).filter(
@@ -110,7 +110,9 @@ def missing_fees(
         Expense.flight_entry_id.in_(flight_scope),
         Expense.expense_type.in_((*FEE_TYPES, ExpenseType.OTHER)),
     ):
-        charged_by_flight[expense.flight_entry_id].update(fee_kinds(expense))
+        statuses = status_by_flight[expense.flight_entry_id]
+        for kind in fee_kinds(expense):
+            statuses[kind] = statuses.get(kind, False) or expense.amount > 0
 
     feedback = {
         (row.flight_id, row.key): row.created_at.date()
@@ -138,8 +140,12 @@ def missing_fees(
                     _, was_charged = observations.popleft()
                     paid_counts[key] -= was_charged is True
                     known_counts[key] -= was_charged is not None
-                charged = kind in charged_by_flight[flight.id]
-                no_fee = (flight.id, feedback_key(kind, airfield, "no_fee")) in feedback
+                fee_status = status_by_flight[flight.id].get(kind)
+                charged = fee_status is True
+                no_fee = (
+                    fee_status is False
+                    or (flight.id, feedback_key(kind, airfield, "no_fee")) in feedback
+                )
                 day_movements.append(
                     (key, True if charged else False if no_fee else None)
                 )
