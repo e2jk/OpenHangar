@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Likely missing airfield fees') }} — OpenHangar{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="page-header mb-4">
+    <h1 class="page-title">{{ _('Likely missing airfield fees') }}</h1>
+    {% if selected_aircraft %}
+    <a class="btn btn-ac-ghost" href="{{ url_for('expenses.list_expenses', aircraft_id=selected_aircraft) }}">{{ _('Expenses') }}</a>
+    {% else %}
+    <a class="btn btn-ac-ghost" href="{{ url_for('config.data_checks') }}">{{ _('Data checks') }}</a>
+    {% endif %}
+  </div>
+  <p>{{ _('Suggestions use earlier flights by the same aircraft at the same airfield. Takeoff and landing fees are checked separately, with a seven-day grace period for new flights.') }}</p>
+  <form method="get" class="row g-2 align-items-end mb-4">
+    <div class="col-6 col-lg">
+      <label class="form-label" for="fee-aircraft">{{ _('Aircraft') }}</label>
+      <select class="form-select" id="fee-aircraft" name="aircraft">
+        <option value="">{{ _('All aircraft') }}</option>
+        {% for item in aircraft %}
+        <option value="{{ item.id }}" {% if selected_aircraft == item.id %}selected{% endif %}>{{ item.registration }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-lg">
+      <label class="form-label" for="fee-airfield">{{ _('Airfield') }}</label>
+      <input class="form-control" id="fee-airfield" name="airfield" maxlength="64" value="{{ airfield }}">
+    </div>
+    <div class="col-6 col-lg">
+      <label class="form-label" for="fee-start">{{ _('From') }}</label>
+      <input class="form-control" type="date" id="fee-start" name="start" value="{{ start }}">
+    </div>
+    <div class="col-6 col-lg">
+      <label class="form-label" for="fee-end">{{ _('To') }}</label>
+      <input class="form-control" type="date" id="fee-end" name="end" value="{{ end }}">
+    </div>
+    <div class="col-6 col-lg">
+      <label class="form-label" for="fee-kind">{{ _('Type') }}</label>
+      <select class="form-select" id="fee-kind" name="kind">
+        <option value="">{{ _('All types') }}</option>
+        {% for value, label in fee_labels.items() %}
+        <option value="{{ value }}" {% if kind == value %}selected{% endif %}>{{ _(label) }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto"><button class="btn btn-ac-primary">{{ _('Filter') }}</button></div>
+  </form>
+
+  {% for finding in findings %}
+  {% set flight = finding.flight %}
+  {% set options = expense_choices[(flight.id, finding.kind)] %}
+  <section class="ac-form-card mb-3">
+    <h2 class="h5">{{ _(fee_labels[finding.kind]) }} · {{ finding.airfield }}</h2>
+    <p class="mb-2">
+      <a href="{{ url_for('aircraft.flight_detail', aircraft_id=flight.aircraft_id, flight_id=flight.id) }}">{{ aircraft_by_id[flight.aircraft_id].registration }} · {{ flight.date }}</a>
+      <span class="text-body-secondary">· {{ _('%(charged)d of %(total)d preceding movements with a known fee status were charged', charged=finding.charged, total=finding.movements) }}</span>
+    </p>
+    <form method="post" action="{{ url_for('expenses.fee_review', aircraft=selected_aircraft, start=start, end=end, airfield=airfield, kind=kind) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="flight" value="{{ flight.id }}">
+      <input type="hidden" name="kind" value="{{ finding.kind }}">
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-ac-primary btn-sm" href="{{ url_for('expenses.add_expense', aircraft_id=flight.aircraft_id, flight_entry_id=flight.id, fee_kind=finding.kind) }}">{{ _('Add expense') }}</a>
+        <button class="btn btn-ac-ghost btn-sm" name="action" value="no_fee">{{ _('No separate fee due') }}</button>
+        <button class="btn btn-ac-ghost btn-sm" name="action" value="defer">{{ _('Review in 30 days') }}</button>
+      </div>
+      {% if options %}
+      <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
+        <label for="fee-expense-{{ flight.id }}-{{ finding.kind }}">{{ _('Existing expense') }}</label>
+        <select class="form-select form-select-sm w-auto mw-100" id="fee-expense-{{ flight.id }}-{{ finding.kind }}" name="expense">
+          {% for expense in options %}
+          <option value="{{ expense.id }}">{{ expense.date }} · {{ expense.amount }} {{ expense.currency }}{% if expense.description %} · {{ expense.description }}{% endif %}</option>
+          {% endfor %}
+        </select>
+        <button class="btn btn-ac-ghost btn-sm" name="action" value="link">{{ _('Link expense') }}</button>
+      </div>
+      {% endif %}
+    </form>
+  </section>
+  {% else %}
+  <p>{{ _('No likely missing fees match these filters.') }}</p>
+  {% endfor %}
+</div>
+{% endblock %}

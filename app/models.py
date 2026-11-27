@@ -2420,14 +2420,28 @@ class ExpenseType:
     PARTS = "parts"
     INSURANCE = "insurance"
     OTHER = "other"
+    LANDING_FEE = "landing_fee"
+    TAKEOFF_FEE = "takeoff_fee"
+    AIRFIELD_FEES = "airfield_fees"
 
-    ALL: ClassVar[set[str]] = {FUEL, PARTS, INSURANCE, OTHER}
+    ALL: ClassVar[set[str]] = {
+        FUEL,
+        PARTS,
+        INSURANCE,
+        OTHER,
+        LANDING_FEE,
+        TAKEOFF_FEE,
+        AIRFIELD_FEES,
+    }
     # N_()-marked: rendered through gettext() at the template/route layer, not here.
     LABELS: ClassVar[dict[str, str]] = {
         FUEL: N_("Fuel"),
         PARTS: N_("Parts & Maintenance"),
         INSURANCE: N_("Insurance"),
         OTHER: N_("Other"),
+        LANDING_FEE: N_("Landing fee"),
+        TAKEOFF_FEE: N_("Takeoff fee"),
+        AIRFIELD_FEES: N_("Landing and takeoff fees"),
     }
 
 
@@ -2448,6 +2462,9 @@ class ExpenseCategory:
         ExpenseType.PARTS: OPERATING,
         ExpenseType.INSURANCE: FIXED,
         ExpenseType.OTHER: OPERATING,
+        ExpenseType.LANDING_FEE: OPERATING,
+        ExpenseType.TAKEOFF_FEE: OPERATING,
+        ExpenseType.AIRFIELD_FEES: OPERATING,
     }
 
 

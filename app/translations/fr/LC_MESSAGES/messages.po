@@ -77,7 +77,7 @@ msgstr "Un nombre saisi est beaucoup trop grand, rien n’a donc été enregistr
 msgid "The sign-in form had expired. Please sign in again."
 msgstr "Le formulaire de connexion avait expiré. Veuillez vous reconnecter."
 
-#: app/models.py:999 app/templates/aircraft/flight_detail.html:114
+#: app/models.py:999 app/templates/aircraft/flight_detail.html:118
 #: app/templates/aircraft/gps_import_review.html:67
 #: app/templates/flights/fleet.html:28
 #: app/templates/flights/flight_form.html:314
@@ -111,7 +111,7 @@ msgstr "Copilote"
 msgid "Student"
 msgstr "Élève"
 
-#: app/models.py:2427 app/pilots/personal_minimums.py:55
+#: app/models.py:2438 app/pilots/personal_minimums.py:55
 #: app/templates/aircraft/wb_config.html:163
 #: app/templates/aircraft/wb_config.html:195
 #: app/templates/aircraft/wb_config.html:244
@@ -119,41 +119,53 @@ msgstr "Élève"
 msgid "Fuel"
 msgstr "Carburant"
 
-#: app/models.py:2428
+#: app/models.py:2439
 msgid "Parts & Maintenance"
 msgstr "Pièces et entretien"
 
-#: app/models.py:2429 app/pwa/routes.py:86 app/templates/dashboard.html:410
+#: app/models.py:2440 app/pwa/routes.py:86 app/templates/dashboard.html:410
 msgid "Insurance"
 msgstr "Assurance"
 
-#: app/models.py:2430 app/pwa/routes.py:91 app/templates/dashboard.html:168
+#: app/models.py:2441 app/pwa/routes.py:91 app/templates/dashboard.html:168
 #: app/templates/maintenance/list.html:90
 #: app/templates/maintenance/trigger_form.html:69
 msgid "Other"
 msgstr "Autre"
 
-#: app/models.py:3412
+#: app/models.py:2442
+msgid "Landing fee"
+msgstr "Taxe d’atterrissage"
+
+#: app/models.py:2443
+msgid "Takeoff fee"
+msgstr "Taxe de décollage"
+
+#: app/models.py:2444
+msgid "Landing and takeoff fees"
+msgstr "Taxes d’atterrissage et de décollage"
+
+#: app/models.py:3429
 msgid "AD"
 msgstr "AD"
 
-#: app/models.py:3413
+#: app/models.py:3430
 msgid "Mandatory SB"
 msgstr "SB obligatoire"
 
-#: app/models.py:3414
+#: app/models.py:3431
 msgid "SB"
 msgstr "SB"
 
-#: app/models.py:3415
+#: app/models.py:3432
 msgid "SIB"
 msgstr "SIB"
 
-#: app/models.py:3416 app/templates/dashboard.html:421
+#: app/models.py:3433 app/templates/dashboard.html:421
 msgid "ARC"
 msgstr "ARC"
 
-#: app/models.py:3417
+#: app/models.py:3434
 msgid "Manual"
 msgstr "Manuel"
 
@@ -1121,23 +1133,23 @@ msgstr "Format de date de fin de récurrence invalide."
 msgid "The recurrence end date must not be before the expense date."
 msgstr "La date de fin de récurrence ne doit pas être antérieure à la date de la dépense."
 
-#: app/expenses/routes.py:230
+#: app/expenses/routes.py:338
 msgid "Expense recorded."
 msgstr "Dépense enregistrée."
 
-#: app/expenses/routes.py:267
+#: app/expenses/routes.py:381
 msgid "Expense updated."
 msgstr "Dépense mise à jour."
 
-#: app/expenses/routes.py:298
+#: app/expenses/routes.py:412
 msgid "Expense deleted."
 msgstr "Dépense supprimée."
 
-#: app/expenses/routes.py:353
+#: app/expenses/routes.py:467
 msgid "This file type is not allowed for receipts."
 msgstr "Ce type de fichier n'est pas autorisé pour les justificatifs."
 
-#: app/expenses/routes.py:401
+#: app/expenses/routes.py:515
 #, python-format
 msgid "Expense receipt %(date)s"
 msgstr "Justificatif de dépense %(date)s"
@@ -1248,7 +1260,7 @@ msgid "PIC / Commander"
 msgstr "CdB / Commandant"
 
 #: app/flights/crew_invites.py:476
-#: app/templates/aircraft/flight_detail.html:120
+#: app/templates/aircraft/flight_detail.html:124
 #: app/templates/flights/flight_form.html:378
 #: app/templates/partials/_crew_claims.html:28
 #: app/templates/partials/_crew_claims.html:68
@@ -1273,7 +1285,7 @@ msgid "%(name)s logged a flight with you on board. Confirm it to add it to your 
 msgstr "%(name)s a enregistré un vol avec vous à bord. Confirmez-le pour l’ajouter à votre carnet de vol, ou refusez-le s’il ne vous concerne pas."
 
 #: app/flights/crew_invites.py:493 app/flights/shared_flight.py:142
-#: app/refuels/routes.py:184 app/templates/aircraft/flight_detail.html:35
+#: app/refuels/routes.py:184 app/templates/aircraft/flight_detail.html:39
 #: app/templates/aircraft/gps_import_history.html:47
 #: app/templates/aircraft/gps_import_review.html:239
 #: app/templates/aircraft/owner_account.html:47
@@ -1281,12 +1293,12 @@ msgstr "%(name)s a enregistré un vol avec vous à bord. Confirmez-le pour l’a
 #: app/templates/aircraft/owners_billing.html:154
 #: app/templates/aircraft/wb_entry.html:29
 #: app/templates/aircraft/wb_list.html:71
-#: app/templates/config/data_checks.html:63
+#: app/templates/config/data_checks.html:66
 #: app/templates/config/renter_account.html:47
 #: app/templates/config/renter_account.html:68
 #: app/templates/documents/reconcile.html:64
-#: app/templates/expenses/expense_form.html:47
-#: app/templates/expenses/list.html:86 app/templates/flights/fleet.html:25
+#: app/templates/expenses/expense_form.html:49
+#: app/templates/expenses/list.html:87 app/templates/flights/fleet.html:25
 #: app/templates/flights/flight_form.html:295
 #: app/templates/flights/list.html:121
 #: app/templates/flights/logbook_component.html:96
@@ -1333,6 +1345,7 @@ msgstr "Route"
 #: app/templates/dashboard.html:756 app/templates/documents/list.html:35
 #: app/templates/documents/list.html:217
 #: app/templates/documents/reconcile.html:61
+#: app/templates/expenses/fee_review.html:16
 #: app/templates/flights/fleet.html:26
 #: app/templates/flights/flight_form.html:241
 #: app/templates/flights/flight_form.html:244
@@ -1818,7 +1831,7 @@ msgid "Aircraft type"
 msgstr "Type d'appareil"
 
 #: app/flights/shared_flight.py:145
-#: app/templates/aircraft/flight_detail.html:39
+#: app/templates/aircraft/flight_detail.html:43
 #: app/templates/flights/airframe_import_review.html:46
 #: app/templates/flights/flight_form.html:421
 #: app/templates/flights/flight_form.html:459
@@ -1830,7 +1843,7 @@ msgid "Departure"
 msgstr "Départ"
 
 #: app/flights/shared_flight.py:146
-#: app/templates/aircraft/flight_detail.html:50
+#: app/templates/aircraft/flight_detail.html:54
 #: app/templates/flights/airframe_import_review.html:47
 #: app/templates/flights/flight_form.html:432
 #: app/templates/flights/flight_form.html:464
@@ -1860,7 +1873,7 @@ msgid "Landing time"
 msgstr "Heure d’atterrissage"
 
 #: app/flights/shared_flight.py:151 app/reservations/routes.py:240
-#: app/templates/aircraft/flight_detail.html:62
+#: app/templates/aircraft/flight_detail.html:66
 #: app/templates/flights/flight_form.html:566
 #: app/templates/reservations/settings.html:84
 msgid "Flight time"
@@ -3543,8 +3556,8 @@ msgid "Airworthiness"
 msgstr "Navigabilité"
 
 #: app/pwa/routes.py:89 app/templates/aircraft/detail.html:385
-#: app/templates/aircraft/flight_detail.html:26
-#: app/templates/config/data_checks.html:49 app/templates/dashboard.html:241
+#: app/templates/aircraft/flight_detail.html:30
+#: app/templates/config/data_checks.html:52 app/templates/dashboard.html:241
 #: app/templates/flights/logbook_component.html:4
 #: app/templates/flights/logbook_component.html:15
 #: app/templates/pilots/entry_detail.html:5
@@ -3621,7 +3634,7 @@ msgstr "à"
 
 #: app/reports/routes.py:119 app/templates/aircraft/owners_billing.html:45
 #: app/templates/expenses/cost_dashboard.html:29
-#: app/templates/expenses/list.html:68 app/templates/refuels/list.html:36
+#: app/templates/expenses/list.html:69 app/templates/refuels/list.html:36
 #: app/templates/reports/utilization.html:29
 msgid "Period"
 msgstr "Période"
@@ -3657,7 +3670,7 @@ msgstr "Heures moteur"
 msgid "Number of flights"
 msgstr "Nombre de vols"
 
-#: app/reports/routes.py:147 app/templates/aircraft/flight_detail.html:84
+#: app/reports/routes.py:147 app/templates/aircraft/flight_detail.html:88
 #: app/templates/flights/airframe_import_review.html:50
 #: app/templates/maintenance/fleet.html:194
 #: app/templates/maintenance/list.html:134
@@ -3668,7 +3681,7 @@ msgstr "Nombre de vols"
 msgid "Landings"
 msgstr "Atterrissages"
 
-#: app/reports/routes.py:148 app/templates/aircraft/flight_detail.html:149
+#: app/reports/routes.py:148 app/templates/aircraft/flight_detail.html:153
 #: app/templates/refuels/list.html:56
 #: app/templates/reports/utilization.html:111
 msgid "Fuel added"
@@ -3693,7 +3706,7 @@ msgstr "Carburant inclus"
 msgid "Dry"
 msgstr "Carburant en sus"
 
-#: app/reservations/routes.py:240 app/templates/aircraft/flight_detail.html:68
+#: app/reservations/routes.py:240 app/templates/aircraft/flight_detail.html:72
 #: app/templates/flights/flight_form.html:534
 #: app/templates/reservations/settings.html:83
 msgid "Engine time"
@@ -4654,7 +4667,7 @@ msgstr "Vols en attente de votre confirmation"
 msgid "Log a flight"
 msgstr "Saisir un vol"
 
-#: app/templates/aircraft/flight_detail.html:110 app/templates/base.html:239
+#: app/templates/aircraft/flight_detail.html:114 app/templates/base.html:239
 #: app/templates/base.html:360 app/templates/flights/flight_form.html:848
 #: app/templates/pilots/logbook.html:19
 msgid "Pilot logbook"
@@ -4668,7 +4681,7 @@ msgstr "Explorer"
 msgid "My account"
 msgstr "Mon compte"
 
-#: app/templates/base.html:254 app/templates/config/data_checks.html:20
+#: app/templates/base.html:254 app/templates/config/data_checks.html:23
 #: app/templates/config/notifications.html:16
 #: app/templates/config/settings.html:3 app/templates/config/settings.html:44
 msgid "Configuration"
@@ -4756,7 +4769,7 @@ msgstr "Statut"
 #: app/templates/documents/upload_form.html:22
 #: app/templates/documents/upload_form.html:114
 #: app/templates/expenses/expense_form.html:19
-#: app/templates/expenses/expense_form.html:234
+#: app/templates/expenses/expense_form.html:236
 #: app/templates/flights/airframe_import_map.html:160
 #: app/templates/flights/flight_form.html:45
 #: app/templates/flights/flight_form.html:49
@@ -5216,7 +5229,7 @@ msgstr[1] "Traces GPS"
 msgid "Pending Reservations"
 msgstr "Réservations en attente"
 
-#: app/templates/aircraft/flight_detail.html:102
+#: app/templates/aircraft/flight_detail.html:106
 #: app/templates/airworthiness/adsb_board.html:62
 #: app/templates/airworthiness/adsb_form.html:52
 #: app/templates/airworthiness/adsb_print.html:39
@@ -5730,12 +5743,12 @@ msgstr "Réservoirs de carburant"
 #: app/templates/airworthiness/wishlist_form.html:38
 #: app/templates/auth/setup.html:64 app/templates/auth/setup.html:294
 #: app/templates/auth/setup.html:299 app/templates/config/settings.html:462
-#: app/templates/expenses/expense_form.html:89
-#: app/templates/expenses/expense_form.html:96
-#: app/templates/expenses/expense_form.html:120
-#: app/templates/expenses/expense_form.html:129
-#: app/templates/expenses/expense_form.html:189
-#: app/templates/expenses/expense_form.html:212
+#: app/templates/expenses/expense_form.html:91
+#: app/templates/expenses/expense_form.html:98
+#: app/templates/expenses/expense_form.html:122
+#: app/templates/expenses/expense_form.html:131
+#: app/templates/expenses/expense_form.html:191
+#: app/templates/expenses/expense_form.html:214
 #: app/templates/flights/flight_form.html:164
 #: app/templates/flights/flight_form.html:378
 #: app/templates/flights/flight_form.html:515
@@ -5853,7 +5866,7 @@ msgstr "Détermine comment les temps de vol importés via GPS sont arrondis dans
 #: app/templates/config/settings.html:224
 #: app/templates/config/settings.html:474
 #: app/templates/documents/edit_form.html:100
-#: app/templates/expenses/expense_form.html:231
+#: app/templates/expenses/expense_form.html:233
 #: app/templates/flights/flight_form.html:911
 #: app/templates/maintenance/amp_declaration_form.html:176
 #: app/templates/maintenance/trigger_form.html:217
@@ -5880,8 +5893,9 @@ msgstr "Ajouter un composant"
 #: app/templates/airworthiness/dashboard.html:92
 #: app/templates/config/renter_account.html:69
 #: app/templates/documents/list.html:61
-#: app/templates/expenses/expense_form.html:53
-#: app/templates/expenses/list.html:59 app/templates/expenses/list.html:87
+#: app/templates/expenses/expense_form.html:55
+#: app/templates/expenses/fee_review.html:37
+#: app/templates/expenses/list.html:60 app/templates/expenses/list.html:88
 #: app/templates/maintenance/_amp_export_body.html:47
 #: app/templates/maintenance/fleet.html:173
 #: app/templates/maintenance/fleet.html:337
@@ -6050,7 +6064,7 @@ msgstr "ARCHIVÉ"
 #: app/templates/aircraft/detail.html:111
 #: app/templates/aircraft/detail.html:404
 #: app/templates/aircraft/detail.html:645
-#: app/templates/aircraft/flight_detail.html:22
+#: app/templates/aircraft/flight_detail.html:26
 #: app/templates/aircraft/wb_list.html:97
 #: app/templates/config/renters_list.html:61
 #: app/templates/pilots/entry_detail.html:41
@@ -6324,7 +6338,8 @@ msgstr "Créer le premier."
 msgid "W&B envelope not configured yet."
 msgstr "L'enveloppe de centrage n'est pas encore configurée."
 
-#: app/templates/aircraft/detail.html:675 app/templates/expenses/list.html:3
+#: app/templates/aircraft/detail.html:675
+#: app/templates/expenses/fee_review.html:8 app/templates/expenses/list.html:3
 #: app/templates/expenses/list.html:11
 msgid "Expenses"
 msgstr "Dépenses"
@@ -6332,7 +6347,8 @@ msgstr "Dépenses"
 #: app/templates/aircraft/detail.html:681
 #: app/templates/expenses/expense_form.html:3
 #: app/templates/expenses/expense_form.html:13
-#: app/templates/expenses/list.html:18 app/templates/expenses/list.html:21
+#: app/templates/expenses/fee_review.html:62
+#: app/templates/expenses/list.html:19 app/templates/expenses/list.html:22
 msgid "Add expense"
 msgstr "Ajouter une dépense"
 
@@ -6651,20 +6667,24 @@ msgstr "photos et informations de base sur le type uniquement — rien d'opérat
 msgid "Create link"
 msgstr "Créer le lien"
 
-#: app/templates/aircraft/flight_detail.html:74
+#: app/templates/aircraft/flight_detail.html:22
+msgid "Record airfield fee"
+msgstr "Enregistrer une taxe d’aérodrome"
+
+#: app/templates/aircraft/flight_detail.html:78
 #: app/templates/pilots/entry_detail.html:83
 msgid "Takeoff / Landing"
 msgstr "Décollage / Atterrissage"
 
-#: app/templates/aircraft/flight_detail.html:90
+#: app/templates/aircraft/flight_detail.html:94
 msgid "Block off (UTC)"
 msgstr "Bloc départ (UTC)"
 
-#: app/templates/aircraft/flight_detail.html:96
+#: app/templates/aircraft/flight_detail.html:100
 msgid "Block on (UTC)"
 msgstr "Bloc arrivée (UTC)"
 
-#: app/templates/aircraft/flight_detail.html:125
+#: app/templates/aircraft/flight_detail.html:129
 #: app/templates/offline/pilot_logbook.html:34
 #: app/templates/pilots/entry_detail.html:131
 #: app/templates/pilots/entry_form.html:237
@@ -6674,13 +6694,13 @@ msgstr "Bloc arrivée (UTC)"
 msgid "Night"
 msgstr "Nuit"
 
-#: app/templates/aircraft/flight_detail.html:126
+#: app/templates/aircraft/flight_detail.html:130
 #: app/templates/pilots/entry_detail.html:137
 #: app/templates/pilots/entry_form.html:273
 msgid "Instrument"
 msgstr "Instruments"
 
-#: app/templates/aircraft/flight_detail.html:127
+#: app/templates/aircraft/flight_detail.html:131
 #: app/templates/flights/flight_form.html:886
 #: app/templates/pilots/entry_detail.html:112
 #: app/templates/pilots/entry_form.html:257
@@ -6688,35 +6708,35 @@ msgstr "Instruments"
 msgid "Multi-pilot"
 msgstr "Multi-pilote"
 
-#: app/templates/aircraft/flight_detail.html:137
+#: app/templates/aircraft/flight_detail.html:141
 msgid "View full pilot logbook entry"
 msgstr "Voir l'entrée complète du carnet de vol pilote"
 
-#: app/templates/aircraft/flight_detail.html:153
+#: app/templates/aircraft/flight_detail.html:157
 #: app/templates/flights/flight_form.html:721
 msgid "Fuel added before flight"
 msgstr "Carburant ajouté avant le vol"
 
-#: app/templates/aircraft/flight_detail.html:160
-#: app/templates/aircraft/flight_detail.html:174
+#: app/templates/aircraft/flight_detail.html:164
+#: app/templates/aircraft/flight_detail.html:178
 msgid "Log as expense"
 msgstr "Enregistrer comme dépense"
 
-#: app/templates/aircraft/flight_detail.html:167
+#: app/templates/aircraft/flight_detail.html:171
 #: app/templates/flights/flight_form.html:749
 msgid "Fuel added after flight"
 msgstr "Carburant ajouté après le vol"
 
-#: app/templates/aircraft/flight_detail.html:186
+#: app/templates/aircraft/flight_detail.html:190
 #: app/templates/flights/flight_form.html:779
 msgid "Fuel remaining at end of flight"
 msgstr "Carburant restant en fin de vol"
 
-#: app/templates/aircraft/flight_detail.html:205
+#: app/templates/aircraft/flight_detail.html:209
 msgid "Imported from GPS:"
 msgstr "Importé depuis GPS :"
 
-#: app/templates/aircraft/flight_detail.html:211
+#: app/templates/aircraft/flight_detail.html:215
 #: app/templates/flights/list.html:40 app/templates/flights/list.html:62
 #: app/templates/maintenance/amp_import_history.html:3
 #: app/templates/maintenance/amp_import_history.html:12
@@ -7007,17 +7027,17 @@ msgid "The logbook and this GPS track differ:"
 msgstr "Le carnet et cette trace GPS diffèrent :"
 
 #: app/templates/aircraft/gps_import_review.html:237
-#: app/templates/config/data_checks.html:61
+#: app/templates/config/data_checks.html:64
 msgid "Departure airfield"
 msgstr "Aérodrome de départ"
 
 #: app/templates/aircraft/gps_import_review.html:238
-#: app/templates/config/data_checks.html:62
+#: app/templates/config/data_checks.html:65
 msgid "Arrival airfield"
 msgstr "Aérodrome d’arrivée"
 
 #: app/templates/aircraft/gps_import_review.html:240
-#: app/templates/config/data_checks.html:67
+#: app/templates/config/data_checks.html:70
 msgid "GPS track outside the logged times"
 msgstr "Trace GPS en dehors des heures enregistrées"
 
@@ -7279,8 +7299,8 @@ msgstr "Télécharger le relevé (CSV)"
 
 #: app/templates/aircraft/owner_account.html:49
 #: app/templates/config/renter_account.html:70
-#: app/templates/expenses/expense_form.html:129
-#: app/templates/expenses/list.html:88 app/templates/passports/builder.html:18
+#: app/templates/expenses/expense_form.html:131
+#: app/templates/expenses/list.html:89 app/templates/passports/builder.html:18
 #: app/templates/passports/next_edition.html:12
 #: app/templates/places/place_form.html:39
 #: app/templates/snags/snag_form.html:37
@@ -7290,8 +7310,8 @@ msgstr "Description"
 #: app/templates/aircraft/owner_account.html:50
 #: app/templates/aircraft/owners_billing.html:86
 #: app/templates/config/renter_account.html:71
-#: app/templates/expenses/expense_form.html:138
-#: app/templates/expenses/list.html:89
+#: app/templates/expenses/expense_form.html:140
+#: app/templates/expenses/list.html:90
 msgid "Amount"
 msgstr "Montant"
 
@@ -7342,21 +7362,21 @@ msgstr "Le mois dernier"
 
 #: app/templates/aircraft/owners_billing.html:48
 #: app/templates/expenses/cost_dashboard.html:33
-#: app/templates/expenses/list.html:70 app/templates/refuels/list.html:40
+#: app/templates/expenses/list.html:71 app/templates/refuels/list.html:40
 #: app/templates/reports/utilization.html:33
 msgid "Last 3 months"
 msgstr "3 derniers mois"
 
 #: app/templates/aircraft/owners_billing.html:49
 #: app/templates/expenses/cost_dashboard.html:35
-#: app/templates/expenses/list.html:72 app/templates/refuels/list.html:42
+#: app/templates/expenses/list.html:73 app/templates/refuels/list.html:42
 #: app/templates/reports/utilization.html:35
 msgid "Last 12 months"
 msgstr "12 derniers mois"
 
 #: app/templates/aircraft/owners_billing.html:50
 #: app/templates/expenses/cost_dashboard.html:36
-#: app/templates/expenses/list.html:73 app/templates/refuels/list.html:43
+#: app/templates/expenses/list.html:74 app/templates/refuels/list.html:43
 #: app/templates/reports/utilization.html:36
 msgid "Last 24 months"
 msgstr "24 derniers mois"
@@ -8546,6 +8566,7 @@ msgstr "Cette instance n’est pas encore configurée. Ouvrez le lien de configu
 #: app/templates/config/data_checks.html:3
 #: app/templates/config/data_checks.html:9
 #: app/templates/config/settings.html:49
+#: app/templates/expenses/fee_review.html:10
 msgid "Data checks"
 msgstr "Vérifications des données"
 
@@ -8553,38 +8574,44 @@ msgstr "Vérifications des données"
 msgid "Differences between logged flights and their GPS tracks, gaps in the counters, and overlapping flights"
 msgstr "Différences entre les vols enregistrés et leurs traces GPS, écarts dans les compteurs et vols qui se chevauchent"
 
-#: app/templates/config/data_checks.html:15
+#: app/templates/config/data_checks.html:14
+#: app/templates/expenses/fee_review.html:2
+#: app/templates/expenses/fee_review.html:6 app/templates/expenses/list.html:16
+msgid "Likely missing airfield fees"
+msgstr "Taxes d’aérodrome probablement manquantes"
+
+#: app/templates/config/data_checks.html:18
 msgid "Dismiss every open difference in this hangar? The logbook entries stay as recorded."
 msgstr "Ignorer toutes les différences à examiner dans ce hangar ? Les entrées du carnet de vol sont conservées."
 
-#: app/templates/config/data_checks.html:16
+#: app/templates/config/data_checks.html:19
 msgid "Dismiss all"
 msgstr "Tout ignorer"
 
-#: app/templates/config/data_checks.html:26
+#: app/templates/config/data_checks.html:29
 msgid "The logbook is never changed on its own: each difference below is only corrected when you choose to use the GPS value. That changes only the one field named on its line — the departure airfield, the arrival airfield or the date; times, counters and everything else stay as logged — and adds a note to the flight with what the paper logbook says, so the paper logbook can stay as written. Dismiss the ones that are right as logged — they are not listed again unless the GPS track changes. Checked daily, and whenever this page is opened."
 msgstr "Le carnet n’est jamais modifié de lui-même : chaque différence ci-dessous n’est corrigée que si vous choisissez d’utiliser la valeur GPS. Seul le champ indiqué sur sa ligne change — l’aérodrome de départ, l’aérodrome d’arrivée ou la date ; les heures, les compteurs et tout le reste restent tels qu’enregistrés — et une note est ajoutée au vol avec ce qu’indique le carnet papier, qui peut ainsi rester tel qu’il est écrit. Écartez celles qui sont correctes telles qu’enregistrées — elles ne réapparaissent que si la trace GPS change. Vérifié chaque jour, et à chaque ouverture de cette page."
 
-#: app/templates/config/data_checks.html:27
+#: app/templates/config/data_checks.html:30
 msgid "A counter gap is a flight whose flight or engine counter doesn't start where the previous flight's ended: a typo, or flights missing from the log."
 msgstr "Un écart de compteur est un vol dont le compteur de vol ou moteur ne commence pas là où celui du vol précédent s’est arrêté : une faute de frappe, ou des vols absents du carnet."
 
-#: app/templates/config/data_checks.html:28
+#: app/templates/config/data_checks.html:31
 msgid "Overlapping flights are two flights of one aircraft logged at times that overlap: one of them has the wrong date or times."
 msgstr "Des vols qui se chevauchent sont deux vols d’un même aéronef enregistrés à des heures qui se recouvrent : l’un d’eux a une date ou des heures erronées."
 
-#: app/templates/config/data_checks.html:33
+#: app/templates/config/data_checks.html:36
 msgid "No differences found between the flights and their GPS tracks, no gaps in the counters, and no overlapping flights."
 msgstr "Aucune différence trouvée entre les vols et leurs traces GPS, aucun écart dans les compteurs et aucun vol qui se chevauche."
 
-#: app/templates/config/data_checks.html:40
+#: app/templates/config/data_checks.html:43
 #, python-format
 msgid "one difference"
 msgid_plural "%(n)d differences"
 msgstr[0] "une différence"
 msgstr[1] "%(n)d différences"
 
-#: app/templates/config/data_checks.html:47
+#: app/templates/config/data_checks.html:50
 #: app/templates/flights/removed_gps_files.html:24
 #: app/templates/partials/_crew_claims.html:48
 #: app/templates/partials/_flight_corrections.html:15
@@ -8594,98 +8621,98 @@ msgstr[1] "%(n)d différences"
 msgid "Flight"
 msgstr "Vol"
 
-#: app/templates/config/data_checks.html:48
+#: app/templates/config/data_checks.html:51
 msgid "Check"
 msgstr "Contrôle"
 
-#: app/templates/config/data_checks.html:50
+#: app/templates/config/data_checks.html:53
 msgid "GPS"
 msgstr "GPS"
 
-#: app/templates/config/data_checks.html:51
+#: app/templates/config/data_checks.html:54
 msgid "Action"
 msgstr "Action"
 
-#: app/templates/config/data_checks.html:64
+#: app/templates/config/data_checks.html:67
 #: app/templates/flights/airframe_import_review.html:52
 #: app/templates/flights/flight_form.html:547
 msgid "Flight counter start"
 msgstr "Compteur de vol initial"
 
-#: app/templates/config/data_checks.html:65
+#: app/templates/config/data_checks.html:68
 #: app/templates/flights/airframe_import_review.html:54
 #: app/templates/flights/flight_form.html:515
 msgid "Engine counter start"
 msgstr "Compteur moteur initial"
 
-#: app/templates/config/data_checks.html:66
+#: app/templates/config/data_checks.html:69
 msgid "Overlapping flight"
 msgstr "Vol qui en chevauche un autre"
 
-#: app/templates/config/data_checks.html:72
+#: app/templates/config/data_checks.html:75
 #, python-format
 msgid "Previous flight ended at %(value)s"
 msgstr "Le vol précédent s’est terminé à %(value)s"
 
-#: app/templates/config/data_checks.html:74
+#: app/templates/config/data_checks.html:77
 #, python-format
 msgid "Another flight of this aircraft is logged %(window)s that day"
 msgstr "Un autre vol de cet aéronef est enregistré de %(window)s ce jour-là"
 
-#: app/templates/config/data_checks.html:76
+#: app/templates/config/data_checks.html:79
 msgid "no airfield nearby"
 msgstr "aucun aérodrome à proximité"
 
-#: app/templates/config/data_checks.html:77
+#: app/templates/config/data_checks.html:80
 #, python-format
 msgid "%(km)s km from %(icao)s"
 msgstr "à %(km)s km de %(icao)s"
 
-#: app/templates/config/data_checks.html:83
+#: app/templates/config/data_checks.html:86
 #, python-format
 msgid "Change only the departure airfield from %(old)s to %(new)s? The times, date and everything else stay as logged; a note with the paper logbook value is added to the flight."
 msgstr "Changer uniquement l’aérodrome de départ de %(old)s en %(new)s ? Les heures, la date et tout le reste restent tels qu’enregistrés ; une note avec la valeur du carnet papier est ajoutée au vol."
 
-#: app/templates/config/data_checks.html:84
+#: app/templates/config/data_checks.html:87
 msgid "Changes only the departure airfield."
 msgstr "Ne change que l’aérodrome de départ."
 
-#: app/templates/config/data_checks.html:86
+#: app/templates/config/data_checks.html:89
 #, python-format
 msgid "Change only the arrival airfield from %(old)s to %(new)s? The times, date and everything else stay as logged; a note with the paper logbook value is added to the flight."
 msgstr "Changer uniquement l’aérodrome d’arrivée de %(old)s en %(new)s ? Les heures, la date et tout le reste restent tels qu’enregistrés ; une note avec la valeur du carnet papier est ajoutée au vol."
 
-#: app/templates/config/data_checks.html:87
+#: app/templates/config/data_checks.html:90
 msgid "Changes only the arrival airfield."
 msgstr "Ne change que l’aérodrome d’arrivée."
 
-#: app/templates/config/data_checks.html:89
+#: app/templates/config/data_checks.html:92
 #, python-format
 msgid "Change only the date from %(old)s to %(new)s? The times, airfields and everything else stay as logged; a note with the paper logbook value is added to the flight."
 msgstr "Changer uniquement la date de %(old)s en %(new)s ? Les heures, les aérodromes et tout le reste restent tels qu’enregistrés ; une note avec la valeur du carnet papier est ajoutée au vol."
 
-#: app/templates/config/data_checks.html:90
+#: app/templates/config/data_checks.html:93
 msgid "Changes only the date."
 msgstr "Ne change que la date."
 
-#: app/templates/config/data_checks.html:95
+#: app/templates/config/data_checks.html:98
 msgid "Use the GPS value"
 msgstr "Utiliser la valeur GPS"
 
-#: app/templates/config/data_checks.html:100
+#: app/templates/config/data_checks.html:103
 #: app/templates/places/_visit_suggestions.html:14
 msgid "Dismiss"
 msgstr "Écarter"
 
-#: app/templates/config/data_checks.html:102
+#: app/templates/config/data_checks.html:105
 msgid "Open both flights to check their dates and times — or dismiss it if they are right."
 msgstr "Ouvrez les deux vols pour vérifier leurs dates et heures — ou ignorez-le s’ils sont corrects."
 
-#: app/templates/config/data_checks.html:102
+#: app/templates/config/data_checks.html:105
 msgid "Open the flight to check its counters — or dismiss it if flights are missing from the log or the counter was replaced."
 msgstr "Ouvrez le vol pour vérifier ses compteurs — ou ignorez l’écart si des vols manquent au carnet ou si le compteur a été remplacé."
 
-#: app/templates/config/data_checks.html:102
+#: app/templates/config/data_checks.html:105
 msgid "Nothing to correct automatically — open the flight to check its times."
 msgstr "Rien à corriger automatiquement — ouvrez le vol pour vérifier ses heures."
 
@@ -9884,7 +9911,9 @@ msgstr "Masquer les sensibles (%(n)s)"
 msgid "Show sensitive (%(n)s)"
 msgstr "Afficher les sensibles (%(n)s)"
 
-#: app/templates/documents/list.html:64 app/templates/expenses/list.html:61
+#: app/templates/documents/list.html:64
+#: app/templates/expenses/fee_review.html:39
+#: app/templates/expenses/list.html:62
 msgid "All types"
 msgstr "Tous les types"
 
@@ -10180,13 +10209,13 @@ msgid "All expenses"
 msgstr "Toutes les dépenses"
 
 #: app/templates/expenses/cost_dashboard.html:34
-#: app/templates/expenses/list.html:71 app/templates/refuels/list.html:41
+#: app/templates/expenses/list.html:72 app/templates/refuels/list.html:41
 #: app/templates/reports/utilization.html:34
 msgid "Last 6 months"
 msgstr "6 derniers mois"
 
 #: app/templates/expenses/cost_dashboard.html:37
-#: app/templates/expenses/list.html:74 app/templates/refuels/list.html:44
+#: app/templates/expenses/list.html:75 app/templates/refuels/list.html:44
 #: app/templates/reports/utilization.html:37
 #: app/templates/reports/utilization.html:62
 msgid "All time"
@@ -10266,156 +10295,224 @@ msgid "Edit Expense"
 msgstr "Modifier la dépense"
 
 #: app/templates/expenses/expense_form.html:31
+msgid "This expense will be linked to the flight."
+msgstr "Cette dépense sera liée au vol."
+
+#: app/templates/expenses/expense_form.html:33
 msgid "Pre-filled from a logged refuel — linked to this flight."
 msgstr "Pré-rempli à partir d'un plein enregistré — lié à ce vol."
 
-#: app/templates/expenses/expense_form.html:33
+#: app/templates/expenses/expense_form.html:35
 msgid "Pre-filled from a logged refuel."
 msgstr "Pré-rempli à partir d'un plein enregistré."
 
-#: app/templates/expenses/expense_form.html:69
+#: app/templates/expenses/expense_form.html:71
 msgid "Cost category"
 msgstr "Catégorie de coût"
 
-#: app/templates/expenses/expense_form.html:70
+#: app/templates/expenses/expense_form.html:72
 msgid "Fixed costs (e.g. insurance) are pro-rated over time; operating costs scale with usage. Used by the cost dashboard."
 msgstr "Les coûts fixes (assurance, par exemple) sont répartis dans le temps ; les coûts opérationnels évoluent avec l'utilisation. Utilisé par le tableau de bord des coûts."
 
-#: app/templates/expenses/expense_form.html:77
+#: app/templates/expenses/expense_form.html:79
 msgid "Operating"
 msgstr "Opérationnel"
 
-#: app/templates/expenses/expense_form.html:80
+#: app/templates/expenses/expense_form.html:82
 msgid "Fixed"
 msgstr "Fixe"
 
-#: app/templates/expenses/expense_form.html:89
+#: app/templates/expenses/expense_form.html:91
 msgid "Coverage start"
 msgstr "Début de couverture"
 
-#: app/templates/expenses/expense_form.html:96
+#: app/templates/expenses/expense_form.html:98
 msgid "Coverage end"
 msgstr "Fin de couverture"
 
-#: app/templates/expenses/expense_form.html:106
+#: app/templates/expenses/expense_form.html:108
 msgid "Repeats"
 msgstr "Répétition"
 
-#: app/templates/expenses/expense_form.html:107
+#: app/templates/expenses/expense_form.html:109
 msgid "A repeating expense is re-created automatically each period (e.g. monthly hangar rent, annual insurance). Generated entries stay editable; edit this entry to change future periods."
 msgstr "Une dépense récurrente est recréée automatiquement à chaque période (p. ex. loyer mensuel du hangar, assurance annuelle). Les entrées générées restent modifiables ; modifiez cette entrée pour changer les périodes futures."
 
-#: app/templates/expenses/expense_form.html:112
+#: app/templates/expenses/expense_form.html:114
 msgid "Does not repeat"
 msgstr "Ne se répète pas"
 
-#: app/templates/expenses/expense_form.html:113
+#: app/templates/expenses/expense_form.html:115
 msgid "Monthly"
 msgstr "Mensuelle"
 
-#: app/templates/expenses/expense_form.html:114
+#: app/templates/expenses/expense_form.html:116
 msgid "Quarterly"
 msgstr "Trimestrielle"
 
-#: app/templates/expenses/expense_form.html:115
+#: app/templates/expenses/expense_form.html:117
 msgid "Yearly"
 msgstr "Annuelle"
 
-#: app/templates/expenses/expense_form.html:120
+#: app/templates/expenses/expense_form.html:122
 msgid "Repeat until"
 msgstr "Répéter jusqu'au"
 
-#: app/templates/expenses/expense_form.html:144
+#: app/templates/expenses/expense_form.html:146
 #: app/templates/passports/vouchers.html:20
 msgid "Currency"
 msgstr "Devise"
 
-#: app/templates/expenses/expense_form.html:161
+#: app/templates/expenses/expense_form.html:163
 msgid "Paid in another currency?"
 msgstr "Payé dans une autre devise ?"
 
-#: app/templates/expenses/expense_form.html:164
+#: app/templates/expenses/expense_form.html:166
 msgid "Amount paid"
 msgstr "Montant payé"
 
-#: app/templates/expenses/expense_form.html:170
+#: app/templates/expenses/expense_form.html:172
 msgid "Currency paid"
 msgstr "Devise payée"
 
-#: app/templates/expenses/expense_form.html:182
+#: app/templates/expenses/expense_form.html:184
 msgid "For your records only: costs are always calculated with the amount above, as charged to you."
 msgstr "Pour information uniquement : les coûts sont toujours calculés avec le montant ci-dessus, tel qu'il vous a été facturé."
 
-#: app/templates/expenses/expense_form.html:189
-#: app/templates/expenses/list.html:90 app/templates/passports/vouchers.html:19
+#: app/templates/expenses/expense_form.html:191
+#: app/templates/expenses/list.html:91 app/templates/passports/vouchers.html:19
 #: app/templates/passports/vouchers.html:36
 #: app/templates/passports/vouchers.html:40 app/templates/refuels/list.html:132
 #: app/templates/refuels/refuel_form.html:31
 msgid "Quantity"
 msgstr "Quantité"
 
-#: app/templates/expenses/expense_form.html:196
+#: app/templates/expenses/expense_form.html:198
 #: app/templates/flights/flight_form.html:727
 #: app/templates/flights/flight_form.html:755
 #: app/templates/refuels/refuel_form.html:37
 msgid "Unit"
 msgstr "Unité"
 
-#: app/templates/expenses/expense_form.html:212
+#: app/templates/expenses/expense_form.html:214
 msgid "Receipt / invoice"
 msgstr "Justificatif / facture"
 
-#: app/templates/expenses/expense_form.html:220
+#: app/templates/expenses/expense_form.html:222
 msgid "uploading a new file replaces it"
 msgstr "téléverser un nouveau fichier le remplace"
 
-#: app/templates/expenses/expense_form.html:223
+#: app/templates/expenses/expense_form.html:225
 msgid "Saved as this expense's receipt, unless you choose another file below."
 msgstr "Enregistré comme reçu de cette dépense, sauf si vous choisissez un autre fichier ci-dessous."
 
-#: app/templates/expenses/list.html:37
+#: app/templates/expenses/fee_review.html:13
+msgid "Suggestions use earlier flights by the same aircraft at the same airfield. Takeoff and landing fees are checked separately, with a seven-day grace period for new flights."
+msgstr "Les suggestions reposent sur les vols précédents du même appareil au même aérodrome. Les taxes de décollage et d’atterrissage sont vérifiées séparément, avec un délai de sept jours pour les nouveaux vols."
+
+#: app/templates/expenses/fee_review.html:18 app/templates/users/list.html:80
+#: app/templates/users/permissions.html:49
+msgid "All aircraft"
+msgstr "Tous les avions"
+
+#: app/templates/expenses/fee_review.html:25
+#: app/templates/explore/where_next.html:41
+#: app/templates/passports/builder.html:62
+#: app/templates/passports/detail.html:42 app/templates/passports/print.html:24
+#: app/templates/passports/public_view.html:19
+#: app/templates/passports/record_visit.html:11
+#: app/templates/passports/series.html:19
+#: app/templates/passports/vouchers.html:12
+#: app/templates/passports/vouchers.html:33
+#: app/templates/passports/vouchers.html:40 app/templates/places/index.html:15
+#: app/templates/places/place_form.html:29
+msgid "Airfield"
+msgstr "Aérodrome"
+
+#: app/templates/expenses/fee_review.html:29
+#: app/templates/passports/detail.html:24 app/templates/passports/print.html:20
+#: app/templates/reports/utilization.html:44
+msgid "From"
+msgstr "De"
+
+#: app/templates/expenses/fee_review.html:33
+#: app/templates/reports/utilization.html:49
+msgid "To"
+msgstr "À"
+
+#: app/templates/expenses/fee_review.html:45
+#: app/templates/partials/_list_filters.html:36
+msgid "Filter"
+msgstr "Filtrer"
+
+#: app/templates/expenses/fee_review.html:55
+#, python-format
+msgid "%(charged)d of %(total)d preceding movements with a known fee status were charged"
+msgstr "%(charged)d opérations facturées sur %(total)d opérations précédentes au statut connu"
+
+#: app/templates/expenses/fee_review.html:63
+msgid "No separate fee due"
+msgstr "Aucune taxe distincte à payer"
+
+#: app/templates/expenses/fee_review.html:64
+msgid "Review in 30 days"
+msgstr "Revoir dans 30 jours"
+
+#: app/templates/expenses/fee_review.html:68
+msgid "Existing expense"
+msgstr "Dépense existante"
+
+#: app/templates/expenses/fee_review.html:74
+msgid "Link expense"
+msgstr "Lier la dépense"
+
+#: app/templates/expenses/fee_review.html:80
+msgid "No likely missing fees match these filters."
+msgstr "Aucune taxe probablement manquante ne correspond à ces filtres."
+
+#: app/templates/expenses/list.html:38
 #, python-format
 msgid "Total cost (%(currency)s)"
 msgstr "Coût total (%(currency)s)"
 
-#: app/templates/expenses/list.html:45
+#: app/templates/expenses/list.html:46
 msgid "Cost / flight hour"
 msgstr "Coût / heure de vol"
 
-#: app/templates/expenses/list.html:51
+#: app/templates/expenses/list.html:52
 msgid "Entries shown"
 msgstr "Entrées affichées"
 
-#: app/templates/expenses/list.html:113
+#: app/templates/expenses/list.html:114
 msgid "Repeating expense — future entries are generated from this one"
 msgstr "Dépense récurrente — les entrées futures sont générées à partir de celle-ci"
 
-#: app/templates/expenses/list.html:121
+#: app/templates/expenses/list.html:122
 msgid "Generated automatically — click to open the repeating expense it comes from"
 msgstr "Générée automatiquement — cliquez pour ouvrir la dépense récurrente dont elle provient"
 
-#: app/templates/expenses/list.html:126
+#: app/templates/expenses/list.html:127
 msgid "Generated automatically from a repeating expense"
 msgstr "Générée automatiquement à partir d'une dépense récurrente"
 
-#: app/templates/expenses/list.html:134 app/templates/refuels/list.html:156
+#: app/templates/expenses/list.html:135 app/templates/refuels/list.html:156
 #, python-format
 msgid "paid %(amount)s %(currency)s"
 msgstr "payé %(amount)s %(currency)s"
 
-#: app/templates/expenses/list.html:150
+#: app/templates/expenses/list.html:151
 msgid "View receipt"
 msgstr "Voir le justificatif"
 
-#: app/templates/expenses/list.html:155 app/templates/expenses/list.html:161
+#: app/templates/expenses/list.html:156 app/templates/expenses/list.html:162
 msgid "Download receipt"
 msgstr "Télécharger le justificatif"
 
-#: app/templates/expenses/list.html:174
+#: app/templates/expenses/list.html:175
 msgid "Delete this expense?"
 msgstr "Supprimer cette dépense ?"
 
-#: app/templates/expenses/list.html:186
+#: app/templates/expenses/list.html:187
 #: app/templates/offline/pilot_logbook.html:32
 #: app/templates/pilots/logbook.html:167
 #: app/templates/reservations/charge.html:46
@@ -10423,15 +10520,15 @@ msgstr "Supprimer cette dépense ?"
 msgid "Total"
 msgstr "Total"
 
-#: app/templates/expenses/list.html:198
+#: app/templates/expenses/list.html:199
 msgid "No expenses recorded for the selected filters."
 msgstr "Aucune dépense enregistrée pour les filtres sélectionnés."
 
-#: app/templates/expenses/list.html:198
+#: app/templates/expenses/list.html:199
 msgid "No expenses recorded."
 msgstr "Aucune dépense enregistrée."
 
-#: app/templates/expenses/list.html:202
+#: app/templates/expenses/list.html:203
 msgid "Add first expense"
 msgstr "Ajouter la première dépense"
 
@@ -10640,19 +10737,6 @@ msgstr "Ajoutez des lieux ou créez un passeport d’aérodromes pour trouver o�
 #: app/templates/places/passport_suggestions.html:9
 msgid "Airfield passports"
 msgstr "Passeports d’aérodromes"
-
-#: app/templates/explore/where_next.html:41
-#: app/templates/passports/builder.html:62
-#: app/templates/passports/detail.html:42 app/templates/passports/print.html:24
-#: app/templates/passports/public_view.html:19
-#: app/templates/passports/record_visit.html:11
-#: app/templates/passports/series.html:19
-#: app/templates/passports/vouchers.html:12
-#: app/templates/passports/vouchers.html:33
-#: app/templates/passports/vouchers.html:40 app/templates/places/index.html:15
-#: app/templates/places/place_form.html:29
-msgid "Airfield"
-msgstr "Aérodrome"
 
 #: app/templates/explore/where_next.html:41
 msgid "Why"
@@ -12595,10 +12679,6 @@ msgstr "Mouvement au sol uniquement ({start}–{end} UTC) : l’enregistrement
 msgid "Clear filters"
 msgstr "Effacer les filtres"
 
-#: app/templates/partials/_list_filters.html:36
-msgid "Filter"
-msgstr "Filtrer"
-
 #: app/templates/partials/_list_filters.html:40
 #, python-format
 msgid "one active filter"
@@ -13085,11 +13165,6 @@ msgstr "Membres du groupe"
 #: app/templates/passports/group_settings.html:4
 msgid "Group visit sharing"
 msgstr "Partage des visites du groupe"
-
-#: app/templates/passports/detail.html:24 app/templates/passports/print.html:20
-#: app/templates/reports/utilization.html:44
-msgid "From"
-msgstr "De"
 
 #: app/templates/passports/detail.html:25
 msgid "Not expired"
@@ -16060,10 +16135,6 @@ msgstr "Exporter en CSV"
 msgid "or"
 msgstr "ou"
 
-#: app/templates/reports/utilization.html:49
-msgid "To"
-msgstr "À"
-
 #: app/templates/reports/utilization.html:127
 msgid "Compared to the previous period of the same length"
 msgstr "Comparé à la période précédente de même durée"
@@ -16706,10 +16777,6 @@ msgstr "Retirer l’accès au carnet de vol personnel"
 #: app/templates/users/list.html:75
 msgid "Enable personal logbook"
 msgstr "Activer le carnet de vol personnel"
-
-#: app/templates/users/list.html:80 app/templates/users/permissions.html:49
-msgid "All aircraft"
-msgstr "Tous les avions"
 
 #: app/templates/users/list.html:108
 msgid "No aircraft"

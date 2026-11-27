@@ -13,6 +13,7 @@
     </div>
     <div class="d-flex gap-2 flex-wrap">
       {% if is_owner %}
+      <a href="{{ url_for('expenses.fee_review', aircraft=aircraft.id) }}" class="btn btn-ac-ghost">{{ _('Likely missing airfield fees') }}</a>
       <a href="{{ url_for('expenses.add_expense', aircraft_id=aircraft.id) }}"
          class="btn btn-ac-primary d-none d-lg-inline-block">
         <i class="bi bi-plus-circle me-1"></i>{{ _('Add expense') }}

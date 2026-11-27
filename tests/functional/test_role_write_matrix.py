@@ -169,6 +169,7 @@ ENDPOINT_TABLE: dict[str, set[str]] = {
     "refuels.edit_refuel": _CREW_ROLES,
     "refuels.delete_refuel": _CREW_ROLES,
     # expenses_bp
+    "expenses.fee_review": _OWNER_ROLES,
     "expenses.add_expense": _OWNER_ROLES,
     "expenses.edit_expense": _OWNER_ROLES,
     "expenses.delete_expense": _OWNER_ROLES,

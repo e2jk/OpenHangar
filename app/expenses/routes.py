@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import date as _date
 from datetime import timedelta
 from typing import Any
@@ -24,7 +25,9 @@ from models import (
 )  # pyright: ignore[reportMissingImports]
 from pwa import pending  # pyright: ignore[reportMissingImports]
 from utils import (  # pyright: ignore[reportMissingImports]
+    accessible_aircraft,
     current_membership,
+    db_id,
     login_required,
     months_back,
     require_role,
@@ -32,6 +35,7 @@ from utils import (  # pyright: ignore[reportMissingImports]
 )
 from werkzeug.datastructures import FileStorage
 
+from expenses import fee_checks
 from expenses.cost_dashboard import (  # pyright: ignore[reportMissingImports]
     DEFAULT_PERIOD_MONTHS,
     PERIOD_OPTIONS,
@@ -75,22 +79,16 @@ def _get_expense_or_404(aircraft: Aircraft, expense_id: int) -> Expense:
     return exp
 
 
-def _fuel_expense_prefill(aircraft: Aircraft) -> dict[str, Any] | None:
-    """Build "add expense" form defaults from a "Log as expense" link off a
-    logged refuel — either flight-linked (`?flight_entry_id=...`, from
-    aircraft/flight_detail.html) or standalone (`?date=...`, from a Refuel
-    record with no flight, see refuels/list.html). A flight's before/after
-    refuel quantities, and a standalone Refuel, are all independent
-    purchases for cost-tracking purposes — only the date and aircraft
-    matter, not which record a given amount happens to be logged against."""
-    flight_entry_id_raw = request.args.get("flight_entry_id", "").strip()
+def _expense_prefill(aircraft: Aircraft, fee_kind: str) -> dict[str, Any] | None:
+    """Prefill from a flight fee, a flight refuel, or a standalone refuel."""
+    flight_entry_id = request.args.get("flight_entry_id", type=db_id)
     date_raw = request.args.get("date", "").strip()
 
     flight_id: int | None = None
     prefill_date: str | None = None
 
-    if flight_entry_id_raw.isdigit():
-        flight = db.session.get(Flight, int(flight_entry_id_raw))
+    if flight_entry_id is not None:
+        flight = db.session.get(Flight, flight_entry_id)
         if flight is not None and flight.aircraft_id == aircraft.id:
             flight_id = flight.id
             prefill_date = flight.date.isoformat()
@@ -108,6 +106,9 @@ def _fuel_expense_prefill(aircraft: Aircraft) -> dict[str, Any] | None:
     unit = request.args.get("unit", "").strip()
     return {
         "flight_entry_id": flight_id,
+        "expense_type": fee_kind
+        if flight_id and fee_kind in fee_checks.KINDS
+        else None,
         "date": prefill_date,
         "quantity": request.args.get("quantity", "").strip() or None,
         "unit": unit if unit in _UNITS else "L",
@@ -144,6 +145,113 @@ def _compute_stats(
     )
     cost_per_hour = round(total_cost / total_hours, 2) if total_hours > 0 else None
     return total_cost, cost_per_hour, period_label
+
+
+@expenses_bp.route("/expenses/fee-checks", methods=["GET", "POST"])
+@login_required
+@require_role(*_OWNER_ROLES)
+def fee_review() -> ResponseReturnValue:
+    aircraft_id = request.args.get("aircraft", type=db_id)
+    aircraft = accessible_aircraft(_tenant_id(), include_archived=True).all()
+    aircraft_by_id = {item.id: item for item in aircraft}
+    if aircraft_id is not None and aircraft_id not in aircraft_by_id:
+        return abort(404)
+    today = _date.today()
+    start = request.args.get(
+        "start", today - fee_checks.HISTORY, type=_date.fromisoformat
+    )
+    end = request.args.get("end", today, type=_date.fromisoformat)
+    airfield = request.args.get("airfield", "").strip().upper()
+    kind = request.args.get("kind", "")
+    aircraft_ids = [aircraft_id] if aircraft_id is not None else list(aircraft_by_id)
+    if request.method == "POST":
+        flight_id = request.form.get("flight", type=db_id)
+        flight = db.session.get(Flight, flight_id) if flight_id is not None else None
+        action = request.form.get("action")
+        fee_kind = request.form.get("kind")
+        if not flight or flight.aircraft_id not in aircraft_ids:
+            return abort(404)
+        if fee_kind not in fee_checks.KINDS or action not in (
+            "no_fee",
+            "defer",
+            "link",
+        ):
+            return abort(400)
+        finding = next(
+            (
+                item
+                for item in fee_checks.missing_fees(
+                    [flight.aircraft_id], flight.date, flight.date, today
+                )
+                if item.flight.id == flight.id and item.kind == fee_kind
+            ),
+            None,
+        )
+        if finding and action == "link":
+            expense_id = request.form.get("expense", type=db_id)
+            expense = (
+                db.session.get(Expense, expense_id) if expense_id is not None else None
+            )
+            if (
+                not expense
+                or expense.aircraft_id != flight.aircraft_id
+                or fee_kind not in fee_checks.fee_kinds(expense)
+                or abs(expense.date - flight.date) > fee_checks.INVOICE_WINDOW
+            ):
+                return abort(400)
+            if not fee_checks.link_expense(expense, flight):
+                return abort(409)
+        elif finding:
+            key = fee_checks.feedback_key(finding.kind, finding.airfield, action)
+            fee_checks.record_feedback(flight.id, key, session.get("user_id"))
+        db.session.commit()
+        return redirect(
+            url_for(
+                "expenses.fee_review",
+                aircraft=aircraft_id,
+                start=start,
+                end=end,
+                airfield=airfield,
+                kind=kind,
+            )
+        )
+
+    findings = [
+        item
+        for item in fee_checks.missing_fees(aircraft_ids, start, end, today)
+        if (not airfield or airfield in item.airfield)
+        and (not kind or kind == item.kind)
+    ]
+    candidates: dict[tuple[int, str], list[Expense]] = defaultdict(list)
+    if findings:
+        for expense in fee_checks.linkable_expenses(
+            aircraft_ids,
+            max(start, _date.min + fee_checks.INVOICE_WINDOW)
+            - fee_checks.INVOICE_WINDOW,
+            min(end, _date.max - fee_checks.INVOICE_WINDOW) + fee_checks.INVOICE_WINDOW,
+        ):
+            for fee_kind in fee_checks.fee_kinds(expense):
+                candidates[(expense.aircraft_id, fee_kind)].append(expense)
+    return render_template(
+        "expenses/fee_review.html",
+        aircraft=aircraft,
+        selected_aircraft=aircraft_id,
+        aircraft_by_id=aircraft_by_id,
+        findings=findings,
+        expense_choices={
+            (item.flight.id, item.kind): [
+                expense
+                for expense in candidates[(item.flight.aircraft_id, item.kind)]
+                if abs(expense.date - item.flight.date) <= fee_checks.INVOICE_WINDOW
+            ]
+            for item in findings
+        },
+        start=start,
+        end=end,
+        airfield=airfield,
+        kind=kind,
+        fee_labels={key: ExpenseType.LABELS[key] for key in fee_checks.KINDS},
+    )
 
 
 # ── Expense list ──────────────────────────────────────────────────────────────
@@ -235,6 +343,12 @@ def add_expense(aircraft_id: int) -> ResponseReturnValue:
             return redirect(url_for("expenses.list_expenses", aircraft_id=ac.id))
         flash(err, "danger")
 
+    fee_kind = request.args.get("fee_kind", "")
+    prefill = (
+        _expense_prefill(ac, fee_kind)
+        if request.method == "GET" or fee_kind in fee_checks.KINDS
+        else None
+    )
     return render_template(
         "expenses/expense_form.html",
         aircraft=ac,
@@ -243,7 +357,7 @@ def add_expense(aircraft_id: int) -> ResponseReturnValue:
         currencies=_CURRENCIES,
         units=_UNITS,
         today=_date.today().isoformat(),
-        prefill=_fuel_expense_prefill(ac) if request.method == "GET" else None,
+        prefill=prefill,
         shared_file=pending.current("expense", ac.id),
     )
 
@@ -359,9 +473,9 @@ def _save_expense(
 
     if expense is None:
         expense = Expense(aircraft_id=aircraft.id, created_by_id=session.get("user_id"))
-        flight_entry_id_raw = request.form.get("flight_entry_id", "").strip()
-        if flight_entry_id_raw.isdigit():
-            flight = db.session.get(Flight, int(flight_entry_id_raw))
+        flight_entry_id = request.form.get("flight_entry_id", type=db_id)
+        if flight_entry_id is not None:
+            flight = db.session.get(Flight, flight_entry_id)
             if flight is not None and flight.aircraft_id == aircraft.id:
                 expense.flight_entry_id = flight.id
         db.session.add(expense)
