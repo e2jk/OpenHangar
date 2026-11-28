@@ -5,6 +5,13 @@ personal collections, live stamps, visit maps, manual visits, private stamp
 photos, linked voucher editions and invitation-based group participation.
 The live implementation plan records the remaining increments.
 
+## Try the demo
+
+The hosted demo signs you in automatically as a demo owner and opens the
+current Lande-Gutscheinheft edition. Use **Linked editions** to browse the
+series and see the sample visits in the 2025 and 2026 editions.
+[Open the Lande-Gutscheinheft demo](https://openhangar-demo.devolenvol.eu/landegut).
+
 ## Read access
 
 The Airfield passports navigation link appears for pilots and existing passport

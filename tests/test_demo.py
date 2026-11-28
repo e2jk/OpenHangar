@@ -9,7 +9,7 @@ Covers:
 """
 
 import os
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import pw_hash as _pw_hash  # pyright: ignore[reportMissingImports]
 import pytest  # pyright: ignore[reportMissingImports]
@@ -18,6 +18,9 @@ from init import create_app  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     AppSetting,
     DemoSlot,
+    Passport,
+    PassportParticipant,
+    PassportSeries,
     Role,
     Tenant,
     TenantUser,
@@ -117,6 +120,96 @@ def _make_demo_slot(app, slot_id=1, last_activity=None):
         db.session.add(slot)
         db.session.commit()
         return slot.id, user.id
+
+
+def test_landegut_opens_current_edition_in_the_assigned_slot(demo_app, demo_client):
+    slot_id, user_id = _make_demo_slot(demo_app, slot_id=1)
+    second_slot_id, second_user_id = _make_demo_slot(demo_app, slot_id=2)
+    today = date.today()
+    with demo_app.app_context():
+        first_slot = db.session.get(DemoSlot, slot_id)
+        second_slot = db.session.get(DemoSlot, second_slot_id)
+        first_slot.last_activity_at = datetime.now(UTC) - timedelta(hours=2)
+        second_slot.last_activity_at = datetime.now(UTC) - timedelta(hours=1)
+        series = PassportSeries(
+            tenant_id=first_slot.tenant_id,
+            owner_user_id=user_id,
+            title="Lande-Gutscheinheft",
+        )
+        db.session.add(series)
+        db.session.flush()
+        current = Passport(
+            tenant_id=first_slot.tenant_id,
+            owner_user_id=user_id,
+            series_id=series.id,
+            title="Lande-Gutscheinheft current",
+            start_date=today - timedelta(days=1),
+            end_date=today,
+        )
+        upcoming = Passport(
+            tenant_id=first_slot.tenant_id,
+            owner_user_id=user_id,
+            series_id=series.id,
+            title="Lande-Gutscheinheft next",
+            start_date=today + timedelta(days=1),
+            end_date=today + timedelta(days=30),
+        )
+        db.session.add_all([current, upcoming])
+        db.session.flush()
+        db.session.add_all(
+            [
+                PassportParticipant(
+                    passport_id=edition.id,
+                    display_name="Demo owner",
+                    user_id=user_id,
+                    accepted_at=datetime.now(UTC),
+                )
+                for edition in (current, upcoming)
+            ]
+        )
+        db.session.commit()
+        current_id, upcoming_id = current.id, upcoming.id
+
+    response = demo_client.get("/landegut")
+    assert response.status_code == 302
+    assert response.headers["Location"] == f"/passports/{current_id}/"
+    assert response.cache_control.no_store
+    with demo_client.session_transaction() as sess:
+        assert (sess["demo_slot_id"], sess["user_id"], sess["demo_role"]) == (
+            slot_id,
+            user_id,
+            "owner",
+        )
+    assert demo_client.get(response.headers["Location"]).status_code == 200
+
+    with demo_app.app_context():
+        db.session.get(Passport, current_id).archived_at = datetime.now(UTC)
+        db.session.commit()
+    assert (
+        demo_client.get("/landegut").headers["Location"] == f"/passports/{upcoming_id}/"
+    )
+    second_client = demo_app.test_client()
+    assert second_client.get("/landegut").headers["Location"] == "/passports/"
+    with second_client.session_transaction() as sess:
+        assert (sess["demo_slot_id"], sess["user_id"]) == (
+            second_slot_id,
+            second_user_id,
+        )
+    assert demo_app.test_client().get("/landegut").status_code == 503
+
+
+def test_landegut_prefetch_and_head_do_not_allocate_a_slot(demo_app, demo_client):
+    slot_id, _ = _make_demo_slot(demo_app)
+    for response in (
+        demo_client.head("/landegut"),
+        demo_client.get("/landegut", headers={"Sec-Purpose": "prefetch;prerender"}),
+    ):
+        assert response.status_code == 204
+        assert response.cache_control.no_store
+    with demo_app.app_context():
+        assert db.session.get(DemoSlot, slot_id).last_activity_at is None
+    with demo_client.session_transaction() as sess:
+        assert "demo_slot_id" not in sess
 
 
 # ── DemoSlot model ────────────────────────────────────────────────────────────
