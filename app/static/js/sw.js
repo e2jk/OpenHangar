@@ -118,6 +118,7 @@ var SWR_PATTERNS = [
  * every navigable GET page in the app is either in SWR_ROUTES/SWR_PATTERNS
  * above, or has an entry (exact or pattern) here explaining the call. */
 var NOT_CACHED_ROUTES = {
+  '/landegut': 'demo sign-in assigns a fresh slot or resumes one already assigned',
   '/login': 'auth form — a cached-but-nonfunctional login page while offline is worse than the existing offline fallback',
   '/setup': 'first-run auth wizard — same reasoning as /login',
   '/profile': 'account security settings (password/TOTP) — always show current state, never a cached one',
