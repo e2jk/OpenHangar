@@ -115,7 +115,7 @@ class TestDevSeedEndToEnd:
         assert r.status_code == 200
 
     def test_passports_seeded_with_contrasting_progress(self, app, client, monkeypatch):
-        """Phase 41: three passports for the admin, stamped live from the
+        """Passports for the admin, stamped live from the
         seeded logbook (partly visited, dated edition, complete), plus home
         airfields for "Where next?"; every passport page renders."""
         from models import Passport, PilotProfile  # pyright: ignore[reportMissingImports]
@@ -137,7 +137,56 @@ class TestDevSeedEndToEnd:
                 "Landing voucher booklet",
                 "Training airfields",
                 "Flying friends",
+                "Lande-Gutscheinheft",
             }
+            from datetime import date
+
+            from models import Flight, PassportAirfield, PassportSeries
+
+            series = PassportSeries.query.filter_by(title="Lande-Gutscheinheft").one()
+            editions = (
+                Passport.query.filter_by(series_id=series.id)
+                .order_by(Passport.start_date)
+                .all()
+            )
+            assert [edition.edition_label for edition in editions] == [
+                "2025",
+                "2026",
+                "2027",
+            ]
+            for year, edition in zip((2025, 2026, 2027), editions, strict=True):
+                assert edition.start_date == date(year, 1, 1)
+                assert edition.end_date == date(year, 12, 31)
+                assert edition.default_voucher_quantity == 3
+                assert (
+                    PassportAirfield.query.filter_by(passport_id=edition.id).count()
+                    == 80
+                )
+            flights = Flight.query.filter_by(
+                pic_user_id=uid, other_aircraft_registration="D-EZZZ"
+            ).all()
+            assert len(flights) == 14
+            assert {flight.date for flight in flights} == {
+                date(2025, 4, 12),
+                date(2025, 5, 17),
+                date(2025, 7, 19),
+                date(2025, 8, 23),
+                date(2025, 9, 13),
+                date(2026, 3, 14),
+                date(2026, 5, 9),
+                date(2026, 6, 20),
+                date(2026, 7, 11),
+                date(2026, 8, 15),
+                date(2026, 9, 12),
+            }
+            for year, edition in zip((2025, 2026, 2027), editions, strict=True):
+                assert passport_progress(edition, uid)["visited"] == len(
+                    {
+                        flight.arrival_icao
+                        for flight in flights
+                        if flight.date.year == year and flight.date <= date.today()
+                    }
+                )
             # The group passport mixes full accounts and a passport-only friend.
             from models import (
                 PassportInvitation,
