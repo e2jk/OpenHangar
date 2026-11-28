@@ -152,11 +152,9 @@ def test_personal_passports_have_no_group_figures_or_filters(
     # Group-only filter values fall back to showing every airfield.
     nobody = client.get(path, query_string={"state": "nobody", "participant": 1}).text
     assert "No airfields match this view." not in nobody
-    # The existing filters still apply: the owner's one target is open.
-    assert (
-        "No airfields match this view."
-        in client.get(path, query_string={"state": "closed"}).text
-    )
+    # The owner's one target is open, so a stale closed filter shows all.
+    closed = client.get(path, query_string={"state": "closed"}).text
+    assert '<option value="all" selected>' in closed
     shown = {
         state: "No airfields match this view."
         not in client.get(path, query_string={"state": state}).text
