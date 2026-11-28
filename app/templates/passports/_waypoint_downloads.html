@@ -1,7 +1,8 @@
 {% set show_waypoint_description = not hide_waypoint_description|default(false) %}
+{% set in_card = waypoint_in_card|default(false) %}
 {% if show_waypoint_description or waypoint_links or omitted_waypoints %}
-<section class="my-3" aria-label="{{ _('Waypoint downloads') }}">
-{% if show_waypoint_description %}<p>{{ _('Downloads contain only open airfields you have not visited in this selection: names, codes and coordinates, without flight tracks or private notes.') }}</p>{% endif %}
+<section class="{{ 'mb-3' if in_card else 'my-3' }}" aria-label="{{ _('Waypoint downloads') }}">
+{% if show_waypoint_description %}<p{% if in_card %} class="small text-body-secondary {{ 'mb-3' if waypoint_links or omitted_waypoints else 'mb-0' }}"{% endif %}>{{ _('Downloads contain only open airfields you have not visited in this selection: names, codes and coordinates, without flight tracks or private notes.') }}</p>{% endif %}
 {% if waypoint_links %}<div class="d-flex flex-wrap gap-2">{% for fmt, href in waypoint_links.items() %}<a class="btn btn-ac-ghost" href="{{ href }}" hx-boost="false">{{ _('Download GPX waypoints') if fmt == 'gpx' else _('Download KML waypoints') }}</a>{% endfor %}</div>{% endif %}
 {% if omitted_waypoints %}<p class="mt-2">{{ _('These open, unvisited airfields have no usable coordinates and are omitted. They cannot be distance-filtered.') }}</p><ul>{% for name in omitted_waypoints %}<li class="text-break">{{ name }}</li>{% endfor %}</ul>{% endif %}
 </section>

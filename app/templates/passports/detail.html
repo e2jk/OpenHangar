@@ -15,37 +15,72 @@
     <a class="btn btn-ac-ghost" href="{{ url_for('explore.where_next', stamp_book=passport.id) }}">{{ _('Where next?') }}</a>
   </div>
 </div>
-{% if passport.archived_at %}<span class="badge bg-secondary">{{ _('Archived') }}</span>{% endif %}
-{% if passport.edition_label %}<p>{{ _('Edition label') }}: {{ passport.edition_label }}</p>{% endif %}
-{% if passport.source_url %}<p>{{ _('Source') }}: <a href="{{ passport.source_url }}" hx-boost="false" rel="noreferrer">{{ passport.source_url }}</a>{% if passport.source_retrieved_at %} · {{ _('Retrieved') }}: {{ format_datetime(passport.source_retrieved_at) }}{% endif %}</p>{% endif %}
-{% if passport.description %}<p>{{ passport.description }}</p>{% endif %}
-{% if passport.start_date %}<dl><dt>{{ _('From') }}</dt><dd>{{ passport.start_date }}</dd></dl>{% endif %}
-{% if passport.end_date %}<dl><dt>{{ _('Until') }}</dt><dd>{{ format_date(passport.end_date) }} · {{ _('Expired') if passport.end_date < today else _('Not expired') }}</dd></dl><a href="{{ url_for('config.notification_preferences') }}">{{ _('Manage expiry reminders') }}</a>{% endif %}
-<p>{{ _('Your progress') }}: <strong>{{ progress.visited }} / {{ progress.total }}</strong>{% if progress.percent is not none %} ({{ progress.percent }}%){% endif %} · {{ _('Original targets') }}: {{ progress.original }} · {{ _('Closed unvisited targets excluded') }}: {{ progress.excluded_closed }}</p>
+<p>{{ _('Your progress') }}: <strong>{{ progress.visited }} / {{ progress.total }}</strong>{% if progress.percent is not none %} ({{ progress.percent }}%){% endif %}{% if progress.excluded_closed %} · {{ _('Closed unvisited targets excluded') }}: {{ progress.excluded_closed }}{% endif %}</p>
 {% if progress.total == 0 %}<p>{{ _('No achievable targets yet.') }}</p>{% elif progress.visited == progress.total %}<p>{{ _('Passport complete!') }}</p>{% endif %}
-{% if group_stats %}<section class="my-3" aria-labelledby="group-progress-heading"><h2 id="group-progress-heading" class="h4">{{ _('Group progress') }}</h2>
-{% if group_stats.participants %}<p>{{ _('Visited by anyone') }}: <strong>{{ group_stats.anyone }} / {{ group_stats.denominator }}</strong> · {{ _('Visited by everyone') }}: <strong>{{ group_stats.everyone }} / {{ group_stats.denominator }}</strong></p>
-<div class="table-responsive"><table class="table table-sm"><thead><tr><th scope="col">{{ _('Rank') }}</th><th scope="col">{{ _('Participant name') }}</th><th scope="col">{{ _('Airfields visited') }}</th><th scope="col">{{ _('Completion') }} (%)</th></tr></thead><tbody>{% for member in group_stats.participants %}<tr{% if member.you %} class="fw-semibold"{% endif %}><td>{{ member.rank }}</td><td class="text-break">{{ member.name }}{% if member.you %} ({{ _('you') }}){% endif %}</td><td>{{ member.visited }} / {{ group_stats.denominator }}</td><td>{% if member.percent is not none %}{{ member.percent }}%{% else %}—{% endif %}</td></tr>{% endfor %}</tbody></table></div>
-{% else %}<p>{{ _('Nobody is sharing visits in this edition yet, so there are no group figures.') }}</p>{% endif %}
-<p class="form-text">{{ _('Group figures count the participants sharing their visits in this edition, and change straight away when someone leaves or is removed. Everyone is measured against the same airfields: all open ones, plus closed ones that someone visited.') }}{% if group_stats.closed_excluded %} {{ _('Closed airfields nobody visited are left out: %(n)s.', n=group_stats.closed_excluded) }}{% endif %}</p></section>{% endif %}
-<form method="get" action="{{ url_for('passports.detail', passport_id=passport.id) }}" class="d-flex flex-wrap gap-3 align-items-center my-3" data-keep-scroll>
-<div class="d-flex align-items-center gap-2"><label for="passport-state" class="form-label mb-0">{{ _('Show airfields') }}</label><select class="form-select w-auto" id="passport-state" name="state" data-auto-submit>{% for value, label in [('all', _('All')), ('visited', _('Visited by you') if group_view else _('Visited')), ('unvisited', _('Not visited by you') if group_view else _('Not visited')), ('closed', _('Closed'))] + ([('anyone', _('Visited by anyone')), ('everyone', _('Visited by everyone')), ('nobody', _('Not visited by anyone'))] if group_stats else []) %}<option value="{{ value }}" {% if state == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+{% if group_stats and group_stats.participants %}<p>{{ _('Visited by anyone') }}: <strong>{{ group_stats.anyone }} / {{ group_stats.denominator }}</strong> · {{ _('Visited by everyone') }}: <strong>{{ group_stats.everyone }} / {{ group_stats.denominator }}</strong></p>{% endif %}
+<div id="passport-progress" data-frequency="{{ '1' if frequency else '0' }}" data-fields="{{ map_rows | tojson | forceescape }}" data-target-url="{{ url_for('passports.target_detail', passport_id=passport.id, target_id=0) }}" data-others="{{ _('Visited by friends') }}" data-visited="{{ _('Visited by you') if group_view else _('Visited') }}" data-unvisited="{{ _('Not visited') }}" data-closed="{{ _('Closed') }}" data-visits="{{ scope_text.recorded(count_scope, count_scope_name) if group_view else _('Recorded visits') }}"><div id="passport-progress-map" class="passport-selection-map border rounded" role="region" aria-label="{{ _('Passport visit map') }}"></div></div>
+<div class="row g-3 mt-0 mb-3">
+<div class="col">
+<div class="card h-100">
+<div class="card-body">
+<form id="passport-filters" method="get" action="{{ url_for('passports.detail', passport_id=passport.id) }}" class="d-flex flex-wrap gap-3 align-items-center mb-3" data-keep-scroll>
+<div class="d-flex align-items-center gap-2"><label for="passport-state" class="form-label mb-0">{{ _('Show airfields') }}</label><select class="form-select w-auto" id="passport-state" name="state" data-auto-submit>{% for value, label in [('all', _('All')), ('visited', _('Visited by you') if group_view else _('Visited')), ('unvisited', _('Not visited by you') if group_view else _('Not visited'))] + ([('closed', _('Closed'))] if has_closed_airfields else []) + ([('anyone', _('Visited by anyone')), ('everyone', _('Visited by everyone')), ('nobody', _('Not visited by anyone'))] if group_stats else []) %}<option value="{{ value }}" {% if state == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
 <div class="form-check mb-0"><input class="form-check-input" type="checkbox" name="frequency" value="1" id="passport-frequency" data-auto-submit {% if frequency %}checked{% endif %}><label class="form-check-label" for="passport-frequency">{{ _('Show visit frequency') }}</label></div>
 {% if group_stats and group_stats.participants %}<div class="d-flex align-items-center gap-2"><label for="passport-participant" class="form-label mb-0">{{ _('Visited by participant') }}</label><select class="form-select w-auto" id="passport-participant" name="participant" data-auto-submit><option value="">{{ _('Any participant') }}</option>{% for member in group_stats.participants|sort(attribute='key') %}<option value="{{ member.key }}" {% if participant == member.key %}selected{% endif %}>{{ member.name }}{% if member.you %} ({{ _('you') }}){% endif %}</option>{% endfor %}</select></div>{% endif %}
 {% with inline_auto_submit = true %}{% include "passports/_count_scope.html" %}{% endwith %}
+{% if not targets and sort_by_name %}<input type="hidden" name="sort" value="name">{% endif %}
 <noscript><button class="btn btn-ac-ghost">{{ _('Apply') }}</button></noscript>
 </form>
-<div id="passport-progress" data-frequency="{{ '1' if frequency else '0' }}" data-fields="{{ map_rows | tojson | forceescape }}" data-target-url="{{ url_for('passports.target_detail', passport_id=passport.id, target_id=0) }}" data-others="{{ _('Visited by friends') }}" data-visited="{{ _('Visited by you') if group_view else _('Visited') }}" data-unvisited="{{ _('Not visited') }}" data-closed="{{ _('Closed') }}" data-visits="{{ scope_text.recorded(count_scope, count_scope_name) if group_view else _('Recorded visits') }}"><div id="passport-progress-map" class="passport-selection-map border rounded" role="region" aria-label="{{ _('Passport visit map') }}"></div></div>
-<p>
+<div class="border-top pt-3 small text-body-secondary">
+<p class="mb-2">
   {{ _('Strong outline: visited by you. Medium outline: visited by friends only. Muted: nobody visited. History access never grants stamps or vouchers in an edition you did not join.') if group_view else _('Blue: visited by you. Grey: not visited.') }}
   {% if targets | selectattr('is_closed') | first is defined %}{{ _('Dashed outline: closed.') }}{% endif %}
   {% if frequency %}{{ _('Marker radius: 6 px for no visits, 8 px for one, increasing to at most 18 px for frequent visits. Exact counts are in the list and map popups.') }}{% endif %}
 </p>
-<p>{{ scope_text.explanation(count_scope, count_scope_name) if group_view else _('Counts show your recorded full-stop visits in this passport. Repeat-visit data may be incomplete.') }}</p>
-{% include "passports/_waypoint_downloads.html" %}
-{% if targets %}<div class="table-responsive"><table class="table" id="passport-targets"><thead><tr><th>{{ _('Airfield') }}</th><th>{{ _('Status') }}</th><th>{{ _('Your first visit') if group_view else _('First visit') }}</th><th>{{ _('Recorded visits') }}</th></tr></thead><tbody>{% for target in targets %}<tr><td><a href="{{ url_for('passports.target_detail', passport_id=passport.id, target_id=target.target_id) }}">{{ target.name }}{% if target.ident %} ({{ target.ident }}){% endif %}</a>{% if target.latitude is none or target.longitude is none %}<br><small>{{ _('No coordinates — shown in the list only.') }}</small>{% endif %}</td><td>{{ _('Visited by you') if group_view and target.state == 'own' else (_('Visited by friends') if group_view and target.state == 'others' else (_('Visited') if target.visited else _('Not visited'))) }}{% if target.is_closed %} · {{ _('Closed') }}{% endif %}{% if group_view %}{% with friends=target.friends %}{% include "passports/_friends.html" %}{% endwith %}{% endif %}</td><td>{{ target.first.date if target.first else '—' }}</td><td>{{ target.count }}</td></tr>{% endfor %}</tbody></table></div>
+<p class="mb-0">{{ scope_text.explanation(count_scope, count_scope_name) if group_view else _('Counts show your recorded full-stop visits in this passport. Repeat-visit data may be incomplete.') }}</p>
+</div>
+</div>
+</div>
+</div>
+{% if passport.archived_at or passport.edition_label or passport.source_url or passport.description or passport.start_date or passport.end_date %}
+<div class="col-lg-6">
+<div class="card h-100">
+<div class="card-body text-break d-flex flex-column align-items-start gap-2">
+{% if passport.archived_at %}<span class="badge bg-secondary">{{ _('Archived') }}</span>{% endif %}
+{% if passport.edition_label %}<p class="mb-0"><strong>{{ _('Edition label') }}</strong>: {{ passport.edition_label }}</p>{% endif %}
+{% if passport.source_url %}<p class="mb-0"><strong>{{ _('Source') }}</strong>: <a href="{{ passport.source_url }}" hx-boost="false" rel="noreferrer">{{ passport.source_url }}</a>{% if passport.source_retrieved_at %} · {{ _('Retrieved') }}: {{ format_datetime(passport.source_retrieved_at) }}{% endif %}</p>{% endif %}
+{% if passport.description %}<p class="mb-0">{{ passport.description }}</p>{% endif %}
+{% if passport.start_date or passport.end_date %}
+<dl class="d-flex flex-wrap column-gap-3 row-gap-1 mb-0">
+  {% if passport.start_date %}<div class="d-inline-flex gap-2"><dt>{{ _('From') }}</dt><dd class="mb-0">{{ passport.start_date }}</dd></div>{% endif %}
+  {% if passport.end_date %}<div class="d-inline-flex gap-2"><dt>{{ _('Until') }}</dt><dd class="mb-0">{{ format_date(passport.end_date) }} · {{ _('Expired') if passport.end_date < today else _('Not expired') }}</dd></div>{% endif %}
+</dl>
+{% if passport.end_date %}<a href="{{ url_for('config.notification_preferences') }}">{{ _('Manage expiry reminders') }}</a>{% endif %}
+{% endif %}
+</div>
+</div>
+</div>
+{% endif %}
+</div>
+{% if targets %}<div class="table-responsive"><table class="table" id="passport-targets"><thead><tr><th scope="col" class="align-middle">
+<div class="d-flex flex-wrap align-items-center gap-2">
+  {{ _('Airfield') }}
+  <label for="passport-sort" class="visually-hidden">{{ _('Sort by') }}</label>
+  <select class="form-select form-select-sm w-auto" id="passport-sort" name="sort" form="passport-filters" data-auto-submit>
+    <option value="visits"{% if not sort_by_name %} selected{% endif %}>{{ _('Most visited') }}</option>
+    <option value="name"{% if sort_by_name %} selected{% endif %}>{{ _('Airfield name') }}</option>
+  </select>
+</div>
+</th><th>{{ _('Status') }}</th><th>{{ _('Your first visit') if group_view else _('First visit') }}</th><th>{{ _('Recorded visits') }}</th></tr></thead><tbody>{% for target in targets %}<tr><td><a href="{{ url_for('passports.target_detail', passport_id=passport.id, target_id=target.target_id) }}">{{ target.name }}{% if target.ident %} ({{ target.ident }}){% endif %}</a>{% if target.latitude is none or target.longitude is none %}<br><small>{{ _('No coordinates — shown in the list only.') }}</small>{% endif %}</td><td>{{ _('Visited by you') if group_view and target.state == 'own' else (_('Visited by friends') if group_view and target.state == 'others' else (_('Visited') if target.visited else _('Not visited'))) }}{% if target.is_closed %} · {{ _('Closed') }}{% endif %}{% if group_view %}{% with friends=target.friends %}{% include "passports/_friends.html" %}{% endwith %}{% endif %}</td><td>{{ target.first.date if target.first else '—' }}</td><td>{{ target.count }}</td></tr>{% endfor %}</tbody></table></div>
 {% else %}<p>{{ _('No airfields match this view.') if progress.original else _('No airfields selected yet.') }}</p>{% endif %}
-<div class="d-flex flex-wrap gap-2 mt-4">
+{% if group_stats %}<section class="my-3" aria-labelledby="group-progress-heading"><h2 id="group-progress-heading" class="h4">{{ _('Group progress') }}</h2>
+{% if group_stats.participants %}<div class="table-responsive"><table class="table table-sm"><thead><tr><th scope="col">{{ _('Rank') }}</th><th scope="col">{{ _('Participant name') }}</th><th scope="col">{{ _('Airfields visited') }}</th><th scope="col">{{ _('Completion') }} (%)</th></tr></thead><tbody>{% for member in group_stats.participants %}<tr{% if member.you %} class="fw-semibold"{% endif %}><td>{{ member.rank }}</td><td class="text-break">{{ member.name }}{% if member.you %} ({{ _('you') }}){% endif %}</td><td>{{ member.visited }} / {{ group_stats.denominator }}</td><td>{% if member.percent is not none %}{{ member.percent }}%{% else %}—{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+{% else %}<p>{{ _('Nobody is sharing visits in this edition yet, so there are no group figures.') }}</p>{% endif %}
+<p class="form-text">{{ _('Group figures count the participants sharing their visits in this edition, and change straight away when someone leaves or is removed. Everyone is measured against the same airfields: all open ones, plus closed ones that someone visited.') }}{% if group_stats.closed_excluded %} {{ _('Closed airfields nobody visited are left out: %(n)s.', n=group_stats.closed_excluded) }}{% endif %}</p></section>{% endif %}
+<div class="card mt-4">
+<div class="card-body">
+{% with waypoint_in_card = true %}{% include "passports/_waypoint_downloads.html" %}{% endwith %}
+<div class="d-flex flex-wrap gap-2">
   <a class="btn btn-ac-ghost" href="{{ url_for('passports.print_passport', passport_id=passport.id) }}">{{ _('Print passport') }}</a>
   <a class="btn btn-ac-ghost" href="{{ url_for('passports.voucher_ledger', passport_id=passport.id) }}">{{ _('Vouchers') }}</a>
   {% if can_manage %}
@@ -64,5 +99,7 @@
 </div>
 <div class="mt-3"><a class="btn btn-outline-danger" href="{{ url_for('passports.delete_passport', passport_id=passport.id) }}">{{ _('Delete passport') }}</a></div>
 {% endif %}
+</div>
+</div>
 </div>
 {% endblock %}

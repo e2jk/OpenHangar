@@ -1,8 +1,10 @@
-# Add Lande-Gutscheinheft editions to the demo
+# Bring the map higher on passport detail pages
 
-- The demo and development seeds include the 2025, 2026, and 2027
-  Lande-Gutscheinheft editions, with 80 airfields each. Sample flights on
-  fixed 2025 and 2026 dates show how logbook arrivals stamp those editions.
-- The demo’s `/landegut` shortcut signs visitors in as a demo owner and opens
-  the Lande-Gutscheinheft passport directly. The airfield passport guide links
-  to the hosted demo.
+- The passport map now follows the progress summary. Cards below it group
+  the map controls, legend, and edition details. The GPX and KML downloads
+  share a card with the passport actions below the airfield list.
+- The edition dates share a row. The progress summary shows the exclusion
+  count only when closed, unvisited airfields were left out. The Closed
+  filter appears when the passport contains closed airfields.
+- The airfield list defaults to most visited first. Use the sort control
+  in the Airfield column header to switch to alphabetical order.

@@ -214,7 +214,10 @@ def detail(passport_id: int) -> ResponseReturnValue:
         {**row, **shared_rows.get(row["id"], {})} for row in progress["rows"]
     ]
     stats = shared["stats"] if shared else None
+    has_closed_airfields = any(row["is_closed"] for row in display_rows)
     state = request.args.get("state", "all")
+    if state == "closed" and not has_closed_airfields:
+        state = "all"
     # The participant filter narrows which airfields show; styling and "your"
     # progress still describe the viewer, whoever is selected.
     participant = request.args.get("participant", type=list_index) if stats else None
@@ -236,6 +239,13 @@ def detail(passport_id: int) -> ResponseReturnValue:
     if download is not None:
         return download
     map_rows = _progress_map_rows(rows)
+    sort_by_name = request.args.get("sort") == "name"
+    rows.sort(
+        key=lambda row: (
+            0 if sort_by_name else -row["count"],
+            row["name"].casefold(),
+        )
+    )
     can_manage = passport.owner_user_id == session.get("user_id")
     try:
         require_actor(passport.tenant_id, session["user_id"])
@@ -254,7 +264,9 @@ def detail(passport_id: int) -> ResponseReturnValue:
         targets=rows,
         progress=progress,
         map_rows=map_rows,
+        has_closed_airfields=has_closed_airfields,
         state=state,
+        sort_by_name=sort_by_name,
         frequency=flag_arg("frequency"),
         can_manage=can_manage,
         group_view=shared is not None,
