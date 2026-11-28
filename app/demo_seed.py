@@ -13,8 +13,8 @@ import shutil
 
 import pw_hash as _pw  # pyright: ignore[reportMissingImports]
 from _seed_helpers import (
+    seed_demo_lande_group,
     seed_fleet,
-    seed_group_passport,
     seed_passports,
     seed_pilot_profiles,
     seed_places,
@@ -178,11 +178,10 @@ def seed() -> None:
         seed_reservations(aircraft, [owner_user.id, pilot_user.id])
         seed_pilot_profiles(owner_user.id)
         seed_pilot_profiles(pilot_user.id)
-        seed_passports(tenant.id, owner_user.id, aircraft)
-        seed_group_passport(
+        seed_passports(tenant.id, owner_user.id, aircraft, demo=True)
+        seed_demo_lande_group(
             tenant.id,
             owner_user.id,
-            pilot_user.id,
             f"demo-friend-{i}@openhangar.demo",
             dummy_hash,
         )

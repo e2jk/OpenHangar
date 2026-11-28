@@ -8,3 +8,5 @@
   filter appears when the passport contains closed airfields.
 - The airfield list defaults to most visited first. Use the sort control
   in the Airfield column header to switch to alphabetical order.
+- Passport edition labels link to the full series. The demo features a
+  curated Belgian passport and shared progress in the Lande-Gutscheinheft.

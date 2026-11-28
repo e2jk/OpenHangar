@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% set no_history_cache = true %}
 {% import "passports/_count_scope_text.html" as scope_text with context %}
+{% set can_view_series = passport.series_id and (passport.is_group or passport.owner_user_id == session.get('user_id')) %}
 {% block title %}{{ _('Airfield passports') }} — OpenHangar{% endblock %}
 {% block content %}
 <div class="container py-4">
@@ -47,7 +48,7 @@
 <div class="card h-100">
 <div class="card-body text-break d-flex flex-column align-items-start gap-2">
 {% if passport.archived_at %}<span class="badge bg-secondary">{{ _('Archived') }}</span>{% endif %}
-{% if passport.edition_label %}<p class="mb-0"><strong>{{ _('Edition label') }}</strong>: {{ passport.edition_label }}</p>{% endif %}
+{% if passport.edition_label %}<p class="mb-0"><strong>{{ _('Edition label') }}</strong>: {{ passport.edition_label }}{% if can_view_series %} · <a href="{{ url_for('passports.series_detail', series_id=passport.series_id, edition='all') }}">{{ _('Linked editions') }}</a>{% endif %}</p>{% endif %}
 {% if passport.source_url %}<p class="mb-0"><strong>{{ _('Source') }}</strong>: <a href="{{ passport.source_url }}" hx-boost="false" rel="noreferrer">{{ passport.source_url }}</a>{% if passport.source_retrieved_at %} · {{ _('Retrieved') }}: {{ format_datetime(passport.source_retrieved_at) }}{% endif %}</p>{% endif %}
 {% if passport.description %}<p class="mb-0">{{ passport.description }}</p>{% endif %}
 {% if passport.start_date or passport.end_date %}
@@ -86,7 +87,7 @@
   {% if can_manage %}
   <a class="btn btn-ac-ghost" href="{{ url_for('passports.archive_passport', passport_id=passport.id) }}">{{ _('Reopen passport') if passport.archived_at else _('Archive passport') }}</a>
   {% endif %}
-  {% if passport.series_id and (passport.is_group or passport.owner_user_id == session.get('user_id')) %}<a class="btn btn-ac-ghost" href="{{ url_for('passports.series_detail', series_id=passport.series_id) }}">{{ _('Linked editions') }}</a>{% endif %}
+  {% if can_view_series and not passport.edition_label %}<a class="btn btn-ac-ghost" href="{{ url_for('passports.series_detail', series_id=passport.series_id) }}">{{ _('Linked editions') }}</a>{% endif %}
   <a class="btn btn-ac-ghost" href="{{ url_for('passports.public_settings', passport_id=passport.id) }}">{{ _('Public sharing') }}</a>
   {% if can_manage and passport.is_group %}<a class="btn btn-ac-ghost" href="{{ url_for('passports.invitation_settings', passport_id=passport.id) }}">{{ _('Invite friends') }}</a>{% endif %}
   {% if passport.is_group %}<a class="btn btn-ac-ghost" href="{{ url_for('passports.group_members', series_id=passport.series_id) }}">{{ _('Group members') }}</a>{% endif %}
