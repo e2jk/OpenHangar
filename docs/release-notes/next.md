@@ -1,29 +1,8 @@
-# Improve destination discovery, passports, and data checks
+# Add Lande-Gutscheinheft editions to the demo
 
-- Place details show associated airfields as cards below the map and mark
-  those in your passports. Where next? now leads the page actions. Ownership,
-  edit history, Archive, and Move to bin sit together near the bottom,
-  beside Copy or move on large screens.
-- Data checks and aircraft Expenses can suggest missing landing and takeoff
-  fees based on earlier flights at the same airfield. Reviewers can record
-  or link an expense, confirm no separate fee was due, or defer review.
-- Data checks fit smaller screens without horizontal scrolling. On phones,
-  each finding shows the flight date and check, then the logbook and GPS
-  comparison, then the actions on their own row.
-- Passport cards open their passport from anywhere outside the map and
-  edition controls. The visit count sits beside the passport title, and
-  nearby places and passport creation share the page header.
-- Passport details put Record a visit, Edit passport, and Where next? beside
-  the title. Other actions are below the airfield list, with edition controls
-  together and Delete passport on its own line. Visit-count guidance follows
-  the map legend, which describes closed airfields when listed. Airfield
-  filters and visit frequency update the map and list automatically.
-- Where next? shows collection and passport filters in separate cards,
-  hides filters for inactive sources, and groups the two visit-history
-  filters together. By default, it shows unvisited places and airfields
-  where you have no logged landing. Choose the reference airfield directly
-  from one field with suggestions by code or name. It starts from an
-  aircraft or pilot home airfield, or the latest logged arrival, with
-  quick picks when more than one is available. Search by distance or by
-  cruise speed and duration, with the last search settings remembered
-  for the session.
+- The demo and development seeds include the 2025, 2026, and 2027
+  Lande-Gutscheinheft editions, with 80 airfields each. Sample flights on
+  fixed 2025 and 2026 dates show how logbook arrivals stamp those editions.
+- The demo’s `/landegut` shortcut signs visitors in as a demo owner and opens
+  the Lande-Gutscheinheft passport directly. The airfield passport guide links
+  to the hosted demo.
