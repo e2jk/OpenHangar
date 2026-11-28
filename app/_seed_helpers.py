@@ -4,7 +4,7 @@ Shared seed helpers — fleet data used by both dev_seed and demo_seed.
 Add richer data here as new phases are implemented; both seeds pick it up
 automatically without any further changes.
 
-All hardcoded dates are expressed relative to _SEED_REF_DATE (the "today"
+Most hardcoded dates are expressed relative to _SEED_REF_DATE (the "today"
 the data was designed around). At runtime, _shift() maps them to real dates
 so the data always looks recent regardless of when the seed is executed.
 """
@@ -42,9 +42,11 @@ from models import (
     InstalledSTC,
     MaintenanceTrigger,
     OperatingModel,
+    Passport,
     PassportAirfield,
     PassportArrivalExclusion,
     PassportParticipant,
+    PassportSeries,
     PersonalMinimumsItem,
     PersonalMinimumsRevision,
     PersonalMinimumsSection,
@@ -3672,16 +3674,78 @@ def passport_booklet_year(today: date) -> int:
     return (today - timedelta(days=60)).year
 
 
+# Public participant lists. Corrected ICAO identifiers are matched against
+# the bundled catalogue (Ried-Kirchheim, Neumünster and Welzow).
+_LANDE_GUTSCHEINHEFT_EDITIONS = {
+    2025: (
+        "https://flightcenter-hannover.de/wp-content/uploads/2024/11/Landegutscheinheft-2025.pdf",
+        """
+        EDAE EDAP EDAX EDAY EDAZ EDBA EDBI EDBJ EDBK EDBN EDBS EDCV
+        EDCY EDEW EDFC EDFN EDFO EDFU EDFY EDGP EDHN EDKD EDKO EDKV
+        EDLA EDLC EDLM EDMB EDMC EDMH EDMI EDNC EDNM EDOA EDOD EDOE
+        EDOT EDOV EDPA EDPM EDQE EDQF EDQM EDQS EDQT EDQZ EDRA EDRH
+        EDRM EDRO EDRW EDTP EDVA EDVE EDVH EDVI EDVR EDVU EDVW EDWF
+        EDWH EDWK EDWM EDWQ EDXB EDXC EDXE EDXF EDXN EDXQ EKRD EKRS
+        EKVJ ETND ETSI LOAB LOAN LOGO LOKH LOLK
+        """,
+    ),
+    2026: (
+        "https://landegut.de/en/products/lande-gutscheinheft-2026",
+        """
+        EDAP EDAV EDAX EDAY EDAZ EDBA EDBI EDBJ EDBK EDBS EDCV EDCY
+        EDFD EDFM EDFN EDFY EDGA EDGB EDGP EDHN EDKD EDKO EDKZ EDLA
+        EDLC EDLM EDMB EDMC EDMH EDMI EDNC EDNM EDNR EDNT EDOA EDOD
+        EDOE EDOT EDPM EDQE EDQF EDQK EDQS EDQZ EDRA EDRH EDRM EDRO
+        EDRS EDRW EDTP EDVA EDVE EDVH EDVI EDVR EDVU EDVW EDWF EDWH
+        EDWK EDWM EDXB EDXC EDXE EDXF EDXL EDXN EDXQ EHTX EKRD EKRS
+        ETHN ETND LOAB LOAN LOGO LOKF LOKH LOLK
+        """,
+    ),
+    2027: (
+        "https://www.siebert.aero/detail/index/sArticle/8528880/sCategory/17650170/number/90457.0012",
+        """
+        EDAE EDAP EDAV EDAX EDAY EDAZ EDBA EDBI EDBJ EDBK EDBN EDBS
+        EDCV EDCY EDEB EDFD EDFM EDFN EDFY EDGB EDGP EDHN EDKD EDKO
+        EDKZ EDLA EDLC EDMB EDMC EDMH EDMI EDNC EDNM EDNR EDOA EDOD
+        EDOE EDOT EDPM EDQE EDQF EDQK EDQM EDRA EDRH EDRM EDRO EDRS
+        EDRW EDTP EDVA EDVE EDVH EDVI EDVR EDVU EDVW EDWF EDWH EDWK
+        EDWM EDWP EDXC EDXE EDXF EDXN EDXQ EHHO EHTX EKOD EKRD EKRS
+        ETHN ETND LOAB LOAN LOGO LOKF LOKH LOLK
+        """,
+    ),
+}
+
+
+# Dates are intentionally fixed so the flights stay in their booklet editions.
+_LANDE_GUTSCHEINHEFT_FLIGHTS = (
+    (date(2025, 4, 12), "EBNM", "EDKV", "1.0"),
+    (date(2025, 4, 12), "EDKV", "EDRA", "0.4"),
+    (date(2025, 5, 17), "EBNM", "EDLM", "1.3"),
+    (date(2025, 7, 19), "EBNM", "EDGP", "1.6"),
+    (date(2025, 8, 23), "EBNM", "EDRO", "1.7"),
+    (date(2025, 9, 13), "EBNM", "EDRA", "1.1"),
+    (date(2026, 3, 14), "EBNM", "EDRW", "1.1"),
+    (date(2026, 3, 14), "EDRW", "EDFY", "0.5"),
+    (date(2026, 5, 9), "EBNM", "EDLC", "0.9"),
+    (date(2026, 5, 9), "EDLC", "EDLM", "0.5"),
+    (date(2026, 6, 20), "EBNM", "EHTX", "1.6"),
+    (date(2026, 7, 11), "EBNM", "EDRO", "1.7"),
+    (date(2026, 8, 15), "EBNM", "EDRW", "1.1"),
+    (date(2026, 9, 12), "EBNM", "EDGP", "1.6"),
+)
+
+
 def seed_passports(tenant_id: int, user_id: int, aircraft: list) -> None:
     """Airfield passports for the main seeded pilot, plus home airfields and
     cruise speeds for "Where next?".
 
     Stamps aren't stored: they're calculated live from the logbook that
-    seed_pilot_profiles created, so call this after it. Three passports with
+    seed_pilot_profiles created, so call this after it. Three fictional passports with
     contrasting states: a lifetime one, partly visited, with a closed and a
     coordinate-less custom field; a dated booklet edition for the year of the
     date 60 days ago (so in early January it is last year's, never an empty
-    new one); and a fully visited one.
+    new one); and a fully visited one. The real voucher booklet series uses
+    fixed edition dates and fixed 2025 and 2026 flights.
     """
     from passports import catalogue as cat  # pyright: ignore[reportMissingImports]
     from passports import evidence  # pyright: ignore[reportMissingImports]
@@ -3819,6 +3883,89 @@ def seed_passports(tenant_id: int, user_id: int, aircraft: list) -> None:
         },
         [field(code) for code in _PASSPORT_TRAINING_CODES],
     )
+    seed_lande_gutscheinheft(tenant_id, user_id)
+    db.session.flush()
+
+
+def seed_lande_gutscheinheft(tenant_id: int, user_id: int) -> None:
+    """Add the published editions and sample flights to a seeded account."""
+    from decimal import Decimal
+
+    from passports import catalogue as cat
+    from passports import editions
+    from passports.management import create_personal
+
+    title = "Lande-Gutscheinheft"
+    series = PassportSeries.query.filter_by(
+        tenant_id=tenant_id, owner_user_id=user_id, title=title
+    ).one_or_none()
+    existing_editions = set()
+    if series is not None:
+        existing_editions = {
+            edition.edition_label
+            for edition in Passport.query.filter_by(series_id=series.id)
+        }
+    by_ident = {row.ident: row for row in cat.load_catalogue()}
+    fields = {}
+    for year, (source_url, codes) in _LANDE_GUTSCHEINHEFT_EDITIONS.items():
+        if str(year) in existing_editions:
+            continue
+        edition = create_personal(
+            tenant_id,
+            user_id,
+            {
+                "title": f"{title} {year}",
+                "edition_label": str(year),
+                "start_date": date(year, 1, 1),
+                "end_date": date(year, 12, 31),
+                "source_url": source_url,
+                "default_voucher_quantity": 3,
+            },
+        )
+        series = editions.link(
+            edition,
+            user_id,
+            series_id=series.id if series is not None else None,
+            title=title,
+        )
+        for order, code in enumerate(codes.split()):
+            if code not in fields:
+                fields[code] = cat.materialise(tenant_id, by_ident[code])
+            db.session.add(
+                PassportAirfield(
+                    tenant_id=tenant_id,
+                    passport_id=edition.id,
+                    airfield_id=fields[code].id,
+                    display_order=order,
+                )
+            )
+
+    existing_flights = {
+        (flight.date, flight.departure_icao, flight.arrival_icao)
+        for flight in Flight.query.filter_by(
+            pic_user_id=user_id, other_aircraft_registration="D-EZZZ"
+        )
+    }
+    for flown_on, departure, arrival, hours in _LANDE_GUTSCHEINHEFT_FLIGHTS:
+        if (flown_on, departure, arrival) in existing_flights:
+            continue
+        duration = Decimal(hours)
+        db.session.add(
+            Flight(
+                pic_user_id=user_id,
+                date=flown_on,
+                departure_icao=departure,
+                arrival_icao=arrival,
+                other_aircraft_registration="D-EZZZ",
+                other_aircraft_type="Cessna 172",
+                other_aircraft_type_icao="C172",
+                flight_time=duration,
+                function_pic=duration,
+                single_pilot_se=duration,
+                landing_count=1,
+                landings_day=1,
+            )
+        )
     db.session.flush()
 
 

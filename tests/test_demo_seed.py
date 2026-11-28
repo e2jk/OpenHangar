@@ -45,10 +45,15 @@ class TestDemoSeedEndToEnd:
             assert DemoSlot.query.count() == 1
             # The wipe removes the first run's passports and airfield
             # identities (referenced by aircraft home airfields) with its
-            # tenant: only the new slot's five passports remain (three
-            # personal ones and the two editions of the group passport).
+            # tenant: only the new slot's eight passports remain.
             slot = DemoSlot.query.one()
-            assert Passport.query.count() == 5
+            assert Passport.query.count() == 8
+            assert {
+                p.edition_label
+                for p in Passport.query.filter(
+                    Passport.title.startswith("Lande-Gutscheinheft ")
+                )
+            } == {"2025", "2026", "2027"}
             # ...and its single passport-only friend, never the first run's.
             friends = TenantUser.query.filter(TenantUser.access_scope == "personal")
             assert [tu.tenant_id for tu in friends] == [slot.tenant_id]
