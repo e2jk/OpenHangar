@@ -3638,6 +3638,38 @@ _PASSPORT_AIRCRAFT_HOMES = {
     "OO-TCH": ("EBST", 100),
 }
 _PASSPORT_PILOT_HOME = "EBCI"
+# Curated Belgian passport targets. Use catalogue identifiers, including
+# those whose airfield has no assigned ICAO code.
+_DEMO_BELGIAN_AIRFIELDS = [
+    "EBAW",
+    "EBBR",
+    "EBCI",
+    "EBKT",
+    "EBLG",
+    "EBOS",
+    "EBST",
+    "EBZR",
+    "EBGB",
+    "EBBT",
+    "EBGG",
+    "EBIS",
+    "EBKH",
+    "EBMO",
+    "EBNM",
+    "EBSG",
+    "EBSH",
+    "EBSP",
+    "EBTX",
+    "EBTY",
+    "EBZH",
+    "EBZW",
+    "EBCF",
+    "EBTN",
+    "EBHN",
+    "EBLE",
+    "EBDT",
+    "EBBZ",
+]
 # A fictional voucher booklet: small fields around Belgium, so the seeded
 # logbook arrival at EBKT and the manual visits below fall inside it.
 _PASSPORT_BOOKLET_CODES = [
@@ -3735,7 +3767,9 @@ _LANDE_GUTSCHEINHEFT_FLIGHTS = (
 )
 
 
-def seed_passports(tenant_id: int, user_id: int, aircraft: list) -> None:
+def seed_passports(
+    tenant_id: int, user_id: int, aircraft: list, *, demo: bool = False
+) -> None:
     """Airfield passports for the main seeded pilot, plus home airfields and
     cruise speeds for "Where next?".
 
@@ -3813,24 +3847,33 @@ def seed_passports(tenant_id: int, user_id: int, aircraft: list) -> None:
 
     # 1. Lifetime passport: Belgian airports and airfields (not heliports),
     # plus two custom fields — a closed one and one without coordinates.
-    belgian = [
-        field(row.ident)
-        for row in by_ident.values()
-        if row.country == "BE"
-        and row.airfield_type in {"small_airport", "medium_airport", "large_airport"}
-        and not row.is_closed
-    ]
-    closed = cat.create_custom(
-        tenant_id, "Former grass strip (closed)", latitude=50.62, longitude=4.98
-    )
-    cat.correct_airfield(closed, {"is_closed": True})
-    no_coordinates = cat.create_custom(tenant_id, "Farm strip (location to confirm)")
+    if demo:
+        belgian = [field(code) for code in _DEMO_BELGIAN_AIRFIELDS]
+    else:
+        belgian = [
+            field(row.ident)
+            for row in by_ident.values()
+            if row.country == "BE"
+            and row.airfield_type
+            in {"small_airport", "medium_airport", "large_airport"}
+            and not row.is_closed
+        ]
+        closed = cat.create_custom(
+            tenant_id, "Former grass strip (closed)", latitude=50.62, longitude=4.98
+        )
+        cat.correct_airfield(closed, {"is_closed": True})
+        no_coordinates = cat.create_custom(
+            tenant_id, "Farm strip (location to confirm)"
+        )
+        belgian.extend([closed, no_coordinates])
     lifetime, participant = passport(
         {
             "title": "Belgian airfields",
-            "description": "Every airport and airfield in Belgium.",
+            "description": "A selection of Belgian airfields."
+            if demo
+            else "Every airport and airfield in Belgium.",
         },
-        [*belgian, closed, no_coordinates],
+        belgian,
     )
     visits(lifetime, participant)
     # The first EBCI arrival was a touch-and-go: set aside, so the stamp
@@ -3861,6 +3904,10 @@ def seed_passports(tenant_id: int, user_id: int, aircraft: list) -> None:
             lifetime, participant, target_id(lifetime, "EBSP"), filename
         )
 
+    if demo:
+        seed_lande_gutscheinheft(tenant_id, user_id)
+        return
+
     # 2. Dated booklet edition, for the year of the date 60 days ago.
     year = passport_booklet_year(date.today())
     booklet, participant = passport(
@@ -3884,7 +3931,6 @@ def seed_passports(tenant_id: int, user_id: int, aircraft: list) -> None:
         [field(code) for code in _PASSPORT_TRAINING_CODES],
     )
     seed_lande_gutscheinheft(tenant_id, user_id)
-    db.session.flush()
 
 
 def seed_lande_gutscheinheft(tenant_id: int, user_id: int) -> None:
@@ -3994,7 +4040,7 @@ def seed_group_passport(
     invitation link can appear in documentation or screenshots.
     Call after seed_pilot_profiles and seed_passports.
     """
-    from models import PassportAirfieldComment, TenantUser, User
+    from models import PassportAirfieldComment
     from passports import catalogue as cat  # pyright: ignore[reportMissingImports]
     from passports import editions, evidence, groups  # pyright: ignore[reportMissingImports]
     from passports.management import (  # pyright: ignore[reportMissingImports]
@@ -4006,20 +4052,7 @@ def seed_group_passport(
     def field(code: str) -> Any:
         return cat.materialise(tenant_id, by_ident[code])
 
-    friend = User(
-        email=friend_email,
-        password_hash=password_hash,
-        totp_secret=None,
-        is_active=True,
-        name="Demo Passport Friend",
-    )
-    db.session.add(friend)
-    db.session.flush()
-    db.session.add(
-        TenantUser(
-            user_id=friend.id, tenant_id=tenant_id, role=None, access_scope="personal"
-        )
-    )
+    friend_id = _seed_passport_friend(tenant_id, friend_email, password_hash)
 
     def consent(name: str) -> dict[str, str]:
         return {
@@ -4060,7 +4093,7 @@ def seed_group_passport(
         editions_made.append(edition)
 
     current = editions_made[-1]
-    members = [(friend.id, "Demo Passport Friend")]
+    members = [(friend_id, "Demo Passport Friend")]
     if pilot_id is not None:
         members.insert(0, (pilot_id, "Demo Pilot"))
     for user_id, name in members:
@@ -4075,7 +4108,7 @@ def seed_group_passport(
         db.session.flush()
         groups.consent(current, user_id, consent(name))
     friend_participant = PassportParticipant.query.filter_by(
-        passport_id=current.id, user_id=friend.id
+        passport_id=current.id, user_id=friend_id
     ).one()
     targets = {
         row.airfield_id: row.id
@@ -4098,7 +4131,7 @@ def seed_group_passport(
             tenant_id=tenant_id,
             series_id=series.id,
             airfield_id=field("EBZW").id,
-            author_user_id=friend.id,
+            author_user_id=friend_id,
             author_display_name="Demo Passport Friend",
             category="nearby",
             body="The clubhouse terrace serves good pancakes on weekends.",
@@ -4106,6 +4139,72 @@ def seed_group_passport(
         )
     )
     db.session.flush()
+
+
+def _seed_passport_friend(tenant_id: int, email: str, password_hash: str) -> int:
+    from models import TenantUser, User
+
+    friend = User(
+        email=email,
+        password_hash=password_hash,
+        is_active=True,
+        name="Demo Passport Friend",
+    )
+    db.session.add(friend)
+    db.session.flush()
+    db.session.add(
+        TenantUser(
+            user_id=friend.id, tenant_id=tenant_id, role=None, access_scope="personal"
+        )
+    )
+    return int(friend.id)
+
+
+def seed_demo_lande_group(
+    tenant_id: int, owner_id: int, friend_email: str, password_hash: str
+) -> None:
+    """Share the demo voucher editions and give the friend distinct fixed visits."""
+    from models import PassportAirfieldIdentity
+    from passports import evidence, groups
+
+    friend_id = _seed_passport_friend(tenant_id, friend_email, password_hash)
+    series = PassportSeries.query.filter_by(
+        tenant_id=tenant_id, owner_user_id=owner_id, title="Lande-Gutscheinheft"
+    ).one()
+    visits = {
+        "2025": (date(2025, 6, 14), ("EDLM", "EDLA", "EDMB")),
+        "2026": (date(2026, 6, 13), ("EDLM", "EDLA", "EDAX", "EDMB")),
+    }
+    sharing = {"share_visits": "yes", "share_history": "yes"}
+    friend_name = "Demo Passport Friend"
+    for edition in Passport.query.filter_by(series_id=series.id).order_by(
+        Passport.start_date
+    ):
+        groups.enable(edition, owner_id, {**sharing, "display_name": "Demo Owner"})
+        participant = PassportParticipant(
+            passport_id=edition.id,
+            user_id=friend_id,
+            accepted_at=datetime.now(UTC),
+            display_name=friend_name,
+        )
+        db.session.add(participant)
+        db.session.flush()
+        groups.consent(edition, friend_id, {**sharing, "display_name": friend_name})
+        if edition.edition_label in visits:
+            day, codes = visits[edition.edition_label]
+            targets = (
+                db.session.query(PassportAirfield.id)
+                .join(PassportAirfieldIdentity)
+                .filter(
+                    PassportAirfield.passport_id == edition.id,
+                    PassportAirfieldIdentity.ident.in_(codes),
+                )
+            )
+            if day <= date.today():
+                for (target_id,) in targets:
+                    evidence.add_visit(
+                        edition, participant, target_id, {"visit_date": day.isoformat()}
+                    )
 
 
 # Places in Belgium worth a flight, for the shared "Our places" collection
@@ -4144,7 +4243,7 @@ def seed_places(
     pilot and the Personal-account friend all edit it; a few located places
     with tags and airfield links, a tag no place uses yet, an unlocated idea
     for Dinant, and a visit each by the owner and the friend. Call after
-    seed_group_passport (it needs the friend's account)."""
+    creating the friend's account."""
     from datetime import date
 
     from models import PlaceTag, PlaceVisit, User

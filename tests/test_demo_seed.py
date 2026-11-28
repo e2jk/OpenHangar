@@ -7,13 +7,19 @@ are excluded from the coverage requirement (.coveragerc), so nothing
 else in the suite calls this function to completion.
 """
 
+from datetime import date
+
 from demo_seed import seed  # pyright: ignore[reportMissingImports]
 from models import (  # pyright: ignore[reportMissingImports]
     DemoSlot,
     Passport,
+    PassportAirfield,
     PassportAirfieldIdentity,
+    PassportSeries,
     TenantUser,
+    db,
 )
+from passports import groups
 
 
 class TestDemoSeedEndToEnd:
@@ -45,15 +51,71 @@ class TestDemoSeedEndToEnd:
             assert DemoSlot.query.count() == 1
             # The wipe removes the first run's passports and airfield
             # identities (referenced by aircraft home airfields) with its
-            # tenant: only the new slot's eight passports remain.
+            # tenant: only the new slot's four passports remain.
             slot = DemoSlot.query.one()
-            assert Passport.query.count() == 8
-            assert {
-                p.edition_label
-                for p in Passport.query.filter(
-                    Passport.title.startswith("Lande-Gutscheinheft ")
+            assert {p.title for p in Passport.query} == {
+                "Belgian airfields",
+                "Lande-Gutscheinheft 2025",
+                "Lande-Gutscheinheft 2026",
+                "Lande-Gutscheinheft 2027",
+            }
+            belgian = Passport.query.filter_by(title="Belgian airfields").one()
+            codes = (
+                db.session.query(PassportAirfieldIdentity.ident)
+                .join(PassportAirfield)
+                .filter(PassportAirfield.passport_id == belgian.id)
+            )
+            assert {code for (code,) in codes} == {
+                "EBAW",
+                "EBBR",
+                "EBCI",
+                "EBKT",
+                "EBLG",
+                "EBOS",
+                "EBST",
+                "EBZR",
+                "EBGB",
+                "EBBT",
+                "EBGG",
+                "EBIS",
+                "EBKH",
+                "EBMO",
+                "EBNM",
+                "EBSG",
+                "EBSH",
+                "EBSP",
+                "EBTX",
+                "EBTY",
+                "EBZH",
+                "EBZW",
+                "EBCF",
+                "EBTN",
+                "EBHN",
+                "EBLE",
+                "EBDT",
+                "EBBZ",
+            }
+            editions = Passport.query.filter(Passport.series_id.isnot(None)).all()
+            assert {edition.edition_label for edition in editions} == {
+                "2025",
+                "2026",
+                "2027",
+            }
+            series = PassportSeries.query.one()
+            shared = groups.shared_progress(series, editions, slot.user_id)
+            for edition in editions:
+                assert edition.is_group
+                stats = groups.edition_stats(
+                    shared["own"][edition.id]["rows"],
+                    shared["roster"][edition.id],
+                    shared["visited_by"][edition.id],
+                    slot.user_id,
                 )
-            } == {"2025", "2026", "2027"}
+                assert len(stats["participants"]) == 2
+                if edition.edition_label == "2026" and date.today() >= date(
+                    2026, 6, 13
+                ):
+                    assert stats["anyone"] > stats["everyone"] > 0
             # ...and its single passport-only friend, never the first run's.
             friends = TenantUser.query.filter(TenantUser.access_scope == "personal")
             assert [tu.tenant_id for tu in friends] == [slot.tenant_id]

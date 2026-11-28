@@ -190,6 +190,7 @@ def test_link_and_series_http_privacy(
     with app.app_context():
         p = db.session.get(Passport, owner["passport"])
         p.start_date, p.end_date = date.today(), date.today() + timedelta(days=1)
+        p.edition_label = "Sample edition"
         series_id = p.series_id
         field = db.session.get(PassportAirfield, owner["target"])
         identity = db.session.get(PassportAirfieldIdentity, field.airfield_id)
@@ -197,6 +198,8 @@ def test_link_and_series_http_privacy(
         db.session.commit()
     response = client.get(url)
     assert "Current edition" in response.text
+    detail = client.get(base + "/").text
+    assert f'Sample edition · <a href="{url}?edition=all">Linked editions</a>' in detail
     assert client.get(url + f"?edition={owner['passport']}").status_code == 200
     assert (
         client.post(base + "/series", data={"series_id": str(series_id)}).status_code
